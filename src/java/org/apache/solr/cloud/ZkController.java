@@ -23,12 +23,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -46,6 +48,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -92,6 +95,10 @@ public final class ZkController {
   private String localHost;
 
   private String hostName;
+  
+  private ScheduledExecutorService updateCloudExecutor = Executors.newScheduledThreadPool(1);
+
+  private boolean cloudStateUpdateScheduled;
 
 
   /**
@@ -112,6 +119,7 @@ public final class ZkController {
     this.localHostPort = locaHostPort;
     this.localHostContext = localHostContext;
     this.localHost = localHost;
+    cloudState = new CloudState(new HashSet<String>(0), new HashMap<String,Map<String,Slice>>(0));
     zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout,
         // on reconnect, reload cloud info
         new OnReconnect() {
@@ -130,7 +138,7 @@ public final class ZkController {
                   register(core, false);
                 }
               }
-              updateCloudState();
+              updateCloudState(false);
             } catch (KeeperException e) {
               log.error("", e);
               throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
@@ -171,7 +179,8 @@ public final class ZkController {
         // makes shards zkNode if it doesn't exist
         zkClient.makePath(shardsZkPath, CreateMode.PERSISTENT, null);
         
-        // ping that there is a new collection (nocommit : or now possibly a new shardId?)
+        // nocommit
+        // ping that there is a new collection or a new shardId
         zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);
       }
     } catch (KeeperException e) {
@@ -398,55 +407,61 @@ public final class ZkController {
     }
   }
   
-  // package private for tests
-  String getNodeName() {
+  public String getNodeName() {
     return hostName + ":" + localHostPort + "_"+ localHostContext;
   }
 
   // load and publish a new CollectionInfo
-  public synchronized void updateCloudState() throws KeeperException, InterruptedException,
+  public synchronized void updateCloudState(boolean immediate) throws KeeperException, InterruptedException,
       IOException {
 
     // TODO: - incremental update rather than reread everything
     
-    log.info("Updating cloud state from ZooKeeper... :" + zkClient.keeper);
-    
     // build immutable CloudInfo
-
-    List<String> collections = getCollectionNames();
     
-    Map<String,Map<String,Slice>> collectionStates = new HashMap<String,Map<String,Slice>>();
-    for (String collection : collections) {
-      String shardIdPaths = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE;
-      List<String> shardIdNames;
-      try {
-        shardIdNames = zkClient.getChildren(shardIdPaths, null);
-      } catch(KeeperException.NoNodeException e) {
-        // node is not valid currently
-        continue;
+    if(immediate) {
+      log.info("Updating cloud state from ZooKeeper... :" + zkClient.keeper);
+      CloudState cloudState;
+      cloudState = CloudState.buildCloudState(zkClient);
+      // update volatile
+      this.cloudState = cloudState;
+    } else {
+      if(cloudStateUpdateScheduled) {
+        return;
       }
-      Map<String,Slice> slices = new HashMap<String,Slice>();
-      for(String shardIdZkPath : shardIdNames) {
-        Map<String,ZkNodeProps> shardsMap = readShards(shardIdPaths + "/" + shardIdZkPath);
-        Slice slice = new Slice(shardIdZkPath, shardsMap);
-        slices.put(shardIdZkPath, slice);
-      }
-      collectionStates.put(collection, slices);
-      
+      log.info("Scheduling cloud state update from ZooKeeper...");
+      cloudStateUpdateScheduled = true;
+      updateCloudExecutor.schedule(new Runnable() {
+        
+        public void run() {
+          log.info("Updating cloud state from ZooKeeper...");
+          synchronized (ZkController.this) {
+            CloudState cloudState;
+            try {
+              cloudState = CloudState.buildCloudState(zkClient);
+            } catch (KeeperException e) {
+              log.error("", e);
+              throw new ZooKeeperException(
+                  SolrException.ErrorCode.SERVER_ERROR, "", e);
+            } catch (InterruptedException e) {
+              // Restore the interrupted status
+              Thread.currentThread().interrupt();
+              log.error("", e);
+              throw new ZooKeeperException(
+                  SolrException.ErrorCode.SERVER_ERROR, "", e);
+            } catch (IOException e) {
+              log.error("", e);
+              throw new ZooKeeperException(
+                  SolrException.ErrorCode.SERVER_ERROR, "", e);
+            }
+            // update volatile
+            ZkController.this.cloudState = cloudState;
+            cloudStateUpdateScheduled = false;
+          }
+        }
+      }, 5000, TimeUnit.MILLISECONDS);
     }
-    
-    CloudState cloudInfo = new CloudState(getLiveNodes(), collectionStates);
-    
-    // update volatile
-    this.cloudState = cloudInfo;
-  }
 
-  private Set<String> getLiveNodes() throws KeeperException, InterruptedException {
-    List<String> liveNodes = zkClient.getChildren(NODES_ZKNODE, null);
-    Set<String> liveNodesSet = new HashSet<String>(liveNodes.size());
-    liveNodesSet.addAll(liveNodes);
-
-    return liveNodesSet;
   }
 
   /**
@@ -491,7 +506,7 @@ public final class ZkController {
       log.error(
           "Multiple configurations were found, but config name to use for collection:"
               + collection + " could not be located", e);
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
           "Multiple configurations were found, but config name to use for collection:"
               + collection + " could not be located", e);
     }
@@ -519,39 +534,6 @@ public final class ZkController {
 
     return configName;
   }
-
-  /**
-   * @param zkClient
-   * @param shardsZkPath
-   * @return
-   * @throws KeeperException
-   * @throws InterruptedException
-   * @throws IOException
-   */
-  private Map<String,ZkNodeProps> readShards(String shardsZkPath)
-      throws KeeperException, InterruptedException, IOException {
-
-    Map<String,ZkNodeProps> shardNameToProps = new HashMap<String,ZkNodeProps>();
-
-    if (zkClient.exists(shardsZkPath, null) == null) {
-      throw new IllegalStateException("Cannot find zk shards node that should exist:"
-          + shardsZkPath);
-    }
-
-    List<String> shardZkPaths = zkClient.getChildren(shardsZkPath, null);
-    
-    for(String shardPath : shardZkPaths) {
-      byte[] data = zkClient.getData(shardsZkPath + "/" + shardPath, null,
-          null);
-      
-      ZkNodeProps props = new ZkNodeProps();
-      props.load(data);
-      shardNameToProps.put(shardPath, props);
-    }
-
-    return Collections.unmodifiableMap(shardNameToProps);
-  }
-
 
   /**
    * Register shard. A SolrCore calls this on startup to register with
@@ -595,15 +577,19 @@ public final class ZkController {
 
     byte[] bytes = props.store();
     
-    String shardZkNodeName = hostName + ":" + localHostPort + "_"+ localHostContext + (coreName.length() == 0 ? "" : "_" + coreName);
+    String shardZkNodeName = getNodeName() + "_" + coreName;
 
     if(shardZkNodeAlreadyExists && forcePropsUpdate) {
       zkClient.setData(shardsZkPath + "/" + shardZkNodeName, bytes);
+      // tell everyone to update cloud info
+      zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);
     } else {
       addZkShardsNode(cloudDesc.getShardId(), collection);
       try {
         zkClient.create(shardsZkPath + "/" + shardZkNodeName, bytes,
             CreateMode.PERSISTENT);
+        // tell everyone to update cloud info
+        zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);
       } catch (KeeperException e) {
         // its okay if the node already exists
         if (e.code() != KeeperException.Code.NODEEXISTS) {
@@ -660,22 +646,6 @@ public final class ZkController {
     zkClient.printLayoutToStdOut();
   }
 
-  public void watchShards() throws KeeperException, InterruptedException {
-    
-    // TODO: don't reload whole state when anything changes - just reload what's
-    // changed
-    // List<String> collections = zkClient.getChildren(COLLECTIONS_ZKNODE,
-    // null);
-    // collections = zkClient.getChildren(COLLECTIONS_ZKNODE, null);
-    // for(String collection : collections) {
-    // for(String shardId : zkClient.getChildren(COLLECTIONS_ZKNODE + "/" +
-    // collection + SHARDS_ZKNODE, null)) {
-    // zkClient.getChildren(COLLECTIONS_ZKNODE + "/" + collection +
-    // SHARDS_ZKNODE + "/" + shardId, shardWatcher);
-    // }
-    // }
-  }
-
   private void setUpCollectionsNode() throws KeeperException, InterruptedException {
     try {
       if (!zkClient.exists(COLLECTIONS_ZKNODE)) {
@@ -703,13 +673,13 @@ public final class ZkController {
     log.info("Start watching collections node for changes");
     zkClient.getChildren(COLLECTIONS_ZKNODE, new Watcher(){
 
-      public void process(WatchedEvent event) {
+      public synchronized void process(WatchedEvent event) {
           try {
             // TODO: fine grained - just reload what's changed
             // nocommit
-            log.info("children changed");
-            // something changed, reload cloud state
-            updateCloudState();
+            log.info("Notified of collection change");
+            addShardZkNodeWatches();
+            updateCloudState(false);
             // re-watch
             zkClient.getChildren(event.getPath(), this);
           } catch (KeeperException e) {
@@ -729,6 +699,101 @@ public final class ZkController {
           }
 
       }});
+    
+    zkClient.exists(COLLECTIONS_ZKNODE, new Watcher(){
+
+      public synchronized void process(WatchedEvent event) {
+        if(event.getType() !=  EventType.NodeDataChanged) {
+          return;
+        }
+        log.info("Notified of CloudState change");
+        try {
+          addShardZkNodeWatches();
+          updateCloudState(false);
+          zkClient.exists(COLLECTIONS_ZKNODE, this);
+        } catch (KeeperException e) {
+          log.error("", e);
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+              "", e);
+        } catch (InterruptedException e) {
+          // Restore the interrupted status
+          Thread.currentThread().interrupt();
+          log.error("", e);
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+              "", e);
+        } catch (IOException e) {
+          log.error("", e);
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+              "", e);
+        }
+        
+      }});
+  }
+  
+  public void addShardZkNodeWatches() throws KeeperException, InterruptedException {
+    CloudState cloudState = getCloudState();
+    Set<String> knownCollections = cloudState.getCollections();
+    
+    List<String> collections = zkClient.getChildren(COLLECTIONS_ZKNODE, null);
+    for(final String collection : collections) {
+      if(!knownCollections.contains(collection)) {
+        zkClient.getChildren(COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE, new Watcher(){
+
+          public void process(WatchedEvent event) {
+            //nocommit
+            System.out.println("ShardId node added/removed/changed:");
+            try {
+              addShardsWatches(collection);
+            } catch (KeeperException e) {
+              log.error("", e);
+              throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                  "", e);
+            } catch (InterruptedException e) {
+              // Restore the interrupted status
+              Thread.currentThread().interrupt();
+              log.error("", e);
+              throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                  "", e);
+            }
+          }});
+      }
+    }
+  }
+  
+  public void addShardsWatches(String collection) throws KeeperException,
+      InterruptedException {
+    if (zkClient.exists(COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE)) {
+      List<String> shardIds = zkClient.getChildren(COLLECTIONS_ZKNODE + "/"
+          + collection + SHARDS_ZKNODE, null);
+      CloudState cloudState = getCloudState();
+      Set<String> knownShardIds;
+      Map<String,Slice> slices = cloudState.getSlices(collection);
+      if (slices != null) {
+        knownShardIds = slices.keySet();
+      } else {
+        knownShardIds = new HashSet<String>(0);
+      }
+      for (final String shardId : shardIds) {
+        if (!knownShardIds.contains(shardId)) {
+          zkClient.getChildren(COLLECTIONS_ZKNODE + "/" + collection
+              + SHARDS_ZKNODE + "/" + shardId, new Watcher() {
+
+            public void process(WatchedEvent event) {
+              // nocommit
+              System.out.println("shard changed under:" + shardId);
+
+            }
+          });
+        }
+      }
+    }
+  }
+  
+  public void addShardsWatches() throws KeeperException, InterruptedException {
+    List<String> collections = zkClient.getChildren(COLLECTIONS_ZKNODE, null);
+    for (final String collection : collections) {
+      addShardsWatches(collection);
+    }
   }
 
 }

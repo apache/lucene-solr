@@ -95,7 +95,6 @@ public class CoreContainer
   }
   
   private void initZooKeeper(String zkHost, int zkClientTimeout) {
-    // nocommit: perhaps get from solr.xml
     // if zkHost sys property is not set, we are not using ZooKeeper
     String zookeeperHost;
     if(zkHost == null) {
@@ -196,7 +195,7 @@ public class CoreContainer
     public CoreContainer initialize() throws IOException, ParserConfigurationException, SAXException {
       CoreContainer cores = null;
       String solrHome = SolrResourceLoader.locateSolrHome();
-      // nocommit : fix broken logic confusing solr.xml with solrconfig.xml
+      // TODO : fix broken logic confusing solr.xml with solrconfig.xml
       File fconf = new File(solrHome, solrConfigFilename == null ? "solr.xml"
           : solrConfigFilename);
       log.info("looking for solr.xml: " + fconf.getAbsolutePath());
@@ -380,13 +379,13 @@ public class CoreContainer
           if (opt != null) {
             p.setSchemaName(opt);
           }
-          // nocommit : default shard list to SHARD: + host:port + context + core
+
           opt = DOMUtil.getAttr(node, "shardId", null);
           if(testShardIdOverride != null && name.equals("")) {
             p.getCloudDescriptor().setShardId(testShardIdOverride);
           } else if(zooKeeperController != null) {
             if(opt == null) {
-              opt = "SHARDID:" + zooKeeperController.getHostName() + ":" + hostPort + "_" + hostContext + "_" + (name.length() == 0 ? "" : "_" + name);
+              opt = "SHARDID:" + zooKeeperController.getNodeName() + "_" + name;
             }
             p.getCloudDescriptor().setShardId(opt);
           }
@@ -425,12 +424,9 @@ public class CoreContainer
     
     
     if(zooKeeperController != null) {
-      // nocommit : exceptions
       try {
-        zooKeeperController.updateCloudState();
-        
-        // nocommit : set shards node watches
-        zooKeeperController.watchShards();
+        zooKeeperController.addShardZkNodeWatches();
+        zooKeeperController.updateCloudState(true);
       } catch (InterruptedException e) {
         // Restore the interrupted status
         Thread.currentThread().interrupt();
@@ -584,8 +580,6 @@ public class CoreContainer
     }
     IndexSchema schema = null;
     if (indexSchemaCache != null) {
-      // nocommit: handle ZooKeeper and schema caching
-      // schema sharing is enabled. so check if it already is loaded
       if (zooKeeperController != null) {
         File schemaFile = new File(dcore.getSchemaName());
         if (!schemaFile.isAbsolute()) {
@@ -991,7 +985,6 @@ public class CoreContainer
           "  </cores>\n" +
           "</solr>";
 
-  // nocommit: consider - for tests now
   public boolean isZooKeeperAware() {
     return zooKeeperController != null;
   }
@@ -999,9 +992,5 @@ public class CoreContainer
   public ZkController getZooKeeperController() {
     return zooKeeperController;
   }
-
-
-
-
 
 }

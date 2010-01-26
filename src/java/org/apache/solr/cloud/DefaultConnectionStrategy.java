@@ -64,7 +64,10 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
         if(connected) {
           executor.shutdownNow();
         } else {
-          delay = delay * 2; // nocommit : back off retry that levels off
+          // nocommit
+          if(delay < 240000) {
+            delay = delay * 2; // nocommit : back off retry that levels off
+          }
           executor.schedule(this, delay, TimeUnit.MILLISECONDS);
         }
         

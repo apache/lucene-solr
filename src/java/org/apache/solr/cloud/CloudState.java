@@ -17,11 +17,16 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.apache.solr.common.SolrException;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,12 +52,85 @@ public class CloudState {
     return Collections.unmodifiableMap(collectionState);
   }
   
+  public Set<String> getCollections() {
+    return Collections.unmodifiableSet(collectionStates.keySet());
+  }
+  
   public Set<String> getLiveNodes() {
     return Collections.unmodifiableSet(liveNodes);
   }
   
   public boolean liveNodesContain(String name) {
     return liveNodes.contains(name);
+  }
+  
+  public static CloudState buildCloudState(SolrZkClient zkClient) throws KeeperException, InterruptedException, IOException {
+
+    List<String> collections = zkClient.getChildren(ZkController.COLLECTIONS_ZKNODE, null);
+    
+    Map<String,Map<String,Slice>> collectionStates = new HashMap<String,Map<String,Slice>>();
+    for (String collection : collections) {
+      String shardIdPaths = ZkController.COLLECTIONS_ZKNODE + "/" + collection + ZkController.SHARDS_ZKNODE;
+      List<String> shardIdNames;
+      try {
+        shardIdNames = zkClient.getChildren(shardIdPaths, null);
+      } catch(KeeperException.NoNodeException e) {
+        // node is not valid currently
+        continue;
+      }
+      Map<String,Slice> slices = new HashMap<String,Slice>();
+      for(String shardIdZkPath : shardIdNames) {
+        Map<String,ZkNodeProps> shardsMap = readShards(zkClient, shardIdPaths + "/" + shardIdZkPath);
+        Slice slice = new Slice(shardIdZkPath, shardsMap);
+        slices.put(shardIdZkPath, slice);
+      }
+      collectionStates.put(collection, slices);
+      
+    }
+    
+    CloudState cloudInfo = new CloudState(getLiveNodes(zkClient), collectionStates);
+    
+    return cloudInfo;
+  }
+  
+  /**
+   * @param zkClient
+   * @param shardsZkPath
+   * @return
+   * @throws KeeperException
+   * @throws InterruptedException
+   * @throws IOException
+   */
+  private static Map<String,ZkNodeProps> readShards(SolrZkClient zkClient, String shardsZkPath)
+      throws KeeperException, InterruptedException, IOException {
+
+    Map<String,ZkNodeProps> shardNameToProps = new HashMap<String,ZkNodeProps>();
+
+    if (zkClient.exists(shardsZkPath, null) == null) {
+      throw new IllegalStateException("Cannot find zk shards node that should exist:"
+          + shardsZkPath);
+    }
+
+    List<String> shardZkPaths = zkClient.getChildren(shardsZkPath, null);
+    
+    for(String shardPath : shardZkPaths) {
+      byte[] data = zkClient.getData(shardsZkPath + "/" + shardPath, null,
+          null);
+      
+      ZkNodeProps props = new ZkNodeProps();
+      props.load(data);
+      shardNameToProps.put(shardPath, props);
+    }
+
+    return Collections.unmodifiableMap(shardNameToProps);
+  }
+  
+  private static Set<String> getLiveNodes(SolrZkClient zkClient) throws KeeperException, InterruptedException {
+    List<String> liveNodes = zkClient.getChildren(ZkController.NODES_ZKNODE, null);
+    Set<String> liveNodesSet = new HashSet<String>(liveNodes.size());
+    liveNodesSet.addAll(liveNodes);
+
+    return liveNodesSet;
   }
 
 }

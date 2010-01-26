@@ -22,6 +22,8 @@ import java.io.File;
 import junit.framework.TestCase;
 
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 
 public class ZkSolrClientTest extends TestCase {
   protected File tmpDir = new File(System.getProperty("java.io.tmpdir")
@@ -129,6 +131,54 @@ public class ZkSolrClientTest extends TestCase {
       throw e;
     } finally {
     
+      if (zkClient != null) {
+        zkClient.close();
+      }
+      if (server != null) {
+        server.shutdown();
+      }
+    }
+  }
+  
+  public void testWatchChildren() throws Exception {
+    String zkDir = tmpDir.getAbsolutePath() + File.separator
+        + "zookeeper/server1/data";
+    ZkTestServer server = null;
+    SolrZkClient zkClient = null;
+    try {
+      server = new ZkTestServer(zkDir);
+      server.run();
+
+      AbstractZkTestCase.makeSolrZkNode();
+
+      zkClient = new SolrZkClient(AbstractZkTestCase.ZOO_KEEPER_ADDRESS, 5);
+
+      zkClient.makePath("/collections");
+      
+      zkClient.getChildren("/collections", new Watcher(){
+
+        public void process(WatchedEvent event) {
+          System.out.println("children changed");
+          
+        }});
+      
+      zkClient.makePath("/collections/collection1/shards");
+
+      zkClient.makePath("collections/collection1/config=collection1");
+
+
+      zkClient.makePath("collections/collection1/config=collection3");
+
+
+      zkClient.printLayoutToStdOut();
+
+
+    } catch (Exception e) {
+      // nocommit
+      e.printStackTrace();
+      throw e;
+    } finally {
+
       if (zkClient != null) {
         zkClient.close();
       }
