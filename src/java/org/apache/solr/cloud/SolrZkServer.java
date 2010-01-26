@@ -43,21 +43,20 @@ public class SolrZkServer {
   String solrPort;
   Properties props;
   SolrZkServerProps zkProps;
-  String zkClientString;
 
   private Thread zkThread;  // the thread running a zookeeper server, only if zkRun is set
 
   public SolrZkServer(String zkRun, String zkHost, String solrHome, String solrPort) {
     this.zkRun = zkRun;
-    this.zkClientString = this.zkHost = zkHost;
+    this.zkHost = zkHost;
     this.solrHome = solrHome;
     this.solrPort = solrPort;
-
-    this.zkClientString = this.zkHost != null ? this.zkHost : this.zkRun;
   }
 
   public String getClientString() {
-    if (props == null) return null;
+    if (zkHost != null) return zkHost;
+    
+    if (zkProps == null) return null;
 
     // if the string wasn't passed as zkHost, then use the standalone server we started
     if (zkRun == null) return null;
@@ -215,7 +214,7 @@ class SolrZkServerProps extends QuorumPeerConfig {
         String host = hostAndPort.substring(0,portIdx);
 
         String serverStr = host + ':' + (clientPort+1);
-        // algorithms other than 0 need an extra port for leader election.
+        // zk leader election algorithms other than 0 need an extra port for leader election.
         if (alg != 0) {
           serverStr = serverStr + ':' + (clientPort+2);
         }

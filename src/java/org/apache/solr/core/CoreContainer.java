@@ -318,7 +318,10 @@ public class CoreContainer
       shareSchema = cfg.getBool("solr/cores/@shareSchema", false);
       zkClientTimeout = cfg.getInt("solr/cores/@zkClientTimeout", 10000);
       if (zkPortOverride == null) {
-        hostPort = cfg.get("solr/cores/@hostPort", "8983");
+        hostPort = System.getProperty("hostPort");
+        if (hostPort == null) {
+          hostPort = cfg.get("solr/cores/@hostPort", "8983");
+        }
       } else {
         hostPort = zkPortOverride;
       }
