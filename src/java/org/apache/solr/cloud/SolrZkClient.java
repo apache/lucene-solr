@@ -25,6 +25,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.cloud.ZkClientConnectionStrategy.ZkUpdate;
+import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;
@@ -50,7 +51,7 @@ public class SolrZkClient {
     public void command();
   }
 
-  static final int CONNECT_TIMEOUT = 5000;
+  static final int DEFAULT_CLIENT_CONNECT_TIMEOUT = 5000;
 
   private static final Logger log = LoggerFactory
       .getLogger(SolrZkClient.class);
@@ -80,12 +81,30 @@ public class SolrZkClient {
    * @param zkServerAddress
    * @param zkClientTimeout
    * @param strat
+   * @param onReconnect
+   * @param clientConnectTimeout
    * @throws InterruptedException
    * @throws TimeoutException
    * @throws IOException
    */
   public SolrZkClient(String zkServerAddress, int zkClientTimeout,
       ZkClientConnectionStrategy strat, final OnReconnect onReconnect) throws InterruptedException,
+      TimeoutException, IOException {
+    this(zkServerAddress, zkClientTimeout, strat, onReconnect, DEFAULT_CLIENT_CONNECT_TIMEOUT);
+  }
+
+  /**
+   * @param zkServerAddress
+   * @param zkClientTimeout
+   * @param strat
+   * @param onReconnect
+   * @param clientConnectTimeout
+   * @throws InterruptedException
+   * @throws TimeoutException
+   * @throws IOException
+   */
+  public SolrZkClient(String zkServerAddress, int zkClientTimeout,
+      ZkClientConnectionStrategy strat, final OnReconnect onReconnect, int clientConnectTimeout) throws InterruptedException,
       TimeoutException, IOException {
     connManager = new ConnectionManager("ZooKeeperConnection Watcher:"
         + zkServerAddress, this, zkServerAddress, zkClientTimeout, strat, onReconnect);
@@ -97,13 +116,17 @@ public class SolrZkClient {
               try {
                 keeper.close();
               } catch (InterruptedException e) {
-                // nocommit
+                // Restore the interrupted status
+                Thread.currentThread().interrupt();
+                log.error("", e);
+                throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                    "", e);
               }
             }
             keeper = zooKeeper;
           }
         });
-    connManager.waitForConnected(CONNECT_TIMEOUT);
+    connManager.waitForConnected(clientConnectTimeout);
   }
 
   /**
@@ -402,6 +425,7 @@ public class SolrZkClient {
           string.append(dent + "DATA: ...supressed..." + NEWL);
         }
       } catch (UnsupportedEncodingException e) {
+        // can't happen - UTF-8
         throw new RuntimeException(e);
       }
     }

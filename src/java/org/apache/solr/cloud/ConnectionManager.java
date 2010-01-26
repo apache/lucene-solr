@@ -86,7 +86,7 @@ class ConnectionManager implements Watcher {
         connectionStrategy.reconnect(zkServerAddress, zkClientTimeout, this, new ZkClientConnectionStrategy.ZkUpdate() {
           @Override
           public void update(ZooKeeper keeper) throws InterruptedException, TimeoutException, IOException {
-           waitForConnected(SolrZkClient.CONNECT_TIMEOUT);
+           waitForConnected(SolrZkClient.DEFAULT_CLIENT_CONNECT_TIMEOUT);
            client.updateKeeper(keeper);
            if(onReconnect != null) {
              onReconnect.command();
