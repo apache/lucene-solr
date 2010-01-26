@@ -162,6 +162,9 @@ Bug Fixes
 * SOLR-1667: PatternTokenizer does not reset attributes such as positionIncrementGap
   (Robert Muir via shalin)
 
+* SOLR-1711: SolrJ - StreamingUpdateSolrServer had a race condition that
+  could halt the streaming of documents. (Attila Babo via yonik)
+
 Other Changes
 ----------------------
 
