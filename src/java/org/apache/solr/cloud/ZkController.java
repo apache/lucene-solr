@@ -163,12 +163,35 @@ public final class ZkController {
    * @param shardId
    * @param collection
    * @throws IOException
+   * @throws InterruptedException 
+   * @throws KeeperException 
    */
-  private void addZkShardsNode(String shardId, String collection) throws IOException {
+  private void addZkShardsNode(String shardId, String collection) throws IOException, InterruptedException, KeeperException {
 
+    String collectionPath = COLLECTIONS_ZKNODE + "/" + collection;
     String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE + "/" + shardId;
     
+    boolean newCollection = false;
+    boolean newShardId = false;
+    
     try {
+      if(!zkClient.exists(collectionPath)) {
+        try {
+          zkClient.makePath(collectionPath, CreateMode.PERSISTENT, null);
+          String confName = readConfigName(collection);
+          if(confName == null && System.getProperty("bootstrap_confdir") != null) {
+            confName = System.getProperty("bootstrap_confname", "configuration1");
+            zkClient.makePath(COLLECTIONS_ZKNODE + "/" + collection + "/conifg=" + confName);
+          }
+          newCollection = true;
+        } catch (KeeperException e) {
+          // its okay if another beats us creating the node
+          if (e.code() != KeeperException.Code.NODEEXISTS) {
+            throw e;
+          }
+        }
+      }
+      
       // shards node
       if (!zkClient.exists(shardsZkPath)) {
         if (log.isInfoEnabled()) {
@@ -177,23 +200,20 @@ public final class ZkController {
         // makes shards zkNode if it doesn't exist
         zkClient.makePath(shardsZkPath, CreateMode.PERSISTENT, null);
         
-        // nocommit - scrutinize
-        // ping that there is a new collection or a new shardId
-        zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);
+        newShardId = true;
+
       }
     } catch (KeeperException e) {
       // its okay if another beats us creating the node
       if (e.code() != KeeperException.Code.NODEEXISTS) {
-        log.error("", e);
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-            "", e);
+        throw e;
       }
-    } catch (InterruptedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
-      log.error("", e);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-          "", e);
+    }
+    
+    if(newCollection || newShardId) {
+      // nocommit - scrutinize
+      // ping that there is a new collection or a new shardId
+      zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);
     }
   }
 
@@ -486,20 +506,11 @@ public final class ZkController {
     try {
       children = zkClient.getChildren(path, null);
     } catch (KeeperException.NoNodeException e) {
-      // no config is set - check if there is only one config
-      // and if there is, use that
-      children = zkClient.getChildren(CONFIGS_ZKNODE, null);
-      if(children.size() == 1) {
-        String config = children.get(0);
-        log.info("No config set for " + collection + ", using single config found:" + config);
-        return config;
-      }
-
       log.error(
-          "Multiple configurations were found, but config name to use for collection:"
+          "Config name to use for collection:"
               + collection + " could not be located", e);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-          "Multiple configurations were found, but config name to use for collection:"
+          "Config name to use for collection:"
               + collection + " could not be located", e);
     }
     for (String node : children) {
@@ -512,16 +523,11 @@ public final class ZkController {
         // nocommmit : bail or read more?
       }
     }
-
-    if (configName == null) {
-      children = zkClient.getChildren(CONFIGS_ZKNODE, null);
-      if(children.size() == 1) {
-        String config = children.get(0);
-        log.info("No config set for " + collection + ", using single config found:" + config);
-        return config;
-      }
-      throw new IllegalStateException("no config specified for collection:"
-          + collection + " " + children.size() + " configurations exist");
+    
+    if(!zkClient.exists(CONFIGS_ZKNODE + "/" + configName)) {
+      log.error("Specified config does not exist in ZooKeeper:" + configName);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+          "Specified config does not exist in ZooKeeper:" + configName);
     }
 
     return configName;
@@ -765,7 +771,9 @@ public final class ZkController {
             // shards node yet -- pause and try again
             madeWatch = false;
             if(i == 4) {
-              throw e;
+              // nocommit:
+              // no shards yet, just bail
+              break;
             }
             Thread.sleep(50);
           }

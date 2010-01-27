@@ -104,9 +104,9 @@ public abstract class AbstractZkTestCase extends AbstractSolrTestCase {
 
     zkClient = new SolrZkClient(ZOO_KEEPER_ADDRESS, AbstractZkTestCase.TIMEOUT);
     
-    // nocommit : test should work with or without this as we ony have one config
-    //zkClient.makePath("/collections/collection1/config=collection1");
-
+    zkClient.makePath("/collections/collection1/config=conf1");
+    zkClient.makePath("/collections/testcore/config=conf1");
+    
     putConfig(zkClient, config);
     putConfig(zkClient, schema);
     putConfig(zkClient, "stopwords.txt");
