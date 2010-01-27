@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
+import org.apache.lucene.util.Version;
 
 /**
  * Test the Arabic Normalization Filter
@@ -112,11 +114,19 @@ public class TestArabicStemFilter extends BaseTokenStreamTestCase {
   public void testNonArabic() throws IOException {
     check("English", "English");
   }
+  
+  public void testWithKeywordAttribute() throws IOException {
+    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    set.add("ساهدهات");
+    ArabicLetterTokenizer tokenStream  = new ArabicLetterTokenizer(new StringReader("ساهدهات"));
+
+    ArabicStemFilter filter = new ArabicStemFilter(new KeywordMarkerTokenFilter(tokenStream, set));
+    assertTokenStreamContents(filter, new String[]{"ساهدهات"});
+  }
 
   private void check(final String input, final String expected) throws IOException {
     ArabicLetterTokenizer tokenStream  = new ArabicLetterTokenizer(new StringReader(input));
     ArabicStemFilter filter = new ArabicStemFilter(tokenStream);
     assertTokenStreamContents(filter, new String[]{expected});
   }
-
 }

@@ -19,6 +19,7 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 
+import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /** Transforms the token stream as per the Porter stemming algorithm.
@@ -38,15 +39,23 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
       }
     }
     </PRE>
+    <p>
+    Note: This filter is aware of the {@link KeywordAttribute}. To prevent
+    certain terms from being passed to the stemmer
+    {@link KeywordAttribute#isKeyword()} should be set to <code>true</code>
+    in a previous {@link TokenStream}.
+    </p>
 */
 public final class PorterStemFilter extends TokenFilter {
-  private PorterStemmer stemmer;
-  private TermAttribute termAtt;
+  private final PorterStemmer stemmer;
+  private final TermAttribute termAtt;
+  private final KeywordAttribute keywordAttr;
 
   public PorterStemFilter(TokenStream in) {
     super(in);
     stemmer = new PorterStemmer();
     termAtt = addAttribute(TermAttribute.class);
+    keywordAttr = addAttribute(KeywordAttribute.class);
   }
 
   @Override
@@ -54,7 +63,7 @@ public final class PorterStemFilter extends TokenFilter {
     if (!input.incrementToken())
       return false;
 
-    if (stemmer.stem(termAtt.termBuffer(), 0, termAtt.termLength()))
+    if ((!keywordAttr.isKeyword()) && stemmer.stem(termAtt.termBuffer(), 0, termAtt.termLength()))
       termAtt.setTermBuffer(stemmer.getResultBuffer(), 0, stemmer.getResultLength());
     return true;
   }

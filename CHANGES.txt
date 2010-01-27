@@ -125,6 +125,9 @@ New features
   stopwords, and implement many analyzers in contrib with it.  
   (Simon Willnauer via Robert Muir)
   
+* LUCENE-2198: Support protected words in stemming TokenFilters using a
+  new KeywordAttribute.  (Simon Willnauer via Uwe Schindler)
+
 Optimizations
 
 * LUCENE-2086: When resolving deleted terms, do so in term sort order

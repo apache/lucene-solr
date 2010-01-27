@@ -26,6 +26,8 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
@@ -93,6 +95,8 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
       }
     }
   }
+  
+  private final Set<?> stemExclusionSet;
 
   /**
    * Builds an analyzer with the default stop words: {@link #DEFAULT_STOPWORD_FILE}.
@@ -110,7 +114,25 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    *          a stopword set
    */
   public ArabicAnalyzer(Version matchVersion, Set<?> stopwords){
+    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
+  }
+
+  /**
+   * Builds an analyzer with the given stop word. If a none-empty stem exclusion set is
+   * provided this analyzer will add a {@link KeywordMarkerTokenFilter} before
+   * {@link ArabicStemFilter}.
+   * 
+   * @param matchVersion
+   *          lucene compatibility version
+   * @param stopwords
+   *          a stopword set
+   * @param stemExclusionSet
+   *          a set of terms not to be stemmed
+   */
+  public ArabicAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionSet){
     super(matchVersion, stopwords);
+    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
+        matchVersion, stemExclusionSet));
   }
 
   /**
@@ -145,7 +167,8 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
    * Creates {@link TokenStreamComponents} used to tokenize all the text in the provided {@link Reader}.
    *
    * @return {@link TokenStreamComponents} built from an {@link ArabicLetterTokenizer} filtered with
-   * 			{@link LowerCaseFilter}, {@link StopFilter}, {@link ArabicNormalizationFilter}
+   * 			{@link LowerCaseFilter}, {@link StopFilter}, {@link ArabicNormalizationFilter},
+   *      {@link KeywordMarkerTokenFilter} if a stem exclusion set is provided
    *            and {@link ArabicStemFilter}.
    */
   @Override
@@ -155,7 +178,11 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
     TokenStream result = new LowerCaseFilter(matchVersion, source);
     // the order here is important: the stopword list is not normalized!
     result = new StopFilter( matchVersion, result, stopwords);
+    // TODO maybe we should make ArabicNormalization filter also KeywordAttribute aware?!
     result = new ArabicNormalizationFilter(result);
+    if(!stemExclusionSet.isEmpty()) {
+      result = new KeywordMarkerTokenFilter(result, stemExclusionSet);
+    }
     return new TokenStreamComponents(source, new ArabicStemFilter(result));
   }
 }

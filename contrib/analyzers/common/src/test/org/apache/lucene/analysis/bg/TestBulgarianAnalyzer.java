@@ -22,6 +22,7 @@ import java.util.Collections;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.util.Version;
 
 /**
@@ -66,5 +67,12 @@ public class TestBulgarianAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "компютър", new String[] {"компютр"});
     
     assertAnalyzesTo(a, "градове", new String[] {"град"});
+  }
+  
+  public void testWithStemExclusionSet() throws IOException {
+    CharArraySet set = new CharArraySet(Version.LUCENE_31, 1, true);
+    set.add("строеве");
+    Analyzer a = new BulgarianAnalyzer(Version.LUCENE_CURRENT, CharArraySet.EMPTY_SET, set);
+    assertAnalyzesTo(a, "строевете строеве", new String[] { "строй", "строеве" });
   }
 }

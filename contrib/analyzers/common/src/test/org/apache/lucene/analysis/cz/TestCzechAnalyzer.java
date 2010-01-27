@@ -24,6 +24,7 @@ import java.io.InputStream;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.util.Version;
 
 /**
@@ -109,5 +110,11 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
     
     assertAnalyzesToReuse(cz, "Česká Republika", new String[] { "česká" });
   }
-
+  
+  public void testWithStemExclusionSet() throws IOException{
+    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    set.add("hole");
+    CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_CURRENT, CharArraySet.EMPTY_SET, set);
+    assertAnalyzesTo(cz, "hole desek", new String[] {"hole", "desk"});
+  }
 }

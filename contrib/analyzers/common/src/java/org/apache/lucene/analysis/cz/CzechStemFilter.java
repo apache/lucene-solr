@@ -2,8 +2,10 @@ package org.apache.lucene.analysis.cz;
 
 import java.io.IOException;
 
+import org.apache.lucene.analysis.KeywordMarkerTokenFilter;// for javadoc
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
@@ -25,25 +27,34 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * A {@link TokenFilter} that applies {@link CzechStemmer} to stem Czech words.
- * 
+ * <p>
+ * To prevent terms from being stemmed use an instance of
+ * {@link KeywordMarkerTokenFilter} or a custom {@link TokenFilter} that sets
+ * the {@link KeywordAttribute} before this {@link TokenStream}.
+ * </p>
  * <p><b>NOTE</b>: Input is expected to be in lowercase, 
  * but with diacritical marks</p>
+ * @see KeywordMarkerTokenFilter
  */
 public final class CzechStemFilter extends TokenFilter {
   private final CzechStemmer stemmer;
   private final TermAttribute termAtt;
+  private final KeywordAttribute keywordAttr;
   
   public CzechStemFilter(TokenStream input) {
     super(input);
     stemmer = new CzechStemmer();
     termAtt = addAttribute(TermAttribute.class);
+    keywordAttr = addAttribute(KeywordAttribute.class);
   }
 
   @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      int newlen = stemmer.stem(termAtt.termBuffer(), termAtt.termLength());
-      termAtt.setTermLength(newlen);
+      if(!keywordAttr.isKeyword()) {
+        final int newlen = stemmer.stem(termAtt.termBuffer(), termAtt.termLength());
+        termAtt.setTermLength(newlen);
+      }
       return true;
     } else {
       return false;

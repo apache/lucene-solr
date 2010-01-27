@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -105,6 +106,7 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
 	// TODO once loadStopWords is gone those member should be removed too in favor of StopwordAnalyzerBase
 	private Set<?> stoptable;
   private final Version matchVersion;
+  private final Set<?> stemExclusionTable;
 
   /**
    * Builds an analyzer with the default stop words ({@link #CZECH_STOP_WORDS}).
@@ -124,8 +126,22 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
    * @param stopwords a stopword set
    */
   public CzechAnalyzer(Version matchVersion, Set<?> stopwords) {
+    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
+  }
+  
+  /**
+   * Builds an analyzer with the given stop words and a set of work to be
+   * excluded from the {@link CzechStemFilter}.
+   * 
+   * @param matchVersion Lucene version to match See
+   *          {@link <a href="#version">above</a>}
+   * @param stopwords a stopword set
+   * @param a stemming exclusion set
+   */
+  public CzechAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionTable) {
     this.matchVersion = matchVersion;
     this.stoptable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stopwords));
+    this.stemExclusionTable = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionTable));
   }
 
 
@@ -207,7 +223,9 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
    * @return {@link TokenStreamComponents} built from a {@link StandardTokenizer}
    *         filtered with {@link StandardFilter}, {@link LowerCaseFilter},
    *         {@link StopFilter}, and {@link CzechStemFilter} (only if version is
-   *         >= LUCENE_31)
+   *         >= LUCENE_31). If a version is >= LUCENE_31 and a stem exclusion set
+   *         is provided via {@link #CzechAnalyzer(Version, Set, Set)} a 
+   *         {@link KeywordMarkerTokenFilter} is added before {@link CzechStemFilter}.
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
@@ -216,8 +234,11 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
     TokenStream result = new StandardFilter(source);
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter( matchVersion, result, stoptable);
-    if (matchVersion.onOrAfter(Version.LUCENE_31))
+    if (matchVersion.onOrAfter(Version.LUCENE_31)) {
+      if(!this.stemExclusionTable.isEmpty())
+        result = new KeywordMarkerTokenFilter(result, stemExclusionTable);
       result = new CzechStemFilter(result);
+    }
     return new TokenStreamComponents(source, result);
   }
 }

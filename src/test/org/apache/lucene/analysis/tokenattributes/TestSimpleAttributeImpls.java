@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.tokenattributes;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 public class TestSimpleAttributeImpls extends LuceneTestCase {
 
@@ -116,6 +117,25 @@ public class TestSimpleAttributeImpls extends LuceneTestCase {
     att.clear();
     assertEquals(0, att.startOffset());
     assertEquals(0, att.endOffset());
+  }
+  
+  public void testKeywordAttribute() {
+    AttributeImpl attrImpl = AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY.createAttributeInstance(KeywordAttribute.class);
+    assertSame(KeywordAttributeImpl.class, attrImpl.getClass());
+    KeywordAttributeImpl att = (KeywordAttributeImpl) attrImpl;
+    assertFalse(att.isKeyword());
+    att.setKeyword(true);
+    assertTrue(att.isKeyword());
+    
+    KeywordAttributeImpl assertCloneIsEqual = (KeywordAttributeImpl) assertCloneIsEqual(att);
+    assertTrue(assertCloneIsEqual.isKeyword());
+    assertCloneIsEqual.clear();
+    assertFalse(assertCloneIsEqual.isKeyword());
+    assertTrue(att.isKeyword());
+    
+    att.copyTo(assertCloneIsEqual);
+    assertTrue(assertCloneIsEqual.isKeyword());
+    assertTrue(att.isKeyword());
   }
   
   public static final AttributeImpl assertCloneIsEqual(AttributeImpl att) {

@@ -17,11 +17,8 @@ package org.apache.lucene.analysis.fr;
  * limitations under the License.
  */
 
-import java.io.StringReader;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.util.Version;
 
 /**
@@ -147,4 +144,17 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
 	  fa.setStemExclusionTable(new String[] { "habitable" });
 	  assertAnalyzesToReuse(fa, "habitable", new String[] { "habitable" });
 	}
+	
+  public void testExclusionTableViaCtor() throws Exception {
+    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    set.add("habitable");
+    FrenchAnalyzer fa = new FrenchAnalyzer(Version.LUCENE_CURRENT,
+        CharArraySet.EMPTY_SET, set);
+    assertAnalyzesToReuse(fa, "habitable chiste", new String[] { "habitable",
+        "chist" });
+
+    fa = new FrenchAnalyzer(Version.LUCENE_CURRENT, CharArraySet.EMPTY_SET, set);
+    assertAnalyzesTo(fa, "habitable chiste", new String[] { "habitable",
+        "chist" });
+  }
 }

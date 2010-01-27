@@ -17,12 +17,14 @@ package org.apache.lucene.analysis.br;
  * limitations under the License.
  */
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
+import java.io.IOException;
+import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
+import org.apache.lucene.analysis.LowerCaseTokenizer;
 import org.apache.lucene.util.Version;
 
 /**
@@ -137,6 +139,34 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
     BrazilianAnalyzer a = new BrazilianAnalyzer(Version.LUCENE_CURRENT);
     a.setStemExclusionTable(new String[] { "quintessência" });
     checkReuse(a, "quintessência", "quintessência"); // excluded words will be completely unchanged.
+  }
+  
+  public void testStemExclusionTableBWCompat() throws IOException {
+    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    set.add("Brasília");
+    BrazilianStemFilter filter = new BrazilianStemFilter(
+        new LowerCaseTokenizer(new StringReader("Brasília Brasilia")), set);
+    assertTokenStreamContents(filter, new String[] { "brasília", "brasil" });
+  }
+
+  public void testWithKeywordAttribute() throws IOException {
+    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    set.add("Brasília");
+    BrazilianStemFilter filter = new BrazilianStemFilter(
+        new KeywordMarkerTokenFilter(new LowerCaseTokenizer(new StringReader(
+            "Brasília Brasilia")), set));
+    assertTokenStreamContents(filter, new String[] { "brasília", "brasil" });
+  }
+
+  public void testWithKeywordAttributeAndExclusionTable() throws IOException {
+    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    set.add("Brasília");
+    CharArraySet set1 = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    set1.add("Brasilia");
+    BrazilianStemFilter filter = new BrazilianStemFilter(
+        new KeywordMarkerTokenFilter(new LowerCaseTokenizer(new StringReader(
+            "Brasília Brasilia")), set), set1);
+    assertTokenStreamContents(filter, new String[] { "brasília", "brasilia" });
   }
   
   /* 

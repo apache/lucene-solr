@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
+import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
@@ -215,7 +216,9 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
     final Tokenizer source = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new StandardFilter(source);
     result = new StopFilter(matchVersion, result, stopwords);
-    result = new FrenchStemFilter(result, excltable);
+    if(!excltable.isEmpty())
+      result = new KeywordMarkerTokenFilter(result, excltable);
+    result = new FrenchStemFilter(result);
     // Convert to lowercase after stemming!
     return new TokenStreamComponents(source, new LowerCaseFilter(matchVersion, result));
   }

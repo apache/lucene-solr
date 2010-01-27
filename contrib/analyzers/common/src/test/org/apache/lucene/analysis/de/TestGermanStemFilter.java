@@ -20,10 +20,15 @@ package org.apache.lucene.analysis.de;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
+import org.apache.lucene.analysis.LowerCaseTokenizer;
 import org.apache.lucene.util.Version;
 
 /**
@@ -64,6 +69,37 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
     checkReuse(a, "Tischen", "tisch");
   }
   
+  public void testExclusionTableBWCompat() throws IOException {
+    GermanStemFilter filter = new GermanStemFilter(new LowerCaseTokenizer(
+        new StringReader("Fischen Trinken")));
+    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    set.add("fischen");
+    filter.setExclusionSet(set);
+    assertTokenStreamContents(filter, new String[] { "fischen", "trink" });
+  }
+
+  public void testWithKeywordAttribute() throws IOException {
+    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    set.add("fischen");
+    GermanStemFilter filter = new GermanStemFilter(
+        new KeywordMarkerTokenFilter(new LowerCaseTokenizer(new StringReader(
+            "Fischen Trinken")), set));
+    assertTokenStreamContents(filter, new String[] { "fischen", "trink" });
+  }
+
+  public void testWithKeywordAttributeAndExclusionTable() throws IOException {
+    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    set.add("fischen");
+    CharArraySet set1 = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    set1.add("trinken");
+    set1.add("fischen");
+    GermanStemFilter filter = new GermanStemFilter(
+        new KeywordMarkerTokenFilter(new LowerCaseTokenizer(new StringReader(
+            "Fischen Trinken")), set));
+    filter.setExclusionSet(set1);
+    assertTokenStreamContents(filter, new String[] { "fischen", "trinken" });
+  }
+  
   /* 
    * Test that changes to the exclusion table are applied immediately
    * when using reusable token streams.
@@ -74,6 +110,7 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
     a.setStemExclusionTable(new String[] { "tischen" });
     checkReuse(a, "tischen", "tischen");
   }
+  
   
   private void check(final String input, final String expected) throws Exception {
     checkOneTerm(new GermanAnalyzer(Version.LUCENE_CURRENT), input, expected);

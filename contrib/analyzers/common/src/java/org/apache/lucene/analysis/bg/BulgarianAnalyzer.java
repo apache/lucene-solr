@@ -25,6 +25,8 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
@@ -88,6 +90,8 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
       }
     }
   }
+  
+  private final Set<?> stemExclusionSet;
    
   /**
    * Builds an analyzer with the default stop words:
@@ -101,8 +105,18 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
    * Builds an analyzer with the given stop words.
    */
   public BulgarianAnalyzer(Version matchVersion, Set<?> stopwords) {
-    super(matchVersion, stopwords);
+    this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
   }
+  
+  /**
+   * Builds an analyzer with the given stop words and a stem exclusion set.
+   * If a stem exclusion set is provided this analyzer will add a {@link KeywordMarkerTokenFilter} 
+   * before {@link BulgarianStemFilter}.
+   */
+  public BulgarianAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionSet) {
+    super(matchVersion, stopwords);
+    this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
+        matchVersion, stemExclusionSet));  }
   
   /**
    * Creates a {@link TokenStreamComponents} which tokenizes all the text in the provided
@@ -110,7 +124,8 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
    * 
    * @return A {@link TokenStreamComponents} built from an {@link StandardTokenizer}
    *         filtered with {@link StandardFilter}, {@link LowerCaseFilter},
-   *         {@link StopFilter}, and {@link BulgarianStemFilter}.
+   *         {@link StopFilter}, {@link KeywordMarkerTokenFilter} if a stem
+   *         exclusion set is provided and {@link BulgarianStemFilter}.
    */
   @Override
   public TokenStreamComponents createComponents(String fieldName, Reader reader) {
@@ -118,6 +133,8 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
     TokenStream result = new StandardFilter(source);
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
+    if(!stemExclusionSet.isEmpty())
+      result = new KeywordMarkerTokenFilter(result, stemExclusionSet);
     result = new BulgarianStemFilter(result);
     return new TokenStreamComponents(source, result);
   }

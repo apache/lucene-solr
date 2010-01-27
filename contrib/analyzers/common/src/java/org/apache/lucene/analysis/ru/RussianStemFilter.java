@@ -17,9 +17,11 @@ package org.apache.lucene.analysis.ru;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.KeywordMarkerTokenFilter;// for javadoc
 import org.apache.lucene.analysis.LowerCaseFilter; // for javadoc
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.ru.RussianStemmer;//javadoc @link
 
@@ -32,6 +34,12 @@ import java.io.IOException;
  * The input should be filtered by {@link LowerCaseFilter} before passing it to RussianStemFilter ,
  * because RussianStemFilter only works with lowercase characters.
  * </p>
+ * <p>
+ * To prevent terms from being stemmed use an instance of
+ * {@link KeywordMarkerTokenFilter} or a custom {@link TokenFilter} that sets
+ * the {@link KeywordAttribute} before this {@link TokenStream}.
+ * </p>
+ * @see KeywordMarkerTokenFilter
  */
 public final class RussianStemFilter extends TokenFilter
 {
@@ -40,13 +48,15 @@ public final class RussianStemFilter extends TokenFilter
      */
     private RussianStemmer stemmer = null;
 
-    private TermAttribute termAtt;
+    private final TermAttribute termAtt;
+    private final KeywordAttribute keywordAttr;
 
     public RussianStemFilter(TokenStream in)
     {
         super(in);
         stemmer = new RussianStemmer();
         termAtt = addAttribute(TermAttribute.class);
+        keywordAttr = addAttribute(KeywordAttribute.class);
     }
     /**
      * Returns the next token in the stream, or null at EOS
@@ -55,10 +65,12 @@ public final class RussianStemFilter extends TokenFilter
     public final boolean incrementToken() throws IOException
     {
       if (input.incrementToken()) {
-        String term = termAtt.term();
-        String s = stemmer.stem(term);
-        if (s != null && !s.equals(term))
-          termAtt.setTermBuffer(s);
+        if(!keywordAttr.isKeyword()) {
+          final String term = termAtt.term();
+          final String s = stemmer.stem(term);
+          if (s != null && !s.equals(term))
+            termAtt.setTermBuffer(s);
+        }
         return true;
       } else {
         return false;

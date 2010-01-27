@@ -18,8 +18,12 @@ package org.apache.lucene.analysis.cz;
  */
 
 import java.io.IOException;
+import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.util.Version;
 
 /**
@@ -270,4 +274,13 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
     assertAnalyzesTo(cz, "e", new String[] { "e" });
     assertAnalyzesTo(cz, "zi", new String[] { "zi" });
   }
+  
+  public void testWithKeywordAttribute() throws IOException {
+    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    set.add("hole");
+    CzechStemFilter filter = new CzechStemFilter(new KeywordMarkerTokenFilter(
+        new WhitespaceTokenizer(new StringReader("hole desek")), set));
+    assertTokenStreamContents(filter, new String[] { "hole", "desk" });
+  }
+  
 }

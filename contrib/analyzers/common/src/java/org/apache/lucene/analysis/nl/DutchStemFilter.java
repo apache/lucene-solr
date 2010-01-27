@@ -23,8 +23,10 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.lucene.analysis.KeywordMarkerTokenFilter;// for javadoc
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
@@ -34,34 +36,54 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * not be stemmed at all. The stemmer used can be changed at runtime after the
  * filter object is created (as long as it is a {@link DutchStemmer}).
  * </p>
+ * <p>
+ * To prevent terms from being stemmed use an instance of
+ * {@link KeywordMarkerTokenFilter} or a custom {@link TokenFilter} that sets
+ * the {@link KeywordAttribute} before this {@link TokenStream}.
+ * </p>
+ * @see KeywordMarkerTokenFilter
  */
 public final class DutchStemFilter extends TokenFilter {
   /**
    * The actual token in the input stream.
    */
   private DutchStemmer stemmer = null;
-  private Set exclusions = null;
+  private Set<?> exclusions = null;
   
-  private TermAttribute termAtt;
+  private final TermAttribute termAtt;
+  private final KeywordAttribute keywordAttr;
 
   public DutchStemFilter(TokenStream _in) {
     super(_in);
     stemmer = new DutchStemmer();
     termAtt = addAttribute(TermAttribute.class);
+    keywordAttr = addAttribute(KeywordAttribute.class);
   }
 
   /**
    * Builds a DutchStemFilter that uses an exclusion table.
+   * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerTokenFilter} instead.
    */
-  public DutchStemFilter(TokenStream _in, Set exclusiontable) {
+  @Deprecated
+  public DutchStemFilter(TokenStream _in, Set<?> exclusiontable) {
     this(_in);
     exclusions = exclusiontable;
+  }
+  
+  /**
+   * @param stemdictionary Dictionary of word stem pairs, that overrule the algorithm
+   */
+  public DutchStemFilter(TokenStream _in,  Map<?,?> stemdictionary) {
+    this(_in);
+    stemmer.setStemDictionary(stemdictionary);
   }
 
   /**
    * @param stemdictionary Dictionary of word stem pairs, that overrule the algorithm
+   * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerTokenFilter} instead.
    */
-  public DutchStemFilter(TokenStream _in, Set exclusiontable, Map stemdictionary) {
+  @Deprecated
+  public DutchStemFilter(TokenStream _in, Set<?> exclusiontable, Map<?,?> stemdictionary) {
     this(_in, exclusiontable);
     stemmer.setStemDictionary(stemdictionary);
   }
@@ -72,11 +94,11 @@ public final class DutchStemFilter extends TokenFilter {
   @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      String term = termAtt.term();
+      final String term = termAtt.term();
 
       // Check the exclusion table.
-      if (exclusions == null || !exclusions.contains(term)) {
-        String s = stemmer.stem(term);
+      if (!keywordAttr.isKeyword() && (exclusions == null || !exclusions.contains(term))) {
+        final String s = stemmer.stem(term);
         // If not stemmed, don't waste the time adjusting the token.
         if ((s != null) && !s.equals(term))
           termAtt.setTermBuffer(s);
@@ -98,8 +120,10 @@ public final class DutchStemFilter extends TokenFilter {
 
   /**
    * Set an alternative exclusion list for this filter.
+   * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerTokenFilter} instead.
    */
-  public void setExclusionTable(HashSet exclusiontable) {
+  @Deprecated
+  public void setExclusionTable(HashSet<?> exclusiontable) {
     exclusions = exclusiontable;
   }
 
@@ -107,7 +131,7 @@ public final class DutchStemFilter extends TokenFilter {
    * Set dictionary for stemming, this dictionary overrules the algorithm,
    * so you can correct for a particular unwanted word-stem pair.
    */
-  public void setStemDictionary(HashMap dict) {
+  public void setStemDictionary(HashMap<?,?> dict) {
     if (stemmer != null)
       stemmer.setStemDictionary(dict);
   }

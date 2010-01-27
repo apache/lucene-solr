@@ -17,11 +17,15 @@ package org.apache.lucene.analysis.ar;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
+import javax.print.DocFlavor.CHAR_ARRAY;
+
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.util.Version;
 
 /**
@@ -83,5 +87,18 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
     ArabicAnalyzer a = new ArabicAnalyzer(Version.LUCENE_CURRENT, set);
     assertAnalyzesTo(a, "The quick brown fox.", new String[] { "quick",
         "brown", "fox" });
+  }
+  
+  public void testWithStemExclusionSet() throws IOException {
+    Set<String> set = new HashSet<String>();
+    set.add("ساهدهات");
+    ArabicAnalyzer a = new ArabicAnalyzer(Version.LUCENE_CURRENT, CharArraySet.EMPTY_SET, set);
+    assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهدهات" });
+    assertAnalyzesToReuse(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهدهات" });
+
+    
+    a = new ArabicAnalyzer(Version.LUCENE_CURRENT, CharArraySet.EMPTY_SET, CharArraySet.EMPTY_SET);
+    assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهد" });
+    assertAnalyzesToReuse(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهد" });
   }
 }

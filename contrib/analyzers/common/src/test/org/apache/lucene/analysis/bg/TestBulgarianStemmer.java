@@ -18,8 +18,12 @@ package org.apache.lucene.analysis.bg;
  */
 
 import java.io.IOException;
+import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.util.Version;
 
 /**
@@ -206,5 +210,16 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
     /* note the below forms conflate with each other, but not the rest */
     assertAnalyzesTo(a, "строя", new String[] {"стр"});
     assertAnalyzesTo(a, "строят", new String[] {"стр"});
+  }
+
+  public void testWithKeywordAttribute() throws IOException {
+    CharArraySet set = new CharArraySet(Version.LUCENE_31, 1, true);
+    set.add("строеве");
+    WhitespaceTokenizer tokenStream = new WhitespaceTokenizer(
+        new StringReader("строевете строеве"));
+
+    BulgarianStemFilter filter = new BulgarianStemFilter(
+        new KeywordMarkerTokenFilter(tokenStream, set));
+    assertTokenStreamContents(filter, new String[] { "строй", "строеве" });
   }
 }

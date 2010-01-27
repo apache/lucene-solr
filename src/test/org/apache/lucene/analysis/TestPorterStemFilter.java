@@ -25,6 +25,8 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.util.zip.ZipFile;
 
+import org.apache.lucene.util.Version;
+
 /**
  * Test the PorterStemFilter with Martin Porter's test data.
  */
@@ -55,5 +57,13 @@ public class TestPorterStemFilter extends BaseTokenStreamTestCase {
     vocReader.close();
     outputReader.close();
     zipFile.close();
+  }
+  
+  public void testWithKeywordAttribute() throws IOException {
+    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    set.add("yourselves");
+    Tokenizer tokenizer = new WhitespaceTokenizer(new StringReader("yourselves yours"));
+    TokenStream filter = new PorterStemFilter(new KeywordMarkerTokenFilter(tokenizer, set));   
+    assertTokenStreamContents(filter, new String[] {"yourselves", "your"});
   }
 }

@@ -26,6 +26,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.Version;
@@ -115,5 +116,15 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
           new String[] { "вмест", "сил", "электромагнитн", "энерг", "имел", "представлен" });
       assertAnalyzesToReuse(a, "Но знание это хранилось в тайне",
           new String[] { "знан", "хран", "тайн" });
+    }
+    
+    
+    public void testWithStemExclusionSet() throws Exception {
+      CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+      set.add("представление");
+      Analyzer a = new RussianAnalyzer(Version.LUCENE_CURRENT, RussianAnalyzer.getDefaultStopSet() , set);
+      assertAnalyzesToReuse(a, "Вместе с тем о силе электромагнитной энергии имели представление еще",
+          new String[] { "вмест", "сил", "электромагнитн", "энерг", "имел", "представление" });
+     
     }
 }

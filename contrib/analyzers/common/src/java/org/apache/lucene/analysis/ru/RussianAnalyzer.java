@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
+import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
@@ -63,6 +64,17 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
           .unmodifiableSet(new CharArraySet(Version.LUCENE_CURRENT, 
               Arrays.asList(RUSSIAN_STOP_WORDS), false));
     }
+    
+    private final Set<?> stemExclusionSet;
+    
+    /**
+     * Returns an unmodifiable instance of the default stop-words set.
+     * 
+     * @return an unmodifiable instance of the default stop-words set.
+     */
+    public static Set<?> getDefaultStopSet() {
+      return DefaultSetHolder.DEFAULT_STOP_SET;
+    }
 
     public RussianAnalyzer(Version matchVersion) {
       this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
@@ -86,8 +98,23 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
      *          a stopword set
      */
     public RussianAnalyzer(Version matchVersion, Set<?> stopwords){
-      super(matchVersion, stopwords);
+      this(matchVersion, stopwords, CharArraySet.EMPTY_SET);
     }
+    
+    /**
+     * Builds an analyzer with the given stop words
+     * 
+     * @param matchVersion
+     *          lucene compatibility version
+     * @param stopwords
+     *          a stopword set
+     * @param stemExclusionSet a set of words not to be stemmed
+     */
+    public RussianAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionSet){
+      super(matchVersion, stopwords);
+      this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(matchVersion, stemExclusionSet));
+    }
+   
    
     /**
      * Builds an analyzer with the given stop words.
@@ -115,6 +142,8 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
       final Tokenizer source = new RussianLetterTokenizer(reader);
       TokenStream result = new LowerCaseFilter(matchVersion, source);
       result = new StopFilter(matchVersion, result, stopwords);
+      if(!stemExclusionSet.isEmpty())
+        result = new KeywordMarkerTokenFilter(result, stemExclusionSet);
       return new TokenStreamComponents(source, new RussianStemFilter(result));
       
     }

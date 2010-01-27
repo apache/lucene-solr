@@ -18,9 +18,11 @@ package org.apache.lucene.analysis.nl;
  */
 
 import java.io.File;
+import java.io.IOException;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.util.Version;
 
 /**
@@ -133,6 +135,19 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "lichamelijk", "licham");
     a.setStemExclusionTable(new String[] { "lichamelijk" });
     checkOneTermReuse(a, "lichamelijk", "lichamelijk");
+
+    
+  }
+  
+  public void testExclusionTableViaCtor() throws IOException {
+    CharArraySet set = new CharArraySet(Version.LUCENE_30, 1, true);
+    set.add("lichamelijk");
+    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_CURRENT, CharArraySet.EMPTY_SET, set);
+    assertAnalyzesToReuse(a, "lichamelijk lichamelijke", new String[] { "lichamelijk", "licham" });
+    
+    a = new DutchAnalyzer(Version.LUCENE_CURRENT, CharArraySet.EMPTY_SET, set);
+    assertAnalyzesTo(a, "lichamelijk lichamelijke", new String[] { "lichamelijk", "licham" });
+
   }
   
   /* 
