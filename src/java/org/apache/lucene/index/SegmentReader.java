@@ -246,7 +246,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
         // point.  If the exception occurred while
         // initialzing the core readers, then
         // origInstance will be null, and we don't want
-        // to call FieldcAche.purge (it leads to NPE):
+        // to call FieldCache.purge (it leads to NPE):
         if (origInstance != null) {
           FieldCache.DEFAULT.purge(origInstance);
         }
