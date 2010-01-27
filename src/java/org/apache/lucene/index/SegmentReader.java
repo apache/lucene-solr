@@ -242,8 +242,12 @@ public class SegmentReader extends IndexReader implements Cloneable {
           storeCFSReader.close();
         }
 
-        // Force FieldCache to evict our entries at this point
-        if (freqStream != null) {
+        // Force FieldCache to evict our entries at this
+        // point.  If the exception occurred while
+        // initialzing the core readers, then
+        // origInstance will be null, and we don't want
+        // to call FieldcAche.purge (it leads to NPE):
+        if (origInstance != null) {
           FieldCache.DEFAULT.purge(origInstance);
         }
       }
