@@ -37,15 +37,19 @@ public class CoreDescriptor {
   private final CoreContainer coreContainer;
   private Properties coreProperties;
   
-  // nocommit : only filled when using ZooKeeper
-  private CloudDescriptor cloudDesc = new CloudDescriptor();
+  private CloudDescriptor cloudDesc;
 
   public CoreDescriptor(CoreContainer coreContainer, String name, String instanceDir) {
     this.coreContainer = coreContainer;
     this.name = name;
     
-    // cloud collection defaults to core name
-    this.cloudDesc.setCollectionName(name == "" ? coreContainer.getDefaultCoreName() : name);
+    if(coreContainer.getZooKeeperController() != null) {
+      this.cloudDesc = new CloudDescriptor();
+      // cloud collection defaults to core name
+      cloudDesc.setCollectionName(name == "" ? coreContainer.getDefaultCoreName() : name);
+      this.cloudDesc.setShardId("SHARDID:" + coreContainer.getZooKeeperController().getNodeName() + "_" + name);
+    }
+    
     if (name == null) {
       throw new RuntimeException("Core needs a name");
     }
@@ -182,5 +186,9 @@ public class CoreDescriptor {
 
   public CloudDescriptor getCloudDescriptor() {
     return cloudDesc;
+  }
+  
+  public void setCloudDescriptor(CloudDescriptor cloudDesc) {
+    this.cloudDesc = cloudDesc;
   }
 }

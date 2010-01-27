@@ -32,6 +32,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZooKeeperException;
@@ -387,9 +388,6 @@ public class CoreContainer
           if(testShardIdOverride != null && name.equals("")) {
             p.getCloudDescriptor().setShardId(testShardIdOverride);
           } else if(zooKeeperController != null) {
-            if(opt == null) {
-              opt = "SHARDID:" + zooKeeperController.getNodeName() + "_" + name;
-            }
             p.getCloudDescriptor().setShardId(opt);
           }
           opt = DOMUtil.getAttr(node, "role", null);

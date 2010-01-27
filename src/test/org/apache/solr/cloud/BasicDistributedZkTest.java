@@ -132,6 +132,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
 
     h.getCoreContainer().getCore(h.getCoreContainer().getDefaultCoreName()).close();
     CoreDescriptor dcore= new CoreDescriptor( h.getCoreContainer(), "testcore", "testcore");
+
     SolrCore core = h.getCoreContainer().create(dcore);
     h.getCoreContainer().register(core, false);
 
