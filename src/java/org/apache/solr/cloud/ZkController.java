@@ -60,6 +60,8 @@ import org.xml.sax.SAXException;
  * notes: loads everything on init, creates what's not there - further updates
  * are prompted with Watches.
  * 
+ * TODO: exceptions during shutdown on attempts to update cloud state
+ * 
  */
 public final class ZkController {
 

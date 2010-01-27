@@ -22,6 +22,7 @@ import java.util.HashSet;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrCore;
 
 /**
  * nocommit: 
@@ -131,7 +132,8 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
 
     h.getCoreContainer().getCore(h.getCoreContainer().getDefaultCoreName()).close();
     CoreDescriptor dcore= new CoreDescriptor( h.getCoreContainer(), "testcore", "testcore");
-    h.getCoreContainer().create(dcore);
+    SolrCore core = h.getCoreContainer().create(dcore);
+    h.getCoreContainer().register(core, false);
 
     // these queries should be exactly ordered and scores should exactly match
     query("q","*:*", "sort",i1+" desc");
@@ -235,6 +237,5 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     
     super.printLayout();
 
-    // Thread.sleep(10000000000L);
   }
 }

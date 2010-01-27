@@ -517,6 +517,24 @@ public class CoreContainer
       core.setName(name);
     }
 
+    if (zooKeeperController != null) {
+      try {
+        zooKeeperController.register(core, true);
+      } catch (InterruptedException e) {
+        // Restore the interrupted status
+        Thread.currentThread().interrupt();
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
+            e);
+      } catch (KeeperException e) {
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
+            e);
+      } catch (IOException e) {
+        log.error("", e);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "", e);
+      }
+    }
 
     if( old == null || old == core) {
       log.info( "registering core: "+name );
