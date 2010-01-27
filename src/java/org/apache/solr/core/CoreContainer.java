@@ -586,7 +586,14 @@ public class CoreContainer
       config = new SolrConfig(solrLoader, dcore.getConfigName(), null);
     } else {
       try {
-        zkConfigName = zooKeeperController.readConfigName(dcore.getCloudDescriptor().getCollectionName());
+        String collection = dcore.getCloudDescriptor().getCollectionName();
+        zooKeeperController.createCollectionZkNode(collection);
+        zkConfigName = zooKeeperController.readConfigName(collection);
+        if (zkConfigName == null) {
+          log.error("Could not find config name for collection:" + collection);
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+              "Could not find config name for collection:" + collection);
+        }
         solrLoader = new ZkSolrResourceLoader(instanceDir, zkConfigName, libLoader, getCoreProps(instanceDir, dcore.getPropertiesName(),dcore.getCoreProperties()), zooKeeperController);
         config = zooKeeperController.getConfig(zkConfigName, dcore.getConfigName(), solrLoader);
       } catch (KeeperException e) {

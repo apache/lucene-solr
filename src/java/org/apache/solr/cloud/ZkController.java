@@ -168,29 +168,11 @@ public final class ZkController {
    */
   private void addZkShardsNode(String shardId, String collection) throws IOException, InterruptedException, KeeperException {
 
-    String collectionPath = COLLECTIONS_ZKNODE + "/" + collection;
     String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE + "/" + shardId;
     
-    boolean newCollection = false;
     boolean newShardId = false;
     
     try {
-      if(!zkClient.exists(collectionPath)) {
-        try {
-          zkClient.makePath(collectionPath, CreateMode.PERSISTENT, null);
-          String confName = readConfigName(collection);
-          if(confName == null && System.getProperty("bootstrap_confdir") != null) {
-            confName = System.getProperty("bootstrap_confname", "configuration1");
-            zkClient.makePath(COLLECTIONS_ZKNODE + "/" + collection + "/conifg=" + confName);
-          }
-          newCollection = true;
-        } catch (KeeperException e) {
-          // its okay if another beats us creating the node
-          if (e.code() != KeeperException.Code.NODEEXISTS) {
-            throw e;
-          }
-        }
-      }
       
       // shards node
       if (!zkClient.exists(shardsZkPath)) {
@@ -210,9 +192,9 @@ public final class ZkController {
       }
     }
     
-    if(newCollection || newShardId) {
+    if(newShardId) {
       // nocommit - scrutinize
-      // ping that there is a new collection or a new shardId
+      // ping that there is a new shardId
       zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);
     }
   }
@@ -524,7 +506,7 @@ public final class ZkController {
       }
     }
     
-    if(!zkClient.exists(CONFIGS_ZKNODE + "/" + configName)) {
+    if (configName != null && !zkClient.exists(CONFIGS_ZKNODE + "/" + configName)) {
       log.error("Specified config does not exist in ZooKeeper:" + configName);
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
           "Specified config does not exist in ZooKeeper:" + configName);
@@ -834,6 +816,46 @@ public final class ZkController {
     for (final String collection : collections) {
       addShardsWatches(collection);
     }
+  }
+
+  public void createCollectionZkNode(String collection) throws KeeperException, InterruptedException {
+    String collectionPath = COLLECTIONS_ZKNODE + "/" + collection;
+    
+    boolean newCollection = false;
+    
+    try {
+      if(!zkClient.exists(collectionPath)) {
+        log.info("Creating collection in ZooKeeper:" + collection);
+        try {
+          zkClient.makePath(collectionPath, CreateMode.PERSISTENT, null);
+          String confName = readConfigName(collection);
+          if(confName == null && System.getProperty("bootstrap_confdir") != null) {
+            log.info("Setting config for collection:" + collection + " to " + confName);
+            confName = System.getProperty("bootstrap_confname", "configuration1");
+            zkClient.makePath(COLLECTIONS_ZKNODE + "/" + collection + "/config=" + confName);
+          }
+          newCollection = true;
+        } catch (KeeperException e) {
+          // its okay if another beats us creating the node
+          if (e.code() != KeeperException.Code.NODEEXISTS) {
+            throw e;
+          }
+        }
+      }
+      
+    } catch (KeeperException e) {
+      // its okay if another beats us creating the node
+      if (e.code() != KeeperException.Code.NODEEXISTS) {
+        throw e;
+      }
+    }
+    
+    if(newCollection) {
+      // nocommit - scrutinize
+      // ping that there is a new collection
+      zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);
+    }
+    
   }
 
 }
