@@ -383,20 +383,22 @@ public class CoreContainer
           if (opt != null) {
             p.setSchemaName(opt);
           }
-
-          opt = DOMUtil.getAttr(node, "shardId", null);
-          if(testShardIdOverride != null && name.equals("")) {
-            p.getCloudDescriptor().setShardId(testShardIdOverride);
-          } else if(zooKeeperController != null) {
-            p.getCloudDescriptor().setShardId(opt);
-          }
-          opt = DOMUtil.getAttr(node, "role", null);
-          if(opt != null) {
-            p.getCloudDescriptor().setRole(opt);
-          }
-          opt = DOMUtil.getAttr(node, "collection", null);
-          if (opt != null) {
-            p.getCloudDescriptor().setCollectionName(opt);
+          if (zooKeeperController != null) {
+            opt = DOMUtil.getAttr(node, "shardId", null);
+            if (testShardIdOverride != null
+                && name.equals("")) {
+              p.getCloudDescriptor().setShardId(testShardIdOverride);
+            } else if (opt != null) {
+              p.getCloudDescriptor().setShardId(opt);
+            }
+            opt = DOMUtil.getAttr(node, "role", null);
+            if (opt != null) {
+              p.getCloudDescriptor().setRole(opt);
+            }
+            opt = DOMUtil.getAttr(node, "collection", null);
+            if (opt != null) {
+              p.getCloudDescriptor().setCollectionName(opt);
+            }
           }
           opt = DOMUtil.getAttr(node, "properties", null);
           if (opt != null) {
