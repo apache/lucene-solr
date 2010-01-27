@@ -49,7 +49,7 @@
    %>  </strong>
   </td>
   <td>
-        <strong>Connect to different zookeeper</strong>
+        Connect to different zookeeper:
 	<input class="std" name="addr" type="text" value="<%XML.escapeCharData(tryAddr, out);%>">
   </td>
     <td>
@@ -57,6 +57,7 @@
   </td>
 </tr>
 <tr>
+</table>
 </form>
 
 
@@ -90,7 +91,7 @@
 
     int level;
 
-    int maxData = 60;
+    int maxData = 100;
 
     private boolean levelchange;
 
@@ -99,13 +100,27 @@
       this.out = out;
       this.addr = addr;
 
+      if (addr == null) {
+        ZkController controller = core.getCoreDescriptor().getCoreContainer().getZooKeeperController();
+        if (controller != null) {
+          // this core is zk enabled
+          keeperAddr = controller.getZkServerAddress();
+          zkClient = controller.getZkClient();
+          if (zkClient != null && zkClient.isConnected()) {
+            return;
+          } else {
+            // try a different client with this address
+            addr = keeperAddr;
+          }
+        }
+      }
+
       keeperAddr = addr;
       if (addr == null) {
-        out
-            .println("Zookeeper is not configured for this Solr Core.  Please try connecting to an alternate zookeeper address.");
+        out.println("Zookeeper is not configured for this Solr Core.  Please try connecting to an alternate zookeeper address.");
         return;
       }
-      
+
       try {
         zkClient = new SolrZkClient(addr, 10000);
         doClose = true;
@@ -131,7 +146,7 @@
             // ignore exception on close
         }
     }
-    
+
     // main entry point
     void print(String path) throws IOException {
       if (zkClient == null)
@@ -235,7 +250,8 @@
         }
 
         if (newline) {
-          sb.append("\\n");
+          // sb.append("\\n");
+          sb.append("  ");  // collapse newline to two spaces
         } else if (whitespace) {
           sb.append(' ');
         }
@@ -290,22 +306,26 @@
 
       url(label, path, true);
 
-      out.print(" [");
+      out.print(" (");
 
       Stat stat = new Stat();
       try {
         byte[] data = zkClient.getData(path, null, stat);
 
+        if (stat.getEphemeralOwner() != 0)
+          out.print("ephemeral ");
         out.print("v=" + stat.getVersion());
         if (stat.getNumChildren() != 0) {
           out.print(" children=" + stat.getNumChildren());
         }
+        out.print(")");
 
         if (data != null) {
+
           String str;
           try {
             str = new String(data, "UTF-8");
-            out.print(" d=\"");
+            out.print(" \"");
             xmlescape(compress(str));
             out.print("\"");
           } catch (UnsupportedEncodingException e) {
@@ -323,7 +343,7 @@
               sb.append("...");
             sb.append(")");
             str = sb.toString();
-            out.print(" d=" + str);
+            out.print(str);
           }
 
         }
@@ -336,8 +356,6 @@
       } catch (InterruptedException e) {
         e.printStackTrace();
       }
-
-      out.println("]");
 
       if (stat.getNumChildren() <= 0)
         return;
@@ -363,6 +381,10 @@
       down();
     }
 
+    String time(long ms) {
+      return (new Date(ms)).toString() + " (" + ms + ")";
+    }
+
     void printZnode(String path) throws IOException {
       try {
 
@@ -375,27 +397,27 @@
 
         up();
         indent();
-        out.print("version=" + stat.getVersion());
+        out.print("version = " + stat.getVersion());
         indent();
-        out.print("aversion=" + stat.getAversion());
+        out.print("aversion = " + stat.getAversion());
         indent();
-        out.print("cversion=" + stat.getCversion());
+        out.print("cversion = " + stat.getCversion());
         indent();
-        out.print("ctime=" + stat.getCtime());
+        out.print("ctime = " + time(stat.getCtime()));
         indent();
-        out.print("mtime=" + stat.getMtime());
+        out.print("mtime = " + time(stat.getMtime()));
         indent();
-        out.print("czxid=" + stat.getCzxid());
+        out.print("czxid = " + stat.getCzxid());
         indent();
-        out.print("mzxid=" + stat.getMzxid());
+        out.print("mzxid = " + stat.getMzxid());
         indent();
-        out.print("pzxid=" + stat.getPzxid());
+        out.print("pzxid = " + stat.getPzxid());
         indent();
-        out.print("numChildren=" + stat.getNumChildren());
+        out.print("numChildren = " + stat.getNumChildren());
         indent();
-        out.print("ephemeralOwner=" + stat.getEphemeralOwner());
+        out.print("ephemeralOwner = " + stat.getEphemeralOwner());
         indent();
-        out.print("dataLength=" + stat.getDataLength());
+        out.print("dataLength = " + stat.getDataLength());
 
         if (data != null) {
           boolean isBinary = false;
@@ -407,7 +429,7 @@
             // gauranteed to be supported? I don't think this is thrown
             // because its not UTF-8 is it? The results are unspecified
             // when the bytes are not properly encoded.
-            
+
             // not UTF8
             StringBuilder sb = new StringBuilder(data.length * 2);
             for (int i = 0; i < data.length; i++) {

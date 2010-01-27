@@ -319,7 +319,7 @@ public final class ZkController {
     return schema;
   }
 
-  SolrZkClient getZkClient() {
+  public SolrZkClient getZkClient() {
     return zkClient;
   }
 
