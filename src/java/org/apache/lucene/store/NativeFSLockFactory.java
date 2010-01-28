@@ -159,12 +159,21 @@ class NativeFSLock extends Lock {
   /*
    * The javadocs for FileChannel state that you should have
    * a single instance of a FileChannel (per JVM) for all
-   * locking against a given file.  To ensure this, we have
-   * a single (static) HashSet that contains the file paths
-   * of all currently locked locks.  This protects against
-   * possible cases where different Directory instances in
-   * one JVM (each with their own NativeFSLockFactory
-   * instance) have set the same lock dir and lock prefix.
+   * locking against a given file (locks are tracked per 
+   * FileChannel instance in Java 1.4/1.5). Even using the same 
+   * FileChannel instance is not completely thread-safe with Java 
+   * 1.4/1.5 though. To work around this, we have a single (static) 
+   * HashSet that contains the file paths of all currently 
+   * locked locks.  This protects against possible cases 
+   * where different Directory instances in one JVM (each 
+   * with their own NativeFSLockFactory instance) have set 
+   * the same lock dir and lock prefix. However, this will not 
+   * work when LockFactorys are created by different 
+   * classloaders (eg multiple webapps). 
+   * 
+   * TODO: Java 1.6 tracks system wide locks in a thread safe manner 
+   * (same FileChannel instance or not), so we may want to 
+   * change this when Lucene moves to Java 1.6.
    */
   private static HashSet<String> LOCK_HELD = new HashSet<String>();
 
