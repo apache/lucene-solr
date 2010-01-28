@@ -289,9 +289,6 @@ public final class ZkController {
         localHost = "http://" + localHost;
       }
     }
-    if (log.isInfoEnabled()) {
-      log.info("Register host with ZooKeeper:" + localHost);
-    }
 
     return localHost;
   }
@@ -342,8 +339,6 @@ public final class ZkController {
 
       if (m.matches()) {
         hostName = m.group(1);
-        // register host
-        zkClient.makePath(hostName);
       } else {
         log.error("Unrecognized host:" + localHostName);
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
