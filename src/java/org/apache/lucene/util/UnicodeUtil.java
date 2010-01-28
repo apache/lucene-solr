@@ -78,9 +78,7 @@ final public class UnicodeUtil {
 
     public void setLength(int newLength) {
       if (result.length < newLength) {
-        byte[] newArray = new byte[(int) (1.5*newLength)];
-        System.arraycopy(result, 0, newArray, 0, length);
-        result = newArray;
+        result = ArrayUtil.grow(result, newLength);
       }
       length = newLength;
     }
@@ -93,9 +91,7 @@ final public class UnicodeUtil {
 
     public void setLength(int newLength) {
       if (result.length < newLength) {
-        char[] newArray = new char[(int) (1.5*newLength)];
-        System.arraycopy(result, 0, newArray, 0, length);
-        result = newArray;
+        result = ArrayUtil.grow(result, newLength);
       }
       length = newLength;
     }
@@ -120,10 +116,7 @@ final public class UnicodeUtil {
       final int code = (int) source[i++];
 
       if (upto+4 > out.length) {
-        byte[] newOut = new byte[2*out.length];
-        assert newOut.length >= upto+4;
-        System.arraycopy(out, 0, newOut, 0, upto);
-        result.result = out = newOut;
+        out = result.result = ArrayUtil.grow(out, upto+4);
       }
       if (code < 0x80)
         out[upto++] = (byte) code;
@@ -179,10 +172,7 @@ final public class UnicodeUtil {
       final int code = (int) source[i++];
 
       if (upto+4 > out.length) {
-        byte[] newOut = new byte[2*out.length];
-        assert newOut.length >= upto+4;
-        System.arraycopy(out, 0, newOut, 0, upto);
-        result.result = out = newOut;
+        out = result.result = ArrayUtil.grow(out, upto+4);
       }
       if (code < 0x80)
         out[upto++] = (byte) code;
@@ -233,10 +223,7 @@ final public class UnicodeUtil {
       final int code = (int) s.charAt(i);
 
       if (upto+4 > out.length) {
-        byte[] newOut = new byte[2*out.length];
-        assert newOut.length >= upto+4;
-        System.arraycopy(out, 0, newOut, 0, upto);
-        result.result = out = newOut;
+        out = result.result = ArrayUtil.grow(out, upto+4);
       }
       if (code < 0x80)
         out[upto++] = (byte) code;
@@ -283,9 +270,7 @@ final public class UnicodeUtil {
     final int end = offset + length;
     char[] out = result.result;
     if (result.offsets.length <= end) {
-      int[] newOffsets = new int[2*end];
-      System.arraycopy(result.offsets, 0, newOffsets, 0, result.offsets.length);
-      result.offsets  = newOffsets;
+      result.offsets = ArrayUtil.grow(result.offsets, end+1);
     }
     final int[] offsets = result.offsets;
 
@@ -299,9 +284,7 @@ final public class UnicodeUtil {
 
     // Pre-allocate for worst case 1-for-1
     if (outUpto+length >= out.length) {
-      char[] newOut = new char[2*(outUpto+length)];
-      System.arraycopy(out, 0, newOut, 0, outUpto);
-      result.result = out = newOut;
+      out = result.result = ArrayUtil.grow(out, outUpto+length+1);
     }
 
     while (upto < end) {

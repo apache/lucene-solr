@@ -22,6 +22,9 @@ import java.io.Closeable;
 import java.util.Map;
 import java.util.HashMap;
 
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.RamUsageEstimator;
+
 /** Abstract base class for input from a file in a {@link Directory}.  A
  * random-access input stream.  Used for all Lucene index input operations.
  * @see Directory
@@ -122,16 +125,18 @@ public abstract class IndexInput implements Cloneable,Closeable {
     if (preUTF8Strings)
       return readModifiedUTF8String();
     int length = readVInt();
-    if (bytes == null || length > bytes.length)
-      bytes = new byte[(int) (length*1.25)];
+    if (bytes == null || length > bytes.length) {
+      bytes = new byte[ArrayUtil.oversize(length, 1)];
+    }
     readBytes(bytes, 0, length);
     return new String(bytes, 0, length, "UTF-8");
   }
 
   private String readModifiedUTF8String() throws IOException {
     int length = readVInt();
-    if (chars == null || length > chars.length)
-      chars = new char[length];
+    if (chars == null || length > chars.length) {
+      chars = new char[ArrayUtil.oversize(length, RamUsageEstimator.NUM_BYTES_CHAR)];
+    }
     readChars(chars, 0, length);
     return new String(chars, 0, length);
   }
@@ -157,10 +162,11 @@ public abstract class IndexInput implements Cloneable,Closeable {
       else if ((b & 0xE0) != 0xE0) {
 	buffer[i] = (char)(((b & 0x1F) << 6)
 		 | (readByte() & 0x3F));
-      } else
+      } else {
 	buffer[i] = (char)(((b & 0x0F) << 12)
 		| ((readByte() & 0x3F) << 6)
 	        |  (readByte() & 0x3F));
+      }
     }
   }
 
@@ -181,10 +187,9 @@ public abstract class IndexInput implements Cloneable,Closeable {
       byte b = readByte();
       if ((b & 0x80) == 0){
         //do nothing, we only need one byte
-      }
-      else if ((b & 0xE0) != 0xE0) {
+      } else if ((b & 0xE0) != 0xE0) {
         readByte();//read an additional byte
-      } else{      
+      } else {      
         //read two additional bytes.
         readByte();
         readByte();

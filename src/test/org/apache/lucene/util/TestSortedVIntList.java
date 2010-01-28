@@ -20,8 +20,6 @@ package org.apache.lucene.util;
 import java.io.IOException;
 import java.util.BitSet;
 
-import org.apache.lucene.util.LuceneTestCase;
-
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
@@ -192,5 +190,12 @@ public class TestSortedVIntList extends LuceneTestCase {
   }
   public void test12() {
    tstIllegalArgExc(new int[] {0,1,1,2,3,5,8,0});
+  }
+  public void test13Allocation() throws Exception {
+    int [] a = new int[2000]; // SortedVIntList initial byte size is 128
+    for (int i = 0; i < a.length; i++) {
+      a[i] = (107 + i) * i;
+    }
+    tstIterator(new SortedVIntList(a), a);
   }
 }

@@ -44,7 +44,12 @@ package org.apache.lucene.analysis;
 */
 
 
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.FileInputStream;
+
+import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_CHAR;
+import org.apache.lucene.util.ArrayUtil;
 
 /**
  *
@@ -61,11 +66,10 @@ class PorterStemmer
   private int i,    /* offset into b */
     j, k, k0;
   private boolean dirty = false;
-  private static final int INC = 50; /* unit of size whereby b is increased */
-  private static final int EXTRA = 1;
+  private static final int INITIAL_SIZE = 50;
 
   public PorterStemmer() {
-    b = new char[INC];
+    b = new char[INITIAL_SIZE];
     i = 0;
   }
 
@@ -81,10 +85,8 @@ class PorterStemmer
    * adding characters, you can call stem(void) to process the word.
    */
   public void add(char ch) {
-    if (b.length <= i + EXTRA) {
-      char[] new_b = new char[b.length+INC];
-      System.arraycopy(b, 0, new_b, 0, b.length);
-      b = new_b;
+    if (b.length <= i) {
+      b = ArrayUtil.grow(b, i+1);
     }
     b[i++] = ch;
   }
@@ -451,8 +453,7 @@ class PorterStemmer
   public boolean stem(char[] wordBuffer, int offset, int wordLen) {
     reset();
     if (b.length < wordLen) {
-      char[] new_b = new char[wordLen + EXTRA];
-      b = new_b;
+      b = new char[ArrayUtil.oversize(wordLen, NUM_BYTES_CHAR)];
     }
     System.arraycopy(wordBuffer, offset, b, 0, wordLen);
     i = wordLen;

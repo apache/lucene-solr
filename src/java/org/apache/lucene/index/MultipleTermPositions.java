@@ -17,13 +17,13 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.PriorityQueue;
-
 import java.io.IOException;
 import java.util.Arrays;
-
 import java.util.LinkedList;
 import java.util.List;
+
+import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.ArrayUtil;
 
 /**
  * Allows you to iterate over the {@link TermPositions} for multiple {@link Term}s as
@@ -83,10 +83,8 @@ public class MultipleTermPositions implements TermPositions {
     }
 
     private void growArray() {
-      int[] newArray = new int[_arraySize * 2];
-      System.arraycopy(_array, 0, newArray, 0, _arraySize);
-      _array = newArray;
-      _arraySize *= 2;
+      _array = ArrayUtil.grow(_array, _arraySize+1);
+      _arraySize = _array.length;
     }
   }
 

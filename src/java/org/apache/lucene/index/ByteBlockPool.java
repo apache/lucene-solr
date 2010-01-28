@@ -34,6 +34,9 @@ package org.apache.lucene.index;
  * hit a non-zero byte. */
 
 import java.util.Arrays;
+import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+import org.apache.lucene.util.ArrayUtil;
+
 
 final class ByteBlockPool {
 
@@ -83,7 +86,8 @@ final class ByteBlockPool {
 
   public void nextBuffer() {
     if (1+bufferUpto == buffers.length) {
-      byte[][] newBuffers = new byte[(int) (buffers.length*1.5)][];
+      byte[][] newBuffers = new byte[ArrayUtil.oversize(buffers.length+1,
+                                                        NUM_BYTES_OBJECT_REF)][];
       System.arraycopy(buffers, 0, newBuffers, 0, buffers.length);
       buffers = newBuffers;
     }

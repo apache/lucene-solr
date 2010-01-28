@@ -17,6 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+import org.apache.lucene.util.ArrayUtil;
+
 final class CharBlockPool {
 
   public char[][] buffers = new char[10][];
@@ -42,7 +45,8 @@ final class CharBlockPool {
 
   public void nextBuffer() {
     if (1+bufferUpto == buffers.length) {
-      char[][] newBuffers = new char[(int) (buffers.length*1.5)][];
+      char[][] newBuffers = new char[ArrayUtil.oversize(buffers.length+1,
+                                                        NUM_BYTES_OBJECT_REF)][];
       System.arraycopy(buffers, 0, newBuffers, 0, buffers.length);
       buffers = newBuffers;
     }

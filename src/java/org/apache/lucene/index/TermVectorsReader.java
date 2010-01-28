@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.ArrayUtil;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -460,18 +461,14 @@ class TermVectorsReader implements Cloneable {
       if (preUTF8) {
         // Term stored as java chars
         if (charBuffer.length < totalLength) {
-          char[] newCharBuffer = new char[(int) (1.5*totalLength)];
-          System.arraycopy(charBuffer, 0, newCharBuffer, 0, start);
-          charBuffer = newCharBuffer;
+          charBuffer = ArrayUtil.grow(charBuffer, totalLength);
         }
         tvf.readChars(charBuffer, start, deltaLength);
         term = new String(charBuffer, 0, totalLength);
       } else {
         // Term stored as utf8 bytes
         if (byteBuffer.length < totalLength) {
-          byte[] newByteBuffer = new byte[(int) (1.5*totalLength)];
-          System.arraycopy(byteBuffer, 0, newByteBuffer, 0, start);
-          byteBuffer = newByteBuffer;
+          byteBuffer = ArrayUtil.grow(byteBuffer, totalLength);
         }
         tvf.readBytes(byteBuffer, start, deltaLength);
         term = new String(byteBuffer, 0, totalLength, "UTF-8");

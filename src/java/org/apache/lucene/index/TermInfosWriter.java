@@ -22,6 +22,8 @@ import java.io.IOException;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.ArrayUtil;
+
 
 /** This stores a monotonically increasing set of <Term, TermInfo> pairs in a
   Directory.  A TermInfos can be written once, in order.  */
@@ -207,9 +209,7 @@ final class TermInfosWriter {
     output.writeBytes(termBytes, start, length);  // write delta bytes
     output.writeVInt(fieldNumber); // write field num
     if (lastTermBytes.length < termBytesLength) {
-      byte[] newArray = new byte[(int) (termBytesLength*1.5)];
-      System.arraycopy(lastTermBytes, 0, newArray, 0, start);
-      lastTermBytes = newArray;
+      lastTermBytes = ArrayUtil.grow(lastTermBytes, termBytesLength);
     }
     System.arraycopy(termBytes, start, lastTermBytes, start, length);
     lastTermBytesLength = termBytesLength;
