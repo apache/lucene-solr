@@ -143,7 +143,9 @@ public class ZkControllerTest extends TestCase {
       SolrZkClient zkClient = new SolrZkClient(AbstractZkTestCase.ZOO_KEEPER_ADDRESS, TIMEOUT);
       String actualConfigName = "firstConfig";
 
-      String shardsPath = "/collections/" + COLLECTION_NAME + "/config="
+      zkClient.makePath(ZkController.CONFIGS_ZKNODE + "/" + actualConfigName);
+      
+      String shardsPath = ZkController.COLLECTIONS_ZKNODE + "/" + COLLECTION_NAME + "/config="
           + actualConfigName;
       zkClient.makePath(shardsPath);
 
@@ -206,7 +208,6 @@ public class ZkControllerTest extends TestCase {
     props.put(ZkController.NODE_NAME, TEST_NODE_NAME);
     byte[] bytes = props.store();
 
-    System.out.println("shards path:" + shardsPath);
     zkClient
         .create(shardsPath + "/" + zkNodeName, bytes, CreateMode.PERSISTENT);
   }
