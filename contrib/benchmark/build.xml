@@ -131,6 +131,7 @@
         <pathelement path="${common.dir}/build/contrib/highlighter/classes/java"/>
         <pathelement path="${common.dir}/build/contrib/memory/classes/java"/>
         <pathelement path="${common.dir}/build/contrib/fast-vector-highlighter/classes/java"/>
+        <pathelement path="${common.dir}/build/contrib/analyzers/common/classes/java"/>
     	<fileset dir="lib">
     		<include name="**/*.jar"/>
     	</fileset>
@@ -192,6 +193,32 @@
 	    <echo>Benchmark output in JIRA table format is in file: ${collation.jira.output.file}</echo>
 	</target>
 	
+    <property name="shingle.alg.file" location="conf/shingle.alg"/>
+    <property name="shingle.output.file" 
+              value="${working.dir}/shingle.benchmark.output.txt"/>
+    <property name="shingle.jira.output.file" 
+              value="${working.dir}/shingle.bm2jira.output.txt"/>
+	
+    <path id="shingle.runtime.classpath">
+      <path refid="run.classpath"/>
+    </path>
+	
+    <target name="shingle" depends="compile,compile-analyzers-common,get-files">
+      <echo>Running contrib/benchmark with alg file: ${shingle.alg.file}</echo>
+      <java fork="true" classname="org.apache.lucene.benchmark.byTask.Benchmark" 
+            maxmemory="${task.mem}" output="${shingle.output.file}">
+        <classpath refid="run.classpath"/>
+        <arg file="${shingle.alg.file}"/>
+      </java>
+      <echo>Benchmark output is in file: ${shingle.output.file}</echo>
+      <echo>Converting to JIRA table format...</echo>
+      <exec executable="perl" output="${shingle.jira.output.file}" failonerror="true">
+        <arg value="scripts/shingle.bm2jira.pl"/>
+        <arg value="${shingle.output.file}"/>
+      </exec>
+      <echo>Benchmark output in JIRA table format is in file: ${shingle.jira.output.file}</echo>
+    </target>
+
     <target name="compile-demo">
       <subant target="compile-demo">
          <fileset dir="${common.dir}" includes="build.xml"/>
@@ -205,6 +232,11 @@
     <target name="compile-icu">
       <subant target="compile">
          <fileset dir="${common.dir}/contrib/icu" includes="build.xml"/>
+      </subant>
+    </target>
+    <target name="compile-analyzers-common">
+      <subant target="compile">
+        <fileset dir="${common.dir}/contrib/analyzers/common" includes="build.xml"/>
       </subant>
     </target>
     <target name="compile-memory">

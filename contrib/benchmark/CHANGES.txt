@@ -2,6 +2,11 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
+1/28/2010
+  LUCENE-2223: Add a benchmark for ShingleFilter. You can wrap any
+  analyzer with ShingleAnalyzerWrapper and specify shingle parameters
+  with the NewShingleAnalyzer task.  (Steven Rowe via Robert Muir)
+
 1/14/2010
   LUCENE-2210: TrecTopicsReader now properly reads descriptions and
   narratives from trec topics files.  (Robert Muir)

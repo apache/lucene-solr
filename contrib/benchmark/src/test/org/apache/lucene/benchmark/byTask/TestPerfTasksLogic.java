@@ -975,6 +975,79 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     return algLines;
   }
   
+  /**
+   * Test that we can create ShingleAnalyzerWrappers.
+   */
+  public void testShingleAnalyzer() throws Exception {
+    String text = "one,two,three, four five six";
+    
+    // Default analyzer, maxShingleSize, and outputUnigrams
+    Benchmark benchmark = execBenchmark(getShingleConfig(""));
+    TokenStream stream = benchmark.getRunData().getAnalyzer().tokenStream
+      ("bogus", new StringReader(text));
+    assertEqualShingle(benchmark.getRunData().getAnalyzer(), text,
+                       new String[] {"one", "one two", "two", "two three",
+                                     "three", "three four", "four", "four five",
+                                     "five", "five six", "six"});
+    // Default analyzer, maxShingleSize = 3, and outputUnigrams = false
+    benchmark = execBenchmark
+      (getShingleConfig("maxShingleSize:3,outputUnigrams:false"));
+    assertEqualShingle(benchmark.getRunData().getAnalyzer(), text,
+                       new String[] { "one two", "one two three", "two three",
+                                      "two three four", "three four", 
+                                      "three four five", "four five",
+                                      "four five six", "five six" });
+    // WhitespaceAnalyzer, default maxShingleSize and outputUnigrams
+    benchmark = execBenchmark
+      (getShingleConfig("analyzer:WhitespaceAnalyzer"));
+    assertEqualShingle(benchmark.getRunData().getAnalyzer(), text,
+                       new String[] { "one,two,three,", "one,two,three, four",
+                                      "four", "four five", "five", "five six", 
+                                      "six" });
+    
+    // WhitespaceAnalyzer, maxShingleSize=3 and outputUnigrams=false
+    benchmark = execBenchmark
+      (getShingleConfig
+        ("outputUnigrams:false,maxShingleSize:3,analyzer:WhitespaceAnalyzer"));
+    assertEqualShingle(benchmark.getRunData().getAnalyzer(), text,
+                       new String[] { "one,two,three, four", 
+                                      "one,two,three, four five",
+                                      "four five", "four five six",
+                                      "five six" });
+  }
+  
+  private void assertEqualShingle
+    (Analyzer analyzer, String text, String[] expected) throws Exception {
+    TokenStream stream = analyzer.tokenStream("bogus", new StringReader(text));
+    stream.reset();
+    TermAttribute termAtt = stream.addAttribute(TermAttribute.class);
+    int termNum = 0;
+    while (stream.incrementToken()) {
+      assertTrue("Extra output term(s), starting with '"
+                 + new String(termAtt.termBuffer(), 0, termAtt.termLength()) + "'",
+                 termNum < expected.length);
+      assertEquals("Mismatch in output term # " + termNum + " - ", 
+                   expected[termNum],
+                   new String(termAtt.termBuffer(), 0, termAtt.termLength()));
+      ++termNum;
+    }
+    assertEquals("Too few output terms", expected.length, termNum);
+    stream.close();
+  }
+  
+  private static String[] getShingleConfig(String params) { 
+    String algLines[] = {
+        "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
+        "docs.file=" + getReuters20LinesFile(),
+        "content.source.forever=false",
+        "directory=RAMDirectory",
+        "NewShingleAnalyzer(" + params + ")",
+        "CreateIndex",
+        "{ \"AddDocs\"  AddDoc > : * "
+    };
+    return algLines;
+  }
+  
   private static String getReuters20LinesFile() {
     return System.getProperty("lucene.common.dir").replace('\\','/') +
       "/contrib/benchmark/src/test/org/apache/lucene/benchmark/reuters.first20.lines.txt";
