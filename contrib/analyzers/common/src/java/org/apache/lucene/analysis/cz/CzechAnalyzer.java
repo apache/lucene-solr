@@ -136,7 +136,7 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
    * @param matchVersion Lucene version to match See
    *          {@link <a href="#version">above</a>}
    * @param stopwords a stopword set
-   * @param a stemming exclusion set
+   * @param stemExclusionTable a stemming exclusion set
    */
   public CzechAnalyzer(Version matchVersion, Set<?> stopwords, Set<?> stemExclusionTable) {
     this.matchVersion = matchVersion;

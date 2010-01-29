@@ -1,5 +1,8 @@
 package org.apache.lucene.util;
 
+import java.io.IOException;
+import java.io.Reader;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -104,10 +107,52 @@ public abstract class CharacterUtils {
    *           the char array.
    */
   public abstract int codePointAt(final char[] chars, final int offset, final int limit);
+  
+  /**
+   * Creates a new {@link CharacterBuffer} and allocates a <code>char[]</code>
+   * of the given bufferSize.
+   * 
+   * @param bufferSize
+   *          the internal char buffer size, must be <code>&gt;= 2</code>
+   * @return a new {@link CharacterBuffer} instance.
+   */
+  public static CharacterBuffer newCharacterBuffer(final int bufferSize) {
+    if(bufferSize < 2)
+      throw new IllegalArgumentException("buffersize must be >= 2");
+    return new CharacterBuffer(new char[bufferSize], 0, 0);
+  }
+
+  /**
+   * Fills the {@link CharacterBuffer} with characters read from the given
+   * reader {@link Reader}. This method tries to read as many characters into
+   * the {@link CharacterBuffer} as possible, each call to fill will start
+   * filling the buffer from offset <code>0</code> up to the length of the size
+   * of the internal character array.
+   * <p>
+   * Depending on the {@link Version} passed to
+   * {@link CharacterUtils#getInstance(Version)} this method implements
+   * supplementary character awareness when filling the given buffer. For all
+   * {@link Version} &gt; 3.0 {@link #fill(CharacterBuffer, Reader)} guarantees
+   * that the given {@link CharacterBuffer} will never contain a high surrogate
+   * character as the last element in the buffer unless it is the last available
+   * character in the reader. In other words, high and low surrogate pairs will
+   * always be preserved across buffer boarders.
+   * </p>
+   * 
+   * @param buffer
+   *          the buffer to fill.
+   * @param reader
+   *          the reader to read characters from.
+   * @return <code>true</code> if and only if no more characters are available
+   *         in the reader, otherwise <code>false</code>.
+   * @throws IOException
+   *           if the reader throws an {@link IOException}.
+   */
+  public abstract boolean fill(CharacterBuffer buffer, Reader reader) throws IOException;
 
   private static final class Java5CharacterUtils extends CharacterUtils {
     Java5CharacterUtils() {
-    };
+    }
 
     @Override
     public final int codePointAt(final char[] chars, final int offset) {
@@ -124,12 +169,32 @@ public abstract class CharacterUtils {
      return Character.codePointAt(chars, offset, limit);
     }
 
-    
+    @Override
+    public boolean fill(final CharacterBuffer buffer, final Reader reader) throws IOException {
+      final char[] charBuffer = buffer.buffer;
+      buffer.offset = 0;
+      charBuffer[0] = buffer.lastTrailingHighSurrogate;
+      final int offset = buffer.lastTrailingHighSurrogate == 0 ? 0 : 1;
+      buffer.lastTrailingHighSurrogate = 0;
+      final int read = reader.read(charBuffer, offset, charBuffer.length
+          - offset);
+      if (read == -1) {
+        buffer.length = offset;
+        return offset != 0;
+      }
+      buffer.length = read + offset;
+      // special case if the read returns 0 and the lastTrailingHighSurrogate was set
+      if (buffer.length > 1
+          && Character.isHighSurrogate(charBuffer[buffer.length - 1])) {
+        buffer.lastTrailingHighSurrogate = charBuffer[--buffer.length];
+      }
+      return true;
+    }
   }
 
   private static final class Java4CharacterUtils extends CharacterUtils {
     Java4CharacterUtils() {
-    };
+    }
 
     @Override
     public final int codePointAt(final char[] chars, final int offset) {
@@ -148,6 +213,72 @@ public abstract class CharacterUtils {
       return chars[offset];
     }
 
+    @Override
+    public boolean fill(final CharacterBuffer buffer, final Reader reader) throws IOException {
+      buffer.offset = 0;
+      final int read = reader.read(buffer.buffer);
+      if(read == -1)
+        return false;
+      buffer.length = read;
+      return true;
+    }
+
+  }
+  
+  /**
+   * A simple IO buffer to use with
+   * {@link CharacterUtils#fill(CharacterBuffer, Reader)}.
+   */
+  public static final class CharacterBuffer {
+    
+    private final char[] buffer;
+    private int offset;
+    private int length;
+    private char lastTrailingHighSurrogate = 0;
+    
+    CharacterBuffer(char[] buffer, int offset, int length) {
+      this.buffer = buffer;
+      this.offset = offset;
+      this.length = length;
+    }
+    
+    /**
+     * Returns the internal buffer
+     * 
+     * @return the buffer
+     */
+    public char[] getBuffer() {
+      return buffer;
+    }
+    
+    /**
+     * Returns the data offset in the internal buffer.
+     * 
+     * @return the offset
+     */
+    public int getOffset() {
+      return offset;
+    }
+    
+    /**
+     * Return the length of the data in the internal buffer starting at
+     * {@link #getOffset()}
+     * 
+     * @return the length
+     */
+    public int getLength() {
+      return length;
+    }
+    
+    /**
+     * Resets the CharacterBuffer. All internals are reset to its default
+     * values.
+     */
+    public void reset() {
+      offset = 0;
+      length = 0;
+      lastTrailingHighSurrogate = 0;
+    }
   }
 
 }

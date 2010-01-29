@@ -18,8 +18,10 @@ package org.apache.lucene.analysis.ar;
 
 import java.io.Reader;
 
+import org.apache.lucene.analysis.CharTokenizer;
 import org.apache.lucene.analysis.LetterTokenizer;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.Version;
 
 /**
  * Tokenizer that breaks text into runs of letters and diacritics.
@@ -27,28 +29,101 @@ import org.apache.lucene.util.AttributeSource;
  * The problem with the standard Letter tokenizer is that it fails on diacritics.
  * Handling similar to this is necessary for Indic Scripts, Hebrew, Thaana, etc.
  * </p>
- *
+ * <p>
+ * <a name="version"/>
+ * You must specify the required {@link Version} compatibility when creating
+ * {@link ArabicLetterTokenizer}:
+ * <ul>
+ * <li>As of 3.1, {@link CharTokenizer} uses an int based API to normalize and
+ * detect token characters. See {@link #isTokenChar(int)} and
+ * {@link #normalize(int)} for details.</li>
+ * </ul>
  */
 public class ArabicLetterTokenizer extends LetterTokenizer {
 
+  
+  /**
+   * Construct a new ArabicLetterTokenizer.
+   * @param matchVersion Lucene version
+   * to match See {@link <a href="#version">above</a>}
+   * 
+   * @param in
+   *          the input to split up into tokens
+   */
+  public ArabicLetterTokenizer(Version matchVersion, Reader in) {
+    super(matchVersion, in);
+  }
+
+  /**
+   * Construct a new ArabicLetterTokenizer using a given {@link AttributeSource}.
+   * 
+   * @param matchVersion
+   *          Lucene version to match See {@link <a href="#version">above</a>}
+   * @param source
+   *          the attribute source to use for this Tokenizer
+   * @param in
+   *          the input to split up into tokens
+   */
+  public ArabicLetterTokenizer(Version matchVersion, AttributeSource source, Reader in) {
+    super(matchVersion, source, in);
+  }
+
+  /**
+   * Construct a new ArabicLetterTokenizer using a given
+   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}. * @param
+   * matchVersion Lucene version to match See
+   * {@link <a href="#version">above</a>}
+   * 
+   * @param factory
+   *          the attribute factory to use for this Tokenizer
+   * @param in
+   *          the input to split up into tokens
+   */
+  public ArabicLetterTokenizer(Version matchVersion, AttributeFactory factory, Reader in) {
+    super(matchVersion, factory, in);
+  }
+  
+  /**
+   * Construct a new ArabicLetterTokenizer.
+   * 
+   * @deprecated use {@link #ArabicLetterTokenizer(Version, Reader)} instead. This will
+   *             be removed in Lucene 4.0.
+   */
+  @Deprecated
   public ArabicLetterTokenizer(Reader in) {
     super(in);
   }
 
+  /**
+   * Construct a new ArabicLetterTokenizer using a given {@link AttributeSource}.
+   * 
+   * @deprecated use {@link #ArabicLetterTokenizer(Version, AttributeSource, Reader)}
+   *             instead. This will be removed in Lucene 4.0.
+   */
+  @Deprecated
   public ArabicLetterTokenizer(AttributeSource source, Reader in) {
     super(source, in);
   }
 
+  /**
+   * Construct a new ArabicLetterTokenizer using a given
+   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
+   * 
+   * @deprecated use {@link #ArabicLetterTokenizer(Version, AttributeSource.AttributeFactory, Reader)}
+   *             instead. This will be removed in Lucene 4.0.
+   */
+  @Deprecated
   public ArabicLetterTokenizer(AttributeFactory factory, Reader in) {
     super(factory, in);
   }
   
+  
   /** 
    * Allows for Letter category or NonspacingMark category
-   * @see org.apache.lucene.analysis.LetterTokenizer#isTokenChar(char)
+   * @see org.apache.lucene.analysis.LetterTokenizer#isTokenChar(int)
    */
   @Override
-  protected boolean isTokenChar(char c) {
+  protected boolean isTokenChar(int c) {
     return super.isTokenChar(c) || Character.getType(c) == Character.NON_SPACING_MARK;
   }
 

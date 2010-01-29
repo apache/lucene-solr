@@ -22,39 +22,107 @@ import org.apache.lucene.analysis.CharTokenizer;
 import org.apache.lucene.analysis.Tokenizer; // for javadocs
 import org.apache.lucene.analysis.LetterTokenizer; // for javadocs
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.Version;
 
 /**
  * A RussianLetterTokenizer is a {@link Tokenizer} that extends {@link LetterTokenizer}
- * by also allowing the basic latin digits 0-9. 
+ * by also allowing the basic Latin digits 0-9.
+ * <p>
+ * <a name="version"/>
+ * You must specify the required {@link Version} compatibility when creating
+ * {@link RussianLetterTokenizer}:
+ * <ul>
+ * <li>As of 3.1, {@link CharTokenizer} uses an int based API to normalize and
+ * detect token characters. See {@link CharTokenizer#isTokenChar(int)} and
+ * {@link CharTokenizer#normalize(int)} for details.</li>
+ * </ul> 
  */
-
 public class RussianLetterTokenizer extends CharTokenizer
 {    
-    public RussianLetterTokenizer(Reader in)
-    {
-    	super(in);
+    private static final int DIGIT_0 = '0';
+    private static final int DIGIT_9 = '9';
+    
+    /**
+     * Construct a new RussianLetterTokenizer. * @param matchVersion Lucene version
+     * to match See {@link <a href="#version">above</a>}
+     * 
+     * @param in
+     *          the input to split up into tokens
+     */
+    public RussianLetterTokenizer(Version matchVersion, Reader in) {
+      super(matchVersion, in);
     }
 
-    public RussianLetterTokenizer(AttributeSource source, Reader in)
-    {
-        super(source, in);
+    /**
+     * Construct a new RussianLetterTokenizer using a given {@link AttributeSource}.
+     * 
+     * @param matchVersion
+     *          Lucene version to match See {@link <a href="#version">above</a>}
+     * @param source
+     *          the attribute source to use for this {@link Tokenizer}
+     * @param in
+     *          the input to split up into tokens
+     */
+    public RussianLetterTokenizer(Version matchVersion, AttributeSource source, Reader in) {
+      super(matchVersion, source, in);
     }
 
-    public RussianLetterTokenizer(AttributeFactory factory, Reader in)
-    {
-        super(factory, in);
+    /**
+     * Construct a new RussianLetterTokenizer using a given
+     * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}. * @param
+     * matchVersion Lucene version to match See
+     * {@link <a href="#version">above</a>}
+     * 
+     * @param factory
+     *          the attribute factory to use for this {@link Tokenizer}
+     * @param in
+     *          the input to split up into tokens
+     */
+    public RussianLetterTokenizer(Version matchVersion, AttributeFactory factory, Reader in) {
+      super(matchVersion, factory, in);
     }
     
     /**
+     * Construct a new RussianLetterTokenizer.
+     * 
+     * @deprecated use {@link #RussianLetterTokenizer(Version, Reader)} instead. This will
+     *             be removed in Lucene 4.0.
+     */
+    @Deprecated
+    public RussianLetterTokenizer(Reader in) {
+      super(in);
+    }
+
+    /**
+     * Construct a new RussianLetterTokenizer using a given {@link AttributeSource}.
+     * 
+     * @deprecated use {@link #RussianLetterTokenizer(Version, AttributeSource, Reader)}
+     *             instead. This will be removed in Lucene 4.0.
+     */
+    @Deprecated
+    public RussianLetterTokenizer(AttributeSource source, Reader in) {
+      super(source, in);
+    }
+
+    /**
+     * Construct a new RussianLetterTokenizer using a given
+     * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
+     * 
+     * @deprecated use {@link #RussianLetterTokenizer(Version, AttributeSource.AttributeFactory, Reader)}
+     *             instead. This will be removed in Lucene 4.0.
+     */
+    @Deprecated
+    public RussianLetterTokenizer(AttributeFactory factory, Reader in) {
+      super(factory, in);
+    }
+    
+    
+    /**
      * Collects only characters which satisfy
-     * {@link Character#isLetter(char)}.
+     * {@link Character#isLetter(int)}.
      */
     @Override
-    protected boolean isTokenChar(char c)
-    {
-        if (Character.isLetter(c) || (c >= '0' && c <= '9'))
-            return true;
-        else
-            return false;
+    protected boolean isTokenChar(int c) {
+        return Character.isLetter(c) || (c >= DIGIT_0 && c <= DIGIT_9);
     }
 }

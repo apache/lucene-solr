@@ -127,6 +127,11 @@ New features
   
 * LUCENE-2198: Support protected words in stemming TokenFilters using a
   new KeywordAttribute.  (Simon Willnauer via Uwe Schindler)
+  
+* LUCENE-2183: Added Unicode 4 support to CharTokenizer and its subclasses.
+  CharTokenizer now has new int-API which is conditionally preferred to
+  the old char-API depending on the provided Version. Version < 3.1 will
+  use the char-API. (Simon Willnauer via Uwe Schindler)
 
 Optimizations
 
