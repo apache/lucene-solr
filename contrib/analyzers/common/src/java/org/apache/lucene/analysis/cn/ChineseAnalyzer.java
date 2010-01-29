@@ -21,15 +21,17 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
+import org.apache.lucene.analysis.standard.StandardAnalyzer; // javadoc @link
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 
 /**
  * An {@link Analyzer} that tokenizes text with {@link ChineseTokenizer} and
  * filters with {@link ChineseFilter}
- *
+ * @deprecated Use {@link StandardAnalyzer} instead, which has the same functionality.
+ * This analyzer will be removed in Lucene 4.0
  */
-
+@Deprecated
 public final class ChineseAnalyzer extends ReusableAnalyzerBase {
 
   /**

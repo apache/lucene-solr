@@ -23,6 +23,7 @@ import java.util.Arrays;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.Version;
 
@@ -41,9 +42,10 @@ import org.apache.lucene.util.Version;
  * </ol>
  * 
  * @version 1.0
- *
+ * @deprecated Use {@link StopFilter} instead, which has the same functionality.
+ * This filter will be removed in Lucene 4.0
  */
-
+@Deprecated
 public final class ChineseFilter extends TokenFilter {
 
 

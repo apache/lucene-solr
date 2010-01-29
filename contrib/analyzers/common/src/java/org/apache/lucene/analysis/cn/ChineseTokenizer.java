@@ -21,6 +21,7 @@ package org.apache.lucene.analysis.cn;
 import java.io.IOException;
 import java.io.Reader;
 
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
@@ -52,9 +53,10 @@ import org.apache.lucene.util.AttributeSource;
  * CJKTokenizer will not work.
  * </p>
  * @version 1.0
- *
+ * @deprecated Use {@link StandardTokenizer} instead, which has the same functionality.
+ * This filter will be removed in Lucene 4.0
  */
-
+@Deprecated
 public final class ChineseTokenizer extends Tokenizer {
 
 
