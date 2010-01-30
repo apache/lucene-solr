@@ -38,6 +38,14 @@ public class FieldQueryTest extends AbstractTestCase {
     assertCollectionQueries( flatQueries, tq( "A" ), tq( "B" ), tq( "C" ) );
   }
 
+  public void testFlattenDisjunctionMaxQuery() throws Exception {
+    Query query = dmq( tq( "A" ), tq( "B" ), pqF( "C", "D" ) );
+    FieldQuery fq = new FieldQuery( query, true, true );
+    Set<Query> flatQueries = new HashSet<Query>();
+    fq.flatten( query, flatQueries );
+    assertCollectionQueries( flatQueries, tq( "A" ), tq( "B" ), pqF( "C", "D" ) );
+  }
+
   public void testFlattenTermAndPhrase() throws Exception {
     Query query = paW.parse( "A AND \"B C\"" );
     FieldQuery fq = new FieldQuery( query, true, true );

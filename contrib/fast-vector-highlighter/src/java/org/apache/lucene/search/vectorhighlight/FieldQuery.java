@@ -27,6 +27,7 @@ import java.util.Set;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -76,6 +77,12 @@ public class FieldQuery {
       for( BooleanClause clause : bq.getClauses() ){
         if( !clause.isProhibited() )
           flatten( clause.getQuery(), flatQueries );
+      }
+    }
+    else if( sourceQuery instanceof DisjunctionMaxQuery ){
+      DisjunctionMaxQuery dmq = (DisjunctionMaxQuery)sourceQuery;
+      for( Query query : dmq ){
+        flatten( query, flatQueries );
       }
     }
     else if( sourceQuery instanceof TermQuery ){

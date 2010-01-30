@@ -96,6 +96,9 @@ New features
    and Swedish. These can be loaded with WordListLoader.getSnowballWordSet.
    (Robert Muir, Simon Willnauer)
 
+ * LUCENE-2243: Add DisjunctionMaxQuery support for FastVectorHighlighter.
+   (Koji Sekiguchi)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 

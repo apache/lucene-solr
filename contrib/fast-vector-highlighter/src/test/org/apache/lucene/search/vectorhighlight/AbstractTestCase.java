@@ -40,6 +40,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -138,6 +139,18 @@ public abstract class AbstractTestCase extends TestCase {
     }
     query.setBoost( boost );
     query.setSlop( slop );
+    return query;
+  }
+  
+  protected Query dmq( Query... queries ){
+    return dmq( 0.0F, queries );
+  }
+  
+  protected Query dmq( float tieBreakerMultiplier, Query... queries ){
+    DisjunctionMaxQuery query = new DisjunctionMaxQuery( tieBreakerMultiplier );
+    for( Query q : queries ){
+      query.add( q );
+    }
     return query;
   }
   
