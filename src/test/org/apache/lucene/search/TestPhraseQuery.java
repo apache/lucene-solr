@@ -51,7 +51,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new WhitespaceTokenizer(reader);
+        return new WhitespaceTokenizer(Version.LUCENE_CURRENT, reader);
       }
 
       @Override
@@ -239,7 +239,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   
   public void testPhraseQueryInConjunctionScorer() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, 
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, 
                                          IndexWriter.MaxFieldLength.LIMITED);
     
     Document doc = new Document();
@@ -275,7 +275,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     
     searcher.close();
     
-    writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, 
+    writer = new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, 
                              IndexWriter.MaxFieldLength.LIMITED);
     doc = new Document();
     doc.add(new Field("contents", "map entry woo", Field.Store.YES, Field.Index.ANALYZED));
@@ -325,7 +325,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   
   public void testSlopScoring() throws IOException {
     Directory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, 
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, 
                                          IndexWriter.MaxFieldLength.LIMITED);
 
     Document doc = new Document();

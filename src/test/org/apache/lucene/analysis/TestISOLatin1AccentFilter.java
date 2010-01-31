@@ -18,12 +18,13 @@ package org.apache.lucene.analysis;
  */
 
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.util.Version;
 
 import java.io.StringReader;
 
 public class TestISOLatin1AccentFilter extends BaseTokenStreamTestCase {
   public void testU() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(new StringReader("Des mot clés À LA CHAÎNE À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ĳ Ð Ñ Ò Ó Ô Õ Ö Ø Œ Þ Ù Ú Û Ü Ý Ÿ à á â ã ä å æ ç è é ê ë ì í î ï ĳ ð ñ ò ó ô õ ö ø œ ß þ ù ú û ü ý ÿ ﬁ ﬂ"));
+    TokenStream stream = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader("Des mot clés À LA CHAÎNE À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ĳ Ð Ñ Ò Ó Ô Õ Ö Ø Œ Þ Ù Ú Û Ü Ý Ÿ à á â ã ä å æ ç è é ê ë ì í î ï ĳ ð ñ ò ó ô õ ö ø œ ß þ ù ú û ü ý ÿ ﬁ ﬂ"));
     ISOLatin1AccentFilter filter = new ISOLatin1AccentFilter(stream);
     TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
     assertTermEquals("Des", filter, termAtt);

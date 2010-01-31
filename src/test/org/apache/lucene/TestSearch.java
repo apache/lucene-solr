@@ -74,7 +74,7 @@ public class TestSearch extends LuceneTestCase {
     throws Exception
     {
       Directory directory = new RAMDirectory();
-      Analyzer analyzer = new SimpleAnalyzer();
+      Analyzer analyzer = new SimpleAnalyzer(Version.LUCENE_CURRENT);
       IndexWriter writer = new IndexWriter(directory, analyzer, true, 
                                            IndexWriter.MaxFieldLength.LIMITED);
 

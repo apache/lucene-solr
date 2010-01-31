@@ -18,6 +18,7 @@ package org.apache.lucene.analysis;
  */
 
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.util.Version;
 
 import java.io.StringReader;
 import java.util.List;
@@ -28,7 +29,7 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
 
   // testLain1Accents() is a copy of TestLatin1AccentFilter.testU().
   public void testLatin1Accents() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(new StringReader
+    TokenStream stream = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader
       ("Des mot clés À LA CHAÎNE À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ĳ Ð Ñ"
       +" Ò Ó Ô Õ Ö Ø Œ Þ Ù Ú Û Ü Ý Ÿ à á â ã ä å æ ç è é ê ë ì í î ï ĳ"
       +" ð ñ ò ó ô õ ö ø œ ß þ ù ú û ü ý ÿ ﬁ ﬂ"));
@@ -1889,7 +1890,7 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
       expectedOutputTokens.add(expected.toString());
     }
 
-    TokenStream stream = new WhitespaceTokenizer(new StringReader(inputText.toString()));
+    TokenStream stream = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader(inputText.toString()));
     ASCIIFoldingFilter filter = new ASCIIFoldingFilter(stream);
     TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
     Iterator<String> expectedIter = expectedOutputTokens.iterator();

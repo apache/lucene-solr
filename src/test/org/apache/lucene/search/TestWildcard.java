@@ -212,7 +212,7 @@ public class TestWildcard
   private RAMDirectory getIndexStore(String field, String[] contents)
       throws IOException {
     RAMDirectory indexStore = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     for (int i = 0; i < contents.length; ++i) {
       Document doc = new Document();
       doc.add(new Field(field, contents[i], Field.Store.YES, Field.Index.ANALYZED));
@@ -240,7 +240,7 @@ public class TestWildcard
   public void testParsingAndSearching() throws Exception {
     String field = "content";
     boolean dbg = false;
-    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, field, new WhitespaceAnalyzer());
+    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, field, new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
     qp.setAllowLeadingWildcard(true);
     String docs[] = {
         "\\ abcdefg1",
@@ -270,7 +270,7 @@ public class TestWildcard
 
     // prepare the index
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter iw = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
     for (int i = 0; i < docs.length; i++) {
       Document doc = new Document();
       doc.add(new Field(field,docs[i],Store.NO,Index.ANALYZED));

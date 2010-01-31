@@ -54,6 +54,7 @@ import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 
 public class TestIndexReader extends LuceneTestCase
@@ -313,7 +314,7 @@ public class TestIndexReader extends LuceneTestCase
         Term searchTerm = new Term("content", "aaa");
 
         //  add 100 documents with term : aaa
-        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
         for (int i = 0; i < 100; i++)
         {
             addDoc(writer, searchTerm.text());
@@ -355,7 +356,7 @@ public class TestIndexReader extends LuceneTestCase
         Directory dir = new RAMDirectory();
         byte[] bin = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         
-        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
         
         for (int i = 0; i < 10; i++) {
           addDoc(writer, "document number " + (i + 1));
@@ -364,7 +365,7 @@ public class TestIndexReader extends LuceneTestCase
           addDocumentWithTermVectorFields(writer);
         }
         writer.close();
-        writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+        writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
         Document doc = new Document();
         doc.add(new Field("bin1", bin, Field.Store.YES));
         doc.add(new Field("junk", "junk text", Field.Store.NO, Field.Index.ANALYZED));
@@ -401,7 +402,7 @@ public class TestIndexReader extends LuceneTestCase
         // force optimize
 
 
-        writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+        writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
         writer.optimize();
         writer.close();
         reader = IndexReader.open(dir, false);
@@ -430,7 +431,7 @@ public class TestIndexReader extends LuceneTestCase
         Term searchTerm = new Term("content", "aaa");
 
         //  add 11 documents with term : aaa
-        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
         for (int i = 0; i < 11; i++)
         {
             addDoc(writer, searchTerm.text());
@@ -475,7 +476,7 @@ public class TestIndexReader extends LuceneTestCase
         Term searchTerm = new Term("content", "aaa");
 
         //  add 11 documents with term : aaa
-        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
         for (int i = 0; i < 11; i++)
         {
             addDoc(writer, searchTerm.text());
@@ -524,7 +525,7 @@ public class TestIndexReader extends LuceneTestCase
         Term searchTerm = new Term("content", "aaa");
 
         //  add 1 documents with term : aaa
-        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
         addDoc(writer, searchTerm.text());
         writer.close();
 
@@ -569,7 +570,7 @@ public class TestIndexReader extends LuceneTestCase
         Term searchTerm = new Term("content", "aaa");
 
         //  add 1 documents with term : aaa
-        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
         writer.setUseCompoundFile(false);
         addDoc(writer, searchTerm.text());
         writer.close();
@@ -623,7 +624,7 @@ public class TestIndexReader extends LuceneTestCase
         Term searchTerm2 = new Term("content", "bbb");
 
         //  add 100 documents with term : aaa
-        IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
         for (int i = 0; i < 100; i++)
         {
             addDoc(writer, searchTerm.text());
@@ -639,7 +640,7 @@ public class TestIndexReader extends LuceneTestCase
         assertTermDocsCount("first reader", reader, searchTerm2, 0);
 
         // add 100 documents with term : bbb
-        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
         for (int i = 0; i < 100; i++)
         {
             addDoc(writer, searchTerm2.text());
@@ -706,7 +707,7 @@ public class TestIndexReader extends LuceneTestCase
         // Create initial data set
         File dirFile = new File(System.getProperty("tempDir"), "testIndex");
         Directory dir = getDirectory();
-        IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
         addDoc(writer, "test");
         writer.close();
         dir.close();
@@ -716,7 +717,7 @@ public class TestIndexReader extends LuceneTestCase
         dir = getDirectory();
 
         // Now create the data set again, just as before
-        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
         addDoc(writer, "test");
         writer.close();
         dir.close();
@@ -742,7 +743,7 @@ public class TestIndexReader extends LuceneTestCase
           else
             dir = getDirectory();
           assertFalse(IndexReader.indexExists(dir));
-          IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+          IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
           addDocumentWithFields(writer);
           assertTrue(IndexWriter.isLocked(dir));		// writer open, so dir is locked
           writer.close();
@@ -759,7 +760,7 @@ public class TestIndexReader extends LuceneTestCase
           // incremented:
           Thread.sleep(1000);
 
-          writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+          writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
           addDocumentWithFields(writer);
           writer.close();
           reader = IndexReader.open(dir, false);
@@ -776,7 +777,7 @@ public class TestIndexReader extends LuceneTestCase
     public void testVersion() throws IOException {
       Directory dir = new MockRAMDirectory();
       assertFalse(IndexReader.indexExists(dir));
-      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
       addDocumentWithFields(writer);
       assertTrue(IndexWriter.isLocked(dir));		// writer open, so dir is locked
       writer.close();
@@ -787,7 +788,7 @@ public class TestIndexReader extends LuceneTestCase
       reader.close();
       // modify index and check version has been
       // incremented:
-      writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+      writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
       addDocumentWithFields(writer);
       writer.close();
       reader = IndexReader.open(dir, false);
@@ -798,10 +799,10 @@ public class TestIndexReader extends LuceneTestCase
 
     public void testLock() throws IOException {
       Directory dir = new MockRAMDirectory();
-      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
       addDocumentWithFields(writer);
       writer.close();
-      writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
       IndexReader reader = IndexReader.open(dir, false);
       try {
         reader.deleteDocument(0);
@@ -818,7 +819,7 @@ public class TestIndexReader extends LuceneTestCase
 
     public void testUndeleteAll() throws IOException {
       Directory dir = new MockRAMDirectory();
-      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
       addDocumentWithFields(writer);
       addDocumentWithFields(writer);
       writer.close();
@@ -835,7 +836,7 @@ public class TestIndexReader extends LuceneTestCase
 
     public void testUndeleteAllAfterClose() throws IOException {
       Directory dir = new MockRAMDirectory();
-      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
       addDocumentWithFields(writer);
       addDocumentWithFields(writer);
       writer.close();
@@ -852,7 +853,7 @@ public class TestIndexReader extends LuceneTestCase
 
     public void testUndeleteAllAfterCloseThenReopen() throws IOException {
       Directory dir = new MockRAMDirectory();
-      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
       addDocumentWithFields(writer);
       addDocumentWithFields(writer);
       writer.close();
@@ -890,7 +891,7 @@ public class TestIndexReader extends LuceneTestCase
       
       // First build up a starting index:
       RAMDirectory startDir = new MockRAMDirectory();
-      IndexWriter writer = new IndexWriter(startDir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer = new IndexWriter(startDir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
       for(int i=0;i<157;i++) {
         Document d = new Document();
         d.add(new Field("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
@@ -1080,7 +1081,7 @@ public class TestIndexReader extends LuceneTestCase
 
     public void testDocsOutOfOrderJIRA140() throws IOException {
       Directory dir = new MockRAMDirectory();      
-      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
       for(int i=0;i<11;i++) {
         addDoc(writer, "aaa");
       }
@@ -1098,7 +1099,7 @@ public class TestIndexReader extends LuceneTestCase
       }
       reader.close();
 
-      writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
 
       // We must add more docs to get a new segment written
       for(int i=0;i<11;i++) {
@@ -1120,7 +1121,7 @@ public class TestIndexReader extends LuceneTestCase
     public void testExceptionReleaseWriteLockJIRA768() throws IOException {
 
       Directory dir = new MockRAMDirectory();      
-      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
       addDoc(writer, "aaa");
       writer.close();
 
@@ -1196,7 +1197,7 @@ public class TestIndexReader extends LuceneTestCase
         //  add 100 documents with term : aaa
         //  add 100 documents with term : bbb
         //  add 100 documents with term : ccc
-        IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
         for (int i = 0; i < 100; i++)
         {
             addDoc(writer, searchTerm1.text());
@@ -1606,7 +1607,7 @@ public class TestIndexReader extends LuceneTestCase
   // reuse the doc values arrays in FieldCache
   public void testFieldCacheReuseAfterClone() throws Exception {
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     doc.add(new Field("number", "17", Field.Store.NO, Field.Index.NOT_ANALYZED));
     writer.addDocument(doc);
@@ -1637,7 +1638,7 @@ public class TestIndexReader extends LuceneTestCase
   // FieldCache
   public void testFieldCacheReuseAfterReopen() throws Exception {
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     doc.add(new Field("number", "17", Field.Store.NO, Field.Index.NOT_ANALYZED));
     writer.addDocument(doc);
@@ -1669,7 +1670,7 @@ public class TestIndexReader extends LuceneTestCase
   // reopen switches readOnly
   public void testReopenChangeReadonly() throws Exception {
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     doc.add(new Field("number", "17", Field.Store.NO, Field.Index.NOT_ANALYZED));
     writer.addDocument(doc);
@@ -1710,7 +1711,7 @@ public class TestIndexReader extends LuceneTestCase
   // LUCENE-1586: getUniqueTermCount
   public void testUniqueTermCount() throws Exception {
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     doc.add(new Field("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", Field.Store.NO, Field.Index.ANALYZED));
     doc.add(new Field("number", "0 1 2 3 4 5 6 7 8 9", Field.Store.NO, Field.Index.ANALYZED));
@@ -1743,7 +1744,7 @@ public class TestIndexReader extends LuceneTestCase
   // LUCENE-1609: don't load terms index
   public void testNoTermsIndex() throws Throwable {
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     doc.add(new Field("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", Field.Store.NO, Field.Index.ANALYZED));
     doc.add(new Field("number", "0 1 2 3 4 5 6 7 8 9", Field.Store.NO, Field.Index.ANALYZED));
@@ -1761,7 +1762,7 @@ public class TestIndexReader extends LuceneTestCase
     assertFalse(((SegmentReader) r.getSequentialSubReaders()[0]).termsIndexLoaded());
 
     assertEquals(-1, ((SegmentReader) r.getSequentialSubReaders()[0]).getTermInfosIndexDivisor());
-    writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.UNLIMITED);
     writer.addDocument(doc);
     writer.close();
 
@@ -1780,7 +1781,7 @@ public class TestIndexReader extends LuceneTestCase
   // LUCENE-2046
   public void testPrepareCommitIsCurrent() throws Throwable {
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     writer.addDocument(doc);
     IndexReader r = IndexReader.open(dir, true);

@@ -100,7 +100,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
 
   public void testLowerCaseTokenizer() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(Version.LUCENE_31,
+    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(Version.LUCENE_CURRENT,
         reader);
     assertTokenStreamContents(tokenizer, new String[] { "tokenizer",
         "\ud801\udc44test" });
@@ -115,7 +115,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
 
   public void testWhitespaceTokenizer() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(Version.LUCENE_31,
+    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(Version.LUCENE_CURRENT,
         reader);
     assertTokenStreamContents(tokenizer, new String[] { "Tokenizer",
         "\ud801\udc1ctest" });

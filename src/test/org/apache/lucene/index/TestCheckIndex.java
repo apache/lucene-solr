@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.ArrayList;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -34,7 +35,7 @@ public class TestCheckIndex extends LuceneTestCase {
 
   public void testDeletedDocs() throws IOException {
     MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, 
+    IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, 
                                           IndexWriter.MaxFieldLength.LIMITED);      
     writer.setMaxBufferedDocs(2);
     Document doc = new Document();

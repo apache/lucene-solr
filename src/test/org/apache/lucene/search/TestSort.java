@@ -41,6 +41,7 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 /**
  * Unit tests for sorting code.
@@ -103,7 +104,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   private Searcher getIndex (boolean even, boolean odd)
   throws IOException {
     RAMDirectory indexStore = new RAMDirectory ();
-    IndexWriter writer = new IndexWriter (indexStore, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter (indexStore, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setMaxBufferedDocs(2);
     writer.setMergeFactor(1000);
     for (int i=0; i<data.length; ++i) {
@@ -139,7 +140,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   
   private IndexSearcher getFullStrings() throws CorruptIndexException, LockObtainFailedException, IOException {
     RAMDirectory indexStore = new RAMDirectory ();
-    IndexWriter writer = new IndexWriter (indexStore, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter (indexStore, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setMaxBufferedDocs(4);
     writer.setMergeFactor(97);
     for (int i=0; i<NUM_STRINGS; i++) {

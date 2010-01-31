@@ -179,7 +179,7 @@ public class CollationTestBase extends TestCase {
                                    String usResult) throws Exception {
     RAMDirectory indexStore = new RAMDirectory();
     PerFieldAnalyzerWrapper analyzer
-      = new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer());
+      = new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
     analyzer.addAnalyzer("US", usAnalyzer);
     analyzer.addAnalyzer("France", franceAnalyzer);
     analyzer.addAnalyzer("Sweden", swedenAnalyzer);

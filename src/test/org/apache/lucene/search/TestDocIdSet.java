@@ -35,6 +35,7 @@ import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 
 public class TestDocIdSet extends LuceneTestCase {
@@ -105,7 +106,7 @@ public class TestDocIdSet extends LuceneTestCase {
     // Tests that if a Filter produces a null DocIdSet, which is given to
     // IndexSearcher, everything works fine. This came up in LUCENE-1754.
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     doc.add(new Field("c", "val", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
     writer.addDocument(doc);

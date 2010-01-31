@@ -62,7 +62,7 @@ public class TestPorterStemFilter extends BaseTokenStreamTestCase {
   public void testWithKeywordAttribute() throws IOException {
     CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
     set.add("yourselves");
-    Tokenizer tokenizer = new WhitespaceTokenizer(new StringReader("yourselves yours"));
+    Tokenizer tokenizer = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader("yourselves yours"));
     TokenStream filter = new PorterStemFilter(new KeywordMarkerTokenFilter(tokenizer, set));   
     assertTokenStreamContents(filter, new String[] {"yourselves", "your"});
   }

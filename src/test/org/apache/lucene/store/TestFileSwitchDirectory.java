@@ -26,6 +26,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.TestIndexWriterReader;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 public class TestFileSwitchDirectory extends LuceneTestCase {
   /**
@@ -41,7 +42,7 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
     RAMDirectory secondaryDir = new MockRAMDirectory();
     
     FileSwitchDirectory fsd = new FileSwitchDirectory(fileExtensions, primaryDir, secondaryDir, true);
-    IndexWriter writer = new IndexWriter(fsd, new WhitespaceAnalyzer(),
+    IndexWriter writer = new IndexWriter(fsd, new WhitespaceAnalyzer(Version.LUCENE_CURRENT),
         IndexWriter.MaxFieldLength.LIMITED);
     writer.setUseCompoundFile(false);
     TestIndexWriterReader.createIndexNoClose(true, "ram", writer);

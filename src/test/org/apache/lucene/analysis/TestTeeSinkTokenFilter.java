@@ -76,7 +76,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
 
   
   public void testGeneral() throws IOException {
-    final TeeSinkTokenFilter source = new TeeSinkTokenFilter(new WhitespaceTokenizer(new StringReader(buffer1.toString())));
+    final TeeSinkTokenFilter source = new TeeSinkTokenFilter(new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader(buffer1.toString())));
     final TokenStream sink1 = source.newSinkTokenStream();
     final TokenStream sink2 = source.newSinkTokenStream(theFilter);
     
@@ -90,7 +90,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
   }
 
   public void testMultipleSources() throws Exception {
-    final TeeSinkTokenFilter tee1 = new TeeSinkTokenFilter(new WhitespaceTokenizer(new StringReader(buffer1.toString())));
+    final TeeSinkTokenFilter tee1 = new TeeSinkTokenFilter(new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader(buffer1.toString())));
     final TeeSinkTokenFilter.SinkTokenStream dogDetector = tee1.newSinkTokenStream(dogFilter);
     final TeeSinkTokenFilter.SinkTokenStream theDetector = tee1.newSinkTokenStream(theFilter);
     final TokenStream source1 = new CachingTokenFilter(tee1);
@@ -99,7 +99,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     dogDetector.addAttribute(CheckClearAttributesAttribute.class);
     theDetector.addAttribute(CheckClearAttributesAttribute.class);
 
-    final TeeSinkTokenFilter tee2 = new TeeSinkTokenFilter(new WhitespaceTokenizer(new StringReader(buffer2.toString())));
+    final TeeSinkTokenFilter tee2 = new TeeSinkTokenFilter(new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader(buffer2.toString())));
     tee2.addSinkTokenStream(dogDetector);
     tee2.addSinkTokenStream(theDetector);
     final TokenStream source2 = tee2;

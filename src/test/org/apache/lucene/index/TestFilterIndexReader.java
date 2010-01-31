@@ -19,6 +19,8 @@ package org.apache.lucene.index;
 
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
+
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
@@ -97,7 +99,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
    */
   public void testFilterIndexReader() throws Exception {
     RAMDirectory directory = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true,
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true,
                                          IndexWriter.MaxFieldLength.LIMITED);
 
     Document d1 = new Document();

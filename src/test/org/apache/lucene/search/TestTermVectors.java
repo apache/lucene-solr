@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -41,7 +42,7 @@ public class TestTermVectors extends LuceneTestCase {
   @Override
   public void setUp() throws Exception {                  
     super.setUp();
-    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(), true,
+    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(Version.LUCENE_CURRENT), true,
                                          IndexWriter.MaxFieldLength.LIMITED);
     //writer.setUseCompoundFile(true);
     //writer.infoStream = System.out;
@@ -93,7 +94,7 @@ public class TestTermVectors extends LuceneTestCase {
   
   public void testTermVectorsFieldOrder() throws IOException {
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("c", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("a", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
@@ -231,7 +232,7 @@ public class TestTermVectors extends LuceneTestCase {
     Directory dir = new MockRAMDirectory();
     
     try {
-      IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(), true, 
+      IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, 
                                            IndexWriter.MaxFieldLength.LIMITED);
       assertTrue(writer != null);
       writer.addDocument(testDoc1);
@@ -347,7 +348,7 @@ public class TestTermVectors extends LuceneTestCase {
 
   // Test only a few docs having vectors
   public void testRareVectors() throws IOException {
-    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(), true, 
+    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, 
                                          IndexWriter.MaxFieldLength.LIMITED);
     for(int i=0;i<100;i++) {
       Document doc = new Document();
@@ -379,7 +380,7 @@ public class TestTermVectors extends LuceneTestCase {
   // In a single doc, for the same field, mix the term
   // vectors up
   public void testMixedVectrosVectors() throws IOException {
-    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(), true, 
+    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, 
                                          IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("field", "one",

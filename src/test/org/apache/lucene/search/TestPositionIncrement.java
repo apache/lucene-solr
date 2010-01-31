@@ -225,7 +225,7 @@ public class TestPositionIncrement extends LuceneTestCase {
 
   private static class StopWhitespaceAnalyzer extends Analyzer {
     boolean enablePositionIncrements;
-    final WhitespaceAnalyzer a = new WhitespaceAnalyzer();
+    final WhitespaceAnalyzer a = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
     public StopWhitespaceAnalyzer(boolean enablePositionIncrements) {
       this.enablePositionIncrements = enablePositionIncrements;
     }
@@ -318,7 +318,7 @@ class TestPayloadAnalyzer extends Analyzer {
 
   @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new LowerCaseTokenizer(reader);
+    TokenStream result = new LowerCaseTokenizer(Version.LUCENE_CURRENT, reader);
     return new PayloadFilter(result, fieldName);
   }
 }

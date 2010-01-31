@@ -39,6 +39,7 @@ import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 
 public class TestDocumentWriter extends LuceneTestCase {
@@ -61,7 +62,7 @@ public class TestDocumentWriter extends LuceneTestCase {
   public void testAddDocument() throws Exception {
     Document testDoc = new Document();
     DocHelper.setupDoc(testDoc);
-    Analyzer analyzer = new WhitespaceAnalyzer();
+    Analyzer analyzer = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
     IndexWriter writer = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
     writer.addDocument(testDoc);
     writer.commit();
@@ -110,7 +111,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new WhitespaceTokenizer(reader);
+        return new WhitespaceTokenizer(Version.LUCENE_CURRENT, reader);
       }
 
       @Override
@@ -143,7 +144,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new TokenFilter(new WhitespaceTokenizer(reader)) {
+        return new TokenFilter(new WhitespaceTokenizer(Version.LUCENE_CURRENT, reader)) {
           boolean first=true;
           AttributeSource.State state;
 
@@ -207,7 +208,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
 
   public void testPreAnalyzedField() throws IOException {
-    IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     
     doc.add(new Field("preanalyzed", new TokenStream() {

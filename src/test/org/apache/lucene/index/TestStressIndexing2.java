@@ -19,6 +19,7 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.*;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.search.TermQuery;
@@ -123,7 +124,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   
   public DocsAndWriter indexRandomIWReader(int nThreads, int iterations, int range, Directory dir) throws IOException, InterruptedException {
     Map<String,Document> docs = new HashMap<String,Document>();
-    IndexWriter w = new MockIndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter w = new MockIndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
     w.setUseCompoundFile(false);
 
     /***
@@ -175,7 +176,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   public Map<String,Document> indexRandom(int nThreads, int iterations, int range, Directory dir) throws IOException, InterruptedException {
     Map<String,Document> docs = new HashMap<String,Document>();
     for(int iter=0;iter<3;iter++) {
-      IndexWriter w = new MockIndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+      IndexWriter w = new MockIndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
       w.setUseCompoundFile(false);
 
       // force many merges
@@ -218,7 +219,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
   
   public static void indexSerial(Map<String,Document> docs, Directory dir) throws IOException {
-    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.UNLIMITED);
 
     // index all docs in a single thread
     Iterator<Document> iter = docs.values().iterator();

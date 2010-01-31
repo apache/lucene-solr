@@ -61,6 +61,9 @@ API Changes
   members. These were converted to private and unused protected
   constructors removed.  (Steven Rowe via Robert Muir)
 
+* LUCENE-2240: SimpleAnalyzer and WhitespaceAnalyzer now have
+  Version ctors.  (Simon Willnauer via Uwe Schindler)
+
 Bug fixes
 
 * LUCENE-2092: BooleanQuery was ignoring disableCoord in its hashCode
@@ -128,10 +131,11 @@ New features
 * LUCENE-2198: Support protected words in stemming TokenFilters using a
   new KeywordAttribute.  (Simon Willnauer via Uwe Schindler)
   
-* LUCENE-2183: Added Unicode 4 support to CharTokenizer and its subclasses.
-  CharTokenizer now has new int-API which is conditionally preferred to
-  the old char-API depending on the provided Version. Version < 3.1 will
-  use the char-API. (Simon Willnauer via Uwe Schindler)
+* LUCENE-2183, LUCENE-2240, LUCENE-2241: Added Unicode 4 support
+  to CharTokenizer and its subclasses. CharTokenizer now has new
+  int-API which is conditionally preferred to the old char-API depending
+  on the provided Version. Version < 3.1 will use the char-API.
+  (Simon Willnauer via Uwe Schindler)
 
 Optimizations
 

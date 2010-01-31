@@ -51,7 +51,7 @@ public class TestDateSort extends LuceneTestCase {
     super.setUp();
     // Create an index writer.
     directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true,
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true,
                                          IndexWriter.MaxFieldLength.LIMITED);
 
     // oldest doc:
@@ -76,7 +76,7 @@ public class TestDateSort extends LuceneTestCase {
 
     Sort sort = new Sort(new SortField(DATE_TIME_FIELD, SortField.STRING, true));
 
-    QueryParser queryParser = new QueryParser(Version.LUCENE_CURRENT, TEXT_FIELD, new WhitespaceAnalyzer());
+    QueryParser queryParser = new QueryParser(Version.LUCENE_CURRENT, TEXT_FIELD, new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
     Query query = queryParser.parse("Document");
 
     // Execute the search and process the search results.

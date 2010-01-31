@@ -35,7 +35,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
    }
 
   public void testSimple() throws Exception {
-    Analyzer a = new SimpleAnalyzer();
+    Analyzer a = new SimpleAnalyzer(Version.LUCENE_CURRENT);
     assertAnalyzesTo(a, "foo bar FOO BAR", 
                      new String[] { "foo", "bar", "foo", "bar" });
     assertAnalyzesTo(a, "foo      bar .  FOO <> BAR", 
@@ -55,7 +55,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   }
 
   public void testNull() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer();
+    Analyzer a = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
     assertAnalyzesTo(a, "foo bar FOO BAR", 
                      new String[] { "foo", "bar", "FOO", "BAR" });
     assertAnalyzesTo(a, "foo      bar .  FOO <> BAR", 
@@ -97,11 +97,11 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   public void testPayloadCopy() throws IOException {
     String s = "how now brown cow";
     TokenStream ts;
-    ts = new WhitespaceTokenizer(new StringReader(s));
+    ts = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader(s));
     ts = new PayloadSetter(ts);
     verifyPayload(ts);
 
-    ts = new WhitespaceTokenizer(new StringReader(s));
+    ts = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader(s));
     ts = new PayloadSetter(ts);
     verifyPayload(ts);
   }
@@ -127,7 +127,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   
     @Override
     public TokenStream tokenStream(String field, Reader reader) {
-      return new WhitespaceAnalyzer().tokenStream(field, reader);
+      return new WhitespaceAnalyzer(Version.LUCENE_CURRENT).tokenStream(field, reader);
     }
   }
 
@@ -145,7 +145,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       return new LowerCaseFilter(Version.LUCENE_CURRENT,
-          new WhitespaceTokenizer(reader));
+          new WhitespaceTokenizer(Version.LUCENE_CURRENT, reader));
     }
     
   }
@@ -192,8 +192,8 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   public void testLowerCaseFilterLowSurrogateLeftover() throws IOException {
     // test if the limit of the termbuffer is correctly used with supplementary
     // chars
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(new StringReader(
-        "BogustermBogusterm\udc16"));
+    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(Version.LUCENE_CURRENT, 
+        new StringReader("BogustermBogusterm\udc16"));
     LowerCaseFilter filter = new LowerCaseFilter(Version.LUCENE_CURRENT,
         tokenizer);
     assertTokenStreamContents(filter, new String[] {"bogustermbogusterm\udc16"});

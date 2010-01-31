@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -66,7 +67,7 @@ public class TestTransactionRollback extends LuceneTestCase {
     if (last==null)
       throw new RuntimeException("Couldn't find commit point "+id);
 		
-    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(),
+    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT),
                                     new RollbackDeletionPolicy(id), MaxFieldLength.UNLIMITED, last);
     Map<String,String> data = new HashMap<String,String>();
     data.put("index", "Rolled back to 1-"+id);
@@ -128,7 +129,7 @@ public class TestTransactionRollback extends LuceneTestCase {
 		
     //Build index, of records 1 to 100, committing after each batch of 10
     IndexDeletionPolicy sdp=new KeepAllDeletionPolicy();
-    IndexWriter w=new IndexWriter(dir,new WhitespaceAnalyzer(),sdp,MaxFieldLength.UNLIMITED);
+    IndexWriter w=new IndexWriter(dir,new WhitespaceAnalyzer(Version.LUCENE_CURRENT),sdp,MaxFieldLength.UNLIMITED);
     for(int currentRecordId=1;currentRecordId<=100;currentRecordId++) {
       Document doc=new Document();
       doc.add(new Field(FIELD_RECORD_ID,""+currentRecordId,Field.Store.YES,Field.Index.ANALYZED));
@@ -196,7 +197,7 @@ public class TestTransactionRollback extends LuceneTestCase {
     for(int i=0;i<2;i++) {
       // Unless you specify a prior commit point, rollback
       // should not work:
-      new IndexWriter(dir,new WhitespaceAnalyzer(),
+      new IndexWriter(dir,new WhitespaceAnalyzer(Version.LUCENE_CURRENT),
                       new DeleteLastCommitPolicy(),
                       MaxFieldLength.UNLIMITED).close();
       IndexReader r = IndexReader.open(dir, true);

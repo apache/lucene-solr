@@ -26,6 +26,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 /**
  * Tests cloning multiple types of readers, modifying the deletedDocs and norms
@@ -197,7 +198,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
 
     TestIndexReaderReopen.createIndex(dir1, true);
     IndexReader reader1 = IndexReader.open(dir1, false);
-    IndexWriter w = new IndexWriter(dir1, new SimpleAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter w = new IndexWriter(dir1, new SimpleAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
     w.optimize();
     w.close();
     IndexReader reader2 = reader1.clone(true);
@@ -484,7 +485,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
 
   public void testCloseStoredFields() throws Exception {
     final Directory dir = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(dir, new SimpleAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter w = new IndexWriter(dir, new SimpleAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.UNLIMITED);
     w.setUseCompoundFile(false);
     Document doc = new Document();
     doc.add(new Field("field", "yes it's stored", Field.Store.YES, Field.Index.ANALYZED));

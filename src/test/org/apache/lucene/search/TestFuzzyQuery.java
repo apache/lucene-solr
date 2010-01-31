@@ -43,7 +43,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
   public void testFuzziness() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     addDoc("aaaaa", writer);
     addDoc("aaaab", writer);
     addDoc("aaabb", writer);
@@ -200,7 +200,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
   public void testFuzzinessLong() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     addDoc("aaaaaaa", writer);
     addDoc("segment", writer);
     writer.optimize();
@@ -288,7 +288,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   
   public void testTokenLengthOpt() throws IOException {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(),
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT),
         true, IndexWriter.MaxFieldLength.LIMITED);
     addDoc("12345678911", writer);
     addDoc("segment", writer);

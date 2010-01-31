@@ -41,6 +41,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 
 
@@ -395,7 +396,7 @@ public class TestPayloads extends LuceneTestCase {
         @Override
         public TokenStream tokenStream(String fieldName, Reader reader) {
             PayloadData payload =  fieldToData.get(fieldName);
-            TokenStream ts = new WhitespaceTokenizer(reader);
+            TokenStream ts = new WhitespaceTokenizer(Version.LUCENE_CURRENT, reader);
             if (payload != null) {
                 if (payload.numFieldInstancesToSkip == 0) {
                     ts = new PayloadFilter(ts, payload.data, payload.offset, payload.length);
@@ -468,7 +469,7 @@ public class TestPayloads extends LuceneTestCase {
         final ByteArrayPool pool = new ByteArrayPool(numThreads, 5);
         
         Directory dir = new RAMDirectory();
-        final IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+        final IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
         final String field = "test";
         
         Thread[] ingesters = new Thread[numThreads];

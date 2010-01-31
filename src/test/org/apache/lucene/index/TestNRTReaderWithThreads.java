@@ -25,6 +25,7 @@ import org.apache.lucene.index.TestIndexWriterReader.HeavyAtomicInt;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 public class TestNRTReaderWithThreads extends LuceneTestCase {
   Random random = new Random();
@@ -32,7 +33,7 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
 
   public void testIndexing() throws Exception {
     Directory mainDir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(mainDir, new WhitespaceAnalyzer(),
+    IndexWriter writer = new IndexWriter(mainDir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT),
         IndexWriter.MaxFieldLength.LIMITED);
     writer.setUseCompoundFile(false);
     IndexReader reader = writer.getReader(); // start pooling readers

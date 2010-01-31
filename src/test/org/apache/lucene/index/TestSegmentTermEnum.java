@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -37,7 +38,7 @@ public class TestSegmentTermEnum extends LuceneTestCase
   {
     IndexWriter writer = null;
 
-    writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
 
     // ADD 100 documents with term : aaa
     // add 100 documents with terms: aaa bbb
@@ -53,7 +54,7 @@ public class TestSegmentTermEnum extends LuceneTestCase
     verifyDocFreq();
 
     // merge segments by optimizing the index
-    writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
+    writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
     writer.optimize();
     writer.close();
 
@@ -64,7 +65,7 @@ public class TestSegmentTermEnum extends LuceneTestCase
   public void testPrevTermAtEnd() throws IOException
   {
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     addDoc(writer, "aaa bbb");
     writer.close();
     SegmentReader reader = SegmentReader.getOnlySegmentReader(dir);

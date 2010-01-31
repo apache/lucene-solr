@@ -52,7 +52,7 @@ public class TestExplanations extends LuceneTestCase {
   public static final String KEY = "KEY";
   public static final String FIELD = "field";
   public static final QueryParser qp =
-    new QueryParser(Version.LUCENE_CURRENT, FIELD, new WhitespaceAnalyzer());
+    new QueryParser(Version.LUCENE_CURRENT, FIELD, new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
 
   @Override
   public void tearDown() throws Exception {
@@ -64,7 +64,7 @@ public class TestExplanations extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer= new IndexWriter(directory, new WhitespaceAnalyzer(), true,
+    IndexWriter writer= new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true,
                                         IndexWriter.MaxFieldLength.LIMITED);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();

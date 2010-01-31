@@ -28,6 +28,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -46,7 +47,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase
 
     public void testPhrasePrefix() throws IOException {
         RAMDirectory indexStore = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
         add("blueberry pie", writer);
         add("blueberry strudel", writer);
         add("blueberry pizza", writer);
@@ -140,7 +141,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase
       // The contained PhraseMultiQuery must contain exactly one term array.
 
       RAMDirectory indexStore = new RAMDirectory();
-      IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
       add("blueberry pie", writer);
       add("blueberry chewing gum", writer);
       add("blue raspberry pie", writer);

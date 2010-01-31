@@ -43,7 +43,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     super.setUp();
     directory = new RAMDirectory();
     IndexWriter writer = new IndexWriter(directory,
-                                         new SimpleAnalyzer(),
+                                         new SimpleAnalyzer(Version.LUCENE_CURRENT),
                                          true, IndexWriter.MaxFieldLength.LIMITED);
 
     Document doc = new Document();
@@ -57,7 +57,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testPerFieldAnalyzer() throws Exception {
-    PerFieldAnalyzerWrapper analyzer = new PerFieldAnalyzerWrapper(new SimpleAnalyzer());
+    PerFieldAnalyzerWrapper analyzer = new PerFieldAnalyzerWrapper(new SimpleAnalyzer(Version.LUCENE_CURRENT));
     analyzer.addAnalyzer("partnum", new KeywordAnalyzer());
 
     QueryParser queryParser = new QueryParser(Version.LUCENE_CURRENT, "description", analyzer);

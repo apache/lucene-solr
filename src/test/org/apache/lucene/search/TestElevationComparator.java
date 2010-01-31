@@ -23,6 +23,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -35,7 +36,7 @@ public class TestElevationComparator extends LuceneTestCase {
   //@Test
   public void testSorting() throws Throwable {
     Directory directory = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setMaxBufferedDocs(2);
     writer.setMergeFactor(1000);
     writer.addDocument(adoc(new String[] {"id", "a", "title", "ipod", "str_s", "a"}));

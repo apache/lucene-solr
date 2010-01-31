@@ -21,6 +21,7 @@ import java.util.Random;
 import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
@@ -134,7 +135,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testRandomExceptions() throws Throwable {
     MockRAMDirectory dir = new MockRAMDirectory();
 
-    MockIndexWriter writer  = new MockIndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    MockIndexWriter writer  = new MockIndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     ((ConcurrentMergeScheduler) writer.getMergeScheduler()).setSuppressExceptions();
     //writer.setMaxBufferedDocs(10);
     writer.setRAMBufferSizeMB(0.1);
@@ -172,7 +173,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testRandomExceptionsThreads() throws Throwable {
 
     MockRAMDirectory dir = new MockRAMDirectory();
-    MockIndexWriter writer  = new MockIndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    MockIndexWriter writer  = new MockIndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     ((ConcurrentMergeScheduler) writer.getMergeScheduler()).setSuppressExceptions();
     //writer.setMaxBufferedDocs(10);
     writer.setRAMBufferSizeMB(0.2);

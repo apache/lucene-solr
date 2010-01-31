@@ -25,6 +25,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.util.English;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
 
@@ -50,7 +51,7 @@ public class PayloadHelper {
 
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new LowerCaseTokenizer(reader);
+      TokenStream result = new LowerCaseTokenizer(Version.LUCENE_CURRENT, reader);
       result = new PayloadFilter(result, fieldName);
       return result;
     }
