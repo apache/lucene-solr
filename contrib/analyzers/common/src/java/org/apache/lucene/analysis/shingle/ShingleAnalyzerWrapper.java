@@ -34,7 +34,9 @@ import org.apache.lucene.util.Version;
 public final class ShingleAnalyzerWrapper extends Analyzer {
 
   private final Analyzer defaultAnalyzer;
-  private int maxShingleSize = 2;
+  private int maxShingleSize = ShingleFilter.DEFAULT_MAX_SHINGLE_SIZE;
+  private int minShingleSize = ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE;
+  private String tokenSeparator = ShingleFilter.TOKEN_SEPARATOR;
   private boolean outputUnigrams = true;
 
   public ShingleAnalyzerWrapper(Analyzer defaultAnalyzer) {
@@ -44,7 +46,13 @@ public final class ShingleAnalyzerWrapper extends Analyzer {
 
   public ShingleAnalyzerWrapper(Analyzer defaultAnalyzer, int maxShingleSize) {
     this(defaultAnalyzer);
-    this.maxShingleSize = maxShingleSize;
+    setMaxShingleSize(maxShingleSize);
+  }
+
+  public ShingleAnalyzerWrapper(Analyzer defaultAnalyzer, int minShingleSize, int maxShingleSize) {
+    this(defaultAnalyzer);
+    setMaxShingleSize(maxShingleSize);
+    setMinShingleSize(minShingleSize);
   }
 
   /**
@@ -58,29 +66,73 @@ public final class ShingleAnalyzerWrapper extends Analyzer {
   /**
    * Wraps {@link StandardAnalyzer}. 
    */
-  public ShingleAnalyzerWrapper(Version matchVersion, int nGramSize) {
+  public ShingleAnalyzerWrapper(Version matchVersion, int minShingleSize, int maxShingleSize) {
     this(matchVersion);
-    this.maxShingleSize = nGramSize;
+    setMaxShingleSize(maxShingleSize);
+    setMinShingleSize(minShingleSize);
   }
 
   /**
-   * The max shingle (ngram) size
+   * The max shingle (token ngram) size
    * 
-   * @return The max shingle (ngram) size
+   * @return The max shingle (token ngram) size
    */
   public int getMaxShingleSize() {
     return maxShingleSize;
   }
 
   /**
-   * Set the maximum size of output shingles
-   * 
+   * Set the maximum size of output shingles (default: 2)
+   *
    * @param maxShingleSize max shingle size
    */
   public void setMaxShingleSize(int maxShingleSize) {
+    if (maxShingleSize < 2) {
+      throw new IllegalArgumentException("Max shingle size must be >= 2");
+    }
     this.maxShingleSize = maxShingleSize;
   }
 
+  /**
+   * The min shingle (token ngram) size
+   * 
+   * @return The min shingle (token ngram) size
+   */
+  public int getMinShingleSize() {
+    return minShingleSize;
+  }
+
+  /**
+   * <p>Set the min shingle size (default: 2).
+   * <p>This method requires that the passed in minShingleSize is not greater
+   * than maxShingleSize, so make sure that maxShingleSize is set before
+   * calling this method.
+   *
+   * @param minShingleSize min size of output shingles
+   */
+  public void setMinShingleSize(int minShingleSize) {
+    if (minShingleSize < 2) {
+      throw new IllegalArgumentException("Min shingle size must be >= 2");
+    }
+    if (minShingleSize > maxShingleSize) {
+      throw new IllegalArgumentException
+        ("Min shingle size must be <= max shingle size");
+    }
+    this.minShingleSize = minShingleSize;
+  }
+
+  public String getTokenSeparator() {
+    return tokenSeparator;
+  }
+
+  /**
+   * Sets the string to use when joining adjacent tokens to form a shingle
+   * @param tokenSeparator used to separate input stream tokens in output shingles
+   */
+  public void setTokenSeparator(String tokenSeparator) {
+    this.tokenSeparator = (tokenSeparator == null ? "" : tokenSeparator);
+  }
+  
   public boolean isOutputUnigrams() {
     return outputUnigrams;
   }
@@ -104,8 +156,10 @@ public final class ShingleAnalyzerWrapper extends Analyzer {
     } catch (IOException e) {
       wrapped = defaultAnalyzer.tokenStream(fieldName, reader);
     }
-    ShingleFilter filter = new ShingleFilter(wrapped);
+    ShingleFilter filter = new ShingleFilter(wrapped, minShingleSize, maxShingleSize);
+    filter.setMinShingleSize(minShingleSize);
     filter.setMaxShingleSize(maxShingleSize);
+    filter.setTokenSeparator(tokenSeparator);
     filter.setOutputUnigrams(outputUnigrams);
     return filter;
   }
@@ -113,7 +167,7 @@ public final class ShingleAnalyzerWrapper extends Analyzer {
   private class SavedStreams {
     TokenStream wrapped;
     ShingleFilter shingle;
-  };
+  }
   
   @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
@@ -135,6 +189,8 @@ public final class ShingleAnalyzerWrapper extends Analyzer {
       }
     }
     streams.shingle.setMaxShingleSize(maxShingleSize);
+    streams.shingle.setMinShingleSize(minShingleSize);
+    streams.shingle.setTokenSeparator(tokenSeparator);
     streams.shingle.setOutputUnigrams(outputUnigrams);
     return streams.shingle;
   }

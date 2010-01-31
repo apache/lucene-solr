@@ -99,6 +99,10 @@ New features
  * LUCENE-2243: Add DisjunctionMaxQuery support for FastVectorHighlighter.
    (Koji Sekiguchi)
 
+ * LUCENE-2218: ShingleFilter supports minimum shingle size, and the separator
+   character is now configurable. Its also up to 20% faster. 
+   (Steven Rowe via Robert Muir)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
