@@ -215,7 +215,7 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
   public void testWithKeywordAttribute() throws IOException {
     CharArraySet set = new CharArraySet(Version.LUCENE_31, 1, true);
     set.add("строеве");
-    WhitespaceTokenizer tokenStream = new WhitespaceTokenizer(
+    WhitespaceTokenizer tokenStream = new WhitespaceTokenizer(Version.LUCENE_CURRENT, 
         new StringReader("строевете строеве"));
 
     BulgarianStemFilter filter = new BulgarianStemFilter(

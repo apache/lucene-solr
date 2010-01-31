@@ -118,14 +118,14 @@ public class TestArabicStemFilter extends BaseTokenStreamTestCase {
   public void testWithKeywordAttribute() throws IOException {
     CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
     set.add("ساهدهات");
-    ArabicLetterTokenizer tokenStream  = new ArabicLetterTokenizer(new StringReader("ساهدهات"));
+    ArabicLetterTokenizer tokenStream  = new ArabicLetterTokenizer(Version.LUCENE_CURRENT, new StringReader("ساهدهات"));
 
     ArabicStemFilter filter = new ArabicStemFilter(new KeywordMarkerTokenFilter(tokenStream, set));
     assertTokenStreamContents(filter, new String[]{"ساهدهات"});
   }
 
   private void check(final String input, final String expected) throws IOException {
-    ArabicLetterTokenizer tokenStream  = new ArabicLetterTokenizer(new StringReader(input));
+    ArabicLetterTokenizer tokenStream  = new ArabicLetterTokenizer(Version.LUCENE_CURRENT, new StringReader(input));
     ArabicStemFilter filter = new ArabicStemFilter(tokenStream);
     assertTokenStreamContents(filter, new String[]{expected});
   }

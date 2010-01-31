@@ -174,7 +174,7 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    final Tokenizer source = new ArabicLetterTokenizer(reader);
+    final Tokenizer source = new ArabicLetterTokenizer(matchVersion, reader);
     TokenStream result = new LowerCaseFilter(matchVersion, source);
     // the order here is important: the stopword list is not normalized!
     result = new StopFilter( matchVersion, result, stopwords);

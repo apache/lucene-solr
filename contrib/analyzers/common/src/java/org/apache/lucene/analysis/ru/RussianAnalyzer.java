@@ -139,7 +139,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
     @Override
     protected TokenStreamComponents createComponents(String fieldName,
         Reader reader) {
-      final Tokenizer source = new RussianLetterTokenizer(reader);
+      final Tokenizer source = new RussianLetterTokenizer(matchVersion, reader);
       TokenStream result = new LowerCaseFilter(matchVersion, source);
       result = new StopFilter(matchVersion, result, stopwords);
       if(!stemExclusionSet.isEmpty())

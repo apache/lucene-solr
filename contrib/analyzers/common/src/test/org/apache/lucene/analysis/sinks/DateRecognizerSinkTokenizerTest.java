@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TeeSinkTokenFilter;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.TeeSinkTokenFilter.SinkTokenStream;
+import org.apache.lucene.util.Version;
 
 public class DateRecognizerSinkTokenizerTest extends BaseTokenStreamTestCase {
 
@@ -36,7 +37,7 @@ public class DateRecognizerSinkTokenizerTest extends BaseTokenStreamTestCase {
   public void test() throws IOException {
     DateRecognizerSinkFilter sinkFilter = new DateRecognizerSinkFilter(new SimpleDateFormat("MM/dd/yyyy", Locale.US));
     String test = "The quick red fox jumped over the lazy brown dogs on 7/11/2006  The dogs finally reacted on 7/12/2006";
-    TeeSinkTokenFilter tee = new TeeSinkTokenFilter(new WhitespaceTokenizer(new StringReader(test)));
+    TeeSinkTokenFilter tee = new TeeSinkTokenFilter(new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader(test)));
     SinkTokenStream sink = tee.newSinkTokenStream(sinkFilter);
     int count = 0;
     

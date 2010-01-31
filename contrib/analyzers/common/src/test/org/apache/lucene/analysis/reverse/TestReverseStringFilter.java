@@ -27,9 +27,9 @@ import org.apache.lucene.util.Version;
 
 public class TestReverseStringFilter extends BaseTokenStreamTestCase {
   public void testFilter() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(
+    TokenStream stream = new WhitespaceTokenizer(Version.LUCENE_CURRENT, 
         new StringReader("Do have a nice day"));     // 1-4 length string
-    ReverseStringFilter filter = new ReverseStringFilter(stream);
+    ReverseStringFilter filter = new ReverseStringFilter(Version.LUCENE_CURRENT, stream);
     TermAttribute text = filter.getAttribute(TermAttribute.class);
     assertTrue(filter.incrementToken());
     assertEquals("oD", text.term());
@@ -45,9 +45,9 @@ public class TestReverseStringFilter extends BaseTokenStreamTestCase {
   }
   
   public void testFilterWithMark() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(new StringReader(
+    TokenStream stream = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader(
         "Do have a nice day")); // 1-4 length string
-    ReverseStringFilter filter = new ReverseStringFilter(stream, '\u0001');
+    ReverseStringFilter filter = new ReverseStringFilter(Version.LUCENE_CURRENT, stream, '\u0001');
     TermAttribute text = filter
         .getAttribute(TermAttribute.class);
     assertTrue(filter.incrementToken());

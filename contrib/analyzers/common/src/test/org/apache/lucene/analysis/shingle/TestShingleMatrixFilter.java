@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.payloads.PayloadHelper;
 import org.apache.lucene.analysis.shingle.ShingleMatrixFilter.Matrix;
 import org.apache.lucene.analysis.shingle.ShingleMatrixFilter.Matrix.Column;
 import org.apache.lucene.analysis.tokenattributes.*;
+import org.apache.lucene.util.Version;
 
 public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
@@ -43,7 +44,7 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
   public void testIterator() throws IOException {
 
-    WhitespaceTokenizer wst = new WhitespaceTokenizer(new StringReader("one two three four five"));
+    WhitespaceTokenizer wst = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader("one two three four five"));
     ShingleMatrixFilter smf = new ShingleMatrixFilter(wst, 2, 2, '_', false, new ShingleMatrixFilter.OneDimensionalNonWeightedTokenSettingsCodec());
 
     int i;

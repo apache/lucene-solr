@@ -66,7 +66,7 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
         TokenStream in = ra.tokenStream("all", inWords);
 
         RussianLetterTokenizer sample =
-            new RussianLetterTokenizer(
+            new RussianLetterTokenizer(Version.LUCENE_CURRENT,
                 sampleUnicode);
 
         TermAttribute text = in.getAttribute(TermAttribute.class);

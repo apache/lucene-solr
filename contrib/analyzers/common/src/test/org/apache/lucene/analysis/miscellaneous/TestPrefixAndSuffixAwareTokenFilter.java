@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.miscellaneous;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -30,7 +31,7 @@ public class TestPrefixAndSuffixAwareTokenFilter extends BaseTokenStreamTestCase
 
     PrefixAndSuffixAwareTokenFilter ts = new PrefixAndSuffixAwareTokenFilter(
         new SingleTokenTokenStream(createToken("^", 0, 0)),
-        new WhitespaceTokenizer(new StringReader("hello world")),
+        new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader("hello world")),
         new SingleTokenTokenStream(createToken("$", 0, 0)));
 
     assertTokenStreamContents(ts,

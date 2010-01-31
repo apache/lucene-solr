@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.ngram;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.util.Version;
 
 import java.io.StringReader;
 
@@ -32,7 +33,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    input = new WhitespaceTokenizer(new StringReader("abcde"));
+    input = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader("abcde"));
   }
 
   public void testInvalidInput() throws Exception {
@@ -91,13 +92,13 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   }
   
   public void testSmallTokenInStream() throws Exception {
-    input = new WhitespaceTokenizer(new StringReader("abc de fgh"));
+    input = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader("abc de fgh"));
     EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.FRONT, 3, 3);
     assertTokenStreamContents(tokenizer, new String[]{"abc","fgh"}, new int[]{0,0}, new int[]{3,3});
   }
   
   public void testReset() throws Exception {
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(new StringReader("abcde"));
+    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader("abcde"));
     EdgeNGramTokenFilter filter = new EdgeNGramTokenFilter(tokenizer, EdgeNGramTokenFilter.Side.FRONT, 1, 3);
     assertTokenStreamContents(filter, new String[]{"a","ab","abc"}, new int[]{0,0,0}, new int[]{1,2,3});
     tokenizer.reset(new StringReader("abcde"));

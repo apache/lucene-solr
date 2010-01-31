@@ -147,7 +147,7 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    final Tokenizer source = new ArabicLetterTokenizer(reader);
+    final Tokenizer source = new ArabicLetterTokenizer(matchVersion, reader);
     TokenStream result = new LowerCaseFilter(matchVersion, source);
     result = new ArabicNormalizationFilter(result);
     /* additional persian-specific normalization */

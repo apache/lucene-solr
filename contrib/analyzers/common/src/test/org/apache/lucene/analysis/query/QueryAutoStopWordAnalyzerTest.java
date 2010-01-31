@@ -51,7 +51,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     dir = new RAMDirectory();
-    appAnalyzer = new WhitespaceAnalyzer();
+    appAnalyzer = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
     IndexWriter writer = new IndexWriter(dir, appAnalyzer, true, IndexWriter.MaxFieldLength.UNLIMITED);
     int numDocs = 200;
     for (int i = 0; i < numDocs; i++) {
@@ -157,9 +157,9 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       if (++invocationCount % 2 == 0)
-        return new WhitespaceTokenizer(reader);
+        return new WhitespaceTokenizer(Version.LUCENE_CURRENT, reader);
       else
-        return new LetterTokenizer(reader);
+        return new LetterTokenizer(Version.LUCENE_CURRENT, reader);
     }
   }
   
@@ -173,7 +173,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
   }
   
   public void testTokenStream() throws Exception {
-    QueryAutoStopWordAnalyzer a = new QueryAutoStopWordAnalyzer(Version.LUCENE_CURRENT, new WhitespaceAnalyzer());
+    QueryAutoStopWordAnalyzer a = new QueryAutoStopWordAnalyzer(Version.LUCENE_CURRENT, new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
     a.addStopWords(reader, 10);
     TokenStream ts = a.tokenStream("repetitiveField", new StringReader("this boring"));
     TermAttribute termAtt = ts.getAttribute(TermAttribute.class);

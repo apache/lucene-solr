@@ -279,7 +279,7 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
     CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
     set.add("hole");
     CzechStemFilter filter = new CzechStemFilter(new KeywordMarkerTokenFilter(
-        new WhitespaceTokenizer(new StringReader("hole desek")), set));
+        new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader("hole desek")), set));
     assertTokenStreamContents(filter, new String[] { "hole", "desk" });
   }
   

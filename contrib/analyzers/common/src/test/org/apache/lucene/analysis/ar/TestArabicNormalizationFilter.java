@@ -22,6 +22,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.util.Version;
 
 /**
  * Test the Arabic Normalization Filter
@@ -86,7 +87,7 @@ public class TestArabicNormalizationFilter extends BaseTokenStreamTestCase {
   }  
   
   private void check(final String input, final String expected) throws IOException {
-    ArabicLetterTokenizer tokenStream = new ArabicLetterTokenizer(new StringReader(input));
+    ArabicLetterTokenizer tokenStream = new ArabicLetterTokenizer(Version.LUCENE_CURRENT, new StringReader(input));
     ArabicNormalizationFilter filter = new ArabicNormalizationFilter(tokenStream);
     assertTokenStreamContents(filter, new String[]{expected});
   }

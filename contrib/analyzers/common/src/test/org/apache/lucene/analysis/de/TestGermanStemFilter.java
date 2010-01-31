@@ -70,7 +70,7 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
   }
   
   public void testExclusionTableBWCompat() throws IOException {
-    GermanStemFilter filter = new GermanStemFilter(new LowerCaseTokenizer(
+    GermanStemFilter filter = new GermanStemFilter(new LowerCaseTokenizer(Version.LUCENE_CURRENT, 
         new StringReader("Fischen Trinken")));
     CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
     set.add("fischen");
@@ -82,7 +82,7 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
     CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
     set.add("fischen");
     GermanStemFilter filter = new GermanStemFilter(
-        new KeywordMarkerTokenFilter(new LowerCaseTokenizer(new StringReader(
+        new KeywordMarkerTokenFilter(new LowerCaseTokenizer(Version.LUCENE_CURRENT, new StringReader( 
             "Fischen Trinken")), set));
     assertTokenStreamContents(filter, new String[] { "fischen", "trink" });
   }
@@ -94,7 +94,7 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
     set1.add("trinken");
     set1.add("fischen");
     GermanStemFilter filter = new GermanStemFilter(
-        new KeywordMarkerTokenFilter(new LowerCaseTokenizer(new StringReader(
+        new KeywordMarkerTokenFilter(new LowerCaseTokenizer(Version.LUCENE_CURRENT, new StringReader(
             "Fischen Trinken")), set));
     filter.setExclusionSet(set1);
     assertTokenStreamContents(filter, new String[] { "fischen", "trinken" });

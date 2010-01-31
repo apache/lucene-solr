@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.Payload;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -35,7 +36,7 @@ public class TokenOffsetPayloadTokenFilterTest extends BaseTokenStreamTestCase {
   public void test() throws IOException {
     String test = "The quick red fox jumped over the lazy brown dogs";
 
-    TokenOffsetPayloadTokenFilter nptf = new TokenOffsetPayloadTokenFilter(new WhitespaceTokenizer(new StringReader(test)));
+    TokenOffsetPayloadTokenFilter nptf = new TokenOffsetPayloadTokenFilter(new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader(test)));
     int count = 0;
     PayloadAttribute payloadAtt = nptf.getAttribute(PayloadAttribute.class);
     OffsetAttribute offsetAtt = nptf.getAttribute(OffsetAttribute.class);

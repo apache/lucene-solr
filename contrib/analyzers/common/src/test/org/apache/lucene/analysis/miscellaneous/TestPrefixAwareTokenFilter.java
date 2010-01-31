@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.miscellaneous;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -40,7 +41,8 @@ public class TestPrefixAwareTokenFilter extends BaseTokenStreamTestCase {
 
     // prefix and suffix using 2x prefix
 
-    ts = new PrefixAwareTokenFilter(new SingleTokenTokenStream(createToken("^", 0, 0)), new WhitespaceTokenizer(new StringReader("hello world")));
+    ts = new PrefixAwareTokenFilter(new SingleTokenTokenStream(createToken("^", 0, 0)),
+        new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader("hello world")));
     ts = new PrefixAwareTokenFilter(ts, new SingleTokenTokenStream(createToken("$", 0, 0)));
 
     assertTokenStreamContents(ts,

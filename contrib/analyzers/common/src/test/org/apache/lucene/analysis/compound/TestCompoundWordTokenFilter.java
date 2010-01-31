@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.util.Version;
 
 public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   static final File dataDir = new File(System.getProperty("dataDir", "./bin"));
@@ -46,8 +47,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter
         .getHyphenationTree(reader);
 
-    HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(
-        new WhitespaceTokenizer(new StringReader(
+    HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(Version.LUCENE_CURRENT, 
+        new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader(
             "min veninde som er lidt af en læsehest")), hyphenator,
         dict, CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
@@ -66,8 +67,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         .getHyphenationTree(reader);
 
     // the word basket will not be added due to the longest match option
-    HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(
-        new WhitespaceTokenizer(new StringReader(
+    HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(Version.LUCENE_CURRENT, 
+        new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader(
             "basketballkurv")), hyphenator, dict,
         CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE, 40, true);
@@ -83,8 +84,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         "Pelar", "Glas", "Ögon", "Fodral", "Bas", "Fiol", "Makare", "Gesäll",
         "Sko", "Vind", "Rute", "Torkare", "Blad" };
 
-    DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(
-        new WhitespaceTokenizer(
+    DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(Version.LUCENE_CURRENT, 
+        new WhitespaceTokenizer(Version.LUCENE_CURRENT, 
             new StringReader(
                 "Bildörr Bilmotor Biltak Slagborr Hammarborr Pelarborr Glasögonfodral Basfiolsfodral Basfiolsfodralmakaregesäll Skomakare Vindrutetorkare Vindrutetorkarblad abba")),
         dict);
@@ -112,8 +113,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         "Pelar", "Glas", "Ögon", "Fodral", "Bas", "Fiols", "Makare", "Gesäll",
         "Sko", "Vind", "Rute", "Torkare", "Blad", "Fiolsfodral" };
 
-    DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(
-        new WhitespaceTokenizer(new StringReader("Basfiolsfodralmakaregesäll")),
+    DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(Version.LUCENE_CURRENT, 
+        new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader("Basfiolsfodralmakaregesäll")),
         dict, CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, true);
@@ -128,9 +129,9 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     String[] dict = { "Rind", "Fleisch", "Draht", "Schere", "Gesetz",
         "Aufgabe", "Überwachung" };
 
-    Tokenizer wsTokenizer = new WhitespaceTokenizer(new StringReader(
+    Tokenizer wsTokenizer = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader(
         "Rindfleischüberwachungsgesetz"));
-    DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(
+    DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(Version.LUCENE_CURRENT, 
         wsTokenizer, dict,
         CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,

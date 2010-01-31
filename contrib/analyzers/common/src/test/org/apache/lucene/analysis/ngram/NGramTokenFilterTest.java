@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.ngram;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -33,7 +34,7 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
     @Override
     public void setUp() throws Exception {
         super.setUp();
-        input = new WhitespaceTokenizer(new StringReader("abcde"));
+        input = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader("abcde"));
     }
 
     public void testInvalidInput() throws Exception {
@@ -81,13 +82,13 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
     }
     
     public void testSmallTokenInStream() throws Exception {
-      input = new WhitespaceTokenizer(new StringReader("abc de fgh"));
+      input = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader("abc de fgh"));
       NGramTokenFilter filter = new NGramTokenFilter(input, 3, 3);
       assertTokenStreamContents(filter, new String[]{"abc","fgh"}, new int[]{0,0}, new int[]{3,3});
     }
     
     public void testReset() throws Exception {
-      WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(new StringReader("abcde"));
+      WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader("abcde"));
       NGramTokenFilter filter = new NGramTokenFilter(tokenizer, 1, 1);
       assertTokenStreamContents(filter, new String[]{"a","b","c","d","e"}, new int[]{0,1,2,3,4}, new int[]{1,2,3,4,5});
       tokenizer.reset(new StringReader("abcde"));

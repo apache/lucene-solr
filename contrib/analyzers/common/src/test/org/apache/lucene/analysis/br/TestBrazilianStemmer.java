@@ -145,7 +145,7 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
     CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
     set.add("Brasília");
     BrazilianStemFilter filter = new BrazilianStemFilter(
-        new LowerCaseTokenizer(new StringReader("Brasília Brasilia")), set);
+        new LowerCaseTokenizer(Version.LUCENE_CURRENT, new StringReader("Brasília Brasilia")), set);
     assertTokenStreamContents(filter, new String[] { "brasília", "brasil" });
   }
 
@@ -153,7 +153,7 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
     CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
     set.add("Brasília");
     BrazilianStemFilter filter = new BrazilianStemFilter(
-        new KeywordMarkerTokenFilter(new LowerCaseTokenizer(new StringReader(
+        new KeywordMarkerTokenFilter(new LowerCaseTokenizer(Version.LUCENE_CURRENT, new StringReader(
             "Brasília Brasilia")), set));
     assertTokenStreamContents(filter, new String[] { "brasília", "brasil" });
   }
@@ -164,7 +164,7 @@ public class TestBrazilianStemmer extends BaseTokenStreamTestCase {
     CharArraySet set1 = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
     set1.add("Brasilia");
     BrazilianStemFilter filter = new BrazilianStemFilter(
-        new KeywordMarkerTokenFilter(new LowerCaseTokenizer(new StringReader(
+        new KeywordMarkerTokenFilter(new LowerCaseTokenizer(Version.LUCENE_CURRENT, new StringReader(
             "Brasília Brasilia")), set), set1);
     assertTokenStreamContents(filter, new String[] { "brasília", "brasilia" });
   }

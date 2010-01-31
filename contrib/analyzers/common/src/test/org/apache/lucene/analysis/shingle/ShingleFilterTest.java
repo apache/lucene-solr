@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.*;
+import org.apache.lucene.util.Version;
 
 public class ShingleFilterTest extends BaseTokenStreamTestCase {
 
@@ -835,7 +836,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
   
   
   public void testReset() throws Exception {
-    Tokenizer wsTokenizer = new WhitespaceTokenizer(new StringReader("please divide this sentence"));
+    Tokenizer wsTokenizer = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader("please divide this sentence"));
     TokenStream filter = new ShingleFilter(wsTokenizer, 2);
     assertTokenStreamContents(filter,
       new String[]{"please","please divide","divide","divide this","this","this sentence","sentence"},

@@ -106,7 +106,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    */
   public void testShingleAnalyzerWrapperQueryParsing() throws Exception {
     ScoreDoc[] hits = queryParsingTest(new ShingleAnalyzerWrapper
-                                     (new WhitespaceAnalyzer(), 2),
+                                     (new WhitespaceAnalyzer(Version.LUCENE_CURRENT), 2),
                                  "test sentence");
     int[] ranks = new int[] { 1, 2, 0 };
     compareRanks(hits, ranks);
@@ -117,7 +117,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    */
   public void testShingleAnalyzerWrapperPhraseQueryParsingFails() throws Exception {
     ScoreDoc[] hits = queryParsingTest(new ShingleAnalyzerWrapper
-                                     (new WhitespaceAnalyzer(), 2),
+                                     (new WhitespaceAnalyzer(Version.LUCENE_CURRENT), 2),
                                  "\"this sentence\"");
     int[] ranks = new int[] { 0 };
     compareRanks(hits, ranks);
@@ -128,7 +128,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    */
   public void testShingleAnalyzerWrapperPhraseQueryParsing() throws Exception {
     ScoreDoc[] hits = queryParsingTest(new ShingleAnalyzerWrapper
-                                     (new WhitespaceAnalyzer(), 2),
+                                     (new WhitespaceAnalyzer(Version.LUCENE_CURRENT), 2),
                                  "\"test sentence\"");
     int[] ranks = new int[] { 1 };
     compareRanks(hits, ranks);
@@ -139,7 +139,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    */
   public void testShingleAnalyzerWrapperRequiredQueryParsing() throws Exception {
     ScoreDoc[] hits = queryParsingTest(new ShingleAnalyzerWrapper
-                                     (new WhitespaceAnalyzer(), 2),
+                                     (new WhitespaceAnalyzer(Version.LUCENE_CURRENT), 2),
                                  "+test +sentence");
     int[] ranks = new int[] { 1, 2 };
     compareRanks(hits, ranks);
@@ -149,7 +149,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    * This shows how to construct a phrase query containing shingles.
    */
   public void testShingleAnalyzerWrapperPhraseQuery() throws Exception {
-    Analyzer analyzer = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(), 2);
+    Analyzer analyzer = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(Version.LUCENE_CURRENT), 2);
     searcher = setUpSearcher(analyzer);
 
     PhraseQuery q = new PhraseQuery();
@@ -178,7 +178,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    * in the right order and adjacent to each other.
    */
   public void testShingleAnalyzerWrapperBooleanQuery() throws Exception {
-    Analyzer analyzer = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(), 2);
+    Analyzer analyzer = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(Version.LUCENE_CURRENT), 2);
     searcher = setUpSearcher(analyzer);
 
     BooleanQuery q = new BooleanQuery();
@@ -200,7 +200,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
   }
   
   public void testReusableTokenStream() throws Exception {
-    Analyzer a = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(), 2);
+    Analyzer a = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(Version.LUCENE_CURRENT), 2);
     assertAnalyzesToReuse(a, "please divide into shingles",
         new String[] { "please", "please divide", "divide", "divide into", "into", "into shingles", "shingles" },
         new int[] { 0, 0, 7, 7, 14, 14, 19 },
@@ -222,9 +222,9 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       if (++invocationCount % 2 == 0)
-        return new WhitespaceTokenizer(reader);
+        return new WhitespaceTokenizer(Version.LUCENE_CURRENT, reader);
       else
-        return new LetterTokenizer(reader);
+        return new LetterTokenizer(Version.LUCENE_CURRENT, reader);
     }
   }
   
