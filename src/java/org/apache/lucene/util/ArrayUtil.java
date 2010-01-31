@@ -23,6 +23,16 @@ package org.apache.lucene.util;
  * @lucene.internal
  */
 public final class ArrayUtil {
+
+  /**
+   * @deprecated This constructor was not intended to be public and should not be used.
+   *  This class contains solely a static utility methods.
+   *  It will be made private in Lucene 4.0
+   */
+  // make private in 4.0!
+  @Deprecated
+  public ArrayUtil() {} // no instance
+
   /*
      Begin Apache Harmony code
 
