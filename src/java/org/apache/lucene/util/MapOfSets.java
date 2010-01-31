@@ -25,6 +25,7 @@ import java.util.Map;
 
 /**
  * Helper class for keeping Lists of Objects associated with keys. <b>WARNING: THIS CLASS IS NOT THREAD SAFE</b>
+ * @lucene.internal
  */
 public class MapOfSets<K, V> {
 

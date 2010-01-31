@@ -36,8 +36,7 @@ import java.util.*;
  * Wikipedia tutorial available at http://en.wikipedia.org/wiki/Wikipedia:Tutorial, but it may not be complete.
  * <p/>
  * <p/>
- * EXPERIMENTAL !!!!!!!!!
- * NOTE: This Tokenizer is considered experimental and the grammar is subject to change in the trunk and in follow up releases.
+ * @lucene.experimental
  */
 public final class WikipediaTokenizer extends Tokenizer {
   public static final String INTERNAL_LINK = "il";

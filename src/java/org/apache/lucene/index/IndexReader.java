@@ -1053,8 +1053,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * readers that correspond to a Directory with its own
    * segments_N file.
    *
-   * <p><b>WARNING</b>: this API is new and experimental and
-   * may suddenly change.</p>
+   * @lucene.experimental
    */
   public IndexCommit getIndexCommit() throws IOException {
     throw new UnsupportedOperationException("This reader does not support this method.");

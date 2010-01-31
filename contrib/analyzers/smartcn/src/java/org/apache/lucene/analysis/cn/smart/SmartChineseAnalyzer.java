@@ -52,11 +52,7 @@ import org.apache.lucene.util.Version;
  * The included dictionary data is from <a href="http://www.ictclas.org">ICTCLAS1.0</a>.
  * Thanks to ICTCLAS for their hard work, and for contributing the data under the Apache 2 License!
  * </p>
- * <p><font color="#FF0000">
- * WARNING: The status of the analyzers/smartcn <b>analysis.cn.smart</b> package is experimental. 
- * The APIs and file formats introduced here might change in the future and will not be 
- * supported anymore in such a case.</font>
- * </p>
+ * @lucene.experimental
  */
 public final class SmartChineseAnalyzer extends Analyzer {
 

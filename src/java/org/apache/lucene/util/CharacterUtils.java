@@ -24,6 +24,8 @@ import java.io.Reader;
  * {@link CharacterUtils} provides a unified interface to Character-related
  * operations to implement backwards compatible character operations based on a
  * {@link Version} instance.
+ * 
+ * @lucene.internal
  */
 public abstract class CharacterUtils {
   private static final Java4CharacterUtils JAVA_4 = new Java4CharacterUtils();

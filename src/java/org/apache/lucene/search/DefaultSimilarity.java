@@ -29,8 +29,7 @@ public class DefaultSimilarity extends Similarity {
    *  FieldInvertState#getLength()} - {@link
    *  FieldInvertState#getNumOverlap()}.
    *
-   *  <p><b>WARNING</b>: This API is new and experimental, and may suddenly
-   *  change.</p> */
+   *  @lucene.experimental */
   @Override
   public float computeNorm(String field, FieldInvertState state) {
     final int numTerms;
@@ -85,8 +84,7 @@ public class DefaultSimilarity extends Similarity {
    *  norm.  By default this is false, meaning overlap
    *  tokens are counted just like non-overlap tokens.
    *
-   *  <p><b>WARNING</b>: This API is new and experimental, and may suddenly
-   *  change.</p>
+   *  @lucene.experimental
    *
    *  @see #computeNorm
    */

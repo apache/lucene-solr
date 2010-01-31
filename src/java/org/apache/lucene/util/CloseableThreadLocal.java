@@ -48,6 +48,8 @@ import java.util.Map;
  *  {@link #close} takes care of all
  *  threads.  You should not call {@link #close} until all
  *  threads are done using the instance.
+ *
+ * @lucene.internal
  */
 
 public class CloseableThreadLocal<T> implements Closeable {

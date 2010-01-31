@@ -27,6 +27,8 @@ import java.util.Map;
  *
  * @deprecated Lucene's internal use of this class has now
  * switched to {@link DoubleBarrelLRUCache}.
+ *
+ * @lucene.internal
  */
 @Deprecated
 public class SimpleLRUCache<K,V> extends SimpleMapCache<K,V> {

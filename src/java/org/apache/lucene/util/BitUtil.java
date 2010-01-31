@@ -18,6 +18,7 @@
 package org.apache.lucene.util; // from org.apache.solr.util rev 555343
 
 /**  A variety of high efficiency bit twiddling routines.
+ * @lucene.internal
  */
 public class BitUtil {
 

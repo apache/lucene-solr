@@ -41,8 +41,7 @@ import org.apache.lucene.store.FSDirectory;
  * File{In,Out}putStream) so it will not work with non
  * FSDirectory Directory impls.</p>
  *
- * <p><b>NOTE</b>: The tool is experimental and might change
- * in incompatible ways in the next release.  You can easily
+ * @lucene.experimental You can easily
  * accidentally remove segments from your index so be
  * careful!
  */

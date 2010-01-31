@@ -33,6 +33,8 @@ import java.util.*;
  * If checkInterned, all Strings checked will be interned, but those
  * that were not already interned will be released for GC when the
  * estimate is complete.
+ * 
+ * @lucene.internal
  */
 public final class RamUsageEstimator {
   private MemoryModel memoryModel;

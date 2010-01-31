@@ -42,10 +42,7 @@ import org.apache.lucene.util.ToStringUtils;
  * </ol>
  * Subclasses can modify the computation by overriding {@link #customScore(int, float, float)}.
  * 
- * <p><font color="#FF0000">
- * WARNING: The status of the <b>search.function</b> package is experimental. 
- * The APIs introduced here might change in the future and will not be 
- * supported anymore in such a case.</font>
+ * @lucene.experimental
  */
 public class CustomScoreQuery extends Query {
 

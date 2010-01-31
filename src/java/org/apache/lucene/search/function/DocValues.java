@@ -25,10 +25,7 @@ import org.apache.lucene.search.Explanation;
  * {@link org.apache.lucene.search.function.ValueSource ValueSuorce} 
  * for a particular field and reader.
  *
- * <p><font color="#FF0000">
- * WARNING: The status of the <b>search.function</b> package is experimental. 
- * The APIs introduced here might change in the future and will not be 
- * supported anymore in such a case.</font>
+ * @lucene.experimental
  * 
  *
  */

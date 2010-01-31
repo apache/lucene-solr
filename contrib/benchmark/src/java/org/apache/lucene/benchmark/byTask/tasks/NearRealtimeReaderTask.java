@@ -29,8 +29,7 @@ import org.apache.lucene.util.ArrayUtil;
  * single query (body: 1) sorted by docdate, and prints
  * time to reopen and time to run the search.
  *
- * <b>NOTE</b>: this is very experimental at this point, and
- * subject to change.  It's also not generally usable, eg
+ * @lucene.experimental It's also not generally usable, eg
  * you cannot change which query is executed.
  */
 public class NearRealtimeReaderTask extends PerfTask {

@@ -27,12 +27,7 @@ import java.util.Properties;
  * <p>
  * SmartChineseAnalyzer has a built-in dictionary and stopword list out-of-box.
  * </p>
- * <p><font color="#FF0000">
- * WARNING: The status of the analyzers/smartcn <b>analysis.cn.smart</b> package is experimental. 
- * The APIs and file formats introduced here might change in the future and will not be 
- * supported anymore in such a case.</font>
- * </p>
- * 
+ * @lucene.experimental
  */
 public class AnalyzerProfile {
 

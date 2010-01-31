@@ -39,9 +39,7 @@ import org.apache.lucene.util.NumericUtils; // for javadocs
  * See {@link NumericRangeQuery} for details on how Lucene
  * indexes and searches numeric valued fields.
  *
- * <p><font color="red"><b>NOTE:</b> This API is experimental and
- * might change in incompatible ways in the next
- * release.</font>
+ * @lucene.experimental
  *
  * @since 2.9
  **/

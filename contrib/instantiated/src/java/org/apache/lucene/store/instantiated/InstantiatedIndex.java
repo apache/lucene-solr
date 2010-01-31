@@ -43,7 +43,7 @@ import org.apache.lucene.util.BitVector;
  * results up to a 100 times faster than the file-centric RAMDirectory
  * at the cost of greater RAM consumption.
  * <p>
- * WARNING: This contrib is experimental and the APIs may change without warning.
+ * @lucene.experimental
  * <p>
  * There are no read and write locks in this store.
  * {@link InstantiatedIndexReader} {@link InstantiatedIndexReader#isCurrent()} all the time

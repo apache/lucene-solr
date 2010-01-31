@@ -40,8 +40,7 @@ import java.util.Map;
  * A collection of segmentInfo objects with methods for operating on
  * those segments in relation to the file system.
  * 
- * <p><b>NOTE:</b> This API is new and still experimental
- * (subject to change suddenly in the next release)</p>
+ * @lucene.experimental
  */
 public final class SegmentInfos extends Vector<SegmentInfo> {
 

@@ -51,8 +51,7 @@ import java.util.Set;
  * <p>The default MergePolicy is {@link
  * LogByteSizeMergePolicy}.</p>
  *
- * <p><b>NOTE:</b> This API is new and still experimental
- * (subject to change suddenly in the next release)</p>
+ * @lucene.experimental
  *
  * <p><b>NOTE</b>: This class typically requires access to
  * package-private APIs (e.g. <code>SegmentInfos</code>) to do its job;

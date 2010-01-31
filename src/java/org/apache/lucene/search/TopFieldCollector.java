@@ -30,8 +30,7 @@ import org.apache.lucene.util.PriorityQueue;
  * See the {@link #create(org.apache.lucene.search.Sort, int, boolean, boolean, boolean, boolean)} method
  * for instantiating a TopFieldCollector.
  * 
- * <p><b>NOTE:</b> This API is experimental and might change in
- * incompatible ways in the next release.</p>
+ * @lucene.experimental
  */
 public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   

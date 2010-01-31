@@ -116,8 +116,7 @@ import org.apache.lucene.index.IndexReader;
  * you need that behavior, use {@link
  * PositiveScoresOnlyCollector}.</p>
  *
- * <p><b>NOTE:</b> This API is experimental and might change
- * in incompatible ways in the next release.</p>
+ * @lucene.experimental
  * 
  * @since 2.9
  */

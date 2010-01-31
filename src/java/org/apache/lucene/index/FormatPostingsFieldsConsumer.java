@@ -24,7 +24,7 @@ import java.io.IOException;
  *  actually do "something" with the postings (write it into
  *  the index in a specific format).
  *
- * NOTE: this API is experimental and will likely change
+ * @lucene.experimental
  */
 abstract class FormatPostingsFieldsConsumer {
 

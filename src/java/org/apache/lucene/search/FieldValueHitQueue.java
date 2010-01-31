@@ -26,9 +26,7 @@ import org.apache.lucene.util.PriorityQueue;
  * Uses <code>FieldCache.DEFAULT</code> for maintaining
  * internal term lookup tables.
  * 
- * <b>NOTE:</b> This API is experimental and might change in
- * incompatible ways in the next release.
- *
+ * @lucene.experimental
  * @since 2.9
  * @see Searcher#search(Query,Filter,int,Sort)
  * @see FieldCache

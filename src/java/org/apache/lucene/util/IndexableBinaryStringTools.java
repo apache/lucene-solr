@@ -50,6 +50,8 @@ import java.nio.ByteBuffer;
  * WARNING: This means that the deprecated Buffer-based methods 
  * only work correctly with buffers that have an offset of 0. For example, they
  * will not correctly interpret buffers returned by {@link ByteBuffer#slice}.  
+ *
+ * @lucene.experimental
  */
 public class IndexableBinaryStringTools {
 

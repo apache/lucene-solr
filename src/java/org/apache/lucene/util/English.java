@@ -17,7 +17,9 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-
+/**
+ * @lucene.internal
+ */ 
 public class English {
 
   public static String longToEnglish(long i) {

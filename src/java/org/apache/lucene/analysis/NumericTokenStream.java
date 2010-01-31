@@ -82,8 +82,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
  * href="../search/NumericRangeQuery.html#precisionStepDesc"><code>precisionStep</code></a>
  * parameter as well as how numeric fields work under the hood.</p>
  *
- * <p><font color="red"><b>NOTE:</b> This API is experimental and
- * might change in incompatible ways in the next release.</font>
+ * @lucene.experimental
  *
  * @since 2.9
  */

@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 /**
- * NOTE: this API is experimental and will likely change
+ * @lucene.experimental
  */
 
 abstract class FormatPostingsDocsConsumer {

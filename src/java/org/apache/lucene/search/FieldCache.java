@@ -496,12 +496,7 @@ public interface FieldCache {
   /**
    * EXPERT: A unique Identifier/Description for each item in the FieldCache. 
    * Can be useful for logging/debugging.
-   * <p>
-   * <b>EXPERIMENTAL API:</b> This API is considered extremely advanced 
-   * and experimental.  It may be removed or altered w/o warning in future 
-   * releases 
-   * of Lucene.
-   * </p>
+   * @lucene.experimental
    */
   public static abstract class CacheEntry {
     public abstract Object getReaderKey();
@@ -566,12 +561,7 @@ public interface FieldCache {
    * associated with it has garbage collected will prevent the Value itself
    * from being garbage collected when the Cache drops the WeakReference.
    * </p>
-   * <p>
-   * <b>EXPERIMENTAL API:</b> This API is considered extremely advanced 
-   * and experimental.  It may be removed or altered w/o warning in future 
-   * releases 
-   * of Lucene.
-   * </p>
+   * @lucene.experimental
    */
   public abstract CacheEntry[] getCacheEntries();
 
@@ -584,12 +574,7 @@ public interface FieldCache {
    * It should not be relied on for "Cache maintenance" in general 
    * application code.
    * </p>
-   * <p>
-   * <b>EXPERIMENTAL API:</b> This API is considered extremely advanced 
-   * and experimental.  It may be removed or altered w/o warning in future 
-   * releases 
-   * of Lucene.
-   * </p>
+   * @lucene.experimental
    */
   public abstract void purgeAllCaches();
 

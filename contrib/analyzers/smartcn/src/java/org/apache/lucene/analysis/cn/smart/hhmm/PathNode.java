@@ -22,11 +22,7 @@ package org.apache.lucene.analysis.cn.smart.hhmm;
  * <p>
  * Used by {@link BiSegGraph} to maximize the segmentation with the Viterbi algorithm.
  * </p>
- * <p><font color="#FF0000">
- * WARNING: The status of the analyzers/smartcn <b>analysis.cn.smart</b> package is experimental. 
- * The APIs and file formats introduced here might change in the future and will not be 
- * supported anymore in such a case.</font>
- * </p>
+ * @lucene.experimental
  */
 class PathNode implements Comparable<PathNode> {
   public double weight;

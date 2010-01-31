@@ -19,11 +19,7 @@ package org.apache.lucene.analysis.cn.smart;
 
 /**
  * Internal SmartChineseAnalyzer character type constants.
- * <p><font color="#FF0000">
- * WARNING: The status of the analyzers/smartcn <b>analysis.cn.smart</b> package is experimental. 
- * The APIs and file formats introduced here might change in the future and will not be 
- * supported anymore in such a case.</font>
- * </p>
+ * @lucene.experimental
  */
 public class CharType {
 

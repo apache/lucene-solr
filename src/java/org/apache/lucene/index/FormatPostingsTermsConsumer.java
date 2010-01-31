@@ -23,7 +23,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
- * NOTE: this API is experimental and will likely change
+ * @lucene.experimental
  */
 
 abstract class FormatPostingsTermsConsumer {

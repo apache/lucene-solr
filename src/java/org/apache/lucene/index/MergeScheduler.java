@@ -24,8 +24,7 @@ import java.io.IOException;
  *  selected by a {@link MergePolicy}.  The default
  *  MergeScheduler is {@link ConcurrentMergeScheduler}.</p>
  *
- * <p><b>NOTE:</b> This API is new and still experimental
- * (subject to change suddenly in the next release)</p>
+ * @lucene.experimental
  *
  * <p><b>NOTE</b>: This class typically requires access to
  * package-private APIs (eg, SegmentInfos) to do its job;

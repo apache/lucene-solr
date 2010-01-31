@@ -54,6 +54,8 @@ import java.util.Set;
  * The one with the larger distance should be used preferable.
  * This way also more complicated method rename scenarios can be handled
  * (think of 2.9 {@code TokenStream} deprecations).</p>
+ *
+ * @lucene.internal
  */
 public final class VirtualMethod<C> {
 

@@ -44,11 +44,7 @@ import org.apache.lucene.search.spans.Spans;
  * Operates like Highlighter - IndexReader should only contain doc of interest,
  * best to use MemoryIndex.
  *
- * <p/>
- * <font color="#FF0000">
-   * WARNING: The status of the <b>Payloads</b> feature is experimental.
-   * The APIs introduced here might change in the future and will not be
-   * supported anymore in such a case.</font>
+ * @lucene.experimental
  * 
  */
 public class PayloadSpanUtil {

@@ -134,9 +134,7 @@ import org.apache.lucene.search.FieldCache; // javadocs
  * values are returned as {@link String}s (according to
  * <code>toString(value)</code> of the used data type).
  *
- * <p><font color="red"><b>NOTE:</b> This API is
- * experimental and might change in incompatible ways in the
- * next release.</font>
+ * @lucene.experimental
  *
  * @since 2.9
  */

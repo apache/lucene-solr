@@ -37,8 +37,7 @@ import org.apache.lucene.store.Directory;
  * associated with it. The segments file associated with a
  * later index commit point would have a larger N.</p>
  *
- * <p><b>WARNING</b>: This API is a new and experimental and
- * may suddenly change. </p>
+ * @lucene.experimental
 */
 
 public abstract class IndexCommit {

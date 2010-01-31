@@ -19,6 +19,8 @@ package org.apache.lucene.util;
 
 /**
  * Methods for manipulating arrays.
+ *
+ * @lucene.internal
  */
 public final class ArrayUtil {
   /*

@@ -32,8 +32,7 @@ import java.util.Collections;
  * Information about a segment such as it's name, directory, and files related
  * to the segment.
  * 
- * * <p><b>NOTE:</b> This API is new and still experimental
- * (subject to change suddenly in the next release)</p>
+ * @lucene.experimental
  */
 public final class SegmentInfo {
 

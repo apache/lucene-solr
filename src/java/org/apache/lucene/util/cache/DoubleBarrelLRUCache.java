@@ -38,11 +38,7 @@ import java.util.Map;
  * not grow unbounded in size when under hideously high
  * load.</p>
  *
- * <p>NOTE: this class is meant only to be used internally
- * by Lucene; it's only public so it can be shared across
- * packages.  This means the API is freely subject to
- * change, and, the class could be removed entirely, in any
- * Lucene release.  Use directly at your own risk!
+ * @lucene.internal
  */
 
 final public class DoubleBarrelLRUCache<K,V> extends Cache<K,V> {

@@ -31,8 +31,7 @@ import java.util.Set;
  * to this class, and must allow multiple threads to call
  * contains at once.</p>
  *
- * <p><b>NOTE</b>: this API is new and experimental and is
- * subject to suddenly change in the next release.
+ * @lucene.experimental
  */
 
 public class FileSwitchDirectory extends Directory {

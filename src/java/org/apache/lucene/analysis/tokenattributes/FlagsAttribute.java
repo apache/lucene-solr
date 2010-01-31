@@ -23,10 +23,10 @@ import org.apache.lucene.util.Attribute;
 /**
  * This attribute can be used to pass different flags down the {@link Tokenizer} chain,
  * eg from one TokenFilter to another one. 
+ * @lucene.experimental While we think this is here to stay, we may want to change it to be a long.
  */
 public interface FlagsAttribute extends Attribute {
   /**
-   * EXPERIMENTAL:  While we think this is here to stay, we may want to change it to be a long.
    * <p/>
    *
    * Get the bitset for any bits that have been set.  This is completely distinct from {@link TypeAttribute#type()}, although they do share similar purposes.

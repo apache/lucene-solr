@@ -40,10 +40,7 @@ import java.io.IOException;
  * when other documents are inserted or deleted,
  * or if a MultiSearcher is used. 
  * 
- * <p><font color="#FF0000">
- * WARNING: The status of the <b>search.function</b> package is experimental. 
- * The APIs introduced here might change in the future and will not be 
- * supported anymore in such a case.</font>
+ * @lucene.experimental
  *
  * <p><b>NOTE</b>: with the switch in 2.9 to segment-based
  * searching, if {@link #getValues} is invoked with a

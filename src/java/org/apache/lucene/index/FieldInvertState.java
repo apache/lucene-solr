@@ -23,8 +23,7 @@ import org.apache.lucene.util.AttributeSource;
  * being added to the index. The information collected in this class is
  * also used to calculate the normalization factor for a field.
  * 
- * <p><b>WARNING</b>: This API is new and experimental, and may suddenly
- * change.</p>
+ * @lucene.experimental
  */
 public final class FieldInvertState {
   int position;

@@ -22,7 +22,10 @@ import java.util.zip.CRC32;
 import java.util.zip.Checksum;
 
 /** Writes bytes through to a primary IndexOutput, computing
- *  checksum.  Note that you cannot use seek().*/
+ *  checksum.  Note that you cannot use seek().
+ *
+ * @lucene.internal
+ */
 public class ChecksumIndexOutput extends IndexOutput {
   IndexOutput main;
   Checksum digest;

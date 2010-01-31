@@ -23,7 +23,8 @@ package org.apache.lucene.util;
  *
  * <p><b>NOTE</b>: This class pre-allocates a full array of
  * length <code>maxSize+1</code>, in {@link #initialize}.
-  * 
+ * 
+ * @lucene.internal
 */
 public abstract class PriorityQueue<T> {
   private int size;

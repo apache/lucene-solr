@@ -31,10 +31,7 @@ import java.io.Serializable;
  * <P>ValueSource implementations differ in RAM requirements: it would always be a factor
  * of the number of documents, but for each document the number of bytes can be 1, 2, 4, or 8. 
  *
- * <p><font color="#FF0000">
- * WARNING: The status of the <b>search.function</b> package is experimental. 
- * The APIs introduced here might change in the future and will not be 
- * supported anymore in such a case.</font>
+ * @lucene.experimental
  *
  *
  */

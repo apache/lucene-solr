@@ -23,8 +23,7 @@ import java.io.Serializable;
 /**
  * Provides a {@link FieldComparator} for custom field sorting.
  *
- * <b>NOTE:</b> This API is experimental and might change in
- * incompatible ways in the next release.
+ * @lucene.experimental
  *
  */
 public abstract class FieldComparatorSource implements Serializable {

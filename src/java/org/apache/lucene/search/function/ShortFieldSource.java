@@ -29,10 +29,7 @@ import java.io.IOException;
  * using <code>getShorts()</code> and makes those values 
  * available as other numeric types, casting as needed.
  * 
- * <p><font color="#FF0000">
- * WARNING: The status of the <b>search.function</b> package is experimental. 
- * The APIs introduced here might change in the future and will not be 
- * supported anymore in such a case.</font>
+ * @lucene.experimental
  * 
  * @see org.apache.lucene.search.function.FieldCacheSource for requirements 
  * on the field.

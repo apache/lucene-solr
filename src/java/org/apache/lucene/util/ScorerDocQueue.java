@@ -27,6 +27,8 @@ import org.apache.lucene.search.Scorer;
 /** A ScorerDocQueue maintains a partial ordering of its Scorers such that the
   least Scorer can always be found in constant time.  Put()'s and pop()'s
   require log(size) time. The ordering is by Scorer.doc().
+ *
+ * @lucene.internal
  */
 public class ScorerDocQueue {  // later: SpansQueue for spans with doc and term positions
   private final HeapedScorerDoc[] heap;

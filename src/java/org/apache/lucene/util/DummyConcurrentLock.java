@@ -24,6 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * A dummy lock as a replacement for {@link ReentrantLock} to disable locking
+ * @lucene.internal
  */
 public final class DummyConcurrentLock implements Lock {
 

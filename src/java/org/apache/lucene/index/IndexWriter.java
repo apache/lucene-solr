@@ -360,8 +360,7 @@ public class IndexWriter implements Closeable {
    * if you attempt to reopen any of those readers, you'll
    * hit an {@link AlreadyClosedException}.</p>
    *
-   * <p><b>NOTE:</b> This API is experimental and might
-   * change in incompatible ways in the next release.</p>
+   * @lucene.experimental
    *
    * @return IndexReader that covers entire index plus all
    * changes made so far by this IndexWriter instance
@@ -4825,8 +4824,7 @@ public class IndexWriter implements Closeable {
    *  search, but will reduce search latency on opening a
    *  new near real-time reader after a merge completes.
    *
-   * <p><b>NOTE:</b> This API is experimental and might
-   * change in incompatible ways in the next release.</p>
+   * @lucene.experimental
    *
    * <p><b>NOTE</b>: warm is called before any deletes have
    * been carried over to the merged segment. */

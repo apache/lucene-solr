@@ -86,9 +86,7 @@ public class IndexSearcher extends Searcher {
   /** Expert: directly specify the reader, subReaders and
    *  their docID starts.
    * 
-   * <p><b>NOTE:</b> This API is experimental and
-   * might change in incompatible ways in the next
-   * release.</font></p> */
+   * @lucene.experimental */
   public IndexSearcher(IndexReader reader, IndexReader[] subReaders, int[] docStarts) {
     this.reader = reader;
     this.subReaders = subReaders;

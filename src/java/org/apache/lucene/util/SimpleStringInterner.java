@@ -19,7 +19,10 @@ package org.apache.lucene.util;
 
 /**
  * Simple lockless and memory barrier free String intern cache that is guaranteed
- * to return the same String instance as String.intern() does.
+ * to return the same String instance as String.intern()
+ * does.
+ *
+ * @lucene.internal
  */
 public class SimpleStringInterner extends StringInterner {
 

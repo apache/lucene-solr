@@ -39,8 +39,7 @@ import org.apache.lucene.store.Directory;
  *  snapshot held when a writer is closed will "survive"
  *  when the next writer is opened.
  *
- * <p><b>WARNING</b>: This API is a new and experimental and
- * may suddenly change.</p> */
+ * @lucene.experimental */
 
 public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
 

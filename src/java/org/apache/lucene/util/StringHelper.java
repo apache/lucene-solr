@@ -20,6 +20,8 @@ package org.apache.lucene.util;
 
 /**
  * Methods for manipulating strings.
+ *
+ * @lucene.internal
  */
 public abstract class StringHelper {
   /**

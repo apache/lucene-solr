@@ -365,8 +365,7 @@ implements Serializable {
   /** Returns the {@link FieldComparator} to use for
    * sorting.
    *
-   * <b>NOTE:</b> This API is experimental and might change in
-   * incompatible ways in the next release.
+   * @lucene.experimental
    *
    * @param numHits number of top hits the queue will store
    * @param sortPos position of this SortField within {@link

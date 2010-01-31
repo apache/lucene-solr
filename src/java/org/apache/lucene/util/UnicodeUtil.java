@@ -54,8 +54,7 @@ package org.apache.lucene.util;
  * without always allocating a new byte[] as
  * String.getBytes("UTF-8") does.
  *
- * <p><b>WARNING</b>: This API is a new and experimental and
- * may suddenly change. </p>
+ * @lucene.internal
  */
 
 final public class UnicodeUtil {
@@ -72,6 +71,9 @@ final public class UnicodeUtil {
   private static final long HALF_SHIFT = 10;
   private static final long HALF_MASK = 0x3FFL;
 
+  /**
+   * @lucene.internal
+   */
   public static final class UTF8Result {
     public byte[] result = new byte[10];
     public int length;
@@ -84,6 +86,9 @@ final public class UnicodeUtil {
     }
   }
 
+  /**
+   * @lucene.internal
+   */
   public static final class UTF16Result {
     public char[] result = new char[10];
     public int[] offsets = new int[10];

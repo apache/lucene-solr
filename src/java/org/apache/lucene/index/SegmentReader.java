@@ -41,8 +41,7 @@ import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
 
 /**
- * <p><b>NOTE:</b> This API is new and still experimental
- * (subject to change suddenly in the next release)</p>
+ * @lucene.experimental
  */
 public class SegmentReader extends IndexReader implements Cloneable {
   protected boolean readOnly;

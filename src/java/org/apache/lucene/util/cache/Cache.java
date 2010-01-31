@@ -21,6 +21,8 @@ import java.io.Closeable;
 
 /**
  * Base class for cache implementations.
+ *
+ * @lucene.internal
  */
 public abstract class Cache<K,V> implements Closeable {
   

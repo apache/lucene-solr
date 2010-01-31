@@ -602,8 +602,7 @@ public abstract class Similarity implements Serializable {
    * {@link FieldInvertState#getLength()} as the second argument, and
    * then multiplies this value by {@link FieldInvertState#getBoost()}.</p>
    * 
-   * <p><b>WARNING</b>: This API is new and experimental and may
-   * suddenly change.</p>
+   * @lucene.experimental
    * 
    * @param field field name
    * @param state current processing state for this field

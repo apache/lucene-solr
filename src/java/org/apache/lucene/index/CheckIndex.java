@@ -41,9 +41,7 @@ import java.util.Map;
  * <p>As this tool checks every byte in the index, on a large
  * index it can take quite a long time to run.
  *
- * <p><b>WARNING</b>: this tool and API is new and
- * experimental and is subject to suddenly change in the
- * next release.  Please make a complete backup of your
+ * @lucene.experimental Please make a complete backup of your
  * index before using this to fix your index!
  */
 public class CheckIndex {
@@ -54,8 +52,7 @@ public class CheckIndex {
   /**
    * Returned from {@link #checkIndex()} detailing the health and status of the index.
    *
-   * <p><b>WARNING</b>: this API is new and experimental and is
-   * subject to suddenly change in the next release.
+   * @lucene.experimental
    **/
 
   public static class Status {

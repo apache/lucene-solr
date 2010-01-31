@@ -24,12 +24,12 @@ import org.apache.lucene.util.AttributeImpl;
 /**
  * This attribute can be used to pass different flags down the tokenizer chain,
  * eg from one TokenFilter to another one. 
+ * @lucene.experimental While we think this is here to stay, we may want to change it to be a long.
  */
 public class FlagsAttributeImpl extends AttributeImpl implements FlagsAttribute, Cloneable, Serializable {
   private int flags = 0;
   
   /**
-   * EXPERIMENTAL:  While we think this is here to stay, we may want to change it to be a long.
    * <p/>
    *
    * Get the bitset for any bits that have been set.  This is completely distinct from {@link TypeAttribute#type()}, although they do share similar purposes.

@@ -79,8 +79,7 @@ import org.apache.lucene.search.FieldCache.StringIndex;
  *       FieldDoc#fields} when returning the top results.
  * </ul>
  *
- * <b>NOTE:</b> This API is experimental and might change in
- * incompatible ways in the next release.
+ * @lucene.experimental
  */
 public abstract class FieldComparator {
 

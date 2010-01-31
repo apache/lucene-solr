@@ -37,10 +37,7 @@ import java.util.Set;
  * <p>
  * Score is set as: Score(doc,query) = query.getBoost()<sup>2</sup> * valueSource(doc).  
  *
- * <p><font color="#FF0000">
- * WARNING: The status of the <b>search.function</b> package is experimental. 
- * The APIs introduced here might change in the future and will not be 
- * supported anymore in such a case.</font>
+ * @lucene.experimental
  */
 public class ValueSourceQuery extends Query {
   ValueSource valSrc;

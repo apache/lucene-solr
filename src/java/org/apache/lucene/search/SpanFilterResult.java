@@ -23,8 +23,7 @@ import java.util.List;
 /**
  *  The results of a SpanQueryFilter.  Wraps the BitSet and the position information from the SpanQuery
  *
- *<p/>
- * NOTE: This API is still experimental and subject to change. 
+ * @lucene.experimental 
  *
  **/
 public class SpanFilterResult {

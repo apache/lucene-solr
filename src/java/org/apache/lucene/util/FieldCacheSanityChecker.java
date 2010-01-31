@@ -44,11 +44,7 @@ import org.apache.lucene.search.FieldCache.CacheEntry;
  * Unit tests) to check at run time if the FieldCache contains "insane" 
  * usages of the FieldCache.
  * </p>
- * <p>
- * <b>EXPERIMENTAL API:</b> This API is considered extremely advanced and 
- * experimental.  It may be removed or altered w/o warning in future releases 
- * of Lucene.
- * </p>
+ * @lucene.experimental
  * @see FieldCache
  * @see FieldCacheSanityChecker.Insanity
  * @see FieldCacheSanityChecker.InsanityType

@@ -34,10 +34,7 @@ import org.apache.lucene.search.FieldCache;
  * <p>
  * Document with no tokens in this field are assigned the <code>Zero</code> value.    
  * 
- * <p><font color="#FF0000">
- * WARNING: The status of the <b>search.function</b> package is experimental. 
- * The APIs introduced here might change in the future and will not be 
- * supported anymore in such a case.</font>
+ * @lucene.experimental
  *
  * <p><b>NOTE</b>: with the switch in 2.9 to segment-based
  * searching, if {@link #getValues} is invoked with a

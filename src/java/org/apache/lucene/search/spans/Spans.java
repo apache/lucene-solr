@@ -66,10 +66,7 @@ public abstract class Spans {
    * <br>
     * Note that the return type is a collection, thus the ordering should not be relied upon.
     * <br/>
-   * <p><font color="#FF0000">
-   * WARNING: The status of the <b>Payloads</b> feature is experimental.
-   * The APIs introduced here might change in the future and will not be
-   * supported anymore in such a case.</font>
+   * @lucene.experimental
    *
    * @return a List of byte arrays containing the data of this payload, otherwise null if isPayloadAvailable is false
    * @throws java.io.IOException

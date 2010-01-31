@@ -52,10 +52,7 @@ package org.apache.lucene.search.function;
  * otherwise, for instance if for each query a new index reader is opened, large penalties would be 
  * paid for loading the field values into memory over and over again!
  * 
- * <p><font color="#FF0000">
- * WARNING: The status of the <b>search.function</b> package is experimental. 
- * The APIs introduced here might change in the future and will not be 
- * supported anymore in such a case.</font>
+ * @lucene.experimental
  */
 public class FieldScoreQuery extends ValueSourceQuery {
 
