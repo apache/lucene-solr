@@ -64,10 +64,11 @@ public class WhitespaceTokenizer extends CharTokenizer {
 
   /**
    * Construct a new WhitespaceTokenizer using a given
-   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}. * @param
-   * matchVersion Lucene version to match See
-   * {@link <a href="#version">above</a>}
-   * 
+   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
+   *
+   * @param
+   *          matchVersion Lucene version to match See
+   *          {@link <a href="#version">above</a>}
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
    * @param in
