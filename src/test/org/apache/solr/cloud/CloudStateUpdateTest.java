@@ -124,26 +124,28 @@ public class CloudStateUpdateTest extends TestCase {
     
     ZkController zkController2 = container2.getZooKeeperController();
     
+    String host = zkController2.getHostName();
+    
     CloudState cloudState2 = zkController2.getCloudState();
     Map<String,Slice> slices = cloudState2.getSlices("testcore");
     
     assertNotNull(slices);
-    assertTrue(slices.containsKey("thequadway:8983_solr_testcore"));
+    assertTrue(slices.containsKey(host + ":8983_solr_testcore"));
     
-    Slice slice = slices.get("thequadway:8983_solr_testcore");
-    assertEquals("thequadway:8983_solr_testcore", slice.getName());
+    Slice slice = slices.get(host + ":8983_solr_testcore");
+    assertEquals(host + ":8983_solr_testcore", slice.getName());
     
     Map<String,ZkNodeProps> shards = slice.getShards();
     
     assertEquals(1, shards.size());
     
-    ZkNodeProps zkProps = shards.get("thequadway:8983_solr_testcore");
+    ZkNodeProps zkProps = shards.get(host + ":8983_solr_testcore");
     
     assertNotNull(zkProps);
     
-    assertEquals("thequadway:8983_solr", zkProps.get("node_name"));
+    assertEquals(host + ":8983_solr", zkProps.get("node_name"));
     
-    assertEquals("http://thequadway:8983/solr/testcore", zkProps.get("url"));
+    assertEquals("http://" + host + ":8983/solr/testcore", zkProps.get("url"));
     
     Set<String> liveNodes = cloudState2.getLiveNodes();
     assertNotNull(liveNodes);
