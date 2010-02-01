@@ -131,7 +131,7 @@
                or when there is no possibility of another process trying
                to modify the index.
       native = NativeFSLockFactory  - uses OS native file locking.
-               Do not use with multiple solr webapps in the same JVM are
+               Do not use when multiple solr webapps in the same JVM are
                attempting to share a single index.
       simple = SimpleFSLockFactory  - uses a plain file for locking
 
