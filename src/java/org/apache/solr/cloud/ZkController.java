@@ -69,6 +69,8 @@ public final class ZkController {
 
   static final String NEWL = System.getProperty("line.separator");
 
+  private static final long CLOUD_UPDATE_DELAY = Long.parseLong(System.getProperty("CLOUD_UPDATE_DELAY", "5000"));
+
   private final static Pattern URL_POST = Pattern.compile("https?://(.*)");
   private final static Pattern URL_PREFIX = Pattern.compile("(https?://).*");
 
@@ -416,6 +418,7 @@ public final class ZkController {
       this.cloudState = cloudState;
     } else {
       if(cloudStateUpdateScheduled) {
+        log.info("Cloud state update for ZooKeeper already scheduled");
         return;
       }
       log.info("Scheduling cloud state update from ZooKeeper...");
@@ -425,6 +428,7 @@ public final class ZkController {
         public void run() {
           log.info("Updating cloud state from ZooKeeper...");
           synchronized (ZkController.this) {
+            cloudStateUpdateScheduled = false;
             CloudState cloudState;
             try {
               cloudState = CloudState.buildCloudState(zkClient);
@@ -445,10 +449,9 @@ public final class ZkController {
             }
             // update volatile
             ZkController.this.cloudState = cloudState;
-            cloudStateUpdateScheduled = false;
           }
         }
-      }, 5000, TimeUnit.MILLISECONDS);
+      }, CLOUD_UPDATE_DELAY, TimeUnit.MILLISECONDS);
     }
 
   }

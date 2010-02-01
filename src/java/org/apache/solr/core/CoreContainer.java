@@ -165,7 +165,7 @@ public class CoreContainer
     protected String solrConfigFilename = null;
     protected boolean abortOnConfigurationError = true;
     protected String dataDir = null; // override datadir for single core mode
-    private String zkPortOverride;
+    protected String zkPortOverride;
     protected String testShardListOverride;
 
     public boolean isAbortOnConfigurationError() {

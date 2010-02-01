@@ -114,9 +114,6 @@ public abstract class AbstractZkTestCase extends AbstractSolrTestCase {
     putConfig(zkClient, "mapping-ISOLatin1Accent.txt");
     putConfig(zkClient, "old_synonyms.txt");
     
-    //nocommit
-    zkClient.printLayoutToStdOut();
-    
     zkClient.close();
   }
 
