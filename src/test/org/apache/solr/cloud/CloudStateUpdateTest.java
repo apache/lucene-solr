@@ -29,6 +29,9 @@ import org.apache.solr.core.SolrCore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ *
+ */
 public class CloudStateUpdateTest extends TestCase {
   protected static Logger log = LoggerFactory
       .getLogger(AbstractZkTestCase.class);
@@ -44,14 +47,12 @@ public class CloudStateUpdateTest extends TestCase {
   protected String zkDir;
 
   private CoreContainer container1;
-
   private CoreContainer container2;
-  
   private CoreContainer container3;
 
   private File dataDir1;
-
   private File dataDir2;
+  private File dataDir3;
 
   public void setUp() throws Exception {
     try {
@@ -69,6 +70,9 @@ public class CloudStateUpdateTest extends TestCase {
 
       dataDir2 = new File(tmpDir + File.separator + "data2");
       dataDir2.mkdirs();
+      
+      dataDir3 = new File(tmpDir + File.separator + "data3");
+      dataDir3.mkdirs();
 
       // set some system properties for use by tests
       System.setProperty("solr.test.sys.prop1", "propone");
@@ -94,7 +98,7 @@ public class CloudStateUpdateTest extends TestCase {
       
       CoreContainer.Initializer init3 = new CoreContainer.Initializer() {
         {
-          this.dataDir = CloudStateUpdateTest.this.dataDir2.getAbsolutePath();
+          this.dataDir = CloudStateUpdateTest.this.dataDir3.getAbsolutePath();
           this.zkPortOverride = "8985";
         }
       };
@@ -149,8 +153,10 @@ public class CloudStateUpdateTest extends TestCase {
     
     liveNodes = zkController2.getCloudState().getLiveNodes();
     
-    // nocommit - fix update cloud state when nodes removed
-    //assertEquals(2, liveNodes.size());
+    // slight pause for watch to trigger
+    Thread.sleep(500);
+    
+    assertEquals(2, liveNodes.size());
   }
 
   public void tearDown() throws Exception {

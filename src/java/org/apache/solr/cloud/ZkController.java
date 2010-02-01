@@ -128,7 +128,7 @@ public final class ZkController {
           public void command() {
             try {
 
-              createEphemeralNode();
+              createEphemeralLiveNode();
               // register cores in case any new cores came online will zk was down
               
               // coreContainer may currently be null in tests, so don't re-register
@@ -361,7 +361,7 @@ public final class ZkController {
               "", e);
         }
       }
-      createEphemeralNode();
+      createEphemeralLiveNode();
       
       setUpCollectionsNode();
       
@@ -383,11 +383,41 @@ public final class ZkController {
 
   }
 
-  private void createEphemeralNode() throws KeeperException,
+  private void createEphemeralLiveNode() throws KeeperException,
       InterruptedException {
     String nodeName = getNodeName();
     String nodePath = NODES_ZKNODE + "/" + nodeName;
     log.info("Register node as live in ZooKeeper:" + nodePath);
+    Watcher liveNodeWatcher = new Watcher() {
+
+      public void process(WatchedEvent event) {
+        try {
+          log.info("Updating live nodes:" + zkClient);
+          try {
+            updateLiveNodes();
+          } finally {
+            // remake watch
+            zkClient.getChildren(event.getPath(), this);
+          }
+        } catch (KeeperException e) {
+          log.error("", e);
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+              "", e);
+        } catch (InterruptedException e) {
+          // Restore the interrupted status
+          Thread.currentThread().interrupt();
+          log.error("", e);
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+              "", e);
+        } catch (IOException e) {
+          log.error("", e);
+          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+              "", e);
+        }
+        
+      }
+      
+    };
     try {
       zkClient.makePath(nodePath, CreateMode.EPHEMERAL);
     } catch (KeeperException e) {
@@ -396,6 +426,7 @@ public final class ZkController {
         throw e;
       }
     }
+    zkClient.getChildren(NODES_ZKNODE, liveNodeWatcher);
   }
   
   public String getNodeName() {
@@ -403,7 +434,19 @@ public final class ZkController {
   }
 
   // load and publish a new CollectionInfo
-  public synchronized void updateCloudState(boolean immediate) throws KeeperException, InterruptedException,
+  public void updateCloudState(boolean immediate) throws KeeperException, InterruptedException,
+      IOException {
+    updateCloudState(immediate, false);
+  }
+  
+  // load and publish a new CollectionInfo
+  public void updateLiveNodes() throws KeeperException, InterruptedException,
+      IOException {
+    updateCloudState(true, true);
+  }
+  
+  // load and publish a new CollectionInfo
+  private synchronized void updateCloudState(boolean immediate, final boolean onlyLiveNodes) throws KeeperException, InterruptedException,
       IOException {
 
     // TODO: - incremental update rather than reread everything
@@ -411,9 +454,13 @@ public final class ZkController {
     // build immutable CloudInfo
     
     if(immediate) {
-      log.info("Updating cloud state from ZooKeeper... :" + zkClient.keeper);
+      if(!onlyLiveNodes) {
+        log.info("Updating cloud state from ZooKeeper... ");
+      } else {
+        log.info("Updating live nodes from ZooKeeper... ");
+      }
       CloudState cloudState;
-      cloudState = CloudState.buildCloudState(zkClient);
+      cloudState = CloudState.buildCloudState(zkClient, this.cloudState, onlyLiveNodes);
       // update volatile
       this.cloudState = cloudState;
     } else {
@@ -431,7 +478,8 @@ public final class ZkController {
             cloudStateUpdateScheduled = false;
             CloudState cloudState;
             try {
-              cloudState = CloudState.buildCloudState(zkClient);
+              cloudState = CloudState.buildCloudState(zkClient,
+                  ZkController.this.cloudState, onlyLiveNodes);
             } catch (KeeperException e) {
               log.error("", e);
               throw new ZooKeeperException(

@@ -56,6 +56,10 @@ public class CloudState {
     return Collections.unmodifiableSet(collectionStates.keySet());
   }
   
+  public Map<String,Map<String,Slice>> getCollectionStates() {
+    return Collections.unmodifiableMap(collectionStates);
+  }
+  
   public Set<String> getLiveNodes() {
     return Collections.unmodifiableSet(liveNodes);
   }
@@ -64,28 +68,35 @@ public class CloudState {
     return liveNodes.contains(name);
   }
   
-  public static CloudState buildCloudState(SolrZkClient zkClient) throws KeeperException, InterruptedException, IOException {
+  public static CloudState buildCloudState(SolrZkClient zkClient, CloudState oldCloudState, boolean onlyLiveNodes) throws KeeperException, InterruptedException, IOException {
+    Map<String,Map<String,Slice>> collectionStates;
+    if (!onlyLiveNodes) {
+      List<String> collections = zkClient.getChildren(
+          ZkController.COLLECTIONS_ZKNODE, null);
 
-    List<String> collections = zkClient.getChildren(ZkController.COLLECTIONS_ZKNODE, null);
-    
-    Map<String,Map<String,Slice>> collectionStates = new HashMap<String,Map<String,Slice>>();
-    for (String collection : collections) {
-      String shardIdPaths = ZkController.COLLECTIONS_ZKNODE + "/" + collection + ZkController.SHARDS_ZKNODE;
-      List<String> shardIdNames;
-      try {
-        shardIdNames = zkClient.getChildren(shardIdPaths, null);
-      } catch(KeeperException.NoNodeException e) {
-        // node is not valid currently
-        continue;
+      collectionStates = new HashMap<String,Map<String,Slice>>();
+      for (String collection : collections) {
+        String shardIdPaths = ZkController.COLLECTIONS_ZKNODE + "/"
+            + collection + ZkController.SHARDS_ZKNODE;
+        List<String> shardIdNames;
+        try {
+          shardIdNames = zkClient.getChildren(shardIdPaths, null);
+        } catch (KeeperException.NoNodeException e) {
+          // node is not valid currently
+          continue;
+        }
+        Map<String,Slice> slices = new HashMap<String,Slice>();
+        for (String shardIdZkPath : shardIdNames) {
+          Map<String,ZkNodeProps> shardsMap = readShards(zkClient, shardIdPaths
+              + "/" + shardIdZkPath);
+          Slice slice = new Slice(shardIdZkPath, shardsMap);
+          slices.put(shardIdZkPath, slice);
+        }
+        collectionStates.put(collection, slices);
+
       }
-      Map<String,Slice> slices = new HashMap<String,Slice>();
-      for(String shardIdZkPath : shardIdNames) {
-        Map<String,ZkNodeProps> shardsMap = readShards(zkClient, shardIdPaths + "/" + shardIdZkPath);
-        Slice slice = new Slice(shardIdZkPath, shardsMap);
-        slices.put(shardIdZkPath, slice);
-      }
-      collectionStates.put(collection, slices);
-      
+    } else {
+      collectionStates = oldCloudState.getCollectionStates();
     }
     
     CloudState cloudInfo = new CloudState(getLiveNodes(zkClient), collectionStates);
