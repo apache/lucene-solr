@@ -29,6 +29,14 @@
     If 'null' (or absent), cores will not be manageable via request handler
   -->
   <cores adminPath="/admin/cores" defaultCoreName="collection1">
-    <core name="collection1" instanceDir="." />
+    <core name="collection1" instanceDir="." shardId="shard1"/>
+    <!-- 
+      SolrCloud related attributes on core:
+        collection - The name of the collection this core belongs to. 
+          Defaults to the name of the core.
+        shardId - which shard of the collection this core has.  Defaults
+          to a name derived from host:port_webapp_corename.
+        role - TBD
+    -->
   </cores>
 </solr>
