@@ -124,9 +124,7 @@ public final class ZkController {
 
           public void command() {
             try {
-
               createEphemeralLiveNode();
-
               updateCloudState(false);
             } catch (KeeperException e) {
               log.error("", e);
@@ -336,11 +334,8 @@ public final class ZkController {
             "Unrecognized host:" + localHostName);
       }
       
-      // makes nodes node
+      // makes nodes zkNode
       try {
-        // TODO: for now, no watch - if a node goes down or comes up, its going to change
-        // shards info anyway and cause a state update - this could change if we do incremental
-        // state update
         zkClient.makePath(NODES_ZKNODE);
       } catch (KeeperException e) {
         // its okay if another beats us creating the node
@@ -350,8 +345,8 @@ public final class ZkController {
               "", e);
         }
       }
-      createEphemeralLiveNode();
       
+      createEphemeralLiveNode();
       setUpCollectionsNode();
       
     } catch (IOException e) {
@@ -429,7 +424,7 @@ public final class ZkController {
   }
   
   // load and publish a new CollectionInfo
-  public void updateLiveNodes() throws KeeperException, InterruptedException,
+  private void updateLiveNodes() throws KeeperException, InterruptedException,
       IOException {
     updateCloudState(true, true);
   }
@@ -509,36 +504,23 @@ public final class ZkController {
    * @return
    * @throws KeeperException
    * @throws InterruptedException
+   * @throws IOException 
    */
   public String readConfigName(String collection) throws KeeperException,
-      InterruptedException {
-    // nocommit: load all config at once or organize differently (Properties?)
+      InterruptedException, IOException {
+
     String configName = null;
 
     String path = COLLECTIONS_ZKNODE + "/" + collection;
     if (log.isInfoEnabled()) {
       log.info("Load collection config from:" + path);
     }
-    List<String> children;
-    try {
-      children = zkClient.getChildren(path, null);
-    } catch (KeeperException.NoNodeException e) {
-      log.error(
-          "Config name to use for collection:"
-              + collection + " could not be located", e);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-          "Config name to use for collection:"
-              + collection + " could not be located", e);
-    }
-    for (String node : children) {
-      // nocommit: do we actually want to handle settings in the node name?
-      if (node.startsWith("config=")) {
-        configName = node.substring(node.indexOf("=") + 1);
-        if (log.isInfoEnabled()) {
-          log.info("Using collection config:" + configName);
-        }
-        // nocommmit : bail or read more?
-      }
+    byte[] data = zkClient.getData(path, null, null);
+    ZkNodeProps props = new ZkNodeProps();
+    
+    if(data != null) {
+      props.load(data);
+      configName = props.get("configName");
     }
     
     if (configName != null && !zkClient.exists(CONFIGS_ZKNODE + "/" + configName)) {
@@ -853,25 +835,26 @@ public final class ZkController {
     }
   }
 
-  public void createCollectionZkNode(String collection) throws KeeperException, InterruptedException {
+  public void createCollectionZkNode(String collection) throws KeeperException, InterruptedException, IOException {
     String collectionPath = COLLECTIONS_ZKNODE + "/" + collection;
-    
-    boolean newCollection = false;
     
     try {
       if(!zkClient.exists(collectionPath)) {
         log.info("Creating collection in ZooKeeper:" + collection);
         try {
-          zkClient.makePath(collectionPath, CreateMode.PERSISTENT, null);
-          String confName = readConfigName(collection);
-          if(confName == null && System.getProperty("bootstrap_confdir") != null) {
+          ZkNodeProps props = new ZkNodeProps();
+          // if we are bootstrapping a collection, default the config for
+          // a new collection to the collection we are bootstrapping
+          if(System.getProperty("bootstrap_confdir") != null) {
+            String confName = System.getProperty("bootstrap_confname", "configuration1");
             log.info("Setting config for collection:" + collection + " to " + confName);
-            confName = System.getProperty("bootstrap_confname", "configuration1");
-            zkClient.makePath(COLLECTIONS_ZKNODE + "/" + collection + "/config=" + confName);
+            props.put("configName",  confName);
           }
-          newCollection = true;
+          
+          zkClient.makePath(COLLECTIONS_ZKNODE + "/" + collection, props.store(), CreateMode.PERSISTENT);
+         
         } catch (KeeperException e) {
-          // its okay if another beats us creating the node
+          // its okay if the node already exists
           if (e.code() != KeeperException.Code.NODEEXISTS) {
             throw e;
           }
@@ -883,12 +866,6 @@ public final class ZkController {
       if (e.code() != KeeperException.Code.NODEEXISTS) {
         throw e;
       }
-    }
-    
-    if(newCollection) {
-      // nocommit - scrutinize
-      // ping that there is a new collection
-      zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);
     }
     
   }

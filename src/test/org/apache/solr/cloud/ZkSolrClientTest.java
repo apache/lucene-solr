@@ -80,7 +80,7 @@ public class ZkSolrClientTest extends TestCase {
       String shardsPath = "/collections/collection1/shards";
       zkClient.makePath(shardsPath);
 
-      zkClient.makePath("collections/collection1/config=collection1");
+      zkClient.makePath("collections/collection1");
       
       // this tests disconnect state
       server.shutdown();
@@ -89,7 +89,7 @@ public class ZkSolrClientTest extends TestCase {
       
       boolean exceptionHappened = false;
       try {
-        zkClient.makePath("collections/collection1/config=collection2");
+        zkClient.makePath("collections/collection2");
       } catch (KeeperException.ConnectionLossException e) {
         // nocommit : the connection should be down
         exceptionHappened = true;
@@ -103,12 +103,12 @@ public class ZkSolrClientTest extends TestCase {
       // wait for reconnect
       Thread.sleep(1000);
       
-      zkClient.makePath("collections/collection1/config=collection3");
+      zkClient.makePath("collections/collection3");
       
       zkClient.printLayoutToStdOut();
       
-      assertNotNull(zkClient.exists("/collections/collection1/config=collection3", null));
-      assertNotNull(zkClient.exists("/collections/collection1/config=collection1", null));
+      assertNotNull(zkClient.exists("/collections/collection3", null));
+      assertNotNull(zkClient.exists("/collections/collection1", null));
       
       //this tests expired state
       
@@ -119,11 +119,11 @@ public class ZkSolrClientTest extends TestCase {
       
       Thread.sleep(3000); // pause for reconnect
       
-      zkClient.makePath("collections/collection1/config=collection4");
+      zkClient.makePath("collections/collection4");
       
       zkClient.printLayoutToStdOut();
       
-      assertNotNull(zkClient.exists("/collections/collection1/config=collection4", null));
+      assertNotNull(zkClient.exists("/collections/collection4", null));
 
     } catch(Exception e) {
       // nocommit

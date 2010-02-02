@@ -80,6 +80,7 @@ public class ZkControllerTest extends TestCase {
 
       zkController = new ZkController(AbstractZkTestCase.ZOO_KEEPER_ADDRESS,
           TIMEOUT, 1000, "localhost", "8983", "/solr");
+ 
       zkController.updateCloudState(true);
       CloudState cloudInfo = zkController.getCloudState();
       Map<String,Slice> slices = cloudInfo.getSlices("collection1");
@@ -145,9 +146,9 @@ public class ZkControllerTest extends TestCase {
 
       zkClient.makePath(ZkController.CONFIGS_ZKNODE + "/" + actualConfigName);
       
-      String shardsPath = ZkController.COLLECTIONS_ZKNODE + "/" + COLLECTION_NAME + "/config="
-          + actualConfigName;
-      zkClient.makePath(shardsPath);
+      ZkNodeProps props = new ZkNodeProps();
+      props.put("configName", actualConfigName);
+      zkClient.makePath(ZkController.COLLECTIONS_ZKNODE + "/" + COLLECTION_NAME , props.store(), CreateMode.PERSISTENT);
 
       if (DEBUG) {
         zkClient.printLayoutToStdOut();

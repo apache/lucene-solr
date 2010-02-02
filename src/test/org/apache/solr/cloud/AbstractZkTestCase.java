@@ -22,6 +22,7 @@ import java.io.File;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.TestHarness;
+import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,8 +105,13 @@ public abstract class AbstractZkTestCase extends AbstractSolrTestCase {
 
     zkClient = new SolrZkClient(ZOO_KEEPER_ADDRESS, AbstractZkTestCase.TIMEOUT);
     
-    zkClient.makePath("/collections/collection1/config=conf1");
-    zkClient.makePath("/collections/testcore/config=conf1");
+    ZkNodeProps props1 = new ZkNodeProps();
+    props1.put("configName", "conf1");
+    zkClient.makePath("/collections/collection1", props1.store(), CreateMode.PERSISTENT);
+    
+    ZkNodeProps props2 = new ZkNodeProps();
+    props2.put("configName", "conf1");
+    zkClient.makePath("/collections/testcore", props2.store(), CreateMode.PERSISTENT);
     
     putConfig(zkClient, config);
     putConfig(zkClient, schema);
