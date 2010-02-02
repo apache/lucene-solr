@@ -22,7 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.InetAddress;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -39,7 +38,6 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.solr.cloud.SolrZkClient.OnReconnect;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -101,20 +99,19 @@ public final class ZkController {
 
   private boolean cloudStateUpdateScheduled;
 
-
   /**
    * @param zkServerAddress ZooKeeper server host address
    * @param zkClientTimeout
+   * @param zkClientConnectTimeout
    * @param localHost
    * @param locaHostPort
    * @param localHostContext
-   * @param coreContainer
    * @throws InterruptedException
    * @throws TimeoutException
    * @throws IOException
    */
   public ZkController(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
-      String localHostContext, final CoreContainer coreContainer) throws InterruptedException,
+      String localHostContext) throws InterruptedException,
       TimeoutException, IOException {
     this.zkServerAddress = zkServerAddress;
     this.localHostPort = locaHostPort;
@@ -129,15 +126,7 @@ public final class ZkController {
             try {
 
               createEphemeralLiveNode();
-              // register cores in case any new cores came online will zk was down
-              
-              // coreContainer may currently be null in tests, so don't re-register
-              if(coreContainer != null) {
-                Collection<SolrCore> cores = coreContainer.getCores();
-                for(SolrCore core : cores) {
-                  register(core, false);
-                }
-              }
+
               updateCloudState(false);
             } catch (KeeperException e) {
               log.error("", e);

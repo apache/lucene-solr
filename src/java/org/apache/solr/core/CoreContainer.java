@@ -124,7 +124,7 @@ public class CoreContainer
         if (zkRun != null && zkServer.getServers().size() > 1)
           zkClientConnectTimeout = 24 * 60 * 60 * 1000;  // 1 day for embedded ensemble
 
-        zooKeeperController = new ZkController(zookeeperHost, zkClientTimeout, zkClientConnectTimeout, host, hostPort, hostContext, this);
+        zooKeeperController = new ZkController(zookeeperHost, zkClientTimeout, zkClientConnectTimeout, host, hostPort, hostContext);
         
         String confDir = System.getProperty("bootstrap_confdir");
         if(confDir != null) {
