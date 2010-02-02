@@ -159,8 +159,6 @@ public final class ZkController {
 
     String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE + "/" + shardId;
     
-    boolean newShardId = false;
-    
     try {
       
       // shards node
@@ -171,7 +169,9 @@ public final class ZkController {
         // makes shards zkNode if it doesn't exist
         zkClient.makePath(shardsZkPath, CreateMode.PERSISTENT, null);
         
-        newShardId = true;
+        // nocommit - scrutinize
+        // ping that there is a new shardId
+        zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);
 
       }
     } catch (KeeperException e) {
@@ -180,12 +180,7 @@ public final class ZkController {
         throw e;
       }
     }
-    
-    if(newShardId) {
-      // nocommit - scrutinize
-      // ping that there is a new shardId
-      zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);
-    }
+
   }
 
   /**
@@ -853,6 +848,8 @@ public final class ZkController {
           
           zkClient.makePath(COLLECTIONS_ZKNODE + "/" + collection, props.store(), CreateMode.PERSISTENT);
          
+          // ping that there is a new collection
+          zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);
         } catch (KeeperException e) {
           // its okay if the node already exists
           if (e.code() != KeeperException.Code.NODEEXISTS) {
