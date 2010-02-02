@@ -73,8 +73,8 @@ public class SolrZkClient {
     this(zkServerAddress, zkClientTimeout, new DefaultConnectionStrategy(), null);
   }
   
-  public SolrZkClient(String zkServerAddress, int zkClientTimeout, OnReconnect onReonnect) throws InterruptedException, TimeoutException, IOException {
-    this(zkServerAddress, zkClientTimeout, new DefaultConnectionStrategy(), onReonnect);
+  public SolrZkClient(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, OnReconnect onReonnect) throws InterruptedException, TimeoutException, IOException {
+    this(zkServerAddress, zkClientTimeout, new DefaultConnectionStrategy(), onReonnect, zkClientConnectTimeout);
   }
 
   /**

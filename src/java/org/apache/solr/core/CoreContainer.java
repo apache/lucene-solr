@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeoutException;
 import java.text.SimpleDateFormat;
 
+import org.apache.solr.cloud.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,11 +33,6 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathExpressionException;
 
-import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.cloud.ZkSolrResourceLoader;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cloud.ZooKeeperException;
-import org.apache.solr.cloud.SolrZkServer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.util.DOMUtil;
@@ -117,12 +113,18 @@ public class CoreContainer
     if (zookeeperHost == null) {
       zookeeperHost = zkServer.getClientString();
     }
-    
+
+    int zkClientConnectTimeout = 5000;
+
     if (zookeeperHost != null) {
       // we are ZooKeeper enabled
       try {
         log.info("Zookeeper client=" + zookeeperHost);
-        zooKeeperController = new ZkController(zookeeperHost, zkClientTimeout, host, hostPort, hostContext, this);
+        // If this is an ensemble, allow for a long connect time for other servers to come up
+        if (zkRun != null && zkServer.getServers().size() > 1)
+          zkClientConnectTimeout = 24 * 60 * 60 * 1000;  // 1 day for embedded ensemble
+
+        zooKeeperController = new ZkController(zookeeperHost, zkClientTimeout, zkClientConnectTimeout, host, hostPort, hostContext, this);
         
         String confDir = System.getProperty("bootstrap_confdir");
         if(confDir != null) {

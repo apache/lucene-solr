@@ -113,7 +113,7 @@ public final class ZkController {
    * @throws TimeoutException
    * @throws IOException
    */
-  public ZkController(String zkServerAddress, int zkClientTimeout, String localHost, String locaHostPort,
+  public ZkController(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout, String localHost, String locaHostPort,
       String localHostContext, final CoreContainer coreContainer) throws InterruptedException,
       TimeoutException, IOException {
     this.zkServerAddress = zkServerAddress;
@@ -121,7 +121,7 @@ public final class ZkController {
     this.localHostContext = localHostContext;
     this.localHost = localHost;
     cloudState = new CloudState(new HashSet<String>(0), new HashMap<String,Map<String,Slice>>(0));
-    zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout,
+    zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
         // on reconnect, reload cloud info
         new OnReconnect() {
 

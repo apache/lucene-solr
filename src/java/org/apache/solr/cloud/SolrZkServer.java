@@ -27,6 +27,7 @@ import org.apache.zookeeper.server.ServerConfig;
 import org.apache.solr.common.SolrException;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.Properties;
 import java.util.Map;
 import java.io.*;
@@ -87,6 +88,10 @@ public class SolrZkServer {
       if (zkRun != null)
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
+  }
+
+  public Map<Long, QuorumPeer.QuorumServer> getServers() {
+    return zkProps.getServers();
   }
 
   public void start() {
