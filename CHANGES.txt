@@ -162,8 +162,18 @@ Bug Fixes
 * SOLR-1667: PatternTokenizer does not reset attributes such as positionIncrementGap
   (Robert Muir via shalin)
 
+* SOLR-1711: SolrJ - StreamingUpdateSolrServer had a race condition that
+  could halt the streaming of documents. (Attila Babo via yonik)
+
 Other Changes
 ----------------------
+
+* SOLR-1516: Addition of an abstract BaseResponseWriter class to simplify the
+  development of QueryResponseWriter implementations.
+  (Chris A. Mattmann via noble)
+
+* SOLR-1592: Refactor XMLWriter startTag to allow arbitrary attributes to be written
+  (Chris A. Mattmann via noble)
 
 * SOLR-1561: Added Lucene 2.9.1 spatial contrib jar to lib. (gsingers)
 
