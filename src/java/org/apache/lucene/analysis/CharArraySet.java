@@ -1,15 +1,5 @@
 package org.apache.lucene.analysis;
 
-import java.util.Arrays;
-import java.util.AbstractSet;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.Set;
-
-import org.apache.lucene.util.CharacterUtils;
-import org.apache.lucene.util.Version;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -27,6 +17,13 @@ import org.apache.lucene.util.Version;
  * limitations under the License.
  */
 
+import java.util.Arrays;
+import java.util.AbstractSet;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Set;
+
+import org.apache.lucene.util.Version;
 
 /**
  * A simple class that stores Strings as char[]'s in a
@@ -58,15 +55,11 @@ import org.apache.lucene.util.Version;
  * For type safety also {@link #stringIterator()} is provided.
  */
 public class CharArraySet extends AbstractSet<Object> {
-  private final static int INIT_SIZE = 8;
-  private char[][] entries;
-  private int count;
-  private final boolean ignoreCase;
-  public static final CharArraySet EMPTY_SET = new EmptyCharArraySet();
+  public static final CharArraySet EMPTY_SET = new CharArraySet(CharArrayMap.<Object>emptyMap());
+  private static final Object PLACEHOLDER = new Object();
   
-  private final CharacterUtils charUtils;
-  private final Version matchVersion;
-
+  private final CharArrayMap<Object> map;
+  
   /**
    * Create set with enough capacity to hold startSize terms
    * 
@@ -80,13 +73,7 @@ public class CharArraySet extends AbstractSet<Object> {
    *          otherwise <code>true</code>.
    */
   public CharArraySet(Version matchVersion, int startSize, boolean ignoreCase) {
-    this.ignoreCase = ignoreCase;
-    int size = INIT_SIZE;
-    while(startSize + (startSize>>2) > size)
-      size <<= 1;
-    entries = new char[size][];
-    this.charUtils = CharacterUtils.getInstance(matchVersion);
-    this.matchVersion = matchVersion;
+    this(new CharArrayMap<Object>(matchVersion, startSize, ignoreCase));
   }
 
   /**
@@ -101,7 +88,7 @@ public class CharArraySet extends AbstractSet<Object> {
    *          <code>false</code> if and only if the set should be case sensitive
    *          otherwise <code>true</code>.
    */
-  public CharArraySet(Version matchVersion, Collection<? extends Object> c, boolean ignoreCase) {
+  public CharArraySet(Version matchVersion, Collection<?> c, boolean ignoreCase) {
     this(matchVersion, c.size(), ignoreCase);
     addAll(c);
   }
@@ -132,77 +119,51 @@ public class CharArraySet extends AbstractSet<Object> {
    * @deprecated use {@link #CharArraySet(Version, Collection, boolean)} instead         
    */  
   @Deprecated
-  public CharArraySet(Collection<? extends Object> c, boolean ignoreCase) {
+  public CharArraySet(Collection<?> c, boolean ignoreCase) {
     this(Version.LUCENE_30, c.size(), ignoreCase);
     addAll(c);
   }
   
-  /** Create set from entries */
-  private CharArraySet(Version matchVersion, char[][] entries, boolean ignoreCase, int count){
-    this.entries = entries;
-    this.ignoreCase = ignoreCase;
-    this.count = count;
-    this.charUtils = CharacterUtils.getInstance(matchVersion);
-    this.matchVersion = matchVersion;
+  /** Create set from the specified map (internal only), used also by {@link CharArrayMap#keySet()} */
+  CharArraySet(final CharArrayMap<Object> map){
+    this.map = map;
   }
   
   /** Clears all entries in this set. This method is supported for reusing, but not {@link Set#remove}. */
   @Override
   public void clear() {
-    count = 0;
-    Arrays.fill(entries, null);
+    map.clear();
   }
 
   /** true if the <code>len</code> chars of <code>text</code> starting at <code>off</code>
    * are in the set */
   public boolean contains(char[] text, int off, int len) {
-    return entries[getSlot(text, off, len)] != null;
+    return map.containsKey(text, off, len);
   }
 
   /** true if the <code>CharSequence</code> is in the set */
   public boolean contains(CharSequence cs) {
-    return entries[getSlot(cs)] != null;
+    return map.containsKey(cs);
   }
 
-  private int getSlot(char[] text, int off, int len) {
-    int code = getHashCode(text, off, len);
-    int pos = code & (entries.length-1);
-    char[] text2 = entries[pos];
-    if (text2 != null && !equals(text, off, len, text2)) {
-      final int inc = ((code>>8)+code)|1;
-      do {
-        code += inc;
-        pos = code & (entries.length-1);
-        text2 = entries[pos];
-      } while (text2 != null && !equals(text, off, len, text2));
-    }
-    return pos;
+  @Override
+  public boolean contains(Object o) {
+    return map.containsKey(o);
   }
 
-  /** Returns true if the String is in the set */  
-  private int getSlot(CharSequence text) {
-    int code = getHashCode(text);
-    int pos = code & (entries.length-1);
-    char[] text2 = entries[pos];
-    if (text2 != null && !equals(text, text2)) {
-      final int inc = ((code>>8)+code)|1;
-      do {
-        code += inc;
-        pos = code & (entries.length-1);
-        text2 = entries[pos];
-      } while (text2 != null && !equals(text, text2));
-    }
-    return pos;
+  @Override
+  public boolean add(Object o) {
+    return map.put(o, PLACEHOLDER) == null;
   }
 
   /** Add this CharSequence into the set */
   public boolean add(CharSequence text) {
-    return add(text.toString()); // could be more efficient
+    return map.put(text, PLACEHOLDER) == null;
   }
   
   /** Add this String into the set */
   public boolean add(String text) {
-    return add(text.toCharArray());
+    return map.put(text, PLACEHOLDER) == null;
   }
 
   /** Add this char[] directly to the set.
@@ -210,140 +171,12 @@ public class CharArraySet extends AbstractSet<Object> {
    * The user should never modify this text array after calling this method.
    */
   public boolean add(char[] text) {
-    if (ignoreCase)
-      for(int i=0;i<text.length;){
-        i += Character.toChars(
-              Character.toLowerCase(
-                  charUtils.codePointAt(text, i)), text, i);
-      }
-    int slot = getSlot(text, 0, text.length);
-    if (entries[slot] != null) return false;
-    entries[slot] = text;
-    count++;
-
-    if (count + (count>>2) > entries.length) {
-      rehash();
-    }
-
-    return true;
+    return map.put(text, PLACEHOLDER) == null;
   }
-
-  private boolean equals(char[] text1, int off, int len, char[] text2) {
-    if (len != text2.length)
-      return false;
-    final int limit = off+len;
-    if (ignoreCase) {
-      for(int i=0;i<len;) {
-        final int codePointAt = charUtils.codePointAt(text1, off+i, limit);
-        if (Character.toLowerCase(codePointAt) != charUtils.codePointAt(text2, i))
-          return false;
-        i += Character.charCount(codePointAt); 
-      }
-    } else {
-      for(int i=0;i<len;i++) {
-        if (text1[off+i] != text2[i])
-          return false;
-      }
-    }
-    return true;
-  }
-
-  private boolean equals(CharSequence text1, char[] text2) {
-    int len = text1.length();
-    if (len != text2.length)
-      return false;
-    if (ignoreCase) {
-      for(int i=0;i<len;) {
-        final int codePointAt = charUtils.codePointAt(text1, i);
-        if (Character.toLowerCase(codePointAt) != charUtils.codePointAt(text2, i))
-          return false;
-        i += Character.charCount(codePointAt);
-      }
-    } else {
-      for(int i=0;i<len;i++) {
-        if (text1.charAt(i) != text2[i])
-          return false;
-      }
-    }
-    return true;
-  }
-  
-
-
-  private void rehash() {
-    final int newSize = 2*entries.length;
-    char[][] oldEntries = entries;
-    entries = new char[newSize][];
-
-    for(int i=0;i<oldEntries.length;i++) {
-      char[] text = oldEntries[i];
-      if (text != null) {
-        // todo: could be faster... no need to compare strings on collision
-        entries[getSlot(text,0,text.length)] = text;
-      }
-    }
-  }
-  
-  private int getHashCode(char[] text, int offset, int len) {
-    int code = 0;
-    final int stop = offset + len;
-    if (ignoreCase) {
-      for (int i=offset; i<stop;) {
-        final int codePointAt = charUtils.codePointAt(text, i, stop);
-        code = code*31 + Character.toLowerCase(codePointAt);
-        i += Character.charCount(codePointAt);
-      }
-    } else {
-      for (int i=offset; i<stop; i++) {
-        code = code*31 + text[i];
-      }
-    }
-    return code;
-  }
-
-  private int getHashCode(CharSequence text) {
-    int code = 0;
-    int len = text.length();
-    if (ignoreCase) {
-      for (int i=0; i<len;) {
-        int codePointAt = charUtils.codePointAt(text, i);
-        code = code*31 + Character.toLowerCase(codePointAt);
-        i += Character.charCount(codePointAt);
-      }
-    } else {
-      for (int i=0; i<len; i++) {
-        code = code*31 + text.charAt(i);
-      }
-    }
-    return code;
-  }
-
 
   @Override
   public int size() {
-    return count;
-  }
-
-  @Override
-  public boolean isEmpty() {
-    return count==0;
-  }
-
-  @Override
-  public boolean contains(Object o) {
-    if (o instanceof char[]) {
-      final char[] text = (char[])o;
-      return contains(text, 0, text.length);
-    } 
-    return contains(o.toString());
-  }
-
-  @Override
-  public boolean add(Object o) {
-    if (o instanceof char[]) {
-      return add((char[])o);
-    }
-    return add(o.toString());
+    return map.size();
   }
   
   /**
@@ -361,14 +194,9 @@ public class CharArraySet extends AbstractSet<Object> {
       throw new NullPointerException("Given set is null");
     if (set == EMPTY_SET)
       return EMPTY_SET;
-    if (set instanceof UnmodifiableCharArraySet)
+    if (set.map instanceof CharArrayMap.UnmodifiableCharArrayMap)
       return set;
-
-    /*
-     * Instead of delegating calls to the given set copy the low-level values to
-     * the unmodifiable Subclass
-     */
-    return new UnmodifiableCharArraySet(set.matchVersion, set.entries, set.ignoreCase, set.count);
+    return new CharArraySet(CharArrayMap.unmodifiableMap(set.map));
   }
 
   /**
@@ -415,29 +243,27 @@ public class CharArraySet extends AbstractSet<Object> {
       return EMPTY_SET;
     if(set instanceof CharArraySet) {
       final CharArraySet source = (CharArraySet) set;
-      // use fast path instead of iterating all values
-      // this is even on very small sets ~10 times faster than iterating
-      final char[][] entries = new char[source.entries.length][];
-      System.arraycopy(source.entries, 0, entries, 0, entries.length);
-      return new CharArraySet(source.matchVersion, entries, source.ignoreCase, source.count);
+      return new CharArraySet(CharArrayMap.copy(source.map.matchVersion, source.map));
     }
     return new CharArraySet(matchVersion, set, false);
   }
   
-
   /** The Iterator<String> for this set.  Strings are constructed on the fly, so
-   * use <code>nextCharArray</code> for more efficient access. */
+   * use <code>nextCharArray</code> for more efficient access.
+   * @deprecated Use the standard iterator, which returns {@code char[]} instances.
+   */
+  @Deprecated
   public class CharArraySetIterator implements Iterator<String> {
     int pos=-1;
     char[] next;
-    CharArraySetIterator() {
+    private CharArraySetIterator() {
       goNext();
     }
 
     private void goNext() {
       next = null;
       pos++;
-      while (pos < entries.length && (next=entries[pos]) == null) pos++;
+      while (pos < map.keys.length && (next=map.keys[pos]) == null) pos++;
     }
 
     public boolean hasNext() {
@@ -462,93 +288,41 @@ public class CharArraySet extends AbstractSet<Object> {
     }
   }
 
-  /** returns an iterator of new allocated Strings */
+  /** returns an iterator of new allocated Strings (an instance of {@link CharArraySetIterator}).
+   * @deprecated Use {@link #iterator}, which returns {@code char[]} instances.
+   */
+  @Deprecated
   public Iterator<String> stringIterator() {
     return new CharArraySetIterator();
   }
 
-  /** returns an iterator of new allocated Strings, this method violates the Set interface */
-  @Override
-  @SuppressWarnings("unchecked")
+  /** Returns an {@link Iterator} depending on the version used:
+   * <ul>
+   * <li>if {@code matchVersion} &ge; 3.1, it returns {@code char[]} instances in this set.</li>
+   * <li>if {@code matchVersion} is 3.0 or older, it returns new
+   * allocated Strings, so this method violates the Set interface.
+   * It is kept this way for backwards compatibility, normally it should
+   * return {@code char[]} on {@code next()}</li>
+   * </ul>
+   */
+  @Override @SuppressWarnings("unchecked")
   public Iterator<Object> iterator() {
-    return (Iterator) stringIterator();
+    // use the AbstractSet#keySet()'s iterator (to not produce endless recursion)
+    return map.matchVersion.onOrAfter(Version.LUCENE_31) ?
+      map.originalKeySet().iterator() : (Iterator) stringIterator();
   }
   
-  /**
-   * Efficient unmodifiable {@link CharArraySet}. This implementation does not
-   * delegate calls to a give {@link CharArraySet} like
-   * {@link Collections#unmodifiableSet(java.util.Set)} does. Instead is passes
-   * the internal representation of a {@link CharArraySet} to a super
-   * constructor and overrides all mutators. 
-   */
-  private static class UnmodifiableCharArraySet extends CharArraySet {
-
-    private UnmodifiableCharArraySet(Version matchVersion, char[][] entries, boolean ignoreCase,
-        int count) {
-      super(matchVersion, entries, ignoreCase, count);
+  @Override
+  public String toString() {
+    final StringBuilder sb = new StringBuilder("[");
+    for (Object item : this) {
+      if (sb.length()>1) sb.append(", ");
+      if (item instanceof char[]) {
+        sb.append((char[]) item);
+      } else {
+        sb.append(item);
+      }
     }
-
-    @Override
-    public void clear() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean add(Object o){
-      throw new UnsupportedOperationException();
-    }
-    
-    @Override
-    public boolean addAll(Collection<? extends Object> coll) {
-      throw new UnsupportedOperationException();
-    }
-    
-    @Override
-    public boolean add(char[] text) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean add(CharSequence text) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public boolean add(String text) {
-      throw new UnsupportedOperationException();
-    }
-  }
-  
-  /**
-   * Empty {@link UnmodifiableCharArraySet} optimized for speed.
-   * Contains checks will always return <code>false</code> or throw
-   * NPE if necessary.
-   */
-  private static final class EmptyCharArraySet extends UnmodifiableCharArraySet {
-
-    private EmptyCharArraySet() {
-      super(Version.LUCENE_CURRENT, new char[0][], false, 0);
-    }
-    
-    @Override
-    public boolean contains(char[] text, int off, int len) {
-      if(text == null)
-        throw new NullPointerException();
-      return false;
-    }
-
-    @Override
-    public boolean contains(CharSequence cs) {
-      if(cs == null)
-        throw new NullPointerException();
-      return false;
-    }
-
-    @Override
-    public boolean contains(Object o) {
-      if(o == null)
-        throw new NullPointerException();
-      return false;
-    }
+    return sb.append(']').toString();
   }
 }

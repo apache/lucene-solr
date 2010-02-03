@@ -19,6 +19,7 @@ package org.apache.lucene.analysis;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -92,7 +93,7 @@ public class TestCharArraySet extends LuceneTestCase {
   }
   
   public void testModifyOnUnmodifiable(){
-    CharArraySet set=new CharArraySet(Version.LUCENE_CURRENT, 10,true);
+    CharArraySet set=new CharArraySet(Version.LUCENE_CURRENT, 10, true);
     set.addAll(Arrays.asList(TEST_STOP_WORDS));
     final int size = set.size();
     set = CharArraySet.unmodifiableSet(set);
@@ -143,8 +144,12 @@ public class TestCharArraySet extends LuceneTestCase {
       assertFalse("Test String has been added to unmodifiable set", set.contains(NOT_IN_SET));
       assertEquals("Size of unmodifiable set has changed", size, set.size());
     }
+    
+    // This test was changed in 3.1, as a contains() call on the given Collection using the "correct" iterator's
+    // current key (now a char[]) on a Set<String> would not hit any element of the CAS and therefor never call
+    // remove() on the iterator
     try{
-      set.removeAll(Arrays.asList(TEST_STOP_WORDS));  
+      set.removeAll(new CharArraySet(Version.LUCENE_CURRENT, Arrays.asList(TEST_STOP_WORDS), true));  
       fail("Modified unmodifiable set");
     }catch (UnsupportedOperationException e) {
       // expected
@@ -152,7 +157,7 @@ public class TestCharArraySet extends LuceneTestCase {
     }
     
     try{
-      set.retainAll(Arrays.asList(new String[]{NOT_IN_SET}));  
+      set.retainAll(new CharArraySet(Version.LUCENE_CURRENT, Arrays.asList(NOT_IN_SET), true));  
       fail("Modified unmodifiable set");
     }catch (UnsupportedOperationException e) {
       // expected
@@ -490,5 +495,12 @@ public class TestCharArraySet extends LuceneTestCase {
       set.contains((Object) null);
       fail("null value must raise NPE");
     } catch (NullPointerException e) {}
+  }
+  
+  public void testToString() {
+    CharArraySet set = CharArraySet.copy(Version.LUCENE_CURRENT, Collections.singleton("test"));
+    assertEquals("[test]", set.toString());
+    set.add("test2");
+    assertTrue(set.toString().contains(", "));
   }
 }

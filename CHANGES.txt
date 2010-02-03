@@ -137,6 +137,9 @@ New features
   on the provided Version. Version < 3.1 will use the char-API.
   (Simon Willnauer via Uwe Schindler)
 
+* LUCENE-2247: Added a CharArrayMap<V> for performance improvements
+  in some stemmers and synonym filters. (Uwe Schindler)
+
 Optimizations
 
 * LUCENE-2086: When resolving deleted terms, do so in term sort order
