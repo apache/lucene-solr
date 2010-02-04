@@ -164,6 +164,11 @@ Bug Fixes
 
 * SOLR-1711: SolrJ - StreamingUpdateSolrServer had a race condition that
   could halt the streaming of documents. (Attila Babo via yonik)
+  
+* SOLR-1748, SOLR-1747, SOLR-1746, SOLR-1745, SOLR-1744: Streams and Readers
+  retrieved from ContentStreams are not closed in various places, resulting
+  in file descriptor leaks.
+  (Christoff Brill, Mark Miller)
 
 Other Changes
 ----------------------
@@ -849,11 +854,6 @@ Bug Fixes
 75. SOLR-1529: More than 8 deleteByQuery commands in a single request
     caused an error to be returned, although the deletes were
     still executed.  (asmodean via yonik)
-    
-76. SOLR-1748, SOLR-1747, SOLR-1746, SOLR-1745, SOLR-1744: Streams and Readers
-    retrieved from ContentStreams are not closed in various places, resulting
-    in file descriptor leaks.
-    (Christoff Brill, Mark Miller)
 
 Other Changes
 ----------------------
