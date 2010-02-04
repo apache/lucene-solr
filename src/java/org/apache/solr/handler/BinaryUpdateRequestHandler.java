@@ -49,7 +49,15 @@ public class BinaryUpdateRequestHandler extends ContentStreamHandlerBase {
   protected ContentStreamLoader newLoader(SolrQueryRequest req, final UpdateRequestProcessor processor) {
     return new ContentStreamLoader() {
       public void load(SolrQueryRequest req, SolrQueryResponse rsp, ContentStream stream) throws Exception {
-        parseAndLoadDocs(req, rsp, stream.getStream(), processor);
+        InputStream is = null;
+        try {
+          is = stream.getStream();
+          parseAndLoadDocs(req, rsp, is, processor);
+        } finally {
+          if(is != null) {
+            is.close();
+          }
+        }
       }
     };
   }

@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.impl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.Reader;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.*;
@@ -246,6 +247,7 @@ public class CommonsHttpSolrServer extends SolrServer
   
   public NamedList<Object> request(final SolrRequest request, ResponseParser processor) throws SolrServerException, IOException {
     HttpMethod method = null;
+    InputStream is = null;
     SolrParams params = request.getParams();
     Collection<ContentStream> streams = requestWriter.getContentStreams(request);
     String path = requestWriter.getPath(request);
@@ -333,7 +335,12 @@ public class CommonsHttpSolrServer extends SolrServer
                     @Override
                     protected void sendData(OutputStream out)
                         throws IOException {
-                      IOUtils.copy(c.getReader(), out);
+                      Reader reader = c.getReader();
+                      try {
+                        IOUtils.copy(reader, out);
+                      } finally {
+                        reader.close();
+                      }
                     }
                   });
                 }
@@ -378,7 +385,8 @@ public class CommonsHttpSolrServer extends SolrServer
                 );
 
               } else {
-                post.setRequestEntity(new InputStreamRequestEntity(contentStream[0].getStream(), contentStream[0].getContentType()));
+                is = contentStream[0].getStream();
+                post.setRequestEntity(new InputStreamRequestEntity(is, contentStream[0].getContentType()));
               }
               method = post;
             }
@@ -391,6 +399,9 @@ public class CommonsHttpSolrServer extends SolrServer
           // This is generally safe to retry on
           method.releaseConnection();
           method = null;
+          if(is != null) {
+            is.close();
+          }
           // If out of tries then just rethrow (as normal error).
           if( ( tries < 1 ) ) {
             throw r;
@@ -473,6 +484,9 @@ public class CommonsHttpSolrServer extends SolrServer
     }
     finally {
       method.releaseConnection();
+      if(is != null) {
+        is.close();
+      }
     }
   }
 

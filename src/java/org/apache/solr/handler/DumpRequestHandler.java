@@ -18,6 +18,7 @@
 package org.apache.solr.handler;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 import org.apache.commons.io.IOUtils;
@@ -45,7 +46,12 @@ public class DumpRequestHandler extends RequestHandlerBase
         stream.add( "sourceInfo", content.getSourceInfo() );
         stream.add( "size", content.getSize() );
         stream.add( "contentType", content.getContentType() );
-        stream.add( "stream", IOUtils.toString( content.getStream() ) );
+        InputStream is = content.getStream();
+        try {
+          stream.add( "stream", IOUtils.toString(is) );
+        } finally {
+          is.close();
+        }
         streams.add( stream );
       }
       rsp.add( "streams", streams );
