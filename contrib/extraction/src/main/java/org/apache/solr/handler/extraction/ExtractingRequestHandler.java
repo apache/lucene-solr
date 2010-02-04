@@ -35,6 +35,8 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
 
 
 /**
@@ -81,8 +83,9 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
       NamedList configDateFormats = (NamedList) initArgs.get(DATE_FORMATS);
       if (configDateFormats != null && configDateFormats.size() > 0) {
         dateFormats = new HashSet<String>();
-        while (configDateFormats.iterator().hasNext()) {
-          String format = (String) configDateFormats.iterator().next();
+        Iterator<Map.Entry> it = configDateFormats.iterator();
+        while (it.hasNext()) {
+          String format = (String) it.next().getValue();
           log.info("Adding Date Format: " + format);
           dateFormats.add(format);
         }
