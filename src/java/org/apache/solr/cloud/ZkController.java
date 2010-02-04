@@ -776,6 +776,7 @@ public final class ZkController {
   }
 
   public void createCollectionZkNode(String collection) throws KeeperException, InterruptedException, IOException {
+    log.info("Check for collection zkNode:" + collection);
     String collectionPath = COLLECTIONS_ZKNODE + "/" + collection;
     
     try {
@@ -789,9 +790,31 @@ public final class ZkController {
             String confName = System.getProperty("bootstrap_confname", "configuration1");
             log.info("Setting config for collection:" + collection + " to " + confName);
             props.put("configName",  confName);
+          } else {
+            // check for configName
+            log.info("Looking for collection configName");
+            int retry = 1;
+            for (; retry < 6; retry++) {
+              if (zkClient.exists(COLLECTIONS_ZKNODE + "/" + collection)) {
+                ZkNodeProps collectionProps = new ZkNodeProps();
+                collectionProps.load(zkClient.getData(COLLECTIONS_ZKNODE + "/"
+                    + collection, null, null));
+                if (collectionProps.containsKey("configName")) {
+                  break;
+                }
+              }
+              log.info("Could not find collection configName - pausing for 2 seconds and trying again - try: " + retry);
+              Thread.sleep(2000);
+            }
+            if (retry == 6) {
+              log.error("Could not find conigName for collection " + collection);
+              throw new ZooKeeperException(
+                  SolrException.ErrorCode.SERVER_ERROR,
+                  "Could not find conigName for collection " + collection);
+            }
           }
           
-          zkClient.makePath(COLLECTIONS_ZKNODE + "/" + collection, props.store(), CreateMode.PERSISTENT);
+          zkClient.makePath(COLLECTIONS_ZKNODE + "/" + collection, props.store(), CreateMode.PERSISTENT, null, true);
          
           // ping that there is a new collection
           zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);
@@ -801,6 +824,8 @@ public final class ZkController {
             throw e;
           }
         }
+      } else {
+        log.info("Collection zkNode exists");
       }
       
     } catch (KeeperException e) {

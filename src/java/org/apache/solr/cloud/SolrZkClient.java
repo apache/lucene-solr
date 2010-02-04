@@ -313,6 +313,24 @@ public class SolrZkClient {
    */
   public void makePath(String path, byte[] data, CreateMode createMode,
       Watcher watcher) throws KeeperException, InterruptedException {
+    makePath(path, data, createMode, watcher, false);
+  }
+  
+  /**
+   * Creates the path in ZooKeeper, creating each node as necessary.
+   * 
+   * e.g. If <code>path=/solr/group/node</code> and none of the nodes, solr,
+   * group, node exist, each will be created.
+   * 
+   * @param path
+   * @param data to set on the last zkNode
+   * @param createMode
+   * @param watcher
+   * @throws KeeperException
+   * @throws InterruptedException
+   */
+  public void makePath(String path, byte[] data, CreateMode createMode,
+      Watcher watcher, boolean failOnExists) throws KeeperException, InterruptedException {
     if (log.isInfoEnabled()) {
       log.info("makePath: " + path + " keeper:" + keeper);
     }
@@ -328,7 +346,7 @@ public class SolrZkClient {
       sbPath.append("/" + pathPiece);
       String currentPath = sbPath.toString();
       Object exists = exists(currentPath, watcher);
-      if (exists == null) {
+      if (exists == null || ((i == paths.length -1) && failOnExists)) {
         CreateMode mode = CreateMode.PERSISTENT;
         if (i == paths.length - 1) {
           mode = createMode;

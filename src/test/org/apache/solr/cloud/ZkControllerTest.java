@@ -68,7 +68,8 @@ public class ZkControllerTest extends TestCase {
       String shardsPath = "/collections/collection1/shards/shardid1";
       zkClient.makePath(shardsPath);
 
-      zkClient.makePath("collections/collection1/config=collection1");
+      // nocommit
+      //zkClient.makePath("collections/collection1/config=collection1");
 
       addShardToZk(zkClient, shardsPath, SHARD1, URL1, "slave");
       addShardToZk(zkClient, shardsPath, SHARD2, URL2, "master");
