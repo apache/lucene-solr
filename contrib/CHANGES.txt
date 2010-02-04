@@ -103,6 +103,8 @@ New features
    character is now configurable. Its also up to 20% faster. 
    (Steven Rowe via Robert Muir)
 
+ * LUCENE-2234: Add a Hindi analyzer.  (Robert Muir)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
