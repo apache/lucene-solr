@@ -17,10 +17,8 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetAddress;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,14 +32,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.xml.parsers.ParserConfigurationException;
-
 import org.apache.solr.cloud.SolrZkClient.OnReconnect;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -50,7 +42,6 @@ import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.xml.sax.SAXException;
 
 /**
  * Handle ZooKeeper interactions.
@@ -219,35 +210,6 @@ public final class ZkController {
   }
 
   /**
-   * Load SolrConfig from ZooKeeper.
-   * 
-   * TODO: consider *many* cores firing up at once and loading the same files
-   * from ZooKeeper
-   * 
-   * @param resourceLoader
-   * @param solrConfigFileName
-   * @return
-   * @throws IOException
-   * @throws ParserConfigurationException
-   * @throws SAXException
-   * @throws InterruptedException
-   * @throws KeeperException
-   */
-  public SolrConfig getConfig(String zkConfigName, String solrConfigFileName,
-      SolrResourceLoader resourceLoader) throws IOException,
-      ParserConfigurationException, SAXException, KeeperException,
-      InterruptedException {
-    byte[] config = zkClient.getData(CONFIGS_ZKNODE + "/" + zkConfigName + "/"
-        + solrConfigFileName, null, null);
-    InputStream is = new ByteArrayInputStream(config);
-    SolrConfig cfg = solrConfigFileName == null ? new SolrConfig(
-        resourceLoader, SolrConfig.DEFAULT_CONF_FILE, is) : new SolrConfig(
-        resourceLoader, solrConfigFileName, is);
-
-    return cfg;
-  }
-
-  /**
    * @param zkConfigName
    * @param fileName
    * @return
@@ -256,7 +218,7 @@ public final class ZkController {
    */
   public byte[] getConfigFileData(String zkConfigName, String fileName)
       throws KeeperException, InterruptedException {
-    return zkClient.getData(CONFIGS_ZKNODE + "/" + zkConfigName, null, null);
+    return zkClient.getData(CONFIGS_ZKNODE + "/" + zkConfigName + "/" + fileName, null, null);
   }
 
   // TODO: consider how this is done
@@ -279,29 +241,6 @@ public final class ZkController {
   
   public String getHostName() {
     return hostName;
-  }
-
-  /**
-   * Load IndexSchema from ZooKeeper.
-   * 
-   * TODO: consider *many* cores firing up at once and loading the same files
-   * from ZooKeeper
-   * 
-   * @param resourceLoader
-   * @param schemaName
-   * @param config
-   * @return
-   * @throws InterruptedException
-   * @throws KeeperException
-   */
-  public IndexSchema getSchema(String zkConfigName, String schemaName,
-      SolrConfig config, SolrResourceLoader resourceLoader)
-      throws KeeperException, InterruptedException {
-    byte[] configBytes = zkClient.getData(CONFIGS_ZKNODE + "/" + zkConfigName
-        + "/" + schemaName, null, null);
-    InputStream is = new ByteArrayInputStream(configBytes);
-    IndexSchema schema = new IndexSchema(config, schemaName, is);
-    return schema;
   }
 
   public SolrZkClient getZkClient() {
@@ -528,23 +467,20 @@ public final class ZkController {
   }
 
   /**
-   * Register shard. A SolrCore calls this on startup to register with
-   * ZooKeeper.
+   * Register shard with ZooKeeper.
    * 
-   * @param core SolrCore to register as a shard
+   * @param coreName
+   * @param cloudDesc
    * @param forcePropsUpdate update solr.xml core props even if the shard is already registered
-   * 
    * @throws IOException
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public void register(SolrCore core, boolean forcePropsUpdate) throws IOException,
+  public void register(String coreName, CloudDescriptor cloudDesc, boolean forcePropsUpdate) throws IOException,
       KeeperException, InterruptedException {
-    String coreName = core.getCoreDescriptor().getName();
     String shardUrl = localHostName + ":" + localHostPort + "/" + localHostContext
         + "/" + coreName;
     
-    CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
     String collection = cloudDesc.getCollectionName();
     
     String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE + "/" + cloudDesc.getShardId();
@@ -556,7 +492,7 @@ public final class ZkController {
     }
     
     if (log.isInfoEnabled()) {
-      log.info("Register shard - core:" + core.getName() + " address:"
+      log.info("Register shard - core:" + coreName + " address:"
           + shardUrl);
     }
 
@@ -596,9 +532,10 @@ public final class ZkController {
   }
 
   /**
-   * @param core
+   * @param coreName
+   * @param cloudDesc
    */
-  public void unregister(SolrCore core) {
+  public void unregister(String coreName, CloudDescriptor cloudDesc) {
     // TODO : perhaps mark the core down in zk?
   }
 

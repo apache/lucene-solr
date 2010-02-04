@@ -43,11 +43,11 @@ public class CoreDescriptor {
     this.coreContainer = coreContainer;
     this.name = name;
     
-    if(coreContainer.getZooKeeperController() != null) {
+    if(coreContainer.getZkController() != null) {
       this.cloudDesc = new CloudDescriptor();
       // cloud collection defaults to core name
       cloudDesc.setCollectionName(name == "" ? coreContainer.getDefaultCoreName() : name);
-      this.cloudDesc.setShardId(coreContainer.getZooKeeperController().getNodeName() + "_" + name);
+      this.cloudDesc.setShardId(coreContainer.getZkController().getNodeName() + "_" + name);
     }
     
     if (name == null) {

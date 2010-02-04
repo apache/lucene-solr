@@ -101,7 +101,7 @@
       this.addr = addr;
 
       if (addr == null) {
-        ZkController controller = core.getCoreDescriptor().getCoreContainer().getZooKeeperController();
+        ZkController controller = core.getCoreDescriptor().getCoreContainer().getZkController();
         if (controller != null) {
           // this core is zk enabled
           keeperAddr = controller.getZkServerAddress();

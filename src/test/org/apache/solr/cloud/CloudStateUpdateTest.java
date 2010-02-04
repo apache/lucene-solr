@@ -122,7 +122,7 @@ public class CloudStateUpdateTest extends TestCase {
     // slight pause - TODO: takes an oddly long amount of time to schedule tasks with almost no delay ...
     Thread.sleep(5000);
     
-    ZkController zkController2 = container2.getZooKeeperController();
+    ZkController zkController2 = container2.getZkController();
     
     String host = zkController2.getHostName();
     

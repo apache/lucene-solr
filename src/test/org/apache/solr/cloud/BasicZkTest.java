@@ -29,7 +29,7 @@ public class BasicZkTest extends AbstractZkTestCase {
     // test using ZooKeeper
     assertTrue("Not using ZooKeeper", h.getCoreContainer().isZooKeeperAware());
     
-    ZkController zkController = h.getCoreContainer().getZooKeeperController();
+    ZkController zkController = h.getCoreContainer().getZkController();
     
     // test merge factor picked up
     SolrCore core = h.getCore();

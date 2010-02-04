@@ -132,7 +132,7 @@ public class QueryComponent extends SearchComponent
       Map<String,Slice> slices = null;
       CoreDescriptor coreDescriptor = req.getCore().getCoreDescriptor();
       CloudDescriptor cloudDescriptor = coreDescriptor.getCloudDescriptor();
-      ZkController zkController = coreDescriptor.getCoreContainer().getZooKeeperController();
+      ZkController zkController = coreDescriptor.getCoreContainer().getZkController();
 
 
       if (shards != null) {

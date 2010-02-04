@@ -173,7 +173,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
         boolean exists = false;
         //nocommit: double check this how we want to handle this
         // check if using ZooKeeper
-        ZkController zooKeeperController = core.getCoreDescriptor().getCoreContainer().getZooKeeperController();
+        ZkController zooKeeperController = core.getCoreDescriptor().getCoreContainer().getZkController();
         if(zooKeeperController != null) {
           // TODO : shouldn't have to keep reading the config name when it has been read before
           exists = zooKeeperController.configFileExists(zooKeeperController.readConfigName(core.getCoreDescriptor().getCloudDescriptor().getCollectionName()), f);

@@ -101,7 +101,7 @@ public class DistributedZkFailuresTest extends AbstractDistributedZkTestCase {
 
   @Override
   public void doTest() throws Exception {
-    ZkController zkController = h.getCoreContainer().getZooKeeperController();
+    ZkController zkController = h.getCoreContainer().getZkController();
     del("*:*");
     
     // nocommit : test too long
