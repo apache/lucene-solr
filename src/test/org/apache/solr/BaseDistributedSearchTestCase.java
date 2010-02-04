@@ -159,6 +159,11 @@ public abstract class BaseDistributedSearchTestCase extends AbstractSolrTestCase
     shards = sb.toString();
   }
 
+
+  protected void setDistributedParams(ModifiableSolrParams params) {
+    params.set("shards", getShardsString());
+  }
+
   protected String getShardsString() {
     if (deadServers == null) return shards;
     
@@ -294,8 +299,8 @@ public abstract class BaseDistributedSearchTestCase extends AbstractSolrTestCase
 
     final QueryResponse controlRsp = controlClient.query(params);
 
+    setDistributedParams(params);
     // query a random server
-    params.set("shards", getShardsString());
     int which = r.nextInt(clients.size());
     SolrServer client = clients.get(which);
     QueryResponse rsp = client.query(params);

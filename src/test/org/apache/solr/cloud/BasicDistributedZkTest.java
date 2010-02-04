@@ -21,6 +21,7 @@ import java.util.HashSet;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 
@@ -56,7 +57,25 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   String oddField="oddField_s";
   String missingField="missing_but_valid_field_t";
   String invalidField="invalid_field_not_in_schema";
-  
+
+  @Override
+  protected void setDistributedParams(ModifiableSolrParams params) {
+    // super.setDistributedParams(params);
+
+    // TODO: this doesn't work yet because of the extra shards in the collection from
+    // localhost:8983 and control_shardId
+    // params.set("distrib","true");
+
+    // use shard ids rather than physical locations
+    StringBuilder sb = new StringBuilder();
+    for (int i=0; i<nServers; i++) {
+      if (i>0) sb.append(',');
+      sb.append("shardId"+(i+3));
+    }
+    params.set("shards",sb.toString());
+    params.set("distrib","true");
+  }
+
   protected void createServers(int numShards) throws Exception {
     controlJetty = createJetty(testDir, "control", "control_shardId");
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
@@ -73,8 +92,9 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     shards = sb.toString();
   }
 
+  int nServers;
   public void testDistribSearch() throws Exception {
-    for (int nServers = 3; nServers < 4; nServers++) {
+    for (nServers = 3; nServers < 4; nServers++) {
       printLayout();
       createServers(nServers);
       RandVal.uniqueValues = new HashSet(); //reset random values
