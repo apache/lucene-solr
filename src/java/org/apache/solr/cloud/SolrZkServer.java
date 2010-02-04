@@ -119,9 +119,9 @@ public class SolrZkServer {
     };
 
     if (zkProps.getServers().size() > 1) {
-      log.info("STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER");      
+      log.info("STARTING EMBEDDED ENSEMBLE ZOOKEEPER SERVER at port " + zkProps.getClientPort());
     } else {
-      log.info("STARTING EMBEDDED STANDALONE ZOOKEEPER SERVER");
+      log.info("STARTING EMBEDDED STANDALONE ZOOKEEPER SERVER at port " + zkProps.getClientPort());
     }
 
     zkThread.setDaemon(true);

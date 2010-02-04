@@ -119,10 +119,13 @@ public class CoreContainer
     if (zookeeperHost != null) {
       // we are ZooKeeper enabled
       try {
-        log.info("Zookeeper client=" + zookeeperHost);
         // If this is an ensemble, allow for a long connect time for other servers to come up
-        if (zkRun != null && zkServer.getServers().size() > 1)
+        if (zkRun != null && zkServer.getServers().size() > 1) {
           zkClientConnectTimeout = 24 * 60 * 60 * 1000;  // 1 day for embedded ensemble
+          log.info("Zookeeper client=" + zookeeperHost + "  Waiting for a quorum.");
+        } else {
+          log.info("Zookeeper client=" + zookeeperHost);          
+        }
 
         zkController = new ZkController(zookeeperHost, zkClientTimeout, zkClientConnectTimeout, host, hostPort, hostContext);
         
