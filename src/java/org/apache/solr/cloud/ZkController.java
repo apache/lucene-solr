@@ -218,7 +218,15 @@ public final class ZkController {
    */
   public byte[] getConfigFileData(String zkConfigName, String fileName)
       throws KeeperException, InterruptedException {
-    return zkClient.getData(CONFIGS_ZKNODE + "/" + zkConfigName + "/" + fileName, null, null);
+    String zkPath = CONFIGS_ZKNODE + "/" + zkConfigName + "/" + fileName;
+    byte[] bytes = zkClient.getData(zkPath, null, null);
+    if (bytes == null) {
+      log.error("Config file contains no data:" + zkPath);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+          "Config file contains no data:" + zkPath);
+    }
+    
+    return bytes;
   }
 
   // TODO: consider how this is done
