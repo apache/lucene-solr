@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Iterator;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
@@ -497,8 +498,39 @@ public class TestCharArraySet extends LuceneTestCase {
     } catch (NullPointerException e) {}
   }
   
+  @Deprecated @SuppressWarnings("unchecked")
+  public void testIterator() {
+    HashSet<String> hset = new HashSet<String>();
+    hset.addAll(Arrays.asList(TEST_STOP_WORDS));
+
+    assertTrue("in 3.0 version, iterator should be CharArraySetIterator",
+      ((Iterator) CharArraySet.copy(Version.LUCENE_30, hset).iterator()) instanceof CharArraySet.CharArraySetIterator);
+
+    CharArraySet set = CharArraySet.copy(Version.LUCENE_CURRENT, hset);
+    assertFalse("in current version, iterator should not be CharArraySetIterator",
+      ((Iterator) set.iterator()) instanceof CharArraySet.CharArraySetIterator);
+    
+    Iterator<String> it = set.stringIterator();
+    assertTrue(it instanceof CharArraySet.CharArraySetIterator);
+    while (it.hasNext()) {
+      // as the set returns String instances, this must work:
+      assertTrue(hset.contains(it.next()));
+      try {
+        it.remove();
+        fail("remove() should not work on CharArraySetIterator");
+      } catch (UnsupportedOperationException uoe) {
+        // pass
+      }
+    }
+  }
+  
   public void testToString() {
     CharArraySet set = CharArraySet.copy(Version.LUCENE_CURRENT, Collections.singleton("test"));
+    assertEquals("[test]", set.toString());
+    set.add("test2");
+    assertTrue(set.toString().contains(", "));
+    
+    set = CharArraySet.copy(Version.LUCENE_30, Collections.singleton("test"));
     assertEquals("[test]", set.toString());
     set.add("test2");
     assertTrue(set.toString().contains(", "));
