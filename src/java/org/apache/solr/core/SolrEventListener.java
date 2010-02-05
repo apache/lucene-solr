@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,10 +27,9 @@ import org.slf4j.LoggerFactory;
 /**
  * @version $Id$
  */
-public interface SolrEventListener {
+public interface SolrEventListener extends NamedListInitializedPlugin{
   static final Logger log = LoggerFactory.getLogger(SolrCore.class);
 
-  public void init(NamedList args);
 
   public void postCommit();
 

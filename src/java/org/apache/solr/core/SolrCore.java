@@ -273,12 +273,8 @@ public final class SolrCore implements SolrInfoMBean {
    }
 
   private void initListeners() {
-    List<PluginInfo> l = solrConfig.getPluginInfos(SolrEventListener.class.getName());
-    firstSearcherListeners = new ArrayList<SolrEventListener>();
-    newSearcherListeners = new ArrayList<SolrEventListener>();
-    for (PluginInfo info : l) {
-      SolrEventListener listener = createEventListener(info.className);
-      listener.init(info.initArgs);
+    for (PluginInfo info : solrConfig.getPluginInfos(SolrEventListener.class.getName())) {
+      SolrEventListener listener = createInitInstance(info, SolrEventListener.class,"Event Listener",null);      
       String event = info.attributes.get("event");
       if("firstSearcher".equals(event) ){
         firstSearcherListeners.add(listener);
@@ -289,8 +285,8 @@ public final class SolrCore implements SolrInfoMBean {
     }
   }
 
-  List<SolrEventListener> firstSearcherListeners;
-  List<SolrEventListener> newSearcherListeners;
+  final List<SolrEventListener> firstSearcherListeners = new ArrayList<SolrEventListener>();
+  final List<SolrEventListener> newSearcherListeners = new ArrayList<SolrEventListener>();
 
   /**
    * NOTE: this function is not thread safe.  However, it is safe to call within the
