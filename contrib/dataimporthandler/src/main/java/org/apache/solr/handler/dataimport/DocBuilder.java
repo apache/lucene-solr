@@ -635,6 +635,7 @@ public class DocBuilder {
           if (isRoot) {
             if (e.getErrCode() == DataImportHandlerException.SKIP) {
               importStatistics.skipDocCount.getAndIncrement();
+              doc = null;
             } else {
               LOG.error("Exception while processing: "
                       + entity.name + " document : " + doc, e);

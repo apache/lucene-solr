@@ -53,6 +53,8 @@ Bug Fixes
 
 * SOLR-1598: Reader used in PlainTextEntityProcessor is not explicitly closed (Sascha Szott via noble)
 
+* SOLR-1759: $skipDoc was not working correctly (Gian Marco Tagliani via noble)
+
 Other Changes
 ----------------------
 
