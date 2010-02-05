@@ -173,6 +173,8 @@ Bug Fixes
 * SOLR-1753: StatsComponent throws NPE when getting statistics for facets in distributed search
   (Janne Majaranta via koji)
 
+* SOLR-1736:In the slave , If 'mov'ing file does not succeed , copy the file (noble)  
+
 Other Changes
 ----------------------
 

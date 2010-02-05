@@ -17,10 +17,8 @@
 
 package org.apache.solr.common.util;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.io.FileNotFoundException;
+import java.io.*;
+import java.nio.channels.FileChannel;
 
 /**
  * @version $Id$
@@ -40,6 +38,19 @@ public class FileUtils {
   public static File resolvePath(File base, String path) {
     File r = new File(path);
     return r.isAbsolute() ? r : new File(base, path);
+  }
+
+  public static void copyFile(File src , File destination) throws IOException {
+    FileChannel in = null;
+    FileChannel out = null;
+    try {
+      in = new FileInputStream(src).getChannel();
+      out = new FileOutputStream(destination).getChannel();
+      in.transferTo(0, in.size(), out);
+    } finally {
+      try { if (in != null) in.close(); } catch (IOException e) {}
+      try { if (out != null) out.close(); } catch (IOException e) {}
+    }
   }
 
   /**

@@ -569,15 +569,23 @@ public class SnapPuller {
   /**
    * Copy a file by the File#renameTo() method. If it fails, it is considered a failure
    * <p/>
-   * Todo may be we should try a simple copy if it fails
    */
   private boolean copyAFile(File tmpIdxDir, File indexDir, String fname, List<String> copiedfiles) {
     File indexFileInTmpDir = new File(tmpIdxDir, fname);
     File indexFileInIndex = new File(indexDir, fname);
     boolean success = indexFileInTmpDir.renameTo(indexFileInIndex);
+    if(!success){
+      try {
+        LOG.error("Unable to move index file from: " + indexFileInTmpDir
+              + " to: " + indexFileInIndex + "Trying to do a copy");
+        FileUtils.copyFile(indexFileInTmpDir,indexFileInIndex);
+        success = true;
+      } catch (IOException e) {
+        LOG.error("Unable to copy index file from: " + indexFileInTmpDir
+              + " to: " + indexFileInIndex , e);
+      }
+    }
     if (!success) {
-      LOG.error("Unable to move index file from: " + indexFileInTmpDir
-              + " to: " + indexFileInIndex);
       for (String f : copiedfiles) {
         File indexFile = new File(indexDir, f);
         if (indexFile.exists())
