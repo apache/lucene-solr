@@ -227,7 +227,7 @@ Other Changes
   
 * SOLR-1696 : Deprecate old <highlighting> syntax and move configuration to HighlightComponent (noble)
 
-* Upgraded to Lucene 2.9-dev r900226 (koji)\
+* Upgraded to Lucene 2.9-dev r900226 (koji)
 
 * SOLR-1727: SolrEventListener should extend NamedListInitializedPlugin (noble)
   
