@@ -73,13 +73,13 @@ public class StatsValues {
           facets.put( field, addTo );
         }
         for( int j=0; j< vals.size(); j++ ) {
-          String val = f.getName(i);
+          String val = vals.getName(j);
           StatsValues vvals = addTo.get( val );
           if( vvals == null ) {
             vvals = new StatsValues();
             addTo.put( val, vvals );
           }
-          vvals.accumulate( (NamedList)f.getVal( i ) );
+          vvals.accumulate( (NamedList)vals.getVal( j ) );
         }
       }
     }

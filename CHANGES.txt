@@ -170,6 +170,9 @@ Bug Fixes
   in file descriptor leaks.
   (Christoff Brill, Mark Miller)
 
+* SOLR-1753: StatsComponent throws NPE when getting statistics for facets in distributed search
+  (Janne Majaranta via koji)
+
 Other Changes
 ----------------------
 
