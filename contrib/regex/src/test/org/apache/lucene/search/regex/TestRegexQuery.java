@@ -29,6 +29,7 @@ import org.apache.lucene.index.TermEnum;
 
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.util.Version;
 
 public class TestRegexQuery extends TestCase {
   private IndexSearcher searcher;
@@ -39,7 +40,7 @@ public class TestRegexQuery extends TestCase {
   public void setUp() {
     RAMDirectory directory = new RAMDirectory();
     try {
-      IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(), true, 
+      IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, 
                                            IndexWriter.MaxFieldLength.LIMITED);
       Document doc = new Document();
       doc.add(new Field(FN, "the quick brown fox jumps over the lazy dog", Field.Store.NO, Field.Index.ANALYZED));

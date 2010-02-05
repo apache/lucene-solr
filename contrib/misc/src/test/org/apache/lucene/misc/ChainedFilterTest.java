@@ -43,6 +43,7 @@ import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 public class ChainedFilterTest extends TestCase {
   public static final int MAX = 500;
@@ -59,7 +60,7 @@ public class ChainedFilterTest extends TestCase {
   public void setUp() throws Exception {
     directory = new RAMDirectory();
     IndexWriter writer =
-       new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+       new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
 
     Calendar cal = new GregorianCalendar();
     cal.clear();
@@ -187,7 +188,7 @@ public class ChainedFilterTest extends TestCase {
   
   public void testWithCachingFilter() throws Exception {
     Directory dir = new RAMDirectory();
-    Analyzer analyzer = new WhitespaceAnalyzer();
+    Analyzer analyzer = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
   
     IndexWriter writer = new IndexWriter(dir, analyzer, true, MaxFieldLength.LIMITED);
     writer.close();

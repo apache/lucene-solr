@@ -37,6 +37,7 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 /**
  * Tests changing the norms after changing the simularity
@@ -60,7 +61,7 @@ public class TestLengthNormModifier extends TestCase {
     
     @Override
     public void setUp() throws Exception {
-	IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(), true, MaxFieldLength.UNLIMITED);
+	IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, MaxFieldLength.UNLIMITED);
 	
 	for (int i = 0; i < NUM_DOCS; i++) {
 	    Document d = new Document();

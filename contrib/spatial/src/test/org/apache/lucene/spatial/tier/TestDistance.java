@@ -29,6 +29,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.store.RAMDirectory;
 
 
@@ -49,7 +50,7 @@ public class TestDistance extends TestCase{
   @Override
   protected void setUp() throws IOException {
     directory = new RAMDirectory();
-    writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    writer = new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
     addData(writer);
     
   }

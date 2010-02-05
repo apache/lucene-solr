@@ -28,6 +28,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 public class BooleanFilterTest extends TestCase
 {
@@ -38,7 +39,7 @@ public class BooleanFilterTest extends TestCase
 	protected void setUp() throws Exception
 	{
 		directory = new RAMDirectory();
-		IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+		IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
 		
 		//Add series of docs with filterable fields : acces rights, prices, dates and "in-stock" flags
 		addDoc(writer, "admin guest", "010", "20040101","Y");

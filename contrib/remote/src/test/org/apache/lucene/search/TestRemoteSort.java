@@ -38,6 +38,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 
 /**
@@ -109,7 +110,7 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
   private Searcher getIndex (boolean even, boolean odd)
   throws IOException {
     RAMDirectory indexStore = new RAMDirectory ();
-    IndexWriter writer = new IndexWriter (indexStore, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter (indexStore, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setMaxBufferedDocs(2);
     writer.setMergeFactor(1000);
     for (int i=0; i<data.length; ++i) {

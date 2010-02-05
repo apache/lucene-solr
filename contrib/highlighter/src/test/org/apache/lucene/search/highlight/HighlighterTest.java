@@ -118,7 +118,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
 
   public void testQueryScorerHits() throws Exception {
-    Analyzer analyzer = new SimpleAnalyzer();
+    Analyzer analyzer = new SimpleAnalyzer(Version.LUCENE_CURRENT);
     QueryParser qp = new QueryParser(TEST_VERSION, FIELD_NAME, analyzer);
     query = qp.parse("\"very long\"");
     searcher = new IndexSearcher(ramDir, true);
@@ -226,7 +226,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     String f2c = f2 + ":";
     String q = "(" + f1c + ph1 + " OR " + f2c + ph1 + ") AND (" + f1c + ph2
         + " OR " + f2c + ph2 + ")";
-    Analyzer analyzer = new WhitespaceAnalyzer();
+    Analyzer analyzer = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
     QueryParser qp = new QueryParser(TEST_VERSION, f1, analyzer);
     Query query = qp.parse(q);
 
@@ -1529,64 +1529,64 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         Highlighter highlighter;
         String result;
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer()).parse("foo");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("foo");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("Hi-Speed10 <B>foo</B>", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer()).parse("10");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("10");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("Hi-Speed<B>10</B> foo", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer()).parse("hi");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("hi");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("<B>Hi</B>-Speed10 foo", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer()).parse("speed");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("speed");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("Hi-<B>Speed</B>10 foo", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer()).parse("hispeed");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("hispeed");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer()).parse("hi speed");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("hi speed");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
 
         // ///////////////// same tests, just put the bigger overlapping token
         // first
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer()).parse("foo");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("foo");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("Hi-Speed10 <B>foo</B>", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer()).parse("10");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("10");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("Hi-Speed<B>10</B> foo", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer()).parse("hi");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("hi");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("<B>Hi</B>-Speed10 foo", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer()).parse("speed");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("speed");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("Hi-<B>Speed</B>10 foo", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer()).parse("hispeed");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("hispeed");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer()).parse("hi speed");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("hi speed");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
@@ -1597,7 +1597,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
   
   private Directory dir = new RAMDirectory();
-  private Analyzer a = new WhitespaceAnalyzer();
+  private Analyzer a = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
   
   public void testWeightedTermsWithDeletes() throws IOException, ParseException, InvalidTokenOffsetsException {
     makeIndex();
@@ -1801,7 +1801,7 @@ class SynonymAnalyzer extends Analyzer {
    */
   @Override
   public TokenStream tokenStream(String arg0, Reader arg1) {
-    LowerCaseTokenizer stream = new LowerCaseTokenizer(arg1);
+    LowerCaseTokenizer stream = new LowerCaseTokenizer(Version.LUCENE_CURRENT, arg1);
     stream.addAttribute(TermAttribute.class);
     stream.addAttribute(PositionIncrementAttribute.class);
     stream.addAttribute(OffsetAttribute.class);

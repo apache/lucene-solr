@@ -20,6 +20,7 @@ package org.apache.lucene.store.instantiated;
 import junit.framework.TestCase;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -35,7 +36,7 @@ public class TestSerialization extends TestCase {
 
     Directory dir = new RAMDirectory();
 
-    IndexWriter iw = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter iw = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     doc.add(new Field("foo", "bar rab abr bra rba", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("moo", "bar rab abr bra rba", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));

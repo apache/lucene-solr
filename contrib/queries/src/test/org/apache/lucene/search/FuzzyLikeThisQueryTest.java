@@ -30,12 +30,13 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 public class FuzzyLikeThisQueryTest extends TestCase
 {
 	private RAMDirectory directory;
 	private IndexSearcher searcher;
-	private Analyzer analyzer=new WhitespaceAnalyzer();
+	private Analyzer analyzer=new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
 
 	@Override
 	protected void setUp() throws Exception
@@ -114,7 +115,7 @@ public class FuzzyLikeThisQueryTest extends TestCase
 	}
 	
 	public void testFuzzyLikeThisQueryEquals() {
-	  Analyzer analyzer = new WhitespaceAnalyzer();
+	  Analyzer analyzer = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
     FuzzyLikeThisQuery fltq1 = new FuzzyLikeThisQuery(10, analyzer);
     fltq1.addTerms("javi", "subject", 0.5f, 2);
     FuzzyLikeThisQuery fltq2 = new FuzzyLikeThisQuery(10, analyzer);

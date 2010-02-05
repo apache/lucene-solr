@@ -47,7 +47,7 @@ public class TestExtendableQueryParser extends TestQueryParser {
   public QueryParser getParser(Analyzer a, Extensions extensions)
       throws Exception {
     if (a == null)
-      a = new SimpleAnalyzer();
+      a = new SimpleAnalyzer(Version.LUCENE_CURRENT);
     QueryParser qp = extensions == null ? new ExtendableQueryParser(
         Version.LUCENE_CURRENT, "field", a) : new ExtendableQueryParser(
         Version.LUCENE_CURRENT, "field", a, extensions);

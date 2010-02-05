@@ -22,6 +22,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 import junit.framework.TestCase;
 
@@ -32,7 +33,7 @@ public class TestMultiPassIndexSplitter extends TestCase {
   @Override
   public void setUp() throws Exception {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(), true,
+    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true,
             MaxFieldLength.LIMITED);
     Document doc;
     for (int i = 0; i < NUM_DOCS; i++) {

@@ -36,6 +36,7 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 
 public class TestSpanRegexQuery extends TestCase {
   Directory indexStoreA = new RAMDirectory();
@@ -44,7 +45,7 @@ public class TestSpanRegexQuery extends TestCase {
 
   public void testSpanRegex() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     // doc.add(new Field("field", "the quick brown fox jumps over the lazy dog",
     // Field.Store.NO, Field.Index.ANALYZED));

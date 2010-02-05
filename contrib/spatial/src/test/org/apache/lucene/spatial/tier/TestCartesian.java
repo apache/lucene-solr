@@ -48,6 +48,7 @@ import org.apache.lucene.spatial.tier.projections.SinusoidalProjector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.Version;
 
 /**
  *
@@ -76,7 +77,7 @@ public class TestCartesian extends TestCase{
   protected void setUp() throws IOException {
     directory = new RAMDirectory();
 
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
     
     setUpPlotter( 2, 15);
     

@@ -21,6 +21,7 @@ import java.rmi.Naming;
 import java.rmi.registry.LocateRegistry;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 
 import org.apache.lucene.analysis.SimpleAnalyzer;
@@ -57,7 +58,7 @@ public class TestRemoteCachingWrapperFilter extends LuceneTestCase {
   private static void startServer() throws Exception {
     // construct an index
     RAMDirectory indexStore = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(), true,
+    IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(Version.LUCENE_CURRENT), true,
                                          IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("test", "test text", Field.Store.YES, Field.Index.ANALYZED));

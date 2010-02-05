@@ -36,6 +36,7 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.LocalizedTestCase;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -99,7 +100,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     /** Filters LowerCaseTokenizer with StopFilter. */
     @Override
     public final TokenStream tokenStream(String fieldName, Reader reader) {
-      return new QPTestFilter(new LowerCaseTokenizer(reader));
+      return new QPTestFilter(new LowerCaseTokenizer(Version.LUCENE_CURRENT, reader));
     }
   }
 
@@ -129,7 +130,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
 
   public PrecedenceQueryParser getParser(Analyzer a) throws Exception {
     if (a == null)
-      a = new SimpleAnalyzer();
+      a = new SimpleAnalyzer(Version.LUCENE_CURRENT);
     PrecedenceQueryParser qp = new PrecedenceQueryParser("field", a);
     qp.setDefaultOperator(PrecedenceQueryParser.OR_OPERATOR);
     return qp;
@@ -174,7 +175,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   public Query getQueryDOA(String query, Analyzer a)
     throws Exception {
     if (a == null)
-      a = new SimpleAnalyzer();
+      a = new SimpleAnalyzer(Version.LUCENE_CURRENT);
     PrecedenceQueryParser qp = new PrecedenceQueryParser("field", a);
     qp.setDefaultOperator(PrecedenceQueryParser.AND_OPERATOR);
     return qp.parse(query);
@@ -254,7 +255,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   }
 
   public void testPunct() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer();
+    Analyzer a = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
     assertQueryEquals("a&b", a, "a&b");
     assertQueryEquals("a&&b", a, "a&&b");
     assertQueryEquals(".NET", a, ".NET");
@@ -412,7 +413,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   }
 
   public void testEscaped() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer();
+    Analyzer a = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
     
     /*assertQueryEquals("\\[brackets", a, "\\[brackets");
     assertQueryEquals("\\[brackets", null, "brackets");
@@ -544,7 +545,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
 
   public void testCustomQueryParserWildcard() {
     try {
-      new QPTestParser("contents", new WhitespaceAnalyzer()).parse("a?t");
+      new QPTestParser("contents", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("a?t");
     } catch (ParseException expected) {
       return;
     }
@@ -553,7 +554,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
 
   public void testCustomQueryParserFuzzy() throws Exception {
     try {
-      new QPTestParser("contents", new WhitespaceAnalyzer()).parse("xunit~");
+      new QPTestParser("contents", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("xunit~");
     } catch (ParseException expected) {
       return;
     }
@@ -563,7 +564,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   public void testBooleanQuery() throws Exception {
     BooleanQuery.setMaxClauseCount(2);
     try {
-      getParser(new WhitespaceAnalyzer()).parse("one two three");
+      getParser(new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("one two three");
       fail("ParseException expected due to too many boolean clauses");
     } catch (ParseException expected) {
       // too many boolean clauses, so ParseException is expected
@@ -577,7 +578,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   // failing tests disabled since PrecedenceQueryParser
   // is currently unmaintained
   public void _testPrecedence() throws Exception {
-    PrecedenceQueryParser parser = getParser(new WhitespaceAnalyzer());
+    PrecedenceQueryParser parser = getParser(new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
     Query query1 = parser.parse("A AND B OR C AND D");
     Query query2 = parser.parse("(A AND B) OR (C AND D)");
     assertEquals(query1, query2);

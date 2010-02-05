@@ -277,10 +277,10 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     Set<?> stopWords = StopAnalyzer.ENGLISH_STOP_WORDS_SET;
     
     Analyzer[] analyzers = new Analyzer[] { 
-        new SimpleAnalyzer(),
+        new SimpleAnalyzer(Version.LUCENE_CURRENT),
         new StopAnalyzer(Version.LUCENE_CURRENT),
         new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT),
-//        new WhitespaceAnalyzer(),
+//        new WhitespaceAnalyzer(Version.LUCENE_CURRENT),
 //        new PatternAnalyzer(PatternAnalyzer.NON_WORD_PATTERN, false, null),
 //        new PatternAnalyzer(PatternAnalyzer.NON_WORD_PATTERN, true, stopWords),        
 //        new SnowballAnalyzer("English", StopAnalyzer.ENGLISH_STOP_WORDS),

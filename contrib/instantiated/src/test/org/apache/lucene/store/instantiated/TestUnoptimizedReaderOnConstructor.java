@@ -24,6 +24,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -35,17 +36,17 @@ public class TestUnoptimizedReaderOnConstructor extends TestCase {
 
   public void test() throws Exception {
     Directory dir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter iw = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
     addDocument(iw, "Hello, world!");
     addDocument(iw, "All work and no play makes jack a dull boy");
     iw.close();
 
-    iw = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.UNLIMITED);
+    iw = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.UNLIMITED);
     addDocument(iw, "Hello, tellus!");
     addDocument(iw, "All work and no play makes danny a dull boy");
     iw.close();
 
-    iw = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.UNLIMITED);
+    iw = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.UNLIMITED);
     addDocument(iw, "Hello, earth!");
     addDocument(iw, "All work and no play makes wendy a dull girl");
     iw.close();

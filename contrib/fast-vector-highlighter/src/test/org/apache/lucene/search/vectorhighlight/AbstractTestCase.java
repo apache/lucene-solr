@@ -79,7 +79,7 @@ public abstract class AbstractTestCase extends TestCase {
 
   @Override
   protected void setUp() throws Exception {
-    analyzerW = new WhitespaceAnalyzer();
+    analyzerW = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
     analyzerB = new BigramAnalyzer();
     paW = new QueryParser(Version.LUCENE_CURRENT,  F, analyzerW );
     paB = new QueryParser(Version.LUCENE_CURRENT,  F, analyzerB );
