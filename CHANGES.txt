@@ -103,6 +103,9 @@ Bug fixes
 
 * LUCENE-2235: Implement missing PerFieldAnalyzerWrapper.getOffsetGap().
   (Javier Godoy via Uwe Schindler)
+
+* LUCENE-2249: ParallelMultiSearcher should shut down thread pool on
+  close.  (Martin Traverso via Uwe Schindler)
   
 New features
 

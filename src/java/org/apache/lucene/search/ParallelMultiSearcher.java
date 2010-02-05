@@ -175,7 +175,13 @@ public class ParallelMultiSearcher extends MultiSearcher {
      searchables[i].search(weight, filter, hc);
    }
   }
-  
+
+  @Override
+  public void close() throws IOException {
+    executor.shutdown();
+    super.close();
+  }
+
   @Override
   HashMap<Term, Integer> createDocFrequencyMap(Set<Term> terms) throws IOException {
     final Term[] allTermsArray = terms.toArray(new Term[terms.size()]);
