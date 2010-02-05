@@ -22,8 +22,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.print.DocFlavor.CHAR_ARRAY;
-
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.util.Version;

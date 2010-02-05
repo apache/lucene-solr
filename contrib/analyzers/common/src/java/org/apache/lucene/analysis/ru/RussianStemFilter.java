@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.ru.RussianStemmer;//javadoc @link
+import org.apache.lucene.analysis.snowball.SnowballFilter; // javadoc @link
 
 import java.io.IOException;
 
@@ -40,7 +41,11 @@ import java.io.IOException;
  * the {@link KeywordAttribute} before this {@link TokenStream}.
  * </p>
  * @see KeywordMarkerTokenFilter
+ * @deprecated Use {@link SnowballFilter} with 
+ * {@link org.tartarus.snowball.ext.RussianStemmer} instead, which has the
+ * same functionality. This filter will be removed in Lucene 4.0
  */
+@Deprecated
 public final class RussianStemFilter extends TokenFilter
 {
     /**

@@ -20,15 +20,14 @@ package org.apache.lucene.analysis.de;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
-import org.apache.lucene.analysis.LowerCaseTokenizer;
+import org.apache.lucene.analysis.KeywordTokenizer;
+import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util.Version;
 
 /**
@@ -40,6 +39,8 @@ import org.apache.lucene.util.Version;
 public class TestGermanStemFilter extends BaseTokenStreamTestCase {
 
   public void testStemming() throws Exception {
+    Tokenizer tokenizer = new KeywordTokenizer(new StringReader(""));
+    TokenFilter filter = new GermanStemFilter(new LowerCaseFilter(Version.LUCENE_CURRENT, tokenizer));
     // read test cases from external file:
     File dataDir = new File(System.getProperty("dataDir", "./bin"));
     File testFile = new File(dataDir, "org/apache/lucene/analysis/de/data.txt");
@@ -55,68 +56,12 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
         continue;    // ignore comments and empty lines
       String[] parts = line.split(";");
       //System.out.println(parts[0] + " -- " + parts[1]);
-      check(parts[0], parts[1]);
+      tokenizer.reset(new StringReader(parts[0]));
+      filter.reset();
+      assertTokenStreamContents(filter, new String[] { parts[1] });
     }
     breader.close();
     isr.close();
     fis.close();
-  }
-  
-  public void testReusableTokenStream() throws Exception {
-    Analyzer a = new GermanAnalyzer(Version.LUCENE_CURRENT);
-    checkReuse(a, "Tisch", "tisch");
-    checkReuse(a, "Tische", "tisch");
-    checkReuse(a, "Tischen", "tisch");
-  }
-  
-  public void testExclusionTableBWCompat() throws IOException {
-    GermanStemFilter filter = new GermanStemFilter(new LowerCaseTokenizer(Version.LUCENE_CURRENT, 
-        new StringReader("Fischen Trinken")));
-    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
-    set.add("fischen");
-    filter.setExclusionSet(set);
-    assertTokenStreamContents(filter, new String[] { "fischen", "trink" });
-  }
-
-  public void testWithKeywordAttribute() throws IOException {
-    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
-    set.add("fischen");
-    GermanStemFilter filter = new GermanStemFilter(
-        new KeywordMarkerTokenFilter(new LowerCaseTokenizer(Version.LUCENE_CURRENT, new StringReader( 
-            "Fischen Trinken")), set));
-    assertTokenStreamContents(filter, new String[] { "fischen", "trink" });
-  }
-
-  public void testWithKeywordAttributeAndExclusionTable() throws IOException {
-    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
-    set.add("fischen");
-    CharArraySet set1 = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
-    set1.add("trinken");
-    set1.add("fischen");
-    GermanStemFilter filter = new GermanStemFilter(
-        new KeywordMarkerTokenFilter(new LowerCaseTokenizer(Version.LUCENE_CURRENT, new StringReader(
-            "Fischen Trinken")), set));
-    filter.setExclusionSet(set1);
-    assertTokenStreamContents(filter, new String[] { "fischen", "trinken" });
-  }
-  
-  /* 
-   * Test that changes to the exclusion table are applied immediately
-   * when using reusable token streams.
-   */
-  public void testExclusionTableReuse() throws Exception {
-    GermanAnalyzer a = new GermanAnalyzer(Version.LUCENE_CURRENT);
-    checkReuse(a, "tischen", "tisch");
-    a.setStemExclusionTable(new String[] { "tischen" });
-    checkReuse(a, "tischen", "tischen");
-  }
-  
-  
-  private void check(final String input, final String expected) throws Exception {
-    checkOneTerm(new GermanAnalyzer(Version.LUCENE_CURRENT), input, expected);
-  }
-  
-  private void checkReuse(Analyzer a, String input, String expected) throws Exception {
-    checkOneTermReuse(a, input, expected);
   }
 }

@@ -100,9 +100,6 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
 	 check("ophalend", "ophal");
 	 check("ophalers", "ophaler");
 	 check("ophef", "ophef");
-	 check("opheffen", "ophef"); // versus snowball 'opheff'
-	 check("opheffende", "ophef"); // versus snowball 'opheff'
-	 check("opheffing", "ophef"); // versus snowball 'opheff'
 	 check("opheldering", "ophelder");
 	 check("ophemelde", "ophemeld");
 	 check("ophemelen", "ophemel");
@@ -116,6 +113,24 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
 	 check("ophopen", "ophop");
 	 check("ophoping", "ophop");
 	 check("ophouden", "ophoud");
+  }
+  
+  /**
+   * @deprecated remove this test in Lucene 4.0
+   */
+  @Deprecated
+  public void testOldBuggyStemmer() throws Exception {
+    Analyzer a = new DutchAnalyzer(Version.LUCENE_30);
+    checkOneTermReuse(a, "opheffen", "ophef"); // versus snowball 'opheff'
+    checkOneTermReuse(a, "opheffende", "ophef"); // versus snowball 'opheff'
+    checkOneTermReuse(a, "opheffing", "ophef"); // versus snowball 'opheff'
+  }
+  
+  public void testSnowballCorrectness() throws Exception {
+    Analyzer a = new DutchAnalyzer(Version.LUCENE_CURRENT);
+    checkOneTermReuse(a, "opheffen", "opheff");
+    checkOneTermReuse(a, "opheffende", "opheff");
+    checkOneTermReuse(a, "opheffing", "opheff");
   }
   
   public void testReusableTokenStream() throws Exception {
@@ -159,6 +174,25 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
     checkOneTermReuse(a, "lichamelijk", "licham");
     a.setStemDictionary(customDictFile);
     checkOneTermReuse(a, "lichamelijk", "somethingentirelydifferent");
+  }
+  
+  /**
+   * Prior to 3.1, this analyzer had no lowercase filter.
+   * stopwords were case sensitive. Preserve this for back compat.
+   * @deprecated Remove this test in Lucene 4.0
+   */
+  @Deprecated
+  public void testBuggyStopwordsCasing() throws IOException {
+    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_30);
+    assertAnalyzesTo(a, "Zelf", new String[] { "zelf" });
+  }
+  
+  /**
+   * Test that stopwords are not case sensitive
+   */
+  public void testStopwordsCasing() throws IOException {
+    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_31);
+    assertAnalyzesTo(a, "Zelf", new String[] { });
   }
   
   private void check(final String input, final String expected) throws Exception {

@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WordlistLoader;
+import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;  // for javadoc
@@ -55,6 +56,9 @@ import java.util.Set;
  * <p>You must specify the required {@link Version}
  * compatibility when creating FrenchAnalyzer:
  * <ul>
+ *   <li> As of 3.1, Snowball stemming is done with SnowballFilter, 
+ *        LowerCaseFilter is used prior to StopFilter, and ElisionFilter and 
+ *        Snowball stopwords are used by default.
  *   <li> As of 2.9, StopFilter preserves position
  *        increments
  * </ul>
@@ -68,7 +72,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
    * Extended list of typical French stopwords.
    * @deprecated use {@link #getDefaultStopSet()} instead
    */
-  // TODO make this private in 3.1
+  // TODO make this private in 3.1, remove in 4.0
   @Deprecated
   public final static String[] FRENCH_STOP_WORDS = {
     "a", "afin", "ai", "ainsi", "après", "attendu", "au", "aujourd", "auquel", "aussi",
@@ -95,6 +99,9 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
     "été", "être", "ô"
   };
 
+  /** File containing default French stopwords. */
+  public final static String DEFAULT_STOPWORD_FILE = "french_stop.txt";
+  
   /**
    * Contains words that should be indexed but not stemmed.
    */
@@ -110,16 +117,31 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
   }
   
   private static class DefaultSetHolder {
-    static final Set<?> DEFAULT_STOP_SET = CharArraySet
+    /** @deprecated remove this in Lucene 4.0 */
+    @Deprecated
+    static final Set<?> DEFAULT_STOP_SET_30 = CharArraySet
         .unmodifiableSet(new CharArraySet(Version.LUCENE_CURRENT, Arrays.asList(FRENCH_STOP_WORDS),
             false));
+    static final Set<?> DEFAULT_STOP_SET;
+    static {
+      try {
+        DEFAULT_STOP_SET = 
+          WordlistLoader.getSnowballWordSet(SnowballFilter.class, DEFAULT_STOPWORD_FILE);
+      } catch (IOException ex) {
+        // default set should always be present as it is part of the
+        // distribution (JAR)
+        throw new RuntimeException("Unable to load default stopword set");
+      }
+    }
   }
 
   /**
-   * Builds an analyzer with the default stop words ({@link #FRENCH_STOP_WORDS}).
+   * Builds an analyzer with the default stop words ({@link #getDefaultStopSet}).
    */
   public FrenchAnalyzer(Version matchVersion) {
-    this(matchVersion, DefaultSetHolder.DEFAULT_STOP_SET);
+    this(matchVersion,
+        matchVersion.onOrAfter(Version.LUCENE_31) ? DefaultSetHolder.DEFAULT_STOP_SET
+            : DefaultSetHolder.DEFAULT_STOP_SET_30);
   }
   
   /**
@@ -207,20 +229,34 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
    * {@link Reader}.
    *
    * @return {@link TokenStreamComponents} built from a {@link StandardTokenizer} 
-   *         filtered with {@link StandardFilter}, {@link StopFilter}, 
-   *         {@link FrenchStemFilter} and {@link LowerCaseFilter}
+   *         filtered with {@link StandardFilter}, {@link ElisionFilter}, 
+   *         {@link LowerCaseFilter}, {@link StopFilter},
+   *         {@link KeywordMarkerTokenFilter} if a stem exclusion set is provided, 
+   *         and {@link SnowballFilter}
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
-    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-    TokenStream result = new StandardFilter(source);
-    result = new StopFilter(matchVersion, result, stopwords);
-    if(!excltable.isEmpty())
-      result = new KeywordMarkerTokenFilter(result, excltable);
-    result = new FrenchStemFilter(result);
-    // Convert to lowercase after stemming!
-    return new TokenStreamComponents(source, new LowerCaseFilter(matchVersion, result));
+    if (matchVersion.onOrAfter(Version.LUCENE_31)) {
+      final Tokenizer source = new StandardTokenizer(matchVersion, reader);
+      TokenStream result = new StandardFilter(source);
+      result = new ElisionFilter(matchVersion, result);
+      result = new LowerCaseFilter(matchVersion, result);
+      result = new StopFilter(matchVersion, result, stopwords);
+      if(!excltable.isEmpty())
+        result = new KeywordMarkerTokenFilter(result, excltable);
+      result = new SnowballFilter(result, new org.tartarus.snowball.ext.FrenchStemmer());
+      return new TokenStreamComponents(source, result);
+    } else {
+      final Tokenizer source = new StandardTokenizer(matchVersion, reader);
+      TokenStream result = new StandardFilter(source);
+      result = new StopFilter(matchVersion, result, stopwords);
+      if(!excltable.isEmpty())
+        result = new KeywordMarkerTokenFilter(result, excltable);
+      result = new FrenchStemFilter(result);
+      // Convert to lowercase after stemming!
+      return new TokenStreamComponents(source, new LowerCaseFilter(matchVersion, result));
+    }
   }
 }
 

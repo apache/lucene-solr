@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.el;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.Version;
 
 /**
@@ -63,4 +62,23 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
 	    assertAnalyzesToReuse(a, "\u03a0\u03a1\u039f\u03ab\u03a0\u039f\u0398\u0395\u03a3\u0395\u0399\u03a3  \u0386\u03c8\u03bf\u03b3\u03bf\u03c2, \u03bf \u03bc\u03b5\u03c3\u03c4\u03cc\u03c2 \u03ba\u03b1\u03b9 \u03bf\u03b9 \u03ac\u03bb\u03bb\u03bf\u03b9",
 	            new String[] { "\u03c0\u03c1\u03bf\u03c5\u03c0\u03bf\u03b8\u03b5\u03c3\u03b5\u03b9\u03c3", "\u03b1\u03c8\u03bf\u03b3\u03bf\u03c3", "\u03bc\u03b5\u03c3\u03c4\u03bf\u03c3", "\u03b1\u03bb\u03bb\u03bf\u03b9" });
 	}
+	
+	/**
+	 * Greek Analyzer didn't call standardFilter, so no normalization of acronyms.
+	 * check that this is preserved.
+	 * @deprecated remove this test in Lucene 4.0
+	 */
+	@Deprecated
+	public void testAcronymBWCompat() throws Exception {
+	  Analyzer a = new GreekAnalyzer(Version.LUCENE_30);
+	  assertAnalyzesTo(a, "Α.Π.Τ.", new String[] { "α.π.τ." });
+	}
+	
+  /**
+   * test that acronym normalization works
+   */
+  public void testAcronym() throws Exception {
+    Analyzer a = new GreekAnalyzer(Version.LUCENE_31);
+    assertAnalyzesTo(a, "Α.Π.Τ.", new String[] { "απτ" });
+  }
 }

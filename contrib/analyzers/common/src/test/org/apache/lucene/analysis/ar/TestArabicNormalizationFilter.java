@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.Version;
 
 /**

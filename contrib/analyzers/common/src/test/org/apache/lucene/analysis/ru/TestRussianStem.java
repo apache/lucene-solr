@@ -24,6 +24,10 @@ import java.io.InputStreamReader;
 import java.io.FileInputStream;
 import java.util.ArrayList;
 
+/**
+ * @deprecated Remove this test class (and its datafiles!) in Lucene 4.0
+ */
+@Deprecated
 public class TestRussianStem extends LuceneTestCase
 {
     private ArrayList words = new ArrayList();

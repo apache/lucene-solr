@@ -17,7 +17,6 @@ package org.apache.lucene.analysis.ngram;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;

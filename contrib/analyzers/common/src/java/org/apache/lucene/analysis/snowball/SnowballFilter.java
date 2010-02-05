@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tr.TurkishLowerCaseFilter; // javadoc @link
 import org.apache.lucene.analysis.LowerCaseFilter; // javadoc @link
@@ -39,14 +40,14 @@ import org.tartarus.snowball.SnowballProgram;
  */
 public final class SnowballFilter extends TokenFilter {
 
-  private SnowballProgram stemmer;
+  private final SnowballProgram stemmer;
 
-  private TermAttribute termAtt;
+  private final TermAttribute termAtt = addAttribute(TermAttribute.class);
+  private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
   
   public SnowballFilter(TokenStream input, SnowballProgram stemmer) {
     super(input);
     this.stemmer = stemmer;
-    termAtt = addAttribute(TermAttribute.class);
   }
 
   /**
@@ -67,23 +68,24 @@ public final class SnowballFilter extends TokenFilter {
     } catch (Exception e) {
       throw new RuntimeException(e.toString());
     }
-    termAtt = addAttribute(TermAttribute.class);
   }
 
   /** Returns the next input Token, after being stemmed */
   @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      char termBuffer[] = termAtt.termBuffer();
-      final int length = termAtt.termLength();
-      stemmer.setCurrent(termBuffer, length);
-      stemmer.stem();
-      final char finalTerm[] = stemmer.getCurrentBuffer();
-      final int newLength = stemmer.getCurrentBufferLength();
-      if (finalTerm != termBuffer)
-        termAtt.setTermBuffer(finalTerm, 0, newLength);
-      else
-        termAtt.setTermLength(newLength); 
+      if (!keywordAttr.isKeyword()) {
+        char termBuffer[] = termAtt.termBuffer();
+        final int length = termAtt.termLength();
+        stemmer.setCurrent(termBuffer, length);
+        stemmer.stem();
+        final char finalTerm[] = stemmer.getCurrentBuffer();
+        final int newLength = stemmer.getCurrentBufferLength();
+        if (finalTerm != termBuffer)
+          termAtt.setTermBuffer(finalTerm, 0, newLength);
+        else
+          termAtt.setTermLength(newLength);
+      }
       return true;
     } else {
       return false;

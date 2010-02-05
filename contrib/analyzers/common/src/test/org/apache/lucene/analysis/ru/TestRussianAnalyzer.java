@@ -50,9 +50,14 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
       dataDir = new File(System.getProperty("dataDir", "./bin"));
     }
 
-    public void testUnicode() throws IOException
+    /**
+     * @deprecated remove this test and its datafiles in Lucene 4.0
+     * the Snowball version has its own data tests.
+     */
+    @Deprecated
+    public void testUnicode30() throws IOException
     {
-        RussianAnalyzer ra = new RussianAnalyzer(Version.LUCENE_CURRENT);
+        RussianAnalyzer ra = new RussianAnalyzer(Version.LUCENE_30);
         inWords =
             new InputStreamReader(
                 new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/testUTF8.txt")),
@@ -110,12 +115,22 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
         }
     }
     
+    /** @deprecated remove this test in Lucene 4.0: stopwords changed */
+    @Deprecated
+    public void testReusableTokenStream30() throws Exception {
+      Analyzer a = new RussianAnalyzer(Version.LUCENE_30);
+      assertAnalyzesToReuse(a, "Вместе с тем о силе электромагнитной энергии имели представление еще",
+          new String[] { "вмест", "сил", "электромагнитн", "энерг", "имел", "представлен" });
+      assertAnalyzesToReuse(a, "Но знание это хранилось в тайне",
+          new String[] { "знан", "хран", "тайн" });
+    }
+    
     public void testReusableTokenStream() throws Exception {
       Analyzer a = new RussianAnalyzer(Version.LUCENE_CURRENT);
       assertAnalyzesToReuse(a, "Вместе с тем о силе электромагнитной энергии имели представление еще",
           new String[] { "вмест", "сил", "электромагнитн", "энерг", "имел", "представлен" });
       assertAnalyzesToReuse(a, "Но знание это хранилось в тайне",
-          new String[] { "знан", "хран", "тайн" });
+          new String[] { "знан", "эт", "хран", "тайн" });
     }
     
     

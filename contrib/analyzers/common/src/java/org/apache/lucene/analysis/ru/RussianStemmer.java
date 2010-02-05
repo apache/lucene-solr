@@ -19,7 +19,10 @@ package org.apache.lucene.analysis.ru;
 
 /**
  * Russian stemming algorithm implementation (see http://snowball.sourceforge.net for detailed description).
+ * @deprecated Use {@link org.tartarus.snowball.ext.RussianStemmer} instead, 
+ * which has the same functionality. This filter will be removed in Lucene 4.0
  */
+@Deprecated
 class RussianStemmer
 {
     // positions of RV, R1 and R2 respectively

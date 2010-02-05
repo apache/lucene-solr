@@ -27,6 +27,10 @@ Changes in runtime behavior
    used with Version > 3.0 and the TurkishStemmer.
    (Robert Muir via Simon Willnauer)  
 
+ * LUCENE-2055: GermanAnalyzer now uses the Snowball German2 algorithm and 
+   stopwords list by default for Version > 3.0.
+   (Robert Muir, Uwe Schindler, Simon Willnauer)
+
 Bug fixes
 
  * LUCENE-2199: ShingleFilter skipped over tri-gram shingles if outputUnigram
@@ -53,6 +57,13 @@ Bug fixes
  * LUCENE-2207, LUCENE-2219: Fix incorrect offset calculations in end() for 
    CJKTokenizer, ChineseTokenizer, SmartChinese SentenceTokenizer, 
    and WikipediaTokenizer.  (Koji Sekiguchi, Robert Muir)
+
+ * LUCENE-2055: Deprecated RussianTokenizer, RussianStemmer, RussianStemFilter,
+   FrenchStemmer, FrenchStemFilter, DutchStemmer, and DutchStemFilter. For
+   these Analyzers, SnowballFilter is used instead (for Version > 3.0), as
+   the previous code did not always implement the Snowball algorithm correctly.
+   Additionally, for Version > 3.0, the Snowball stopword lists are used by
+   default.  (Robert Muir, Uwe Schindler, Simon Willnauer)
    
 API Changes
 
@@ -68,6 +79,12 @@ API Changes
 
  * LUCENE-2204: Change some package private classes/members to publicly accessible to implement
    custom FragmentsBuilders. (Koji Sekiguchi)
+
+ * LUCENE-2055: Integrate snowball into contrib/analyzers. SnowballAnalyzer is
+   now deprecated in favor of language-specific analyzers which contain things
+   such as stopword lists and any language-specific processing in addition to
+   stemming. Add Turkish and Romanian stopwords lists to support this.
+   (Robert Muir, Uwe Schindler, Simon Willnauer)
    
 New features
 
@@ -104,6 +121,10 @@ New features
    (Steven Rowe via Robert Muir)
 
  * LUCENE-2234: Add a Hindi analyzer.  (Robert Muir)
+
+ * LUCENE-2055: Add analyzers/misc/StemmerOverrideFilter. This filter provides
+   the ability to override any stemmer with a custom dictionary map.
+   (Robert Muir, Uwe Schindler, Simon Willnauer)
 
 Build
 

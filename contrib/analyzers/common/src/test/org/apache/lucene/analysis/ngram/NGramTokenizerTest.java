@@ -18,10 +18,8 @@ package org.apache.lucene.analysis.ngram;
  */
 
 
-import java.io.IOException;
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 
 /**

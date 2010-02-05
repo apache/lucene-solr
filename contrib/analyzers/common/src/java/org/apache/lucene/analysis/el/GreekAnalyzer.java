@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;  // for javadoc
 import org.apache.lucene.util.Version;
@@ -41,6 +42,15 @@ import java.util.Set;
  * A default set of stopwords is used unless an alternative list is specified.
  * </p>
  *
+ * <a name="version"/>
+ * <p>You must specify the required {@link Version}
+ * compatibility when creating GreekAnalyzer:
+ * <ul>
+ *   <li> As of 3.1, StandardFilter is used by default.
+ *   <li> As of 2.9, StopFilter preserves position
+ *        increments
+ * </ul>
+ * 
  * <p><b>NOTE</b>: This class uses the same {@link Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
  */
@@ -117,13 +127,15 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase
     * 
     * @return {@link TokenStreamComponents} built from a
     *         {@link StandardTokenizer} filtered with
-    *         {@link GreekLowerCaseFilter} and {@link StopFilter}
+    *         {@link GreekLowerCaseFilter}, {@link StandardFilter} and {@link StopFilter}
     */
     @Override
     protected TokenStreamComponents createComponents(String fieldName,
         Reader reader) {
       final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-      final TokenStream result = new GreekLowerCaseFilter(source);
+      TokenStream result = new GreekLowerCaseFilter(source);
+      if (matchVersion.onOrAfter(Version.LUCENE_31))
+        result = new StandardFilter(result);
       return new TokenStreamComponents(source, new StopFilter(matchVersion, result, stopwords));
     }
 }

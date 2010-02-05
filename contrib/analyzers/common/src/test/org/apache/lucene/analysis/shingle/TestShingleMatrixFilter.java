@@ -22,11 +22,8 @@ import java.io.StringReader;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.HashSet;
-import java.util.Arrays;
 
 import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.miscellaneous.EmptyTokenStream;
 import org.apache.lucene.analysis.miscellaneous.PrefixAndSuffixAwareTokenFilter;
 import org.apache.lucene.analysis.miscellaneous.SingleTokenTokenStream;

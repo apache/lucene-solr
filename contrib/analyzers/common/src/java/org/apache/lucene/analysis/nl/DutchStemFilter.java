@@ -26,6 +26,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.KeywordMarkerTokenFilter;// for javadoc
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
@@ -42,7 +43,11 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * the {@link KeywordAttribute} before this {@link TokenStream}.
  * </p>
  * @see KeywordMarkerTokenFilter
+ * @deprecated Use {@link SnowballFilter} with 
+ * {@link org.tartarus.snowball.ext.DutchStemmer} instead, which has the
+ * same functionality. This filter will be removed in Lucene 4.0
  */
+@Deprecated
 public final class DutchStemFilter extends TokenFilter {
   /**
    * The actual token in the input stream.

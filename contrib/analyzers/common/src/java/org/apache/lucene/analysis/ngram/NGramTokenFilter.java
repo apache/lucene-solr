@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.ngram;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;

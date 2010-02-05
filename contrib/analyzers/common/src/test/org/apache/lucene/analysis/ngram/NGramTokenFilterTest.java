@@ -22,7 +22,6 @@ import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.util.Version;
 
-import java.io.IOException;
 import java.io.StringReader;
 
 /**

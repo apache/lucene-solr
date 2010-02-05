@@ -21,6 +21,7 @@ import java.io.Reader;
 import org.apache.lucene.analysis.CharTokenizer;
 import org.apache.lucene.analysis.Tokenizer; // for javadocs
 import org.apache.lucene.analysis.LetterTokenizer; // for javadocs
+import org.apache.lucene.analysis.standard.StandardTokenizer; // for javadocs
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
@@ -35,8 +36,11 @@ import org.apache.lucene.util.Version;
  * <li>As of 3.1, {@link CharTokenizer} uses an int based API to normalize and
  * detect token characters. See {@link CharTokenizer#isTokenChar(int)} and
  * {@link CharTokenizer#normalize(int)} for details.</li>
- * </ul> 
+ * </ul>
+ * @deprecated Use {@link StandardTokenizer} instead, which has the same functionality.
+ * This filter will be removed in Lucene 4.0 
  */
+@Deprecated
 public class RussianLetterTokenizer extends CharTokenizer
 {    
     private static final int DIGIT_0 = '0';

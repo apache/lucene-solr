@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.th;
 import java.io.IOException;
 import java.util.Locale;
 import java.lang.Character.UnicodeBlock;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;

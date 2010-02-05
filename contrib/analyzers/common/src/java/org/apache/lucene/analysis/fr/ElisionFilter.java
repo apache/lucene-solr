@@ -68,7 +68,7 @@ public final class ElisionFilter extends TokenFilter {
   /**
    * Constructs an elision filter with standard stop words
    */
-  protected ElisionFilter(Version matchVersion, TokenStream input) {
+  public ElisionFilter(Version matchVersion, TokenStream input) {
     this(matchVersion, input, DEFAULT_ARTICLES);
   }
 
@@ -77,7 +77,7 @@ public final class ElisionFilter extends TokenFilter {
    * @deprecated use {@link #ElisionFilter(Version, TokenStream)} instead
    */
   @Deprecated
-  protected ElisionFilter(TokenStream input) {
+  public ElisionFilter(TokenStream input) {
     this(Version.LUCENE_30, input);
   }
 
