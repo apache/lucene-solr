@@ -119,6 +119,7 @@
       <include name="*.jar" />
     </fileset>
     <pathelement location="${dest}/common"/>
+    <pathelement location="${src}/java"/>  <!-- temp hack since CloudSolrServer depends on ZkController, etc -->
   </path>
 
   <target name="compile-solrj"

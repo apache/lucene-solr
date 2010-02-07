@@ -90,6 +90,8 @@ public final class ZkController {
 
   private boolean cloudStateUpdateScheduled;
 
+  private boolean readonly;  // temporary hack to enable reuse in SolrJ client
+
   /**
    * @param zkServerAddress ZooKeeper server host address
    * @param zkClientTimeout
@@ -108,6 +110,7 @@ public final class ZkController {
     this.localHostPort = locaHostPort;
     this.localHostContext = localHostContext;
     this.localHost = localHost;
+    this.readonly = localHostPort==null;
     cloudState = new CloudState(new HashSet<String>(0), new HashMap<String,Map<String,Slice>>(0));
     zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
         // on reconnect, reload cloud info
@@ -345,7 +348,8 @@ public final class ZkController {
       
     };
     try {
-      zkClient.makePath(nodePath, CreateMode.EPHEMERAL);
+      if (!readonly)
+        zkClient.makePath(nodePath, CreateMode.EPHEMERAL);
     } catch (KeeperException e) {
       // its okay if the node already exists
       if (e.code() != KeeperException.Code.NODEEXISTS) {
@@ -585,7 +589,7 @@ public final class ZkController {
 
   private void setUpCollectionsNode() throws KeeperException, InterruptedException {
     try {
-      if (!zkClient.exists(COLLECTIONS_ZKNODE)) {
+      if (!zkClient.exists(COLLECTIONS_ZKNODE) && !readonly) {
         if (log.isInfoEnabled()) {
           log.info("creating zk collections node:" + COLLECTIONS_ZKNODE);
         }
