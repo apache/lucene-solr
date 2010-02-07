@@ -132,8 +132,6 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           final int startLength = fieldState.length;
           
           try {
-            int offsetEnd = fieldState.offset-1;
-            
             boolean hasMoreTokens = stream.incrementToken();
 
             fieldState.attributeSource = stream;
@@ -178,7 +176,6 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
                   docState.docWriter.setAborting();
               }
               fieldState.position++;
-              offsetEnd = fieldState.offset + offsetAttribute.endOffset();
               if (++fieldState.length >= maxFieldLength) {
                 if (docState.infoStream != null)
                   docState.infoStream.println("maxFieldLength " +maxFieldLength+ " reached for field " + fieldInfo.name + ", ignoring following tokens");
