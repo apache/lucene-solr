@@ -55,6 +55,8 @@ Bug Fixes
 
 * SOLR-1759: $skipDoc was not working correctly (Gian Marco Tagliani via noble)
 
+* SOLR-1762: DateFormatTransformer does not work correctly with non-default locale dates (tommy chheng via noble)
+
 Other Changes
 ----------------------
 
