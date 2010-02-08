@@ -54,6 +54,7 @@ public class FastVectorHighlighterTest extends AbstractSolrTestCase {
     args.put("hl", "true");
     args.put("hl.fl", "tv_text");
     args.put("hl.snippets", "2");
+    args.put("hl.useFastVectorHighlighter", "true");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "standard",0,200,args);
     
