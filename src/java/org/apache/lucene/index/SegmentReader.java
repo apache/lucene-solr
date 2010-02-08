@@ -613,7 +613,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
       deletedDocsRef = new AtomicInteger(1);
       assert checkDeletedCounts();
       if (deletedDocs.size() != si.docCount) {
-        throw new CorruptIndexException("document count mismatch: deleted docs count " + deletedDocs.size() + " vs segment doc count " + si.docCount);
+        throw new CorruptIndexException("document count mismatch: deleted docs count " + deletedDocs.size() + " vs segment doc count " + si.docCount + " segment=" + si.name);
       }
     } else
       assert si.getDelCount() == 0;

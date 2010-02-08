@@ -63,7 +63,7 @@ public final class BitVector implements Cloneable {
   /** Sets the value of <code>bit</code> to one. */
   public final void set(int bit) {
     if (bit >= size) {
-      throw new ArrayIndexOutOfBoundsException(bit);
+      throw new ArrayIndexOutOfBoundsException("bit=" + bit + " size=" + size);
     }
     bits[bit >> 3] |= 1 << (bit & 7);
     count = -1;
@@ -73,7 +73,7 @@ public final class BitVector implements Cloneable {
    *  returns true if bit was already set */
   public final boolean getAndSet(int bit) {
     if (bit >= size) {
-      throw new ArrayIndexOutOfBoundsException(bit);
+      throw new ArrayIndexOutOfBoundsException("bit=" + bit + " size=" + size);
     }
     final int pos = bit >> 3;
     final int v = bits[pos];

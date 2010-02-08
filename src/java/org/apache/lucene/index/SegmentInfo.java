@@ -533,6 +533,7 @@ public final class SegmentInfo {
    */
   void write(IndexOutput output)
     throws IOException {
+    assert delCount <= docCount: "delCount=" + delCount + " docCount=" + docCount + " segment=" + name;
     output.writeString(name);
     output.writeInt(docCount);
     output.writeLong(delGen);
