@@ -66,18 +66,19 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   protected void setDistributedParams(ModifiableSolrParams params) {
     // super.setDistributedParams(params);
 
-    // TODO: this doesn't work yet because of the extra shards in the collection from
-    // localhost:8983 and control_shardId
-    // params.set("distrib","true");
-
-    // use shard ids rather than physical locations
-    StringBuilder sb = new StringBuilder();
-    for (int i=0; i<nServers; i++) {
-      if (i>0) sb.append(',');
-      sb.append("shardId"+(i+3));
+    if (r.nextBoolean()) {
+      // don't set shards, let that be figured out from the cloud state
+      params.set("distrib","true");
+    } else {
+      // use shard ids rather than physical locations
+      StringBuilder sb = new StringBuilder();
+      for (int i=0; i<nServers; i++) {
+        if (i>0) sb.append(',');
+        sb.append("shardId"+(i+3));
+      }
+      params.set("shards",sb.toString());
+      params.set("distrib","true");
     }
-    params.set("shards",sb.toString());
-    params.set("distrib","true");
   }
 
   // TODO: there is an incorrect localhost:8983 shard registered
