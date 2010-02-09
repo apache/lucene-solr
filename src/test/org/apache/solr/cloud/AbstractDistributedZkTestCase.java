@@ -63,8 +63,8 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
       }
     };
 
-    h = new TestHarness("", init);
-    lrf = h.getRequestFactory("standard", 0, 20, "version", "2.2");
+//    h = new TestHarness("", init);
+//    lrf = h.getRequestFactory("standard", 0, 20, "version", "2.2");
 
     log.info("####SETUP_END " + getName());
 
