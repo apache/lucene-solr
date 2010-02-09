@@ -125,7 +125,12 @@ public class CloudSolrServer extends SolrServer {
   }
 
   public void close() {
-    zkController.close();
-    zkController = null;
+    if (zkController != null) {
+      synchronized(this) {
+        if (zkController != null)
+          zkController.close();
+        zkController = null;
+      }
+    }
   }
 }
