@@ -80,6 +80,8 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     params.set("distrib","true");
   }
 
+  // TODO: there is an incorrect localhost:8983 shard registered
+
   protected void createServers(int numShards) throws Exception {
     controlJetty = createJetty(testDir, "control", "control_shardId");
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
@@ -269,7 +271,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
 
   @Override
   protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {
-    if (true || r.nextBoolean())
+    if (r.nextBoolean())
       return super.queryServer(params);
 
     // use the distributed solrj client
@@ -284,6 +286,9 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
         }
       }
     }
+
+    if (r.nextBoolean())
+      params.set("collection","collection1");
 
     QueryResponse rsp = solrj.query(params);
     return rsp;
