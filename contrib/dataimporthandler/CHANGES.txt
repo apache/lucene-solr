@@ -57,6 +57,8 @@ Bug Fixes
 
 * SOLR-1762: DateFormatTransformer does not work correctly with non-default locale dates (tommy chheng via noble)
 
+* SOLR-1757: DIH multithreading sometimes throws NPE (noble)
+
 Other Changes
 ----------------------
 

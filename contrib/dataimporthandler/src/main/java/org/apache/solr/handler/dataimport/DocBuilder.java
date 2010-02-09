@@ -345,11 +345,11 @@ public class DocBuilder {
     private DocWrapper docWrapper;
     private volatile boolean entityInitialized ;
     String currentProcess;
-    ThreadLocal<ThreadedEntityProcessorWrapper> currentEntityProcWrapper = new ThreadLocal<ThreadedEntityProcessorWrapper>();
+    final ThreadLocal<ThreadedEntityProcessorWrapper> currentEntityProcWrapper = new ThreadLocal<ThreadedEntityProcessorWrapper>();
 
     private ContextImpl context;
-    EntityRunner parent;
-    AtomicBoolean entityEnded = new AtomicBoolean(false);
+    final EntityRunner parent;
+    final AtomicBoolean entityEnded = new AtomicBoolean(false);
     private Exception exception;
 
     public EntityRunner(DataConfig.Entity entity, EntityRunner parent) {
