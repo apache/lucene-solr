@@ -70,7 +70,7 @@ New Features
 
 * SOLR-1177: Distributed Search support for TermsComponent (Matt Weber via shalin)
 
-* SOLR-1621: Allow current single core deployments to be specified by solr.xml (Mark Miller , noble)
+* SOLR-1621, SOLR-1722: Allow current single core deployments to be specified by solr.xml (Mark Miller , noble)
 
 * SOLR-1532: Allow StreamingUpdateSolrServer to use a provided HttpClient (Gabriele Renzi via shalin)
 

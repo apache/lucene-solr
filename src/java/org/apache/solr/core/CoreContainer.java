@@ -50,7 +50,7 @@ import org.xml.sax.SAXException;
  */
 public class CoreContainer 
 {
-  private static final String DEFAULT_CORE_NAME = "DEFAULT_CORE";
+  private static final String DEFAULT_DEFAULT_CORE_NAME = "collection1";
 
   protected static Logger log = LoggerFactory.getLogger(CoreContainer.class);
   
@@ -69,6 +69,8 @@ public class CoreContainer
   protected boolean shareSchema;
   protected String solrHome;
   protected String solrConfigFilenameOverride;
+
+  private String defaultCoreName = DEFAULT_DEFAULT_CORE_NAME;
 
   public CoreContainer() {
     solrHome = SolrResourceLoader.locateSolrHome();
@@ -210,7 +212,10 @@ public class CoreContainer
     solrHome = loader.getInstanceDir();
     try {
       Config cfg = new Config(loader, null, cfgis, null);
-
+      String dcoreName = cfg.get("solr/@defaultCoreName", null);
+      if(dcoreName != null) {
+        defaultCoreName = dcoreName;
+      }
       persistent = cfg.getBool( "solr/@persistent", false );
       libDir     = cfg.get(     "solr/@sharedLib", null);
       adminPath  = cfg.get(     "solr/cores/@adminPath", null );
@@ -248,7 +253,7 @@ public class CoreContainer
         Node node = nodes.item(i);
         try {
           String name = DOMUtil.getAttr(node, "name", null);
-          if(name.equals(DEFAULT_CORE_NAME)){
+          if(name.equals(defaultCoreName)){
             if(defaultCoreFound) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Only one 'DEFAULT_CORE' is allowed ");            
             defaultCoreFound = true;
             name="";
@@ -488,7 +493,7 @@ public class CoreContainer
   }
 
   private String checkDefault(String name) {
-    return name.length() == 0  || DEFAULT_CORE_NAME.equals(name) || name.trim().length() == 0 ? "" : name;
+    return name.length() == 0  || defaultCoreName.equals(name) || name.trim().length() == 0 ? "" : name;
   } 
 
   /**
@@ -769,7 +774,7 @@ public class CoreContainer
   private static final String DEF_SOLR_XML ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
           "<solr persistent=\"false\">\n" +
           "  <cores adminPath=\"/admin/cores\">\n" +
-          "    <core name=\""+ DEFAULT_CORE_NAME + "\" instanceDir=\".\" />\n" +
+          "    <core name=\""+ DEFAULT_DEFAULT_CORE_NAME + "\" instanceDir=\".\" />\n" +
           "  </cores>\n" +
           "</solr>";
 }
