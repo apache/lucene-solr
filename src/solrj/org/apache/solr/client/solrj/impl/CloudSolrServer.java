@@ -65,9 +65,10 @@ public class CloudSolrServer extends SolrServer {
     synchronized(this) {
       if (zkController != null) return;
       try {
-        zkController = new ZkController(zkHost, zkConnectTimeout, zkClientTimeout, null, null, null);
-        zkController.addShardZkNodeWatches();
-        zkController.updateCloudState(true);
+        ZkController zk = new ZkController(zkHost, zkConnectTimeout, zkClientTimeout, null, null, null);
+        zk.addShardZkNodeWatches();
+        zk.updateCloudState(true);
+        zkController = zk;
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
