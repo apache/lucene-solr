@@ -290,6 +290,14 @@ public abstract class BaseDistributedSearchTestCase extends AbstractSolrTestCase
     for (SolrServer client : clients) client.commit();
   }
 
+  protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {
+    // query a random server
+    int which = r.nextInt(clients.size());
+    SolrServer client = clients.get(which);
+    QueryResponse rsp = client.query(params);
+    return rsp;
+  }
+
   protected void query(Object... q) throws Exception {
     final ModifiableSolrParams params = new ModifiableSolrParams();
 
@@ -300,10 +308,8 @@ public abstract class BaseDistributedSearchTestCase extends AbstractSolrTestCase
     final QueryResponse controlRsp = controlClient.query(params);
 
     setDistributedParams(params);
-    // query a random server
-    int which = r.nextInt(clients.size());
-    SolrServer client = clients.get(which);
-    QueryResponse rsp = client.query(params);
+
+    QueryResponse rsp = queryServer(params);
 
     //compareResponses(rsp, controlRsp);
 

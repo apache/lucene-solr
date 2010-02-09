@@ -118,7 +118,7 @@ public class CloudSolrServer extends SolrServer {
     }
 
     Collections.shuffle(urlList, rand);
-
+    // System.out.println("########################## MAKING REQUEST TO " + urlList);
     // TODO: set distrib=true if we detected more than one shard?
     LBHttpSolrServer.Req req = new LBHttpSolrServer.Req(request, urlList);
     LBHttpSolrServer.Rsp rsp = lbServer.request(req);

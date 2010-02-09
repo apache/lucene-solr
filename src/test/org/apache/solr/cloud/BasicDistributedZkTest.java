@@ -17,10 +17,14 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.net.MalformedURLException;
 import java.util.HashSet;
 
+import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudSolrServer;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -258,5 +262,30 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
     
     super.printLayout();
 
+  }
+
+
+  volatile CloudSolrServer solrj;
+
+  @Override
+  protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {
+    if (true || r.nextBoolean())
+      return super.queryServer(params);
+
+    // use the distributed solrj client
+    if (solrj == null) {
+      synchronized(this) {
+        try {
+          CloudSolrServer server = new CloudSolrServer(AbstractZkTestCase.ZOO_KEEPER_ADDRESS);
+          server.setDefaultCollection("collection1");
+          solrj = server;
+        } catch (MalformedURLException e) {
+          throw new RuntimeException(e);
+        }
+      }
+    }
+
+    QueryResponse rsp = solrj.query(params);
+    return rsp;
   }
 }
