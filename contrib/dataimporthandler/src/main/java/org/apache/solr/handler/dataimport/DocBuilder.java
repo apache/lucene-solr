@@ -429,6 +429,7 @@ public class DocBuilder {
         DocWrapper docWrapper = this.docWrapper;
         Context.CURRENT_CONTEXT.set(context);
         for (; ;) {
+          if(DocBuilder.this.stop.get()) break;
           try {
             Map<String, Object> arow = epw.nextRow();
             if (arow == null) {

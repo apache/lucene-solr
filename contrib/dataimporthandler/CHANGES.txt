@@ -59,6 +59,8 @@ Bug Fixes
 
 * SOLR-1757: DIH multithreading sometimes throws NPE (noble)
 
+* SOLR-1766: DIH with threads enabled doesn't respond to the abort command (Michael Henson via noble)
+
 Other Changes
 ----------------------
 
