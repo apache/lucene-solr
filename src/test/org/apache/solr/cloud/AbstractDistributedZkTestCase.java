@@ -30,7 +30,9 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
   protected File tmpDir = new File(System.getProperty("java.io.tmpdir")
       + System.getProperty("file.separator") + getClass().getName() + "-"
       + System.currentTimeMillis());
-  
+
+  boolean createEmbeddedCore;
+
   @Override
   public void setUp() throws Exception {
     // we don't call super.setUp
@@ -56,16 +58,18 @@ public abstract class AbstractDistributedZkTestCase extends BaseDistributedSearc
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
 
+
+    if (createEmbeddedCore) {
     CoreContainer.Initializer init = new CoreContainer.Initializer() {
       {
         this.dataDir = AbstractDistributedZkTestCase.this.dataDir.getAbsolutePath();
         this.solrConfigFilename = AbstractDistributedZkTestCase.this.getSolrConfigFilename();
       }
     };
-
-//    h = new TestHarness("", init);
-//    lrf = h.getRequestFactory("standard", 0, 20, "version", "2.2");
-
+    h = new TestHarness("", init);
+    lrf = h.getRequestFactory("standard", 0, 20, "version", "2.2");
+    }
+  
     log.info("####SETUP_END " + getName());
 
     testDir = new File(System.getProperty("java.io.tmpdir")

@@ -64,6 +64,7 @@ public class DistributedZkFailuresTest extends AbstractDistributedZkTestCase {
   
   @Override
   public void setUp() throws Exception {
+    createEmbeddedCore = true;
     super.setUp();
     
     jetty = new JettySolrRunner(context, 0, getSolrConfigFilename());
