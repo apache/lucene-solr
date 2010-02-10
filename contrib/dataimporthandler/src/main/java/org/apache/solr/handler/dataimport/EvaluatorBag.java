@@ -72,7 +72,10 @@ public class EvaluatorBag {
           throw new DataImportHandlerException(SEVERE, "'escapeSql' must have at least one parameter ");
         }
         String s = l.get(0).toString();
-        return s.replaceAll("'", "''").replaceAll("\"", "\"\"");
+        // escape single quote with two single quotes, double quote
+        // with two doule quotes, and backslash with double backslash.
+        // See:  http://dev.mysql.com/doc/refman/4.1/en/mysql-real-escape-string.html
+        return s.replaceAll("'", "''").replaceAll("\"", "\"\"").replaceAll("\\\\", "\\\\\\\\");
       }
     };
   }

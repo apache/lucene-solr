@@ -49,6 +49,7 @@ public class TestEvaluatorBag {
     sqlTests = new HashMap<String, String>();
 
     sqlTests.put("foo\"", "foo\"\"");
+    sqlTests.put("foo\\", "foo\\\\");
     sqlTests.put("foo'", "foo''");
     sqlTests.put("foo''", "foo''''");
     sqlTests.put("'foo\"", "''foo\"\"");
