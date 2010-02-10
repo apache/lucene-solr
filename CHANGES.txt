@@ -57,6 +57,9 @@ API Changes
    which reader the int doc, passed to customScore, refers to.  (Paul
    chez Jamespot via Mike McCandless)
 
+ * LUCENE-2258: Remove unneeded synchronization in FuzzyTermEnum.
+   (Uwe Schindler, Robert Muir)
+
 Test Cases
 
  * LUCENE-2114: Change TestFilteredSearch to test on multi-segment
