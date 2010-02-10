@@ -29,7 +29,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestSpanQueryFilter extends LuceneTestCase {
 
@@ -40,7 +39,7 @@ public class TestSpanQueryFilter extends LuceneTestCase {
 
   public void testFilterWorks() throws Exception {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, 
+    IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, 
                                          IndexWriter.MaxFieldLength.LIMITED);
     for (int i = 0; i < 500; i++) {
       Document document = new Document();

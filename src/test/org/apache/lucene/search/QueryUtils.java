@@ -15,7 +15,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
+import static org.apache.lucene.util.LuceneTestCaseJ4.TEST_VERSION_CURRENT;
 
 /**
  * Copyright 2005 Apache Software Foundation
@@ -200,7 +200,7 @@ public class QueryUtils {
   private static RAMDirectory makeEmptyIndex(final int numDeletedDocs) 
     throws IOException {
       RAMDirectory d = new RAMDirectory();
-      IndexWriter w = new IndexWriter(d, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true,
+      IndexWriter w = new IndexWriter(d, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true,
                                       MaxFieldLength.LIMITED);
       for (int i = 0; i < numDeletedDocs; i++) {
         w.addDocument(new Document());

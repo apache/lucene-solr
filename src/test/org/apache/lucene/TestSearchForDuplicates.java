@@ -27,8 +27,6 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.queryParser.*;
-import org.apache.lucene.util.Version;
-
 import org.apache.lucene.util.LuceneTestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
@@ -79,7 +77,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
 
   private void doTest(PrintWriter out, boolean useCompoundFiles) throws Exception {
       Directory directory = new RAMDirectory();
-      Analyzer analyzer = new SimpleAnalyzer(Version.LUCENE_CURRENT);
+      Analyzer analyzer = new SimpleAnalyzer(TEST_VERSION_CURRENT);
       IndexWriter writer = new IndexWriter(directory, analyzer, true,
                                            IndexWriter.MaxFieldLength.LIMITED);
 
@@ -98,7 +96,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       // try a search without OR
       Searcher searcher = new IndexSearcher(directory, true);
 
-      QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, PRIORITY_FIELD, analyzer);
+      QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, PRIORITY_FIELD, analyzer);
 
       Query query = parser.parse(HIGH_PRIORITY);
       out.println("Query: " + query.toString(PRIORITY_FIELD));
@@ -113,7 +111,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       searcher = new IndexSearcher(directory, true);
       hits = null;
 
-      parser = new QueryParser(Version.LUCENE_CURRENT, PRIORITY_FIELD, analyzer);
+      parser = new QueryParser(TEST_VERSION_CURRENT, PRIORITY_FIELD, analyzer);
 
       query = parser.parse(HIGH_PRIORITY + " OR " + MED_PRIORITY);
       out.println("Query: " + query.toString(PRIORITY_FIELD));

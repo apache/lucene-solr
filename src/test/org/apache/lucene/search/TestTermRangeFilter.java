@@ -28,7 +28,6 @@ import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
 
 /**
  * A basic 'positive' Unit test class for the TermRangeFilter class.
@@ -340,7 +339,7 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
             
         /* build an index */
         RAMDirectory farsiIndex = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(farsiIndex, new SimpleAnalyzer(Version.LUCENE_CURRENT), T, 
+        IndexWriter writer = new IndexWriter(farsiIndex, new SimpleAnalyzer(TEST_VERSION_CURRENT), T, 
                                              IndexWriter.MaxFieldLength.LIMITED);
         Document doc = new Document();
         doc.add(new Field("content","\u0633\u0627\u0628", 
@@ -380,7 +379,7 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
         /* build an index */
         RAMDirectory danishIndex = new RAMDirectory();
         IndexWriter writer = new IndexWriter
-            (danishIndex, new SimpleAnalyzer(Version.LUCENE_CURRENT), T, 
+            (danishIndex, new SimpleAnalyzer(TEST_VERSION_CURRENT), T, 
              IndexWriter.MaxFieldLength.LIMITED);
         // Danish collation orders the words below in the given order
         // (example taken from TestSort.testInternationalSort() ).

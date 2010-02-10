@@ -18,8 +18,6 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
-
 import java.io.IOException;
 import java.util.Collection;
 
@@ -65,7 +63,7 @@ public class TestSimilarity extends LuceneTestCase {
 
   public void testSimilarity() throws Exception {
     RAMDirectory store = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, 
+    IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, 
                                          IndexWriter.MaxFieldLength.LIMITED);
     writer.setSimilarity(new SimpleSimilarity());
     

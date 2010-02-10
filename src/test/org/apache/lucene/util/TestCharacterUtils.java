@@ -18,6 +18,7 @@ package org.apache.lucene.util;
  */
 
 import static org.junit.Assert.*;
+import static org.apache.lucene.util.LuceneTestCaseJ4.TEST_VERSION_CURRENT;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -45,7 +46,7 @@ public class TestCharacterUtils {
     } catch (ArrayIndexOutOfBoundsException e) {
     }
 
-    CharacterUtils java5 = CharacterUtils.getInstance(Version.LUCENE_31);
+    CharacterUtils java5 = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
     assertEquals((int) 'A', java5.codePointAt(cpAt3, 0));
     assertEquals(Character.toCodePoint('\ud801', '\udc1c'), java5.codePointAt(
         cpAt3, 3));
@@ -71,7 +72,7 @@ public class TestCharacterUtils {
     } catch (StringIndexOutOfBoundsException e) {
     }
 
-    CharacterUtils java5 = CharacterUtils.getInstance(Version.LUCENE_31);
+    CharacterUtils java5 = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
     assertEquals((int) 'A', java5.codePointAt(cpAt3, 0));
     assertEquals(Character.toCodePoint('\ud801', '\udc1c'), java5.codePointAt(
         cpAt3, 3));
@@ -93,7 +94,7 @@ public class TestCharacterUtils {
     assertEquals((int) '\ud801', java4.codePointAt(cpAt3, 3, 5));
     assertEquals((int) '\ud801', java4.codePointAt(highSurrogateAt3, 3, 4));
 
-    CharacterUtils java5 = CharacterUtils.getInstance(Version.LUCENE_31);
+    CharacterUtils java5 = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
     assertEquals((int) 'A', java5.codePointAt(cpAt3, 0, 2));
     assertEquals(Character.toCodePoint('\ud801', '\udc1c'), java5.codePointAt(
         cpAt3, 3, 5));
@@ -122,7 +123,7 @@ public class TestCharacterUtils {
 
   @Test
   public void testFillNoHighSurrogate() throws IOException {
-    Version[] versions = new Version[] { Version.LUCENE_30, Version.LUCENE_31 };
+    Version[] versions = new Version[] { Version.LUCENE_30, TEST_VERSION_CURRENT };
     for (Version version : versions) {
       CharacterUtils instance = CharacterUtils.getInstance(version);
       Reader reader = new StringReader("helloworld");
@@ -144,7 +145,7 @@ public class TestCharacterUtils {
   @Test
   public void testFillJava15() throws IOException {
     String input = "1234\ud801\udc1c789123\ud801\ud801\udc1c\ud801";
-    CharacterUtils instance = CharacterUtils.getInstance(Version.LUCENE_31);
+    CharacterUtils instance = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
     Reader reader = new StringReader(input);
     CharacterBuffer buffer = CharacterUtils.newCharacterBuffer(5);
     assertTrue(instance.fill(buffer, reader));

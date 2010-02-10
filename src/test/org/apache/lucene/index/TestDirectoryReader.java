@@ -194,7 +194,7 @@ public class TestDirectoryReader extends LuceneTestCase {
   }
 
   private void addDoc(RAMDirectory ramDir1, String s, boolean create) throws IOException {
-    IndexWriter iw = new IndexWriter(ramDir1, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), create, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter iw = new IndexWriter(ramDir1, new StandardAnalyzer(TEST_VERSION_CURRENT), create, IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("body", s, Field.Store.YES, Field.Index.ANALYZED));
     iw.addDocument(doc);

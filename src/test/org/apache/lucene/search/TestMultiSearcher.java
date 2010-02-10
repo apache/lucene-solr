@@ -30,8 +30,6 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.util.Version;
-
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
@@ -84,9 +82,9 @@ public class TestMultiSearcher extends LuceneTestCase
         lDoc3.add(new Field("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
 
         // creating an index writer for the first index
-        IndexWriter writerA = new IndexWriter(indexStoreA, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writerA = new IndexWriter(indexStoreA, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
         // creating an index writer for the second index, but writing nothing
-        IndexWriter writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
 
         //--------------------------------------------------------------------
         // scenario 1
@@ -103,7 +101,7 @@ public class TestMultiSearcher extends LuceneTestCase
         writerB.close();
 
         // creating the query
-        QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, "fulltext", new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
+        QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "fulltext", new StandardAnalyzer(TEST_VERSION_CURRENT));
         Query query = parser.parse("handle:1");
 
         // building the searchables
@@ -130,7 +128,7 @@ public class TestMultiSearcher extends LuceneTestCase
         //--------------------------------------------------------------------
 
         // adding one document to the empty index
-        writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
+        writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
         writerB.addDocument(lDoc);
         writerB.optimize();
         writerB.close();
@@ -176,7 +174,7 @@ public class TestMultiSearcher extends LuceneTestCase
         readerB.close();
 
         // optimizing the index with the writer
-        writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
+        writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
         writerB.optimize();
         writerB.close();
 

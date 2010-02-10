@@ -26,7 +26,7 @@ import java.io.File;
 import java.io.IOException;
 
 public class TestAtomicUpdate extends LuceneTestCase {
-  private static final Analyzer ANALYZER = new SimpleAnalyzer(Version.LUCENE_CURRENT);
+  private static final Analyzer ANALYZER = new SimpleAnalyzer(TEST_VERSION_CURRENT);
   private Random RANDOM;
 
   public class MockIndexWriter extends IndexWriter {

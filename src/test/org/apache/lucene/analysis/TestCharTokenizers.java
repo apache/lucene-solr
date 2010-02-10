@@ -46,7 +46,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     // internal buffer size is 1024 make sure we have a surrogate pair right at the border
     builder.insert(1023, "\ud801\udc1c");
     LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(
-        Version.LUCENE_CURRENT, new StringReader(builder.toString()));
+        TEST_VERSION_CURRENT, new StringReader(builder.toString()));
     assertTokenStreamContents(tokenizer, builder.toString().toLowerCase().split(" "));
   }
   
@@ -64,7 +64,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
       }
       builder.append("\ud801\udc1cabc");
       LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(
-          Version.LUCENE_CURRENT, new StringReader(builder.toString()));
+          TEST_VERSION_CURRENT, new StringReader(builder.toString()));
       assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase()});
     }
   }
@@ -79,7 +79,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
       builder.append("A");
     }
     LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(
-        Version.LUCENE_CURRENT, new StringReader(builder.toString() + builder.toString()));
+        TEST_VERSION_CURRENT, new StringReader(builder.toString() + builder.toString()));
     assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase(), builder.toString().toLowerCase()});
   }
   
@@ -94,13 +94,13 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     }
     builder.append("\ud801\udc1c");
     LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(
-        Version.LUCENE_CURRENT, new StringReader(builder.toString() + builder.toString()));
+        TEST_VERSION_CURRENT, new StringReader(builder.toString() + builder.toString()));
     assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase(), builder.toString().toLowerCase()});
   }
 
   public void testLowerCaseTokenizer() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(Version.LUCENE_CURRENT,
+    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT,
         reader);
     assertTokenStreamContents(tokenizer, new String[] { "tokenizer",
         "\ud801\udc44test" });
@@ -115,7 +115,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
 
   public void testWhitespaceTokenizer() throws IOException {
     StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(Version.LUCENE_CURRENT,
+    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT,
         reader);
     assertTokenStreamContents(tokenizer, new String[] { "Tokenizer",
         "\ud801\udc1ctest" });
@@ -132,7 +132,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
   public void testIsTokenCharCharInSubclass() {
     new TestingCharTokenizer(Version.LUCENE_30, new StringReader(""));
     try {
-      new TestingCharTokenizer(Version.LUCENE_CURRENT, new StringReader(""));
+      new TestingCharTokenizer(TEST_VERSION_CURRENT, new StringReader(""));
       fail("version 3.1 is not permitted if char based method is implemented");
     } catch (IllegalArgumentException e) {
       // expected
@@ -142,7 +142,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
   public void testNormalizeCharInSubclass() {
     new TestingCharTokenizerNormalize(Version.LUCENE_30, new StringReader(""));
     try {
-      new TestingCharTokenizerNormalize(Version.LUCENE_CURRENT,
+      new TestingCharTokenizerNormalize(TEST_VERSION_CURRENT,
           new StringReader(""));
       fail("version 3.1 is not permitted if char based method is implemented");
     } catch (IllegalArgumentException e) {
@@ -154,7 +154,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     new TestingCharTokenizerNormalizeIsTokenChar(Version.LUCENE_30,
         new StringReader(""));
     try {
-      new TestingCharTokenizerNormalizeIsTokenChar(Version.LUCENE_CURRENT,
+      new TestingCharTokenizerNormalizeIsTokenChar(TEST_VERSION_CURRENT,
           new StringReader(""));
       fail("version 3.1 is not permitted if char based method is implemented");
     } catch (IllegalArgumentException e) {

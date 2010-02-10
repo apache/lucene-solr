@@ -22,7 +22,6 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
@@ -74,7 +73,7 @@ public class TestSearch extends LuceneTestCase {
     throws Exception
     {
       Directory directory = new RAMDirectory();
-      Analyzer analyzer = new SimpleAnalyzer(Version.LUCENE_CURRENT);
+      Analyzer analyzer = new SimpleAnalyzer(TEST_VERSION_CURRENT);
       IndexWriter writer = new IndexWriter(directory, analyzer, true, 
                                            IndexWriter.MaxFieldLength.LIMITED);
 
@@ -108,7 +107,7 @@ public class TestSearch extends LuceneTestCase {
       };
       ScoreDoc[] hits = null;
 
-      QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, "contents", analyzer);
+      QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "contents", analyzer);
       parser.setPhraseSlop(4);
       for (int j = 0; j < queries.length; j++) {
         Query query = parser.parse(queries[j]);

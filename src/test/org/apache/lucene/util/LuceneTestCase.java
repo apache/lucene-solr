@@ -53,6 +53,8 @@ import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 @Deprecated
 public abstract class LuceneTestCase extends TestCase {
 
+  public static final Version TEST_VERSION_CURRENT = LuceneTestCaseJ4.TEST_VERSION_CURRENT;
+
   public LuceneTestCase() {
     super();
   }

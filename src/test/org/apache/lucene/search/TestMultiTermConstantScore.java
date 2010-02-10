@@ -26,8 +26,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
-
 import java.io.IOException;
 import java.text.Collator;
 import java.util.Locale;
@@ -66,7 +64,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
         "X       4 5 6" };
 
     small = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(small, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true,
+    IndexWriter writer = new IndexWriter(small, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true,
         IndexWriter.MaxFieldLength.LIMITED);
 
     for (int i = 0; i < data.length; i++) {
@@ -617,7 +615,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
 
     /* build an index */
     RAMDirectory farsiIndex = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(farsiIndex, new SimpleAnalyzer(Version.LUCENE_CURRENT), T,
+    IndexWriter writer = new IndexWriter(farsiIndex, new SimpleAnalyzer(TEST_VERSION_CURRENT), T,
         IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
@@ -657,7 +655,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
 
     /* build an index */
     RAMDirectory danishIndex = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(danishIndex, new SimpleAnalyzer(Version.LUCENE_CURRENT), T,
+    IndexWriter writer = new IndexWriter(danishIndex, new SimpleAnalyzer(TEST_VERSION_CURRENT), T,
                                          IndexWriter.MaxFieldLength.LIMITED);
 
     // Danish collation orders the words below in the given order

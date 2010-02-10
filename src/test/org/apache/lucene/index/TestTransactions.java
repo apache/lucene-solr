@@ -88,12 +88,12 @@ public class TestTransactions extends LuceneTestCase
     @Override
     public void doWork() throws Throwable {
 
-      IndexWriter writer1 = new IndexWriter(dir1, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer1 = new IndexWriter(dir1, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
       writer1.setMaxBufferedDocs(3);
       writer1.setMergeFactor(2);
       ((ConcurrentMergeScheduler) writer1.getMergeScheduler()).setSuppressExceptions();
 
-      IndexWriter writer2 = new IndexWriter(dir2, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer2 = new IndexWriter(dir2, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
       // Intentionally use different params so flush/merge
       // happen @ different times
       writer2.setMaxBufferedDocs(2);
@@ -178,7 +178,7 @@ public class TestTransactions extends LuceneTestCase
   }
 
   public void initIndex(Directory dir) throws Throwable {
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
     for(int j=0; j<7; j++) {
       Document d = new Document();
       int n = RANDOM.nextInt();

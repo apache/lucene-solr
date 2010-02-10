@@ -32,7 +32,6 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 /**
  * This testcase tests whether multi-level skipping is being used
@@ -92,7 +91,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
   private static class PayloadAnalyzer extends Analyzer {
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new PayloadFilter(new LowerCaseTokenizer(Version.LUCENE_CURRENT, reader));
+      return new PayloadFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, reader));
     }
 
   }

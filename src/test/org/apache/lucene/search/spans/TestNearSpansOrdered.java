@@ -30,14 +30,13 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestNearSpansOrdered extends LuceneTestCase {
   protected IndexSearcher searcher;
 
   public static final String FIELD = "field";
   public static final QueryParser qp =
-    new QueryParser(Version.LUCENE_CURRENT, FIELD, new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
+    new QueryParser(TEST_VERSION_CURRENT, FIELD, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
 
   @Override
   public void tearDown() throws Exception {
@@ -49,7 +48,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer= new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer= new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(new Field(FIELD, docFields[i], Field.Store.NO, Field.Index.ANALYZED));

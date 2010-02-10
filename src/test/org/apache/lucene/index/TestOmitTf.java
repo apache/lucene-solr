@@ -66,7 +66,7 @@ public class TestOmitTf extends LuceneTestCase {
   // omitTermFreqAndPositions bit in the FieldInfo
   public void testOmitTermFreqAndPositions() throws Exception {
     Directory ram = new MockRAMDirectory();
-    Analyzer analyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
+    Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
     IndexWriter writer = new IndexWriter(ram, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
     Document d = new Document();
         
@@ -112,7 +112,7 @@ public class TestOmitTf extends LuceneTestCase {
   // omitTermFreqAndPositions for the same field works
   public void testMixedMerge() throws Exception {
     Directory ram = new MockRAMDirectory();
-    Analyzer analyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
+    Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
     IndexWriter writer = new IndexWriter(ram, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setMaxBufferedDocs(3);
     writer.setMergeFactor(2);
@@ -165,7 +165,7 @@ public class TestOmitTf extends LuceneTestCase {
   // field, 
   public void testMixedRAM() throws Exception {
     Directory ram = new MockRAMDirectory();
-    Analyzer analyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
+    Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
     IndexWriter writer = new IndexWriter(ram, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setMaxBufferedDocs(10);
     writer.setMergeFactor(2);
@@ -213,7 +213,7 @@ public class TestOmitTf extends LuceneTestCase {
   // Verifies no *.prx exists when all fields omit term freq:
   public void testNoPrxFile() throws Throwable {
     Directory ram = new MockRAMDirectory();
-    Analyzer analyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
+    Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
     IndexWriter writer = new IndexWriter(ram, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setMaxBufferedDocs(3);
     writer.setMergeFactor(2);
@@ -244,7 +244,7 @@ public class TestOmitTf extends LuceneTestCase {
   // Test scores with one field with Term Freqs and one without, otherwise with equal content 
   public void testBasic() throws Exception {
     Directory dir = new MockRAMDirectory();  
-    Analyzer analyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
+    Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
     IndexWriter writer = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setMergeFactor(2);
     writer.setMaxBufferedDocs(2);

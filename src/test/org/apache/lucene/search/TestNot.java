@@ -25,7 +25,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.util.Version;
 
 /** Similarity unit test.
  *
@@ -39,7 +38,7 @@ public class TestNot extends LuceneTestCase {
 
   public void testNot() throws Exception {
     RAMDirectory store = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
 
     Document d1 = new Document();
     d1.add(new Field("field", "a b", Field.Store.YES, Field.Index.ANALYZED));
@@ -49,7 +48,7 @@ public class TestNot extends LuceneTestCase {
     writer.close();
 
     Searcher searcher = new IndexSearcher(store, true);
-      QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, "field", new SimpleAnalyzer(Version.LUCENE_CURRENT));
+      QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "field", new SimpleAnalyzer(TEST_VERSION_CURRENT));
     Query query = parser.parse("a NOT b");
     //System.out.println(query);
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;

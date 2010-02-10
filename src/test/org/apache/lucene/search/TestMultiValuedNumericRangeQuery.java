@@ -30,7 +30,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
 
@@ -44,7 +43,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
     final Random rnd = newRandom();
 
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, MaxFieldLength.UNLIMITED);
     
     DecimalFormat format = new DecimalFormat("00000000000", new DecimalFormatSymbols(Locale.US));
     

@@ -45,9 +45,9 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     RAMDirectory dirA = new RAMDirectory();
     RAMDirectory dirB = new RAMDirectory();
 
-    IndexWriter wA = new IndexWriter(dirA, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, 
+    IndexWriter wA = new IndexWriter(dirA, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, 
                                      IndexWriter.MaxFieldLength.LIMITED);
-    IndexWriter wB = new IndexWriter(dirB, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, 
+    IndexWriter wB = new IndexWriter(dirB, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, 
                                      IndexWriter.MaxFieldLength.LIMITED);
 
     long theLong = Long.MAX_VALUE;

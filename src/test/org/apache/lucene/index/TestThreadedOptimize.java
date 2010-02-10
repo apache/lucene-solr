@@ -24,7 +24,6 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.English;
 
@@ -35,7 +34,7 @@ import java.io.File;
 
 public class TestThreadedOptimize extends LuceneTestCase {
   
-  private static final Analyzer ANALYZER = new SimpleAnalyzer(Version.LUCENE_CURRENT);
+  private static final Analyzer ANALYZER = new SimpleAnalyzer(TEST_VERSION_CURRENT);
 
   private final static int NUM_THREADS = 3;
   //private final static int NUM_THREADS = 5;

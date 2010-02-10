@@ -73,6 +73,9 @@ import static org.junit.Assert.fail;
 //@RunWith(RunBareWrapper.class)
 public class LuceneTestCaseJ4 extends TestWatchman {
 
+  /** Change this when development starts for new Lucene version: */
+  public static final Version TEST_VERSION_CURRENT = Version.LUCENE_31;
+
   // This is how we get control when errors occur.
   // Think of this as start/end/success/failed
   // events.
@@ -214,7 +217,7 @@ public class LuceneTestCaseJ4 extends TestWatchman {
    */
   public Random newRandom() {
     if (seed != null) {
-      throw new IllegalStateException("please call LuceneTestCase.newRandom only once per test");
+      throw new IllegalStateException("please call LuceneTestCaseJ4.newRandom only once per test");
     }
     return newRandom(seedRnd.nextLong());
   }
@@ -226,7 +229,7 @@ public class LuceneTestCaseJ4 extends TestWatchman {
    */
   public Random newRandom(long seed) {
     if (this.seed != null) {
-      throw new IllegalStateException("please call LuceneTestCase.newRandom only once per test");
+      throw new IllegalStateException("please call LuceneTestCaseJ4.newRandom only once per test");
     }
     this.seed = Long.valueOf(seed);
     return new Random(seed);

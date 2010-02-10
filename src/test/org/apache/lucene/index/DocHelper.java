@@ -29,7 +29,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Version;
+import static org.apache.lucene.util.LuceneTestCaseJ4.TEST_VERSION_CURRENT;
 
 class DocHelper {
   public static final String FIELD_1_TEXT = "field one text";
@@ -219,7 +219,7 @@ class DocHelper {
    */ 
   public static SegmentInfo writeDoc(Directory dir, Document doc) throws IOException
   {
-    return writeDoc(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), Similarity.getDefault(), doc);
+    return writeDoc(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), Similarity.getDefault(), doc);
   }
 
   /**

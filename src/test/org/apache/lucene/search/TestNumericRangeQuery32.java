@@ -29,7 +29,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.Version;
 
 public class TestNumericRangeQuery32 extends LuceneTestCase {
   // distance of entries
@@ -47,7 +46,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
       BooleanQuery.setMaxClauseCount(3*255*2 + 255);
       
       directory = new RAMDirectory();
-      IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT),
+      IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT),
       true, MaxFieldLength.UNLIMITED);
       
       NumericField

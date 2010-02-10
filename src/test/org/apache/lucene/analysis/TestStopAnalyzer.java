@@ -29,7 +29,7 @@ import java.util.HashSet;
 
 public class TestStopAnalyzer extends BaseTokenStreamTestCase {
   
-  private StopAnalyzer stop = new StopAnalyzer(Version.LUCENE_CURRENT);
+  private StopAnalyzer stop = new StopAnalyzer(TEST_VERSION_CURRENT);
   private Set<Object> inValidTokens = new HashSet<Object>();
   
   public TestStopAnalyzer(String s) {
@@ -82,7 +82,7 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
     stopWordsSet.add("good");
     stopWordsSet.add("test");
     stopWordsSet.add("analyzer");
-    StopAnalyzer newStop = new StopAnalyzer(Version.LUCENE_CURRENT, stopWordsSet);
+    StopAnalyzer newStop = new StopAnalyzer(TEST_VERSION_CURRENT, stopWordsSet);
     StringReader reader = new StringReader("This is a good test of the english stop analyzer with positions");
     int expectedIncr[] =                  { 1,   1, 1,          3, 1,  1,      1,            2,   1};
     TokenStream stream = newStop.tokenStream("test", reader);

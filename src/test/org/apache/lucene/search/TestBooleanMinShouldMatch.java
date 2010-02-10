@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 
 import junit.framework.TestCase;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -60,7 +59,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
 
         index = new RAMDirectory();
         IndexWriter writer = new IndexWriter(index,
-                                             new WhitespaceAnalyzer(Version.LUCENE_CURRENT),
+                                             new WhitespaceAnalyzer(TEST_VERSION_CURRENT),
                                              true, IndexWriter.MaxFieldLength.LIMITED);
 
         for (int i = 0; i < data.length; i++) {

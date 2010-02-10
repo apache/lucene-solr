@@ -25,13 +25,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
-
 import java.io.IOException;
 
 public class TestConcurrentMergeScheduler extends LuceneTestCase {
   
-  private static final Analyzer ANALYZER = new SimpleAnalyzer(Version.LUCENE_CURRENT);
+  private static final Analyzer ANALYZER = new SimpleAnalyzer(TEST_VERSION_CURRENT);
 
   private static class FailOnlyOnFlush extends MockRAMDirectory.Failure {
     boolean doFail;

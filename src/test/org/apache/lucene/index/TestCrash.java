@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.NoLockFactory;
@@ -36,7 +35,7 @@ public class TestCrash extends LuceneTestCase {
   private IndexWriter initIndex(MockRAMDirectory dir) throws IOException {
     dir.setLockFactory(NoLockFactory.getNoLockFactory());
 
-    IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.UNLIMITED);
     //writer.setMaxBufferedDocs(2);
     writer.setMaxBufferedDocs(10);
     ((ConcurrentMergeScheduler) writer.getMergeScheduler()).setSuppressExceptions();

@@ -28,8 +28,6 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Locale;
@@ -311,7 +309,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
   }
 
   private void initializeIndex(String[] values) throws IOException {
-    initializeIndex(values, new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
+    initializeIndex(values, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
   }
 
   private void initializeIndex(String[] values, Analyzer analyzer) throws IOException {
@@ -323,7 +321,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
   }
 
   private void addDoc(String content) throws IOException {
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
     insertDoc(writer, content);
     writer.close();
   }

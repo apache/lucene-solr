@@ -20,7 +20,6 @@ package org.apache.lucene.search.function;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
-import org.apache.lucene.util.Version;
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -185,7 +184,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   }
 
   public void testCustomExternalQuery() throws Exception {
-    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, TEXT_FIELD,anlzr); 
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, TEXT_FIELD,anlzr); 
     String qtxt = "first aid text"; // from the doc texts in FunctionQuerySetup.
     Query q1 = qp.parse(qtxt); 
     
@@ -208,7 +207,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     float boost = (float) dboost;
     IndexSearcher s = new IndexSearcher(dir, true);
     FieldScoreQuery qValSrc = new FieldScoreQuery(field, tp); // a query that would score by the field
-    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, TEXT_FIELD, anlzr);
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, TEXT_FIELD, anlzr);
     String qtxt = "first aid text"; // from the doc texts in FunctionQuerySetup.
 
     // regular (boolean) query.

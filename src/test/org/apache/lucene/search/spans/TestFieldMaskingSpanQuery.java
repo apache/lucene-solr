@@ -32,7 +32,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestFieldMaskingSpanQuery extends LuceneTestCase {
 
@@ -55,7 +54,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
     IndexWriter writer= new IndexWriter(directory,
-                                        new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true,
+                                        new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true,
                                         IndexWriter.MaxFieldLength.LIMITED);
     
     writer.addDocument(doc(new Field[] { field("id", "0")

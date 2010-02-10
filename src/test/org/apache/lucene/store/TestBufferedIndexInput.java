@@ -37,7 +37,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.NIOFSDirectory.NIOFSIndexInput;
 import org.apache.lucene.store.SimpleFSDirectory.SimpleFSIndexInput;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.ArrayUtil;
 
@@ -243,7 +242,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       File indexDir = new File(System.getProperty("tempDir"), "testSetBufferSize");
       MockFSDirectory dir = new MockFSDirectory(indexDir, newRandom());
       try {
-        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
         writer.setUseCompoundFile(false);
         for(int i=0;i<37;i++) {
           Document doc = new Document();

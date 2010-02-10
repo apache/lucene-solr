@@ -35,7 +35,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 /**
  * Tests basic search capabilities.
@@ -56,7 +55,7 @@ public class TestBasics extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, 
+    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, 
                                          IndexWriter.MaxFieldLength.LIMITED);
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {

@@ -29,14 +29,13 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.RAMDirectory;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 /**
  * Tests MatchAllDocsQuery.
  *
  */
 public class TestMatchAllDocsQuery extends LuceneTestCase {
-  private Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_CURRENT);
+  private Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
   
   public void testQuery() throws Exception {
 
@@ -100,7 +99,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
     assertEquals(2, hits.length);
     
     // test parsable toString()
-    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "key", analyzer);
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "key", analyzer);
     hits = is.search(qp.parse(new MatchAllDocsQuery().toString()), null, 1000).scoreDocs;
     assertEquals(2, hits.length);
 

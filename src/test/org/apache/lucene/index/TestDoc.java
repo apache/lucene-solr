@@ -35,7 +35,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 
 /** JUnit adaptation of an older test case DocTest. */
@@ -110,7 +109,7 @@ public class TestDoc extends LuceneTestCase {
       PrintWriter out = new PrintWriter(sw, true);
 
       Directory directory = FSDirectory.open(indexDir);
-      IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
 
       SegmentInfo si1 = indexDoc(writer, "test.txt");
       printSegment(out, si1);
@@ -138,7 +137,7 @@ public class TestDoc extends LuceneTestCase {
       out = new PrintWriter(sw, true);
 
       directory = FSDirectory.open(indexDir);
-      writer = new IndexWriter(directory, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+      writer = new IndexWriter(directory, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
 
       si1 = indexDoc(writer, "test.txt");
       printSegment(out, si1);

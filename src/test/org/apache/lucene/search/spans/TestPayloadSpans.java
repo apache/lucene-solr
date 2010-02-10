@@ -47,7 +47,6 @@ import org.apache.lucene.search.payloads.PayloadSpanUtil;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestPayloadSpans extends LuceneTestCase {
   private final static boolean DEBUG = true;
@@ -469,7 +468,7 @@ public class TestPayloadSpans extends LuceneTestCase {
 
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new LowerCaseTokenizer(Version.LUCENE_CURRENT, reader);
+      TokenStream result = new LowerCaseTokenizer(TEST_VERSION_CURRENT, reader);
       result = new PayloadFilter(result, fieldName);
       return result;
     }
@@ -521,7 +520,7 @@ public class TestPayloadSpans extends LuceneTestCase {
 
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new LowerCaseTokenizer(Version.LUCENE_CURRENT, reader);
+      TokenStream result = new LowerCaseTokenizer(TEST_VERSION_CURRENT, reader);
       result = new PayloadFilter(result, fieldName);
       return result;
     }

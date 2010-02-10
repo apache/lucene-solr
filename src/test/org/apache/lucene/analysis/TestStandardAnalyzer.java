@@ -23,16 +23,16 @@ import org.apache.lucene.util.Version;
 
 public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
 
-  private Analyzer a = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
+  private Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT);
 
   public void testMaxTermLength() throws Exception {
-    StandardAnalyzer sa = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
+    StandardAnalyzer sa = new StandardAnalyzer(TEST_VERSION_CURRENT);
     sa.setMaxTokenLength(5);
     assertAnalyzesTo(sa, "ab cd toolong xy z", new String[]{"ab", "cd", "xy", "z"});
   }
 
   public void testMaxTermLength2() throws Exception {
-    StandardAnalyzer sa = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
+    StandardAnalyzer sa = new StandardAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(sa, "ab cd toolong xy z", new String[]{"ab", "cd", "toolong", "xy", "z"});
     sa.setMaxTokenLength(5);
     
@@ -96,7 +96,7 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
 
   public void testLucene1140() throws Exception {
     try {
-      StandardAnalyzer analyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
+      StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
       assertAnalyzesTo(analyzer, "www.nutch.org.", new String[]{ "www.nutch.org" }, new String[] { "<HOST>" });
     } catch (NullPointerException e) {
       fail("Should not throw an NPE and it did");
@@ -106,7 +106,7 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
 
   public void testDomainNames() throws Exception {
     // Current lucene should not show the bug
-    StandardAnalyzer a2 = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
+    StandardAnalyzer a2 = new StandardAnalyzer(TEST_VERSION_CURRENT);
 
     // domain names
     assertAnalyzesTo(a2, "www.nutch.org", new String[]{"www.nutch.org"});

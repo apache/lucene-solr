@@ -31,7 +31,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
 
 public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   
@@ -43,7 +42,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     super.setUp();
     directory = new RAMDirectory();
     IndexWriter writer = new IndexWriter(directory,
-                                         new SimpleAnalyzer(Version.LUCENE_CURRENT),
+                                         new SimpleAnalyzer(TEST_VERSION_CURRENT),
                                          true, IndexWriter.MaxFieldLength.LIMITED);
 
     Document doc = new Document();
@@ -57,10 +56,10 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testPerFieldAnalyzer() throws Exception {
-    PerFieldAnalyzerWrapper analyzer = new PerFieldAnalyzerWrapper(new SimpleAnalyzer(Version.LUCENE_CURRENT));
+    PerFieldAnalyzerWrapper analyzer = new PerFieldAnalyzerWrapper(new SimpleAnalyzer(TEST_VERSION_CURRENT));
     analyzer.addAnalyzer("partnum", new KeywordAnalyzer());
 
-    QueryParser queryParser = new QueryParser(Version.LUCENE_CURRENT, "description", analyzer);
+    QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, "description", analyzer);
     Query query = queryParser.parse("partnum:Q36 AND SPACE");
 
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;

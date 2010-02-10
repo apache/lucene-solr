@@ -31,7 +31,6 @@ import org.apache.lucene.search.TimeLimitingCollector.TimeExceededException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
@@ -76,7 +75,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
         "blueberry pizza",
     };
     Directory directory = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, MaxFieldLength.UNLIMITED);
+    IndexWriter iw = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, MaxFieldLength.UNLIMITED);
     
     for (int i=0; i<N_DOCS; i++) {
       add(docText[i%docText.length], iw);
@@ -89,7 +88,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     for (int i = 1; i < docText.length; i++) {
       qtxt += ' ' + docText[i]; // large query so that search will be longer
     }
-    QueryParser queryParser = new QueryParser(Version.LUCENE_CURRENT, FIELD_NAME, new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
+    QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     query = queryParser.parse(qtxt);
     
     // warm the searcher

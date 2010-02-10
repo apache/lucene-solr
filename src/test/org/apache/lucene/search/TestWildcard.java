@@ -28,7 +28,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 
@@ -212,7 +211,7 @@ public class TestWildcard
   private RAMDirectory getIndexStore(String field, String[] contents)
       throws IOException {
     RAMDirectory indexStore = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     for (int i = 0; i < contents.length; ++i) {
       Document doc = new Document();
       doc.add(new Field(field, contents[i], Field.Store.YES, Field.Index.ANALYZED));
@@ -240,7 +239,7 @@ public class TestWildcard
   public void testParsingAndSearching() throws Exception {
     String field = "content";
     boolean dbg = false;
-    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, field, new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, field, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     qp.setAllowLeadingWildcard(true);
     String docs[] = {
         "\\ abcdefg1",
@@ -270,7 +269,7 @@ public class TestWildcard
 
     // prepare the index
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter iw = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
     for (int i = 0; i < docs.length; i++) {
       Document doc = new Document();
       doc.add(new Field(field,docs[i],Store.NO,Index.ANALYZED));

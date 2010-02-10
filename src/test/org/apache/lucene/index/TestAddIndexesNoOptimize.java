@@ -20,8 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
-
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -429,7 +427,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
 
   private IndexWriter newWriter(Directory dir, boolean create)
       throws IOException {
-    final IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), create, IndexWriter.MaxFieldLength.UNLIMITED);
+    final IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), create, IndexWriter.MaxFieldLength.UNLIMITED);
     writer.setMergePolicy(new LogDocMergePolicy(writer));
     return writer;
   }
@@ -503,7 +501,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
   public void testHangOnClose() throws IOException {
 
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setMergePolicy(new LogByteSizeMergePolicy(writer));
     writer.setMaxBufferedDocs(5);
     writer.setUseCompoundFile(false);
@@ -529,7 +527,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer.close();
 
     Directory dir2 = new MockRAMDirectory();
-    writer = new IndexWriter(dir2, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    writer = new IndexWriter(dir2, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     LogByteSizeMergePolicy lmp = new LogByteSizeMergePolicy(writer);
     lmp.setMinMergeMB(0.0001);
     writer.setMergePolicy(lmp);

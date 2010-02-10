@@ -45,7 +45,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 
 /*
@@ -218,7 +217,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
         hasTested29++;
       }
 
-      IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
       w.optimize();
       w.close();
 
@@ -273,7 +272,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
   }
 
   public void searchIndex(String dirName, String oldName) throws IOException {
-    //QueryParser parser = new QueryParser("contents", new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
+    //QueryParser parser = new QueryParser("contents", new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     //Query query = parser.parse("handle:1");
 
     dirName = fullDir(dirName);
@@ -358,7 +357,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     Directory dir = FSDirectory.open(new File(dirName));
 
     // open writer
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.UNLIMITED);
 
     // add 10 docs
     for(int i=0;i<10;i++) {
@@ -402,7 +401,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     searcher.close();
 
     // optimize
-    writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.UNLIMITED);
+    writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.UNLIMITED);
     writer.optimize();
     writer.close();
 
@@ -452,7 +451,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     searcher.close();
 
     // optimize
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.UNLIMITED);
     writer.optimize();
     writer.close();
 
@@ -474,7 +473,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     dirName = fullDir(dirName);
 
     Directory dir = FSDirectory.open(new File(dirName));
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setUseCompoundFile(doCFS);
     writer.setMaxBufferedDocs(10);
     
@@ -485,7 +484,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     writer.close();
 
     // open fresh writer so we get no prx file in the added segment
-    writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+    writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
     writer.setUseCompoundFile(doCFS);
     writer.setMaxBufferedDocs(10);
     addNoProxDoc(writer);
@@ -512,7 +511,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
     try {
       Directory dir = FSDirectory.open(new File(fullDir(outputDir)));
 
-      IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
+      IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
       writer.setRAMBufferSizeMB(16.0);
       for(int i=0;i<35;i++) {
         addDoc(writer, i);
