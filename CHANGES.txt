@@ -197,6 +197,9 @@ Optimizations
 * LUCENE-2195: Speedup CharArraySet if set is empty.
   (Simon Willnauer via Robert Muir)
    
+* LUCENE-2258: Remove unneeded synchronization in FuzzyTermEnum.
+  (Uwe Schindler, Robert Muir)
+   
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
