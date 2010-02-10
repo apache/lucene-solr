@@ -67,10 +67,9 @@ public final class ZkController {
   static final String SHARDS_ZKNODE = "/shards";
   static final String CONFIGS_ZKNODE = "/configs";
   static final String COLLECTIONS_ZKNODE = "/collections";
-  static final String NODES_ZKNODE = "/nodes";
+  static final String NODES_ZKNODE = "/live_nodes";
 
   public static final String URL_PROP = "url";
-  public static final String ROLE_PROP = "role";
   public static final String NODE_NAME = "node_name";
 
   private SolrZkClient zkClient;
@@ -510,8 +509,6 @@ public final class ZkController {
 
     ZkNodeProps props = new ZkNodeProps();
     props.put(URL_PROP, shardUrl);
-
-    props.put(ROLE_PROP, cloudDesc.getRole());
     
     props.put(NODE_NAME, getNodeName());
 

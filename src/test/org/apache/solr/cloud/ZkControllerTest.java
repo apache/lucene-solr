@@ -71,9 +71,9 @@ public class ZkControllerTest extends TestCase {
       // nocommit
       //zkClient.makePath("collections/collection1/config=collection1");
 
-      addShardToZk(zkClient, shardsPath, SHARD1, URL1, "slave");
-      addShardToZk(zkClient, shardsPath, SHARD2, URL2, "master");
-      addShardToZk(zkClient, shardsPath, SHARD3, URL3, "slave");
+      addShardToZk(zkClient, shardsPath, SHARD1, URL1);
+      addShardToZk(zkClient, shardsPath, SHARD2, URL2);
+      addShardToZk(zkClient, shardsPath, SHARD3, URL3);
 
       if (DEBUG) {
         zkClient.printLayoutToStdOut();
@@ -101,17 +101,14 @@ public class ZkControllerTest extends TestCase {
         assertNotNull(shards.get(SHARD3));
 
         ZkNodeProps props = shards.get(SHARD1);
-        assertEquals("slave", props.get(ZkController.ROLE_PROP));
         assertEquals(URL1, props.get(ZkController.URL_PROP));
         assertEquals(TEST_NODE_NAME, props.get(ZkController.NODE_NAME));
 
         props = shards.get(SHARD2);
-        assertEquals("master", props.get(ZkController.ROLE_PROP));
         assertEquals(URL2, props.get(ZkController.URL_PROP));
         assertEquals(TEST_NODE_NAME, props.get(ZkController.NODE_NAME));
 
         props = shards.get(SHARD3);
-        assertEquals("slave", props.get(ZkController.ROLE_PROP));
         assertEquals(URL3, props.get(ZkController.URL_PROP));
         assertEquals(TEST_NODE_NAME, props.get(ZkController.NODE_NAME));
 
@@ -201,12 +198,11 @@ public class ZkControllerTest extends TestCase {
   }
 
   private void addShardToZk(SolrZkClient zkClient, String shardsPath,
-      String zkNodeName, String url, String role) throws IOException,
+      String zkNodeName, String url) throws IOException,
       KeeperException, InterruptedException {
 
     ZkNodeProps props = new ZkNodeProps();
     props.put(ZkController.URL_PROP, url);
-    props.put(ZkController.ROLE_PROP, role);
     props.put(ZkController.NODE_NAME, TEST_NODE_NAME);
     byte[] bytes = props.store();
 

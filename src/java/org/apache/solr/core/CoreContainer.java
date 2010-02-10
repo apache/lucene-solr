@@ -396,10 +396,6 @@ public class CoreContainer
             } else if (opt != null) {
               p.getCloudDescriptor().setShardId(opt);
             }
-            opt = DOMUtil.getAttr(node, "role", null);
-            if (opt != null) {
-              p.getCloudDescriptor().setRole(opt);
-            }
             opt = DOMUtil.getAttr(node, "collection", null);
             if (opt != null) {
               p.getCloudDescriptor().setCollectionName(opt);

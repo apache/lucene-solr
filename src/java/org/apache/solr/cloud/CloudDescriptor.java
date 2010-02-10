@@ -21,15 +21,6 @@ public class CloudDescriptor {
 
   private String shardId;
   private String collectionName;
-  private String role = "none";
-  
-  public String getRole() {
-    return role;
-  }
-
-  public void setRole(String role) {
-    this.role = role;
-  }
 
   public void setShardId(String shardId) {
     this.shardId = shardId;
