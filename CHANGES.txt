@@ -43,6 +43,9 @@ Optimizations
  * LUCENE-2086: When resolving deleted terms, do so in term sort order
    for better performance (Bogdan Ghidireac via Mike McCandless)
 
+ * LUCENE-2258: Remove unneeded synchronization in FuzzyTermEnum.
+   (Uwe Schindler, Robert Muir)
+
 Documentation
 
  * LUCENE-2114: Improve javadocs of Filter to call out that the

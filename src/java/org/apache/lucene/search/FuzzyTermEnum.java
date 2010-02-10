@@ -202,7 +202,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
    * @return the similarity,  0.0 or less indicates that it matches less than the required
    * threshold and 1.0 indicates that the text and target are identical
    */
-  private synchronized final float similarity(final String target) {
+  private float similarity(final String target) {
     final int m = target.length();
     final int n = text.length();
     if (n == 0)  {
