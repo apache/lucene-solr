@@ -117,6 +117,7 @@ public final class ZkController {
 
           public void command() {
             try {
+              // nocommit: recreate watches ????
               createEphemeralLiveNode();
               updateCloudState(false);
             } catch (KeeperException e) {
