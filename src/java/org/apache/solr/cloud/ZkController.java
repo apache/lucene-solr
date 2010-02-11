@@ -347,13 +347,32 @@ public final class ZkController {
       
     };
     try {
-      if (!readonly)
+      if (!readonly) {
+        boolean nodeDeleted = true;
+        try {
+          // we attempt a delete in the case of a quick server bounce -
+          // if there was not a graceful shutdown, the node may exist
+          // until expiration timeout - so a node won't be created here because
+          // it exists, but eventually the node will be removed. So delete
+          // in case it exists and create a new node.
+          zkClient.delete(nodePath, -1);
+        } catch (KeeperException.NoNodeException e) {
+          // fine if there is nothing to delete
+          nodeDeleted = false;
+        }
+        if (nodeDeleted) {
+          log
+              .info("Found a previous node that still exists while trying to register a new live node "
+                  + nodePath + " - removing existing node to create another.");
+        }
         zkClient.makePath(nodePath, CreateMode.EPHEMERAL);
+      }
     } catch (KeeperException e) {
       // its okay if the node already exists
       if (e.code() != KeeperException.Code.NODEEXISTS) {
         throw e;
       }
+      System.out.println("NODE ALREADY EXISTS");
     }
     zkClient.getChildren(NODES_ZKNODE, liveNodeWatcher);
   }

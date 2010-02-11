@@ -24,7 +24,6 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.cloud.SolrZkClient.OnReconnect;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.Watcher.Event.KeeperState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,7 +84,7 @@ class ConnectionManager implements Watcher {
       try {
         connectionStrategy.reconnect(zkServerAddress, zkClientTimeout, this, new ZkClientConnectionStrategy.ZkUpdate() {
           @Override
-          public void update(ZooKeeper keeper) throws InterruptedException, TimeoutException, IOException {
+          public void update(SolrZooKeeper keeper) throws InterruptedException, TimeoutException, IOException {
            waitForConnected(SolrZkClient.DEFAULT_CLIENT_CONNECT_TIMEOUT);
            client.updateKeeper(keeper);
            if(onReconnect != null) {

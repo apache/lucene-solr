@@ -60,7 +60,7 @@ public class SolrZkClient {
 
   private ConnectionManager connManager;
 
-  volatile ZooKeeper keeper;
+  volatile SolrZooKeeper keeper;
   
   /**
    * @param zkServerAddress
@@ -111,7 +111,7 @@ public class SolrZkClient {
     strat.connect(zkServerAddress, zkClientTimeout, connManager,
         new ZkUpdate() {
           @Override
-          public void update(ZooKeeper zooKeeper) {
+          public void update(SolrZooKeeper zooKeeper) {
             if (keeper != null) {
               try {
                 keeper.close();
@@ -484,7 +484,7 @@ public class SolrZkClient {
    * 
    * @param keeper
    */
-  void updateKeeper(ZooKeeper keeper) {
+  void updateKeeper(SolrZooKeeper keeper) {
     // nocommit
    log.info("Updating ZooKeeper instance:" + keeper);
    this.keeper = keeper;

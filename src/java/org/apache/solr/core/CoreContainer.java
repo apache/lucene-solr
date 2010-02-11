@@ -61,7 +61,6 @@ public class CoreContainer
   protected boolean persistent = false;
   protected String adminPath = null;
   protected String managementPath = null;
-  protected int zkClientTimeout;
   protected String hostPort;
   protected String hostContext;
   protected String host;
@@ -322,7 +321,7 @@ public class CoreContainer
       zkHost = cfg.get("solr/@zkHost" , null);
       adminPath = cfg.get("solr/cores/@adminPath", null);
       shareSchema = cfg.getBool("solr/cores/@shareSchema", false);
-      zkClientTimeout = cfg.getInt("solr/cores/@zkClientTimeout", 10000);
+      int zkClientTimeout = cfg.getInt("solr/cores/@zkClientTimeout", 10000);
       if (zkPortOverride == null) {
         hostPort = System.getProperty("hostPort");
         if (hostPort == null) {
@@ -340,6 +339,7 @@ public class CoreContainer
       adminHandler  = cfg.get("solr/cores/@adminHandler", null );
       managementPath  = cfg.get("solr/cores/@managementPath", null );
       
+      zkClientTimeout = Integer.parseInt(System.getProperty("zkClientTimeout", Integer.toString(zkClientTimeout)));
       initZooKeeper(zkHost, zkClientTimeout);
 
       if (libDir != null) {

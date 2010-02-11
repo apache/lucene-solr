@@ -26,6 +26,7 @@ import junit.framework.TestCase;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.core.CoreContainer.Initializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,7 +40,11 @@ public class CloudStateUpdateTest extends TestCase {
   protected File tmpDir = new File(System.getProperty("java.io.tmpdir")
       + System.getProperty("file.separator") + getClass().getName() + "-"
       + System.currentTimeMillis());
-  
+
+  protected String getSolrConfigFilename() {
+    return "solr.lowZkTimeout.xml";
+  }
+
   private static final boolean VERBOSE = true;
 
   protected ZkTestServer zkServer;
@@ -47,15 +52,22 @@ public class CloudStateUpdateTest extends TestCase {
   protected String zkDir;
 
   private CoreContainer container1;
+
   private CoreContainer container2;
+
   private CoreContainer container3;
 
   private File dataDir1;
+
   private File dataDir2;
+
   private File dataDir3;
+
+  private Initializer init2;
 
   public void setUp() throws Exception {
     try {
+      System.setProperty("zkClientTimeout", "3000");
       System.setProperty("zkHost", AbstractZkTestCase.ZOO_KEEPER_ADDRESS);
       zkDir = tmpDir.getAbsolutePath() + File.separator
           + "zookeeper/server1/data";
@@ -70,7 +82,7 @@ public class CloudStateUpdateTest extends TestCase {
 
       dataDir2 = new File(tmpDir + File.separator + "data2");
       dataDir2.mkdirs();
-      
+
       dataDir3 = new File(tmpDir + File.separator + "data3");
       dataDir3.mkdirs();
 
@@ -87,7 +99,7 @@ public class CloudStateUpdateTest extends TestCase {
 
       container1 = init1.initialize();
 
-      CoreContainer.Initializer init2 = new CoreContainer.Initializer() {
+      init2 = new CoreContainer.Initializer() {
         {
           this.dataDir = CloudStateUpdateTest.this.dataDir2.getAbsolutePath();
           this.zkPortOverride = "8984";
@@ -95,7 +107,7 @@ public class CloudStateUpdateTest extends TestCase {
       };
 
       container2 = init2.initialize();
-      
+
       CoreContainer.Initializer init3 = new CoreContainer.Initializer() {
         {
           this.dataDir = CloudStateUpdateTest.this.dataDir3.getAbsolutePath();
@@ -111,58 +123,74 @@ public class CloudStateUpdateTest extends TestCase {
     log.info("####SETUP_END " + getName());
 
   }
-  
+
   public void testCoreRegistration() throws Exception {
     System.setProperty("CLOUD_UPDATE_DELAY", "1");
-    CoreDescriptor dcore= new CoreDescriptor(container1, "testcore", "testcore");
+    CoreDescriptor dcore = new CoreDescriptor(container1, "testcore",
+        "testcore");
 
     SolrCore core = container1.create(dcore);
     container1.register(core, false);
-    
-    // slight pause - TODO: takes an oddly long amount of time to schedule tasks with almost no delay ...
+
+    // slight pause - TODO: takes an oddly long amount of time to schedule tasks
+    // with almost no delay ...
     Thread.sleep(5000);
-    
+
     ZkController zkController2 = container2.getZkController();
-    
+
     String host = zkController2.getHostName();
-    
+
     CloudState cloudState2 = zkController2.getCloudState();
     Map<String,Slice> slices = cloudState2.getSlices("testcore");
-    
+
     assertNotNull(slices);
     assertTrue(slices.containsKey(host + ":8983_solr_testcore"));
-    
+
     Slice slice = slices.get(host + ":8983_solr_testcore");
     assertEquals(host + ":8983_solr_testcore", slice.getName());
-    
+
     Map<String,ZkNodeProps> shards = slice.getShards();
-    
+
     assertEquals(1, shards.size());
-    
+
     ZkNodeProps zkProps = shards.get(host + ":8983_solr_testcore");
-    
+
     assertNotNull(zkProps);
-    
+
     assertEquals(host + ":8983_solr", zkProps.get("node_name"));
-    
+
     assertEquals("http://" + host + ":8983/solr/testcore", zkProps.get("url"));
-    
+
     Set<String> liveNodes = cloudState2.getLiveNodes();
     assertNotNull(liveNodes);
     assertEquals(3, liveNodes.size());
-    
+
     container3.shutdown();
-    
+
     liveNodes = zkController2.getCloudState().getLiveNodes();
-    
+
     // slight pause for watch to trigger
     Thread.sleep(500);
-    
+
     assertEquals(2, liveNodes.size());
+
+    // quickly kill / start client
+
+    container2.getZkController().getZkClient().keeper.getConnection()
+        .disconnect();
+    container2.shutdown();
+
+    container2 = init2.initialize();
+
+    Thread.sleep(8000);
+
+    assertTrue(container1.getZkController().getCloudState().liveNodesContain(
+        container2.getZkController().getNodeName()));
+
   }
 
   public void tearDown() throws Exception {
-    if(VERBOSE) {
+    if (VERBOSE) {
       printLayout();
     }
     super.tearDown();

@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZooKeeper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +37,7 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
   
   @Override
   public void connect(String serverAddress, int timeout, Watcher watcher, ZkUpdate updater) throws IOException, InterruptedException, TimeoutException {
-    updater.update(new ZooKeeper(serverAddress, timeout, watcher));
+    updater.update(new SolrZooKeeper(serverAddress, timeout, watcher));
   }
 
   @Override
@@ -52,7 +51,7 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
         log.info("Attempting the connect...");
         boolean connected = false;
         try {
-          updater.update(new ZooKeeper(serverAddress, zkClientTimeout, watcher));
+          updater.update(new SolrZooKeeper(serverAddress, zkClientTimeout, watcher));
           // nocommit
           log.info("Reconnected to ZooKeeper");
           connected = true;
