@@ -31,14 +31,21 @@ import java.io.Serializable;
  */
 public final class Version extends Parameter implements Serializable {
 
-  /** Use this to get the latest & greatest settings, bug
-   *  fixes, etc, for Lucene.
-   *
+  /**
    * <p><b>WARNING</b>: if you use this setting, and then
    * upgrade to a newer release of Lucene, sizable changes
-   * may happen.  If precise back compatibility is important
+   * may happen.  If backwards compatibility is important
    * then you should instead explicitly specify an actual
    * version.
+   * <p>
+   * If you use this constant then you may need to
+   * <b>re-index all of your documents</b> when upgrading
+   * Lucene, as the way text is indexed may have changed.
+   * Additionally, you may need to <b>re-test your entire
+   * application</b> to ensure it behaves as expected, as
+   * some defaults may have changed and may break functionality
+   * in your application.
+   * @deprecated Use an actual version instead.
    */
   public static final Version LUCENE_CURRENT = new Version("LUCENE_CURRENT", 0);
   
@@ -57,7 +64,11 @@ public final class Version extends Parameter implements Serializable {
   /** Match settings and bugs in Lucene's 2.4 release. */
   public static final Version LUCENE_24 = new Version("LUCENE_24", 2400);
 
-  /** Match settings and bugs in Lucene's 2.9 release. */
+  /** Match settings and bugs in Lucene's 2.9 release. 
+   *  <p>
+   *  Use this to get the latest &amp; greatest settings, bug
+   *  fixes, etc, for Lucene.
+   */
   public static final Version LUCENE_29 = new Version("LUCENE_29", 2900);
 
   private final int v;
