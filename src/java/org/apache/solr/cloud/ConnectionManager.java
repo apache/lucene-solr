@@ -74,9 +74,6 @@ class ConnectionManager implements Watcher {
       connected = true;
       clientConnected.countDown();
     } else if (state == KeeperState.Expired) {
-      // nocommit : much to do here - if expired, on reconnect we must remake ephemeral nodes (re-register cores)
-      // also may need to re-watch given nodes
-      // what about on disconnect ??
       
       connected = false;
       log.info("Attempting to reconnect to ZooKeeper...");
@@ -94,16 +91,13 @@ class ConnectionManager implements Watcher {
           }
         });
       } catch (Exception e) {
-        // nocommit
-        e.printStackTrace();
+        log.error("", e);
       }
 
       log.info("Connected:" + connected);
     } else if (state == KeeperState.Disconnected) {
-      // nocommit : not sure we have to reconnect on disconnect
-      // ZooKeeper will recover when it can it seems ??
+      // ZooKeeper client will recover when it can
       connected = false;
-
     } else {
       connected = false;
     }
