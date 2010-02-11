@@ -66,8 +66,6 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
   public InputStream openResource(String resource) {
     InputStream is = null;
     String file = getConfigDir() + "/" + resource; //nocommit: getConfigDir no longer makes sense here
-    //nocommit:
-    System.out.println("look for:" + file);
     try {
       if (zkController.pathExists(file)) {
         byte[] bytes = zkController.getZkClient().getData(getConfigDir() + "/" + resource, null, null);
