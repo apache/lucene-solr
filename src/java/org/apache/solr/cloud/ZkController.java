@@ -20,11 +20,7 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -34,6 +30,7 @@ import java.util.regex.Pattern;
 
 import org.apache.solr.cloud.SolrZkClient.OnReconnect;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
@@ -798,30 +795,49 @@ public final class ZkController {
     }
   }
 
-  public void createCollectionZkNode(String collection) throws KeeperException, InterruptedException, IOException {
+  public void createCollectionZkNode(CloudDescriptor cd) throws KeeperException, InterruptedException, IOException {
+    String collection = cd.getCollectionName();
+    
     log.info("Check for collection zkNode:" + collection);
     String collectionPath = COLLECTIONS_ZKNODE + "/" + collection;
     
     try {
       if(!zkClient.exists(collectionPath)) {
         log.info("Creating collection in ZooKeeper:" + collection);
+       SolrParams params = cd.getParams();
+
         try {
-          ZkNodeProps props = new ZkNodeProps();
-          // if we are bootstrapping a collection, default the config for
-          // a new collection to the collection we are bootstrapping
-          if(System.getProperty("bootstrap_confdir") != null) {
-            String confName = System.getProperty("bootstrap_confname", "configuration1");
-            log.info("Setting config for collection:" + collection + " to " + confName);
-            props.put("configName",  confName);
+          ZkNodeProps collectionProps = new ZkNodeProps();
+          // TODO: if bootstrap_confname isn't set, and there isn't already a conf in zk, just use that?
+          String defaultConfigName = System.getProperty("bootstrap_confname", "configuration1");
+
+          // params passed in - currently only done via core admin (create core commmand).
+          if (params != null) {
+            Iterator<String> iter = params.getParameterNamesIterator();
+            while (iter.hasNext()) {
+              String paramName = iter.next();
+              if (paramName.startsWith("collection.")) {
+                collectionProps.put(paramName.substring("collection.".length()), params.get(paramName));
+              }
+            }
+
+            // if the config name wasn't passed in, use the default
+            if (!collectionProps.containsKey("configName"))
+              collectionProps.put("configName",  defaultConfigName);
+            
+          } else if(System.getProperty("bootstrap_confdir") != null) {
+            // if we are bootstrapping a collection, default the config for
+            // a new collection to the collection we are bootstrapping
+            log.info("Setting config for collection:" + collection + " to " + defaultConfigName);
+            collectionProps.put("configName",  defaultConfigName);
           } else {
             // check for configName
             log.info("Looking for collection configName");
             int retry = 1;
             for (; retry < 6; retry++) {
-              if (zkClient.exists(COLLECTIONS_ZKNODE + "/" + collection)) {
-                ZkNodeProps collectionProps = new ZkNodeProps();
-                collectionProps.load(zkClient.getData(COLLECTIONS_ZKNODE + "/"
-                    + collection, null, null));
+              if (zkClient.exists(collectionPath)) {
+                collectionProps = new ZkNodeProps();
+                collectionProps.load(zkClient.getData(collectionPath, null, null));
                 if (collectionProps.containsKey("configName")) {
                   break;
                 }
@@ -830,14 +846,14 @@ public final class ZkController {
               Thread.sleep(2000);
             }
             if (retry == 6) {
-              log.error("Could not find conigName for collection " + collection);
+              log.error("Could not find configName for collection " + collection);
               throw new ZooKeeperException(
                   SolrException.ErrorCode.SERVER_ERROR,
                   "Could not find conigName for collection " + collection);
             }
           }
           
-          zkClient.makePath(COLLECTIONS_ZKNODE + "/" + collection, props.store(), CreateMode.PERSISTENT, null, true);
+          zkClient.makePath(collectionPath, collectionProps.store(), CreateMode.PERSISTENT, null, true);
          
           // ping that there is a new collection
           zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);

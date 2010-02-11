@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
@@ -242,6 +243,19 @@ public class CoreAdminHandler extends RequestHandlerBase {
       opts = params.get(CoreAdminParams.DATA_DIR);
       if (opts != null)
         dcore.setDataDir(opts);
+
+      CloudDescriptor cd = dcore.getCloudDescriptor();
+      if (cd != null) {
+        cd.setParams(req.getParams());
+
+        opts = params.get(CoreAdminParams.COLLECTION);
+        if (opts != null)
+          cd.setCollectionName(opts);
+        
+        opts = params.get(CoreAdminParams.SHARD);
+        if (opts != null)
+          cd.setShardId(opts);
+      }
 
       dcore.setCoreProperties(null);
       SolrCore core = coreContainer.create(dcore);

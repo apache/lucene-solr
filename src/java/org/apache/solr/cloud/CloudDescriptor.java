@@ -1,5 +1,12 @@
 package org.apache.solr.cloud;
 
+import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.SolrParams;
+
+import java.util.Collections;
+import java.util.HashMap;
+
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,9 +25,9 @@ package org.apache.solr.cloud;
  */
 
 public class CloudDescriptor {
-
   private String shardId;
   private String collectionName;
+  private SolrParams params;
 
   public void setShardId(String shardId) {
     this.shardId = shardId;
@@ -36,5 +43,14 @@ public class CloudDescriptor {
 
   public void setCollectionName(String collectionName) {
     this.collectionName = collectionName;
+  }
+
+  /** Optional parameters that can change how a core is created. */
+  public SolrParams getParams() {
+    return params;
+  }
+
+  public void setParams(SolrParams params) {
+    this.params = params;
   }
 }
