@@ -17,22 +17,25 @@ package org.apache.solr.cloud;
  * the License.
  */
 
-import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Map.Entry;
+
+import org.apache.solr.common.SolrException;
+import org.apache.zookeeper.server.ServerConfig;
+import org.apache.zookeeper.server.ZooKeeperServerMain;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
+import org.apache.zookeeper.server.quorum.QuorumPeerConfig;
 import org.apache.zookeeper.server.quorum.QuorumPeerMain;
 import org.apache.zookeeper.server.quorum.flexible.QuorumHierarchical;
 import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
-import org.apache.zookeeper.server.ZooKeeperServerMain;
-import org.apache.zookeeper.server.ServerConfig;
-import org.apache.solr.common.SolrException;
 import org.slf4j.LoggerFactory;
-
-import java.util.Collections;
-import java.util.Properties;
-import java.util.Map;
-import java.io.*;
-import java.util.Map.Entry;
-import java.net.InetSocketAddress;
 
 
 public class SolrZkServer {
