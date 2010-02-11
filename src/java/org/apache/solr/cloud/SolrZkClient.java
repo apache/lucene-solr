@@ -40,8 +40,6 @@ import org.slf4j.LoggerFactory;
  * 
  * All Solr ZooKeeper interactions should go through this class rather than
  * ZooKeeper. This class handles synchronous connects and reconnections.
- * 
- * nocommit: and may end up optionally queuing commands when zk is down
  *
  */
 public class SolrZkClient {
@@ -356,7 +354,7 @@ public class SolrZkClient {
         // set new watch
         exists(currentPath, watcher);
       } else if (i == paths.length - 1) {
-        // nocommit: version ?
+        // TODO: version ? for now, don't worry about race
         setData(currentPath, data, -1);
         // set new watch
         exists(currentPath, watcher);
@@ -474,8 +472,6 @@ public class SolrZkClient {
    * @throws InterruptedException
    */
   public void close() throws InterruptedException {
-    // nocommit
-    log.info("closing SolrZKClient " + this);
     keeper.close();
   }
 
@@ -485,13 +481,7 @@ public class SolrZkClient {
    * @param keeper
    */
   void updateKeeper(SolrZooKeeper keeper) {
-    // nocommit
-   log.info("Updating ZooKeeper instance:" + keeper);
    this.keeper = keeper;
   }
 
-  // for testing
-  void dissconect() throws InterruptedException {
-    this.keeper.close();
-  }
 }
