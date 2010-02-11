@@ -863,7 +863,7 @@ public final class ZkController {
               log.error("Could not find configName for collection " + collection);
               throw new ZooKeeperException(
                   SolrException.ErrorCode.SERVER_ERROR,
-                  "Could not find conigName for collection " + collection);
+                  "Could not find configName for collection " + collection);
             }
           }
           
