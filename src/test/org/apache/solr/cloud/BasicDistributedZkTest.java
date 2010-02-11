@@ -20,17 +20,13 @@ package org.apache.solr.cloud;
 import java.net.MalformedURLException;
 import java.util.HashSet;
 
-import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.core.SolrCore;
 
 /**
- * nocommit: 
  *
  */
 public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
