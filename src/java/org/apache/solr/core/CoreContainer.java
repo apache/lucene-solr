@@ -632,7 +632,7 @@ public class CoreContainer
           }
         }
       } else {
-        // nocommit: TODO handle caching from ZooKeeper - perhaps using ZooKeepers versioning
+        // TODO: handle caching from ZooKeeper - perhaps using ZooKeepers versioning
         // Don't like this cache though - how does it empty as last modified changes?
       }
     }
