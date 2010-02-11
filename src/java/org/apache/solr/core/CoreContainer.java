@@ -134,7 +134,7 @@ public class CoreContainer
           if(!dir.isDirectory()) {
             throw new IllegalArgumentException("bootstrap_confdir must be a directory of configuration files");
           }
-          String confName = System.getProperty("bootstrap_confname", "configuration1");
+          String confName = System.getProperty(ZkController.COLLECTION_PARAM_PREFIX+ZkController.CONFIGNAME_PROP, "configuration1");
           zkController.uploadConfigDir(dir, confName);
         }
       } catch (InterruptedException e) {

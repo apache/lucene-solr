@@ -60,6 +60,7 @@ public final class ZkController {
   private final static Pattern URL_POST = Pattern.compile("https?://(.*)");
   private final static Pattern URL_PREFIX = Pattern.compile("(https?://).*");
 
+
   // package private for tests
   static final String SHARDS_ZKNODE = "/shards";
   static final String CONFIGS_ZKNODE = "/configs";
@@ -68,6 +69,8 @@ public final class ZkController {
 
   public static final String URL_PROP = "url";
   public static final String NODE_NAME = "node_name";
+  public final static String COLLECTION_PARAM_PREFIX="collection.";
+  public final static String CONFIGNAME_PROP="configName";
 
   private SolrZkClient zkClient;
 
@@ -482,7 +485,7 @@ public final class ZkController {
     
     if(data != null) {
       props.load(data);
-      configName = props.get("configName");
+      configName = props.get(CONFIGNAME_PROP);
     }
     
     if (configName != null && !zkClient.exists(CONFIGS_ZKNODE + "/" + configName)) {
@@ -808,28 +811,39 @@ public final class ZkController {
 
         try {
           ZkNodeProps collectionProps = new ZkNodeProps();
-          // TODO: if bootstrap_confname isn't set, and there isn't already a conf in zk, just use that?
-          String defaultConfigName = System.getProperty("bootstrap_confname", "configuration1");
+          // TODO: if collection.configName isn't set, and there isn't already a conf in zk, just use that?
+          String defaultConfigName = System.getProperty(COLLECTION_PARAM_PREFIX+CONFIGNAME_PROP, "configuration1");
 
           // params passed in - currently only done via core admin (create core commmand).
           if (params != null) {
             Iterator<String> iter = params.getParameterNamesIterator();
             while (iter.hasNext()) {
               String paramName = iter.next();
-              if (paramName.startsWith("collection.")) {
-                collectionProps.put(paramName.substring("collection.".length()), params.get(paramName));
+              if (paramName.startsWith(COLLECTION_PARAM_PREFIX)) {
+                collectionProps.put(paramName.substring(COLLECTION_PARAM_PREFIX.length()), params.get(paramName));
               }
             }
 
             // if the config name wasn't passed in, use the default
-            if (!collectionProps.containsKey("configName"))
-              collectionProps.put("configName",  defaultConfigName);
+            if (!collectionProps.containsKey(CONFIGNAME_PROP))
+              collectionProps.put(CONFIGNAME_PROP,  defaultConfigName);
             
           } else if(System.getProperty("bootstrap_confdir") != null) {
             // if we are bootstrapping a collection, default the config for
             // a new collection to the collection we are bootstrapping
             log.info("Setting config for collection:" + collection + " to " + defaultConfigName);
-            collectionProps.put("configName",  defaultConfigName);
+
+            Properties sysProps = System.getProperties();
+            for (String sprop : System.getProperties().stringPropertyNames()) {
+              if (sprop.startsWith(COLLECTION_PARAM_PREFIX)) {
+                collectionProps.put(sprop.substring(COLLECTION_PARAM_PREFIX.length()), sysProps.getProperty(sprop));                
+              }
+            }
+            
+            // if the config name wasn't passed in, use the default
+            if (!collectionProps.containsKey(CONFIGNAME_PROP))
+              collectionProps.put(CONFIGNAME_PROP,  defaultConfigName);
+
           } else {
             // check for configName
             log.info("Looking for collection configName");
@@ -838,7 +852,7 @@ public final class ZkController {
               if (zkClient.exists(collectionPath)) {
                 collectionProps = new ZkNodeProps();
                 collectionProps.load(zkClient.getData(collectionPath, null, null));
-                if (collectionProps.containsKey("configName")) {
+                if (collectionProps.containsKey(CONFIGNAME_PROP)) {
                   break;
                 }
               }
