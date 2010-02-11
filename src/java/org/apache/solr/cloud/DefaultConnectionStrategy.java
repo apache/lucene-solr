@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * nocommit : default needs backoff retry reconnection attempts
+ * TODO: improve backoff retry impl
  */
 public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
 
@@ -52,20 +52,17 @@ public class DefaultConnectionStrategy extends ZkClientConnectionStrategy {
         boolean connected = false;
         try {
           updater.update(new SolrZooKeeper(serverAddress, zkClientTimeout, watcher));
-          // nocommit
           log.info("Reconnected to ZooKeeper");
           connected = true;
         } catch (Exception e) {
-          // nocommit
-          e.printStackTrace();
+          log.error("", e);
           log.info("Reconnect to ZooKeeper failed");
         }
         if(connected) {
           executor.shutdownNow();
         } else {
-          // nocommit
           if(delay < 240000) {
-            delay = delay * 2; // nocommit : back off retry that levels off
+            delay = delay * 2;
           }
           executor.schedule(this, delay, TimeUnit.MILLISECONDS);
         }
