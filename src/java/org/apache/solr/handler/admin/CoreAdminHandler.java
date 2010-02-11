@@ -264,7 +264,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
       return coreContainer.isPersistent();
     } catch (Exception ex) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Error executing default implementation of CREATE", ex);
+              "CREATE ERROR:"+ex.getMessage(), ex);
     }
   }
 
