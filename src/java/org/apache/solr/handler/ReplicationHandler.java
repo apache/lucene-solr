@@ -252,7 +252,6 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   void doFetch(SolrParams solrParams) {
     String masterUrl = solrParams == null ? null : solrParams.get(MASTER_URL);
-    // nocommit : override master url using info from ZooKeeper
     
     if (!snapPullLock.tryLock())
       return;
