@@ -695,8 +695,10 @@ public final class ZkController {
     Set<String> knownCollections = cloudState.getCollections();
     
     List<String> collections = zkClient.getChildren(COLLECTIONS_ZKNODE, null);
+
     for(final String collection : collections) {
       if(!knownCollections.contains(collection)) {
+        log.info("Found new collection:" + collection);
         Watcher watcher = new Watcher() {
           public void process(WatchedEvent event) {
             log.info("Detected changed ShardId in collection:" + collection);
@@ -721,25 +723,23 @@ public final class ZkController {
           }
         };
         boolean madeWatch = true;
-
+        String shardZkNode = COLLECTIONS_ZKNODE + "/" + collection
+            + SHARDS_ZKNODE;
         for (int i = 0; i < 5; i++) {
           try {
-            zkClient.getChildren(COLLECTIONS_ZKNODE + "/" + collection
-                + SHARDS_ZKNODE, watcher);
+            zkClient.getChildren(shardZkNode, watcher);
           } catch (KeeperException.NoNodeException e) {
             // most likely, the collections node has been created, but not the
             // shards node yet -- pause and try again
             madeWatch = false;
             if (i == 4) {
-              // nocommit : 
-//              throw new ZooKeeperException(
-//                  SolrException.ErrorCode.SERVER_ERROR,
-//                  "Could not set shards zknode watch, because the zknode does not exist");
-            break;
+              log.error("Could not set shards zknode watch, because the zknode does not exist:" + shardZkNode);
+              break;
             }
-            Thread.sleep(50);
+            Thread.sleep(100);
           }
-          if(madeWatch) {
+          if (madeWatch) {
+            log.info("Made shard watch:" + shardZkNode);
             break;
           }
         }

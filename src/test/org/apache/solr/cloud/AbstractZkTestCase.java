@@ -109,10 +109,6 @@ public abstract class AbstractZkTestCase extends AbstractSolrTestCase {
     props1.put("configName", "conf1");
     zkClient.makePath("/collections/collection1", props1.store(), CreateMode.PERSISTENT);
     
-    ZkNodeProps props2 = new ZkNodeProps();
-    props2.put("configName", "conf1");
-    zkClient.makePath("/collections/testcore", props2.store(), CreateMode.PERSISTENT);
-    
     putConfig(zkClient, config);
     putConfig(zkClient, schema);
     putConfig(zkClient, "stopwords.txt");

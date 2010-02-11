@@ -152,14 +152,6 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
       query("q","*:*", "sort",f+" desc");
       query("q","*:*", "sort",f+" asc");
     }
-
-    /**
-    h.getCoreContainer().getCore(h.getCoreContainer().getDefaultCoreName()).close();
-    CoreDescriptor dcore= new CoreDescriptor( h.getCoreContainer(), "testcore", "testcore");
-
-    SolrCore core = h.getCoreContainer().create(dcore);
-    h.getCoreContainer().register(core, false);
-    **/
   
     // these queries should be exactly ordered and scores should exactly match
     query("q","*:*", "sort",i1+" desc");
