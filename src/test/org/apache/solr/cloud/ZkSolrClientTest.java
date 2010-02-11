@@ -125,10 +125,6 @@ public class ZkSolrClientTest extends TestCase {
       
       assertNotNull(zkClient.exists("/collections/collection4", null));
 
-    } catch(Exception e) {
-      // nocommit
-      e.printStackTrace();
-      throw e;
     } finally {
     
       if (zkClient != null) {

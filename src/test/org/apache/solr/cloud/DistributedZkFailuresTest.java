@@ -22,7 +22,6 @@ import java.util.HashSet;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 
 /**
- * nocommit: 
  *
  */
 public class DistributedZkFailuresTest extends AbstractDistributedZkTestCase {
@@ -105,7 +104,7 @@ public class DistributedZkFailuresTest extends AbstractDistributedZkTestCase {
     ZkController zkController = h.getCoreContainer().getZkController();
     del("*:*");
     
-    // nocommit : test too long
+    // TODO : test too long
     System.out.println("gc block");
     for(int i = 0; i < 100; i++) {
       // try and timeout
