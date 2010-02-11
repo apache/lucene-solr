@@ -731,9 +731,11 @@ public final class ZkController {
             // shards node yet -- pause and try again
             madeWatch = false;
             if (i == 4) {
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR,
-                  "Could not set shards zknode watch, because the zknode does not exist");
+              // nocommit : 
+//              throw new ZooKeeperException(
+//                  SolrException.ErrorCode.SERVER_ERROR,
+//                  "Could not set shards zknode watch, because the zknode does not exist");
+            break;
             }
             Thread.sleep(50);
           }
