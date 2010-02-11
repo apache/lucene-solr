@@ -330,7 +330,7 @@ public class SolrZkClient {
   public void makePath(String path, byte[] data, CreateMode createMode,
       Watcher watcher, boolean failOnExists) throws KeeperException, InterruptedException {
     if (log.isInfoEnabled()) {
-      log.info("makePath: " + path + " keeper:" + keeper);
+      log.info("makePath: " + path);
     }
     
     if (path.startsWith("/")) {
