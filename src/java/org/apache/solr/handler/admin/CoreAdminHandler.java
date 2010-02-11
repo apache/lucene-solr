@@ -229,7 +229,14 @@ public class CoreAdminHandler extends RequestHandlerBase {
     try {
       SolrParams params = req.getParams();
       String name = params.get(CoreAdminParams.NAME);
-      CoreDescriptor dcore = new CoreDescriptor(coreContainer, name, params.get(CoreAdminParams.INSTANCE_DIR));
+
+      String instanceDir = params.get(CoreAdminParams.INSTANCE_DIR);
+      if (instanceDir == null) {
+        // instanceDir = coreContainer.getSolrHome() + "/" + name;
+        instanceDir = name; // bare name is already relative to solr home
+      }
+
+      CoreDescriptor dcore = new CoreDescriptor(coreContainer, name, instanceDir);
 
       //  fillup optional parameters
       String opts = params.get(CoreAdminParams.CONFIG);
