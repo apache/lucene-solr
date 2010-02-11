@@ -64,7 +64,7 @@ public class ZkSolrClientTest extends TestCase {
     server.shutdown();
   }
   
-  // nocommit : must be a clear way to do this
+  // TODO : must be a better way to do this
   public void testReconnect() throws Exception {
     String zkDir = tmpDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
@@ -91,7 +91,7 @@ public class ZkSolrClientTest extends TestCase {
       try {
         zkClient.makePath("collections/collection2");
       } catch (KeeperException.ConnectionLossException e) {
-        // nocommit : the connection should be down
+        // the connection should be down
         exceptionHappened = true;
       }
       
@@ -173,10 +173,6 @@ public class ZkSolrClientTest extends TestCase {
       zkClient.printLayoutToStdOut();
 
 
-    } catch (Exception e) {
-      // nocommit
-      e.printStackTrace();
-      throw e;
     } finally {
 
       if (zkClient != null) {

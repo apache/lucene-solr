@@ -53,8 +53,6 @@ public class JettySolrRunner
   public JettySolrRunner( String context, int port, String solrConfigFilename )
   {
     this.init( context, port );
-    // nocommit
-    System.out.println("set config:" + solrConfigFilename);
     dispatchFilter.setInitParameter("solrconfig-filename", solrConfigFilename);
   }
   
@@ -104,13 +102,10 @@ public class JettySolrRunner
   }
   
   public void setPortOverride(int port) {
-    //nocommit:
     dispatchFilter.setInitParameter("zkPortOverride", Integer.toString(port));
   }
   
   public void setTestShardListOverride(String shardList) {
-    //nocommit:
-    System.out.println("set shardlist override:"+shardList);
     dispatchFilter.setInitParameter("testShardListOverride", shardList);
   }
 

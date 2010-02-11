@@ -82,7 +82,6 @@ public class SolrDispatchFilter implements Filter
       // web.xml configuration
       this.pathPrefix = config.getInitParameter( "path-prefix" );
       init.setSolrConfigFilename(config.getInitParameter("solrconfig-filename"));
-      // nocommit : consider
       init.setZKPortOverride(config.getInitParameter("zkPortOverride"));
       init.setTestShardListOverride(config.getInitParameter("testShardListOverride"));
 

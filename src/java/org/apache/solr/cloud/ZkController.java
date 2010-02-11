@@ -730,10 +730,10 @@ public final class ZkController {
             // most likely, the collections node has been created, but not the
             // shards node yet -- pause and try again
             madeWatch = false;
-            if(i == 4) {
-              // nocommit:
-              // no shards yet, just bail
-              break;
+            if (i == 4) {
+              throw new ZooKeeperException(
+                  SolrException.ErrorCode.SERVER_ERROR,
+                  "Could not set shards zknode watch, because the zknode does not exist");
             }
             Thread.sleep(50);
           }
