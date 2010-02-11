@@ -27,6 +27,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.CoreContainer.Initializer;
+import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -126,6 +127,14 @@ public class CloudStateUpdateTest extends TestCase {
 
   public void testCoreRegistration() throws Exception {
     System.setProperty("CLOUD_UPDATE_DELAY", "1");
+    
+    ZkNodeProps props2 = new ZkNodeProps();
+    props2.put("configName", "conf1");
+    
+    SolrZkClient zkClient = new SolrZkClient(AbstractZkTestCase.ZOO_KEEPER_ADDRESS, AbstractZkTestCase.TIMEOUT);
+    zkClient.makePath("/collections/testcore", props2.store(), CreateMode.PERSISTENT);
+    zkClient.close();
+    
     CoreDescriptor dcore = new CoreDescriptor(container1, "testcore",
         "testcore");
 
