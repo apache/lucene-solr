@@ -134,7 +134,6 @@ public class HighlighterTest extends AbstractSolrTestCase {
     args.put("hl", "true");
     args.put("hl.fl", "tv_text");
     args.put("hl.snippets", "2");
-    args.put("hl.useHighlighter", "true");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "standard",0,200,args);
     
@@ -175,7 +174,6 @@ public class HighlighterTest extends AbstractSolrTestCase {
     args.put("hl", "true");
     args.put("hl.fl", "tv_mv_text");
     args.put("hl.snippets", "2");
-    args.put("hl.useHighlighter", "true");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "standard",0,200,args);
     
@@ -202,7 +200,6 @@ public class HighlighterTest extends AbstractSolrTestCase {
     args.put("hl", "true");
     args.put("hl.fl", "tv_mv_text");
     args.put("hl.snippets", "2");
-    args.put("hl.useHighlighter", "true");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "standard",0,200,args);
 
@@ -228,7 +225,6 @@ public class HighlighterTest extends AbstractSolrTestCase {
     args.put("hl.fl", "tv_text");
     args.put("qf", "tv_text");
     args.put("q.alt", "*:*");
-    args.put("hl.useHighlighter", "true");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "dismax",0,200,args);
     
@@ -340,7 +336,6 @@ public class HighlighterTest extends AbstractSolrTestCase {
     HashMap<String,String> args = new HashMap<String,String>();
     args.put("hl", "true");
     args.put("hl.fl", "t_text tv_text");
-    args.put("hl.useHighlighter", "true");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "standard", 0, 200, args);
     
@@ -441,7 +436,6 @@ public class HighlighterTest extends AbstractSolrTestCase {
     HashMap<String,String> args = new HashMap<String,String>();
     args.put("hl", "true");
     args.put("hl.fl", "tv_text");
-    args.put("hl.useHighlighter", "true");
     TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
       "standard", 0, 200, args);
     
@@ -540,7 +534,6 @@ public class HighlighterTest extends AbstractSolrTestCase {
      HashMap<String,String> args = new HashMap<String,String>();
      args.put("hl", "true");
      args.put("hl.fl", "tv_text");
-     args.put("hl.useHighlighter", "true");
      TestHarness.LocalRequestFactory sumLRF = h.getRequestFactory(
        "standard", 0, 200, args);
      assertQ("Basic summarization",

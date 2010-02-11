@@ -53,6 +53,16 @@ Bug Fixes
 
 * SOLR-1598: Reader used in PlainTextEntityProcessor is not explicitly closed (Sascha Szott via noble)
 
+* SOLR-1759: $skipDoc was not working correctly (Gian Marco Tagliani via noble)
+
+* SOLR-1762: DateFormatTransformer does not work correctly with non-default locale dates (tommy chheng via noble)
+
+* SOLR-1757: DIH multithreading sometimes throws NPE (noble)
+
+* SOLR-1766: DIH with threads enabled doesn't respond to the abort command (Michael Henson via noble)
+
+* SOLR-1767: dataimporter.functions.escapeSql() does not escape backslash character (Sean Timm via noble) 
+
 Other Changes
 ----------------------
 

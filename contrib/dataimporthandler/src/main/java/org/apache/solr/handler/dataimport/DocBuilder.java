@@ -345,11 +345,11 @@ public class DocBuilder {
     private DocWrapper docWrapper;
     private volatile boolean entityInitialized ;
     String currentProcess;
-    ThreadLocal<ThreadedEntityProcessorWrapper> currentEntityProcWrapper = new ThreadLocal<ThreadedEntityProcessorWrapper>();
+    final ThreadLocal<ThreadedEntityProcessorWrapper> currentEntityProcWrapper = new ThreadLocal<ThreadedEntityProcessorWrapper>();
 
     private ContextImpl context;
-    EntityRunner parent;
-    AtomicBoolean entityEnded = new AtomicBoolean(false);
+    final EntityRunner parent;
+    final AtomicBoolean entityEnded = new AtomicBoolean(false);
     private Exception exception;
 
     public EntityRunner(DataConfig.Entity entity, EntityRunner parent) {
@@ -429,6 +429,7 @@ public class DocBuilder {
         DocWrapper docWrapper = this.docWrapper;
         Context.CURRENT_CONTEXT.set(context);
         for (; ;) {
+          if(DocBuilder.this.stop.get()) break;
           try {
             Map<String, Object> arow = epw.nextRow();
             if (arow == null) {
@@ -635,6 +636,7 @@ public class DocBuilder {
           if (isRoot) {
             if (e.getErrCode() == DataImportHandlerException.SKIP) {
               importStatistics.skipDocCount.getAndIncrement();
+              doc = null;
             } else {
               LOG.error("Exception while processing: "
                       + entity.name + " document : " + doc, e);

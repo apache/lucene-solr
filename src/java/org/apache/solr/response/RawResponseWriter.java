@@ -18,6 +18,7 @@
 package org.apache.solr.response;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.Writer;
 
 import org.apache.commons.io.IOUtils;
@@ -81,7 +82,12 @@ public class RawResponseWriter implements QueryResponseWriter
     if( obj != null && (obj instanceof ContentStream ) ) {
       // copy the contents to the writer...
       ContentStream content = (ContentStream)obj;
-      IOUtils.copy( content.getReader(), writer );
+      Reader reader = content.getReader();
+      try {
+        IOUtils.copy( reader, writer );
+      } finally {
+        reader.close();
+      }
     }
     else {
       getBaseWriter( request ).write( writer, request, response );

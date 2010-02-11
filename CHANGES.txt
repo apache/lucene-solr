@@ -70,7 +70,7 @@ New Features
 
 * SOLR-1177: Distributed Search support for TermsComponent (Matt Weber via shalin)
 
-* SOLR-1621: Allow current single core deployments to be specified by solr.xml (Mark Miller , noble)
+* SOLR-1621, SOLR-1722: Allow current single core deployments to be specified by solr.xml (Mark Miller , noble)
 
 * SOLR-1532: Allow StreamingUpdateSolrServer to use a provided HttpClient (Gabriele Renzi via shalin)
 
@@ -164,6 +164,16 @@ Bug Fixes
 
 * SOLR-1711: SolrJ - StreamingUpdateSolrServer had a race condition that
   could halt the streaming of documents. (Attila Babo via yonik)
+  
+* SOLR-1748, SOLR-1747, SOLR-1746, SOLR-1745, SOLR-1744: Streams and Readers
+  retrieved from ContentStreams are not closed in various places, resulting
+  in file descriptor leaks.
+  (Christoff Brill, Mark Miller)
+
+* SOLR-1753: StatsComponent throws NPE when getting statistics for facets in distributed search
+  (Janne Majaranta via koji)
+
+* SOLR-1736:In the slave , If 'mov'ing file does not succeed , copy the file (noble)  
 
 Other Changes
 ----------------------
@@ -218,6 +228,8 @@ Other Changes
 * SOLR-1696 : Deprecate old <highlighting> syntax and move configuration to HighlightComponent (noble)
 
 * Upgraded to Lucene 2.9-dev r900226 (koji)
+
+* SOLR-1727: SolrEventListener should extend NamedListInitializedPlugin (noble)
   
 Build
 ----------------------

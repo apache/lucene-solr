@@ -47,7 +47,14 @@ public class DateFormatTransformer extends Transformer {
 
   @SuppressWarnings("unchecked")
   public Object transformRow(Map<String, Object> aRow, Context context) {
+
     for (Map<String, String> map : context.getAllEntityFields()) {
+      Locale locale = Locale.getDefault();
+      String customLocale = map.get("locale");
+      if(customLocale != null){
+        locale = new Locale(customLocale);
+      }
+
       String fmt = map.get(DATE_TIME_FMT);
       if (fmt == null)
         continue;
@@ -61,12 +68,12 @@ public class DateFormatTransformer extends Transformer {
           List inputs = (List) o;
           List<Date> results = new ArrayList<Date>();
           for (Object input : inputs) {
-            results.add(process(input, fmt));
+            results.add(process(input, fmt, locale));
           }
           aRow.put(column, results);
         } else {
           if (o != null) {
-            aRow.put(column, process(o, fmt));
+            aRow.put(column, process(o, fmt, locale));
           }
         }
       } catch (ParseException e) {
@@ -76,14 +83,14 @@ public class DateFormatTransformer extends Transformer {
     return aRow;
   }
 
-  private Date process(Object value, String format) throws ParseException {
+  private Date process(Object value, String format, Locale locale) throws ParseException {
     if (value == null) return null;
     String strVal = value.toString().trim();
     if (strVal.length() == 0)
       return null;
     SimpleDateFormat fmt = fmtCache.get(format);
     if (fmt == null) {
-      fmt = new SimpleDateFormat(format);
+      fmt = new SimpleDateFormat(format, locale);
       fmtCache.put(format, fmt);
     }
     return fmt.parse(strVal);

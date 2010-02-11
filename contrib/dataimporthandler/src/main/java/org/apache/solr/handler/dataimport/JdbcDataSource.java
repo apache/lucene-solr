@@ -126,8 +126,6 @@ public class JdbcDataSource extends
 
     return factory = new Callable<Connection>() {
       public Connection call() throws Exception {
-        // Resolve variables again because the variables may have changed
-        resolveVariables(context, initProps);
         LOG.info("Creating a connection for entity "
                 + context.getEntityAttribute(DataImporter.NAME) + " with URL: "
                 + url);

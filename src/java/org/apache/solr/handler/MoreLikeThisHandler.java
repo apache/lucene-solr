@@ -23,11 +23,9 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.document.Document;
@@ -40,7 +38,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similar.MoreLikeThis;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.MoreLikeThisParams;
 import org.apache.solr.common.params.SolrParams;
@@ -84,24 +81,7 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     SolrParams params = req.getParams();
     SolrIndexSearcher searcher = req.getSearcher();
     
-    // Parse Required Params
-    // This will either have a single Reader or valid query
-    Reader reader = null;
-    String q = params.get( CommonParams.Q );
-    if( q == null || q.trim().length() <1 ) {
-      Iterable<ContentStream> streams = req.getContentStreams();
-      if( streams != null ) {
-        Iterator<ContentStream> iter = streams.iterator();
-        if( iter.hasNext() ) {
-          reader = iter.next().getReader();
-        }
-        if( iter.hasNext() ) {
-          throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, 
-              "MoreLikeThis does not support multiple ContentStreams" );
-        }
-      }
-    }
-
+    
     MoreLikeThisHelper mlt = new MoreLikeThisHelper( params, searcher );
     List<Query> filters = SolrPluginUtils.parseFilterQueries(req);
     
@@ -110,46 +90,75 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     List<InterestingTerm> interesting = (termStyle == TermStyle.NONE )
       ? null : new ArrayList<InterestingTerm>( mlt.mlt.getMaxQueryTerms() );
     
-    // What fields do we need to return
-    String fl = params.get(CommonParams.FL);
-    int flags = 0; 
-    if (fl != null) {
-      flags |= SolrPluginUtils.setReturnFields(fl, rsp);
-    }
-
-    int start = params.getInt( CommonParams.START, 0 );
-    int rows  = params.getInt( CommonParams.ROWS, 10 );
-    
     DocListAndSet mltDocs = null;
+    String q = params.get( CommonParams.Q );
     
-    // Find documents MoreLikeThis - either with a reader or a query
-    //--------------------------------------------------------------------------------
-    if( reader != null ) {
-      mltDocs = mlt.getMoreLikeThis( reader, start, rows, filters, interesting, flags );
-    }
-    else if( q != null ) {
-      // Matching options
-      boolean includeMatch = params.getBool( MoreLikeThisParams.MATCH_INCLUDE, true );
-      int matchOffset = params.getInt( MoreLikeThisParams.MATCH_OFFSET, 0 );
-      // Find the base match  
-      Query query = QueryParsing.parseQuery(q, params.get(CommonParams.DF), params, req.getSchema());
-      DocList match = searcher.getDocList(query, null, null, matchOffset, 1, flags ); // only get the first one...
-      if( includeMatch ) {
-        rsp.add( "match", match );
+    // Parse Required Params
+    // This will either have a single Reader or valid query
+    Reader reader = null;
+    try {
+      if (q == null || q.trim().length() < 1) {
+        Iterable<ContentStream> streams = req.getContentStreams();
+        if (streams != null) {
+          Iterator<ContentStream> iter = streams.iterator();
+          if (iter.hasNext()) {
+            reader = iter.next().getReader();
+          }
+          if (iter.hasNext()) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                "MoreLikeThis does not support multiple ContentStreams");
+          }
+        }
       }
 
-      // This is an iterator, but we only handle the first match
-      DocIterator iterator = match.iterator();
-      if( iterator.hasNext() ) {
-        // do a MoreLikeThis query for each document in results
-        int id = iterator.nextDoc();
-        mltDocs = mlt.getMoreLikeThis( id, start, rows, filters, interesting, flags );
+      // What fields do we need to return
+      String fl = params.get(CommonParams.FL);
+      int flags = 0;
+      if (fl != null) {
+        flags |= SolrPluginUtils.setReturnFields(fl, rsp);
+      }
+
+      int start = params.getInt(CommonParams.START, 0);
+      int rows = params.getInt(CommonParams.ROWS, 10);
+
+      // Find documents MoreLikeThis - either with a reader or a query
+      // --------------------------------------------------------------------------------
+      if (reader != null) {
+        mltDocs = mlt.getMoreLikeThis(reader, start, rows, filters,
+            interesting, flags);
+      } else if (q != null) {
+        // Matching options
+        boolean includeMatch = params.getBool(MoreLikeThisParams.MATCH_INCLUDE,
+            true);
+        int matchOffset = params.getInt(MoreLikeThisParams.MATCH_OFFSET, 0);
+        // Find the base match
+        Query query = QueryParsing.parseQuery(q, params.get(CommonParams.DF),
+            params, req.getSchema());
+        DocList match = searcher.getDocList(query, null, null, matchOffset, 1,
+            flags); // only get the first one...
+        if (includeMatch) {
+          rsp.add("match", match);
+        }
+
+        // This is an iterator, but we only handle the first match
+        DocIterator iterator = match.iterator();
+        if (iterator.hasNext()) {
+          // do a MoreLikeThis query for each document in results
+          int id = iterator.nextDoc();
+          mltDocs = mlt.getMoreLikeThis(id, start, rows, filters, interesting,
+              flags);
+        }
+      } else {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "MoreLikeThis requires either a query (?q=) or text to find similar documents.");
+      }
+
+    } finally {
+      if (reader != null) {
+        reader.close();
       }
     }
-    else {
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, 
-          "MoreLikeThis requires either a query (?q=) or text to find similar documents." );
-    }
+    
     if( mltDocs == null ) {
       mltDocs = new DocListAndSet(); // avoid NPE
     }

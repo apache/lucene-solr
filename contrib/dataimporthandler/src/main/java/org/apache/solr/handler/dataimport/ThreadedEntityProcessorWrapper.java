@@ -36,10 +36,10 @@ import java.util.Collections;
 public class ThreadedEntityProcessorWrapper extends EntityProcessorWrapper {
   private static final Logger LOG = LoggerFactory.getLogger(ThreadedEntityProcessorWrapper.class);
 
-  DocBuilder.EntityRunner entityRunner;
+  final DocBuilder.EntityRunner entityRunner;
   /**For each child entity there is one EntityRunner
    */
-  Map<DataConfig.Entity ,DocBuilder.EntityRunner> children;
+  final Map<DataConfig.Entity ,DocBuilder.EntityRunner> children;
 
   public ThreadedEntityProcessorWrapper(EntityProcessor delegate, DocBuilder docBuilder,
                                   DocBuilder.EntityRunner entityRunner,

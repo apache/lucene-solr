@@ -355,7 +355,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     return schemaField != null &&
       schemaField.storeTermPositions() &&
       schemaField.storeTermOffsets() &&
-      !params.getFieldBool( fieldName, HighlightParams.USE_HIGHLIGHTER, false );
+      params.getFieldBool( fieldName, HighlightParams.USE_FVH, false );
   }
   
   private void doHighlightingByHighlighter( Query query, SolrQueryRequest req, NamedList docSummaries,

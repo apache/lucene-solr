@@ -41,7 +41,7 @@ public interface HighlightParams {
 
   public static final String MERGE_CONTIGUOUS_FRAGMENTS = HIGHLIGHT + ".mergeContiguous";
 
-  public static final String USE_HIGHLIGHTER = HIGHLIGHT + ".useHighlighter";
+  public static final String USE_FVH = HIGHLIGHT + ".useFastVectorHighlighter";
   
   // Formatter
   public static final String SIMPLE = "simple";

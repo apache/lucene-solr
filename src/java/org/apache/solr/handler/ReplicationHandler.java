@@ -279,14 +279,15 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     try {
       IndexDeletionPolicyWrapper delPolicy = core.getDeletionPolicy();
       IndexCommit indexCommit = delPolicy.getLatestCommit();
-      // race?
-      delPolicy.setReserveDuration(indexCommit.getVersion(), reserveCommitDuration);
+
       if(indexCommit == null) {
         indexCommit = req.getSearcher().getReader().getIndexCommit();
+        // race?
+        delPolicy.setReserveDuration(indexCommit.getVersion(), reserveCommitDuration);
       }
-      if (indexCommit != null)  {
-        new SnapShooter(core, params.get("location")).createSnapAsync(indexCommit, this);
-      }
+ 
+      new SnapShooter(core, params.get("location")).createSnapAsync(indexCommit, this);
+
     } catch (Exception e) {
       LOG.warn("Exception during creating a snapshot", e);
       rsp.add("exception", e);
