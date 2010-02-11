@@ -120,7 +120,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws IOException 
   {
     File adminFile = null;
-    
+    // nocommit : this shouldn't use getConfigDir if we can help it - zookeeper
     final SolrResourceLoader loader = req.getCore().getResourceLoader();
     File configdir = new File( loader.getConfigDir() ); 
     String fname = req.getParams().get("file", null);
