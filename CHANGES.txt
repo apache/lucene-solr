@@ -47,6 +47,11 @@ API Changes
    which reader the int doc, passed to customScore, refers to.  (Paul
    chez Jamespot via Mike McCandless)
 
+ * LUCENE-2080: Deprecate Version.LUCENE_CURRENT, as using this constant
+   will cause backwards compatibility problems when upgrading Lucene. See
+   the Version javadocs for additional information.
+   (Robert Muir)
+
 Optimizations
 
  * LUCENE-2086: When resolving deleted terms, do so in term sort order
