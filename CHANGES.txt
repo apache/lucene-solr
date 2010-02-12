@@ -35,6 +35,11 @@ Bug fixes
    implementation class when interface was loaded by a different
    class loader.  (Uwe Schindler, reported on java-user by Ahmed El-dawy)
 
+ * LUCENE-2260: Fixed AttributeSource to not hold a strong
+   reference to the Attribute/AttributeImpl classes which prevents
+   unloading of custom attributes loaded by other classloaders
+   (e.g. in Solr plugins).  (Uwe Schindler)
+
 API Changes
 
  * LUCENE-2190: Added setNextReader method to CustomScoreQuery, which

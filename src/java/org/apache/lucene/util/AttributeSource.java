@@ -17,11 +17,12 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.lang.ref.WeakReference;
 import java.util.Collections;
 import java.util.NoSuchElementException;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
-import java.util.IdentityHashMap;
+import java.util.WeakHashMap;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -55,7 +56,7 @@ public class AttributeSource {
     public static final AttributeFactory DEFAULT_ATTRIBUTE_FACTORY = new DefaultAttributeFactory();
     
     private static final class DefaultAttributeFactory extends AttributeFactory {
-      private static final IdentityHashMap/*<Class<? extends Attribute>,Class<? extends AttributeImpl>>*/ attClassImplMap = new IdentityHashMap();
+      private static final WeakHashMap/*<Class<? extends Attribute>, WeakReference<Class<? extends AttributeImpl>>>*/ attClassImplMap = new WeakHashMap();
       
       private DefaultAttributeFactory() {}
     
@@ -71,12 +72,13 @@ public class AttributeSource {
       
       private static Class getClassForInterface(Class attClass) {
         synchronized(attClassImplMap) {
-          Class clazz = (Class) attClassImplMap.get(attClass);
+          final WeakReference ref = (WeakReference) attClassImplMap.get(attClass);
+          Class clazz = (ref == null) ? null : ((Class) ref.get());
           if (clazz == null) {
             try {
-              attClassImplMap.put(attClass,
+              attClassImplMap.put(attClass, new WeakReference(
                 clazz = Class.forName(attClass.getName() + "Impl", true, attClass.getClassLoader())
-              );
+              ));
             } catch (ClassNotFoundException e) {
               throw new IllegalArgumentException("Could not find implementing class for " + attClass.getName());
             }
@@ -173,7 +175,8 @@ public class AttributeSource {
   }
   
   /** a cache that stores all interfaces for known implementation classes for performance (slow reflection) */
-  private static final IdentityHashMap/*<Class<? extends AttributeImpl>,LinkedList<Class<? extends Attribute>>>*/ knownImplClasses = new IdentityHashMap();
+  private static final WeakHashMap/*<Class<? extends AttributeImpl>,LinkedList<WeakReference<Class<? extends Attribute>>>>*/
+    knownImplClasses = new WeakHashMap();
   
   /** Adds a custom AttributeImpl instance with one or more Attribute interfaces. */
   public void addAttributeImpl(final AttributeImpl att) {
@@ -183,6 +186,8 @@ public class AttributeSource {
     synchronized(knownImplClasses) {
       foundInterfaces = (LinkedList) knownImplClasses.get(clazz);
       if (foundInterfaces == null) {
+        // we have a strong reference to the class instance holding all interfaces in the list (parameter "att"),
+        // so all WeakReferences are never evicted by GC
         knownImplClasses.put(clazz, foundInterfaces=new LinkedList());
         // find all interfaces that this attribute instance implements
         // and that extend the Attribute interface
@@ -192,7 +197,7 @@ public class AttributeSource {
           for (int i = 0; i < interfaces.length; i++) {
             final Class curInterface = interfaces[i];
             if (curInterface != Attribute.class && Attribute.class.isAssignableFrom(curInterface)) {
-              foundInterfaces.add(curInterface);
+              foundInterfaces.add(new WeakReference(curInterface));
             }
           }
           actClazz = actClazz.getSuperclass();
@@ -202,7 +207,10 @@ public class AttributeSource {
     
     // add all interfaces of this AttributeImpl to the maps
     for (Iterator it = foundInterfaces.iterator(); it.hasNext(); ) {
-      final Class curInterface = (Class) it.next();
+      final WeakReference curInterfaceRef = (WeakReference) it.next();
+      final Class curInterface = (Class) curInterfaceRef.get();
+      assert (curInterface != null) :
+        "We have a strong reference on the class holding the interfaces, so they should never get evicted";
       // Attribute is a superclass of this interface
       if (!attributes.containsKey(curInterface)) {
         // invalidate state to force recomputation in captureState()
