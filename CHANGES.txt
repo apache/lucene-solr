@@ -118,6 +118,11 @@ Bug fixes
   termIndexInterval (default 128) * ~2.1 billion = ~274 billion.
   (Tom Burton-West via Mike McCandless)
   
+* LUCENE-2260: Fixed AttributeSource to not hold a strong
+  reference to the Attribute/AttributeImpl classes which prevents
+  unloading of custom attributes loaded by other classloaders
+  (e.g. in Solr plugins).  (Uwe Schindler)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
