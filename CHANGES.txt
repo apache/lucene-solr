@@ -69,6 +69,11 @@ API Changes
  * LUCENE-2258: Remove unneeded synchronization in FuzzyTermEnum.
    (Uwe Schindler, Robert Muir)
 
+ * LUCENE-2080: Deprecate Version.LUCENE_CURRENT, as using this constant
+   will cause backwards compatibility problems when upgrading Lucene. See
+   the Version javadocs for additional information.
+   (Robert Muir)
+
 Test Cases
 
  * LUCENE-2114: Change TestFilteredSearch to test on multi-segment
