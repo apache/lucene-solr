@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.solr.common.cloud.SolrZooKeeper;
 import org.apache.zookeeper.Watcher;
 
 /**

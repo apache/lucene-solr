@@ -20,18 +20,17 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.solr.cloud.SolrZkClient.OnReconnect;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.OnReconnect;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -63,10 +62,8 @@ public final class ZkController {
 
 
   // package private for tests
-  static final String SHARDS_ZKNODE = "/shards";
+
   static final String CONFIGS_ZKNODE = "/configs";
-  static final String COLLECTIONS_ZKNODE = "/collections";
-  static final String NODES_ZKNODE = "/live_nodes";
 
   public static final String URL_PROP = "url";
   public static final String NODE_NAME = "node_name";
@@ -85,10 +82,6 @@ public final class ZkController {
   private String localHost;
 
   private String hostName;
-  
-
-
-  private boolean readonly;  // temporary hack to enable reuse in SolrJ client
 
   /**
    * @param zkServerAddress ZooKeeper server host address
@@ -108,7 +101,6 @@ public final class ZkController {
     this.localHostPort = locaHostPort;
     this.localHostContext = localHostContext;
     this.localHost = localHost;
-    this.readonly = localHostPort==null;
 
     zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
         // on reconnect, reload cloud info
@@ -150,7 +142,7 @@ public final class ZkController {
    */
   private void addZkShardsNode(String shardId, String collection) throws IOException, InterruptedException, KeeperException {
 
-    String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE + "/" + shardId;
+    String shardsZkPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + ZkStateReader.SHARDS_ZKNODE + "/" + shardId;
     
     try {
       
@@ -164,7 +156,7 @@ public final class ZkController {
         
         // nocommit - scrutinize
         // ping that there is a new shardId
-        zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);
+        zkClient.setData(ZkStateReader.COLLECTIONS_ZKNODE, (byte[])null);
 
       }
     } catch (KeeperException e) {
@@ -280,7 +272,7 @@ public final class ZkController {
       
       // makes nodes zkNode
       try {
-        zkClient.makePath(NODES_ZKNODE);
+        zkClient.makePath(ZkStateReader.LIVE_NODES_ZKNODE);
       } catch (KeeperException e) {
         // its okay if another beats us creating the node
         if (e.code() != KeeperException.Code.NODEEXISTS) {
@@ -314,7 +306,7 @@ public final class ZkController {
   private void createEphemeralLiveNode() throws KeeperException,
       InterruptedException {
     String nodeName = getNodeName();
-    String nodePath = NODES_ZKNODE + "/" + nodeName;
+    String nodePath = ZkStateReader.LIVE_NODES_ZKNODE + "/" + nodeName;
     log.info("Register node as live in ZooKeeper:" + nodePath);
     Watcher liveNodeWatcher = new Watcher() {
 
@@ -347,26 +339,24 @@ public final class ZkController {
       
     };
     try {
-      if (!readonly) {
-        boolean nodeDeleted = true;
-        try {
-          // we attempt a delete in the case of a quick server bounce -
-          // if there was not a graceful shutdown, the node may exist
-          // until expiration timeout - so a node won't be created here because
-          // it exists, but eventually the node will be removed. So delete
-          // in case it exists and create a new node.
-          zkClient.delete(nodePath, -1);
-        } catch (KeeperException.NoNodeException e) {
-          // fine if there is nothing to delete
-          nodeDeleted = false;
-        }
-        if (nodeDeleted) {
-          log
-              .info("Found a previous node that still exists while trying to register a new live node "
-                  + nodePath + " - removing existing node to create another.");
-        }
-        zkClient.makePath(nodePath, CreateMode.EPHEMERAL);
+      boolean nodeDeleted = true;
+      try {
+        // we attempt a delete in the case of a quick server bounce -
+        // if there was not a graceful shutdown, the node may exist
+        // until expiration timeout - so a node won't be created here because
+        // it exists, but eventually the node will be removed. So delete
+        // in case it exists and create a new node.
+        zkClient.delete(nodePath, -1);
+      } catch (KeeperException.NoNodeException e) {
+        // fine if there is nothing to delete
+        nodeDeleted = false;
       }
+      if (nodeDeleted) {
+        log
+            .info("Found a previous node that still exists while trying to register a new live node "
+                + nodePath + " - removing existing node to create another.");
+      }
+      zkClient.makePath(nodePath, CreateMode.EPHEMERAL);
     } catch (KeeperException e) {
       // its okay if the node already exists
       if (e.code() != KeeperException.Code.NODEEXISTS) {
@@ -374,14 +364,12 @@ public final class ZkController {
       }
       System.out.println("NODE ALREADY EXISTS");
     }
-    zkClient.getChildren(NODES_ZKNODE, liveNodeWatcher);
+    zkClient.getChildren(ZkStateReader.LIVE_NODES_ZKNODE, liveNodeWatcher);
   }
   
   public String getNodeName() {
     return hostName + ":" + localHostPort + "_"+ localHostContext;
   }
-
-
 
   /**
    * @param path
@@ -406,7 +394,7 @@ public final class ZkController {
 
     String configName = null;
 
-    String path = COLLECTIONS_ZKNODE + "/" + collection;
+    String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection;
     if (log.isInfoEnabled()) {
       log.info("Load collection config from:" + path);
     }
@@ -444,7 +432,7 @@ public final class ZkController {
     
     String collection = cloudDesc.getCollectionName();
     
-    String shardsZkPath = COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE + "/" + cloudDesc.getShardId();
+    String shardsZkPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + ZkStateReader.SHARDS_ZKNODE + "/" + cloudDesc.getShardId();
 
     boolean shardZkNodeAlreadyExists = zkClient.exists(shardsZkPath);
     
@@ -469,14 +457,14 @@ public final class ZkController {
     if(shardZkNodeAlreadyExists && forcePropsUpdate) {
       zkClient.setData(shardsZkPath + "/" + shardZkNodeName, bytes);
       // tell everyone to update cloud info
-      zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);
+      zkClient.setData(ZkStateReader.COLLECTIONS_ZKNODE, (byte[])null);
     } else {
       addZkShardsNode(cloudDesc.getShardId(), collection);
       try {
         zkClient.create(shardsZkPath + "/" + shardZkNodeName, bytes,
             CreateMode.PERSISTENT);
         // tell everyone to update cloud info
-        zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);
+        zkClient.setData(ZkStateReader.COLLECTIONS_ZKNODE, (byte[])null);
       } catch (KeeperException e) {
         // its okay if the node already exists
         if (e.code() != KeeperException.Code.NODEEXISTS) {
@@ -536,12 +524,12 @@ public final class ZkController {
 
   private void setUpCollectionsNode() throws KeeperException, InterruptedException {
     try {
-      if (!zkClient.exists(COLLECTIONS_ZKNODE) && !readonly) {
+      if (!zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE)) {
         if (log.isInfoEnabled()) {
-          log.info("creating zk collections node:" + COLLECTIONS_ZKNODE);
+          log.info("creating zk collections node:" + ZkStateReader.COLLECTIONS_ZKNODE);
         }
         // makes collections zkNode if it doesn't exist
-        zkClient.makePath(COLLECTIONS_ZKNODE, CreateMode.PERSISTENT, null);
+        zkClient.makePath(ZkStateReader.COLLECTIONS_ZKNODE, CreateMode.PERSISTENT, null);
       }
     } catch (KeeperException e) {
       // its okay if another beats us creating the node
@@ -559,13 +547,13 @@ public final class ZkController {
     }
     
     log.info("Start watching collections zk node for changes");
-    zkClient.getChildren(COLLECTIONS_ZKNODE, new Watcher(){
+    zkClient.getChildren(ZkStateReader.COLLECTIONS_ZKNODE, new Watcher(){
 
       public void process(WatchedEvent event) {
           try {
             log.info("Detected a new or removed collection");
             synchronized (zkStateReader.getUpdateLock()) {
-              addShardZkNodeWatches();
+              zkStateReader.addShardZkNodeWatches();
               zkStateReader.updateCloudState(false);
             }
             // re-watch
@@ -588,7 +576,7 @@ public final class ZkController {
 
       }});
     
-    zkClient.exists(COLLECTIONS_ZKNODE, new Watcher(){
+    zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, new Watcher(){
 
       public void process(WatchedEvent event) {
         if(event.getType() !=  EventType.NodeDataChanged) {
@@ -597,10 +585,10 @@ public final class ZkController {
         log.info("Notified of CloudState change");
         try {
           synchronized (zkStateReader.getUpdateLock()) {
-            addShardZkNodeWatches();
+            zkStateReader.addShardZkNodeWatches();
             zkStateReader.updateCloudState(false);
           }
-          zkClient.exists(COLLECTIONS_ZKNODE, this);
+          zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, this);
         } catch (KeeperException e) {
           log.error("", e);
           throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
@@ -619,120 +607,12 @@ public final class ZkController {
         
       }});
   }
-  
-  public void addShardZkNodeWatches() throws KeeperException, InterruptedException {
-    CloudState cloudState = getCloudState();
-    Set<String> knownCollections = cloudState.getCollections();
-    
-    List<String> collections = zkClient.getChildren(COLLECTIONS_ZKNODE, null);
-
-    for(final String collection : collections) {
-      if(!knownCollections.contains(collection)) {
-        log.info("Found new collection:" + collection);
-        Watcher watcher = new Watcher() {
-          public void process(WatchedEvent event) {
-            log.info("Detected changed ShardId in collection:" + collection);
-            try {
-              addShardsWatches(collection);
-              zkStateReader.updateCloudState(false);
-            } catch (KeeperException e) {
-              log.error("", e);
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR, "", e);
-            } catch (InterruptedException e) {
-              // Restore the interrupted status
-              Thread.currentThread().interrupt();
-              log.error("", e);
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR, "", e);
-            } catch (IOException e) {
-              log.error("", e);
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR, "", e);
-            }
-          }
-        };
-        boolean madeWatch = true;
-        String shardZkNode = COLLECTIONS_ZKNODE + "/" + collection
-            + SHARDS_ZKNODE;
-        for (int i = 0; i < 5; i++) {
-          try {
-            zkClient.getChildren(shardZkNode, watcher);
-          } catch (KeeperException.NoNodeException e) {
-            // most likely, the collections node has been created, but not the
-            // shards node yet -- pause and try again
-            madeWatch = false;
-            if (i == 4) {
-              log.error("Could not set shards zknode watch, because the zknode does not exist:" + shardZkNode);
-              break;
-            }
-            Thread.sleep(100);
-          }
-          if (madeWatch) {
-            log.info("Made shard watch:" + shardZkNode);
-            break;
-          }
-        }
-      }
-    }
-  }
-  
-  public void addShardsWatches(final String collection) throws KeeperException,
-      InterruptedException {
-    if (zkClient.exists(COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE)) {
-      List<String> shardIds = zkClient.getChildren(COLLECTIONS_ZKNODE + "/"
-          + collection + SHARDS_ZKNODE, null);
-      CloudState cloudState = getCloudState();
-      Set<String> knownShardIds;
-      Map<String,Slice> slices = cloudState.getSlices(collection);
-      if (slices != null) {
-        knownShardIds = slices.keySet();
-      } else {
-        knownShardIds = new HashSet<String>(0);
-      }
-      for (final String shardId : shardIds) {
-        if (!knownShardIds.contains(shardId)) {
-          zkClient.getChildren(COLLECTIONS_ZKNODE + "/" + collection
-              + SHARDS_ZKNODE + "/" + shardId, new Watcher() {
-
-            public void process(WatchedEvent event) {
-              log.info("Detected a shard change under ShardId:" + shardId + " in collection:" + collection);
-              try {
-                zkStateReader.updateCloudState(false);
-              } catch (KeeperException e) {
-                log.error("", e);
-                throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                    "", e);
-              } catch (InterruptedException e) {
-                // Restore the interrupted status
-                Thread.currentThread().interrupt();
-                log.error("", e);
-                throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                    "", e);
-              } catch (IOException e) {
-                log.error("", e);
-                throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                    "", e);
-              }
-            }
-          });
-        }
-      }
-    }
-  }
-  
-  public void addShardsWatches() throws KeeperException, InterruptedException {
-    List<String> collections = zkClient.getChildren(COLLECTIONS_ZKNODE, null);
-    for (final String collection : collections) {
-      addShardsWatches(collection);
-    }
-  }
 
   public void createCollectionZkNode(CloudDescriptor cd) throws KeeperException, InterruptedException, IOException {
     String collection = cd.getCollectionName();
     
     log.info("Check for collection zkNode:" + collection);
-    String collectionPath = COLLECTIONS_ZKNODE + "/" + collection;
+    String collectionPath = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection;
     
     try {
       if(!zkClient.exists(collectionPath)) {
@@ -800,7 +680,7 @@ public final class ZkController {
           zkClient.makePath(collectionPath, collectionProps.store(), CreateMode.PERSISTENT, null, true);
          
           // ping that there is a new collection
-          zkClient.setData(COLLECTIONS_ZKNODE, (byte[])null);
+          zkClient.setData(ZkStateReader.COLLECTIONS_ZKNODE, (byte[])null);
         } catch (KeeperException e) {
           // its okay if the node already exists
           if (e.code() != KeeperException.Code.NODEEXISTS) {

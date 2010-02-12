@@ -1,4 +1,4 @@
-package org.apache.solr.cloud;
+package org.apache.solr.common.cloud;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,20 +20,29 @@ package org.apache.solr.cloud;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.solr.cloud.SolrZkClient.OnReconnect;
+import org.apache.solr.cloud.Slice;
+import org.apache.solr.cloud.ZooKeeperException;
 import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ZkStateReader {
   private static Logger log = LoggerFactory.getLogger(ZkStateReader.class);
+  
+  public static final String COLLECTIONS_ZKNODE = "/collections";
+  public static final String SHARDS_ZKNODE = "/shards";
+  public static final String LIVE_NODES_ZKNODE = "/live_nodes";
   
   private volatile CloudState cloudState  = new CloudState(new HashSet<String>(0), new HashMap<String,Map<String,Slice>>(0));
   
@@ -45,11 +54,14 @@ public class ZkStateReader {
 
   private SolrZkClient zkClient;
   
+  private boolean closeClient = false;
+  
   public ZkStateReader(SolrZkClient zkClient) {
     this.zkClient = zkClient;
   }
   
   public ZkStateReader(String zkServerAddress, int zkClientTimeout, int zkClientConnectTimeout) throws InterruptedException, TimeoutException, IOException {
+    closeClient = true;
     zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
         // on reconnect, reload cloud info
         new OnReconnect() {
@@ -149,6 +161,114 @@ public class ZkStateReader {
 
   }
   
+  public void addShardZkNodeWatches() throws KeeperException, InterruptedException {
+    CloudState cloudState = getCloudState();
+    Set<String> knownCollections = cloudState.getCollections();
+    
+    List<String> collections = zkClient.getChildren(COLLECTIONS_ZKNODE, null);
+
+    for(final String collection : collections) {
+      if(!knownCollections.contains(collection)) {
+        log.info("Found new collection:" + collection);
+        Watcher watcher = new Watcher() {
+          public void process(WatchedEvent event) {
+            log.info("Detected changed ShardId in collection:" + collection);
+            try {
+              addShardsWatches(collection);
+              updateCloudState(false);
+            } catch (KeeperException e) {
+              log.error("", e);
+              throw new ZooKeeperException(
+                  SolrException.ErrorCode.SERVER_ERROR, "", e);
+            } catch (InterruptedException e) {
+              // Restore the interrupted status
+              Thread.currentThread().interrupt();
+              log.error("", e);
+              throw new ZooKeeperException(
+                  SolrException.ErrorCode.SERVER_ERROR, "", e);
+            } catch (IOException e) {
+              log.error("", e);
+              throw new ZooKeeperException(
+                  SolrException.ErrorCode.SERVER_ERROR, "", e);
+            }
+          }
+        };
+        boolean madeWatch = true;
+        String shardZkNode = COLLECTIONS_ZKNODE + "/" + collection
+            + SHARDS_ZKNODE;
+        for (int i = 0; i < 5; i++) {
+          try {
+            zkClient.getChildren(shardZkNode, watcher);
+          } catch (KeeperException.NoNodeException e) {
+            // most likely, the collections node has been created, but not the
+            // shards node yet -- pause and try again
+            madeWatch = false;
+            if (i == 4) {
+              log.error("Could not set shards zknode watch, because the zknode does not exist:" + shardZkNode);
+              break;
+            }
+            Thread.sleep(100);
+          }
+          if (madeWatch) {
+            log.info("Made shard watch:" + shardZkNode);
+            break;
+          }
+        }
+      }
+    }
+  }
+  
+  public void addShardsWatches(final String collection) throws KeeperException,
+      InterruptedException {
+    if (zkClient.exists(COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE)) {
+      List<String> shardIds = zkClient.getChildren(COLLECTIONS_ZKNODE + "/"
+          + collection + SHARDS_ZKNODE, null);
+      CloudState cloudState = getCloudState();
+      Set<String> knownShardIds;
+      Map<String,Slice> slices = cloudState.getSlices(collection);
+      if (slices != null) {
+        knownShardIds = slices.keySet();
+      } else {
+        knownShardIds = new HashSet<String>(0);
+      }
+      for (final String shardId : shardIds) {
+        if (!knownShardIds.contains(shardId)) {
+          zkClient.getChildren(COLLECTIONS_ZKNODE + "/" + collection
+              + SHARDS_ZKNODE + "/" + shardId, new Watcher() {
+
+            public void process(WatchedEvent event) {
+              log.info("Detected a shard change under ShardId:" + shardId + " in collection:" + collection);
+              try {
+                updateCloudState(false);
+              } catch (KeeperException e) {
+                log.error("", e);
+                throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                    "", e);
+              } catch (InterruptedException e) {
+                // Restore the interrupted status
+                Thread.currentThread().interrupt();
+                log.error("", e);
+                throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                    "", e);
+              } catch (IOException e) {
+                log.error("", e);
+                throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+                    "", e);
+              }
+            }
+          });
+        }
+      }
+    }
+  }
+  
+  public void addShardsWatches() throws KeeperException, InterruptedException {
+    List<String> collections = zkClient.getChildren(COLLECTIONS_ZKNODE, null);
+    for (final String collection : collections) {
+      addShardsWatches(collection);
+    }
+  }
+  
   /**
    * @return information about the cluster from ZooKeeper
    */
@@ -158,5 +278,19 @@ public class ZkStateReader {
   
   public Object getUpdateLock() {
     return this;
+  }
+
+  public void close() {
+    if (closeClient) {
+      try {
+        zkClient.close();
+      } catch (InterruptedException e) {
+        // Restore the interrupted status
+        Thread.currentThread().interrupt();
+        log.error("", e);
+        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "",
+            e);
+      }
+    }
   }
 }

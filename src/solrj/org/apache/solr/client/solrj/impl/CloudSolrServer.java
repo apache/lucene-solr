@@ -1,20 +1,31 @@
 package org.apache.solr.client.solrj.impl;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.TimeoutException;
+
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.cloud.*;
+import org.apache.solr.cloud.Slice;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkNodeProps;
+import org.apache.solr.cloud.ZooKeeperException;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.util.*;
-import java.util.concurrent.TimeoutException;
-
 public class CloudSolrServer extends SolrServer {
-  private volatile ZkController zkController;
+  private volatile ZkStateReader zkStateReader;
   private String zkHost; // the zk server address
   private int zkConnectTimeout = 10000;
   private int zkClientTimeout = 10000;
@@ -61,14 +72,15 @@ public class CloudSolrServer extends SolrServer {
    * @throws InterruptedException
    */
   public void connect() {
-    if (zkController != null) return;
+    if (zkStateReader != null) return;
     synchronized(this) {
-      if (zkController != null) return;
+      if (zkStateReader != null) return;
       try {
-        ZkController zk = new ZkController(zkHost, zkConnectTimeout, zkClientTimeout, null, null, null);
+        ZkStateReader zk = new ZkStateReader(zkHost, zkConnectTimeout, zkClientTimeout);
+        // nocommit : deal with other watches
         zk.addShardZkNodeWatches();
-        zk.getZkStateReader().updateCloudState(true);
-        zkController = zk;
+        zk.updateCloudState(true);
+        zkStateReader = zk;
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "", e);
@@ -89,7 +101,7 @@ public class CloudSolrServer extends SolrServer {
   public NamedList<Object> request(SolrRequest request) throws SolrServerException, IOException {
     connect();
 
-    CloudState cloudState = zkController.getCloudState();
+    CloudState cloudState = zkStateReader.getCloudState();
 
     String collection = request.getParams().get("collection", defaultCollection);
 
@@ -126,11 +138,11 @@ public class CloudSolrServer extends SolrServer {
   }
 
   public void close() {
-    if (zkController != null) {
+    if (zkStateReader != null) {
       synchronized(this) {
-        if (zkController != null)
-          zkController.close();
-        zkController = null;
+        if (zkStateReader!= null)
+          zkStateReader.close();
+        zkStateReader = null;
       }
     }
   }

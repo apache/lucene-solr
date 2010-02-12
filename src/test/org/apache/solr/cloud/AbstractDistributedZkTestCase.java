@@ -21,6 +21,7 @@ import java.io.File;
 import java.util.HashSet;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.TestHarness;
 

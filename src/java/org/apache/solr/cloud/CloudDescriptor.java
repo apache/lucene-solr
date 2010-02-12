@@ -1,10 +1,6 @@
 package org.apache.solr.cloud;
 
-import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
-
-import java.util.Collections;
-import java.util.HashMap;
 
 
 /**

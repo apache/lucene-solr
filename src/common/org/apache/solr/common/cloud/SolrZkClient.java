@@ -1,4 +1,4 @@
-package org.apache.solr.cloud;
+package org.apache.solr.common.cloud;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.cloud.ZkClientConnectionStrategy;
+import org.apache.solr.cloud.ZooKeeperException;
 import org.apache.solr.cloud.ZkClientConnectionStrategy.ZkUpdate;
 import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.CreateMode;
@@ -44,10 +46,6 @@ import org.slf4j.LoggerFactory;
  */
 public class SolrZkClient {
   static final String NEWL = System.getProperty("line.separator");
-  
-  public static interface OnReconnect {
-    public void command();
-  }
 
   static final int DEFAULT_CLIENT_CONNECT_TIMEOUT = 5000;
 
@@ -482,6 +480,10 @@ public class SolrZkClient {
    */
   void updateKeeper(SolrZooKeeper keeper) {
    this.keeper = keeper;
+  }
+  
+  public SolrZooKeeper getSolrZooKeeper() {
+    return keeper;
   }
 
 }

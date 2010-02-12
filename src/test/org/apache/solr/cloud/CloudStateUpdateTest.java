@@ -23,6 +23,8 @@ import java.util.Set;
 
 import junit.framework.TestCase;
 
+import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -185,7 +187,7 @@ public class CloudStateUpdateTest extends TestCase {
 
     // quickly kill / start client
 
-    container2.getZkController().getZkClient().keeper.getConnection()
+    container2.getZkController().getZkClient().getSolrZooKeeper().getConnection()
         .disconnect();
     container2.shutdown();
 

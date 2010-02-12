@@ -1,4 +1,4 @@
-package org.apache.solr.cloud;
+package org.apache.solr.common.cloud;
 
 import java.io.IOException;
 
@@ -14,7 +14,7 @@ public class SolrZooKeeper extends ZooKeeper {
     // TODO Auto-generated constructor stub
   }
   
-  protected ClientCnxn getConnection() {
+  public ClientCnxn getConnection() {
     return cnxn;
   }
 

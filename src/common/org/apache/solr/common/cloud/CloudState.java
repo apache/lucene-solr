@@ -1,4 +1,4 @@
-package org.apache.solr.cloud;
+package org.apache.solr.common.cloud;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,6 +25,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.cloud.Slice;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.cloud.ZkNodeProps;
+import org.apache.solr.cloud.ZooKeeperException;
 import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -72,12 +76,12 @@ public class CloudState {
     Map<String,Map<String,Slice>> collectionStates;
     if (!onlyLiveNodes) {
       List<String> collections = zkClient.getChildren(
-          ZkController.COLLECTIONS_ZKNODE, null);
+          ZkStateReader.COLLECTIONS_ZKNODE, null);
 
       collectionStates = new HashMap<String,Map<String,Slice>>();
       for (String collection : collections) {
-        String shardIdPaths = ZkController.COLLECTIONS_ZKNODE + "/"
-            + collection + ZkController.SHARDS_ZKNODE;
+        String shardIdPaths = ZkStateReader.COLLECTIONS_ZKNODE + "/"
+            + collection + ZkStateReader.SHARDS_ZKNODE;
         List<String> shardIdNames;
         try {
           shardIdNames = zkClient.getChildren(shardIdPaths, null);
@@ -137,7 +141,7 @@ public class CloudState {
   }
   
   private static Set<String> getLiveNodes(SolrZkClient zkClient) throws KeeperException, InterruptedException {
-    List<String> liveNodes = zkClient.getChildren(ZkController.NODES_ZKNODE, null);
+    List<String> liveNodes = zkClient.getChildren(ZkStateReader.LIVE_NODES_ZKNODE, null);
     Set<String> liveNodesSet = new HashSet<String>(liveNodes.size());
     liveNodesSet.addAll(liveNodes);
 
