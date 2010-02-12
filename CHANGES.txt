@@ -107,6 +107,10 @@ Bug fixes
 * LUCENE-2249: ParallelMultiSearcher should shut down thread pool on
   close.  (Martin Traverso via Uwe Schindler)
   
+* LUCENE-2257: Increase max number of unique terms in one segment to
+  termIndexInterval (default 128) * ~2.1 billion = ~274 billion.
+  (Tom Burton-West via Mike McCandless)
+  
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
