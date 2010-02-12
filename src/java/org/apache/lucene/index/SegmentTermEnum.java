@@ -108,7 +108,7 @@ final class SegmentTermEnum extends TermEnum implements Cloneable {
     return clone;
   }
 
-  final void seek(long pointer, int p, Term t, TermInfo ti)
+  final void seek(long pointer, long p, Term t, TermInfo ti)
           throws IOException {
     input.seek(pointer);
     position = p;

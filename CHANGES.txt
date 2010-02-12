@@ -27,6 +27,10 @@ Bug fixes
  * LUCENE-2158: At high indexing rates, NRT reader could temporarily
    lose deletions.  (Mike McCandless)
   
+ * LUCENE-2257: Increase max number of unique terms in one segment to
+   termIndexInterval (default 128) * ~2.1 billion = ~274 billion.
+   (Tom Burton-West via Mike McCandless)
+  
 API Changes
 
  * LUCENE-2182: DEFAULT_ATTRIBUTE_FACTORY was failing to load
