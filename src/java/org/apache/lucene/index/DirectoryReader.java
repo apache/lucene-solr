@@ -883,6 +883,12 @@ class DirectoryReader extends IndexReader implements Cloneable {
     // not a good idea):
     FieldCache.DEFAULT.purge(this);
 
+    if (writer != null) {
+      // Since we just closed, writer may now be able to
+      // delete unused files:
+      writer.deleteUnusedFiles();
+    }
+
     // throw the first exception
     if (ioe != null) throw ioe;
   }

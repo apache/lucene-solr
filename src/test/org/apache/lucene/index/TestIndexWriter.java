@@ -4670,4 +4670,62 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
     assertFalse(failed.get());
   }
+
+  public void testDeleteUnusedFiles() throws Exception {
+
+    for(int iter=0;iter<2;iter++) {
+      Directory dir = new MockRAMDirectory();
+      IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+      Document doc = new Document();
+      doc.add(new Field("field", "go", Field.Store.NO, Field.Index.ANALYZED));
+      w.addDocument(doc);
+      IndexReader r;
+      if (iter == 0) {
+        // use NRT
+        r = w.getReader();
+      } else {
+        // don't use NRT
+        w.commit();
+        r = IndexReader.open(dir);
+      }
+
+      List<String> files = Arrays.asList(dir.listAll());
+      assertTrue(files.contains("_0.cfs"));
+      w.addDocument(doc);
+      w.optimize();
+      if (iter == 1) {
+        w.commit();
+      }
+      IndexReader r2 = r.reopen();
+      assertTrue(r != r2);
+      files = Arrays.asList(dir.listAll());
+      assertTrue(files.contains("_0.cfs"));
+      // optimize created this
+      assertTrue(files.contains("_2.cfs"));
+      w.deleteUnusedFiles();
+
+      files = Arrays.asList(dir.listAll());
+      // r still holds this file open
+      assertTrue(files.contains("_0.cfs"));
+      assertTrue(files.contains("_2.cfs"));
+
+      r.close();
+      if (iter == 0) {
+        // on closing NRT reader, it calls writer.deleteUnusedFiles
+        files = Arrays.asList(dir.listAll());
+        assertFalse(files.contains("_0.cfs"));
+      } else {
+        // now writer can remove it
+        w.deleteUnusedFiles();
+        files = Arrays.asList(dir.listAll());
+        assertFalse(files.contains("_0.cfs"));
+      }
+      assertTrue(files.contains("_2.cfs"));
+
+      w.close();
+      r2.close();
+
+      dir.close();
+    }
+  }
 }

@@ -338,7 +338,7 @@ final class IndexFileDeleter {
     deletePendingFiles();
   }
 
-  private void deletePendingFiles() throws IOException {
+  public void deletePendingFiles() throws IOException {
     if (deletable != null) {
       List<String> oldDeletable = deletable;
       deletable = null;

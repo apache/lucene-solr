@@ -64,6 +64,13 @@ API Changes
 * LUCENE-2240: SimpleAnalyzer and WhitespaceAnalyzer now have
   Version ctors.  (Simon Willnauer via Uwe Schindler)
 
+* LUCENE-2259: Add IndexWriter.removeUnusedFiles, to attempt removing
+  unused files.  This is only useful on Windows, which prevents
+  deletion of open files. IndexWriter will eventually remove these
+  files itself; this method just lets you do so when you know the
+  files are no longer open by IndexReaders. (luocanrao via Mike
+  McCandless)
+
 Bug fixes
 
 * LUCENE-2092: BooleanQuery was ignoring disableCoord in its hashCode
