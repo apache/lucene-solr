@@ -429,9 +429,9 @@ public class CoreContainer
     
     if(zkController != null) {
       try {
-        synchronized (zkController) {
+        synchronized (zkController.getZkStateReader().getUpdateLock()) {
           zkController.addShardZkNodeWatches();
-          zkController.updateCloudState(true);
+          zkController.getZkStateReader().updateCloudState(true);
         }
       } catch (InterruptedException e) {
         // Restore the interrupted status

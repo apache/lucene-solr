@@ -20,10 +20,12 @@ package org.apache.solr.cloud;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -55,7 +57,6 @@ public final class ZkController {
 
   static final String NEWL = System.getProperty("line.separator");
 
-  private static final long CLOUD_UPDATE_DELAY = Long.parseLong(System.getProperty("CLOUD_UPDATE_DELAY", "5000"));
 
   private final static Pattern URL_POST = Pattern.compile("https?://(.*)");
   private final static Pattern URL_PREFIX = Pattern.compile("(https?://).*");
@@ -73,8 +74,8 @@ public final class ZkController {
   public final static String CONFIGNAME_PROP="configName";
 
   private SolrZkClient zkClient;
-
-  private volatile CloudState cloudState;
+  
+  private ZkStateReader zkStateReader;
 
   private String zkServerAddress;
 
@@ -85,9 +86,7 @@ public final class ZkController {
 
   private String hostName;
   
-  private ScheduledExecutorService updateCloudExecutor = Executors.newScheduledThreadPool(1);
 
-  private boolean cloudStateUpdateScheduled;
 
   private boolean readonly;  // temporary hack to enable reuse in SolrJ client
 
@@ -110,7 +109,7 @@ public final class ZkController {
     this.localHostContext = localHostContext;
     this.localHost = localHost;
     this.readonly = localHostPort==null;
-    cloudState = new CloudState(new HashSet<String>(0), new HashMap<String,Map<String,Slice>>(0));
+
     zkClient = new SolrZkClient(zkServerAddress, zkClientTimeout, zkClientConnectTimeout,
         // on reconnect, reload cloud info
         new OnReconnect() {
@@ -119,7 +118,7 @@ public final class ZkController {
             try {
               // nocommit: recreate watches ????
               createEphemeralLiveNode();
-              updateCloudState(false);
+              zkStateReader.updateCloudState(false);
             } catch (KeeperException e) {
               log.error("", e);
               throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
@@ -138,7 +137,7 @@ public final class ZkController {
 
           }
         });
-    
+    zkStateReader = new ZkStateReader(zkClient);
     init();
   }
 
@@ -209,7 +208,7 @@ public final class ZkController {
    * @return information about the cluster from ZooKeeper
    */
   public CloudState getCloudState() {
-    return cloudState;
+    return zkStateReader.getCloudState();
   }
 
   /**
@@ -323,7 +322,7 @@ public final class ZkController {
         try {
           log.info("Updating live nodes:" + zkClient);
           try {
-            updateLiveNodes();
+            zkStateReader.updateLiveNodes();
           } finally {
             // remake watch
             zkClient.getChildren(event.getPath(), this);
@@ -382,76 +381,7 @@ public final class ZkController {
     return hostName + ":" + localHostPort + "_"+ localHostContext;
   }
 
-  // load and publish a new CollectionInfo
-  public void updateCloudState(boolean immediate) throws KeeperException, InterruptedException,
-      IOException {
-    updateCloudState(immediate, false);
-  }
-  
-  // load and publish a new CollectionInfo
-  private void updateLiveNodes() throws KeeperException, InterruptedException,
-      IOException {
-    updateCloudState(true, true);
-  }
-  
-  // load and publish a new CollectionInfo
-  private synchronized void updateCloudState(boolean immediate, final boolean onlyLiveNodes) throws KeeperException, InterruptedException,
-      IOException {
 
-    // TODO: - incremental update rather than reread everything
-    
-    // build immutable CloudInfo
-    
-    if(immediate) {
-      if(!onlyLiveNodes) {
-        log.info("Updating cloud state from ZooKeeper... ");
-      } else {
-        log.info("Updating live nodes from ZooKeeper... ");
-      }
-      CloudState cloudState;
-      cloudState = CloudState.buildCloudState(zkClient, this.cloudState, onlyLiveNodes);
-      // update volatile
-      this.cloudState = cloudState;
-    } else {
-      if(cloudStateUpdateScheduled) {
-        log.info("Cloud state update for ZooKeeper already scheduled");
-        return;
-      }
-      log.info("Scheduling cloud state update from ZooKeeper...");
-      cloudStateUpdateScheduled = true;
-      updateCloudExecutor.schedule(new Runnable() {
-        
-        public void run() {
-          log.info("Updating cloud state from ZooKeeper...");
-          synchronized (ZkController.this) {
-            cloudStateUpdateScheduled = false;
-            CloudState cloudState;
-            try {
-              cloudState = CloudState.buildCloudState(zkClient,
-                  ZkController.this.cloudState, onlyLiveNodes);
-            } catch (KeeperException e) {
-              log.error("", e);
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR, "", e);
-            } catch (InterruptedException e) {
-              // Restore the interrupted status
-              Thread.currentThread().interrupt();
-              log.error("", e);
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR, "", e);
-            } catch (IOException e) {
-              log.error("", e);
-              throw new ZooKeeperException(
-                  SolrException.ErrorCode.SERVER_ERROR, "", e);
-            }
-            // update volatile
-            ZkController.this.cloudState = cloudState;
-          }
-        }
-      }, CLOUD_UPDATE_DELAY, TimeUnit.MILLISECONDS);
-    }
-
-  }
 
   /**
    * @param path
@@ -634,9 +564,9 @@ public final class ZkController {
       public void process(WatchedEvent event) {
           try {
             log.info("Detected a new or removed collection");
-            synchronized (ZkController.this) {
+            synchronized (zkStateReader.getUpdateLock()) {
               addShardZkNodeWatches();
-              updateCloudState(false);
+              zkStateReader.updateCloudState(false);
             }
             // re-watch
             zkClient.getChildren(event.getPath(), this);
@@ -666,9 +596,9 @@ public final class ZkController {
         }
         log.info("Notified of CloudState change");
         try {
-          synchronized (ZkController.this) {
+          synchronized (zkStateReader.getUpdateLock()) {
             addShardZkNodeWatches();
-            updateCloudState(false);
+            zkStateReader.updateCloudState(false);
           }
           zkClient.exists(COLLECTIONS_ZKNODE, this);
         } catch (KeeperException e) {
@@ -704,7 +634,7 @@ public final class ZkController {
             log.info("Detected changed ShardId in collection:" + collection);
             try {
               addShardsWatches(collection);
-              updateCloudState(false);
+              zkStateReader.updateCloudState(false);
             } catch (KeeperException e) {
               log.error("", e);
               throw new ZooKeeperException(
@@ -768,7 +698,7 @@ public final class ZkController {
             public void process(WatchedEvent event) {
               log.info("Detected a shard change under ShardId:" + shardId + " in collection:" + collection);
               try {
-                updateCloudState(false);
+                zkStateReader.updateCloudState(false);
               } catch (KeeperException e) {
                 log.error("", e);
                 throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
@@ -888,6 +818,10 @@ public final class ZkController {
       }
     }
     
+  }
+  
+  public ZkStateReader getZkStateReader() {
+    return zkStateReader;
   }
 
 }
