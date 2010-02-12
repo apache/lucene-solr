@@ -1846,11 +1846,12 @@
 
             <p>
 	      When referring to term numbers, Lucene's current
-	      implementation uses a Java <code>int</code>, which means
-	      the maximum number of unique terms in any single index
-	      segment is 2,147,483,648.  This is technically not a
-	      limitation of the index file format, just of Lucene's
-	      current implementation.
+	      implementation uses a Java <code>int</code> to hold the
+	      term index, which means the maximum number of unique
+	      terms in any single index segment is ~2.1 billion times
+	      the term index interval (default 128) = ~274 billion.
+	      This is technically not a limitation of the index file
+	      format, just of Lucene's current implementation.
 	    </p>
 	    <p>
 	      Similarly, Lucene uses a Java <code>int</code> to refer

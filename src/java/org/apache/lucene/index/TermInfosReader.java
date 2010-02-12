@@ -170,7 +170,7 @@ final class TermInfosReader {
 
   private final void seekEnum(SegmentTermEnum enumerator, int indexOffset) throws IOException {
     enumerator.seek(indexPointers[indexOffset],
-                   (indexOffset * totalIndexInterval) - 1,
+                   ((long) indexOffset * totalIndexInterval) - 1,
                    indexTerms[indexOffset], indexInfos[indexOffset]);
   }
 
@@ -239,28 +239,6 @@ final class TermInfosReader {
       ti = null;
     }
     return ti;
-  }
-
-  /** Returns the nth term in the set. */
-  final Term get(int position) throws IOException {
-    if (size == 0) return null;
-
-    SegmentTermEnum enumerator = getThreadResources().termEnum;
-    if (enumerator.term() != null &&
-        position >= enumerator.position &&
-	position < (enumerator.position + totalIndexInterval))
-      return scanEnum(enumerator, position);      // can avoid seek
-
-    seekEnum(enumerator, position/totalIndexInterval); // must seek
-    return scanEnum(enumerator, position);
-  }
-
-  private final Term scanEnum(SegmentTermEnum enumerator, int position) throws IOException {
-    while(enumerator.position < position)
-      if (!enumerator.next())
-	return null;
-
-    return enumerator.term();
   }
 
   private void ensureIndexIsRead() {
