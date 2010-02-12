@@ -71,6 +71,11 @@ API Changes
   files are no longer open by IndexReaders. (luocanrao via Mike
   McCandless)
 
+* LUCENE-2080: Deprecate Version.LUCENE_CURRENT, as using this constant
+  will cause backwards compatibility problems when upgrading Lucene. See
+  the Version javadocs for additional information.
+  (Robert Muir)
+
 Bug fixes
 
 * LUCENE-2092: BooleanQuery was ignoring disableCoord in its hashCode
