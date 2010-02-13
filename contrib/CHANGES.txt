@@ -1,8 +1,16 @@
 Lucene contrib change Log
 
-======================= 3.0 branch (not yet released) =======================
+======================= Release 3.0.1 2010-02-19 =======================
 
-Bug fixes
+New features
+
+ * LUCENE-2108: Spellchecker now safely supports concurrent modifications to
+   the spell-index. Threads can safely obtain term suggestions while the spell-
+   index is rebuild, cleared or reset. Internal IndexSearcher instances remain
+   open until the last thread accessing them releases the reference.
+   (Simon Willnauer)
+
+Bug Fixes
 
  * LUCENE-2144: Fix InstantiatedIndex to handle termDocs(null)
    correctly (enumerate all non-deleted docs).  (Karl Wettin via Mike
@@ -28,14 +36,6 @@ API Changes
  * LUCENE-2165: Add a constructor to SnowballAnalyzer that takes a Set of 
    stopwords, and deprecate the String[] one.  (Nick Burch via Robert Muir)
    
-New features
-
- * LUCENE-2108: Spellchecker now safely supports concurrent modifications to
-   the spell-index. Threads can safely obtain term suggestions while the spell-
-   index is rebuild, cleared or reset. Internal IndexSearcher instances remain
-   open until the last thread accessing them releases the reference.
-   (Simon Willnauer)
-
 ======================= Release 3.0.0 2009-11-25 =======================
 
 Changes in backwards compatibility policy
