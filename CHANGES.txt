@@ -1,7 +1,7 @@
 Lucene Change Log
 $Id$
 
-======================= 3.0 branch (not yet released) =======================
+======================= Release 3.0.1 2010-02-19 =======================
 
 Changes in backwards compatibility policy
 
@@ -38,20 +38,10 @@ Bug fixes
    termIndexInterval (default 128) * ~2.1 billion = ~274 billion.
    (Tom Burton-West via Mike McCandless)
   
-* LUCENE-2260: Fixed AttributeSource to not hold a strong
-  reference to the Attribute/AttributeImpl classes which prevents
-  unloading of custom attributes loaded by other classloaders
-  (e.g. in Solr plugins).  (Uwe Schindler)
-
-New features
-
-Optimizations
-
- * LUCENE-2086: When resolving deleted terms, do so in term sort order
-   for better performance (Bogdan Ghidireac via Mike McCandless)
-
- * LUCENE-2123 (partly): Fixes a slowdown / memory issue added by
-   LUCENE-504.  (Uwe Schindler, Robert Muir, Mike McCandless)
+ * LUCENE-2260: Fixed AttributeSource to not hold a strong
+   reference to the Attribute/AttributeImpl classes which prevents
+   unloading of custom attributes loaded by other classloaders
+   (e.g. in Solr plugins).  (Uwe Schindler)
 
 API Changes
 
@@ -66,13 +56,21 @@ API Changes
    which reader the int doc, passed to customScore, refers to.  (Paul
    chez Jamespot via Mike McCandless)
 
- * LUCENE-2258: Remove unneeded synchronization in FuzzyTermEnum.
-   (Uwe Schindler, Robert Muir)
-
  * LUCENE-2080: Deprecate Version.LUCENE_CURRENT, as using this constant
    will cause backwards compatibility problems when upgrading Lucene. See
    the Version javadocs for additional information.
    (Robert Muir)
+
+Optimizations
+
+ * LUCENE-2086: When resolving deleted terms, do so in term sort order
+   for better performance (Bogdan Ghidireac via Mike McCandless)
+
+ * LUCENE-2123 (partly): Fixes a slowdown / memory issue added by
+   LUCENE-504.  (Uwe Schindler, Robert Muir, Mike McCandless)
+
+ * LUCENE-2258: Remove unneeded synchronization in FuzzyTermEnum.
+   (Uwe Schindler, Robert Muir)
 
 Test Cases
 
