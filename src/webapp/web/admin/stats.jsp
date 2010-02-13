@@ -27,12 +27,12 @@
 <solr>
   <%  
   if (core.getName() != null) { %> 
-	  <core><%=core.getName()%></core> 
+	  <core><% XML.escapeCharData(core.getName(), out); %></core> 
   <% } %>
-  <schema><%= collectionName %></schema>
-  <host><%= hostname %></host>
-  <now><%= new Date().toString() %></now>
-  <start><%= new Date(core.getStartTime()) %></start>
+  <schema><% XML.escapeCharData(collectionName, out); %></schema>
+  <host><% XML.escapeCharData(hostname, out); %></host>
+  <now><% XML.escapeCharData(new Date().toString(), out); %></now>
+  <start><% XML.escapeCharData(new Date(core.getStartTime()).toString(), out); %></start>
   <solr-info>
 <%
 for (SolrInfoMBean.Category cat : SolrInfoMBean.Category.values()) {
@@ -55,23 +55,23 @@ for (SolrInfoMBean.Category cat : SolrInfoMBean.Category.values()) {
 %>
     <entry>
       <name>
-        <%= key %>
+        <% XML.escapeCharData(key, out); %>
       </name>
       <class>
-        <%= name %>
+        <% XML.escapeCharData(name, out); %>
       </class>
       <version>
-        <%= vers %>
+        <% XML.escapeCharData(vers, out); %>
       </version>
       <description>
-        <%= desc %>
+        <% XML.escapeCharData(desc, out); %>
       </description>
       <stats>
 <%
       for (int i = 0; i < nl.size() ; i++) {
 %>
-        <stat name="<%XML.escapeCharData(nl.getName(i), out);  %>" >
-          <%= nl.getVal(i).toString() %>
+        <stat name="<% XML.escapeAttributeValue(nl.getName(i), out);  %>" >
+          <% XML.escapeCharData(nl.getVal(i).toString(), out); %>
         </stat>
 <%
       }

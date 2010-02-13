@@ -175,6 +175,9 @@ Bug Fixes
 
 * SOLR-1736:In the slave , If 'mov'ing file does not succeed , copy the file (noble)  
 
+* SOLR-1579: Fixes to XML escaping in stats.jsp
+  (David Bowen and hossman)
+
 Other Changes
 ----------------------
 
