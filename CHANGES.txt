@@ -1,7 +1,7 @@
 Lucene Change Log
 $Id$
 
-======================= 2.9 branch (not yet released) =======================
+======================= Release 2.9.2 2010-02-19 =======================
 
 Bug fixes
 
@@ -9,12 +9,12 @@ Bug fixes
    infoStream on IndexWriter and then add an empty document and commit
    (Shai Erera via Mike McCandless)
 
+ * LUCENE-2088: addAttribute() should only accept interfaces that
+   extend Attribute. (Shai Erera, Uwe Schindler)
+
  * LUCENE-2092: BooleanQuery was ignoring disableCoord in its hashCode
    and equals methods, cause bad things to happen when caching
    BooleanQueries.  (Chris Hostetter, Mike McCandless)
-
- * LUCENE-2088: addAttribute() should only accept interfaces that
-   extend Attribute. (Shai Erera, Uwe Schindler)
 
  * LUCENE-2095: Fixes: when two threads call IndexWriter.commit() at
    the same time, it's possible for commit to return control back to
@@ -27,13 +27,13 @@ Bug fixes
  * LUCENE-2158: At high indexing rates, NRT reader could temporarily
    lose deletions.  (Mike McCandless)
   
- * LUCENE-2257: Increase max number of unique terms in one segment to
-   termIndexInterval (default 128) * ~2.1 billion = ~274 billion.
-   (Tom Burton-West via Mike McCandless)
-  
  * LUCENE-2182: DEFAULT_ATTRIBUTE_FACTORY was failing to load
    implementation class when interface was loaded by a different
    class loader.  (Uwe Schindler, reported on java-user by Ahmed El-dawy)
+  
+ * LUCENE-2257: Increase max number of unique terms in one segment to
+   termIndexInterval (default 128) * ~2.1 billion = ~274 billion.
+   (Tom Burton-West via Mike McCandless)
 
  * LUCENE-2260: Fixed AttributeSource to not hold a strong
    reference to the Attribute/AttributeImpl classes which prevents
@@ -60,12 +60,6 @@ Optimizations
  * LUCENE-2258: Remove unneeded synchronization in FuzzyTermEnum.
    (Uwe Schindler, Robert Muir)
 
-Documentation
-
- * LUCENE-2114: Improve javadocs of Filter to call out that the
-   provided reader is per-segment (Simon Willnauer via Mike
-   McCandless)
-
 Test Cases
 
  * LUCENE-2114: Change TestFilteredSearch to test on multi-segment
@@ -77,6 +71,12 @@ Test Cases
 
  * LUCENE-2207, LUCENE-2219: Improve BaseTokenStreamTestCase to check if
    end() is implemented correctly.  (Koji Sekiguchi, Robert Muir)
+
+Documentation
+
+ * LUCENE-2114: Improve javadocs of Filter to call out that the
+   provided reader is per-segment (Simon Willnauer via Mike
+   McCandless)
 
 ======================= Release 2.9.1 2009-11-06 =======================
 
