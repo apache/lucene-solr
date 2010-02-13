@@ -993,7 +993,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   /**
-   * @see IndexReader#getFieldNames(IndexReader.FieldOption fldOption)
+   * @see IndexReader#getFieldNames(org.apache.lucene.index.IndexReader.FieldOption)
    */
   public Collection getFieldNames(IndexReader.FieldOption fieldOption) {
     ensureOpen();

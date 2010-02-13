@@ -44,6 +44,7 @@ import org.apache.lucene.index.TermVectorOffsetInfo;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.BitVector;
 
 /**
  * This class, similar to {@link org.apache.lucene.index.IndexWriter}, has no locking mechanism.
@@ -403,6 +404,18 @@ public class InstantiatedIndexWriter {
     unflushedDocuments.clear();
     termDocumentInformationFactoryByDocument.clear();
     fieldNameBuffer.clear();
+
+
+    // update deleted documents bitset
+    if (index.getDeletedDocuments() != null) {
+      BitVector deletedDocuments = new BitVector(index.getDocumentsByNumber().length);
+      for (int i = 0; i < index.getDeletedDocuments().size(); i++) {
+        if (index.getDeletedDocuments().get(i)) {
+          deletedDocuments.set(i);
+        }
+      }
+      index.setDeletedDocuments(deletedDocuments);
+    }
 
     index.setVersion(System.currentTimeMillis());
 

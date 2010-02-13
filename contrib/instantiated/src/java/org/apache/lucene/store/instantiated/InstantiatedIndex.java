@@ -34,6 +34,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermPositions;
+import org.apache.lucene.util.BitVector;
 
 /**
  * Represented as a coupled graph of class instances, this
@@ -60,8 +61,7 @@ public class InstantiatedIndex
 
   private InstantiatedDocument[] documentsByNumber;
 
-  /** todo: should this be a BitSet? */
-  private Set<Integer> deletedDocuments;
+  private BitVector deletedDocuments;
 
   private Map<String, Map<String, InstantiatedTerm>> termsByFieldAndText;
   private InstantiatedTerm[] orderedTerms;
@@ -84,7 +84,6 @@ public class InstantiatedIndex
     orderedTerms = new InstantiatedTerm[0];
     documentsByNumber = new InstantiatedDocument[0];
     normsByFieldNameAndDocumentNumber = new HashMap<String, byte[]>();
-    deletedDocuments = new HashSet<Integer>();
   }
 
   
@@ -173,11 +172,14 @@ public class InstantiatedIndex
 
     documentsByNumber = new InstantiatedDocument[sourceIndexReader.maxDoc()];
 
+    if (sourceIndexReader.hasDeletions()) {
+      deletedDocuments = new BitVector(sourceIndexReader.maxDoc());
+    }
 
     // create documents
     for (int i = 0; i < sourceIndexReader.maxDoc(); i++) {
-      if (sourceIndexReader.isDeleted(i)) {
-        deletedDocuments.add(i);
+      if (sourceIndexReader.hasDeletions() && sourceIndexReader.isDeleted(i)) {
+        deletedDocuments.set(i);
       } else {
         InstantiatedDocument document = new InstantiatedDocument();
         // copy stored fields from source reader
@@ -328,10 +330,13 @@ public class InstantiatedIndex
     this.normsByFieldNameAndDocumentNumber = normsByFieldNameAndDocumentNumber;
   }
 
-  public Set<Integer> getDeletedDocuments() {
+  public BitVector getDeletedDocuments() {
     return deletedDocuments;
   }
 
+  void setDeletedDocuments(BitVector deletedDocuments) {
+    this.deletedDocuments = deletedDocuments;
+  }
 
   void setOrderedTerms(InstantiatedTerm[] orderedTerms) {
     this.orderedTerms = orderedTerms;

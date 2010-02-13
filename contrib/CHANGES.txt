@@ -1,11 +1,6 @@
 Lucene contrib change Log
 
-======================= 2.9 branch (not yet released) =======================
-
-API Changes
-
- * LUCENE-2108: Add SpellChecker.close, to close the underlying
-   reader.  (Eirik Bjørsnøs via Mike McCandless)
+======================= Release 2.9.2 2010-02-19 =======================
 
 New features
 
@@ -16,6 +11,10 @@ New features
    (Simon Willnauer)
 
 Bug Fixes
+
+ * LUCENE-2144: Fix InstantiatedIndex to handle termDocs(null)
+   correctly (enumerate all non-deleted docs).  (Karl Wettin via Mike
+   McCandless)
 
  * LUCENE-2199: ShingleFilter skipped over tri-gram shingles if outputUnigram
    was set to false. (Simon Willnauer)
@@ -33,6 +32,14 @@ Bug Fixes
    CJKTokenizer, ChineseTokenizer, SmartChinese SentenceTokenizer,
    and WikipediaTokenizer.  (Koji Sekiguchi, Robert Muir)
 
+API Changes
+
+ * LUCENE-2108: Add SpellChecker.close, to close the underlying
+   reader.  (Eirik Bjørsnøs via Mike McCandless)
+
+ * LUCENE-2165: Add a constructor to SnowballAnalyzer that takes a Set of 
+   stopwords, and deprecate the String[] one.  (Nick Burch via Robert Muir)
+   
 ======================= Release 2.9.1 2009-11-06 =======================
 
 Changes in backwards compatibility policy

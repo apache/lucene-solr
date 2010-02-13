@@ -29,16 +29,9 @@ import java.util.Set;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.index.CorruptIndexException;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.index.TermFreqVector;
-import org.apache.lucene.index.TermPositions;
-import org.apache.lucene.index.TermVectorMapper;
+import org.apache.lucene.index.*;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BitVector;
 
 /**
  * An InstantiatedIndexReader is not a snapshot in time, it is completely in
@@ -101,9 +94,9 @@ public class InstantiatedIndexReader extends IndexReader {
     return index;
   }
 
-  private Set<InstantiatedDocument> deletedDocuments = new HashSet<InstantiatedDocument>();
-  private Set<Integer> deletedDocumentNumbers = new HashSet<Integer>();
-  private Map<String,List<NormUpdate>> updatedNormsByFieldNameAndDocumentNumber = null;
+  private BitVector uncommittedDeletedDocuments;
+
+  private Map<String,List<NormUpdate>> uncommittedNormsByFieldNameAndDocumentNumber = null;
 
   private class NormUpdate {
     private int doc;
@@ -116,32 +109,53 @@ public class InstantiatedIndexReader extends IndexReader {
   }
 
   public int numDocs() {
-    return getIndex().getDocumentsByNumber().length - index.getDeletedDocuments().size() - deletedDocuments.size();
+    // todo i suppose this value could be cached, but array#length and bitvector#count is fast.
+    int numDocs = getIndex().getDocumentsByNumber().length;
+    if (uncommittedDeletedDocuments != null) {
+      numDocs -= uncommittedDeletedDocuments.count();
+    }
+    if (index.getDeletedDocuments() != null) {
+      numDocs -= index.getDeletedDocuments().count();
+    }
+    return numDocs;
   }
 
   public int maxDoc() {
     return getIndex().getDocumentsByNumber().length;
   }
 
-  public boolean isDeleted(int n) {
-    return getIndex().getDeletedDocuments().contains(n) || deletedDocumentNumbers.contains(n);
-  }
-
   public boolean hasDeletions() {
-    return getIndex().getDeletedDocuments().size() > 0 || deletedDocumentNumbers.size() > 0;
+    return index.getDeletedDocuments() != null || uncommittedDeletedDocuments != null;
   }
 
+
+  @Override
+  public boolean isDeleted(int n) {
+    return (index.getDeletedDocuments() != null && index.getDeletedDocuments().get(n))
+        || (uncommittedDeletedDocuments != null && uncommittedDeletedDocuments.get(n));
+  }
+
+
+  @Override
   protected void doDelete(int docNum) throws IOException {
-    if (!getIndex().getDeletedDocuments().contains(docNum)) {
-      if (deletedDocumentNumbers.add(docNum)) {
-        deletedDocuments.add(getIndex().getDocumentsByNumber()[docNum]);
-      }
+
+    // dont delete if already deleted
+    if ((index.getDeletedDocuments() != null && index.getDeletedDocuments().get(docNum))
+        || (uncommittedDeletedDocuments != null && uncommittedDeletedDocuments.get(docNum))) {
+      return;
     }
+
+    if (uncommittedDeletedDocuments == null) {
+      uncommittedDeletedDocuments = new BitVector(maxDoc());
+    }
+
+    uncommittedDeletedDocuments.set(docNum);
   }
 
   protected void doUndeleteAll() throws IOException {
-    deletedDocumentNumbers.clear();
-    deletedDocuments.clear();
+    // todo: read/write lock
+    uncommittedDeletedDocuments = null;
+    // todo: read/write unlock
   }
 
   protected void doCommit() throws IOException {
@@ -150,25 +164,30 @@ public class InstantiatedIndexReader extends IndexReader {
     boolean updated = false;
 
     // 1. update norms
-    if (updatedNormsByFieldNameAndDocumentNumber != null) {
-      for (Map.Entry<String,List<NormUpdate>> e : updatedNormsByFieldNameAndDocumentNumber.entrySet()) {
+    if (uncommittedNormsByFieldNameAndDocumentNumber != null) {
+      for (Map.Entry<String,List<NormUpdate>> e : uncommittedNormsByFieldNameAndDocumentNumber.entrySet()) {
         byte[] norms = getIndex().getNormsByFieldNameAndDocumentNumber().get(e.getKey());
         for (NormUpdate normUpdate : e.getValue()) {
           norms[normUpdate.doc] = normUpdate.value;
         }
       }
-      updatedNormsByFieldNameAndDocumentNumber = null;
+      uncommittedNormsByFieldNameAndDocumentNumber = null;
 
       updated = true;
     }
 
     // 2. remove deleted documents
-    if (deletedDocumentNumbers.size() > 0) {
-      for (Integer doc : deletedDocumentNumbers) {
-        getIndex().getDeletedDocuments().add(doc);
+    if (uncommittedDeletedDocuments != null) {
+      if (index.getDeletedDocuments() == null) {
+        index.setDeletedDocuments(uncommittedDeletedDocuments);
+      } else {
+        for (int d = 0; d< uncommittedDeletedDocuments.size(); d++) {
+          if (uncommittedDeletedDocuments.get(d)) {
+            index.getDeletedDocuments().set(d);
+          }
+        }
       }
-      deletedDocumentNumbers.clear();
-      deletedDocuments.clear();
+      uncommittedDeletedDocuments = null;
 
       updated = true;
 
@@ -283,9 +302,9 @@ public class InstantiatedIndexReader extends IndexReader {
     if (norms == null) {
       return new byte[0]; // todo a static final zero length attribute?
     }
-    if (updatedNormsByFieldNameAndDocumentNumber != null) {
+    if (uncommittedNormsByFieldNameAndDocumentNumber != null) {
       norms = norms.clone();
-      List<NormUpdate> updated = updatedNormsByFieldNameAndDocumentNumber.get(field);
+      List<NormUpdate> updated = uncommittedNormsByFieldNameAndDocumentNumber.get(field);
       if (updated != null) {
         for (NormUpdate normUpdate : updated) {
           norms[normUpdate.doc] = normUpdate.value;
@@ -304,13 +323,13 @@ public class InstantiatedIndexReader extends IndexReader {
   }
 
   protected void doSetNorm(int doc, String field, byte value) throws IOException {
-    if (updatedNormsByFieldNameAndDocumentNumber == null) {
-      updatedNormsByFieldNameAndDocumentNumber = new HashMap<String,List<NormUpdate>>(getIndex().getNormsByFieldNameAndDocumentNumber().size());
+    if (uncommittedNormsByFieldNameAndDocumentNumber == null) {
+      uncommittedNormsByFieldNameAndDocumentNumber = new HashMap<String,List<NormUpdate>>(getIndex().getNormsByFieldNameAndDocumentNumber().size());
     }
-    List<NormUpdate> list = updatedNormsByFieldNameAndDocumentNumber.get(field);
+    List<NormUpdate> list = uncommittedNormsByFieldNameAndDocumentNumber.get(field);
     if (list == null) {
       list = new LinkedList<NormUpdate>();
-      updatedNormsByFieldNameAndDocumentNumber.put(field, list);
+      uncommittedNormsByFieldNameAndDocumentNumber.put(field, list);
     }
     list.add(new NormUpdate(doc, value));
   }
@@ -345,6 +364,19 @@ public class InstantiatedIndexReader extends IndexReader {
     return new InstantiatedTermDocs(this);
   }
 
+
+  @Override
+  public TermDocs termDocs(Term term) throws IOException {
+    if (term == null) {
+      return new InstantiatedAllTermDocs(this);
+    } else {
+      InstantiatedTermDocs termDocs = new InstantiatedTermDocs(this);
+      termDocs.seek(term);
+      return termDocs;
+    }
+  }
+
+  @Override
   public TermPositions termPositions() throws IOException {
     return new InstantiatedTermPositions(this);
   }
@@ -384,7 +416,7 @@ public class InstantiatedIndexReader extends IndexReader {
 
   public void getTermFreqVector(int docNumber, TermVectorMapper mapper) throws IOException {
     InstantiatedDocument doc = getIndex().getDocumentsByNumber()[docNumber];
-    for (Map.Entry<String,List<InstantiatedTermDocumentInformation>> e : doc.getVectorSpace().entrySet()) {
+    for (Map.Entry<String, List<InstantiatedTermDocumentInformation>> e : doc.getVectorSpace().entrySet()) {
       mapper.setExpectations(e.getKey(), e.getValue().size(), true, true);
       for (InstantiatedTermDocumentInformation tdi : e.getValue()) {
         mapper.map(tdi.getTerm().text(), tdi.getTermPositions().length, tdi.getTermOffsets(), tdi.getTermPositions());

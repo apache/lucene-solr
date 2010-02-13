@@ -66,6 +66,12 @@ public class SnowballAnalyzer extends Analyzer {
     this(matchVersion, name);
     stopSet = StopFilter.makeStopSet(stopWords);
   }
+  
+  /** Builds the named analyzer with the given stop words. */
+  public SnowballAnalyzer(Version matchVersion, String name, Set stopWords) {
+    this(matchVersion, name);
+    this.stopSet = CharArraySet.unmodifiableSet(new CharArraySet(stopWords, false));
+  }
 
   /** Constructs a {@link StandardTokenizer} filtered by a {@link
       StandardFilter}, a {@link LowerCaseFilter}, a {@link StopFilter},
