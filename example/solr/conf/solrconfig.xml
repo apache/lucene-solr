@@ -36,7 +36,7 @@
        and use them to resolve any "plugins" specified in your solrconfig.xml or
        schema.xml (ie: Analyzers, Request Handlers, etc...).
 
-       All directories and paths are resolved relative the instanceDir.
+       All directories and paths are resolved relative to the instanceDir.
 
        If a "./lib" directory exists in your instanceDir, all files found in it
        are included as if you had used the following syntax...
