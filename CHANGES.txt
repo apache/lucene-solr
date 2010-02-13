@@ -1,6 +1,7 @@
 Lucene Change Log
 
 ======================= Trunk (not yet released) =======================
+
 Changes in backwards compatibility policy
 
 * LUCENE-1483: Removed utility class oal.util.SorterTemplate; this

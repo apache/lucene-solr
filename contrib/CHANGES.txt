@@ -33,31 +33,15 @@ Changes in runtime behavior
 
 Bug fixes
 
- * LUCENE-2199: ShingleFilter skipped over tri-gram shingles if outputUnigram
-   was set to false. (Simon Willnauer)
-
  * LUCENE-2068: Fixed ReverseStringFilter which was not aware of supplementary
    characters. During reverse the filter created unpaired surrogates, which
    will be replaced by U+FFFD by the indexer, but not at query time. The filter
    now reverses supplementary characters correctly if used with Version > 3.0.
    (Simon Willnauer, Robert Muir)
 
- * LUCENE-2144: Fix InstantiatedIndex to handle termDocs(null)
-   correctly (enumerate all non-deleted docs).  (Karl Wettin via Mike
-   McCandless)
-   
  * LUCENE-2035: TokenSources.getTokenStream() does not assign  positionIncrement. 
    (Christopher Morris via Mark Miller)
   
- * LUCENE-2211: Fix missing clearAttributes() calls in contrib:
-   ShingleMatrix, PrefixAware, compounds, NGramTokenFilter,
-   EdgeNGramTokenFilter, Highlighter, and MemoryIndex.
-   (Uwe Schindler, Robert Muir)
-
- * LUCENE-2207, LUCENE-2219: Fix incorrect offset calculations in end() for 
-   CJKTokenizer, ChineseTokenizer, SmartChinese SentenceTokenizer, 
-   and WikipediaTokenizer.  (Koji Sekiguchi, Robert Muir)
-
  * LUCENE-2055: Deprecated RussianTokenizer, RussianStemmer, RussianStemFilter,
    FrenchStemmer, FrenchStemFilter, DutchStemmer, and DutchStemFilter. For
    these Analyzers, SnowballFilter is used instead (for Version > 3.0), as
@@ -67,16 +51,10 @@ Bug fixes
    
 API Changes
 
- * LUCENE-2108: Add SpellChecker.close, to close the underlying
-   reader.  (Eirik Bjørsnøs via Mike McCandless)
- 
  * LUCENE-2147: Spatial GeoHashUtils now always decode GeoHash strings
    with full precision. GeoHash#decode_exactly(String) was merged into
    GeoHash#decode(String). (Chris Male, Simon Willnauer)
    
- * LUCENE-2165: Add a constructor to SnowballAnalyzer that takes a Set of 
-   stopwords, and deprecate the String[] one.  (Nick Burch via Robert Muir)
-
  * LUCENE-2204: Change some package private classes/members to publicly accessible to implement
    custom FragmentsBuilders. (Koji Sekiguchi)
 
@@ -95,12 +73,6 @@ New features
  * LUCENE-2039: Add a extensible query parser to contrib/misc.
    ExtendableQueryParser enables arbitrary parser extensions based on a
    customizable field naming scheme.
-   (Simon Willnauer)
-
- * LUCENE-2108: Spellchecker now safely supports concurrent modifications to
-   the spell-index. Threads can safely obtain term suggestions while the spell-
-   index is rebuild, cleared or reset. Internal IndexSearcher instances remain
-   open until the last thread accessing them releases the reference.
    (Simon Willnauer)
 
  * LUCENE-2067: Add a Czech light stemmer. CzechAnalyzer will now stem words
@@ -153,6 +125,42 @@ Other
  * LUCENE-1845: Updated bdb-je jar from version 3.3.69 to 3.3.93.
    (Simon Willnauer via Mike McCandless)
 
+================== Release 2.9.2 / 3.0.1 2010-02-19 ====================
+
+New features
+
+ * LUCENE-2108: Spellchecker now safely supports concurrent modifications to
+   the spell-index. Threads can safely obtain term suggestions while the spell-
+   index is rebuild, cleared or reset. Internal IndexSearcher instances remain
+   open until the last thread accessing them releases the reference.
+   (Simon Willnauer)
+
+Bug Fixes
+
+ * LUCENE-2144: Fix InstantiatedIndex to handle termDocs(null)
+   correctly (enumerate all non-deleted docs).  (Karl Wettin via Mike
+   McCandless)
+
+ * LUCENE-2199: ShingleFilter skipped over tri-gram shingles if outputUnigram
+   was set to false. (Simon Willnauer)
+  
+ * LUCENE-2211: Fix missing clearAttributes() calls:
+   ShingleMatrix, PrefixAware, compounds, NGramTokenFilter,
+   EdgeNGramTokenFilter, Highlighter, and MemoryIndex.
+   (Uwe Schindler, Robert Muir)
+
+ * LUCENE-2207, LUCENE-2219: Fix incorrect offset calculations in end() for 
+   CJKTokenizer, ChineseTokenizer, SmartChinese SentenceTokenizer, 
+   and WikipediaTokenizer.  (Koji Sekiguchi, Robert Muir)
+   
+API Changes
+
+ * LUCENE-2108: Add SpellChecker.close, to close the underlying
+   reader.  (Eirik Bjørsnøs via Mike McCandless)
+
+ * LUCENE-2165: Add a constructor to SnowballAnalyzer that takes a Set of 
+   stopwords, and deprecate the String[] one.  (Nick Burch via Robert Muir)
+   
 ======================= Release 3.0.0 2009-11-25 =======================
 
 Changes in backwards compatibility policy
