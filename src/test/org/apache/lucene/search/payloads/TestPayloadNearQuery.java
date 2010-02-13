@@ -37,6 +37,7 @@ import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
@@ -63,13 +64,11 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   }
 
   private class PayloadFilter extends TokenFilter {
-    String fieldName;
     int numSeen = 0;
     protected PayloadAttribute payAtt;
 
     public PayloadFilter(TokenStream input, String fieldName) {
       super(input);
-      this.fieldName = fieldName;
       payAtt = addAttribute(PayloadAttribute.class);
     }
 
@@ -93,7 +92,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     String[] words = phrase.split("[\\s]+");
     SpanQuery clauses[] = new SpanQuery[words.length];
     for (int i=0;i<clauses.length;i++) {
-      clauses[i] = new PayloadTermQuery(new Term(fieldName, words[i]), new AveragePayloadFunction());  
+      clauses[i] = new SpanTermQuery(new Term(fieldName, words[i]));  
     } 
     return new PayloadNearQuery(clauses, 0, inOrder);
   }
