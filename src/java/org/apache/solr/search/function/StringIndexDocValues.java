@@ -32,12 +32,16 @@ public abstract class StringIndexDocValues extends DocValues {
     protected final ValueSource vs;
 
     public StringIndexDocValues(ValueSource vs, IndexReader reader, String field) throws IOException {
-      index = FieldCache.DEFAULT.getStringIndex(reader, field);
+      try {
+        index = FieldCache.DEFAULT.getStringIndex(reader, field);
+      } catch (RuntimeException e) {
+        throw new StringIndexException(field, e);
+      }
       order = index.order;
       lookup = index.lookup;
       this.vs = vs;
     }
-
+  
     protected abstract String toTerm(String readableValue);
 
    @Override
@@ -82,4 +86,12 @@ public abstract class StringIndexDocValues extends DocValues {
       return vs.description() + '=' + strVal(doc);
     }
 
+  public static final class StringIndexException extends RuntimeException {
+    public StringIndexException(final String fieldName,
+                                final RuntimeException cause) {
+      super("Can't initialize StringIndex to generate (function) " +
+            "DocValues for field: " + fieldName, cause);
+    }
   }
+  
+}

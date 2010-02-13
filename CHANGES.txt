@@ -233,7 +233,10 @@ Other Changes
 * Upgraded to Lucene 2.9-dev r900226 (koji)
 
 * SOLR-1727: SolrEventListener should extend NamedListInitializedPlugin (noble)
-  
+
+* SOLR-1771: Improved error message when StringIndex cannot be initialized
+  for a function query (hossman)
+
 Build
 ----------------------
 
