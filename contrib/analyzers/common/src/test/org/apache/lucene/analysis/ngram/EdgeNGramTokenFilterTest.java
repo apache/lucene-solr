@@ -93,7 +93,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   public void testSmallTokenInStream() throws Exception {
     input = new WhitespaceTokenizer(new StringReader("abc de fgh"));
     EdgeNGramTokenFilter tokenizer = new EdgeNGramTokenFilter(input, EdgeNGramTokenFilter.Side.FRONT, 3, 3);
-    assertTokenStreamContents(tokenizer, new String[]{"abc","fgh"}, new int[]{0,0}, new int[]{3,3});
+    assertTokenStreamContents(tokenizer, new String[]{"abc","fgh"}, new int[]{0,7}, new int[]{3,10});
   }
   
   public void testReset() throws Exception {

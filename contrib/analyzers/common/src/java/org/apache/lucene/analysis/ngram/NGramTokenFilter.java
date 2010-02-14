@@ -38,6 +38,7 @@ public final class NGramTokenFilter extends TokenFilter {
   private int curTermLength;
   private int curGramSize;
   private int curPos;
+  private int tokStart;
   
   private TermAttribute termAtt;
   private OffsetAttribute offsetAtt;
@@ -83,13 +84,14 @@ public final class NGramTokenFilter extends TokenFilter {
           curTermLength = termAtt.termLength();
           curGramSize = minGram;
           curPos = 0;
+          tokStart = offsetAtt.startOffset();
         }
       }
       while (curGramSize <= maxGram) {
         while (curPos+curGramSize <= curTermLength) {     // while there is input
           clearAttributes();
           termAtt.setTermBuffer(curTermBuffer, curPos, curGramSize);
-          offsetAtt.setOffset(curPos, curPos+curGramSize);
+          offsetAtt.setOffset(tokStart + curPos, tokStart + curPos + curGramSize);
           curPos++;
           return true;
         }

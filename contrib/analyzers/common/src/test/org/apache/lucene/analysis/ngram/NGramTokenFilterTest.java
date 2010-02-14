@@ -83,7 +83,7 @@ public class NGramTokenFilterTest extends BaseTokenStreamTestCase {
     public void testSmallTokenInStream() throws Exception {
       input = new WhitespaceTokenizer(new StringReader("abc de fgh"));
       NGramTokenFilter filter = new NGramTokenFilter(input, 3, 3);
-      assertTokenStreamContents(filter, new String[]{"abc","fgh"}, new int[]{0,0}, new int[]{3,3});
+      assertTokenStreamContents(filter, new String[]{"abc","fgh"}, new int[]{0,7}, new int[]{3,10});
     }
     
     public void testReset() throws Exception {
