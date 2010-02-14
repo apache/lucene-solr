@@ -235,6 +235,10 @@ Bug fixes
    reference to the Attribute/AttributeImpl classes which prevents
    unloading of custom attributes loaded by other classloaders
    (e.g. in Solr plugins).  (Uwe Schindler)
+ 
+ * LUCENE-1941: Fix Min/MaxPayloadFunction returns 0 when
+   only one payload is present.  (Erik Hatcher, Mike McCandless
+   via Uwe Schindler)
 
 API Changes
 
