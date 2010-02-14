@@ -153,6 +153,9 @@ Bug Fixes
    CJKTokenizer, ChineseTokenizer, SmartChinese SentenceTokenizer, 
    and WikipediaTokenizer.  (Koji Sekiguchi, Robert Muir)
    
+ * LUCENE-2266: Fixed offset calculations in NGramTokenFilter and 
+   EdgeNGramTokenFilter.  (Joe Calderon, Robert Muir via Uwe Schindler)
+   
 API Changes
 
  * LUCENE-2108: Add SpellChecker.close, to close the underlying
