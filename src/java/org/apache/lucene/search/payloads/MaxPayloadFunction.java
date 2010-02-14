@@ -27,7 +27,11 @@ package org.apache.lucene.search.payloads;
 public class MaxPayloadFunction extends PayloadFunction {
   @Override
   public float currentScore(int docId, String field, int start, int end, int numPayloadsSeen, float currentScore, float currentPayloadScore) {
-    return Math.max(currentPayloadScore, currentScore);
+    if (numPayloadsSeen == 0) {
+      return currentPayloadScore;
+    } else {
+      return Math.max(currentPayloadScore, currentScore);
+    }
   }
 
   @Override
