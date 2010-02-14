@@ -23,8 +23,12 @@ package org.apache.lucene.search.payloads;
  **/
 public class MinPayloadFunction extends PayloadFunction {
 
-    public float currentScore(int docId, String field, int start, int end, int numPayloadsSeen, float currentScore, float currentPayloadScore) {
-    return Math.min(currentPayloadScore, currentScore);
+  public float currentScore(int docId, String field, int start, int end, int numPayloadsSeen, float currentScore, float currentPayloadScore) {
+    if (numPayloadsSeen == 0) {
+      return currentPayloadScore;
+    } else {
+      return Math.min(currentPayloadScore, currentScore);
+    }
   }
 
   public float docScore(int docId, String field, int numPayloadsSeen, float payloadScore) {
