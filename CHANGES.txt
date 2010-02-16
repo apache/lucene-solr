@@ -33,6 +33,9 @@ Upgrading from Solr 1.4
 
 Versions of Major Components
 ---------------------
+Apache Lucene 2.9.2-rc1 (r910082 on 2.9 branch)
+Apache Tika 0.4
+Carrot2 3.1.0
 
 Detailed Change List
 ----------------------
@@ -175,6 +178,9 @@ Bug Fixes
 
 * SOLR-1736:In the slave , If 'mov'ing file does not succeed , copy the file (noble)  
 
+* SOLR-1579: Fixes to XML escaping in stats.jsp
+  (David Bowen and hossman)
+
 Other Changes
 ----------------------
 
@@ -227,10 +233,11 @@ Other Changes
   
 * SOLR-1696 : Deprecate old <highlighting> syntax and move configuration to HighlightComponent (noble)
 
-* Upgraded to Lucene 2.9-dev r900226 (koji)
-
 * SOLR-1727: SolrEventListener should extend NamedListInitializedPlugin (noble)
-  
+
+* SOLR-1771: Improved error message when StringIndex cannot be initialized
+  for a function query (hossman)
+
 Build
 ----------------------
 
