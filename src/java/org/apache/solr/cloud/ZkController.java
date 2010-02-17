@@ -286,6 +286,7 @@ public final class ZkController {
       
       createEphemeralLiveNode();
       setUpCollectionsNode();
+      zkStateReader.makeCollectionsNodeWatches();
       
     } catch (IOException e) {
       log.error("", e);
@@ -548,66 +549,6 @@ public final class ZkController {
           "", e);
     }
     
-    log.info("Start watching collections zk node for changes");
-    zkClient.getChildren(ZkStateReader.COLLECTIONS_ZKNODE, new Watcher(){
-
-      public void process(WatchedEvent event) {
-          try {
-            log.info("Detected a new or removed collection");
-            synchronized (zkStateReader.getUpdateLock()) {
-              zkStateReader.addShardZkNodeWatches();
-              zkStateReader.updateCloudState(false);
-            }
-            // re-watch
-            zkClient.getChildren(event.getPath(), this);
-          } catch (KeeperException e) {
-            log.error("", e);
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                "", e);
-          } catch (InterruptedException e) {
-            // Restore the interrupted status
-            Thread.currentThread().interrupt();
-            log.error("", e);
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                "", e);
-          } catch (IOException e) {
-            log.error("", e);
-            throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-                "", e);
-          }
-
-      }});
-    
-    zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, new Watcher(){
-
-      public void process(WatchedEvent event) {
-        if(event.getType() !=  EventType.NodeDataChanged) {
-          return;
-        }
-        log.info("Notified of CloudState change");
-        try {
-          synchronized (zkStateReader.getUpdateLock()) {
-            zkStateReader.addShardZkNodeWatches();
-            zkStateReader.updateCloudState(false);
-          }
-          zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, this);
-        } catch (KeeperException e) {
-          log.error("", e);
-          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-              "", e);
-        } catch (InterruptedException e) {
-          // Restore the interrupted status
-          Thread.currentThread().interrupt();
-          log.error("", e);
-          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-              "", e);
-        } catch (IOException e) {
-          log.error("", e);
-          throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-              "", e);
-        }
-        
-      }});
   }
 
   public void createCollectionZkNode(CloudDescriptor cd) throws KeeperException, InterruptedException, IOException {
