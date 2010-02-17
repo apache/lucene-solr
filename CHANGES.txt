@@ -242,6 +242,9 @@ Other Changes
 * SOLR-1771: Improved error message when StringIndex cannot be initialized
   for a function query (hossman)
 
+* SOLR-1695: Improved error message when adding a document that does not
+  contain a value for the uniqueKey field (hossman)
+
 Build
 ----------------------
 

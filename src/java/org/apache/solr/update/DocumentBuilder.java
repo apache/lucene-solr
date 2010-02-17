@@ -17,6 +17,7 @@
 
 package org.apache.solr.update;
 
+import java.util.Collection;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -225,6 +226,16 @@ public class DocumentBuilder {
   { 
     Document out = new Document();
     out.setBoost( doc.getDocumentBoost() );
+
+    final SchemaField uniqueKeyField = schema.getUniqueKeyField();
+    if (null != uniqueKeyField) {
+      Collection<Object> keys = doc.getFieldValues(uniqueKeyField.getName());
+      if (null == keys || keys.isEmpty()) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                "Document missing value for uniqueKeyField: " +
+                                uniqueKeyField.getName());
+      }
+    }
     
     // Load fields from SolrDocument to Document
     for( SolrInputField field : doc ) {
@@ -235,11 +246,10 @@ public class DocumentBuilder {
       
       // Make sure it has the correct number
       if( sfield!=null && !sfield.multiValued() && field.getValueCount() > 1 ) {
-        String id = "";
-        SchemaField sf = schema.getUniqueKeyField();
-        if( sf != null ) {
-          id = "["+doc.getFieldValue( sf.getName() )+"] ";
-        }
+        String id = ( uniqueKeyField == null )
+          ? ""
+          : ("["+doc.getFieldValue( uniqueKeyField.getName() )+"] ");
+
         throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
             "ERROR: "+id+"multiple values encountered for non multiValued field " + 
               sfield.getName() + ": " +field.getValue() );
