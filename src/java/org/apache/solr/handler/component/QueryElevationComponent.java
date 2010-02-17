@@ -171,7 +171,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
               +"' -- path to elevate.xml" );
         }
         boolean exists = false;
-        //nocommit: double check this how we want to handle this
+
         // check if using ZooKeeper
         ZkController zkController = core.getCoreDescriptor().getCoreContainer().getZkController();
         if(zkController != null) {
