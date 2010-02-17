@@ -28,8 +28,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.solr.cloud.Slice;
-import org.apache.solr.cloud.ZooKeeperException;
 import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;

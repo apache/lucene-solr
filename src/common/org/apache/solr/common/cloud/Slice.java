@@ -1,4 +1,4 @@
-package org.apache.solr.cloud;
+package org.apache.solr.common.cloud;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,17 +17,25 @@ package org.apache.solr.cloud;
  * limitations under the License.
  */
 
+import java.util.Collections;
+import java.util.Map;
 
-import org.apache.solr.common.SolrException;
 
-public class ZooKeeperException extends SolrException {
+// immutable
+public class Slice {
+  private final Map<String,ZkNodeProps> shards;
+  private final String name;
 
-  public ZooKeeperException(ErrorCode code, String msg, Throwable th) {
-    super(code, msg, th);
+  public Slice(String name, Map<String,ZkNodeProps> shards) {
+    this.shards = shards;
+    this.name = name;
   }
   
-  public ZooKeeperException(ErrorCode code, String msg) {
-    super(code, msg);
+  public Map<String,ZkNodeProps> getShards() {
+    return Collections.unmodifiableMap(shards);
   }
-
+  
+  public String getName() {
+    return name;
+  }
 }

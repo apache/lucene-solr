@@ -1,4 +1,4 @@
-package org.apache.solr.cloud;
+package org.apache.solr.common.cloud;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

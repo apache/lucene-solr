@@ -24,10 +24,8 @@ import java.util.List;
 import java.util.concurrent.TimeoutException;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.solr.cloud.ZkClientConnectionStrategy;
-import org.apache.solr.cloud.ZooKeeperException;
-import org.apache.solr.cloud.ZkClientConnectionStrategy.ZkUpdate;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkClientConnectionStrategy.ZkUpdate;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.Watcher;

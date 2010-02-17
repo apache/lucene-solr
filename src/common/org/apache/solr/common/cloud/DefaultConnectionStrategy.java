@@ -23,8 +23,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import org.apache.solr.cloud.ZkClientConnectionStrategy;
-import org.apache.solr.cloud.ZkClientConnectionStrategy.ZkUpdate;
 import org.apache.zookeeper.Watcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

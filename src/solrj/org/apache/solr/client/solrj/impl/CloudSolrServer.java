@@ -14,13 +14,13 @@ import java.util.concurrent.TimeoutException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.cloud.Slice;
 import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cloud.ZkNodeProps;
-import org.apache.solr.cloud.ZooKeeperException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.CloudState;
+import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.zookeeper.KeeperException;
 

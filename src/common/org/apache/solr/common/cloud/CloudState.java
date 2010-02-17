@@ -25,10 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.solr.cloud.Slice;
-import org.apache.solr.cloud.ZkController;
-import org.apache.solr.cloud.ZkNodeProps;
-import org.apache.solr.cloud.ZooKeeperException;
 import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;

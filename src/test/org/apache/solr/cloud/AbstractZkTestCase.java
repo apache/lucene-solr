@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.io.File;
 
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.TestHarness;
