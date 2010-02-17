@@ -18,10 +18,15 @@ package org.apache.solr.cloud;
  */
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.Properties;
 
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.zookeeper.KeeperException;
 
 /**
  * ResourceLoader that works with ZooKeeper.
@@ -29,14 +34,14 @@ import org.apache.solr.core.SolrResourceLoader;
  */
 public class ZkSolrResourceLoader extends SolrResourceLoader {
 
-  private String collection;
+  private final String collectionZkPath;
   private ZkController zkController;
 
   public ZkSolrResourceLoader(String instanceDir, String collection,
       ZkController zooKeeperController) {
     super(instanceDir);
     this.zkController = zooKeeperController;
-    this.collection = collection;
+    collectionZkPath = ZkController.CONFIGS_ZKNODE + "/" + collection;
   }
 
   /**
@@ -50,8 +55,8 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
   public ZkSolrResourceLoader(String instanceDir, String collection, ClassLoader parent,
       Properties coreProperties, ZkController zooKeeperController) {
     super(instanceDir, parent, coreProperties);
-    this.collection = collection;
     this.zkController = zooKeeperController;
+    collectionZkPath = ZkController.CONFIGS_ZKNODE + "/" + collection;
   }
 
   /**
@@ -65,10 +70,10 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
    */
   public InputStream openResource(String resource) {
     InputStream is = null;
-    String file = getConfigDir() + "/" + resource; //nocommit: getConfigDir no longer makes sense here
+    String file = collectionZkPath + "/" + resource; //nocommit: getConfigDir no longer makes sense here
     try {
       if (zkController.pathExists(file)) {
-        byte[] bytes = zkController.getZkClient().getData(getConfigDir() + "/" + resource, null, null);
+        byte[] bytes = zkController.getZkClient().getData(collectionZkPath + "/" + resource, null, null);
         return new ByteArrayInputStream(bytes);
       }
     } catch (Exception e) {
@@ -82,14 +87,34 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     }
     if (is == null) {
       throw new RuntimeException("Can't find resource '" + resource
-          + "' in classpath or '" + getConfigDir() + "', cwd="
+          + "' in classpath or '" + collectionZkPath + "', cwd="
           + System.getProperty("user.dir"));
     }
     return is;
   }
 
-  // nocommit: deal with code that uses this call to load the file itself (elevation?)
   public String getConfigDir() {
-    return "/configs/" + collection;
+    throw new ZooKeeperException(
+        ErrorCode.SERVER_ERROR,
+        "ZkSolrResourceLoader does not support getConfigDir() - likely, what you are trying to do is not supported in ZooKeeper mode");
   }
+  
+  public String[] listConfigDir() {
+    List<String> list;
+    try {
+      list = zkController.getZkClient().getChildren(collectionZkPath, null);
+    } catch (InterruptedException e) {
+      // Restore the interrupted status
+      Thread.currentThread().interrupt();
+      log.error("", e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+          "", e);
+    } catch (KeeperException e) {
+      log.error("", e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+          "", e);
+    }
+    return list.toArray(new String[0]);
+  }
+  
 }

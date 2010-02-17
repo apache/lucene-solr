@@ -204,6 +204,15 @@ public class SolrResourceLoader implements ResourceLoader
     return instanceDir + "conf/";
   }
   
+  public String[] listConfigDir() {
+    File configdir = new File(getConfigDir());
+    if( configdir.exists() && configdir.isDirectory() ) {
+      return configdir.list();
+    } else {
+      return new String[0];
+    }
+  }
+  
   public String getDataDir()    {
     return dataDir;
   }

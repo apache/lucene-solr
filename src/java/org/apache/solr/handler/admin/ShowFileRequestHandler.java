@@ -71,6 +71,8 @@ import org.apache.solr.response.SolrQueryResponse;
  *   http://localhost:8983/solr/admin/file?file=schema.xml&contentType=text/plain
  * </pre>
  * 
+ * TODO: make this work with Solr in ZooKeeper mode
+ * 
  * @version $Id$
  * @since solr 1.3
  */
