@@ -70,7 +70,7 @@ public class DistanceUtils {
       result = Math.sqrt(squaredEuclideanDistance(vec1, vec2));
     } else if (power == Integer.MAX_VALUE || Double.isInfinite(power)) {//infininte norm?
       for (int i = 0; i < vec1.length; i++) {
-        result = Math.max(vec1[i], vec2[i]);
+        result = Math.max(result, Math.max(vec1[i], vec2[i]));
       }
     } else {
       for (int i = 0; i < vec1.length; i++) {
