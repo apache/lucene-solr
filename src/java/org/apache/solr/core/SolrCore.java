@@ -1299,29 +1299,38 @@ public final class SolrCore implements SolrInfoMBean {
 
   public void execute(SolrRequestHandler handler, SolrQueryRequest req, SolrQueryResponse rsp) {
     if (handler==null) {
-      log.warn(logid+"Null Request Handler '" + req.getParams().get(CommonParams.QT) +"' :" + req);
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,"Null Request Handler '" + req.getParams().get(CommonParams.QT) + "'", true);
+      String msg = "Null Request Handler '" +
+        req.getParams().get(CommonParams.QT) + "'";
+      
+      if (log.isWarnEnabled()) log.warn(logid + msg + ":" + req);
+      
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg, true);
     }
     // setup response header and handle request
     final NamedList<Object> responseHeader = new SimpleOrderedMap<Object>();
     rsp.add("responseHeader", responseHeader);
+
+    // toLog is a local ref to the same NamedList used by the request
     NamedList toLog = rsp.getToLog();
-    //toLog.add("core", getName());
+    // for back compat, we set these now just in case other code
+    // are expecting them during handleRequest
     toLog.add("webapp", req.getContext().get("webapp"));
     toLog.add("path", req.getContext().get("path"));
     toLog.add("params", "{" + req.getParamString() + "}");
+    
     handler.handleRequest(req,rsp);
     setResponseHeaderValues(handler,req,rsp);
-    StringBuilder sb = new StringBuilder();
-    for (int i=0; i<toLog.size(); i++) {
-     	String name = toLog.getName(i);
-     	Object val = toLog.getVal(i);
-     	sb.append(name).append("=").append(val).append(" ");
+    
+    if (log.isInfoEnabled()) {
+      StringBuilder sb = new StringBuilder(logid);
+      for (int i=0; i<toLog.size(); i++) {
+        String name = toLog.getName(i);
+        Object val = toLog.getVal(i);
+        sb.append(name).append("=").append(val).append(" ");
+      }
+      log.info(sb.toString());
     }
-    log.info(logid +  sb.toString());
-    /*log.info(logid+"" + req.getContext().get("path") + " "
-            + req.getParamString()+ " 0 "+
-       (int)(rsp.getEndTime() - req.getStartTime()));*/
+
   }
 
   /**

@@ -91,6 +91,10 @@ New Features
 Optimizations
 ----------------------
 
+* SOLR-1679: Don't build up string messages in SolrCore.execute unless they
+  are necessary for the current log level.
+  (Fuad Efendi and hossman)
+
 Bug Fixes
 ----------------------
 
