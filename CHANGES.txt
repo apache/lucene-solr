@@ -185,6 +185,10 @@ Bug Fixes
 * SOLR-1579: Fixes to XML escaping in stats.jsp
   (David Bowen and hossman)
 
+* SOLR-1777: fieldTypes with sortMissingLast=true or sortMissingFirst=true can
+  result in incorrectly sorted results.  (yonik)
+
+
 Other Changes
 ----------------------
 
