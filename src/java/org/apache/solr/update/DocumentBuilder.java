@@ -232,8 +232,14 @@ public class DocumentBuilder {
       Collection<Object> keys = doc.getFieldValues(uniqueKeyField.getName());
       if (null == keys || keys.isEmpty()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                                "Document missing value for uniqueKeyField: " +
+                                "Document missing a value for uniqueKey field: " +
                                 uniqueKeyField.getName());
+      }
+      if (1 < keys.size()) {
+        throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST,
+           "Document contains multiple values for uniqueKey field: " +
+           uniqueKeyField.getName());
       }
     }
     
