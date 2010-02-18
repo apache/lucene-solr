@@ -111,9 +111,9 @@ public abstract class UpdateHandler implements SolrInfoMBean {
     // form have that transformation already performed and stored as the field value.
     Fieldable[] id = doc.getFieldables( idField.getName() );
     if (id == null || id.length < 1)
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document is missing uniqueKey field " + idField.getName());
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document is missing mandatory uniqueKey field: " + idField.getName());
     if( id.length > 1 )
-      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document specifies multiple unique ids! " + idField.getName());
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Document contains multiple values for uniqueKey field: " + idField.getName());
 
     return idFieldType.storedToIndexed( id[0] );
   }
