@@ -139,6 +139,9 @@ public class DistanceUtils {
       for (; i < dimension; i++) {
         while (start < end && externalVal.charAt(start) == ' ') start++;
         while (end > start && externalVal.charAt(end - 1) == ' ') end--;
+	if (start == end){
+	    break;
+        }
         out[i] = externalVal.substring(start, end);
         start = idx + 1;
         end = externalVal.indexOf(',', start);
@@ -180,6 +183,9 @@ public class DistanceUtils {
         //TODO: abstract common code with other parsePoint
         while (start < end && externalVal.charAt(start) == ' ') start++;
         while (end > start && externalVal.charAt(end - 1) == ' ') end--;
+	if (start == end){
+	    break;
+        }
         out[i] = Double.parseDouble(externalVal.substring(start, end));
         start = idx + 1;
         end = externalVal.indexOf(',', start);
