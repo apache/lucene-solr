@@ -47,6 +47,10 @@ Bug fixes
    only one payload is present.  (Erik Hatcher, Mike McCandless
    via Uwe Schindler)
 
+ * LUCENE-2770: Queries consisting of all zero-boost clauses
+   (for example, text:foo^0) sorted incorrectly and produced
+   invalid docids. (yonik
+
 API Changes
 
  * LUCENE-1609: Restore IndexReader.getTermInfosIndexDivisor (it was
