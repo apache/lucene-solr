@@ -189,7 +189,7 @@ public class DistanceUtils {
         out[i] = Double.parseDouble(externalVal.substring(start, end));
         start = idx + 1;
         end = externalVal.indexOf(',', start);
-	idex = end;
+	idx = end;
         if (end == -1) {
           end = externalVal.length();
         }
