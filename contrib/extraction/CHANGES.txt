@@ -21,10 +21,14 @@ $Id:$
 
 ================== Release 1.5-dev ==================
 
+
 * SOLR-1567: Upgrade to Tika 0.5, which upgrades many of the underlying libraries (PDFBox, for example) too (gsingers)
 
 * SOLR-1756: The date.format setting causes ClassCastException when enabled and the config code that
   parses this setting does not properly use the same iterator instance. (Christoph Brill, Mark Miller)
+
+* SOLR-1738: Upgrade to Tika 0.6 (gsingers)
+
 
 ================== Release 1.4.0 ==================
 

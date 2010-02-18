@@ -34,7 +34,7 @@ Upgrading from Solr 1.4
 Versions of Major Components
 ---------------------
 Apache Lucene 2.9.2-rc1 (r910082 on 2.9 branch)
-Apache Tika 0.4
+Apache Tika 0.6
 Carrot2 3.1.0
 
 Detailed Change List
@@ -90,6 +90,10 @@ New Features
 
 Optimizations
 ----------------------
+
+* SOLR-1679: Don't build up string messages in SolrCore.execute unless they
+  are necessary for the current log level.
+  (Fuad Efendi and hossman)
 
 Bug Fixes
 ----------------------
@@ -181,6 +185,12 @@ Bug Fixes
 * SOLR-1579: Fixes to XML escaping in stats.jsp
   (David Bowen and hossman)
 
+* SOLR-1777: fieldTypes with sortMissingLast=true or sortMissingFirst=true can
+  result in incorrectly sorted results.  (yonik)
+
+* SOLR-1779: Fix parsing of points with more than 2 dimensions (gsingers)
+
+
 Other Changes
 ----------------------
 
@@ -237,6 +247,9 @@ Other Changes
 
 * SOLR-1771: Improved error message when StringIndex cannot be initialized
   for a function query (hossman)
+
+* SOLR-1695: Improved error messages when adding a document that does not
+  contain exactly one value for the uniqueKey field (hossman)
 
 Build
 ----------------------

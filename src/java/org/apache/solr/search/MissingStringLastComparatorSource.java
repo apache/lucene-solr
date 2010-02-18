@@ -43,18 +43,17 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
   }
 
   public FieldComparator newComparator(String fieldname, int numHits, int sortPos, boolean reversed) throws IOException {
-    return new MissingLastOrdComparator(numHits, fieldname, sortPos, reversed, true, missingValueProxy);
+    return new MissingLastOrdComparator(numHits, fieldname, sortPos, reversed, missingValueProxy);
   }
 
 }
 
+
 // Copied from Lucene and modified since the Lucene version couldn't
 // be extended or have it's values accessed.
-
-// NOTE: there were a number of other interesting String
-// comparators explored, but this one seemed to perform
-// best all around.  See LUCENE-1483 for details.
-class MissingLastOrdComparator extends FieldComparator {
+ class MissingLastOrdComparator extends FieldComparator {
+    private static final int NULL_ORD = Integer.MAX_VALUE;
+    private final String nullVal; 
 
     private final int[] ords;
     private final String[] values;
@@ -71,30 +70,19 @@ class MissingLastOrdComparator extends FieldComparator {
     private final boolean reversed;
     private final int sortPos;
 
-    private final int nullCmp;
-    private final Comparable nullVal;
-
-    public MissingLastOrdComparator(int numHits, String field, int sortPos, boolean reversed, boolean sortMissingLast, Comparable nullVal) {
+   public MissingLastOrdComparator(int numHits, String field, int sortPos, boolean reversed, String nullVal) {
       ords = new int[numHits];
       values = new String[numHits];
       readerGen = new int[numHits];
       this.sortPos = sortPos;
       this.reversed = reversed;
       this.field = field;
-      this.nullCmp = sortMissingLast ? 1 : -1;
       this.nullVal = nullVal;
     }
 
-  public int compare(int slot1, int slot2) {
-      int ord1 = ords[slot1];
-      int ord2 = ords[slot2];
-      int cmp = ord1-ord2;
-      if (ord1==0 || ord2==0) {
-        if (cmp==0) return 0;
-        return ord1==0 ? nullCmp : -nullCmp;
-      }
-
+    public int compare(int slot1, int slot2) {
       if (readerGen[slot1] == readerGen[slot2]) {
+        int cmp = ords[slot1] - ords[slot2];
         if (cmp != 0) {
           return cmp;
         }
@@ -102,13 +90,14 @@ class MissingLastOrdComparator extends FieldComparator {
 
       final String val1 = values[slot1];
       final String val2 = values[slot2];
+
       if (val1 == null) {
         if (val2 == null) {
           return 0;
         }
-        return nullCmp;
+        return 1;
       } else if (val2 == null) {
-        return -nullCmp;
+        return -1;
       }
       return val1.compareTo(val2);
     }
@@ -116,27 +105,17 @@ class MissingLastOrdComparator extends FieldComparator {
     public int compareBottom(int doc) {
       assert bottomSlot != -1;
       int order = this.order[doc];
-      final int cmp = bottomOrd - order;
-      if (bottomOrd==0 || order==0) {
-        if (cmp==0) return 0;
-        return bottomOrd==0 ? nullCmp : -nullCmp;        
-      }
-
+      int ord = (order == 0) ? NULL_ORD : order;
+      final int cmp = bottomOrd - ord;
       if (cmp != 0) {
         return cmp;
       }
 
       final String val2 = lookup[order];
-      if (bottomValue == null) {
-        if (val2 == null) {
-          return 0;
-        }
-        // bottom wins
-        return nullCmp;
-      } else if (val2 == null) {
-        // doc wins
-        return -nullCmp;
-      }
+
+      // take care of the case where both vals are null
+      if (bottomValue == val2) return 0;
+ 
       return bottomValue.compareTo(val2);
     }
 
@@ -145,7 +124,8 @@ class MissingLastOrdComparator extends FieldComparator {
       int index = 0;
       String value = values[slot];
       if (value == null) {
-        ords[slot] = 0;
+        // should already be done
+        // ords[slot] = NULL_ORD;
         return;
       }
 
@@ -171,7 +151,7 @@ class MissingLastOrdComparator extends FieldComparator {
 
     public void copy(int slot, int doc) {
       final int ord = order[doc];
-      ords[slot] = ord;
+      ords[slot] = ord == 0 ? NULL_ORD : ord;
       assert ord >= 0;
       values[slot] = lookup[ord];
       readerGen[slot] = currentReaderGen;
@@ -196,12 +176,8 @@ class MissingLastOrdComparator extends FieldComparator {
       }
       bottomOrd = ords[bottom];
       assert bottomOrd >= 0;
-      assert bottomOrd < lookup.length;
+      // assert bottomOrd < lookup.length;
       bottomValue = values[bottom];
-    }
-
-    public int sortType() {
-      return SortField.STRING;
     }
 
     public Comparable value(int slot) {

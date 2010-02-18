@@ -70,7 +70,7 @@ public class DistanceUtils {
       result = Math.sqrt(squaredEuclideanDistance(vec1, vec2));
     } else if (power == Integer.MAX_VALUE || Double.isInfinite(power)) {//infininte norm?
       for (int i = 0; i < vec1.length; i++) {
-        result = Math.max(vec1[i], vec2[i]);
+        result = Math.max(result, Math.max(vec1[i], vec2[i]));
       }
     } else {
       for (int i = 0; i < vec1.length; i++) {
@@ -139,9 +139,13 @@ public class DistanceUtils {
       for (; i < dimension; i++) {
         while (start < end && externalVal.charAt(start) == ' ') start++;
         while (end > start && externalVal.charAt(end - 1) == ' ') end--;
+	if (start == end){
+	    break;
+        }
         out[i] = externalVal.substring(start, end);
         start = idx + 1;
         end = externalVal.indexOf(',', start);
+	idx = end;
         if (end == -1) {
           end = externalVal.length();
         }
@@ -179,9 +183,13 @@ public class DistanceUtils {
         //TODO: abstract common code with other parsePoint
         while (start < end && externalVal.charAt(start) == ' ') start++;
         while (end > start && externalVal.charAt(end - 1) == ' ') end--;
+	if (start == end){
+	    break;
+        }
         out[i] = Double.parseDouble(externalVal.substring(start, end));
         start = idx + 1;
         end = externalVal.indexOf(',', start);
+	idx = end;
         if (end == -1) {
           end = externalVal.length();
         }
