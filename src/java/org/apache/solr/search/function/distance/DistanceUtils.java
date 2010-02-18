@@ -140,8 +140,9 @@ public class DistanceUtils {
         while (start < end && externalVal.charAt(start) == ' ') start++;
         while (end > start && externalVal.charAt(end - 1) == ' ') end--;
         out[i] = externalVal.substring(start, end);
-        start = end + 1;
+        start = idx + 1;
         end = externalVal.indexOf(',', start);
+	idx = end;
         if (end == -1) {
           end = externalVal.length();
         }
@@ -180,8 +181,9 @@ public class DistanceUtils {
         while (start < end && externalVal.charAt(start) == ' ') start++;
         while (end > start && externalVal.charAt(end - 1) == ' ') end--;
         out[i] = Double.parseDouble(externalVal.substring(start, end));
-        start = end + 1;
+        start = idx + 1;
         end = externalVal.indexOf(',', start);
+	idex = end;
         if (end == -1) {
           end = externalVal.length();
         }
