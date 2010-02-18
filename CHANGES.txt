@@ -188,6 +188,8 @@ Bug Fixes
 * SOLR-1777: fieldTypes with sortMissingLast=true or sortMissingFirst=true can
   result in incorrectly sorted results.  (yonik)
 
+* SOLR-1779: Fix parsing of points with more than 2 dimensions (gsingers)
+
 
 Other Changes
 ----------------------
