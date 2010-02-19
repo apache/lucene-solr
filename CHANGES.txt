@@ -49,7 +49,7 @@ Bug fixes
 
  * LUCENE-2270: Queries consisting of all zero-boost clauses
    (for example, text:foo^0) sorted incorrectly and produced
-   invalid docids. (yonik
+   invalid docids. (yonik)
 
 API Changes
 
