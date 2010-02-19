@@ -81,7 +81,6 @@ Bug fixes
 
 * LUCENE-2249: ParallelMultiSearcher should shut down thread pool on
   close.  (Martin Traverso via Uwe Schindler)
-
   
 New features
 
@@ -241,10 +240,9 @@ Bug fixes
    only one payload is present.  (Erik Hatcher, Mike McCandless
    via Uwe Schindler)
 
- * LUCENE-2770: Queries consisting of all zero-boost clauses
+ * LUCENE-2270: Queries consisting of all zero-boost clauses
    (for example, text:foo^0) sorted incorrectly and produced
    invalid docids. (yonik)
-
 
 API Changes
 
