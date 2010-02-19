@@ -50,15 +50,7 @@ public final class QueryResultKey {
 
     sfields = (this.sort !=null) ? this.sort.getSort() : defaultSort;
     for (SortField sf : sfields) {
-      // mix the bits so that sortFields are position dependent
-      // so that a,b won't hash to the same value as b,a
-      h ^= (h << 8) | (h >>> 25);   // reversible hash
-
-      if (sf.getField() != null) h += sf.getField().hashCode();
-      h += sf.getType();
-      if (sf.getReverse()) h=~h;
-      if (sf.getLocale()!=null) h+=sf.getLocale().hashCode();
-      if (sf.getFactory()!=null) h+=sf.getFactory().hashCode();
+      h = h*29 + sf.hashCode();
     }
 
     hc = h;
@@ -87,12 +79,7 @@ public final class QueryResultKey {
     for (int i=0; i<sfields.length; i++) {
       SortField sf1 = this.sfields[i];
       SortField sf2 = other.sfields[i];
-      if (sf1.getType() != sf2.getType()) return false;
-      if (sf1.getReverse() != sf2.getReverse()) return false;
-      if (!isEqual(sf1.getField(),sf2.getField())) return false;
-      if (!isEqual(sf1.getLocale(), sf2.getLocale())) return false;
-      if (!isEqual(sf1.getFactory(), sf2.getFactory())) return false;
-      // NOTE: the factory must be identical!!! use singletons!
+      if (!sf1.equals(sf2)) return false;
     }
 
     return true;
