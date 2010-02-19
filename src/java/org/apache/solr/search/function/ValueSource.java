@@ -68,10 +68,13 @@ public abstract class ValueSource implements Serializable {
   }
 
   /**
+   * EXPERIMENTAL: This method is subject to change.
+   * <br>WARNING: Sorted function queries are not currently weighted.
+   * <p>
    * Get the SortField for this ValueSource.  Uses the {@link #getValues(java.util.Map, org.apache.lucene.index.IndexReader)}
    * to populate the SortField.
    * 
-   * @param reverse true if the order should be reversed.
+   * @param reverse true if this is a reverse sort.
    * @return The {@link org.apache.lucene.search.SortField} for the ValueSource
    * @throws IOException if there was a problem reading the values.
    */
