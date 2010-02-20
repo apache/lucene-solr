@@ -113,6 +113,9 @@
   <property name="svnversion.exe" value="svnversion" />
   <property name="svn.exe" value="svn" />
   
+  <property name="gpg.exe" value="gpg" />
+  <property name="gpg.key" value="CODE SIGNING KEY" />
+
   <condition property="build-1-5-contrib">
      <equals arg1="1.5" arg2="${ant.java.version}" />
   </condition>

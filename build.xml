@@ -550,6 +550,48 @@
   </target>
 	
   <!-- ================================================================== -->
+  <!-- support for signing the artifacts using gpg                        -->
+  <!-- ================================================================== -->
+  <target name="clean-dist-signatures">
+    <delete failonerror="false">
+      <fileset dir="${dist.dir}">
+        <include name="**/*.asc"/>
+      </fileset>
+    </delete>
+  </target>
+  
+  <target name="sign-artifacts" depends="clean-dist-signatures">
+    <available property="gpg.input.handler" classname="org.apache.tools.ant.input.SecureInputHandler"
+      value="org.apache.tools.ant.input.SecureInputHandler"/>
+    <!--else:--><property name="gpg.input.handler" value="org.apache.tools.ant.input.DefaultInputHandler"/>
+    <input message="Enter GPG keystore password: >" addproperty="gpg.passphrase">
+      <handler classname="${gpg.input.handler}" />
+    </input>
+    
+    <apply executable="${gpg.exe}" inputstring="${gpg.passphrase}"
+      dest="${dist.dir}" type="file" maxparallel="1" verbose="yes">
+      <arg value="--passphrase-fd"/>
+      <arg value="0"/>
+      <arg value="--batch"/>
+      <arg value="--armor"/>
+      <arg value="--default-key"/>
+      <arg value="${gpg.key}"/>
+      <arg value="--output"/>
+      <targetfile/>
+      <arg value="--detach-sig"/>
+      <srcfile/>
+      
+      <fileset dir="${dist.dir}">
+        <include name="**/*.jar"/>
+        <include name="**/*.zip"/>
+        <include name="**/*.tar.gz"/>
+        <include name="**/*.pom"/>
+      </fileset>
+      <globmapper from="*" to="*.asc"/>
+    </apply>
+  </target>
+
+  <!-- ================================================================== -->
   <!-- Build the JavaCC files into the source tree                        -->
   <!-- ================================================================== -->
   <target name="jjdoc">
