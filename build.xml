@@ -697,20 +697,10 @@
          wouldn't be able to checksum more then one file per build
       -->
     <sequential>
-      <checksum file="@{file}"
-                property="@{file}.sum"
-                algorithm="${checksum.algorithm}" />
+      <echo>Building checksum for '@{file}'</echo>
+      <checksum file="@{file}" property="@{file}.sum" algorithm="${checksum.algorithm}" readbuffersize="65536"/>
       <basename file="@{file}" property="@{file}.base" />
-      <concat destfile="@{file}.${checksum.algorithm}"
-              force="yes"
-              append="false"
-              fixlastline="yes">
-        <header trimleading="yes">${@{file}.sum}  </header>
-        <!-- empty fileset to trick concat -->
-        <fileset dir="." excludes="**" />
-        <footer trimleading="yes">${@{file}.base}
-        </footer>
-      </concat>
+      <echo file="@{file}.${checksum.algorithm}" append="false" message="${@{file}.sum} *${@{file}.base}${line.separator}"/>
     </sequential>
   </macrodef>
 
