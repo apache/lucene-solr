@@ -26,10 +26,15 @@ import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.apache.lucene.util.NumericUtils;
 
-public class TestNumericRangeQuery64 extends LuceneTestCase {
+import org.junit.Test;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import static org.junit.Assert.*;
+
+public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
   // distance of entries
   private static final long distance = 66666L;
   // shift the starting of the values to the left, to also have negative values:
@@ -37,54 +42,60 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
   // number of docs to generate for testing
   private static final int noDocs = 10000;
   
-  private static final RAMDirectory directory;
-  private static final IndexSearcher searcher;
-  static {
-    try {
-      directory = new RAMDirectory();
-      IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT),
-      true, MaxFieldLength.UNLIMITED);
-      
-      NumericField
-        field8 = new NumericField("field8", 8, Field.Store.YES, true),
-        field6 = new NumericField("field6", 6, Field.Store.YES, true),
-        field4 = new NumericField("field4", 4, Field.Store.YES, true),
-        field2 = new NumericField("field2", 2, Field.Store.YES, true),
-        fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, Integer.MAX_VALUE, Field.Store.YES, true),
-        ascfield8 = new NumericField("ascfield8", 8, Field.Store.NO, true),
-        ascfield6 = new NumericField("ascfield6", 6, Field.Store.NO, true),
-        ascfield4 = new NumericField("ascfield4", 4, Field.Store.NO, true),
-        ascfield2 = new NumericField("ascfield2", 2, Field.Store.NO, true);
-      
-      Document doc = new Document();
-      // add fields, that have a distance to test general functionality
-      doc.add(field8); doc.add(field6); doc.add(field4); doc.add(field2); doc.add(fieldNoTrie);
-      // add ascending fields with a distance of 1, beginning at -noDocs/2 to test the correct splitting of range and inclusive/exclusive
-      doc.add(ascfield8); doc.add(ascfield6); doc.add(ascfield4); doc.add(ascfield2);
-      
-      // Add a series of noDocs docs with increasing long values, by updating the fields
-      for (int l=0; l<noDocs; l++) {
-        long val=distance*l+startOffset;
-        field8.setLongValue(val);
-        field6.setLongValue(val);
-        field4.setLongValue(val);
-        field2.setLongValue(val);
-        fieldNoTrie.setLongValue(val);
-
-        val=l-(noDocs/2);
-        ascfield8.setLongValue(val);
-        ascfield6.setLongValue(val);
-        ascfield4.setLongValue(val);
-        ascfield2.setLongValue(val);
-        writer.addDocument(doc);
-      }
+  private static RAMDirectory directory = null;
+  private static IndexSearcher searcher = null;
+  
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    directory = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT),
+    true, MaxFieldLength.UNLIMITED);
     
-      writer.optimize();
-      writer.close();
-      searcher=new IndexSearcher(directory, true);
-    } catch (Exception e) {
-      throw new Error(e);
+    NumericField
+      field8 = new NumericField("field8", 8, Field.Store.YES, true),
+      field6 = new NumericField("field6", 6, Field.Store.YES, true),
+      field4 = new NumericField("field4", 4, Field.Store.YES, true),
+      field2 = new NumericField("field2", 2, Field.Store.YES, true),
+      fieldNoTrie = new NumericField("field"+Integer.MAX_VALUE, Integer.MAX_VALUE, Field.Store.YES, true),
+      ascfield8 = new NumericField("ascfield8", 8, Field.Store.NO, true),
+      ascfield6 = new NumericField("ascfield6", 6, Field.Store.NO, true),
+      ascfield4 = new NumericField("ascfield4", 4, Field.Store.NO, true),
+      ascfield2 = new NumericField("ascfield2", 2, Field.Store.NO, true);
+    
+    Document doc = new Document();
+    // add fields, that have a distance to test general functionality
+    doc.add(field8); doc.add(field6); doc.add(field4); doc.add(field2); doc.add(fieldNoTrie);
+    // add ascending fields with a distance of 1, beginning at -noDocs/2 to test the correct splitting of range and inclusive/exclusive
+    doc.add(ascfield8); doc.add(ascfield6); doc.add(ascfield4); doc.add(ascfield2);
+    
+    // Add a series of noDocs docs with increasing long values, by updating the fields
+    for (int l=0; l<noDocs; l++) {
+      long val=distance*l+startOffset;
+      field8.setLongValue(val);
+      field6.setLongValue(val);
+      field4.setLongValue(val);
+      field2.setLongValue(val);
+      fieldNoTrie.setLongValue(val);
+
+      val=l-(noDocs/2);
+      ascfield8.setLongValue(val);
+      ascfield6.setLongValue(val);
+      ascfield4.setLongValue(val);
+      ascfield2.setLongValue(val);
+      writer.addDocument(doc);
     }
+  
+    writer.optimize();
+    writer.close();
+    searcher=new IndexSearcher(directory, true);
+  }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    searcher.close();
+    searcher = null;
+    directory.close();
+    directory = null;
   }
   
   @Override
@@ -145,22 +156,27 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     }
   }
 
+  @Test
   public void testRange_8bit() throws Exception {
     testRange(8);
   }
   
+  @Test
   public void testRange_6bit() throws Exception {
     testRange(6);
   }
   
+  @Test
   public void testRange_4bit() throws Exception {
     testRange(4);
   }
   
+  @Test
   public void testRange_2bit() throws Exception {
     testRange(2);
   }
   
+  @Test
   public void testInverseRange() throws Exception {
     NumericRangeFilter<Long> f = NumericRangeFilter.newLongRange("field8", 8, 1000L, -1000L, true, true);
     assertSame("A inverse range should return the EMPTY_DOCIDSET instance", DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(searcher.getIndexReader()));
@@ -172,6 +188,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       DocIdSet.EMPTY_DOCIDSET, f.getDocIdSet(searcher.getIndexReader()));
   }
   
+  @Test
   public void testOneMatchQuery() throws Exception {
     NumericRangeQuery<Long> q = NumericRangeQuery.newLongRange("ascfield8", 8, 1000L, 1000L, true, true);
     assertSame(MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE, q.getRewriteMethod());
@@ -197,18 +214,22 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     assertEquals("Last doc", (count-1)*distance+startOffset, Long.parseLong(doc.get(field)) );
   }
   
+  @Test
   public void testLeftOpenRange_8bit() throws Exception {
     testLeftOpenRange(8);
   }
   
+  @Test
   public void testLeftOpenRange_6bit() throws Exception {
     testLeftOpenRange(6);
   }
   
+  @Test
   public void testLeftOpenRange_4bit() throws Exception {
     testLeftOpenRange(4);
   }
   
+  @Test
   public void testLeftOpenRange_2bit() throws Exception {
     testLeftOpenRange(2);
   }
@@ -229,18 +250,22 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     assertEquals("Last doc", (noDocs-1)*distance+startOffset, Long.parseLong(doc.get(field)) );
   }
   
+  @Test
   public void testRightOpenRange_8bit() throws Exception {
     testRightOpenRange(8);
   }
   
+  @Test
   public void testRightOpenRange_6bit() throws Exception {
     testRightOpenRange(6);
   }
   
+  @Test
   public void testRightOpenRange_4bit() throws Exception {
     testRightOpenRange(4);
   }
   
+  @Test
   public void testRightOpenRange_2bit() throws Exception {
     testRightOpenRange(2);
   }
@@ -297,22 +322,27 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     }
   }
   
+  @Test
   public void testRandomTrieAndClassicRangeQuery_8bit() throws Exception {
     testRandomTrieAndClassicRangeQuery(8);
   }
   
+  @Test
   public void testRandomTrieAndClassicRangeQuery_6bit() throws Exception {
     testRandomTrieAndClassicRangeQuery(6);
   }
   
+  @Test
   public void testRandomTrieAndClassicRangeQuery_4bit() throws Exception {
     testRandomTrieAndClassicRangeQuery(4);
   }
   
+  @Test
   public void testRandomTrieAndClassicRangeQuery_2bit() throws Exception {
     testRandomTrieAndClassicRangeQuery(2);
   }
   
+  @Test
   public void testRandomTrieAndClassicRangeQuery_NoTrie() throws Exception {
     testRandomTrieAndClassicRangeQuery(Integer.MAX_VALUE);
   }
@@ -346,18 +376,22 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     }
   }
 
+  @Test
   public void testRangeSplit_8bit() throws Exception {
     testRangeSplit(8);
   }
   
+  @Test
   public void testRangeSplit_6bit() throws Exception {
     testRangeSplit(6);
   }
   
+  @Test
   public void testRangeSplit_4bit() throws Exception {
     testRangeSplit(4);
   }
   
+  @Test
   public void testRangeSplit_2bit() throws Exception {
     testRangeSplit(2);
   }
@@ -378,18 +412,22 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     assertEquals("Returned count of range filter must be equal to inclusive range length", upper-lower+1, tTopDocs.totalHits );
   }
 
+  @Test
   public void testDoubleRange_8bit() throws Exception {
     testDoubleRange(8);
   }
   
+  @Test
   public void testDoubleRange_6bit() throws Exception {
     testDoubleRange(6);
   }
   
+  @Test
   public void testDoubleRange_4bit() throws Exception {
     testDoubleRange(4);
   }
   
+  @Test
   public void testDoubleRange_2bit() throws Exception {
     testDoubleRange(2);
   }
@@ -419,22 +457,27 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
     }
   }
 
+  @Test
   public void testSorting_8bit() throws Exception {
     testSorting(8);
   }
   
+  @Test
   public void testSorting_6bit() throws Exception {
     testSorting(6);
   }
   
+  @Test
   public void testSorting_4bit() throws Exception {
     testSorting(4);
   }
   
+  @Test
   public void testSorting_2bit() throws Exception {
     testSorting(2);
   }
   
+  @Test
   public void testEqualsAndHash() throws Exception {
     QueryUtils.checkHashEquals(NumericRangeQuery.newLongRange("test1", 4, 10L, 20L, true, true));
     QueryUtils.checkHashEquals(NumericRangeQuery.newLongRange("test2", 4, 10L, 20L, false, true));
