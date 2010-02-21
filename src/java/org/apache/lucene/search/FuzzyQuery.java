@@ -30,7 +30,7 @@ import java.io.IOException;
  * length of 0 - in this case, *every* term will be enumerated and
  * cause an edit score calculation.
  * 
- * <p>This query uses {@link MultiTermQuery#TOP_TERMS_SCORING_BOOLEAN_REWRITE}
+ * <p>This query uses {@link MultiTermQuery.TopTermsScoringBooleanQueryRewrite}
  * as default. So terms will be collected and scored according to their
  * edit distance. Only the top terms are used for building the {@link BooleanQuery}.
  * It is not recommended to change the rewrite mode for fuzzy queries.
@@ -39,6 +39,7 @@ public class FuzzyQuery extends MultiTermQuery {
   
   public final static float defaultMinSimilarity = 0.5f;
   public final static int defaultPrefixLength = 0;
+  public final static int defaultMaxExpansions = Integer.MAX_VALUE;
   
   private float minimumSimilarity;
   private int prefixLength;
@@ -59,12 +60,15 @@ public class FuzzyQuery extends MultiTermQuery {
    *  as the query term is considered similar to the query term if the edit distance
    *  between both terms is less than <code>length(term)*0.5</code>
    * @param prefixLength length of common (non-fuzzy) prefix
+   * @param maxExpansions the maximum number of terms to match. If this number is
+   *  greater than {@link BooleanQuery#getMaxClauseCount} when the query is rewritten, 
+   *  then the maxClauseCount will be used instead.
    * @throws IllegalArgumentException if minimumSimilarity is &gt;= 1 or &lt; 0
    * or if prefixLength &lt; 0
    */
-  public FuzzyQuery(Term term, float minimumSimilarity, int prefixLength) throws IllegalArgumentException {
+  public FuzzyQuery(Term term, float minimumSimilarity, int prefixLength,
+      int maxExpansions) {
     this.term = term;
-    setRewriteMethod(TOP_TERMS_SCORING_BOOLEAN_REWRITE);
     
     if (minimumSimilarity >= 1.0f)
       throw new IllegalArgumentException("minimumSimilarity >= 1");
@@ -72,6 +76,10 @@ public class FuzzyQuery extends MultiTermQuery {
       throw new IllegalArgumentException("minimumSimilarity < 0");
     if (prefixLength < 0)
       throw new IllegalArgumentException("prefixLength < 0");
+    if (maxExpansions < 0)
+      throw new IllegalArgumentException("maxExpansions < 0");
+    
+    setRewriteMethod(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(maxExpansions));
     
     if (term.text().length() > 1.0f / (1.0f - minimumSimilarity)) {
       this.termLongEnough = true;
@@ -82,17 +90,24 @@ public class FuzzyQuery extends MultiTermQuery {
   }
   
   /**
-   * Calls {@link #FuzzyQuery(Term, float) FuzzyQuery(term, minimumSimilarity, 0)}.
+   * Calls {@link #FuzzyQuery(Term, float) FuzzyQuery(term, minimumSimilarity, prefixLength, Integer.MAX_VALUE)}.
    */
-  public FuzzyQuery(Term term, float minimumSimilarity) throws IllegalArgumentException {
-    this(term, minimumSimilarity, defaultPrefixLength);
+  public FuzzyQuery(Term term, float minimumSimilarity, int prefixLength) {
+    this(term, minimumSimilarity, prefixLength, defaultMaxExpansions);
+  }
+  
+  /**
+   * Calls {@link #FuzzyQuery(Term, float) FuzzyQuery(term, minimumSimilarity, 0, Integer.MAX_VALUE)}.
+   */
+  public FuzzyQuery(Term term, float minimumSimilarity) {
+    this(term, minimumSimilarity, defaultPrefixLength, defaultMaxExpansions);
   }
 
   /**
-   * Calls {@link #FuzzyQuery(Term, float) FuzzyQuery(term, 0.5f, 0)}.
+   * Calls {@link #FuzzyQuery(Term, float) FuzzyQuery(term, 0.5f, 0, Integer.MAX_VALUE)}.
    */
   public FuzzyQuery(Term term) {
-    this(term, defaultMinSimilarity, defaultPrefixLength);
+    this(term, defaultMinSimilarity, defaultPrefixLength, defaultMaxExpansions);
   }
   
   /**

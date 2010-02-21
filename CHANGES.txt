@@ -135,8 +135,11 @@ Optimizations
 * LUCENE-2137: Switch to AtomicInteger for some ref counting (Earwin
   Burrfoot via Mike McCandless)
 
-* LUCENE-2123: Move FuzzyQuery rewrite as separate RewriteMode into
-  MTQ. (Uwe Schindler, Robert Muir, Mike McCandless)
+* LUCENE-2123, LUCENE-2261: Move FuzzyQuery rewrite to separate RewriteMode 
+  into MultiTermQuery. The number of fuzzy expansions can be specified with
+  the maxExpansions parameter to FuzzyQuery, but the default is limited to
+  BooleanQuery.maxClauseCount() as before. 
+  (Uwe Schindler, Robert Muir, Mike McCandless)
 
 * LUCENE-2135: On IndexReader.close, forcefully evict any entries from
   the FieldCache rather than waiting for the WeakHashMap to release

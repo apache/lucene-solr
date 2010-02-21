@@ -89,22 +89,16 @@ public class TestFuzzyQuery extends LuceneTestCase {
       assertEquals(order.get(i), term);
     }
 
-    // test BooleanQuery.maxClauseCount
-    int savedClauseCount = BooleanQuery.getMaxClauseCount();
-    try {
-      BooleanQuery.setMaxClauseCount(2);
-      // This query would normally return 3 documents, because 3 terms match (see above):
-      query = new FuzzyQuery(new Term("field", "bbbbb"), FuzzyQuery.defaultMinSimilarity, 0);   
-      hits = searcher.search(query, null, 1000).scoreDocs;
-      assertEquals("only 2 documents should match", 2, hits.length);
-      order = Arrays.asList("bbbbb","abbbb");
-      for (int i = 0; i < hits.length; i++) {
-        final String term = searcher.doc(hits[i].doc).get("field");
-        //System.out.println(hits[i].score);
-        assertEquals(order.get(i), term);
-      }
-    } finally {
-      BooleanQuery.setMaxClauseCount(savedClauseCount);
+    // test pq size by supplying maxExpansions=2
+    // This query would normally return 3 documents, because 3 terms match (see above):
+    query = new FuzzyQuery(new Term("field", "bbbbb"), FuzzyQuery.defaultMinSimilarity, 0, 2); 
+    hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals("only 2 documents should match", 2, hits.length);
+    order = Arrays.asList("bbbbb","abbbb");
+    for (int i = 0; i < hits.length; i++) {
+      final String term = searcher.doc(hits[i].doc).get("field");
+      //System.out.println(hits[i].score);
+      assertEquals(order.get(i), term);
     }
 
     // not similar enough:

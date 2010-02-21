@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.PriorityQueue;
 
 import org.apache.lucene.index.IndexReader;
@@ -53,7 +52,7 @@ import org.apache.lucene.queryParser.QueryParser; // for javadoc
  * computing unhelpful scores, and it tries to pick the most
  * performant rewrite method given the query. If you
  * need scoring (like {@link FuzzyQuery}, use
- * {@link #TOP_TERMS_SCORING_BOOLEAN_REWRITE} which uses
+ * {@link TopTermsScoringBooleanQueryRewrite} which uses
  * a priority queue to only collect competitive terms
  * and not hit this limitation.
  *
@@ -163,10 +162,41 @@ public abstract class MultiTermQuery extends Query {
    *  @see #setRewriteMethod */
   public final static RewriteMethod SCORING_BOOLEAN_QUERY_REWRITE = new ScoringBooleanQueryRewrite();
 
-  private static final class TopTermsScoringBooleanQueryRewrite extends BooleanQueryRewrite {
+  /** A rewrite method that first translates each term into
+   *  {@link BooleanClause.Occur#SHOULD} clause in a
+   *  BooleanQuery, and keeps the scores as computed by the
+   *  query.
+   *
+   * <p>This rewrite mode only uses the top scoring terms
+   * so it will not overflow the boolean max clause count.
+   * It is the default rewrite mode for {@link FuzzyQuery}.
+   *
+   *  @see #setRewriteMethod */
+  public static final class TopTermsScoringBooleanQueryRewrite extends BooleanQueryRewrite {
+    private final int size;
+    
+    /** 
+     * Create a TopTermsScoringBooleanQueryRewrite for 
+     * at most <code>size</code> terms.
+     * <p>
+     * NOTE: if {@link BooleanQuery#getMaxClauseCount} is smaller than 
+     * <code>size</code>, then it will be used instead. 
+     */
+    public TopTermsScoringBooleanQueryRewrite(int size) {
+      this.size = size;
+    }
+    
+    /** 
+     * Create a TopTermsScoringBooleanQueryRewrite that is limited
+     * to at most {@link BooleanQuery#getMaxClauseCount} terms. 
+     */
+    public TopTermsScoringBooleanQueryRewrite() {
+      this(Integer.MAX_VALUE);
+    }
+    
     @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
-      final int maxSize = BooleanQuery.getMaxClauseCount();
+      final int maxSize = Math.min(size, BooleanQuery.getMaxClauseCount());
       final PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<ScoreTerm>();
       collectTerms(reader, query, new TermCollector() {
         public boolean collect(Term t, float boost) {
@@ -195,10 +225,23 @@ public abstract class MultiTermQuery extends Query {
       query.incTotalNumberOfTerms(bq.clauses().size());
       return bq;
     }
+  
+    @Override
+    public int hashCode() {
+      final int prime = 17;
+      int result = 1;
+      result = prime * result + size;
+      return result;
+    }
 
-    // Make sure we are still a singleton even after deserializing
-    protected Object readResolve() {
-      return TOP_TERMS_SCORING_BOOLEAN_REWRITE;
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) return true;
+      if (obj == null) return false;
+      if (getClass() != obj.getClass()) return false;
+      TopTermsScoringBooleanQueryRewrite other = (TopTermsScoringBooleanQueryRewrite) obj;
+      if (size != other.size) return false;
+      return true;
     }
   
     private static class ScoreTerm implements Comparable<ScoreTerm> {
@@ -213,18 +256,6 @@ public abstract class MultiTermQuery extends Query {
       }
     }
   }
-  
-  /** A rewrite method that first translates each term into
-   *  {@link BooleanClause.Occur#SHOULD} clause in a
-   *  BooleanQuery, and keeps the scores as computed by the
-   *  query.
-   *
-   * <p>This rewrite mode only uses the top scoring terms
-   * so it will not overflow the boolean max clause count.
-   * It is the default rewrite mode for {@link FuzzyQuery}.
-   *
-   *  @see #setRewriteMethod */
-  public final static RewriteMethod TOP_TERMS_SCORING_BOOLEAN_REWRITE = new TopTermsScoringBooleanQueryRewrite();
 
   private static class ConstantScoreBooleanQueryRewrite extends ScoringBooleanQueryRewrite implements Serializable {
     @Override
