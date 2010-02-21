@@ -38,7 +38,7 @@ public class SimpleQQParser implements QualityQueryParser {
 
   /**
    * Constructor of a simple qq parser.
-   * @param qqName name-value pairs of quality query to use for creating the query
+   * @param qqNames name-value pairs of quality query to use for creating the query
    * @param indexField corresponding index field  
    */
   public SimpleQQParser(String qqNames[], String indexField) {
