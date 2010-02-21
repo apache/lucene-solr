@@ -125,7 +125,7 @@ Other
  * LUCENE-1845: Updated bdb-je jar from version 3.3.69 to 3.3.93.
    (Simon Willnauer via Mike McCandless)
 
-================== Release 2.9.2 / 3.0.1 2010-02-19 ====================
+================== Release 2.9.2 / 3.0.1 2010-02-26 ====================
 
 New features
 
