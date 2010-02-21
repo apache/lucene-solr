@@ -612,10 +612,10 @@ Changes in backwards compatibility policy
     code to implement this method.  If you already extend
     IndexSearcher, no further changes are needed to use Collector.
     
-    Finally, the values Float.NaN, Float.NEGATIVE_INFINITY and
-    Float.POSITIVE_INFINITY are not valid scores.  Lucene uses these
-    values internally in certain places, so if you have hits with such
-    scores, it will cause problems. (Shai Erera via Mike McCandless)
+    Finally, the values Float.NaN and Float.NEGATIVE_INFINITY are not
+    valid scores.  Lucene uses these values internally in certain
+    places, so if you have hits with such scores, it will cause
+    problems. (Shai Erera via Mike McCandless)
 
  * LUCENE-1687: All methods and parsers from the interface ExtendedFieldCache
     have been moved into FieldCache. ExtendedFieldCache is now deprecated and
@@ -693,7 +693,7 @@ Changes in runtime behavior
     
  * LUCENE-1575: As of 2.9, the core collectors as well as
     IndexSearcher's search methods that return top N results, no
-    longer filter out zero scoring documents. If you rely on this
+    longer filter documents with scores <= 0.0. If you rely on this
     functionality you can use PositiveScoresOnlyCollector like this:
 
     <code>
