@@ -204,7 +204,8 @@ public class CustomScoreQuery extends Query {
   /**
    * Compute a custom score by the subQuery score and a number of 
    * ValueSourceQuery scores.
-   * @deprecated The doc is relative to the current reader, which is
+   * @deprecated Will be removed in Lucene 3.1.
+   * The doc is relative to the current reader, which is
    * unknown to CustomScoreQuery when using per-segment search (since Lucene 2.9).
    * Please override {@link #getCustomScoreProvider} and return a subclass
    * of {@link CustomScoreProvider} for the given {@link IndexReader}.
@@ -227,7 +228,8 @@ public class CustomScoreQuery extends Query {
 
   /**
    * Compute a custom score by the subQuery score and the ValueSourceQuery score.
-   * @deprecated The doc is relative to the current reader, which is
+   * @deprecated Will be removed in Lucene 3.1.
+   * The doc is relative to the current reader, which is
    * unknown to CustomScoreQuery when using per-segment search (since Lucene 2.9).
    * Please override {@link #getCustomScoreProvider} and return a subclass
    * of {@link CustomScoreProvider} for the given {@link IndexReader}.
@@ -240,7 +242,8 @@ public class CustomScoreQuery extends Query {
 
   /**
    * Explain the custom score.
-   * @deprecated The doc is relative to the current reader, which is
+   * @deprecated Will be removed in Lucene 3.1.
+   * The doc is relative to the current reader, which is
    * unknown to CustomScoreQuery when using per-segment search (since Lucene 2.9).
    * Please override {@link #getCustomScoreProvider} and return a subclass
    * of {@link CustomScoreProvider} for the given {@link IndexReader}.
@@ -268,7 +271,8 @@ public class CustomScoreQuery extends Query {
 
   /**
    * Explain the custom score.
-   * @deprecated The doc is relative to the current reader, which is
+   * @deprecated Will be removed in Lucene 3.1.
+   * The doc is relative to the current reader, which is
    * unknown to CustomScoreQuery when using per-segment search (since Lucene 2.9).
    * Please override {@link #getCustomScoreProvider} and return a subclass
    * of {@link CustomScoreProvider} for the given {@link IndexReader}.
