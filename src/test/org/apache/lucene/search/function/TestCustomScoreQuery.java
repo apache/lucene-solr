@@ -33,7 +33,6 @@ import org.apache.lucene.index.IndexReader;
 /**
  * Test CustomScoreQuery search.
  */
-@SuppressWarnings({"MagicNumber"})
 public class TestCustomScoreQuery extends FunctionTestSetup {
 
   /* @override constructor */
@@ -96,23 +95,26 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     public String name() {
       return "customAdd";
     }
-
-    /*(non-Javadoc) @see org.apache.lucene.search.function.CustomScoreQuery#customScore(int, float, float) */
+    
     @Override
-    public float customScore(int doc, float subQueryScore, float valSrcScore) {
-      return subQueryScore + valSrcScore;
-    }
+    protected CustomScoreProvider getCustomScoreProvider(IndexReader reader) {
+      return new CustomScoreProvider(reader) {
+        @Override
+        public float customScore(int doc, float subQueryScore, float valSrcScore) {
+          return subQueryScore + valSrcScore;
+        }
 
-    /* (non-Javadoc)@see org.apache.lucene.search.function.CustomScoreQuery#customExplain(int, org.apache.lucene.search.Explanation, org.apache.lucene.search.Explanation)*/
-    @Override
-    public Explanation customExplain(int doc, Explanation subQueryExpl, Explanation valSrcExpl) {
-      float valSrcScore = valSrcExpl == null ? 0 : valSrcExpl.getValue();
-      Explanation exp = new Explanation(valSrcScore + subQueryExpl.getValue(), "custom score: sum of:");
-      exp.addDetail(subQueryExpl);
-      if (valSrcExpl != null) {
-        exp.addDetail(valSrcExpl);
-      }
-      return exp;
+        @Override
+        public Explanation customExplain(int doc, Explanation subQueryExpl, Explanation valSrcExpl) {
+          float valSrcScore = valSrcExpl == null ? 0 : valSrcExpl.getValue();
+          Explanation exp = new Explanation(valSrcScore + subQueryExpl.getValue(), "custom score: sum of:");
+          exp.addDetail(subQueryExpl);
+          if (valSrcExpl != null) {
+            exp.addDetail(valSrcExpl);
+          }
+          return exp;
+        }
+      };
     }
   }
 
@@ -130,52 +132,55 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
       return "customMulAdd";
     }
 
-    /*(non-Javadoc) @see org.apache.lucene.search.function.CustomScoreQuery#customScore(int, float, float) */
     @Override
-    public float customScore(int doc, float subQueryScore, float valSrcScores[]) {
-      if (valSrcScores.length == 0) {
-        return subQueryScore;
-      }
-      if (valSrcScores.length == 1) {
-        return subQueryScore + valSrcScores[0];
-        // confirm that skipping beyond the last doc, on the
-        // previous reader, hits NO_MORE_DOCS
-      }
-      return (subQueryScore + valSrcScores[0]) * valSrcScores[1]; // we know there are two
-    }
+    protected CustomScoreProvider getCustomScoreProvider(IndexReader reader) {
+      return new CustomScoreProvider(reader) {
+        @Override
+        public float customScore(int doc, float subQueryScore, float valSrcScores[]) {
+          if (valSrcScores.length == 0) {
+            return subQueryScore;
+          }
+          if (valSrcScores.length == 1) {
+            return subQueryScore + valSrcScores[0];
+            // confirm that skipping beyond the last doc, on the
+            // previous reader, hits NO_MORE_DOCS
+          }
+          return (subQueryScore + valSrcScores[0]) * valSrcScores[1]; // we know there are two
+        }
 
-    /* (non-Javadoc)@see org.apache.lucene.search.function.CustomScoreQuery#customExplain(int, org.apache.lucene.search.Explanation, org.apache.lucene.search.Explanation)*/
-    @Override
-    public Explanation customExplain(int doc, Explanation subQueryExpl, Explanation valSrcExpls[]) {
-      if (valSrcExpls.length == 0) {
-        return subQueryExpl;
-      }
-      Explanation exp = new Explanation(valSrcExpls[0].getValue() + subQueryExpl.getValue(), "sum of:");
-      exp.addDetail(subQueryExpl);
-      exp.addDetail(valSrcExpls[0]);
-      if (valSrcExpls.length == 1) {
-        exp.setDescription("CustomMulAdd, sum of:");
-        return exp;
-      }
-      Explanation exp2 = new Explanation(valSrcExpls[1].getValue() * exp.getValue(), "custom score: product of:");
-      exp2.addDetail(valSrcExpls[1]);
-      exp2.addDetail(exp);
-      return exp2;
+        @Override
+        public Explanation customExplain(int doc, Explanation subQueryExpl, Explanation valSrcExpls[]) {
+          if (valSrcExpls.length == 0) {
+            return subQueryExpl;
+          }
+          Explanation exp = new Explanation(valSrcExpls[0].getValue() + subQueryExpl.getValue(), "sum of:");
+          exp.addDetail(subQueryExpl);
+          exp.addDetail(valSrcExpls[0]);
+          if (valSrcExpls.length == 1) {
+            exp.setDescription("CustomMulAdd, sum of:");
+            return exp;
+          }
+          Explanation exp2 = new Explanation(valSrcExpls[1].getValue() * exp.getValue(), "custom score: product of:");
+          exp2.addDetail(valSrcExpls[1]);
+          exp2.addDetail(exp);
+          return exp2;
+        }
+      };
     }
   }
 
   private final class CustomExternalQuery extends CustomScoreQuery {
-    private IndexReader reader;
-    private int[] values;
 
-    public float customScore(int doc, float subScore, float valSrcScore) {
-      assertTrue(doc <= reader.maxDoc());
-      return (float) values[doc];
-    }
-
-    public void setNextReader(IndexReader r) throws IOException {
-      reader = r;
-      values = FieldCache.DEFAULT.getInts(r, INT_FIELD);
+    @Override
+    protected CustomScoreProvider getCustomScoreProvider(IndexReader reader) throws IOException {
+      final int[] values = FieldCache.DEFAULT.getInts(reader, INT_FIELD);
+      return new CustomScoreProvider(reader) {
+        @Override
+        public float customScore(int doc, float subScore, float valSrcScore) throws IOException {
+          assertTrue(doc <= reader.maxDoc());
+          return (float) values[doc];
+        }
+      };
     }
 
     public CustomExternalQuery(Query q) {
