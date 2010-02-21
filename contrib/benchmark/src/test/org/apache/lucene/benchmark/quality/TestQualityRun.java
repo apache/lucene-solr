@@ -20,10 +20,11 @@ package org.apache.lucene.benchmark.quality;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 
 import org.apache.lucene.benchmark.byTask.TestPerfTasksLogic;
-import org.apache.lucene.benchmark.byTask.feeds.ReutersContentSource;
 import org.apache.lucene.benchmark.quality.Judge;
 import org.apache.lucene.benchmark.quality.QualityQuery;
 import org.apache.lucene.benchmark.quality.QualityQueryParser;
@@ -39,6 +40,10 @@ import junit.framework.TestCase;
 
 /**
  * Test that quality run does its job.
+ * <p>
+ * NOTE: if the default scoring or StandardAnalyzer is changed, then
+ * this test will not work correctly, as it does not dynamically
+ * generate its test trec topics/qrels!
  */
 public class TestQualityRun extends TestCase {
 
@@ -52,14 +57,14 @@ public class TestQualityRun extends TestCase {
   }
 
   public void testTrecQuality() throws Exception {
-    // first create the complete reuters index
+    // first create the partial reuters index
     createReutersIndex();
     
     File workDir = new File(System.getProperty("benchmark.work.dir","work"));
     assertTrue("Bad workDir: "+workDir, workDir.exists()&& workDir.isDirectory());
 
     int maxResults = 1000;
-    String docNameField = "docid"; 
+    String docNameField = "doctitle"; // orig docID is in the linedoc format title 
     
     PrintWriter logger = DEBUG ? new PrintWriter(System.out,true) : null;
 
@@ -105,13 +110,13 @@ public class TestQualityRun extends TestCase {
         assertTrue("avg-p should be hurt: "+s.getAvp(), 1.0 > s.getAvp());
         assertTrue("recall should be hurt: "+s.getRecall(), 1.0 > s.getRecall());
         for (int j = 1; j <= QualityStats.MAX_POINTS; j++) {
-          assertEquals("p_at_"+j+" should be perfect: "+s.getPrecisionAt(j), 1.0, s.getPrecisionAt(j), 1E-9);
+          assertEquals("p_at_"+j+" should be perfect: "+s.getPrecisionAt(j), 1.0, s.getPrecisionAt(j), 1E-2);
         }
         break;
       
       case 1:
         assertTrue("avg-p should be hurt", 1.0 > s.getAvp());
-        assertEquals("recall should be perfect: "+s.getRecall(), 1.0, s.getRecall(), 1E-9);
+        assertEquals("recall should be perfect: "+s.getRecall(), 1.0, s.getRecall(), 1E-2);
         for (int j = 1; j <= QualityStats.MAX_POINTS; j++) {
           assertTrue("p_at_"+j+" should be hurt: "+s.getPrecisionAt(j), 1.0 > s.getPrecisionAt(j));
         }
@@ -126,10 +131,10 @@ public class TestQualityRun extends TestCase {
         break;
 
       default: {
-        assertEquals("avg-p should be perfect: "+s.getAvp(), 1.0, s.getAvp(), 1E-9);
-        assertEquals("recall should be perfect: "+s.getRecall(), 1.0, s.getRecall(), 1E-9);
+        assertEquals("avg-p should be perfect: "+s.getAvp(), 1.0, s.getAvp(), 1E-2);
+        assertEquals("recall should be perfect: "+s.getRecall(), 1.0, s.getRecall(), 1E-2);
         for (int j = 1; j <= QualityStats.MAX_POINTS; j++) {
-          assertEquals("p_at_"+j+" should be perfect: "+s.getPrecisionAt(j), 1.0, s.getPrecisionAt(j), 1E-9);
+          assertEquals("p_at_"+j+" should be perfect: "+s.getPrecisionAt(j), 1.0, s.getPrecisionAt(j), 1E-2);
         }
       }
       
@@ -150,24 +155,12 @@ public class TestQualityRun extends TestCase {
     
   }
   
-  public void testTrecTopicsReader() throws Exception {
-    File workDir = new File(System.getProperty("benchmark.work.dir","work"));
-    assertTrue("Bad workDir: " + workDir, 
-        workDir.exists() && workDir.isDirectory());
-    
-    // <tests src dir> for topics/qrels files:
-    //  src/test/org/apache/lucene/benchmark/quality
-    File srcTestDir = new File(new File(new File(new File(new File(
-      new File(new File(workDir.getAbsoluteFile().getParentFile(),
-        "src"),"test"),"org"),"apache"),"lucene"),"benchmark"),"quality");
-    
+  public void testTrecTopicsReader() throws Exception {    
     // prepare topics
-    File topicsFile = new File(srcTestDir, "trecTopics.txt");
-    assertTrue("Bad topicsFile: " + topicsFile, 
-        topicsFile.exists() && topicsFile.isFile());
+    InputStream topicsFile = getClass().getResourceAsStream("trecTopics.txt");
     TrecTopicsReader qReader = new TrecTopicsReader();
     QualityQuery qqs[] = qReader.readQueries(
-        new BufferedReader(new FileReader(topicsFile)));
+        new BufferedReader(new InputStreamReader(topicsFile, "UTF-8")));
     
     assertEquals(20, qqs.length);
     
@@ -193,12 +186,13 @@ public class TestQualityRun extends TestCase {
         qq.getValue("narrative"));
   }
 
-  // use benchmark logic to create the full Reuters index
+  // use benchmark logic to create the mini Reuters index
   private void createReutersIndex() throws Exception {
     // 1. alg definition
     String algLines[] = {
         "# ----- properties ",
-        "content.source="+ReutersContentSource.class.getName(),
+        "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
+        "docs.file=" + getReuters578LinesFile(),
         "content.source.log.step=2500",
         "doc.term.vector=false",
         "content.source.forever=false",
@@ -215,4 +209,9 @@ public class TestQualityRun extends TestCase {
     // 2. execute the algorithm  (required in every "logic" test)
     TestPerfTasksLogic.execBenchmark(algLines);
   }
+  
+  private static String getReuters578LinesFile() {
+    return System.getProperty("lucene.common.dir").replace('\\','/') +
+      "/contrib/benchmark/src/test/org/apache/lucene/benchmark/quality/reuters.578.lines.txt.bz2";
+  }  
 }

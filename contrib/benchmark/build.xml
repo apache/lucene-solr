@@ -250,11 +250,6 @@
       </subant>
     </target>
 
-    <target name="init" depends="common.init,compile-demo,compile-memory,compile-highlighter,compile-vector-highlighter,check-files"/>
-
-    <!-- make sure online collections (reuters) are first downloaded -->
-    <target name="test" depends="init,get-files">
-      <antcall target="common.test" inheritRefs="true" />
-    </target>
+    <target name="init" depends="common.init,compile-demo,compile-memory,compile-highlighter,compile-vector-highlighter"/>
     
 </project>
