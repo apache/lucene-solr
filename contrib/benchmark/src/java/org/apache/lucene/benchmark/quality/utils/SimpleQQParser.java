@@ -21,18 +21,30 @@ import org.apache.lucene.benchmark.quality.QualityQuery;
 import org.apache.lucene.benchmark.quality.QualityQueryParser;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Version;
 
 /**
  * Simplistic quality query parser. A Lucene query is created by passing 
- * the value of the specified QualityQuery name-value pair into 
+ * the value of the specified QualityQuery name-value pair(s) into 
  * a Lucene's QueryParser using StandardAnalyzer. */
 public class SimpleQQParser implements QualityQueryParser {
 
-  private String qqName;
+  private String qqNames[];
   private String indexField;
   ThreadLocal<QueryParser> queryParser = new ThreadLocal<QueryParser>();
+
+  /**
+   * Constructor of a simple qq parser.
+   * @param qqName name-value pairs of quality query to use for creating the query
+   * @param indexField corresponding index field  
+   */
+  public SimpleQQParser(String qqNames[], String indexField) {
+    this.qqNames = qqNames;
+    this.indexField = indexField;
+  }
 
   /**
    * Constructor of a simple qq parser.
@@ -40,8 +52,7 @@ public class SimpleQQParser implements QualityQueryParser {
    * @param indexField corresponding index field  
    */
   public SimpleQQParser(String qqName, String indexField) {
-    this.qqName = qqName;
-    this.indexField = indexField;
+    this(new String[] { qqName }, indexField);
   }
 
   /* (non-Javadoc)
@@ -53,7 +64,11 @@ public class SimpleQQParser implements QualityQueryParser {
       qp = new QueryParser(Version.LUCENE_CURRENT, indexField, new StandardAnalyzer(Version.LUCENE_CURRENT));
       queryParser.set(qp);
     }
-    return qp.parse(qq.getValue(qqName));
+    BooleanQuery bq = new BooleanQuery();
+    for (int i = 0; i < qqNames.length; i++)
+      bq.add(qp.parse(QueryParser.escape(qq.getValue(qqNames[i]))), BooleanClause.Occur.SHOULD);
+    
+    return bq;
   }
 
 }

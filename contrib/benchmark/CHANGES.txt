@@ -2,6 +2,11 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
+2/21/2020
+  LUCENE-2254: Add support to the quality package for running
+  experiments with any combination of Title, Description, and Narrative.
+  (Robert Muir)
+
 1/28/2010
   LUCENE-2223: Add a benchmark for ShingleFilter. You can wrap any
   analyzer with ShingleAnalyzerWrapper and specify shingle parameters

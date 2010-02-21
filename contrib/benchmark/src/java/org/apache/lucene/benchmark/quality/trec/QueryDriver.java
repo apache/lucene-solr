@@ -30,6 +30,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.PrintWriter;
+import java.util.HashSet;
+import java.util.Set;
 
 
 /**
@@ -38,12 +40,14 @@ import java.io.PrintWriter;
  **/
 public class QueryDriver {
   public static void main(String[] args) throws Exception {
-    if (args.length != 4) {
-      System.err.println("Usage: QueryDriver <topicsFile> <qrelsFile> <submissionFile> <indexDir>");
+    if (args.length < 4 || args.length > 5) {
+      System.err.println("Usage: QueryDriver <topicsFile> <qrelsFile> <submissionFile> <indexDir> [querySpec]");
       System.err.println("topicsFile: input file containing queries");
       System.err.println("qrelsFile: input file containing relevance judgements");
       System.err.println("submissionFile: output submission file for trec_eval");
       System.err.println("indexDir: index directory");
+      System.err.println("querySpec: string composed of fields to use in query consisting of T=title,D=description,N=narrative:");
+      System.err.println("\texample: TD (query on Title + Description). The default is T (title only)");
       System.exit(1);
     }
     
@@ -51,6 +55,7 @@ public class QueryDriver {
     File qrelsFile = new File(args[1]);
     SubmissionReport submitLog = new SubmissionReport(new PrintWriter(args[2]), "lucene");
     FSDirectory dir = FSDirectory.open(new File(args[3]));
+    String fieldSpec = args.length == 5 ? args[4] : "T"; // default to Title-only if not specified.
     Searcher searcher = new IndexSearcher(dir, true);
 
     int maxResults = 1000;
@@ -68,8 +73,13 @@ public class QueryDriver {
     // validate topics & judgments match each other
     judge.validateData(qqs, logger);
 
+    Set<String> fieldSet = new HashSet<String>();
+    if (fieldSpec.indexOf('T') >= 0) fieldSet.add("title");
+    if (fieldSpec.indexOf('D') >= 0) fieldSet.add("description");
+    if (fieldSpec.indexOf('N') >= 0) fieldSet.add("narrative");
+    
     // set the parsing of quality queries into Lucene queries.
-    QualityQueryParser qqParser = new SimpleQQParser("title", "body");
+    QualityQueryParser qqParser = new SimpleQQParser(fieldSet.toArray(new String[0]), "body");
 
     // run the benchmark
     QualityBenchmark qrun = new QualityBenchmark(qqs, qqParser, searcher, docNameField);
