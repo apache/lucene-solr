@@ -58,27 +58,25 @@ class FieldCacheImpl implements FieldCache {
     caches.put(StringIndex.class, new StringIndexCache(this));
   }
 
-  public void purgeAllCaches() {
+  public synchronized void purgeAllCaches() {
     init();
   }
 
-  public void purge(IndexReader r) {
+  public synchronized void purge(IndexReader r) {
     for(Cache c : caches.values()) {
       c.purge(r);
     }
   }
   
-  public CacheEntry[] getCacheEntries() {
+  public synchronized CacheEntry[] getCacheEntries() {
     List<CacheEntry> result = new ArrayList<CacheEntry>(17);
-    for(final Class<?> cacheType: caches.keySet()) {
-      Cache cache = caches.get(cacheType);
-      for (final Object readerKey : cache.readerCache.keySet()) {
-        // we've now materialized a hard ref
-        
-        // innerKeys was backed by WeakHashMap, sanity check
-        // that it wasn't GCed before we made hard ref
-        if (null != readerKey && cache.readerCache.containsKey(readerKey)) {
-          Map<Entry, Object> innerCache = cache.readerCache.get(readerKey);
+    for(final Map.Entry<Class<?>,Cache> cacheEntry: caches.entrySet()) {
+      final Cache cache = cacheEntry.getValue();
+      final Class<?> cacheType = cacheEntry.getKey();
+      synchronized(cache.readerCache) {
+        for (final Map.Entry<Object,Map<Entry, Object>> readerCacheEntry : cache.readerCache.entrySet()) {
+          final Object readerKey = readerCacheEntry.getKey();
+          final Map<Entry, Object> innerCache = readerCacheEntry.getValue();
           for (final Map.Entry<Entry, Object> mapEntry : innerCache.entrySet()) {
             Entry entry = mapEntry.getKey();
             result.add(new CacheEntryImpl(readerKey, entry.field,
