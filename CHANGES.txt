@@ -1,7 +1,7 @@
 Lucene Change Log
 $Id$
 
-======================= Release 3.0.1 2010-02-19 =======================
+======================= Release 3.0.1 2010-02-26 =======================
 
 Changes in backwards compatibility policy
 
