@@ -82,12 +82,16 @@ public class TestIndexWriter extends LuceneTestCase {
         IndexReader reader = null;
         int i;
 
-        IndexWriter.setDefaultWriteLockTimeout(2000);
-        assertEquals(2000, IndexWriter.getDefaultWriteLockTimeout());
+        long savedWriteLockTimeout = IndexWriter.getDefaultWriteLockTimeout();
+        try {
+          IndexWriter.setDefaultWriteLockTimeout(2000);
+          assertEquals(2000, IndexWriter.getDefaultWriteLockTimeout());
 
-        writer  = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+          writer  = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
 
-        IndexWriter.setDefaultWriteLockTimeout(1000);
+        } finally {
+          IndexWriter.setDefaultWriteLockTimeout(savedWriteLockTimeout);
+        }
 
         // add 100 documents
         for (i = 0; i < 100; i++) {
