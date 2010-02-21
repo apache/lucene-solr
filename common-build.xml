@@ -401,7 +401,7 @@
 	    </condition>
 	  	<mkdir dir="@{junit.output.dir}"/>
 	    <junit printsummary="off" haltonfailure="no" maxmemory="512M"
-	      errorProperty="tests.failed" failureProperty="tests.failed">
+	      errorProperty="tests.failed" failureProperty="tests.failed" forkmode="perBatch">
 	      <classpath refid="@{junit.classpath}"/>
 	      <assertions>
 	        <enable package="org.apache.lucene"/>
