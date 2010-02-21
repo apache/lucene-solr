@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
@@ -35,6 +36,7 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.function.CustomScoreQuery;
+import org.apache.lucene.search.function.CustomScoreProvider;
 import org.apache.lucene.search.function.FieldScoreQuery;
 import org.apache.lucene.search.function.FieldScoreQuery.Type;
 import org.apache.lucene.util.NumericUtils;
@@ -164,23 +166,27 @@ public class TestCartesian extends TestCase{
       FieldScoreQuery fsQuery = new FieldScoreQuery("geo_distance", Type.FLOAT);
     
       CustomScoreQuery customScore = new CustomScoreQuery(dq.getQuery(tq),fsQuery){
-      
-          @Override
+        @Override
+        protected CustomScoreProvider getCustomScoreProvider(IndexReader reader) {
+          return new CustomScoreProvider(reader) {
+            @Override // TODO: broken, as reader is not used!
             public float customScore(int doc, float subQueryScore, float valSrcScore){
-            //System.out.println(doc);
-            if (dq.distanceFilter.getDistance(doc) == null)
-              return 0;
-        
-            double distance = dq.distanceFilter.getDistance(doc);
-            // boost score shouldn't exceed 1
-            if (distance < 1.0d)
-              distance = 1.0d;
-            //boost by distance is invertly proportional to
-            // to distance from center point to location
-            float score = new Float((miles - distance) / miles ).floatValue();
-            return score * subQueryScore;
-          }
-        };
+              //System.out.println(doc);
+              if (dq.distanceFilter.getDistance(doc) == null)
+                return 0;
+          
+              double distance = dq.distanceFilter.getDistance(doc);
+              // boost score shouldn't exceed 1
+              if (distance < 1.0d)
+                distance = 1.0d;
+              //boost by distance is invertly proportional to
+              // to distance from center point to location
+              float score = new Float((miles - distance) / miles ).floatValue();
+              return score * subQueryScore;
+            }
+          };
+        }
+      };
       // Create a distance sort
       // As the radius filter has performed the distance calculations
       // already, pass in the filter to reuse the results.
@@ -253,23 +259,27 @@ public class TestCartesian extends TestCase{
 	    
       FieldScoreQuery fsQuery = new FieldScoreQuery("geo_distance", Type.FLOAT);
       CustomScoreQuery customScore = new CustomScoreQuery(tq,fsQuery){
-	      
-          @Override
+        @Override
+        protected CustomScoreProvider getCustomScoreProvider(IndexReader reader) {
+          return new CustomScoreProvider(reader) {
+            @Override // TODO: broken, as reader is not used!
             public float customScore(int doc, float subQueryScore, float valSrcScore){
-            //System.out.println(doc);
-            if (dq.distanceFilter.getDistance(doc) == null)
-              return 0;
-	        
-            double distance = dq.distanceFilter.getDistance(doc);
-            // boost score shouldn't exceed 1
-            if (distance < 1.0d)
-              distance = 1.0d;
-            //boost by distance is invertly proportional to
-            // to distance from center point to location
-            float score = new Float((miles - distance) / miles ).floatValue();
-            return score * subQueryScore;
-          }
-        };
+              //System.out.println(doc);
+              if (dq.distanceFilter.getDistance(doc) == null)
+                return 0;
+            
+              double distance = dq.distanceFilter.getDistance(doc);
+              // boost score shouldn't exceed 1
+              if (distance < 1.0d)
+                distance = 1.0d;
+              //boost by distance is invertly proportional to
+              // to distance from center point to location
+              float score = (float) ( (miles - distance) / miles );
+              return score * subQueryScore;
+            }
+          };
+        }
+      };
       // Create a distance sort
       // As the radius filter has performed the distance calculations
       // already, pass in the filter to reuse the results.

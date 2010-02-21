@@ -38,7 +38,7 @@ import org.apache.lucene.util.ToStringUtils;
  *        For most simple/convenient use cases this query is likely to be a 
  *        {@link org.apache.lucene.search.function.FieldScoreQuery FieldScoreQuery}</li>
  * </ol>
- * Subclasses can modify the computation by overriding {@link #customScore(int, float, float)}.
+ * Subclasses can modify the computation by overriding {@link #getCustomScoreProvider}.
  * 
  * <p><font color="#FF0000">
  * WARNING: The status of the <b>search.function</b> package is experimental. 
@@ -81,7 +81,6 @@ public class CustomScoreQuery extends Query {
    * This parameter is optional - it can be null or even an empty array.
    */
   public CustomScoreQuery(Query subQuery, ValueSourceQuery valSrcQueries[]) {
-    super();
     this.subQuery = subQuery;
     this.valSrcQueries = valSrcQueries!=null?
         valSrcQueries : new ValueSourceQuery[0];
@@ -90,11 +89,23 @@ public class CustomScoreQuery extends Query {
 
   /*(non-Javadoc) @see org.apache.lucene.search.Query#rewrite(org.apache.lucene.index.IndexReader) */
   public Query rewrite(IndexReader reader) throws IOException {
-    subQuery = subQuery.rewrite(reader);
-    for(int i = 0; i < valSrcQueries.length; i++) {
-      valSrcQueries[i] = (ValueSourceQuery) valSrcQueries[i].rewrite(reader);
+    CustomScoreQuery clone = null;
+    
+    final Query sq = subQuery.rewrite(reader);
+    if (sq != subQuery) {
+      clone = (CustomScoreQuery) clone();
+      clone.subQuery = sq;
     }
-    return this;
+
+    for(int i = 0; i < valSrcQueries.length; i++) {
+      final ValueSourceQuery v = (ValueSourceQuery) valSrcQueries[i].rewrite(reader);
+      if (v != valSrcQueries[i]) {
+        if (clone == null) clone = (CustomScoreQuery) clone();
+        clone.valSrcQueries[i] = v;
+      }
+    }
+    
+    return (clone == null) ? this : clone;
   }
 
   /*(non-Javadoc) @see org.apache.lucene.search.Query#extractTerms(java.util.Set) */
@@ -135,7 +146,8 @@ public class CustomScoreQuery extends Query {
     }
     CustomScoreQuery other = (CustomScoreQuery)o;
     if (this.getBoost() != other.getBoost() ||
-        !this.subQuery.equals(other.subQuery)||
+        !this.subQuery.equals(other.subQuery) ||
+        this.strict != other.strict ||
         this.valSrcQueries.length != other.valSrcQueries.length) {
       return false;
     }
@@ -153,31 +165,48 @@ public class CustomScoreQuery extends Query {
     for (int i=0; i<valSrcQueries.length; i++) { //TODO simplify with Arrays.deepHashcode() once moving to Java 1.5
       valSrcHash += valSrcQueries[i].hashCode();
     }
-    return (getClass().hashCode() + subQuery.hashCode() + valSrcHash) ^ Float.floatToIntBits(getBoost());
+    return (getClass().hashCode() + subQuery.hashCode() + valSrcHash) ^
+      Float.floatToIntBits(getBoost()) ^ (strict ? 1234 : 4321);
   }  
   
   /**
+   * Returns a {@link CustomScoreProvider} that calculates the custom scores
+   * for the given {@link IndexReader}. The default implementation returns a default
+   * implementation as specified in the docs of {@link CustomScoreProvider}.
+   * @since 2.9.2
+   */
+  protected CustomScoreProvider getCustomScoreProvider(IndexReader reader) throws IOException {
+    // when deprecated methods are removed, do not extend class here, just return new default CustomScoreProvider
+    return new CustomScoreProvider(reader) {
+      
+      public float customScore(int doc, float subQueryScore, float valSrcScores[]) throws IOException {
+        return CustomScoreQuery.this.customScore(doc, subQueryScore, valSrcScores);
+      }
+      
+      public float customScore(int doc, float subQueryScore, float valSrcScore) throws IOException {
+        return CustomScoreQuery.this.customScore(doc, subQueryScore, valSrcScore);
+      }
+      
+      public Explanation customExplain(int doc, Explanation subQueryExpl, Explanation valSrcExpls[]) throws IOException {
+        return CustomScoreQuery.this.customExplain(doc, subQueryExpl, valSrcExpls);
+      }
+      
+      public Explanation customExplain(int doc, Explanation subQueryExpl, Explanation valSrcExpl) throws IOException {
+        return CustomScoreQuery.this.customExplain(doc, subQueryExpl, valSrcExpl);
+      }
+      
+    };
+  }
+
+  /**
    * Compute a custom score by the subQuery score and a number of 
    * ValueSourceQuery scores.
-   * <p> 
-   * Subclasses can override this method to modify the custom score.  
-   * <p>
-   * If your custom scoring is different than the default herein you 
-   * should override at least one of the two customScore() methods.
-   * If the number of ValueSourceQueries is always &lt; 2 it is 
-   * sufficient to override the other 
-   * {@link #customScore(int, float, float) customScore()} 
-   * method, which is simpler. 
-   * <p>
-   * The default computation herein is a multiplication of given scores:
-   * <pre>
-   *     ModifiedScore = valSrcScore * valSrcScores[0] * valSrcScores[1] * ...
-   * </pre>
-   * 
-   * @param doc id of scored doc. 
-   * @param subQueryScore score of that doc by the subQuery.
-   * @param valSrcScores scores of that doc by the ValueSourceQuery.
-   * @return custom score.
+   * @deprecated Will be removed in Lucene 3.1.
+   * The doc is relative to the current reader, which is
+   * unknown to CustomScoreQuery when using per-segment search (since Lucene 2.9).
+   * Please override {@link #getCustomScoreProvider} and return a subclass
+   * of {@link CustomScoreProvider} for the given {@link IndexReader}.
+   * @see CustomScoreProvider#customScore(int,float,float[])
    */
   public float customScore(int doc, float subQueryScore, float valSrcScores[]) {
     if (valSrcScores.length == 1) {
@@ -195,50 +224,25 @@ public class CustomScoreQuery extends Query {
 
   /**
    * Compute a custom score by the subQuery score and the ValueSourceQuery score.
-   * <p> 
-   * Subclasses can override this method to modify the custom score.
-   * <p>
-   * If your custom scoring is different than the default herein you 
-   * should override at least one of the two customScore() methods.
-   * If the number of ValueSourceQueries is always &lt; 2 it is 
-   * sufficient to override this customScore() method, which is simpler. 
-   * <p>
-   * The default computation herein is a multiplication of the two scores:
-   * <pre>
-   *     ModifiedScore = subQueryScore * valSrcScore
-   * </pre>
-   *
-   * <p><b>NOTE</b>: The doc is relative to the current
-   * reader, last passed to {@link #setNextReader}.
-   * 
-   * @param doc id of scored doc. 
-   * @param subQueryScore score of that doc by the subQuery.
-   * @param valSrcScore score of that doc by the ValueSourceQuery.
-   * @return custom score.
+   * @deprecated Will be removed in Lucene 3.1.
+   * The doc is relative to the current reader, which is
+   * unknown to CustomScoreQuery when using per-segment search (since Lucene 2.9).
+   * Please override {@link #getCustomScoreProvider} and return a subclass
+   * of {@link CustomScoreProvider} for the given {@link IndexReader}.
+   * @see CustomScoreProvider#customScore(int,float,float)
    */
   public float customScore(int doc, float subQueryScore, float valSrcScore) {
     return subQueryScore * valSrcScore;
   }
 
   /**
-   * Called when the scoring switches to another reader.
-   * 
-   * @param reader
-   *          next IndexReader
-   */
-  public void setNextReader(IndexReader reader) throws IOException {
-  }
-
-  /**
    * Explain the custom score.
-   * Whenever overriding {@link #customScore(int, float, float[])}, 
-   * this method should also be overridden to provide the correct explanation
-   * for the part of the custom scoring.
-   *  
-   * @param doc doc being explained.
-   * @param subQueryExpl explanation for the sub-query part.
-   * @param valSrcExpls explanation for the value source part.
-   * @return an explanation for the custom score
+   * @deprecated Will be removed in Lucene 3.1.
+   * The doc is relative to the current reader, which is
+   * unknown to CustomScoreQuery when using per-segment search (since Lucene 2.9).
+   * Please override {@link #getCustomScoreProvider} and return a subclass
+   * of {@link CustomScoreProvider} for the given {@link IndexReader}.
+   * @see CustomScoreProvider#customExplain(int,Explanation,Explanation[])
    */
   public Explanation customExplain(int doc, Explanation subQueryExpl, Explanation valSrcExpls[]) {
     if (valSrcExpls.length == 1) {
@@ -261,14 +265,12 @@ public class CustomScoreQuery extends Query {
 
   /**
    * Explain the custom score.
-   * Whenever overriding {@link #customScore(int, float, float)}, 
-   * this method should also be overridden to provide the correct explanation
-   * for the part of the custom scoring.
-   *  
-   * @param doc doc being explained.
-   * @param subQueryExpl explanation for the sub-query part.
-   * @param valSrcExpl explanation for the value source part.
-   * @return an explanation for the custom score
+   * @deprecated Will be removed in Lucene 3.1.
+   * The doc is relative to the current reader, which is
+   * unknown to CustomScoreQuery when using per-segment search (since Lucene 2.9).
+   * Please override {@link #getCustomScoreProvider} and return a subclass
+   * of {@link CustomScoreProvider} for the given {@link IndexReader}.
+   * @see CustomScoreProvider#customExplain(int,Explanation,Explanation[])
    */
   public Explanation customExplain(int doc, Explanation subQueryExpl, Explanation valSrcExpl) {
     float valSrcScore = 1;
@@ -372,7 +374,7 @@ public class CustomScoreQuery extends Query {
       for(int i = 0; i < valSrcScorers.length; i++) {
         valSrcExpls[i] = valSrcScorers[i].explain(doc);
       }
-      Explanation customExp = customExplain(doc,subQueryExpl,valSrcExpls);
+      Explanation customExp = CustomScoreQuery.this.getCustomScoreProvider(reader).customExplain(doc,subQueryExpl,valSrcExpls);
       float sc = getValue() * customExp.getValue();
       Explanation res = new ComplexExplanation(
         true, sc, CustomScoreQuery.this.toString() + ", product of:");
@@ -399,6 +401,7 @@ public class CustomScoreQuery extends Query {
     private Scorer subQueryScorer;
     private Scorer[] valSrcScorers;
     private IndexReader reader;
+    private final CustomScoreProvider provider;
     private float vScores[]; // reused in score() to avoid allocating this array for each doc 
 
     // constructor
@@ -411,7 +414,7 @@ public class CustomScoreQuery extends Query {
       this.valSrcScorers = valSrcScorers;
       this.reader = reader;
       this.vScores = new float[valSrcScorers.length];
-      setNextReader(reader);
+      this.provider = CustomScoreQuery.this.getCustomScoreProvider(reader);
     }
 
     /** @deprecated use {@link #nextDoc()} instead. */
@@ -443,7 +446,7 @@ public class CustomScoreQuery extends Query {
       for (int i = 0; i < valSrcScorers.length; i++) {
         vScores[i] = valSrcScorers[i].score();
       }
-      return qWeight * customScore(subQueryScorer.docID(), subQueryScorer.score(), vScores);
+      return qWeight * provider.customScore(subQueryScorer.docID(), subQueryScorer.score(), vScores);
     }
 
     /** @deprecated use {@link #advance(int)} instead. */

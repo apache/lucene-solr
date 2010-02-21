@@ -50,10 +50,16 @@ Bug fixes
 
 API Changes
 
- * LUCENE-2190: Added setNextReader method to CustomScoreQuery, which
-   is necessary with per-segment searching to notify the subclass
-   which reader the int doc, passed to customScore, refers to.  (Paul
-   chez Jamespot via Mike McCandless)
+ * LUCENE-2190: Added a new class CustomScoreProvider to function package
+   that can be subclassed to provide custom scoring to CustomScoreQuery.
+   The methods in CustomScoreQuery that did this before were deprecated
+   and replaced by a method getCustomScoreProvider(IndexReader) that
+   returns a custom score implementation using the above class. The change
+   is necessary with per-segment searching, as CustomScoreQuery is
+   a stateless class (like all other Queries) and does not know about
+   the currently searched segment. This API works similar to Filter's
+   getDocIdSet(IndexReader).  (Paul chez Jamespot via Mike McCandless,
+   Uwe Schindler)
 
  * LUCENE-2080: Deprecate Version.LUCENE_CURRENT, as using this constant
    will cause backwards compatibility problems when upgrading Lucene. See
