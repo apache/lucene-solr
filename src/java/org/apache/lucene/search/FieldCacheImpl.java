@@ -76,6 +76,7 @@ class FieldCacheImpl implements FieldCache {
       synchronized(cache.readerCache) {
         for (final Map.Entry<Object,Map<Entry, Object>> readerCacheEntry : cache.readerCache.entrySet()) {
           final Object readerKey = readerCacheEntry.getKey();
+          if (readerKey == null) continue;
           final Map<Entry, Object> innerCache = readerCacheEntry.getValue();
           for (final Map.Entry<Entry, Object> mapEntry : innerCache.entrySet()) {
             Entry entry = mapEntry.getKey();
