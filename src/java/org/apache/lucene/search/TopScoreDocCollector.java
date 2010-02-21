@@ -29,10 +29,10 @@ import org.apache.lucene.index.IndexReader;
  * instance of this collector you should know in advance whether documents are
  * going to be collected in doc Id order or not.
  *
- * <p><b>NOTE</b>: The values Float.Nan,
- * Float.NEGATIVE_INFINITY and Float.POSITIVE_INFINITY are
- * not valid scores.  This collector will not properly
- * collect hits with such scores.
+ * <p><b>NOTE</b>: The values {@link Float#NaN} and
+ * {Float#NEGATIVE_INFINITY} are not valid scores.  This
+ * collector will not properly collect hits with such
+ * scores.
  */
 public abstract class TopScoreDocCollector extends TopDocsCollector {
 
@@ -44,6 +44,11 @@ public abstract class TopScoreDocCollector extends TopDocsCollector {
     
     public void collect(int doc) throws IOException {
       float score = scorer.score();
+
+      // This collector cannot handle these scores:
+      assert score != Float.NEGATIVE_INFINITY;
+      assert !Float.isNaN(score);
+
       totalHits++;
       if (score <= pqTop.score) {
         // Since docs are returned in-order (i.e., increasing doc Id), a document
@@ -69,6 +74,10 @@ public abstract class TopScoreDocCollector extends TopDocsCollector {
     
     public void collect(int doc) throws IOException {
       float score = scorer.score();
+
+      // This collector cannot handle NaN
+      assert !Float.isNaN(score);
+
       totalHits++;
       doc += docBase;
       if (score < pqTop.score || (score == pqTop.score && doc > pqTop.doc)) {
