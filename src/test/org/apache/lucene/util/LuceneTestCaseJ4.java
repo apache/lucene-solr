@@ -18,6 +18,7 @@ package org.apache.lucene.util;
  */
 
 import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
@@ -76,6 +77,8 @@ public class LuceneTestCaseJ4 extends TestWatchman {
   /** Change this when development starts for new Lucene version: */
   public static final Version TEST_VERSION_CURRENT = Version.LUCENE_31;
 
+  private int savedBoolMaxClauseCount;
+
   // This is how we get control when errors occur.
   // Think of this as start/end/success/failed
   // events.
@@ -92,6 +95,7 @@ public class LuceneTestCaseJ4 extends TestWatchman {
   @Before
   public void setUp() throws Exception {
     ConcurrentMergeScheduler.setTestMode();
+    savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
     seed = null;
   }
 
@@ -117,6 +121,7 @@ public class LuceneTestCaseJ4 extends TestWatchman {
 
   @After
   public void tearDown() throws Exception {
+    BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
     try {
       // this isn't as useful as calling directly from the scope where the
       // index readers are used, because they could be gc'ed just before
