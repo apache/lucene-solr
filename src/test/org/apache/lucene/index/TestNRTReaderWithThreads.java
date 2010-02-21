@@ -54,12 +54,15 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
     int addCount = 0;
     for (int x=0; x < indexThreads.length; x++) {
       indexThreads[x].run = false;
-      assertTrue(indexThreads[x].ex == null);
+      assertNull("Exception thrown: "+indexThreads[x].ex, indexThreads[x].ex);
       addCount += indexThreads[x].addCount;
       delCount += indexThreads[x].delCount;
     }
     for (int x=0; x < indexThreads.length; x++) {
       indexThreads[x].join();
+    }
+    for (int x=0; x < indexThreads.length; x++) {
+      assertNull("Exception thrown: "+indexThreads[x].ex, indexThreads[x].ex);
     }
     //System.out.println("addCount:"+addCount);
     //System.out.println("delCount:"+delCount);
@@ -69,8 +72,8 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
 
   public class RunThread extends Thread {
     IndexWriter writer;
-    boolean run = true;
-    Throwable ex;
+    volatile boolean run = true;
+    volatile Throwable ex;
     int delCount = 0;
     int addCount = 0;
     int type;

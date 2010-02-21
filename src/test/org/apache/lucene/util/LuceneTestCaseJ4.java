@@ -31,6 +31,9 @@ import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Random;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -79,6 +82,19 @@ public class LuceneTestCaseJ4 extends TestWatchman {
 
   private int savedBoolMaxClauseCount;
 
+  private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;
+  
+  private static class UncaughtExceptionEntry {
+    public final Thread thread;
+    public final Throwable exception;
+    
+    public UncaughtExceptionEntry(Thread thread, Throwable exception) {
+      this.thread = thread;
+      this.exception = exception;
+    }
+  }
+  private List<UncaughtExceptionEntry> uncaughtExceptions = Collections.synchronizedList(new ArrayList<UncaughtExceptionEntry>());
+
   // This is how we get control when errors occur.
   // Think of this as start/end/success/failed
   // events.
@@ -94,6 +110,15 @@ public class LuceneTestCaseJ4 extends TestWatchman {
 
   @Before
   public void setUp() throws Exception {
+    savedUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
+    Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+      public void uncaughtException(Thread t, Throwable e) {
+        uncaughtExceptions.add(new UncaughtExceptionEntry(t, e));
+        if (savedUncaughtExceptionHandler != null)
+          savedUncaughtExceptionHandler.uncaughtException(t, e);
+      }
+    });
+    
     ConcurrentMergeScheduler.setTestMode();
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
     seed = null;
@@ -137,6 +162,16 @@ public class LuceneTestCaseJ4 extends TestWatchman {
       }
     } finally {
       purgeFieldCache(FieldCache.DEFAULT);
+    }
+    
+    Thread.setDefaultUncaughtExceptionHandler(savedUncaughtExceptionHandler);
+    if (!uncaughtExceptions.isEmpty()) {
+      System.err.println("The following exceptions were thrown by threads:");
+      for (UncaughtExceptionEntry entry : uncaughtExceptions) {
+        System.err.println("*** Thread: " + entry.thread.getName() + " ***");
+        entry.exception.printStackTrace(System.err);
+      }
+      fail("Some threads throwed uncaught exceptions!");
     }
   }
 
