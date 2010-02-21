@@ -25,6 +25,7 @@ import java.util.Random;
 import junit.framework.TestCase;
 
 import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
@@ -54,6 +55,7 @@ import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 public abstract class LuceneTestCase extends TestCase {
 
   public static final Version TEST_VERSION_CURRENT = LuceneTestCaseJ4.TEST_VERSION_CURRENT;
+  private int savedBoolMaxClauseCount;
 
   public LuceneTestCase() {
     super();
@@ -67,6 +69,7 @@ public abstract class LuceneTestCase extends TestCase {
   protected void setUp() throws Exception {
     super.setUp();
     ConcurrentMergeScheduler.setTestMode();
+    savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
   }
 
   /**
@@ -89,6 +92,7 @@ public abstract class LuceneTestCase extends TestCase {
 
   @Override
   protected void tearDown() throws Exception {
+    BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
     try {
       // this isn't as useful as calling directly from the scope where the 
       // index readers are used, because they could be gc'ed just before

@@ -42,9 +42,6 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
   private static final IndexSearcher searcher;
   static {
     try {    
-      // set the theoretical maximum term count for 8bit (see docs for the number)
-      BooleanQuery.setMaxClauseCount(3*255*2 + 255);
-      
       directory = new RAMDirectory();
       IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT),
       true, MaxFieldLength.UNLIMITED);
@@ -85,6 +82,14 @@ public class TestNumericRangeQuery32 extends LuceneTestCase {
     } catch (Exception e) {
       throw new Error(e);
     }
+  }
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    // set the theoretical maximum term count for 8bit (see docs for the number)
+    // super.tearDown will restore the default
+    BooleanQuery.setMaxClauseCount(3*255*2 + 255);
   }
   
   /** test for both constant score and boolean query, the other tests only use the constant score mode */
