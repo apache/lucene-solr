@@ -89,7 +89,7 @@ public class SolrDispatchFilter implements Filter
     }
     catch( Throwable t ) {
       // catch this so our filter still works
-      log.error( "Could not start SOLR. Check solr/home property", t);
+      log.error( "Could not start Solr. Check solr/home property", t);
       SolrConfig.severeErrors.add( t );
       SolrCore.log( t );
     }
