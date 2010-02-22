@@ -986,25 +986,27 @@ final class DocumentsWriter {
     assert checkDeleteTerm(null);
 
     // Delete by term
-    TermDocs docs = reader.termDocs();
-    try {
-      for (Entry<Term, BufferedDeletes.Num> entry: deletesFlushed.terms.entrySet()) {
-        Term term = entry.getKey();
-        // LUCENE-2086: we should be iterating a TreeMap,
-        // here, so terms better be in order:
-        assert checkDeleteTerm(term);
-        docs.seek(term);
-        int limit = entry.getValue().getNum();
-        while (docs.next()) {
-          int docID = docs.doc();
-          if (docIDStart+docID >= limit)
-            break;
-          reader.deleteDocument(docID);
-          any = true;
+    if (deletesFlushed.terms.size() > 0) {
+      TermDocs docs = reader.termDocs();
+      try {
+        for (Entry<Term, BufferedDeletes.Num> entry: deletesFlushed.terms.entrySet()) {
+          Term term = entry.getKey();
+          // LUCENE-2086: we should be iterating a TreeMap,
+          // here, so terms better be in order:
+          assert checkDeleteTerm(term);
+          docs.seek(term);
+          int limit = entry.getValue().getNum();
+          while (docs.next()) {
+            int docID = docs.doc();
+            if (docIDStart+docID >= limit)
+              break;
+            reader.deleteDocument(docID);
+            any = true;
+          }
         }
+      } finally {
+        docs.close();
       }
-    } finally {
-      docs.close();
     }
 
     // Delete by docID
@@ -1017,23 +1019,28 @@ final class DocumentsWriter {
     }
 
     // Delete by query
-    IndexSearcher searcher = new IndexSearcher(reader);
-    for (Entry<Query, Integer> entry : deletesFlushed.queries.entrySet()) {
-      Query query = entry.getKey();
-      int limit = entry.getValue().intValue();
-      Weight weight = query.weight(searcher);
-      Scorer scorer = weight.scorer(reader, true, false);
-      if (scorer != null) {
-        while(true)  {
-          int doc = scorer.nextDoc();
-          if (((long) docIDStart) + doc >= limit)
-            break;
-          reader.deleteDocument(doc);
-          any = true;
+    if (deletesFlushed.queries.size() > 0) {
+      IndexSearcher searcher = new IndexSearcher(reader);
+      try {
+        for (Entry<Query, Integer> entry : deletesFlushed.queries.entrySet()) {
+          Query query = entry.getKey();
+          int limit = entry.getValue().intValue();
+          Weight weight = query.weight(searcher);
+          Scorer scorer = weight.scorer(reader, true, false);
+          if (scorer != null) {
+            while(true)  {
+              int doc = scorer.nextDoc();
+              if (((long) docIDStart) + doc >= limit)
+                break;
+              reader.deleteDocument(doc);
+              any = true;
+            }
+          }
         }
+      } finally {
+        searcher.close();
       }
     }
-    searcher.close();
     return any;
   }
 
