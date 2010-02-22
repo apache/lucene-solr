@@ -70,7 +70,7 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
       StringBuilder sb = new StringBuilder();
       for (int i=0; i<nServers; i++) {
         if (i>0) sb.append(',');
-        sb.append("shardId"+(i+3));
+        sb.append("shard"+(i+3));
       }
       params.set("shards",sb.toString());
       params.set("distrib","true");
@@ -80,13 +80,13 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   // TODO: there is an incorrect localhost:8983 shard registered
 
   protected void createServers(int numShards) throws Exception {
-    controlJetty = createJetty(testDir, "control", "control_shardId");
+    controlJetty = createJetty(testDir, "control", "control_shard");
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
 
     StringBuilder sb = new StringBuilder();
     for (int i = 1; i <= numShards; i++) {
       if (sb.length() > 0) sb.append(',');
-      JettySolrRunner j = createJetty(testDir, "jetty" + i, "shardId" + (i + 2));
+      JettySolrRunner j = createJetty(testDir, "jetty" + i, "shard" + (i + 2));
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));
       sb.append("localhost:").append(j.getLocalPort()).append(context);

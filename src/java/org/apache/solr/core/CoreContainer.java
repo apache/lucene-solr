@@ -390,7 +390,7 @@ public class CoreContainer
             p.setSchemaName(opt);
           }
           if (zkController != null) {
-            opt = DOMUtil.getAttr(node, "shardId", null);
+            opt = DOMUtil.getAttr(node, "shard", null);
             if (testShardIdOverride != null
                 && name.equals("")) {
               p.getCloudDescriptor().setShardId(testShardIdOverride);
@@ -954,6 +954,18 @@ public class CoreContainer
     }
     opt = dcore.dataDir;
     if (opt != null) writeAttribute(w,"dataDir",opt);
+
+    CloudDescriptor cd = dcore.getCloudDescriptor();
+    if (cd != null) {
+      opt = cd.getShardId();
+      if (opt != null)
+        writeAttribute(w,"shard",opt);
+      // only write out the collection name if it's not the default (the core name)
+      opt = cd.getCollectionName();
+      if (opt != null && !opt.equals(dcore.name))
+        writeAttribute(w,"collection",opt);
+    }
+
     if (dcore.getCoreProperties() == null || dcore.getCoreProperties().isEmpty())
       w.write("/>\n"); // core
     else  {
