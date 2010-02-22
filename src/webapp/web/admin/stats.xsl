@@ -49,7 +49,7 @@
       </head>
       <body>
         <a href=".">
-	   <img border="0" align="right" height="78" width="142" src="solr_small.png" alt="SOLR">
+	   <img border="0" align="right" height="78" width="142" src="solr_small.png" alt="Apache Solr">
 	   </img>
 	</a>
         <h1><xsl:value-of select="$title"/></h1>

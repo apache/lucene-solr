@@ -33,7 +33,7 @@ Upgrading from Solr 1.4
 
 Versions of Major Components
 ---------------------
-Apache Lucene 2.9.2-rc1 (r910082 on 2.9 branch)
+Apache Lucene 2.9.2-rc2
 Apache Tika 0.6
 Carrot2 3.1.0
 
@@ -187,8 +187,6 @@ Bug Fixes
 
 * SOLR-1777: fieldTypes with sortMissingLast=true or sortMissingFirst=true can
   result in incorrectly sorted results.  (yonik)
-
-* SOLR-1779: Fix parsing of points with more than 2 dimensions (gsingers)
 
 
 Other Changes

@@ -39,14 +39,14 @@
         <link rel="stylesheet" type="text/css" href="solr-admin.css"></link>
         <link rel="icon" href="favicon.ico" type="image/ico"></link>
         <link rel="shortcut icon" href="favicon.ico" type="image/ico"></link>
-        <title>SOLR Search Results</title>
+        <title>Solr Search Results</title>
       </head>
       <body>
         <a href=".">
-           <img border="0" align="right" height="78" width="142" src="solr_small.png" alt="SOLR">
+           <img border="0" align="right" height="78" width="142" src="solr_small.png" alt="Apache Solr">
            </img>
         </a>
-        <h1>SOLR Search Results</h1>
+        <h1>Solr Search Results</h1>
           <br clear="all" />
         <xsl:apply-templates/>
         <br /><br />

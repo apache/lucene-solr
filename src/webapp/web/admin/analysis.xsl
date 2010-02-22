@@ -36,11 +36,11 @@
         <link rel="stylesheet" type="text/css" href="solr-admin.css"></link>
         <link rel="icon" href="favicon.ico" type="image/ico"></link>
         <link rel="shortcut icon" href="favicon.ico" type="image/ico"></link>
-        <title>SOLR Info</title>
+        <title>Solr Info</title>
       </head>
       <body>
         <a href="">
-          <img border="0" align="right" height="78" width="142" src="solr_small.png" alt="SOLR"/>
+          <img border="0" align="right" height="78" width="142" src="solr_small.png" alt="Apache Solr"/>
   </a>
         <h1>Solr Admin (<xsl:value-of select="solr/meta/collection" />)</h1>
         <div style="margin-top: 1em;">
