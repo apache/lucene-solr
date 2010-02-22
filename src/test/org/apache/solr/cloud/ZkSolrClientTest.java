@@ -77,7 +77,7 @@ public class ZkSolrClientTest extends TestCase {
 
       AbstractZkTestCase.makeSolrZkNode();
 
-      zkClient = new SolrZkClient(AbstractZkTestCase.ZOO_KEEPER_ADDRESS, 5);
+      zkClient = new SolrZkClient(AbstractZkTestCase.ZOO_KEEPER_ADDRESS, 15);
       String shardsPath = "/collections/collection1/shards";
       zkClient.makePath(shardsPath);
 
@@ -148,7 +148,7 @@ public class ZkSolrClientTest extends TestCase {
 
       AbstractZkTestCase.makeSolrZkNode();
 
-      zkClient = new SolrZkClient(AbstractZkTestCase.ZOO_KEEPER_ADDRESS, 5);
+      zkClient = new SolrZkClient(AbstractZkTestCase.ZOO_KEEPER_ADDRESS, 15);
 
       zkClient.makePath("/collections");
       
