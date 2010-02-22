@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 
 /**
  * Test CustomScoreQuery search.
@@ -188,6 +189,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     }
   }
 
+  @Test
   public void testCustomExternalQuery() throws Exception {
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, TEXT_FIELD,anlzr); 
     String qtxt = "first aid text"; // from the doc texts in FunctionQuerySetup.
@@ -204,6 +206,29 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
       final float score = hits.scoreDocs[i].score;
       assertEquals("doc=" + doc, (float) 1+(4*doc) % N_DOCS, score, 0.0001);
     }
+    s.close();
+  }
+  
+  @Test
+  public void testRewrite() throws Exception {
+    final IndexSearcher s = new IndexSearcher(dir, true);
+
+    Query q = new TermQuery(new Term(TEXT_FIELD, "first"));
+    CustomScoreQuery original = new CustomScoreQuery(q);
+    CustomScoreQuery rewritten = (CustomScoreQuery) original.rewrite(s.getIndexReader());
+    assertTrue("rewritten query should be identical, as TermQuery does not rewrite", original == rewritten);
+    assertTrue("no hits for query", s.search(rewritten,1).totalHits > 0);
+    assertEquals(s.search(q,1).totalHits, s.search(rewritten,1).totalHits);
+
+    q = new TermRangeQuery(TEXT_FIELD, null, null, true, true); // everything
+    original = new CustomScoreQuery(q);
+    rewritten = (CustomScoreQuery) original.rewrite(s.getIndexReader());
+    assertTrue("rewritten query should not be identical, as TermRangeQuery rewrites", original != rewritten);
+    assertTrue("rewritten query should be a CustomScoreQuery", rewritten instanceof CustomScoreQuery);
+    assertTrue("no hits for query", s.search(rewritten,1).totalHits > 0);
+    assertEquals(s.search(q,1).totalHits, s.search(original,1).totalHits);
+    assertEquals(s.search(q,1).totalHits, s.search(rewritten,1).totalHits);
+    
     s.close();
   }
   
