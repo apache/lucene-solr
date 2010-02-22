@@ -121,7 +121,7 @@ class ConnectionManager implements Watcher {
       left = expire - System.currentTimeMillis();
     }
     if (!connected) {
-      throw new TimeoutException("Could not connect to ZooKeeper within " + waitForConnection + " ms");
+      throw new TimeoutException("Could not connect to ZooKeeper " + zkServerAddress + " within " + waitForConnection + " ms");
     }
   }
 
