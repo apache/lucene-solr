@@ -96,6 +96,7 @@ class ConnectionManager implements Watcher {
       log.info("Connected:" + connected);
     } else if (state == KeeperState.Disconnected) {
       // ZooKeeper client will recover when it can
+      // TODO: this needs to be investigated more
       connected = false;
     } else {
       connected = false;

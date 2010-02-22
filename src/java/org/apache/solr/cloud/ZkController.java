@@ -38,7 +38,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -110,7 +109,8 @@ public final class ZkController {
 
           public void command() {
             try {
-              // nocommit: recreate watches ????
+              zkStateReader.makeCollectionsNodeWatches();
+              zkStateReader.makeShardsWatches(true);
               createEphemeralLiveNode();
               zkStateReader.updateCloudState(false);
             } catch (KeeperException e) {

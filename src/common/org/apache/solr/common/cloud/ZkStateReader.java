@@ -67,7 +67,8 @@ public class ZkStateReader {
 
           public void command() {
             try {
-              // nocommit: recreate watches ????
+              makeCollectionsNodeWatches();
+              makeShardsWatches(true);
               updateCloudState(false);
             } catch (KeeperException e) {
               log.error("", e);
@@ -160,20 +161,20 @@ public class ZkStateReader {
 
   }
   
-  public void makeShardZkNodeWatches() throws KeeperException, InterruptedException {
+  public void makeShardZkNodeWatches(boolean makeWatchesForReconnect) throws KeeperException, InterruptedException {
     CloudState cloudState = getCloudState();
-    Set<String> knownCollections = cloudState.getCollections();
     
+    Set<String> knownCollections = cloudState.getCollections();
     List<String> collections = zkClient.getChildren(COLLECTIONS_ZKNODE, null);
 
     for(final String collection : collections) {
-      if(!knownCollections.contains(collection)) {
+      if(makeWatchesForReconnect || !knownCollections.contains(collection)) {
         log.info("Found new collection:" + collection);
         Watcher watcher = new Watcher() {
           public void process(WatchedEvent event) {
             log.info("Detected changed ShardId in collection:" + collection);
             try {
-              makeShardsWatches(collection);
+              makeShardsWatches(collection, false);
               updateCloudState(false);
             } catch (KeeperException e) {
               log.error("", e);
@@ -217,7 +218,7 @@ public class ZkStateReader {
     }
   }
   
-  public void makeShardsWatches(final String collection) throws KeeperException,
+  public void makeShardsWatches(final String collection, boolean makeWatchesForReconnect) throws KeeperException,
       InterruptedException {
     if (zkClient.exists(COLLECTIONS_ZKNODE + "/" + collection + SHARDS_ZKNODE)) {
       List<String> shardIds = zkClient.getChildren(COLLECTIONS_ZKNODE + "/"
@@ -231,7 +232,7 @@ public class ZkStateReader {
         knownShardIds = new HashSet<String>(0);
       }
       for (final String shardId : shardIds) {
-        if (!knownShardIds.contains(shardId)) {
+        if (makeWatchesForReconnect || !knownShardIds.contains(shardId)) {
           zkClient.getChildren(COLLECTIONS_ZKNODE + "/" + collection
               + SHARDS_ZKNODE + "/" + shardId, new Watcher() {
 
@@ -265,10 +266,10 @@ public class ZkStateReader {
    * @throws KeeperException
    * @throws InterruptedException
    */
-  public void makeShardsWatches() throws KeeperException, InterruptedException {
+  public void makeShardsWatches(boolean makeWatchesForReconnect) throws KeeperException, InterruptedException {
     List<String> collections = zkClient.getChildren(COLLECTIONS_ZKNODE, null);
     for (final String collection : collections) {
-      makeShardsWatches(collection);
+      makeShardsWatches(collection, makeWatchesForReconnect);
     }
   }
   
@@ -305,7 +306,7 @@ public class ZkStateReader {
           try {
             log.info("Detected a new or removed collection");
             synchronized (getUpdateLock()) {
-              makeShardZkNodeWatches();
+              makeShardZkNodeWatches(false);
               updateCloudState(false);
             }
             // re-watch
@@ -337,7 +338,7 @@ public class ZkStateReader {
         log.info("Notified of CloudState change");
         try {
           synchronized (getUpdateLock()) {
-            makeShardZkNodeWatches();
+            makeShardZkNodeWatches(false);
             updateCloudState(false);
           }
           zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE, this);
