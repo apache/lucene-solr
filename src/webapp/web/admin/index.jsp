@@ -59,11 +59,16 @@
 <%-- List the cores (that arent this one) so we can switch --%>
 <% org.apache.solr.core.CoreContainer cores = (org.apache.solr.core.CoreContainer)request.getAttribute("org.apache.solr.CoreContainer");
   if (cores!=null) {
-    Collection<SolrCore> names = cores.getCores();
+    Collection<String> names = cores.getCoreNames();
     if (names.size() > 1) {%><tr><td><strong>Cores:</strong><br></td><td><%
-    for (SolrCore name : names) {
-      if(name.equals(core.getName())) continue;
-    %>[<a href="../../<%=name.getName()%>/admin/"><%=name%></a>]<%         
+    String url = request.getContextPath();
+    for (String name : names) {
+      String lname = name.length()==0 ? cores.getDefaultCoreName() : name; // use the real core name rather than the default
+      if(name.equals(core.getName())) {
+        %>[<%=lname%>]<%
+      } else {
+        %>[<a href="<%=url%>/<%=lname%>/admin/"><%=lname%></a>]<%
+      }
   }%></td></tr><%
 }}%>
 
