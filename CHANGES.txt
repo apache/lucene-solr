@@ -64,6 +64,10 @@ API Changes
   files are no longer open by IndexReaders. (luocanrao via Mike
   McCandless)
 
+* LUCENE-2281: added doBeforeFlush to IndexWriter to allow extensions to perform
+  operations before flush starts. Also exposed doAfterFlush as protected instead
+  of package-private. (Shai Erera via Mike McCandless)
+
 Bug fixes
 
 * LUCENE-2119: Don't throw NegativeArraySizeException if you pass

@@ -3174,16 +3174,22 @@ public class TestIndexWriter extends LuceneTestCase {
       super(dir, a, create, mfl);
     }
 
-    boolean wasCalled;
+    boolean afterWasCalled;
+    boolean beforeWasCalled;
 
     @Override
     public void doAfterFlush() {
-      wasCalled = true;
+      afterWasCalled = true;
+    }
+    
+    @Override
+    protected void doBeforeFlush() throws IOException {
+      beforeWasCalled = true;
     }
   }
 
   // LUCENE-1222
-  public void testDoAfterFlush() throws IOException {
+  public void testDoBeforeAfterFlush() throws IOException {
     MockRAMDirectory dir = new MockRAMDirectory();
     MockIndexWriter3 w = new MockIndexWriter3(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
@@ -3191,11 +3197,14 @@ public class TestIndexWriter extends LuceneTestCase {
                       Field.Index.ANALYZED));
     w.addDocument(doc);
     w.commit();
-    assertTrue(w.wasCalled);
-    w.wasCalled = true;
+    assertTrue(w.beforeWasCalled);
+    assertTrue(w.afterWasCalled);
+    w.beforeWasCalled = false;
+    w.afterWasCalled = false;
     w.deleteDocuments(new Term("field", "field"));
     w.commit();
-    assertTrue(w.wasCalled);
+    assertTrue(w.beforeWasCalled);
+    assertTrue(w.afterWasCalled);
     w.close();
 
     IndexReader ir = IndexReader.open(dir, true);

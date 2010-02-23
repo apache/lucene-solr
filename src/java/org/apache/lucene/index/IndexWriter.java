@@ -3312,12 +3312,18 @@ public class IndexWriter implements Closeable {
     }
   }
 
-  // This is called after pending added and deleted
-  // documents have been flushed to the Directory but before
-  // the change is committed (new segments_N file written).
-  void doAfterFlush()
-    throws IOException {
-  }
+  /**
+   * A hook for extending classes to execute operations after pending added and
+   * deleted documents have been flushed to the Directory but before the change
+   * is committed (new segments_N file written).
+   */
+  protected void doAfterFlush() throws IOException {}
+
+  /**
+   * A hook for extending classes to execute operations before pending added and
+   * deleted documents are flushed to the Directory.
+   */
+  protected void doBeforeFlush() throws IOException {}
 
   /** Expert: prepare for commit.
    *
@@ -3525,6 +3531,8 @@ public class IndexWriter implements Closeable {
 
     assert testPoint("startDoFlush");
 
+    doBeforeFlush();
+    
     flushCount++;
 
     // If we are flushing because too many deletes
