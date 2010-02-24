@@ -249,6 +249,10 @@ Other Changes
 * SOLR-1695: Improved error messages when adding a document that does not
   contain exactly one value for the uniqueKey field (hossman)
 
+* SOLR-1776: DismaxQParser and ExtendedDismaxQParser now use the schema.xml
+  "defaultSearchField" as the default value for the "qf" param instead of failing
+  with an error when "qf" is not specified.  (hossman)
+  
 Build
 ----------------------
 

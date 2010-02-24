@@ -206,6 +206,15 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
     doTestSomeStuff("dismaxOldStyleDefaults");
   }
 
+  public void testSimplestParams() throws Exception {
+    populate();
 
+    assertQ("match w/o only q param",
+            req("qt", "dismaxNoDefaults",
+                "q","guide")
+            ,"//*[@numFound='2']"
+            );
+    
+  }
   
 }

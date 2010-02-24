@@ -104,6 +104,10 @@ class ExtendedDismaxQParser extends QParser {
     SolrParams solrParams = localParams == null ? params : new DefaultSolrParams(localParams, params);
 
     queryFields = U.parseFieldBoosts(solrParams.getParams(DMP.QF));
+    if (0 == queryFields.size()) {
+      queryFields.put(req.getSchema().getDefaultSearchFieldName(), 1.0f);
+    }
+    
     // Boosted phrase of the full query string
     Map<String,Float> phraseFields = 
       U.parseFieldBoosts(solrParams.getParams(DMP.PF));

@@ -65,7 +65,10 @@ public class DisMaxQParser extends QParser {
   public Query parse() throws ParseException {
     SolrParams solrParams = localParams == null ? params : new DefaultSolrParams(localParams, params);
     queryFields = SolrPluginUtils.parseFieldBoosts(solrParams.getParams(DisMaxParams.QF));
-
+    if (0 == queryFields.size()) {
+      queryFields.put(req.getSchema().getDefaultSearchFieldName(), 1.0f);
+    }
+    
     /* the main query we will execute.  we disable the coord because
      * this query is an artificial construct
      */
