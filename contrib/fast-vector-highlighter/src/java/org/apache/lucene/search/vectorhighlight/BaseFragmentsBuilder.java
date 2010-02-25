@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.MapFieldSelector;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo;
@@ -72,7 +73,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     List<WeightedFragInfo> fragInfos = getWeightedFragInfoList( fieldFragList.fragInfos );
     
     List<String> fragments = new ArrayList<String>( maxNumFragments );
-    String[] values = getFieldValues( reader, docId, fieldName );
+    Field[] values = getFields( reader, docId, fieldName );
     if( values.length == 0 ) return null;
     StringBuilder buffer = new StringBuilder();
     int[] nextValueIndex = { 0 };
@@ -83,15 +84,31 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     return fragments.toArray( new String[fragments.size()] );
   }
   
+  @Deprecated
   protected String[] getFieldValues( IndexReader reader, int docId, String fieldName) throws IOException {
     Document doc = reader.document( docId, new MapFieldSelector( new String[]{ fieldName } ) );
     return doc.getValues( fieldName ); // according to Document class javadoc, this never returns null
   }
+  
+  protected Field[] getFields( IndexReader reader, int docId, String fieldName) throws IOException {
+    // according to javadoc, doc.getFields(fieldName) cannot be used with lazy loaded field???
+    Document doc = reader.document( docId, new MapFieldSelector( new String[]{ fieldName } ) );
+    return doc.getFields( fieldName ); // according to Document class javadoc, this never returns null
+  }
 
+  @Deprecated
   protected String makeFragment( StringBuilder buffer, int[] index, String[] values, WeightedFragInfo fragInfo ){
-    StringBuilder fragment = new StringBuilder();
     final int s = fragInfo.startOffset;
-    String src = getFragmentSource( buffer, index, values, s, fragInfo.endOffset );
+    return makeFragment( fragInfo, getFragmentSource( buffer, index, values, s, fragInfo.endOffset ), s );
+  }
+
+  protected String makeFragment( StringBuilder buffer, int[] index, Field[] values, WeightedFragInfo fragInfo ){
+    final int s = fragInfo.startOffset;
+    return makeFragment( fragInfo, getFragmentSource( buffer, index, values, s, fragInfo.endOffset ), s );
+  }
+  
+  private String makeFragment( WeightedFragInfo fragInfo, String src, int s ){
+    StringBuilder fragment = new StringBuilder();
     int srcIndex = 0;
     for( SubInfo subInfo : fragInfo.subInfos ){
       for( Toffs to : subInfo.termsOffsets ){
@@ -104,12 +121,24 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     return fragment.toString();
   }
   
+  @Deprecated
   protected String getFragmentSource( StringBuilder buffer, int[] index, String[] values,
       int startOffset, int endOffset ){
     while( buffer.length() < endOffset && index[0] < values.length ){
       if( index[0] > 0 && values[index[0]].length() > 0 )
         buffer.append( ' ' );
       buffer.append( values[index[0]++] );
+    }
+    int eo = buffer.length() < endOffset ? buffer.length() : endOffset;
+    return buffer.substring( startOffset, eo );
+  }
+
+  protected String getFragmentSource( StringBuilder buffer, int[] index, Field[] values,
+      int startOffset, int endOffset ){
+    while( buffer.length() < endOffset && index[0] < values.length ){
+      if( index[0] > 0 && values[index[0]].isTokenized() && values[index[0]].stringValue().length() > 0 )
+        buffer.append( ' ' );
+      buffer.append( values[index[0]++].stringValue() );
     }
     int eo = buffer.length() < endOffset ? buffer.length() : endOffset;
     return buffer.substring( startOffset, eo );

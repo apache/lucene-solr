@@ -48,6 +48,9 @@ Bug fixes
    the previous code did not always implement the Snowball algorithm correctly.
    Additionally, for Version > 3.0, the Snowball stopword lists are used by
    default.  (Robert Muir, Uwe Schindler, Simon Willnauer)
+
+ * LUCENE-2278: FastVectorHighlighter: Highlighted term is out of alignment
+   in multi-valued NOT_ANALYZED field. (Koji Sekiguchi)
    
 API Changes
 

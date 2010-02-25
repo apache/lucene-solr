@@ -127,4 +127,16 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
 
     reader = IndexReader.open( dir, true );
   }
+  
+  public void test1StrMV() throws Exception {
+    makeIndexStrMV();
+
+    FieldQuery fq = new FieldQuery( tq( "defg" ), true, true );
+    FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
+    FieldPhraseList fpl = new FieldPhraseList( stack, fq );
+    SimpleFragListBuilder sflb = new SimpleFragListBuilder();
+    FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
+    SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
+    assertEquals( "abc<b>defg</b>hijkl", sfb.createFragment( reader, 0, F, ffl ) );
+  }
 }
