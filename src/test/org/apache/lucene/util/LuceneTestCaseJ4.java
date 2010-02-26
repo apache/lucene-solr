@@ -25,7 +25,6 @@ import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
-import org.junit.rules.TestWatchman;
 
 import java.io.PrintStream;
 import java.util.Arrays;
@@ -75,7 +74,7 @@ import static org.junit.Assert.fail;
 // every test. But the functionality we used to
 // get from that override is provided by InterceptTestCaseEvents
 //@RunWith(RunBareWrapper.class)
-public class LuceneTestCaseJ4 extends TestWatchman {
+public class LuceneTestCaseJ4 {
 
   /** Change this when development starts for new Lucene version: */
   public static final Version TEST_VERSION_CURRENT = Version.LUCENE_31;
@@ -279,7 +278,7 @@ public class LuceneTestCaseJ4 extends TestWatchman {
     return this.name;
   }
 
-  // We get here fro InterceptTestCaseEvents on the 'failed' event.... 
+  // We get here from InterceptTestCaseEvents on the 'failed' event....
   public void reportAdditionalFailureInfo() {
     if (seed != null) {
       System.out.println("NOTE: random seed of testcase '" + getName() + "' was: " + seed);
