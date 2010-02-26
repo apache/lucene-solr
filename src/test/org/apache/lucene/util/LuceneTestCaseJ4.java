@@ -25,6 +25,8 @@ import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.rules.TestWatchman;
+import org.junit.runners.model.FrameworkMethod;
 
 import java.io.PrintStream;
 import java.util.Arrays;
@@ -98,14 +100,21 @@ public class LuceneTestCaseJ4 {
   // Think of this as start/end/success/failed
   // events.
   @Rule
-  public InterceptTestCaseEvents intercept = new InterceptTestCaseEvents(this);
+  public final TestWatchman intercept = new TestWatchman() {
 
-  public LuceneTestCaseJ4() {
-  }
+    @Override
+    public void failed(Throwable e, FrameworkMethod method) {
+      reportAdditionalFailureInfo();
+      super.failed(e, method);
+    }
 
-  public LuceneTestCaseJ4(String name) {
-    this.name = name;
-  }
+    @Override
+    public void starting(FrameworkMethod method) {
+      LuceneTestCaseJ4.this.name = method.getName();
+      super.starting(method);
+    }
+    
+  };
 
   @Before
   public void setUp() throws Exception {
@@ -291,6 +300,6 @@ public class LuceneTestCaseJ4 {
   // static members
   private static final Random seedRnd = new Random();
 
-  private String name = "";
+  private String name = "<unknown>";
 
 }
