@@ -33,7 +33,7 @@ public class MatchAllDocsQueryNode extends QueryNodeImpl {
 
   @Override
   public String toString() {
-    return "<matchAllDocs field='*' term='*'>";
+    return "<matchAllDocs field='*' term='*'/>";
   }
 
   public CharSequence toQueryString(EscapeQuerySyntax escapeSyntaxParser) {

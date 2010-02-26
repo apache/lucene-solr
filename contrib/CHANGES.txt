@@ -51,6 +51,9 @@ Bug fixes
 
  * LUCENE-2278: FastVectorHighlighter: Highlighted term is out of alignment
    in multi-valued NOT_ANALYZED field. (Koji Sekiguchi)
+ 
+ * LUCENE-2284: MatchAllDocsQueryNode toString() created an invalid XML tag.
+   (Frank Wesemann via Robert Muir)
    
 API Changes
 
