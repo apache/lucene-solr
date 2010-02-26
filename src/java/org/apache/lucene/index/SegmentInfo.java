@@ -333,7 +333,7 @@ public final class SegmentInfo {
       return null;
     } else {
       // If delGen is CHECK_DIR, it's the pre-lockless-commit file format
-      return IndexFileNames.fileNameFromGeneration(name, "." + IndexFileNames.DELETES_EXTENSION, delGen); 
+      return IndexFileNames.fileNameFromGeneration(name, IndexFileNames.DELETES_EXTENSION, delGen); 
     }
   }
 
@@ -428,8 +428,6 @@ public final class SegmentInfo {
    * @param number field index
    */
   public String getNormFileName(int number) throws IOException {
-    String prefix;
-
     long gen;
     if (normGen == null) {
       gen = CHECK_DIR;
@@ -439,19 +437,16 @@ public final class SegmentInfo {
     
     if (hasSeparateNorms(number)) {
       // case 1: separate norm
-      prefix = ".s";
-      return IndexFileNames.fileNameFromGeneration(name, prefix + number, gen);
+      return IndexFileNames.fileNameFromGeneration(name, "s" + number, gen);
     }
 
     if (hasSingleNormFile) {
       // case 2: lockless (or nrm file exists) - single file for all norms 
-      prefix = "." + IndexFileNames.NORMS_EXTENSION;
-      return IndexFileNames.fileNameFromGeneration(name, prefix, WITHOUT_GEN);
+      return IndexFileNames.fileNameFromGeneration(name, IndexFileNames.NORMS_EXTENSION, WITHOUT_GEN);
     }
       
     // case 3: norm file for each field
-    prefix = ".f";
-    return IndexFileNames.fileNameFromGeneration(name, prefix + number, WITHOUT_GEN);
+    return IndexFileNames.fileNameFromGeneration(name, "f" + number, WITHOUT_GEN);
   }
 
   /**
@@ -479,7 +474,7 @@ public final class SegmentInfo {
     } else if (isCompoundFile == YES) {
       return true;
     } else {
-      return dir.fileExists(name + "." + IndexFileNames.COMPOUND_FILE_EXTENSION);
+      return dir.fileExists(IndexFileNames.segmentFileName(name, IndexFileNames.COMPOUND_FILE_EXTENSION));
     }
   }
 
@@ -590,11 +585,10 @@ public final class SegmentInfo {
     boolean useCompoundFile = getUseCompoundFile();
 
     if (useCompoundFile) {
-      files.add(name + "." + IndexFileNames.COMPOUND_FILE_EXTENSION);
+      files.add(IndexFileNames.segmentFileName(name, IndexFileNames.COMPOUND_FILE_EXTENSION));
     } else {
-      final String[] exts = IndexFileNames.NON_STORE_INDEX_EXTENSIONS;
-      for(int i=0;i<exts.length;i++)
-        addIfExists(files, name + "." + exts[i]);
+      for (String ext : IndexFileNames.NON_STORE_INDEX_EXTENSIONS)
+        addIfExists(files, IndexFileNames.segmentFileName(name, ext));
     }
 
     if (docStoreOffset != -1) {
@@ -602,21 +596,17 @@ public final class SegmentInfo {
       // vectors) with other segments
       assert docStoreSegment != null;
       if (docStoreIsCompoundFile) {
-        files.add(docStoreSegment + "." + IndexFileNames.COMPOUND_FILE_STORE_EXTENSION);
+        files.add(IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.COMPOUND_FILE_STORE_EXTENSION));
       } else {
-        final String[] exts = IndexFileNames.STORE_INDEX_EXTENSIONS;
-        for(int i=0;i<exts.length;i++)
-          addIfExists(files, docStoreSegment + "." + exts[i]);
+        for (String ext : IndexFileNames.STORE_INDEX_EXTENSIONS)
+          addIfExists(files, IndexFileNames.segmentFileName(docStoreSegment, ext));
       }
     } else if (!useCompoundFile) {
-      // We are not sharing, and, these files were not
-      // included in the compound file
-      final String[] exts = IndexFileNames.STORE_INDEX_EXTENSIONS;
-      for(int i=0;i<exts.length;i++)
-        addIfExists(files, name + "." + exts[i]);
+      for (String ext : IndexFileNames.STORE_INDEX_EXTENSIONS)
+        addIfExists(files, IndexFileNames.segmentFileName(name, ext));
     }
 
-    String delFileName = IndexFileNames.fileNameFromGeneration(name, "." + IndexFileNames.DELETES_EXTENSION, delGen);
+    String delFileName = IndexFileNames.fileNameFromGeneration(name, IndexFileNames.DELETES_EXTENSION, delGen);
     if (delFileName != null && (delGen >= YES || dir.fileExists(delFileName))) {
       files.add(delFileName);
     }
@@ -627,12 +617,12 @@ public final class SegmentInfo {
         long gen = normGen[i];
         if (gen >= YES) {
           // Definitely a separate norm file, with generation:
-          files.add(IndexFileNames.fileNameFromGeneration(name, "." + IndexFileNames.SEPARATE_NORMS_EXTENSION + i, gen));
+          files.add(IndexFileNames.fileNameFromGeneration(name, IndexFileNames.SEPARATE_NORMS_EXTENSION + i, gen));
         } else if (NO == gen) {
           // No separate norms but maybe plain norms
           // in the non compound file case:
           if (!hasSingleNormFile && !useCompoundFile) {
-            String fileName = name + "." + IndexFileNames.PLAIN_NORMS_EXTENSION + i;
+            String fileName = IndexFileNames.segmentFileName(name, IndexFileNames.PLAIN_NORMS_EXTENSION + i);
             if (dir.fileExists(fileName)) {
               files.add(fileName);
             }
@@ -641,9 +631,9 @@ public final class SegmentInfo {
           // Pre-2.1: we have to check file existence
           String fileName = null;
           if (useCompoundFile) {
-            fileName = name + "." + IndexFileNames.SEPARATE_NORMS_EXTENSION + i;
+            fileName = IndexFileNames.segmentFileName(name, IndexFileNames.SEPARATE_NORMS_EXTENSION + i);
           } else if (!hasSingleNormFile) {
-            fileName = name + "." + IndexFileNames.PLAIN_NORMS_EXTENSION + i;
+            fileName = IndexFileNames.segmentFileName(name, IndexFileNames.PLAIN_NORMS_EXTENSION + i);
           }
           if (fileName != null && dir.fileExists(fileName)) {
             files.add(fileName);
@@ -655,9 +645,9 @@ public final class SegmentInfo {
       // matching _X.sN/_X.fN files for our segment:
       String prefix;
       if (useCompoundFile)
-        prefix = name + "." + IndexFileNames.SEPARATE_NORMS_EXTENSION;
+        prefix = IndexFileNames.segmentFileName(name, IndexFileNames.SEPARATE_NORMS_EXTENSION);
       else
-        prefix = name + "." + IndexFileNames.PLAIN_NORMS_EXTENSION;
+        prefix = IndexFileNames.segmentFileName(name, IndexFileNames.PLAIN_NORMS_EXTENSION);
       int prefixLength = prefix.length();
       String[] allFiles = dir.listAll();
       final IndexFileNameFilter filter = IndexFileNameFilter.getFilter();

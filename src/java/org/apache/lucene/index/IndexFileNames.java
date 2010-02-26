@@ -18,70 +18,78 @@ package org.apache.lucene.index;
  */
 
 /**
- * Useful constants representing filenames and extensions used by lucene
+ * This class contains useful constants representing filenames and extensions
+ * used by lucene, as well as convenience methods for querying whether a file
+ * name matches an extension ({@link #matchesExtension(String, String)
+ * matchesExtension}), as well as generating file names from a segment name,
+ * generation and extension (
+ * {@link #fileNameFromGeneration(String, String, long) fileNameFromGeneration},
+ * {@link #segmentFileName(String, String) segmentFileName}).
+ * 
+ * @lucene.internal
  */
-final class IndexFileNames {
+public final class IndexFileNames {
 
   /** Name of the index segment file */
-  static final String SEGMENTS = "segments";
+  public static final String SEGMENTS = "segments";
 
   /** Name of the generation reference file name */
-  static final String SEGMENTS_GEN = "segments.gen";
+  public static final String SEGMENTS_GEN = "segments.gen";
   
   /** Name of the index deletable file (only used in
    * pre-lockless indices) */
-  static final String DELETABLE = "deletable";
+  public static final String DELETABLE = "deletable";
    
   /** Extension of norms file */
-  static final String NORMS_EXTENSION = "nrm";
+  public static final String NORMS_EXTENSION = "nrm";
 
   /** Extension of freq postings file */
-  static final String FREQ_EXTENSION = "frq";
+  public static final String FREQ_EXTENSION = "frq";
 
   /** Extension of prox postings file */
-  static final String PROX_EXTENSION = "prx";
+  public static final String PROX_EXTENSION = "prx";
 
   /** Extension of terms file */
-  static final String TERMS_EXTENSION = "tis";
+  public static final String TERMS_EXTENSION = "tis";
 
   /** Extension of terms index file */
-  static final String TERMS_INDEX_EXTENSION = "tii";
+  public static final String TERMS_INDEX_EXTENSION = "tii";
 
   /** Extension of stored fields index file */
-  static final String FIELDS_INDEX_EXTENSION = "fdx";
+  public static final String FIELDS_INDEX_EXTENSION = "fdx";
 
   /** Extension of stored fields file */
-  static final String FIELDS_EXTENSION = "fdt";
+  public static final String FIELDS_EXTENSION = "fdt";
 
   /** Extension of vectors fields file */
-  static final String VECTORS_FIELDS_EXTENSION = "tvf";
+  public static final String VECTORS_FIELDS_EXTENSION = "tvf";
 
   /** Extension of vectors documents file */
-  static final String VECTORS_DOCUMENTS_EXTENSION = "tvd";
+  public static final String VECTORS_DOCUMENTS_EXTENSION = "tvd";
 
   /** Extension of vectors index file */
-  static final String VECTORS_INDEX_EXTENSION = "tvx";
+  public static final String VECTORS_INDEX_EXTENSION = "tvx";
 
   /** Extension of compound file */
-  static final String COMPOUND_FILE_EXTENSION = "cfs";
+  public static final String COMPOUND_FILE_EXTENSION = "cfs";
 
   /** Extension of compound file for doc store files*/
-  static final String COMPOUND_FILE_STORE_EXTENSION = "cfx";
+  public static final String COMPOUND_FILE_STORE_EXTENSION = "cfx";
 
   /** Extension of deletes */
-  static final String DELETES_EXTENSION = "del";
+  public static final String DELETES_EXTENSION = "del";
 
   /** Extension of field infos */
-  static final String FIELD_INFOS_EXTENSION = "fnm";
+  public static final String FIELD_INFOS_EXTENSION = "fnm";
 
   /** Extension of plain norms */
-  static final String PLAIN_NORMS_EXTENSION = "f";
+  public static final String PLAIN_NORMS_EXTENSION = "f";
 
   /** Extension of separate norms */
-  static final String SEPARATE_NORMS_EXTENSION = "s";
+  public static final String SEPARATE_NORMS_EXTENSION = "s";
 
   /** Extension of gen file */
-  static final String GEN_EXTENSION = "gen";
+  public static final String GEN_EXTENSION = "gen";
 
   /**
    * This array contains all filename extensions used by
@@ -91,7 +99,7 @@ final class IndexFileNames {
    * Lucene's <code>segments_N</code> files do not have any
    * filename extension.
    */
-  static final String INDEX_EXTENSIONS[] = new String[] {
+  public static final String INDEX_EXTENSIONS[] = new String[] {
     COMPOUND_FILE_EXTENSION,
     FIELD_INFOS_EXTENSION,
     FIELDS_INDEX_EXTENSION,
@@ -111,7 +119,7 @@ final class IndexFileNames {
 
   /** File extensions that are added to a compound file
    * (same as above, minus "del", "gen", "cfs"). */
-  static final String[] INDEX_EXTENSIONS_IN_COMPOUND_FILE = new String[] {
+  public static final String[] INDEX_EXTENSIONS_IN_COMPOUND_FILE = new String[] {
     FIELD_INFOS_EXTENSION,
     FIELDS_INDEX_EXTENSION,
     FIELDS_EXTENSION,
@@ -125,7 +133,7 @@ final class IndexFileNames {
     NORMS_EXTENSION
   };
 
-  static final String[] STORE_INDEX_EXTENSIONS = new String[] {
+  public static final String[] STORE_INDEX_EXTENSIONS = new String[] {
     VECTORS_INDEX_EXTENSION,
     VECTORS_FIELDS_EXTENSION,
     VECTORS_DOCUMENTS_EXTENSION,
@@ -133,7 +141,7 @@ final class IndexFileNames {
     FIELDS_EXTENSION
   };
 
-  static final String[] NON_STORE_INDEX_EXTENSIONS = new String[] {
+  public static final String[] NON_STORE_INDEX_EXTENSIONS = new String[] {
     FIELD_INFOS_EXTENSION,
     FREQ_EXTENSION,
     PROX_EXTENSION,
@@ -143,7 +151,7 @@ final class IndexFileNames {
   };
   
   /** File extensions of old-style index files */
-  static final String COMPOUND_EXTENSIONS[] = new String[] {
+  public static final String COMPOUND_EXTENSIONS[] = new String[] {
     FIELD_INFOS_EXTENSION,
     FREQ_EXTENSION,
     PROX_EXTENSION,
@@ -154,47 +162,81 @@ final class IndexFileNames {
   };
   
   /** File extensions for term vector support */
-  static final String VECTOR_EXTENSIONS[] = new String[] {
+  public static final String VECTOR_EXTENSIONS[] = new String[] {
     VECTORS_INDEX_EXTENSION,
     VECTORS_DOCUMENTS_EXTENSION,
     VECTORS_FIELDS_EXTENSION
   };
 
   /**
-   * Computes the full file name from base, extension and
-   * generation.  If the generation is -1, the file name is
-   * null.  If it's 0, the file name is <base><extension>.
-   * If it's > 0, the file name is <base>_<generation><extension>.
-   *
-   * @param base -- main part of the file name
-   * @param extension -- extension of the filename (including .)
-   * @param gen -- generation
+   * Computes the full file name from base, extension and generation. If the
+   * generation is -1, the file name is null. If it's 0, the file name is
+   * &lt;base&gt;.&lt;ext&gt;. If it's > 0, the file name is
+   * &lt;base&gt;_&lt;gen&gt;.&lt;ext&gt;.<br>
+   * <b>NOTE:</b> .&lt;ext&gt; is added to the name only if <code>ext</code> is
+   * not an empty string.
+   * 
+   * @param base main part of the file name
+   * @param ext extension of the filename
+   * @param gen generation
    */
-  static final String fileNameFromGeneration(String base, String extension, long gen) {
+  public static final String fileNameFromGeneration(String base, String ext, long gen) {
     if (gen == SegmentInfo.NO) {
       return null;
     } else if (gen == SegmentInfo.WITHOUT_GEN) {
-      return base + extension;
+      return segmentFileName(base, ext);
     } else {
-      return base + "_" + Long.toString(gen, Character.MAX_RADIX) + extension;
+      // The '6' part in the length is: 1 for '.', 1 for '_' and 4 as estimate
+      // to the gen length as string (hopefully an upper limit so SB won't
+      // expand in the middle.
+      StringBuilder res = new StringBuilder(base.length() + 6 + ext.length())
+          .append(base).append('_').append(Long.toString(gen, Character.MAX_RADIX));
+      if (ext.length() > 0) {
+        res.append('.').append(ext);
+      }
+      return res.toString();
     }
   }
 
   /**
-   * Returns true if the provided filename is one of the doc
-   * store files (ends with an extension in
-   * STORE_INDEX_EXTENSIONS).
+   * Returns true if the provided filename is one of the doc store files (ends
+   * with an extension in {@link #STORE_INDEX_EXTENSIONS}).
    */
-  static final boolean isDocStoreFile(String fileName) {
+  public static final boolean isDocStoreFile(String fileName) {
     if (fileName.endsWith(COMPOUND_FILE_STORE_EXTENSION))
       return true;
-    for(int i=0;i<STORE_INDEX_EXTENSIONS.length;i++)
-      if (fileName.endsWith(STORE_INDEX_EXTENSIONS[i]))
+    for (String ext : STORE_INDEX_EXTENSIONS) {
+      if (fileName.endsWith(ext))
         return true;
+    }
     return false;
   }
 
-  static String segmentFileName(String segmentName, String ext) {
-    return segmentName + "." + ext;
+  /**
+   * Returns the file name that matches the given segment name and extension.
+   * This method takes care to return the full file name in the form
+   * &lt;segmentName&gt;.&lt;ext&gt;, therefore you don't need to prefix the
+   * extension with a '.'.<br>
+   * <b>NOTE:</b> .&lt;ext&gt; is added to the result file name only if
+   * <code>ext</code> is not empty.
+   */
+  public static final String segmentFileName(String segmentName, String ext) {
+    if (ext.length() > 0) {
+      return new StringBuilder(segmentName.length() + 1 + ext.length()).append(
+          segmentName).append('.').append(ext).toString();
+    } else {
+      return segmentName;
+    }
   }
+  
+  /**
+   * Returns true if the given filename ends with the given extension. One
+   * should provide a <i>pure</i> extension, withouth '.'.
+   */
+  public static final boolean matchesExtension(String filename, String ext) {
+    // It doesn't make a difference whether we allocate a StringBuilder ourself
+    // or not, since there's only 1 '+' operator.
+    return filename.endsWith("." + ext);
+  }
+  
 }

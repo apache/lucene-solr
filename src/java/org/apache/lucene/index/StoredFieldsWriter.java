@@ -67,8 +67,8 @@ final class StoredFieldsWriter {
         fieldsWriter = new FieldsWriter(docWriter.directory,
                                         docStoreSegment,
                                         fieldInfos);
-        docWriter.addOpenFile(docStoreSegment + "." + IndexFileNames.FIELDS_EXTENSION);
-        docWriter.addOpenFile(docStoreSegment + "." + IndexFileNames.FIELDS_INDEX_EXTENSION);
+        docWriter.addOpenFile(IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.FIELDS_EXTENSION));
+        docWriter.addOpenFile(IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.FIELDS_INDEX_EXTENSION));
         lastDocID = 0;
       }
     }
@@ -86,16 +86,16 @@ final class StoredFieldsWriter {
       fieldsWriter = null;
       lastDocID = 0;
       assert state.docStoreSegmentName != null;
-      state.flushedFiles.add(state.docStoreSegmentName + "." + IndexFileNames.FIELDS_EXTENSION);
-      state.flushedFiles.add(state.docStoreSegmentName + "." + IndexFileNames.FIELDS_INDEX_EXTENSION);
+      String fieldsName = IndexFileNames.segmentFileName(state.docStoreSegmentName, IndexFileNames.FIELDS_EXTENSION);
+      String fieldsIdxName = IndexFileNames.segmentFileName(state.docStoreSegmentName, IndexFileNames.FIELDS_INDEX_EXTENSION);
+      state.flushedFiles.add(fieldsName);
+      state.flushedFiles.add(fieldsIdxName);
 
-      state.docWriter.removeOpenFile(state.docStoreSegmentName + "." + IndexFileNames.FIELDS_EXTENSION);
-      state.docWriter.removeOpenFile(state.docStoreSegmentName + "." + IndexFileNames.FIELDS_INDEX_EXTENSION);
+      state.docWriter.removeOpenFile(fieldsName);
+      state.docWriter.removeOpenFile(fieldsIdxName);
 
-      final String fileName = state.docStoreSegmentName + "." + IndexFileNames.FIELDS_INDEX_EXTENSION;
-
-      if (4+((long) state.numDocsInStore)*8 != state.directory.fileLength(fileName))
-        throw new RuntimeException("after flush: fdx size mismatch: " + state.numDocsInStore + " docs vs " + state.directory.fileLength(fileName) + " length in bytes of " + fileName + " file exists?=" + state.directory.fileExists(fileName));
+      if (4+((long) state.numDocsInStore)*8 != state.directory.fileLength(fieldsIdxName))
+        throw new RuntimeException("after flush: fdx size mismatch: " + state.numDocsInStore + " docs vs " + state.directory.fileLength(fieldsIdxName) + " length in bytes of " + fieldsIdxName + " file exists?=" + state.directory.fileExists(fieldsIdxName));
     }
   }
 

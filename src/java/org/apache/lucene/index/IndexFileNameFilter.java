@@ -23,6 +23,8 @@ import java.util.HashSet;
 
 /**
  * Filename filter that accept filenames and extensions only created by Lucene.
+ *
+ * @lucene.internal
  */
 public class IndexFileNameFilter implements FilenameFilter {
 
@@ -33,12 +35,12 @@ public class IndexFileNameFilter implements FilenameFilter {
   // Prevent instantiation.
   private IndexFileNameFilter() {
     extensions = new HashSet<String>();
-    for (int i = 0; i < IndexFileNames.INDEX_EXTENSIONS.length; i++) {
-      extensions.add(IndexFileNames.INDEX_EXTENSIONS[i]);
+    for (String ext : IndexFileNames.INDEX_EXTENSIONS) {
+      extensions.add(ext);
     }
     extensionsInCFS = new HashSet<String>();
-    for (int i = 0; i < IndexFileNames.INDEX_EXTENSIONS_IN_COMPOUND_FILE.length; i++) {
-      extensionsInCFS.add(IndexFileNames.INDEX_EXTENSIONS_IN_COMPOUND_FILE[i]);
+    for (String ext : IndexFileNames.INDEX_EXTENSIONS_IN_COMPOUND_FILE) {
+      extensionsInCFS.add(ext);
     }
   }
 

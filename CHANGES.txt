@@ -68,6 +68,11 @@ API Changes
   operations before flush starts. Also exposed doAfterFlush as protected instead
   of package-private. (Shai Erera via Mike McCandless)
 
+* LUCENE-2282: IndexFileNames is exposed as a public class allowing for easier 
+  use by external code. In addition it offers a matchExtension method which 
+  callers can use to query whether a certain file matches a certain extension.
+  (Shai Erera via Mike McCandless)  
+
 Bug fixes
 
 * LUCENE-2119: Don't throw NegativeArraySizeException if you pass

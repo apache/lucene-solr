@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.TestIndexWriterReader;
@@ -34,8 +35,8 @@ public class TestFileSwitchDirectory extends LuceneTestCase {
    */
   public void testBasic() throws IOException {
     Set<String> fileExtensions = new HashSet<String>();
-    fileExtensions.add("fdt");
-    fileExtensions.add("fdx");
+    fileExtensions.add(IndexFileNames.FIELDS_EXTENSION);
+    fileExtensions.add(IndexFileNames.FIELDS_INDEX_EXTENSION);
     
     Directory primaryDir = new MockRAMDirectory();
     RAMDirectory secondaryDir = new MockRAMDirectory();
