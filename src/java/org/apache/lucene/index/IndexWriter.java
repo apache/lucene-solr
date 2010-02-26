@@ -404,7 +404,11 @@ public class IndexWriter implements Closeable {
     // just like we do when loading segments_N
     synchronized(this) {
       applyDeletes();
-      return new ReadOnlyDirectoryReader(this, segmentInfos, termInfosIndexDivisor);
+      final IndexReader r = new ReadOnlyDirectoryReader(this, segmentInfos, termInfosIndexDivisor);
+      if (infoStream != null) {
+        message("return reader version=" + r.getVersion() + " reader=" + r);
+      }
+      return r;
     }
   }
 
