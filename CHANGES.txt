@@ -33,7 +33,7 @@ Upgrading from Solr 1.4
 
 Versions of Major Components
 ---------------------
-Apache Lucene 2.9.2-rc2
+Apache Lucene 2.9.2
 Apache Tika 0.6
 Carrot2 3.1.0
 
