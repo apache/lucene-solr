@@ -20,7 +20,6 @@ package org.apache.lucene.search.function;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.ComplexExplanation;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FieldCache; // for javadocs
 

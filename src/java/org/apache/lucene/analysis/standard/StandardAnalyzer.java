@@ -47,7 +47,7 @@ public class StandardAnalyzer extends Analyzer {
 
   /**
    * Specifies whether deprecated acronyms should be replaced with HOST type.
-   * See {@linkplain https://issues.apache.org/jira/browse/LUCENE-1068}
+   * See {@linkplain "https://issues.apache.org/jira/browse/LUCENE-1068"}
    */
   private final boolean replaceInvalidAcronym;
 

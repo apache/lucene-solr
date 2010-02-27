@@ -50,7 +50,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
   protected IndexSearcher searcher;
   
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
     IndexWriter writer= new IndexWriter(directory,
@@ -116,9 +116,9 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
   }
 
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  protected void tearDown() throws Exception {
     searcher.close();
+    super.tearDown();
   }
 
   protected void check(SpanQuery q, int[] docs) throws Exception {

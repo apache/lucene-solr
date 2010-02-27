@@ -46,16 +46,16 @@ public class TestCollationKeyFilter extends CollationTestBase {
 
   
   public class TestAnalyzer extends Analyzer {
-    private Collator collator;
+    private Collator _collator;
 
     TestAnalyzer(Collator collator) {
-      this.collator = collator;
+      _collator = collator;
     }
 
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       TokenStream result = new KeywordTokenizer(reader);
-      result = new CollationKeyFilter(result, collator);
+      result = new CollationKeyFilter(result, _collator);
       return result;
     }
   }

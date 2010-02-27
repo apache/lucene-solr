@@ -38,13 +38,9 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
-
 
 /**
  * Spell checker test case
- *
- *
  */
 public class TestSpellChecker extends LuceneTestCase {
   private SpellCheckerMock spellChecker;
@@ -58,7 +54,7 @@ public class TestSpellChecker extends LuceneTestCase {
     
     //create a user index
     userindex = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(userindex, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(userindex, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
 
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
@@ -335,15 +331,16 @@ public class TestSpellChecker extends LuceneTestCase {
       assertEquals(0, searcher.getIndexReader().getRefCount());
     }
   }
-  
-  private void showSearchersOpen() {
-    int count = 0;
-    for (IndexSearcher searcher : searchers) {
-      if(searcher.getIndexReader().getRefCount() > 0)
-        ++count;
-    } 
-    System.out.println(count);
-  }
+
+  // For debug
+//  private void showSearchersOpen() {
+//    int count = 0;
+//    for (IndexSearcher searcher : searchers) {
+//      if(searcher.getIndexReader().getRefCount() > 0)
+//        ++count;
+//    } 
+//    System.out.println(count);
+//  }
 
   
   private class SpellCheckWorker implements Runnable {

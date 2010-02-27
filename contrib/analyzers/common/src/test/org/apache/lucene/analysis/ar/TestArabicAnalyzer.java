@@ -24,7 +24,6 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.util.Version;
 
 /**
  * Test the Arabic Analyzer
@@ -35,14 +34,14 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new ArabicAnalyzer(Version.LUCENE_CURRENT);
+    new ArabicAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /**
    * Some simple tests showing some features of the analyzer, how some regular forms will conflate
    */
   public void testBasicFeatures() throws Exception {
-    ArabicAnalyzer a = new ArabicAnalyzer(Version.LUCENE_CURRENT);
+    ArabicAnalyzer a = new ArabicAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(a, "كبير", new String[] { "كبير" });
     assertAnalyzesTo(a, "كبيرة", new String[] { "كبير" }); // feminine marker
     
@@ -63,7 +62,7 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
    * Simple tests to show things are getting reset correctly, etc.
    */
   public void testReusableTokenStream() throws Exception {
-    ArabicAnalyzer a = new ArabicAnalyzer(Version.LUCENE_CURRENT);
+    ArabicAnalyzer a = new ArabicAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesToReuse(a, "كبير", new String[] { "كبير" });
     assertAnalyzesToReuse(a, "كبيرة", new String[] { "كبير" }); // feminine marker
   }
@@ -72,7 +71,7 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
    * Non-arabic text gets treated in a similar way as SimpleAnalyzer.
    */
   public void testEnglishInput() throws Exception {
-    assertAnalyzesTo(new ArabicAnalyzer(Version.LUCENE_CURRENT), "English text.", new String[] {
+    assertAnalyzesTo(new ArabicAnalyzer(TEST_VERSION_CURRENT), "English text.", new String[] {
         "english", "text" });
   }
   
@@ -82,7 +81,7 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
   public void testCustomStopwords() throws Exception {
     Set<String> set = new HashSet<String>();
     Collections.addAll(set, "the", "and", "a");
-    ArabicAnalyzer a = new ArabicAnalyzer(Version.LUCENE_CURRENT, set);
+    ArabicAnalyzer a = new ArabicAnalyzer(TEST_VERSION_CURRENT, set);
     assertAnalyzesTo(a, "The quick brown fox.", new String[] { "quick",
         "brown", "fox" });
   }
@@ -90,12 +89,12 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
   public void testWithStemExclusionSet() throws IOException {
     Set<String> set = new HashSet<String>();
     set.add("ساهدهات");
-    ArabicAnalyzer a = new ArabicAnalyzer(Version.LUCENE_CURRENT, CharArraySet.EMPTY_SET, set);
+    ArabicAnalyzer a = new ArabicAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهدهات" });
     assertAnalyzesToReuse(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهدهات" });
 
     
-    a = new ArabicAnalyzer(Version.LUCENE_CURRENT, CharArraySet.EMPTY_SET, CharArraySet.EMPTY_SET);
+    a = new ArabicAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, CharArraySet.EMPTY_SET);
     assertAnalyzesTo(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهد" });
     assertAnalyzesToReuse(a, "كبيرة the quick ساهدهات", new String[] { "كبير","the", "quick", "ساهد" });
   }

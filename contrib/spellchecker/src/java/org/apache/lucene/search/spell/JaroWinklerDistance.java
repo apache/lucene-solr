@@ -82,7 +82,7 @@ public class JaroWinklerDistance implements StringDistance {
 
   public float getDistance(String s1, String s2) {
     int[] mtp = matches(s1, s2);
-    float m = (float) mtp[0];
+    float m = mtp[0];
     if (m == 0) {
       return 0f;
     }

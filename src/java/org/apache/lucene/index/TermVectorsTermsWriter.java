@@ -151,8 +151,6 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       if (docStoreSegment == null)
         return;
 
-      assert docStoreSegment != null;
-
       // If we hit an exception while init'ing the term
       // vector output files, we must abort this segment
       // because those files will be in an unknown
@@ -198,8 +196,8 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
         tvd.writeVLong(pos-lastPos);
         lastPos = pos;
       }
-      perDoc.tvf.writeTo(tvf);
-      perDoc.tvf.reset();
+      perDoc.perDocTvf.writeTo(tvf);
+      perDoc.perDocTvf.reset();
       perDoc.numVectorFields = 0;
     }
 
@@ -252,14 +250,14 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
 
     // TODO: use something more memory efficient; for small
     // docs the 1024 buffer size of RAMOutputStream wastes alot
-    RAMOutputStream tvf = new RAMOutputStream();
+    RAMOutputStream perDocTvf = new RAMOutputStream();
     int numVectorFields;
 
     int[] fieldNumbers = new int[1];
     long[] fieldPointers = new long[1];
 
     void reset() {
-      tvf.reset();
+      perDocTvf.reset();
       numVectorFields = 0;
     }
 
@@ -277,13 +275,13 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
         fieldPointers = ArrayUtil.grow(fieldPointers);
       }
       fieldNumbers[numVectorFields] = fieldNumber;
-      fieldPointers[numVectorFields] = tvf.getFilePointer();
+      fieldPointers[numVectorFields] = perDocTvf.getFilePointer();
       numVectorFields++;
     }
 
     @Override
     public long sizeInBytes() {
-      return tvf.sizeInBytes();
+      return perDocTvf.sizeInBytes();
     }
 
     @Override

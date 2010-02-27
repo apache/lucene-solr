@@ -31,7 +31,6 @@ import org.apache.lucene.analysis.payloads.PayloadHelper;
 import org.apache.lucene.analysis.shingle.ShingleMatrixFilter.Matrix;
 import org.apache.lucene.analysis.shingle.ShingleMatrixFilter.Matrix.Column;
 import org.apache.lucene.analysis.tokenattributes.*;
-import org.apache.lucene.util.Version;
 
 public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
@@ -41,11 +40,11 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
   public void testIterator() throws IOException {
 
-    WhitespaceTokenizer wst = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader("one two three four five"));
+    WhitespaceTokenizer wst = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("one two three four five"));
     ShingleMatrixFilter smf = new ShingleMatrixFilter(wst, 2, 2, '_', false, new ShingleMatrixFilter.OneDimensionalNonWeightedTokenSettingsCodec());
 
     int i;
-    for(i=0; smf.incrementToken(); i++);
+    for(i=0; smf.incrementToken(); i++) {}
     assertEquals(4, i);
 
     // call next once more. this should return false again rather than throwing an exception (LUCENE-1939)
@@ -65,11 +64,11 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
     assertFalse(ts.incrementToken());
 
     TokenListStream tls;
-    LinkedList tokens;
+    LinkedList<Token> tokens;
 
     // test a plain old token stream with synonyms translated to rows.
 
-    tokens = new LinkedList();
+    tokens = new LinkedList<Token>();
     tokens.add(createToken("please", 0, 6));
     tokens.add(createToken("divide", 7, 13));
     tokens.add(createToken("this", 14, 18));
@@ -101,11 +100,11 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
     TokenStream ts;
     TokenStream tls;
-    LinkedList tokens;
+    LinkedList<Token> tokens;
 
     // test a plain old token stream with synonyms tranlated to rows.
 
-    tokens = new LinkedList();
+    tokens = new LinkedList<Token>();
     tokens.add(tokenFactory("hello", 1, 0, 4));
     tokens.add(tokenFactory("greetings", 0, 0, 4));
     tokens.add(tokenFactory("world", 1, 5, 10));
@@ -145,7 +144,7 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
     ShingleMatrixFilter.defaultSettingsCodec = new ShingleMatrixFilter.SimpleThreeDimensionalTokenSettingsCodec();
 
-    tokens = new LinkedList();
+    tokens = new LinkedList<Token>();
     tokens.add(tokenFactory("hello", 1, 1f, 0, 4, ShingleMatrixFilter.TokenPositioner.newColumn));
     tokens.add(tokenFactory("greetings", 0, 1f, 0, 4, ShingleMatrixFilter.TokenPositioner.newRow));
     tokens.add(tokenFactory("world", 1, 1f, 5, 10, ShingleMatrixFilter.TokenPositioner.newColumn));
@@ -286,7 +285,7 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
     //
 
 
-    tokens = new LinkedList();
+    tokens = new LinkedList<Token>();
     tokens.add(tokenFactory("hello", 1, 1f, 0, 4, ShingleMatrixFilter.TokenPositioner.newColumn));
     tokens.add(tokenFactory("greetings", 1, 1f, 0, 4, ShingleMatrixFilter.TokenPositioner.newRow));
     tokens.add(tokenFactory("and", 1, 1f, 0, 4, ShingleMatrixFilter.TokenPositioner.sameRow));
@@ -413,11 +412,6 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
   }
 
-  private Token tokenFactory(String text, int startOffset, int endOffset) {
-    return tokenFactory(text, 1, 1f, startOffset, endOffset);
-  }
-
-
   private Token tokenFactory(String text, int posIncr, int startOffset, int endOffset) {
     Token token = new Token(startOffset, endOffset);
     token.setTermBuffer(text);
@@ -428,10 +422,6 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
   private Token tokenFactory(String text, int posIncr) {
     return tokenFactory(text, posIncr, 1f, 0, 0);
-  }
-
-  private Token tokenFactory(String text, int posIncr, float weight) {
-    return tokenFactory(text, posIncr, weight, 0, 0);
   }
 
   private Token tokenFactory(String text, int posIncr, float weight, int startOffset, int endOffset) {
@@ -458,17 +448,6 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
     assertTrue(ts.incrementToken());
     assertEquals(text, termAtt.term());
-  }
-
-  private void assertNext(TokenStream ts, String text, int positionIncrement, float boost) throws IOException {
-    TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
-    PositionIncrementAttribute posIncrAtt = ts.addAttribute(PositionIncrementAttribute.class);
-    PayloadAttribute payloadAtt = ts.addAttribute(PayloadAttribute.class);
-
-    assertTrue(ts.incrementToken());
-    assertEquals(text, termAtt.term());
-    assertEquals(positionIncrement, posIncrAtt.getPositionIncrement());
-    assertEquals(boost, payloadAtt.getPayload() == null ? 1f : PayloadHelper.decodeFloat(payloadAtt.getPayload().getData()), 0);
   }
 
   private void assertNext(TokenStream ts, String text, int positionIncrement, float boost, int startOffset, int endOffset) throws IOException {
@@ -505,7 +484,7 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
   public static class TokenListStream extends TokenStream {
 
-    private Collection tokens;
+    private Collection<Token> tokens;
     TermAttribute termAtt;
     PositionIncrementAttribute posIncrAtt;
     PayloadAttribute payloadAtt;
@@ -513,7 +492,7 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
     TypeAttribute typeAtt;
     FlagsAttribute flagsAtt;
     
-    public TokenListStream(Collection tokens) {
+    public TokenListStream(Collection<Token> tokens) {
       this.tokens = tokens;
       termAtt = addAttribute(TermAttribute.class);
       posIncrAtt = addAttribute(PositionIncrementAttribute.class);
@@ -523,7 +502,7 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
       flagsAtt = addAttribute(FlagsAttribute.class);
     }
 
-    private Iterator iterator;
+    private Iterator<Token> iterator;
 
     @Override
     public boolean incrementToken() throws IOException {
@@ -533,7 +512,7 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
       if (!iterator.hasNext()) {
         return false;
       }
-      Token prototype = (Token) iterator.next();
+      Token prototype = iterator.next();
       clearAttributes();
       termAtt.setTermBuffer(prototype.termBuffer(), 0, prototype.termLength());
       posIncrAtt.setPositionIncrement(prototype.getPositionIncrement());

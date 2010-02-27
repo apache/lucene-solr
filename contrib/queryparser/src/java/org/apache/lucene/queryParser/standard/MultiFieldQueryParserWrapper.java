@@ -77,7 +77,7 @@ public class MultiFieldQueryParserWrapper extends QueryParserWrapper {
   @SuppressWarnings("unchecked")
 public MultiFieldQueryParserWrapper(String[] fields, Analyzer analyzer, Map boosts) {
     this(fields, analyzer);
-    StandardQueryParser qpHelper = (StandardQueryParser) getQueryParserHelper();
+    StandardQueryParser qpHelper = getQueryParserHelper();
 
     qpHelper.setMultiFields(fields);
     qpHelper.setFieldsBoost(boosts);
@@ -113,7 +113,7 @@ public MultiFieldQueryParserWrapper(String[] fields, Analyzer analyzer, Map boos
   public MultiFieldQueryParserWrapper(String[] fields, Analyzer analyzer) {
     super(null, analyzer);
 
-    StandardQueryParser qpHelper = (StandardQueryParser) getQueryParserHelper();
+    StandardQueryParser qpHelper = getQueryParserHelper();
     qpHelper.setAnalyzer(analyzer);
 
     qpHelper.setMultiFields(fields);

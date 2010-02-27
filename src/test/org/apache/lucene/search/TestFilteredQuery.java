@@ -45,7 +45,7 @@ public class TestFilteredQuery extends LuceneTestCase {
   private Filter filter;
 
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
     super.setUp();
     directory = new RAMDirectory();
     IndexWriter writer = new IndexWriter (directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
@@ -92,8 +92,7 @@ public class TestFilteredQuery extends LuceneTestCase {
   }
 
   @Override
-  public void tearDown()
-  throws Exception {
+  protected void tearDown() throws Exception {
     searcher.close();
     directory.close();
     super.tearDown();

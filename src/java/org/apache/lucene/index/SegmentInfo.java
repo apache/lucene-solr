@@ -318,7 +318,7 @@ public final class SegmentInfo {
     si.hasSingleNormFile = hasSingleNormFile;
     si.diagnostics = new HashMap<String, String>(diagnostics);
     if (normGen != null) {
-      si.normGen = (long[]) normGen.clone();
+      si.normGen = normGen.clone();
     }
     si.docStoreOffset = docStoreOffset;
     si.docStoreSegment = docStoreSegment;

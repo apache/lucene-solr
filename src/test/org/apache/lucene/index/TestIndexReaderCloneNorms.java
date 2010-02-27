@@ -247,11 +247,6 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     iw.close();
   }
 
-  private void modifyNormsForF1(Directory dir) throws IOException {
-    IndexReader ir = IndexReader.open(dir, false);
-    modifyNormsForF1(ir);
-  }
-
   private void modifyNormsForF1(IndexReader ir) throws IOException {
     int n = ir.maxDoc();
     // System.out.println("modifyNormsForF1 maxDoc: "+n);

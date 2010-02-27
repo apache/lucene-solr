@@ -294,7 +294,6 @@ public class CustomScoreQuery extends Query {
     private final float qWeight;
     private Scorer subQueryScorer;
     private Scorer[] valSrcScorers;
-    private IndexReader reader;
     private final CustomScoreProvider provider;
     private float vScores[]; // reused in score() to avoid allocating this array for each doc 
 
@@ -305,7 +304,6 @@ public class CustomScoreQuery extends Query {
       this.qWeight = w.getValue();
       this.subQueryScorer = subQueryScorer;
       this.valSrcScorers = valSrcScorers;
-      this.reader = reader;
       this.vScores = new float[valSrcScorers.length];
       this.provider = CustomScoreQuery.this.getCustomScoreProvider(reader);
     }

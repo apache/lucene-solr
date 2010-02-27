@@ -46,7 +46,7 @@ import org.apache.lucene.util.AttributeSource;
  */
 public class AnalyzerUtil {
   
-  private AnalyzerUtil() {};
+  private AnalyzerUtil() {}
 
   /**
    * Returns a simple analyzer wrapper that logs all tokens produced by the
@@ -367,7 +367,7 @@ public class AnalyzerUtil {
     public void setValue(int value) { this.value = value; }
     @Override
     public String toString() { return String.valueOf(value); }
-  };
+  }
   
   
   
@@ -400,7 +400,7 @@ public class AnalyzerUtil {
   
   // TODO: don't split on floating point numbers, e.g. 3.1415 (digit before or after '.')
   /** Divides text into sentences; Includes inverted spanish exclamation and question mark */
-  private static final Pattern SENTENCES  = Pattern.compile("[!\\.\\?\\xA1\\xBF]+");
+//  private static final Pattern SENTENCES  = Pattern.compile("[!\\.\\?\\xA1\\xBF]+");
 
   /**
    * Returns at most the first N sentences of the given text. Delimiting

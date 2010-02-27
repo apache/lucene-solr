@@ -55,7 +55,7 @@ public class TestCompoundFile extends LuceneTestCase
 
 
     @Override
-    public void setUp() throws Exception {
+    protected void setUp() throws Exception {
        super.setUp();
        File file = new File(System.getProperty("tempDir"), "testIndex");
        _TestUtil.rmDir(file);
@@ -64,7 +64,7 @@ public class TestCompoundFile extends LuceneTestCase
     }
 
     @Override
-    public void tearDown() throws Exception {
+    protected void tearDown() throws Exception {
        dir.close();
        super.tearDown();
     }
@@ -329,14 +329,14 @@ public class TestCompoundFile extends LuceneTestCase
         IndexInput in = fsdir.openInput(file);
 
         // This read primes the buffer in IndexInput
-        byte b = in.readByte();
+        in.readByte();
 
         // Close the file
         in.close();
 
         // ERROR: this call should fail, but succeeds because the buffer
         // is still filled
-        b = in.readByte();
+        in.readByte();
 
         // ERROR: this call should fail, but succeeds for some reason as well
         in.seek(1099);
@@ -344,7 +344,7 @@ public class TestCompoundFile extends LuceneTestCase
         try {
             // OK: this call correctly fails. We are now past the 1024 internal
             // buffer, so an actual IO is attempted, which fails
-            b = in.readByte();
+            in.readByte();
             fail("expected readByte() to throw exception");
         } catch (IOException e) {
           // expected exception
@@ -587,7 +587,7 @@ public class TestCompoundFile extends LuceneTestCase
 
         // Open two files
         try {
-            IndexInput e1 = cr.openInput("bogus");
+            cr.openInput("bogus");
             fail("File not found");
 
         } catch (IOException e) {
@@ -608,7 +608,7 @@ public class TestCompoundFile extends LuceneTestCase
         is.readBytes(b, 0, 10);
 
         try {
-            byte test = is.readByte();
+            is.readByte();
             fail("Single byte read past end of file");
         } catch (IOException e) {
             /* success */

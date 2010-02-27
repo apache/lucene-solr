@@ -27,9 +27,9 @@ import org.apache.lucene.util.Version;
 
 public class TestReverseStringFilter extends BaseTokenStreamTestCase {
   public void testFilter() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(Version.LUCENE_CURRENT, 
+    TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, 
         new StringReader("Do have a nice day"));     // 1-4 length string
-    ReverseStringFilter filter = new ReverseStringFilter(Version.LUCENE_CURRENT, stream);
+    ReverseStringFilter filter = new ReverseStringFilter(TEST_VERSION_CURRENT, stream);
     TermAttribute text = filter.getAttribute(TermAttribute.class);
     assertTrue(filter.incrementToken());
     assertEquals("oD", text.term());
@@ -45,9 +45,9 @@ public class TestReverseStringFilter extends BaseTokenStreamTestCase {
   }
   
   public void testFilterWithMark() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader(
+    TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
         "Do have a nice day")); // 1-4 length string
-    ReverseStringFilter filter = new ReverseStringFilter(Version.LUCENE_CURRENT, stream, '\u0001');
+    ReverseStringFilter filter = new ReverseStringFilter(TEST_VERSION_CURRENT, stream, '\u0001');
     TermAttribute text = filter
         .getAttribute(TermAttribute.class);
     assertTrue(filter.incrementToken());
@@ -64,14 +64,14 @@ public class TestReverseStringFilter extends BaseTokenStreamTestCase {
   }
 
   public void testReverseString() throws Exception {
-    assertEquals( "A", ReverseStringFilter.reverse( "A" ) );
-    assertEquals( "BA", ReverseStringFilter.reverse( "AB" ) );
-    assertEquals( "CBA", ReverseStringFilter.reverse( "ABC" ) );
+    assertEquals( "A", ReverseStringFilter.reverse(TEST_VERSION_CURRENT, "A" ) );
+    assertEquals( "BA", ReverseStringFilter.reverse(TEST_VERSION_CURRENT, "AB" ) );
+    assertEquals( "CBA", ReverseStringFilter.reverse(TEST_VERSION_CURRENT, "ABC" ) );
   }
   
   public void testReverseChar() throws Exception {
     char[] buffer = { 'A', 'B', 'C', 'D', 'E', 'F' };
-    ReverseStringFilter.reverse( buffer, 2, 3 );
+    ReverseStringFilter.reverse(TEST_VERSION_CURRENT, buffer, 2, 3 );
     assertEquals( "ABEDCF", new String( buffer ) );
   }
   
@@ -84,37 +84,37 @@ public class TestReverseStringFilter extends BaseTokenStreamTestCase {
   
   public void testReverseSupplementary() throws Exception {
     // supplementary at end
-    assertEquals("𩬅艱鍟䇹愯瀛", ReverseStringFilter.reverse(Version.LUCENE_CURRENT, "瀛愯䇹鍟艱𩬅"));
+    assertEquals("𩬅艱鍟䇹愯瀛", ReverseStringFilter.reverse(TEST_VERSION_CURRENT, "瀛愯䇹鍟艱𩬅"));
     // supplementary at end - 1
-    assertEquals("a𩬅艱鍟䇹愯瀛", ReverseStringFilter.reverse(Version.LUCENE_CURRENT, "瀛愯䇹鍟艱𩬅a"));
+    assertEquals("a𩬅艱鍟䇹愯瀛", ReverseStringFilter.reverse(TEST_VERSION_CURRENT, "瀛愯䇹鍟艱𩬅a"));
     // supplementary at start
-    assertEquals("fedcba𩬅", ReverseStringFilter.reverse(Version.LUCENE_CURRENT, "𩬅abcdef"));
+    assertEquals("fedcba𩬅", ReverseStringFilter.reverse(TEST_VERSION_CURRENT, "𩬅abcdef"));
     // supplementary at start + 1
-    assertEquals("fedcba𩬅z", ReverseStringFilter.reverse(Version.LUCENE_CURRENT, "z𩬅abcdef"));
+    assertEquals("fedcba𩬅z", ReverseStringFilter.reverse(TEST_VERSION_CURRENT, "z𩬅abcdef"));
     // supplementary medial
-    assertEquals("gfe𩬅dcba", ReverseStringFilter.reverse(Version.LUCENE_CURRENT, "abcd𩬅efg"));
+    assertEquals("gfe𩬅dcba", ReverseStringFilter.reverse(TEST_VERSION_CURRENT, "abcd𩬅efg"));
   }
 
   public void testReverseSupplementaryChar() throws Exception {
     // supplementary at end
     char[] buffer = "abc瀛愯䇹鍟艱𩬅".toCharArray();
-    ReverseStringFilter.reverse(Version.LUCENE_CURRENT, buffer, 3, 7);
+    ReverseStringFilter.reverse(TEST_VERSION_CURRENT, buffer, 3, 7);
     assertEquals("abc𩬅艱鍟䇹愯瀛", new String(buffer));
     // supplementary at end - 1
     buffer = "abc瀛愯䇹鍟艱𩬅d".toCharArray();
-    ReverseStringFilter.reverse(Version.LUCENE_CURRENT, buffer, 3, 8);
+    ReverseStringFilter.reverse(TEST_VERSION_CURRENT, buffer, 3, 8);
     assertEquals("abcd𩬅艱鍟䇹愯瀛", new String(buffer));
     // supplementary at start
     buffer = "abc𩬅瀛愯䇹鍟艱".toCharArray();
-    ReverseStringFilter.reverse(Version.LUCENE_CURRENT, buffer, 3, 7);
+    ReverseStringFilter.reverse(TEST_VERSION_CURRENT, buffer, 3, 7);
     assertEquals("abc艱鍟䇹愯瀛𩬅", new String(buffer));
     // supplementary at start + 1
     buffer = "abcd𩬅瀛愯䇹鍟艱".toCharArray();
-    ReverseStringFilter.reverse(Version.LUCENE_CURRENT, buffer, 3, 8);
+    ReverseStringFilter.reverse(TEST_VERSION_CURRENT, buffer, 3, 8);
     assertEquals("abc艱鍟䇹愯瀛𩬅d", new String(buffer));
     // supplementary medial
     buffer = "abc瀛愯𩬅def".toCharArray();
-    ReverseStringFilter.reverse(Version.LUCENE_CURRENT, buffer, 3, 7);
+    ReverseStringFilter.reverse(TEST_VERSION_CURRENT, buffer, 3, 7);
     assertEquals("abcfed𩬅愯瀛", new String(buffer));
   }
 }

@@ -18,8 +18,6 @@ package org.apache.lucene.spatial.tier;
 
 import java.io.IOException;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -28,16 +26,11 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.store.RAMDirectory;
 
-
-/**
- *
- */
-public class TestDistance extends TestCase{
-
+public class TestDistance extends LuceneTestCase {
   
   private RAMDirectory directory;
   // reston va
@@ -48,16 +41,18 @@ public class TestDistance extends TestCase{
   private IndexWriter writer;
   
   @Override
-  protected void setUp() throws IOException {
+  protected void setUp() throws Exception {
+    super.setUp();
     directory = new RAMDirectory();
-    writer = new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
     addData(writer);
     
   }
 
   @Override
-  protected void tearDown() throws IOException {
+  protected void tearDown() throws Exception {
     writer.close();
+    super.tearDown();
   }
   
   private void addPoint(IndexWriter writer, String name, double lat, double lng) throws IOException{

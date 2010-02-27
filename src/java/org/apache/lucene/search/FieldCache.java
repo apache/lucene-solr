@@ -501,7 +501,7 @@ public interface FieldCache {
   public static abstract class CacheEntry {
     public abstract Object getReaderKey();
     public abstract String getFieldName();
-    public abstract Class getCacheType();
+    public abstract Class<?> getCacheType();
     public abstract Object getCustom();
     public abstract Object getValue();
     private String size = null;

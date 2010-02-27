@@ -159,7 +159,6 @@ public class TestBitVector extends LuceneTestCase
 
     /**
      * Test r/w when size/count cause switching between bit-set and d-gaps file formats.  
-     * @throws Exception
      */
     public void testDgaps() throws IOException {
       doTestDgaps(1,0,1);

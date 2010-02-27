@@ -30,15 +30,10 @@ import java.util.Map;
  */
 @Deprecated
 @SuppressWarnings("serial")
-public abstract class Parameter implements Serializable
-{
+public abstract class Parameter implements Serializable {
   static Map<String,Parameter> allParameters = new HashMap<String,Parameter>();
   
   private String name;
-  
-  private Parameter() {
-    // typesafe enum pattern, no public constructor
-  }
   
   protected Parameter(String name) {
     // typesafe enum pattern, no public constructor

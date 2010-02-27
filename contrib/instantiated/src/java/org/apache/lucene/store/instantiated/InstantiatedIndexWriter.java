@@ -37,7 +37,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -470,7 +469,7 @@ public class InstantiatedIndexWriter implements Closeable {
     // normalize settings per field name in document
 
     Map<String /* field name */, FieldSetting> fieldSettingsByFieldName = new HashMap<String, FieldSetting>();
-    for (Fieldable field : (List<Fieldable>) document.getDocument().getFields()) {
+    for (Fieldable field : document.getDocument().getFields()) {
       FieldSetting fieldSetting = fieldSettingsByFieldName.get(field.name());
       if (fieldSetting == null) {
         fieldSetting = new FieldSetting();
@@ -514,7 +513,7 @@ public class InstantiatedIndexWriter implements Closeable {
     Map<Fieldable, LinkedList<Token>> tokensByField = new LinkedHashMap<Fieldable, LinkedList<Token>>(20);
 
     // tokenize indexed fields.
-    for (Iterator<Fieldable> it = (Iterator<Fieldable>) document.getDocument().getFields().iterator(); it.hasNext();) {
+    for (Iterator<Fieldable> it = document.getDocument().getFields().iterator(); it.hasNext();) {
 
       Fieldable field = it.next();
 
@@ -526,7 +525,6 @@ public class InstantiatedIndexWriter implements Closeable {
         tokensByField.put(field, tokens);
 
         if (field.isTokenized()) {
-          int termCounter = 0;
           final TokenStream tokenStream;
           // todo readerValue(), binaryValue()
           if (field.tokenStreamValue() != null) {

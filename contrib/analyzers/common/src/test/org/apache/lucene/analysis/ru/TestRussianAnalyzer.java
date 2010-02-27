@@ -44,8 +44,7 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
     private File dataDir;
 
     @Override
-    protected void setUp() throws Exception
-    {
+    protected void setUp() throws Exception {
       super.setUp();
       dataDir = new File(System.getProperty("dataDir", "./bin"));
     }
@@ -71,7 +70,7 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
         TokenStream in = ra.tokenStream("all", inWords);
 
         RussianLetterTokenizer sample =
-            new RussianLetterTokenizer(Version.LUCENE_CURRENT,
+            new RussianLetterTokenizer(TEST_VERSION_CURRENT,
                 sampleUnicode);
 
         TermAttribute text = in.getAttribute(TermAttribute.class);
@@ -98,7 +97,7 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
     public void testDigitsInRussianCharset() 
     {
         Reader reader = new StringReader("text 1000");
-        RussianAnalyzer ra = new RussianAnalyzer(Version.LUCENE_CURRENT);
+        RussianAnalyzer ra = new RussianAnalyzer(TEST_VERSION_CURRENT);
         TokenStream stream = ra.tokenStream("", reader);
 
         TermAttribute termText = stream.getAttribute(TermAttribute.class);
@@ -126,7 +125,7 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
     }
     
     public void testReusableTokenStream() throws Exception {
-      Analyzer a = new RussianAnalyzer(Version.LUCENE_CURRENT);
+      Analyzer a = new RussianAnalyzer(TEST_VERSION_CURRENT);
       assertAnalyzesToReuse(a, "Вместе с тем о силе электромагнитной энергии имели представление еще",
           new String[] { "вмест", "сил", "электромагнитн", "энерг", "имел", "представлен" });
       assertAnalyzesToReuse(a, "Но знание это хранилось в тайне",
@@ -135,9 +134,9 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
     
     
     public void testWithStemExclusionSet() throws Exception {
-      CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+      CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
       set.add("представление");
-      Analyzer a = new RussianAnalyzer(Version.LUCENE_CURRENT, RussianAnalyzer.getDefaultStopSet() , set);
+      Analyzer a = new RussianAnalyzer(TEST_VERSION_CURRENT, RussianAnalyzer.getDefaultStopSet() , set);
       assertAnalyzesToReuse(a, "Вместе с тем о силе электромагнитной энергии имели представление еще",
           new String[] { "вмест", "сил", "электромагнитн", "энерг", "имел", "представление" });
      

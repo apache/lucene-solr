@@ -32,7 +32,6 @@ import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.IndexInput;
 
-import com.sleepycat.db.internal.DbEnv;
 import com.sleepycat.db.internal.Db;
 import com.sleepycat.db.internal.DbConstants;
 import com.sleepycat.db.DatabaseEntry;

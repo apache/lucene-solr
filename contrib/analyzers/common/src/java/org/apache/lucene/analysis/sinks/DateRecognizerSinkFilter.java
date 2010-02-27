@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.sinks;
 
 import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 
 import org.apache.lucene.analysis.TeeSinkTokenFilter.SinkFilter;
@@ -42,7 +41,7 @@ public class DateRecognizerSinkFilter extends SinkFilter {
    * Uses {@link java.text.SimpleDateFormat#getDateInstance()} as the {@link java.text.DateFormat} object.
    */
   public DateRecognizerSinkFilter() {
-    this(SimpleDateFormat.getDateInstance());
+    this(DateFormat.getDateInstance());
   }
   
   public DateRecognizerSinkFilter(DateFormat dateFormat) {

@@ -25,7 +25,6 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
-import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
 import org.apache.lucene.analysis.StopFilter;
@@ -162,14 +161,16 @@ public final class ArabicAnalyzer extends StopwordAnalyzerBase {
     this(matchVersion, WordlistLoader.getWordSet( stopwords, STOPWORDS_COMMENT));
   }
 
-
   /**
-   * Creates {@link TokenStreamComponents} used to tokenize all the text in the provided {@link Reader}.
-   *
-   * @return {@link TokenStreamComponents} built from an {@link ArabicLetterTokenizer} filtered with
-   * 			{@link LowerCaseFilter}, {@link StopFilter}, {@link ArabicNormalizationFilter},
-   *      {@link KeywordMarkerTokenFilter} if a stem exclusion set is provided
-   *            and {@link ArabicStemFilter}.
+   * Creates
+   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * used to tokenize all the text in the provided {@link Reader}.
+   * 
+   * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   *         built from an {@link ArabicLetterTokenizer} filtered with
+   *         {@link LowerCaseFilter}, {@link StopFilter},
+   *         {@link ArabicNormalizationFilter}, {@link KeywordMarkerTokenFilter}
+   *         if a stem exclusion set is provided and {@link ArabicStemFilter}.
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName,

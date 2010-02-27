@@ -27,11 +27,6 @@ public class Hyphenation {
   private int[] hyphenPoints;
 
   /**
-   * number of hyphenation points in word
-   */
-  private int len;
-
-  /**
    * rawWord as made of alternating strings and {@link Hyphen Hyphen} instances
    */
   Hyphenation(int[] points) {

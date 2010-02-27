@@ -20,8 +20,6 @@ package org.apache.lucene.misc;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -43,9 +41,9 @@ import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class ChainedFilterTest extends TestCase {
+public class ChainedFilterTest extends LuceneTestCase {
   public static final int MAX = 500;
 
   private RAMDirectory directory;
@@ -57,10 +55,11 @@ public class ChainedFilterTest extends TestCase {
   private QueryWrapperFilter sueFilter;
 
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
+    super.setUp();
     directory = new RAMDirectory();
     IndexWriter writer =
-       new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
+       new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
 
     Calendar cal = new GregorianCalendar();
     cal.clear();
@@ -188,7 +187,7 @@ public class ChainedFilterTest extends TestCase {
   
   public void testWithCachingFilter() throws Exception {
     Directory dir = new RAMDirectory();
-    Analyzer analyzer = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer analyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
   
     IndexWriter writer = new IndexWriter(dir, analyzer, true, MaxFieldLength.LIMITED);
     writer.close();

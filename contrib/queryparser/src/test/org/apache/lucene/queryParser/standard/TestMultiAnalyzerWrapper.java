@@ -17,12 +17,10 @@ package org.apache.lucene.queryParser.standard;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
@@ -31,9 +29,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.queryParser.standard.QueryParserWrapper;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 /**
  * This test case is a copy of the core Lucene query parser test, it was adapted
@@ -150,9 +146,9 @@ public class TestMultiAnalyzerWrapper extends LuceneTestCase {
 
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new StandardTokenizer(Version.LUCENE_CURRENT, reader);
+      TokenStream result = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
       result = new TestFilter(result);
-      result = new LowerCaseFilter(Version.LUCENE_CURRENT, result);
+      result = new LowerCaseFilter(TEST_VERSION_CURRENT, result);
       return result;
     }
   }
@@ -220,9 +216,9 @@ public class TestMultiAnalyzerWrapper extends LuceneTestCase {
 
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new StandardTokenizer(Version.LUCENE_CURRENT, reader);
+      TokenStream result = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
       result = new TestPosIncrementFilter(result);
-      result = new LowerCaseFilter(Version.LUCENE_CURRENT, result);
+      result = new LowerCaseFilter(TEST_VERSION_CURRENT, result);
       return result;
     }
   }

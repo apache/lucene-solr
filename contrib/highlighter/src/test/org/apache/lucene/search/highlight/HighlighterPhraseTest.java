@@ -48,12 +48,10 @@ import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.Version;
 
-import junit.framework.TestCase;
-
-public class HighlighterPhraseTest extends TestCase {
+public class HighlighterPhraseTest extends LuceneTestCase {
   private static final String FIELD = "text";
 
   public void testConcurrentPhrase() throws CorruptIndexException,
@@ -61,7 +59,7 @@ public class HighlighterPhraseTest extends TestCase {
     final String TEXT = "the fox jumped";
     final Directory directory = new RAMDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        new WhitespaceAnalyzer(Version.LUCENE_CURRENT), MaxFieldLength.UNLIMITED);
+        new WhitespaceAnalyzer(TEST_VERSION_CURRENT), MaxFieldLength.UNLIMITED);
     try {
       final Document document = new Document();
       document.add(new Field(FIELD, new TokenStreamConcurrent(),
@@ -104,7 +102,7 @@ public class HighlighterPhraseTest extends TestCase {
     final String TEXT = "the fox jumped";
     final Directory directory = new RAMDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        new WhitespaceAnalyzer(Version.LUCENE_CURRENT), MaxFieldLength.UNLIMITED);
+        new WhitespaceAnalyzer(TEST_VERSION_CURRENT), MaxFieldLength.UNLIMITED);
     try {
       final Document document = new Document();
       document.add(new Field(FIELD, new TokenStreamConcurrent(),
@@ -125,19 +123,23 @@ public class HighlighterPhraseTest extends TestCase {
         indexSearcher.search(phraseQuery, new Collector() {
           private int baseDoc;
 
+          @Override
           public boolean acceptsDocsOutOfOrder() {
             return true;
           }
 
+          @Override
           public void collect(int i) throws IOException {
             bitset.set(this.baseDoc + i);
           }
 
+          @Override
           public void setNextReader(IndexReader indexreader, int i)
               throws IOException {
             this.baseDoc = i;
           }
 
+          @Override
           public void setScorer(org.apache.lucene.search.Scorer scorer)
               throws IOException {
             // Do Nothing
@@ -169,7 +171,7 @@ public class HighlighterPhraseTest extends TestCase {
     final String TEXT = "the fox did not jump";
     final Directory directory = new RAMDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        new WhitespaceAnalyzer(Version.LUCENE_CURRENT), MaxFieldLength.UNLIMITED);
+        new WhitespaceAnalyzer(TEST_VERSION_CURRENT), MaxFieldLength.UNLIMITED);
     try {
       final Document document = new Document();
       document.add(new Field(FIELD, new TokenStreamSparse(),
@@ -211,7 +213,7 @@ public class HighlighterPhraseTest extends TestCase {
     final String TEXT = "the fox did not jump";
     final Directory directory = new RAMDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        new WhitespaceAnalyzer(Version.LUCENE_CURRENT), MaxFieldLength.UNLIMITED);
+        new WhitespaceAnalyzer(TEST_VERSION_CURRENT), MaxFieldLength.UNLIMITED);
     try {
       final Document document = new Document();
       document.add(new Field(FIELD, TEXT, Store.YES, Index.ANALYZED,
@@ -251,7 +253,7 @@ public class HighlighterPhraseTest extends TestCase {
     final String TEXT = "the fox did not jump";
     final Directory directory = new RAMDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        new WhitespaceAnalyzer(Version.LUCENE_CURRENT), MaxFieldLength.UNLIMITED);
+        new WhitespaceAnalyzer(TEST_VERSION_CURRENT), MaxFieldLength.UNLIMITED);
     try {
       final Document document = new Document();
       document.add(new Field(FIELD, new TokenStreamSparse(),
@@ -322,6 +324,7 @@ public class HighlighterPhraseTest extends TestCase {
       return true;
     }
 
+    @Override
     public void reset() {
       this.i = -1;
       this.tokens = new Token[] {
@@ -367,6 +370,7 @@ public class HighlighterPhraseTest extends TestCase {
       return true;
     }
 
+    @Override
     public void reset() {
       this.i = -1;
       this.tokens = new Token[] {

@@ -23,18 +23,17 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestEnglishAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new EnglishAnalyzer(Version.LUCENE_CURRENT);
+    new EnglishAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new EnglishAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new EnglishAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTermReuse(a, "books", "book");
     checkOneTermReuse(a, "book", "book");
@@ -46,7 +45,7 @@ public class TestEnglishAnalyzer extends BaseTokenStreamTestCase {
   public void testExclude() throws IOException {
     Set<String> exclusionSet = new HashSet<String>();
     exclusionSet.add("books");
-    Analyzer a = new EnglishAnalyzer(Version.LUCENE_CURRENT, 
+    Analyzer a = new EnglishAnalyzer(TEST_VERSION_CURRENT, 
         EnglishAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "books", "books");
     checkOneTermReuse(a, "book", "book");

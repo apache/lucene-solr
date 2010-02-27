@@ -39,7 +39,6 @@ import static org.junit.Assert.*;
  * <p>
  * The exact score tests use TopDocs top to verify the exact score.  
  */
-@SuppressWarnings({"UseOfSystemOutOrSystemErr"})
 public class TestFieldScoreQuery extends FunctionTestSetup {
 
   /* @override constructor */

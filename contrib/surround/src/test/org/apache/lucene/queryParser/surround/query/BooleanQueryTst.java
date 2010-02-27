@@ -29,6 +29,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.queryParser.surround.parser.QueryParser;
 
 import junit.framework.TestCase;
+import junit.framework.Assert;
 
 public class BooleanQueryTst {
   String queryText;
@@ -87,8 +88,8 @@ public class BooleanQueryTst {
       float score = scorer.score();
       docNr += docBase;
       /* System.out.println(docNr + " '" + dBase.getDocs()[docNr] + "': " + score); */
-      TestCase.assertTrue(queryText + ": positive score", score > 0.0);
-      TestCase.assertTrue(queryText + ": too many hits", totalMatched < expectedDocNrs.length);
+      Assert.assertTrue(queryText + ": positive score", score > 0.0);
+      Assert.assertTrue(queryText + ": too many hits", totalMatched < expectedDocNrs.length);
       int i;
       for (i = 0; i < expectedDocNrs.length; i++) {
         if ((! encountered[i]) && (expectedDocNrs[i] == docNr)) {
@@ -97,13 +98,13 @@ public class BooleanQueryTst {
         }
       }
       if (i == expectedDocNrs.length) {
-        TestCase.assertTrue(queryText + ": doc nr for hit not expected: " + docNr, false);
+        Assert.assertTrue(queryText + ": doc nr for hit not expected: " + docNr, false);
       }
       totalMatched++;
     }
 
     void checkNrHits() {
-      TestCase.assertEquals(queryText + ": nr of hits", expectedDocNrs.length, totalMatched);
+      Assert.assertEquals(queryText + ": nr of hits", expectedDocNrs.length, totalMatched);
     }
   }
 

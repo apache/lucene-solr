@@ -79,7 +79,7 @@ public class ReverseOrdFieldSource extends ValueSource {
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#floatVal(int) */
       @Override
       public float floatVal(int doc) {
-        return (float)(end - arr[doc]);
+        return (end - arr[doc]);
       }
       /* (non-Javadoc) @see org.apache.lucene.search.function.DocValues#intVal(int) */
       @Override

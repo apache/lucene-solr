@@ -38,7 +38,7 @@ import org.apache.lucene.store.RAMDirectory;
 public class TestSpansAdvanced extends LuceneTestCase {
 
     // location to the index
-    protected Directory mDirectory;;
+    protected Directory mDirectory;
 
     protected IndexSearcher searcher;
 
@@ -51,7 +51,6 @@ public class TestSpansAdvanced extends LuceneTestCase {
      */
     @Override
     protected void setUp() throws Exception {
-        super.setUp();
         super.setUp();
 
         // create test index
@@ -67,10 +66,10 @@ public class TestSpansAdvanced extends LuceneTestCase {
 
     @Override
     protected void tearDown() throws Exception {
-        super.tearDown();
         searcher.close();
         mDirectory.close();
         mDirectory = null;
+        super.tearDown();
     }
 
     /**

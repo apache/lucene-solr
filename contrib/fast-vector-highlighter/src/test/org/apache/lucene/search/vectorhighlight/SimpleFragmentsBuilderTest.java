@@ -17,7 +17,6 @@ package org.apache.lucene.search.vectorhighlight;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;

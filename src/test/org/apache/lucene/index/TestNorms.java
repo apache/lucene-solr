@@ -17,7 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
+import java.io.IOException;
+import java.util.ArrayList;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -29,10 +30,7 @@ import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Test that norms info is preserved during index life - including
@@ -158,8 +156,8 @@ public class TestNorms extends LuceneTestCase {
     int n = ir.maxDoc();
     for (int i = 0; i < n; i+=3) { // modify for every third doc
       int k = (i*3) % modifiedNorms.size();
-      float origNorm = ((Float)modifiedNorms.get(i)).floatValue();
-      float newNorm = ((Float)modifiedNorms.get(k)).floatValue();
+      float origNorm = modifiedNorms.get(i).floatValue();
+      float newNorm = modifiedNorms.get(k).floatValue();
       //System.out.println("Modifying: for "+i+" from "+origNorm+" to "+newNorm);
       //System.out.println("      and: for "+k+" from "+newNorm+" to "+origNorm);
       modifiedNorms.set(i, Float.valueOf(newNorm));

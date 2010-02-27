@@ -199,7 +199,7 @@ final class TermVectorsWriter {
       try {
         tvx.close();
       } catch (IOException e) {
-        if (keep == null) keep = e;
+        keep = e;
       }
     if (tvd != null)
       try {

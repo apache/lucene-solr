@@ -19,8 +19,6 @@ package org.apache.lucene.search.regex;
 
 import java.io.IOException;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -36,16 +34,17 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestSpanRegexQuery extends TestCase {
+public class TestSpanRegexQuery extends LuceneTestCase {
+  
   Directory indexStoreA = new RAMDirectory();
 
   Directory indexStoreB = new RAMDirectory();
 
   public void testSpanRegex() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     // doc.add(new Field("field", "the quick brown fox jumps over the lazy dog",
     // Field.Store.NO, Field.Index.ANALYZED));
@@ -110,14 +109,14 @@ public class TestSpanRegexQuery extends TestCase {
         Field.Index.ANALYZED_NO_NORMS));
 
     // creating first index writer
-    IndexWriter writerA = new IndexWriter(indexStoreA, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT),
+    IndexWriter writerA = new IndexWriter(indexStoreA, new StandardAnalyzer(TEST_VERSION_CURRENT),
         true, IndexWriter.MaxFieldLength.LIMITED);
     writerA.addDocument(lDoc);
     writerA.optimize();
     writerA.close();
 
     // creating second index writer
-    IndexWriter writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT),
+    IndexWriter writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(TEST_VERSION_CURRENT),
         true, IndexWriter.MaxFieldLength.LIMITED);
     writerB.addDocument(lDoc2);
     writerB.optimize();

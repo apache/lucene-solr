@@ -68,10 +68,12 @@ import java.util.TreeSet;
  * xxxx:[]
  * </pre>
  *
- * @see <a target="_blank"
+ * <p>
+ * <b>See also:</b><br>
+ * <a target="_blank"
  *      href="http://www.cogsci.princeton.edu/~wn/man/prologdb.5WN.html">prologdb
- *      man page </a>
- * @see <a target="_blank" href="http://www.hostmon.com/rfc/advanced.jsp">Dave's synonym demo site</a>
+ *      man page </a><br>
+ * <a target="_blank" href="http://www.hostmon.com/rfc/advanced.jsp">Dave's synonym demo site</a>
  */
 public class SynonymMap {
 
@@ -389,7 +391,7 @@ public class SynonymMap {
       System.arraycopy(output, 0, buffer, 0, len);
       return buffer;
     } finally {
-      if (input != null) input.close();
+      input.close();
     }
   }
   

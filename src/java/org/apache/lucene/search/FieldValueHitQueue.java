@@ -203,7 +203,7 @@ public abstract class FieldValueHitQueue extends PriorityQueue<FieldValueHitQueu
    */
   FieldDoc fillFields(final Entry entry) {
     final int n = comparators.length;
-    final Comparable[] fields = new Comparable[n];
+    final Comparable<?>[] fields = new Comparable[n];
     for (int i = 0; i < n; ++i) {
       fields[i] = comparators[i].value(entry.slot);
     }

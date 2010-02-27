@@ -20,8 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.HashSet;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -30,17 +28,16 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class FuzzyLikeThisQueryTest extends TestCase
-{
+public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 	private RAMDirectory directory;
 	private IndexSearcher searcher;
-	private Analyzer analyzer=new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
+	private Analyzer analyzer=new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
 
 	@Override
-	protected void setUp() throws Exception
-	{
+	protected void setUp() throws Exception	{
+	  super.setUp();
 		directory = new RAMDirectory();
 		IndexWriter writer = new IndexWriter(directory, analyzer,true, MaxFieldLength.UNLIMITED);
 		
@@ -115,7 +112,7 @@ public class FuzzyLikeThisQueryTest extends TestCase
 	}
 	
 	public void testFuzzyLikeThisQueryEquals() {
-	  Analyzer analyzer = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
+	  Analyzer analyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
     FuzzyLikeThisQuery fltq1 = new FuzzyLikeThisQuery(10, analyzer);
     fltq1.addTerms("javi", "subject", 0.5f, 2);
     FuzzyLikeThisQuery fltq2 = new FuzzyLikeThisQuery(10, analyzer);

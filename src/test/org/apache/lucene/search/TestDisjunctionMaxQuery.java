@@ -74,7 +74,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
     public IndexSearcher s;
 
     @Override
-    public void setUp() throws Exception {
+    protected void setUp() throws Exception {
         super.setUp();
 
         index = new RAMDirectory();

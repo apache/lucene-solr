@@ -33,7 +33,6 @@ public class TestQueryTermVector extends LuceneTestCase {
     String [] gold = {"again", "bar", "foo", "go"};
     int [] goldFreqs = {1, 2, 3, 3};
     QueryTermVector result = new QueryTermVector(queryTerm);
-    assertTrue(result != null);
     String [] terms = result.getTerms();
     assertTrue(terms.length == 4);
     int [] freq = result.getTermFrequencies();
@@ -43,7 +42,6 @@ public class TestQueryTermVector extends LuceneTestCase {
     assertTrue(result.getTerms().length == 0);
     
     result = new QueryTermVector("foo bar foo again foo bar go go go", new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
-    assertTrue(result != null);
     terms = result.getTerms();
     assertTrue(terms.length == 4);
     freq = result.getTermFrequencies();

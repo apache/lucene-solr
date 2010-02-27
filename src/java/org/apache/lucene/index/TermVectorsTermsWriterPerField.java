@@ -74,8 +74,8 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
         perThread.doc = termsWriter.getPerDoc();
         perThread.doc.docID = docState.docID;
         assert perThread.doc.numVectorFields == 0;
-        assert 0 == perThread.doc.tvf.length();
-        assert 0 == perThread.doc.tvf.getFilePointer();
+        assert 0 == perThread.doc.perDocTvf.length();
+        assert 0 == perThread.doc.perDocTvf.getFilePointer();
       } else {
         assert perThread.doc.docID == docState.docID;
 
@@ -114,7 +114,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     if (numPostings > maxNumPostings)
       maxNumPostings = numPostings;
 
-    final IndexOutput tvf = perThread.doc.tvf;
+    final IndexOutput tvf = perThread.doc.perDocTvf;
 
     // This is called once, after inverting all occurrences
     // of a given field in the doc.  At this point we flush
@@ -216,7 +216,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     p.freq = 1;
 
     if (doVectorOffsets) {
-      int startOffset = fieldState.offset + offsetAttribute.startOffset();;
+      int startOffset = fieldState.offset + offsetAttribute.startOffset();
       int endOffset = fieldState.offset + offsetAttribute.endOffset();
       
       termsHashPerField.writeVInt(1, startOffset);
@@ -239,7 +239,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     p.freq++;
 
     if (doVectorOffsets) {
-      int startOffset = fieldState.offset + offsetAttribute.startOffset();;
+      int startOffset = fieldState.offset + offsetAttribute.startOffset();
       int endOffset = fieldState.offset + offsetAttribute.endOffset();
       
       termsHashPerField.writeVInt(1, startOffset - p.lastOffset);

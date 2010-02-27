@@ -23,18 +23,17 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestTurkishAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new TurkishAnalyzer(Version.LUCENE_CURRENT);
+    new TurkishAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new TurkishAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new TurkishAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTermReuse(a, "ağacı", "ağaç");
     checkOneTermReuse(a, "ağaç", "ağaç");
@@ -46,7 +45,7 @@ public class TestTurkishAnalyzer extends BaseTokenStreamTestCase {
   public void testExclude() throws IOException {
     Set<String> exclusionSet = new HashSet<String>();
     exclusionSet.add("ağacı");
-    Analyzer a = new TurkishAnalyzer(Version.LUCENE_CURRENT, 
+    Analyzer a = new TurkishAnalyzer(TEST_VERSION_CURRENT, 
         TurkishAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "ağacı", "ağacı");
     checkOneTermReuse(a, "ağaç", "ağaç");

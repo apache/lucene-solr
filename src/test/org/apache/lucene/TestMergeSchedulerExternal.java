@@ -20,7 +20,6 @@ import java.io.IOException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.Directory;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
@@ -37,14 +36,6 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
   volatile boolean mergeCalled;
   volatile boolean mergeThreadCreated;
   volatile boolean excCalled;
-
-  private class MyMergeException extends RuntimeException {
-    Directory dir;
-    public MyMergeException(Throwable exc, Directory dir) {
-      super(exc);
-      this.dir = dir;
-    }
-  }
 
   private class MyMergeScheduler extends ConcurrentMergeScheduler {
 
@@ -99,7 +90,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     MyMergeScheduler ms = new MyMergeScheduler();
     writer.setMergeScheduler(ms);
     writer.setMaxBufferedDocs(2);
-    writer.setRAMBufferSizeMB(writer.DISABLE_AUTO_FLUSH);
+    writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
     for(int i=0;i<20;i++)
       writer.addDocument(doc);
 

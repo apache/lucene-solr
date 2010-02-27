@@ -26,7 +26,7 @@ package org.apache.lucene.analysis.ru;
 class RussianStemmer
 {
     // positions of RV, R1 and R2 respectively
-    private int RV, R1, R2;
+    private int RV, /*R1,*/ R2;
 
     // letters (currently unused letters are commented out)
     private final static char A = '\u0430';
@@ -263,11 +263,7 @@ class RussianStemmer
         if (!findAndRemoveEnding(stemmingZone, adjectiveEndings))
             return false;
         // if adjective ending was found, try for participle ending.
-        // variable r is unused, we are just interested in the side effect of
-        // findAndRemoveEnding():
-        boolean r =
-            findAndRemoveEnding(stemmingZone, participleEndings1, participle1Predessors)
-            ||
+        if (!findAndRemoveEnding(stemmingZone, participleEndings1, participle1Predessors))
             findAndRemoveEnding(stemmingZone, participleEndings2);
         return true;
     }
@@ -391,7 +387,7 @@ class RussianStemmer
     private void markPositions(String word)
     {
         RV = 0;
-        R1 = 0;
+//        R1 = 0;
         R2 = 0;
         int i = 0;
         // find RV
@@ -409,7 +405,7 @@ class RussianStemmer
         }
         if (word.length() - 1 < ++i)
             return; // R1 zone is empty
-        R1 = i;
+//        R1 = i;
         // find R2
         while (word.length() > i && !isVowel(word.charAt(i)))
         {
@@ -532,13 +528,9 @@ class RussianStemmer
         if (!perfectiveGerund(stemmingZone))
         {
             reflexive(stemmingZone);
-            // variable r is unused, we are just interested in the flow that gets
-            // created by logical expression: apply adjectival(); if that fails,
-            // apply verb() etc
-            boolean r =
-                adjectival(stemmingZone)
-                || verb(stemmingZone)
-                || noun(stemmingZone);
+            if (!adjectival(stemmingZone))
+              if (!verb(stemmingZone))
+                noun(stemmingZone);
         }
         // Step 2
         removeI(stemmingZone);

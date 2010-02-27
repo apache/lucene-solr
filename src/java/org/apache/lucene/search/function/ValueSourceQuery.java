@@ -125,7 +125,6 @@ public class ValueSourceQuery extends Query {
    * be used. (assuming field is indexed for this doc, with a single token.)   
    */
   private class ValueSourceScorer extends Scorer {
-    private final ValueSourceWeight weight;
     private final float qWeight;
     private final DocValues vals;
     private final TermDocs termDocs;
@@ -134,8 +133,7 @@ public class ValueSourceQuery extends Query {
     // constructor
     private ValueSourceScorer(Similarity similarity, IndexReader reader, ValueSourceWeight w) throws IOException {
       super(similarity);
-      this.weight = w;
-      this.qWeight = w.getValue();
+      qWeight = w.getValue();
       // this is when/where the values are first created.
       vals = valSrc.getValues(reader);
       termDocs = reader.termDocs(null);

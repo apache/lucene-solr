@@ -57,7 +57,6 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     assertTrue(reader != null);
     assertEquals(indexDivisor, reader.getTermInfosIndexDivisor());
     SegmentTermDocs segTermDocs = new SegmentTermDocs(reader);
-    assertTrue(segTermDocs != null);
     segTermDocs.seek(new Term(DocHelper.TEXT_FIELD_2_KEY, "field"));
     if (segTermDocs.next() == true)
     {
@@ -79,7 +78,6 @@ public class TestSegmentTermDocs extends LuceneTestCase {
       SegmentReader reader = SegmentReader.get(true, info, indexDivisor);
       assertTrue(reader != null);
       SegmentTermDocs segTermDocs = new SegmentTermDocs(reader);
-      assertTrue(segTermDocs != null);
       segTermDocs.seek(new Term("textField2", "bad"));
       assertTrue(segTermDocs.next() == false);
       reader.close();
@@ -89,7 +87,6 @@ public class TestSegmentTermDocs extends LuceneTestCase {
       SegmentReader reader = SegmentReader.get(true, info, indexDivisor);
       assertTrue(reader != null);
       SegmentTermDocs segTermDocs = new SegmentTermDocs(reader);
-      assertTrue(segTermDocs != null);
       segTermDocs.seek(new Term("junk", "bad"));
       assertTrue(segTermDocs.next() == false);
       reader.close();

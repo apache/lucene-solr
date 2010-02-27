@@ -167,10 +167,8 @@ public class InstantiatedIndexReader extends IndexReader {
   }
 
   @Override
-  protected void doCommit(Map commitUserData) throws IOException {
+  protected void doCommit(Map<String,String> commitUserData) throws IOException {
     // todo: read/write lock
-
-    boolean updated = false;
 
     // 1. update norms
     if (uncommittedNormsByFieldNameAndDocumentNumber != null) {
@@ -181,8 +179,6 @@ public class InstantiatedIndexReader extends IndexReader {
         }
       }
       uncommittedNormsByFieldNameAndDocumentNumber = null;
-
-      updated = true;
     }
 
     // 2. remove deleted documents
@@ -197,9 +193,6 @@ public class InstantiatedIndexReader extends IndexReader {
         }
       }
       uncommittedDeletedDocuments = null;
-
-      updated = true;
-
     }
 
     // todo unlock read/writelock

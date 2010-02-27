@@ -488,7 +488,7 @@ public class CharArrayMap<V> extends AbstractMap<Object,V> {
     @Override
     public String toString() {
       return new StringBuilder().append(keys[pos]).append('=')
-        .append(((Object) values[pos] == (Object) CharArrayMap.this) ? "(this Map)" : values[pos])
+        .append((values[pos] == CharArrayMap.this) ? "(this Map)" : values[pos])
         .toString();
     }
   }

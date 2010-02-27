@@ -131,7 +131,7 @@ public final class SynExpand {
 		while ( it.hasNext())
 		{
 			// [2a] add to level words in
-			String word = (String) it.next();
+			String word = it.next();
 			TermQuery tq = new TermQuery( new Term( field, word));
 			tmp.add( tq, BooleanClause.Occur.SHOULD);
 

@@ -42,7 +42,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
 
 /**
  * A test class for ShingleAnalyzerWrapper as regards queries and scoring.
@@ -86,7 +85,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
   protected ScoreDoc[] queryParsingTest(Analyzer analyzer, String qs) throws Exception {
     searcher = setUpSearcher(analyzer);
 
-    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "content", analyzer);
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "content", analyzer);
 
     Query q = qp.parse(qs);
 
@@ -106,7 +105,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    */
   public void testShingleAnalyzerWrapperQueryParsing() throws Exception {
     ScoreDoc[] hits = queryParsingTest(new ShingleAnalyzerWrapper
-                                     (new WhitespaceAnalyzer(Version.LUCENE_CURRENT), 2),
+                                     (new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 2),
                                  "test sentence");
     int[] ranks = new int[] { 1, 2, 0 };
     compareRanks(hits, ranks);
@@ -117,7 +116,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    */
   public void testShingleAnalyzerWrapperPhraseQueryParsingFails() throws Exception {
     ScoreDoc[] hits = queryParsingTest(new ShingleAnalyzerWrapper
-                                     (new WhitespaceAnalyzer(Version.LUCENE_CURRENT), 2),
+                                     (new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 2),
                                  "\"this sentence\"");
     int[] ranks = new int[] { 0 };
     compareRanks(hits, ranks);
@@ -128,7 +127,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    */
   public void testShingleAnalyzerWrapperPhraseQueryParsing() throws Exception {
     ScoreDoc[] hits = queryParsingTest(new ShingleAnalyzerWrapper
-                                     (new WhitespaceAnalyzer(Version.LUCENE_CURRENT), 2),
+                                     (new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 2),
                                  "\"test sentence\"");
     int[] ranks = new int[] { 1 };
     compareRanks(hits, ranks);
@@ -139,7 +138,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    */
   public void testShingleAnalyzerWrapperRequiredQueryParsing() throws Exception {
     ScoreDoc[] hits = queryParsingTest(new ShingleAnalyzerWrapper
-                                     (new WhitespaceAnalyzer(Version.LUCENE_CURRENT), 2),
+                                     (new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 2),
                                  "+test +sentence");
     int[] ranks = new int[] { 1, 2 };
     compareRanks(hits, ranks);
@@ -149,7 +148,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    * This shows how to construct a phrase query containing shingles.
    */
   public void testShingleAnalyzerWrapperPhraseQuery() throws Exception {
-    Analyzer analyzer = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(Version.LUCENE_CURRENT), 2);
+    Analyzer analyzer = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 2);
     searcher = setUpSearcher(analyzer);
 
     PhraseQuery q = new PhraseQuery();
@@ -178,7 +177,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
    * in the right order and adjacent to each other.
    */
   public void testShingleAnalyzerWrapperBooleanQuery() throws Exception {
-    Analyzer analyzer = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(Version.LUCENE_CURRENT), 2);
+    Analyzer analyzer = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 2);
     searcher = setUpSearcher(analyzer);
 
     BooleanQuery q = new BooleanQuery();
@@ -200,7 +199,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
   }
   
   public void testReusableTokenStream() throws Exception {
-    Analyzer a = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(Version.LUCENE_CURRENT), 2);
+    Analyzer a = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 2);
     assertAnalyzesToReuse(a, "please divide into shingles",
         new String[] { "please", "please divide", "divide", "divide into", "into", "into shingles", "shingles" },
         new int[] { 0, 0, 7, 7, 14, 14, 19 },
@@ -222,9 +221,9 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       if (++invocationCount % 2 == 0)
-        return new WhitespaceTokenizer(Version.LUCENE_CURRENT, reader);
+        return new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
       else
-        return new LetterTokenizer(Version.LUCENE_CURRENT, reader);
+        return new LetterTokenizer(TEST_VERSION_CURRENT, reader);
     }
   }
   
@@ -249,7 +248,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
   public void testNonDefaultMinShingleSize() throws Exception {
     ShingleAnalyzerWrapper analyzer 
-      = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(), 3, 4);
+      = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 3, 4);
     assertAnalyzesToReuse(analyzer, "please divide this sentence into shingles",
                           new String[] { "please",   "please divide this",   "please divide this sentence", 
                                          "divide",   "divide this sentence", "divide this sentence into", 
@@ -273,7 +272,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
   
   public void testNonDefaultMinAndSameMaxShingleSize() throws Exception {
     ShingleAnalyzerWrapper analyzer
-      = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(), 3, 3);
+      = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 3, 3);
     assertAnalyzesToReuse(analyzer, "please divide this sentence into shingles",
                           new String[] { "please",   "please divide this", 
                                          "divide",   "divide this sentence", 
@@ -297,7 +296,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
   public void testNoTokenSeparator() throws Exception {
     ShingleAnalyzerWrapper analyzer 
-      = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer());
+      = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     analyzer.setTokenSeparator("");
     assertAnalyzesToReuse(analyzer, "please divide into shingles",
                           new String[] { "please", "pleasedivide", 
@@ -319,7 +318,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
 
   public void testNullTokenSeparator() throws Exception {
     ShingleAnalyzerWrapper analyzer 
-      = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer());
+      = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     analyzer.setTokenSeparator(null);
     assertAnalyzesToReuse(analyzer, "please divide into shingles",
                           new String[] { "please", "pleasedivide", 
@@ -340,7 +339,7 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
   }
   public void testAltTokenSeparator() throws Exception {
     ShingleAnalyzerWrapper analyzer 
-      = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer());
+      = new ShingleAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     analyzer.setTokenSeparator("<SEP>");
     assertAnalyzesToReuse(analyzer, "please divide into shingles",
                           new String[] { "please", "please<SEP>divide", 

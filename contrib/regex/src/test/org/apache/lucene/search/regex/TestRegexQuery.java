@@ -17,7 +17,6 @@ package org.apache.lucene.search.regex;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -29,18 +28,19 @@ import org.apache.lucene.index.TermEnum;
 
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestRegexQuery extends TestCase {
+public class TestRegexQuery extends LuceneTestCase {
   private IndexSearcher searcher;
   private final String FN = "field";
 
 
   @Override
-  public void setUp() {
+  protected void setUp() throws Exception {
+    super.setUp();
     RAMDirectory directory = new RAMDirectory();
     try {
-      IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, 
+      IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, 
                                            IndexWriter.MaxFieldLength.LIMITED);
       Document doc = new Document();
       doc.add(new Field(FN, "the quick brown fox jumps over the lazy dog", Field.Store.NO, Field.Index.ANALYZED));
@@ -54,12 +54,9 @@ public class TestRegexQuery extends TestCase {
   }
 
   @Override
-  public void tearDown() {
-    try {
-      searcher.close();
-    } catch (Exception e) {
-      fail(e.toString());
-    }
+  protected void tearDown() throws Exception {
+    searcher.close();
+    super.tearDown();
   }
 
   private Term newTerm(String value) { return new Term(FN, value); }

@@ -93,7 +93,7 @@ implements Serializable {
    * Create index and query for test cases. 
    */
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
           super.setUp();
           index = getIndex();
           query = new TermQuery( new Term("content", "test"));

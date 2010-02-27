@@ -22,8 +22,6 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -42,11 +40,12 @@ import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Asserts equality of content and behaviour of two index readers.
  */
-public class TestIndicesEquals extends TestCase {
+public class TestIndicesEquals extends LuceneTestCase {
 
 //  public void test2() throws Exception {
 //    FSDirectory fsdir = FSDirectory.open(new File("/tmp/fatcorpus"));
@@ -61,7 +60,7 @@ public class TestIndicesEquals extends TestCase {
     RAMDirectory dir = new RAMDirectory();
 
     // create dir data
-    IndexWriter indexWriter = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter indexWriter = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
     for (int i = 0; i < 20; i++) {
       Document document = new Document();
       assembleDocument(document, i);
@@ -85,7 +84,7 @@ public class TestIndicesEquals extends TestCase {
     InstantiatedIndex ii = new InstantiatedIndex();
 
     // create dir data
-    IndexWriter indexWriter = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter indexWriter = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
     for (int i = 0; i < 500; i++) {
       Document document = new Document();
       assembleDocument(document, i);
@@ -94,7 +93,7 @@ public class TestIndicesEquals extends TestCase {
     indexWriter.close();
 
     // test ii writer
-    InstantiatedIndexWriter instantiatedIndexWriter = ii.indexWriterFactory(new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true);
+    InstantiatedIndexWriter instantiatedIndexWriter = ii.indexWriterFactory(new StandardAnalyzer(TEST_VERSION_CURRENT), true);
     for (int i = 0; i < 500; i++) {
       Document document = new Document();
       assembleDocument(document, i);

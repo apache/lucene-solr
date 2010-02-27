@@ -19,8 +19,6 @@ package org.apache.lucene.search;
 
 import java.util.HashSet;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -29,11 +27,11 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.Version;
 
-public class TermsFilterTest extends TestCase
-{
+public class TermsFilterTest extends LuceneTestCase {
+  
 	public void testCachability() throws Exception
 	{
 		TermsFilter a=new TermsFilter();
@@ -56,7 +54,7 @@ public class TermsFilterTest extends TestCase
 	{
 		String fieldName="field1";
 		RAMDirectory rd=new RAMDirectory();
-		IndexWriter w=new IndexWriter(rd,new WhitespaceAnalyzer(Version.LUCENE_CURRENT),MaxFieldLength.UNLIMITED);
+		IndexWriter w=new IndexWriter(rd,new WhitespaceAnalyzer(TEST_VERSION_CURRENT),MaxFieldLength.UNLIMITED);
 		for (int i = 0; i < 100; i++)
 		{
 			Document doc=new Document();

@@ -119,7 +119,7 @@ public abstract class IndexOutput implements Closeable {
        throws IOException {
     final int end = start + length;
     for (int i = start; i < end; i++) {
-      final int code = (int)s.charAt(i);
+      final int code = s.charAt(i);
       if (code >= 0x01 && code <= 0x7F)
 	writeByte((byte)code);
       else if (((code >= 0x80) && (code <= 0x7FF)) || code == 0) {
@@ -145,7 +145,7 @@ public abstract class IndexOutput implements Closeable {
     throws IOException {
     final int end = start + length;
     for (int i = start; i < end; i++) {
-      final int code = (int)s[i];
+      final int code = s[i];
       if (code >= 0x01 && code <= 0x7F)
 	writeByte((byte)code);
       else if (((code >= 0x80) && (code <= 0x7FF)) || code == 0) {
@@ -210,7 +210,7 @@ public abstract class IndexOutput implements Closeable {
    * undefined.  Otherwise the file is truncated.
    * @param length file length
    */
-  public void setLength(long length) throws IOException {};
+  public void setLength(long length) throws IOException {}
 
   public void writeStringStringMap(Map<String,String> map) throws IOException {
     if (map == null) {

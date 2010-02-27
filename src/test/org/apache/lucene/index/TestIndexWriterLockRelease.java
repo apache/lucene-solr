@@ -34,7 +34,7 @@ public class TestIndexWriterLockRelease extends LuceneTestCase {
     private java.io.File __test_dir;
 
     @Override
-    public void setUp() throws Exception {
+    protected void setUp() throws Exception {
         super.setUp();
         if (this.__test_dir == null) {
             String tmp_dir = System.getProperty("java.io.tmpdir", "tmp");
@@ -52,8 +52,7 @@ public class TestIndexWriterLockRelease extends LuceneTestCase {
     }
 
     @Override
-    public void tearDown() throws Exception {
-        super.tearDown();
+    protected void tearDown() throws Exception {
         if (this.__test_dir != null) {
             File[] files = this.__test_dir.listFiles();
 
@@ -69,16 +68,16 @@ public class TestIndexWriterLockRelease extends LuceneTestCase {
                 throw new IOException("unable to remove test directory \"" + this.__test_dir.getPath() + "\" (please remove by hand)");
             }
         }
+        super.tearDown();
     }
 
     public void testIndexWriterLockRelease() throws IOException {
-        IndexWriter im;
         FSDirectory dir = FSDirectory.open(this.__test_dir);
         try {
-            im = new IndexWriter(dir, new org.apache.lucene.analysis.standard.StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
+            new IndexWriter(dir, new org.apache.lucene.analysis.standard.StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
         } catch (FileNotFoundException e) {
             try {
-                im = new IndexWriter(dir, new org.apache.lucene.analysis.standard.StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
+                new IndexWriter(dir, new org.apache.lucene.analysis.standard.StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
             } catch (FileNotFoundException e1) {
             }
         } finally {

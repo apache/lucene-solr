@@ -19,6 +19,7 @@ package org.apache.lucene.search.regex;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanClause;
@@ -51,7 +52,7 @@ public class SpanRegexQuery extends SpanQuery implements RegexQueryCapable {
   public Query rewrite(IndexReader reader) throws IOException {
     RegexQuery orig = new RegexQuery(term);
     orig.setRegexImplementation(regexImpl);
-    orig.setRewriteMethod(RegexQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    orig.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     BooleanQuery bq = (BooleanQuery) orig.rewrite(reader);
 
     BooleanClause[] clauses = bq.getClauses();

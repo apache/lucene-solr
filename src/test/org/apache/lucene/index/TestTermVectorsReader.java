@@ -166,7 +166,6 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
   public void testReader() throws IOException {
     TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
-    assertTrue(reader != null);
     for (int j = 0; j < 5; j++) {
       TermFreqVector vector = reader.get(j, testFields[0]);
       assertTrue(vector != null);
@@ -183,7 +182,6 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
   public void testPositionReader() throws IOException {
     TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
-    assertTrue(reader != null);
     TermPositionVector vector;
     String[] terms;
     vector = (TermPositionVector) reader.get(0, testFields[0]);
@@ -226,7 +224,6 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
   public void testOffsetReader() throws IOException {
     TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
-    assertTrue(reader != null);
     TermPositionVector vector = (TermPositionVector) reader.get(0, testFields[0]);
     assertTrue(vector != null);
     String[] terms = vector.getTerms();
@@ -255,7 +252,6 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
   public void testMapper() throws IOException {
     TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
-    assertTrue(reader != null);
     SortedTermVectorMapper mapper = new SortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
     reader.get(0, mapper);
     SortedSet<TermVectorEntry> set = mapper.getTermVectorEntrySet();
@@ -376,7 +372,6 @@ public class TestTermVectorsReader extends LuceneTestCase {
   public void testBadParams() {
     try {
       TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
-      assertTrue(reader != null);
       //Bad document number, good field number
       reader.get(50, testFields[0]);
       fail();
@@ -385,7 +380,6 @@ public class TestTermVectorsReader extends LuceneTestCase {
     }
     try {
       TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
-      assertTrue(reader != null);
       //Bad document number, no field
       reader.get(50);
       fail();
@@ -394,7 +388,6 @@ public class TestTermVectorsReader extends LuceneTestCase {
     }
     try {
       TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
-      assertTrue(reader != null);
       //good document number, bad field number
       TermFreqVector vector = reader.get(0, "f50");
       assertTrue(vector == null);

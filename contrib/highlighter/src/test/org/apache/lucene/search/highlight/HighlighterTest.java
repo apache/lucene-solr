@@ -79,6 +79,7 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -89,7 +90,7 @@ import org.w3c.dom.NodeList;
  */
 public class HighlighterTest extends BaseTokenStreamTestCase implements Formatter {
   // TODO: change to CURRENT, does not work because posIncr:
-  static final Version TEST_VERSION = Version.LUCENE_CURRENT;
+  static final Version TEST_VERSION = TEST_VERSION_CURRENT;
 
   private IndexReader reader;
   static final String FIELD_NAME = "contents";
@@ -118,7 +119,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
 
   public void testQueryScorerHits() throws Exception {
-    Analyzer analyzer = new SimpleAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer analyzer = new SimpleAnalyzer(TEST_VERSION_CURRENT);
     QueryParser qp = new QueryParser(TEST_VERSION, FIELD_NAME, analyzer);
     query = qp.parse("\"very long\"");
     searcher = new IndexSearcher(ramDir, true);
@@ -226,7 +227,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     String f2c = f2 + ":";
     String q = "(" + f1c + ph1 + " OR " + f2c + ph1 + ") AND (" + f1c + ph2
         + " OR " + f2c + ph2 + ")";
-    Analyzer analyzer = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer analyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
     QueryParser qp = new QueryParser(TEST_VERSION, f1, analyzer);
     Query query = qp.parse(q);
 
@@ -374,8 +375,8 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       highlighter.setTextFragmenter(new SimpleFragmenter(40));
 
-      String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
-          "...");
+//      String result = 
+        highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,"...");
       //System.out.println("\t" + result);
     }
 
@@ -1389,9 +1390,9 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         // highlighting respects fieldnames used in query
 
         Scorer fieldSpecificScorer = null;
-        if (mode == this.QUERY) {
+        if (mode == TestHighlightRunner.QUERY) {
           fieldSpecificScorer = new QueryScorer(query, FIELD_NAME);
-        } else if (mode == this.QUERY_TERM) {
+        } else if (mode == TestHighlightRunner.QUERY_TERM) {
           fieldSpecificScorer = new QueryTermScorer(query, "contents");
         }
         Highlighter fieldSpecificHighlighter = new Highlighter(new SimpleHTMLFormatter(),
@@ -1402,9 +1403,9 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
         // highlighting does not respect fieldnames used in query
         Scorer fieldInSpecificScorer = null;
-        if (mode == this.QUERY) {
+        if (mode == TestHighlightRunner.QUERY) {
           fieldInSpecificScorer = new QueryScorer(query, null);
-        } else if (mode == this.QUERY_TERM) {
+        } else if (mode == TestHighlightRunner.QUERY_TERM) {
           fieldInSpecificScorer = new QueryTermScorer(query);
         }
 
@@ -1529,64 +1530,64 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         Highlighter highlighter;
         String result;
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("foo");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("foo");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("Hi-Speed10 <B>foo</B>", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("10");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("10");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("Hi-Speed<B>10</B> foo", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("hi");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("hi");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("<B>Hi</B>-Speed10 foo", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("speed");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("speed");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("Hi-<B>Speed</B>10 foo", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("hispeed");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("hispeed");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("hi speed");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("hi speed");
         highlighter = getHighlighter(query, "text", getTS2(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
 
         // ///////////////// same tests, just put the bigger overlapping token
         // first
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("foo");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("foo");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("Hi-Speed10 <B>foo</B>", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("10");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("10");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("Hi-Speed<B>10</B> foo", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("hi");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("hi");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("<B>Hi</B>-Speed10 foo", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("speed");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("speed");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("Hi-<B>Speed</B>10 foo", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("hispeed");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("hispeed");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
 
-        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("hi speed");
+        query = new QueryParser(TEST_VERSION, "text", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("hi speed");
         highlighter = getHighlighter(query, "text", getTS2a(), HighlighterTest.this);
         result = highlighter.getBestFragments(getTS2a(), s, 3, "...");
         assertEquals("<B>Hi-Speed</B>10 foo", result);
@@ -1597,7 +1598,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
   
   private Directory dir = new RAMDirectory();
-  private Analyzer a = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
+  private Analyzer a = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
   
   public void testWeightedTermsWithDeletes() throws IOException, ParseException, InvalidTokenOffsetsException {
     makeIndex();
@@ -1762,11 +1763,6 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
   }
 
-  @Override
-  protected void tearDown() throws Exception {
-    super.tearDown();
-  }
-
   private static Token createToken(String term, int start, int offset)
   {
     Token token = new Token(start, offset);
@@ -1801,7 +1797,7 @@ class SynonymAnalyzer extends Analyzer {
    */
   @Override
   public TokenStream tokenStream(String arg0, Reader arg1) {
-    LowerCaseTokenizer stream = new LowerCaseTokenizer(Version.LUCENE_CURRENT, arg1);
+    LowerCaseTokenizer stream = new LowerCaseTokenizer(LuceneTestCase.TEST_VERSION_CURRENT, arg1);
     stream.addAttribute(TermAttribute.class);
     stream.addAttribute(PositionIncrementAttribute.class);
     stream.addAttribute(OffsetAttribute.class);
@@ -1816,7 +1812,6 @@ class SynonymAnalyzer extends Analyzer {
 class SynonymTokenizer extends TokenStream {
   private TokenStream realStream;
   private Token currentRealToken = null;
-  private org.apache.lucene.analysis.Token cRealToken = null;
   private Map<String,String> synonyms;
   StringTokenizer st = null;
   private TermAttribute realTermAtt;

@@ -899,7 +899,7 @@ public class CheckIndex {
     System.out.println("");
 
     final int exitCode;
-    if (result != null && result.clean == true)
+    if (result.clean == true)
       exitCode = 0;
     else
       exitCode = 1;

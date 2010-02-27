@@ -54,20 +54,17 @@ public class DistanceFieldComparatorSource extends FieldComparatorSource {
 	@Override
 	public FieldComparator newComparator(String fieldname, int numHits,
 			int sortPos, boolean reversed) throws IOException {
-		dsdlc = new DistanceScoreDocLookupComparator(distanceFilter, numHits);
+		dsdlc = new DistanceScoreDocLookupComparator(numHits);
 		return dsdlc;
 	}
 
 	private class DistanceScoreDocLookupComparator extends FieldComparator {
 
-		private DistanceFilter distanceFilter;
 		private double[] values;
 		private double bottom;
 		private int offset =0;
 		
-		public DistanceScoreDocLookupComparator(DistanceFilter distanceFilter,
-				int numHits) {
-			this.distanceFilter = distanceFilter;
+		public DistanceScoreDocLookupComparator(int numHits) {
 			values = new double[numHits];
 			return;
 		}

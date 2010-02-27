@@ -64,7 +64,7 @@ public class FieldTermStack {
     writer.close();
     
     IndexReader reader = IndexReader.open( dir, true );
-    FieldTermStack ftl = new FieldTermStack( reader, 0, "f", fieldQuery );
+    new FieldTermStack( reader, 0, "f", fieldQuery );
     reader.close();
   }
 

@@ -19,8 +19,6 @@ package org.apache.lucene.queryParser.complexPhrase;
 
 import java.util.HashSet;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -33,11 +31,11 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestComplexPhraseQuery extends TestCase {
+public class TestComplexPhraseQuery extends LuceneTestCase {
 
-  Analyzer analyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
+  Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
 
   DocData docsContent[] = { new DocData("john smith", "1"),
       new DocData("johathon smith", "2"),
@@ -72,7 +70,7 @@ public class TestComplexPhraseQuery extends TestCase {
   }
 
   private void checkBadQuery(String qString) {
-    QueryParser qp = new ComplexPhraseQueryParser(Version.LUCENE_CURRENT, defaultFieldName, analyzer);
+    QueryParser qp = new ComplexPhraseQueryParser(TEST_VERSION_CURRENT, defaultFieldName, analyzer);
     Throwable expected = null;
     try {
       qp.parse(qString);
@@ -85,7 +83,7 @@ public class TestComplexPhraseQuery extends TestCase {
 
   private void checkMatches(String qString, String expectedVals)
       throws Exception {
-    QueryParser qp = new ComplexPhraseQueryParser(Version.LUCENE_CURRENT, defaultFieldName, analyzer);
+    QueryParser qp = new ComplexPhraseQueryParser(TEST_VERSION_CURRENT, defaultFieldName, analyzer);
     qp.setFuzzyPrefixLength(1); // usually a good idea
 
     Query q = qp.parse(qString);
@@ -113,6 +111,7 @@ public class TestComplexPhraseQuery extends TestCase {
 
   @Override
   protected void setUp() throws Exception {
+    super.setUp();
     RAMDirectory rd = new RAMDirectory();
     IndexWriter w = new IndexWriter(rd, analyzer, MaxFieldLength.UNLIMITED);
     for (int i = 0; i < docsContent.length; i++) {
@@ -130,6 +129,7 @@ public class TestComplexPhraseQuery extends TestCase {
   @Override
   protected void tearDown() throws Exception {
     searcher.close();
+    super.tearDown();
   }
 
   static class DocData {

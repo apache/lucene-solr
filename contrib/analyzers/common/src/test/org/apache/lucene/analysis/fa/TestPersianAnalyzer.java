@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.fa;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.util.Version;
 
 /**
  * Test the Persian Analyzer
@@ -31,7 +30,7 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
    * This test fails with NPE when the stopwords file is missing in classpath
    */
   public void testResourcesAvailable() {
-    new PersianAnalyzer(Version.LUCENE_CURRENT);
+    new PersianAnalyzer(TEST_VERSION_CURRENT);
   }
 
   /**
@@ -42,7 +41,7 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
    * These verb forms are from http://en.wikipedia.org/wiki/Persian_grammar
    */
   public void testBehaviorVerbs() throws Exception {
-    Analyzer a = new PersianAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new PersianAnalyzer(TEST_VERSION_CURRENT);
     // active present indicative
     assertAnalyzesTo(a, "می‌خورد", new String[] { "خورد" });
     // active preterite indicative
@@ -118,7 +117,7 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
    * These verb forms are from http://en.wikipedia.org/wiki/Persian_grammar
    */
   public void testBehaviorVerbsDefective() throws Exception {
-    Analyzer a = new PersianAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new PersianAnalyzer(TEST_VERSION_CURRENT);
     // active present indicative
     assertAnalyzesTo(a, "مي خورد", new String[] { "خورد" });
     // active preterite indicative
@@ -189,7 +188,7 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
    * nouns, removing the plural -ha.
    */
   public void testBehaviorNouns() throws Exception {
-    Analyzer a = new PersianAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new PersianAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(a, "برگ ها", new String[] { "برگ" });
     assertAnalyzesTo(a, "برگ‌ها", new String[] { "برگ" });
   }
@@ -199,7 +198,7 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
    * (lowercased, etc)
    */
   public void testBehaviorNonPersian() throws Exception {
-    Analyzer a = new PersianAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new PersianAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(a, "English test.", new String[] { "english", "test" });
   }
   
@@ -207,7 +206,7 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
    * Basic test ensuring that reusableTokenStream works correctly.
    */
   public void testReusableTokenStream() throws Exception {
-    Analyzer a = new PersianAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new PersianAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesToReuse(a, "خورده مي شده بوده باشد", new String[] { "خورده" });
     assertAnalyzesToReuse(a, "برگ‌ها", new String[] { "برگ" });
   }
@@ -216,7 +215,7 @@ public class TestPersianAnalyzer extends BaseTokenStreamTestCase {
    * Test that custom stopwords work, and are not case-sensitive.
    */
   public void testCustomStopwords() throws Exception {
-    PersianAnalyzer a = new PersianAnalyzer(Version.LUCENE_CURRENT, new String[] { "the", "and", "a" });
+    PersianAnalyzer a = new PersianAnalyzer(TEST_VERSION_CURRENT, new String[] { "the", "and", "a" });
     assertAnalyzesTo(a, "The quick brown fox.", new String[] { "quick",
         "brown", "fox" });
   }

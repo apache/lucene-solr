@@ -113,7 +113,7 @@ public class HyphenationCompoundWordTokenFilter extends
    *          strings.
    */
   public HyphenationCompoundWordTokenFilter(Version matchVersion, TokenStream input,
-      HyphenationTree hyphenator, Set dictionary) {
+      HyphenationTree hyphenator, Set<?> dictionary) {
     this(input, hyphenator, dictionary, DEFAULT_MIN_WORD_SIZE,
         DEFAULT_MIN_SUBWORD_SIZE, DEFAULT_MAX_SUBWORD_SIZE, false);
   }
@@ -145,7 +145,7 @@ public class HyphenationCompoundWordTokenFilter extends
    *          Add only the longest matching subword to the stream
    */
   public HyphenationCompoundWordTokenFilter(Version matchVersion, TokenStream input,
-      HyphenationTree hyphenator, Set dictionary, int minWordSize,
+      HyphenationTree hyphenator, Set<?> dictionary, int minWordSize,
       int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
     super(matchVersion, input, dictionary, minWordSize, minSubwordSize, maxSubwordSize,
         onlyLongestMatch);
@@ -201,7 +201,7 @@ public class HyphenationCompoundWordTokenFilter extends
    */
   @Deprecated
   public HyphenationCompoundWordTokenFilter(TokenStream input,
-      HyphenationTree hyphenator, Set dictionary) {
+      HyphenationTree hyphenator, Set<?> dictionary) {
     this(Version.LUCENE_30, input, hyphenator, dictionary, DEFAULT_MIN_WORD_SIZE,
         DEFAULT_MIN_SUBWORD_SIZE, DEFAULT_MAX_SUBWORD_SIZE, false);
   }
@@ -223,7 +223,7 @@ public class HyphenationCompoundWordTokenFilter extends
    */
   @Deprecated
   public HyphenationCompoundWordTokenFilter(TokenStream input,
-      HyphenationTree hyphenator, Set dictionary, int minWordSize,
+      HyphenationTree hyphenator, Set<?> dictionary, int minWordSize,
       int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
     super(Version.LUCENE_30, input, dictionary, minWordSize, minSubwordSize, maxSubwordSize,
         onlyLongestMatch);

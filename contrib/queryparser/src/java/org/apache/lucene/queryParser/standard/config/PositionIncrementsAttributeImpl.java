@@ -61,7 +61,6 @@ public class PositionIncrementsAttributeImpl extends AttributeImpl
   public boolean equals(Object other) {
 
     if (other instanceof PositionIncrementsAttributeImpl
-        && other != null
         && ((PositionIncrementsAttributeImpl) other).positionIncrementsEnabled == this.positionIncrementsEnabled) {
 
       return true;

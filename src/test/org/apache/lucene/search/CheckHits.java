@@ -76,7 +76,7 @@ public class CheckHits {
    * @param searcher the searcher to test the query against
    * @param defaultFieldName used for displaying the query in assertion messages
    * @param results a list of documentIds that must match the query
-   * @see Searcher#search(Query,HitCollector)
+   * @see Searcher#search(Query,Collector)
    * @see #checkHits
    */
   public static void checkHitCollector(Query query, String defaultFieldName,
@@ -149,7 +149,7 @@ public class CheckHits {
    * @param searcher the searcher to test the query against
    * @param defaultFieldName used for displaing the query in assertion messages
    * @param results a list of documentIds that must match the query
-   * @see Searcher#search(Query)
+   * @see Searcher#search(Query, int)
    * @see #checkHitCollector
    */
   public static void checkHits(
@@ -159,7 +159,7 @@ public class CheckHits {
         int[] results)
           throws IOException {
 
-    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    ScoreDoc[] hits = searcher.search(query, 1000).scoreDocs;
 
     Set<Integer> correct = new TreeSet<Integer>();
     for (int i = 0; i < results.length; i++) {

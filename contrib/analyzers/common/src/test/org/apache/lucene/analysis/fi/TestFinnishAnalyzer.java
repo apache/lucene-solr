@@ -23,18 +23,17 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestFinnishAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new FinnishAnalyzer(Version.LUCENE_CURRENT);
+    new FinnishAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new FinnishAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new FinnishAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTermReuse(a, "edeltäjiinsä", "edeltäj");
     checkOneTermReuse(a, "edeltäjistään", "edeltäj");
@@ -46,7 +45,7 @@ public class TestFinnishAnalyzer extends BaseTokenStreamTestCase {
   public void testExclude() throws IOException {
     Set<String> exclusionSet = new HashSet<String>();
     exclusionSet.add("edeltäjistään");
-    Analyzer a = new FinnishAnalyzer(Version.LUCENE_CURRENT, 
+    Analyzer a = new FinnishAnalyzer(TEST_VERSION_CURRENT, 
         FinnishAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "edeltäjiinsä", "edeltäj");
     checkOneTermReuse(a, "edeltäjistään", "edeltäjistään");

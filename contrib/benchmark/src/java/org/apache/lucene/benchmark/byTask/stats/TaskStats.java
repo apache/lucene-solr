@@ -211,7 +211,7 @@ public class TaskStats implements Cloneable {
   public Object clone() throws CloneNotSupportedException {
     TaskStats c = (TaskStats) super.clone();
     if (c.countsByTime != null) {
-      c.countsByTime = (int[]) c.countsByTime.clone();
+      c.countsByTime = c.countsByTime.clone();
     }
     return c;
   }

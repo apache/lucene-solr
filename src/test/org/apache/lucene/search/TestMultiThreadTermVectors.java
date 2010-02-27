@@ -38,7 +38,7 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
   }
   
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
     super.setUp();
     IndexWriter writer
             = new IndexWriter(directory, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);

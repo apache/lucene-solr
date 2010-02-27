@@ -132,7 +132,7 @@ public class ExtractWikipedia {
     properties.setProperty("keep.image.only.docs", String.valueOf(keepImageOnlyDocs));
     docMaker.setConfig(new Config(properties));
     docMaker.resetInputs();
-    if (wikipedia != null && wikipedia.exists()) {
+    if (wikipedia.exists()) {
       System.out.println("Extracting Wikipedia to: " + outputDir + " using EnwikiContentSource");
       outputDir.mkdirs();
       ExtractWikipedia extractor = new ExtractWikipedia(docMaker, outputDir);

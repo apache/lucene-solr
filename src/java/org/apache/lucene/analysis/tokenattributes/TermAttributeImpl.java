@@ -183,7 +183,7 @@ public class TermAttributeImpl extends AttributeImpl implements TermAttribute, C
     TermAttributeImpl t = (TermAttributeImpl)super.clone();
     // Do a deep clone
     if (termBuffer != null) {
-      t.termBuffer = (char[]) termBuffer.clone();
+      t.termBuffer = termBuffer.clone();
     }
     return t;
   }

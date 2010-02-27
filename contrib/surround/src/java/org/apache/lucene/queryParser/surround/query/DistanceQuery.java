@@ -46,7 +46,7 @@ public class DistanceQuery extends ComposedQuery implements DistanceSubQuery {
   public boolean subQueriesOrdered() {return ordered;}
   
   public String distanceSubQueryNotAllowed() {
-    Iterator sqi = getSubQueriesIterator();
+    Iterator<?> sqi = getSubQueriesIterator();
     while (sqi.hasNext()) {
       Object leq = sqi.next();
       if (leq instanceof DistanceSubQuery) {
@@ -94,7 +94,7 @@ public class DistanceQuery extends ComposedQuery implements DistanceSubQuery {
           float boost,
           BasicQueryFactory qf) throws IOException {
     SpanQuery[] spanNearClauses = new SpanQuery[getNrSubQueries()];
-    Iterator sqi = getSubQueriesIterator();
+    Iterator<?> sqi = getSubQueriesIterator();
     int qi = 0;
     while (sqi.hasNext()) {
       SpanNearClauseFactory sncf = new SpanNearClauseFactory(reader, fieldName, qf);

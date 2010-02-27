@@ -89,7 +89,7 @@ public class TestDoubleBarrelLRUCache extends BaseTestLRU {
     }
     
     final CacheThread[] threads = new CacheThread[NUM_THREADS];
-    final long endTime = System.currentTimeMillis()+((long) 1000);
+    final long endTime = System.currentTimeMillis()+1000L;
     for(int i=0;i<NUM_THREADS;i++) {
       threads[i] = new CacheThread(c, objs, endTime);
       threads[i].start();

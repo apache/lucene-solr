@@ -50,7 +50,7 @@ public class TestVirtualMethod extends LuceneTestCase {
   static class TestClass5 extends TestClass4 {
   }
 
-  public void test() {
+  public void testGeneral() {
     assertEquals(0, publicTestMethod.getImplementationDistance(this.getClass()));
     assertEquals(1, publicTestMethod.getImplementationDistance(TestClass1.class));
     assertEquals(1, publicTestMethod.getImplementationDistance(TestClass2.class));
@@ -67,10 +67,13 @@ public class TestVirtualMethod extends LuceneTestCase {
     
     assertTrue(VirtualMethod.compareImplementationDistance(TestClass3.class, publicTestMethod, protectedTestMethod) > 0);
     assertEquals(0, VirtualMethod.compareImplementationDistance(TestClass5.class, publicTestMethod, protectedTestMethod));
-    
+  }
+
+  @SuppressWarnings("unchecked")
+  public void testExceptions() {
     try {
       // cast to Class to remove generics:
-      @SuppressWarnings("unchecked") int dist = publicTestMethod.getImplementationDistance((Class) LuceneTestCase.class);
+      publicTestMethod.getImplementationDistance((Class) LuceneTestCase.class);
       fail("LuceneTestCase is not a subclass and can never override publicTest(String)");
     } catch (IllegalArgumentException arg) {
       // pass

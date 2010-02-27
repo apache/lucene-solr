@@ -70,7 +70,7 @@ public class NearRealtimeReaderTask extends PerfTask {
     // Parent sequence sets stopNow
     reopenCount = 0;
     while(!stopNow) {
-      long waitForMsec = (long) (pauseMSec - (System.currentTimeMillis() - t));
+      long waitForMsec = (pauseMSec - (System.currentTimeMillis() - t));
       if (waitForMsec > 0) {
         Thread.sleep(waitForMsec);
         //System.out.println("NRT wait: " + waitForMsec + " msec");

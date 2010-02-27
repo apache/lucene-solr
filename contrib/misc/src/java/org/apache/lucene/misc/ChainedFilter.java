@@ -25,7 +25,6 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetDISI;
-import org.apache.lucene.util.SortedVIntList;
 
 /**
  * <p>

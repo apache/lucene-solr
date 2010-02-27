@@ -24,7 +24,6 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
-import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
 import org.apache.lucene.analysis.StopFilter;
@@ -117,15 +116,18 @@ public final class BulgarianAnalyzer extends StopwordAnalyzerBase {
     super(matchVersion, stopwords);
     this.stemExclusionSet = CharArraySet.unmodifiableSet(CharArraySet.copy(
         matchVersion, stemExclusionSet));  }
-  
+
   /**
-   * Creates a {@link TokenStreamComponents} which tokenizes all the text in the provided
-   * {@link Reader}.
+   * Creates a
+   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * which tokenizes all the text in the provided {@link Reader}.
    * 
-   * @return A {@link TokenStreamComponents} built from an {@link StandardTokenizer}
-   *         filtered with {@link StandardFilter}, {@link LowerCaseFilter},
-   *         {@link StopFilter}, {@link KeywordMarkerTokenFilter} if a stem
-   *         exclusion set is provided and {@link BulgarianStemFilter}.
+   * @return A
+   *         {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   *         built from an {@link StandardTokenizer} filtered with
+   *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
+   *         , {@link KeywordMarkerTokenFilter} if a stem exclusion set is
+   *         provided and {@link BulgarianStemFilter}.
    */
   @Override
   public TokenStreamComponents createComponents(String fieldName, Reader reader) {

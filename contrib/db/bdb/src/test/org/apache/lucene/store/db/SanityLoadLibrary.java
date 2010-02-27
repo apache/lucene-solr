@@ -31,6 +31,6 @@ public class SanityLoadLibrary {
   public static void main(String[] ignored) throws Exception {
     EnvironmentConfig envConfig = EnvironmentConfig.DEFAULT;
     envConfig.setAllowCreate(false);
-    Environment env = new Environment(null, envConfig);
+    new Environment(null, envConfig);
   }
 }

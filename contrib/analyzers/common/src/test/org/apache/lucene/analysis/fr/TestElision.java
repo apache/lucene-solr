@@ -29,7 +29,6 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.util.Version;
 
 /**
  * 
@@ -38,19 +37,19 @@ public class TestElision extends BaseTokenStreamTestCase {
 
   public void testElision() throws Exception {
     String test = "Plop, juste pour voir l'embrouille avec O'brian. M'enfin.";
-    Tokenizer tokenizer = new StandardTokenizer(Version.LUCENE_CURRENT, new StringReader(test));
-    Set articles = new HashSet();
+    Tokenizer tokenizer = new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(test));
+    Set<String> articles = new HashSet<String>();
     articles.add("l");
     articles.add("M");
-    TokenFilter filter = new ElisionFilter(Version.LUCENE_CURRENT, tokenizer, articles);
-    List tas = filtre(filter);
+    TokenFilter filter = new ElisionFilter(TEST_VERSION_CURRENT, tokenizer, articles);
+    List<String> tas = filter(filter);
     assertEquals("embrouille", tas.get(4));
     assertEquals("O'brian", tas.get(6));
     assertEquals("enfin", tas.get(7));
   }
 
-  private List filtre(TokenFilter filter) throws IOException {
-    List tas = new ArrayList();
+  private List<String> filter(TokenFilter filter) throws IOException {
+    List<String> tas = new ArrayList<String>();
     TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
     while (filter.incrementToken()) {
       tas.add(termAtt.term());

@@ -28,7 +28,6 @@ import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
 import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
@@ -109,11 +108,14 @@ public final class TurkishAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * Creates a {@link TokenStreamComponents} which tokenizes all the text in the provided
-   * {@link Reader}.
+   * Creates a
+   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * which tokenizes all the text in the provided {@link Reader}.
    * 
-   * @return A {@link TokenStreamComponents} built from an {@link StandardTokenizer}
-   *         filtered with {@link StandardFilter}, {@link TurkishLowerCaseFilter},
+   * @return A
+   *         {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   *         built from an {@link StandardTokenizer} filtered with
+   *         {@link StandardFilter}, {@link TurkishLowerCaseFilter},
    *         {@link StopFilter}, {@link KeywordMarkerTokenFilter} if a stem
    *         exclusion set is provided and {@link SnowballFilter}.
    */

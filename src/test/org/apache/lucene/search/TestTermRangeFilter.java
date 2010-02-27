@@ -400,8 +400,6 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
         Query q = new TermQuery(new Term("body","body"));
 
         Collator collator = Collator.getInstance(new Locale("da", "dk"));
-        Query query = new TermRangeQuery
-            ("content", "H\u00D8T", "MAND", false, false, collator);
 
         // Unicode order would not include "H\u00C5T" in [ "H\u00D8T", "MAND" ],
         // but Danish collation does.

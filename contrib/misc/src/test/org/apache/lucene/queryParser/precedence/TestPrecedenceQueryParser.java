@@ -36,7 +36,6 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.LocalizedTestCase;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -100,7 +99,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     /** Filters LowerCaseTokenizer with StopFilter. */
     @Override
     public final TokenStream tokenStream(String fieldName, Reader reader) {
-      return new QPTestFilter(new LowerCaseTokenizer(Version.LUCENE_CURRENT, reader));
+      return new QPTestFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, reader));
     }
   }
 
@@ -123,14 +122,14 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   private int originalMaxClauses;
 
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
     super.setUp();
     originalMaxClauses = BooleanQuery.getMaxClauseCount();
   }
 
   public PrecedenceQueryParser getParser(Analyzer a) throws Exception {
     if (a == null)
-      a = new SimpleAnalyzer(Version.LUCENE_CURRENT);
+      a = new SimpleAnalyzer(TEST_VERSION_CURRENT);
     PrecedenceQueryParser qp = new PrecedenceQueryParser("field", a);
     qp.setDefaultOperator(PrecedenceQueryParser.OR_OPERATOR);
     return qp;
@@ -175,7 +174,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   public Query getQueryDOA(String query, Analyzer a)
     throws Exception {
     if (a == null)
-      a = new SimpleAnalyzer(Version.LUCENE_CURRENT);
+      a = new SimpleAnalyzer(TEST_VERSION_CURRENT);
     PrecedenceQueryParser qp = new PrecedenceQueryParser("field", a);
     qp.setDefaultOperator(PrecedenceQueryParser.AND_OPERATOR);
     return qp.parse(query);
@@ -241,7 +240,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     assertQueryEquals("+title:(dog OR cat) -author:\"bob dole\"", null,
                       "+(title:dog title:cat) -author:\"bob dole\"");
     
-    PrecedenceQueryParser qp = new PrecedenceQueryParser("field", new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
+    PrecedenceQueryParser qp = new PrecedenceQueryParser("field", new StandardAnalyzer(TEST_VERSION_CURRENT));
     // make sure OR is the default:
     assertEquals(PrecedenceQueryParser.OR_OPERATOR, qp.getDefaultOperator());
     qp.setDefaultOperator(PrecedenceQueryParser.AND_OPERATOR);
@@ -255,7 +254,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   }
 
   public void testPunct() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
     assertQueryEquals("a&b", a, "a&b");
     assertQueryEquals("a&&b", a, "a&&b");
     assertQueryEquals(".NET", a, ".NET");
@@ -275,7 +274,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     assertQueryEquals("term 1.0 1 2", null, "term");
     assertQueryEquals("term term1 term2", null, "term term term");
 
-    Analyzer a = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
+    Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT);
     assertQueryEquals("3", a, "3");
     assertQueryEquals("term 1.0 1 2", a, "term 1.0 1 2");
     assertQueryEquals("term term1 term2", a, "term term1 term2");
@@ -413,7 +412,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   }
 
   public void testEscaped() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
     
     /*assertQueryEquals("\\[brackets", a, "\\[brackets");
     assertQueryEquals("\\[brackets", null, "brackets");
@@ -518,7 +517,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
 
   public void testBoost()
     throws Exception {
-    StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT, Collections.singleton("on"));
+    StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(TEST_VERSION_CURRENT, Collections.singleton("on"));
     PrecedenceQueryParser qp = new PrecedenceQueryParser("field", oneStopAnalyzer);
     Query q = qp.parse("on^1.0");
     assertNotNull(q);
@@ -531,7 +530,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     q = qp.parse("\"on\"^1.0");
     assertNotNull(q);
 
-    q = getParser(new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT)).parse("the^3");
+    q = getParser(new StandardAnalyzer(TEST_VERSION_CURRENT)).parse("the^3");
     assertNotNull(q);
   }
 
@@ -545,7 +544,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
 
   public void testCustomQueryParserWildcard() {
     try {
-      new QPTestParser("contents", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("a?t");
+      new QPTestParser("contents", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("a?t");
     } catch (ParseException expected) {
       return;
     }
@@ -554,7 +553,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
 
   public void testCustomQueryParserFuzzy() throws Exception {
     try {
-      new QPTestParser("contents", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("xunit~");
+      new QPTestParser("contents", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("xunit~");
     } catch (ParseException expected) {
       return;
     }
@@ -564,7 +563,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   public void testBooleanQuery() throws Exception {
     BooleanQuery.setMaxClauseCount(2);
     try {
-      getParser(new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("one two three");
+      getParser(new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("one two three");
       fail("ParseException expected due to too many boolean clauses");
     } catch (ParseException expected) {
       // too many boolean clauses, so ParseException is expected
@@ -578,7 +577,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   // failing tests disabled since PrecedenceQueryParser
   // is currently unmaintained
   public void _testPrecedence() throws Exception {
-    PrecedenceQueryParser parser = getParser(new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
+    PrecedenceQueryParser parser = getParser(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     Query query1 = parser.parse("A AND B OR C AND D");
     Query query2 = parser.parse("(A AND B) OR (C AND D)");
     assertEquals(query1, query2);
@@ -606,8 +605,9 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
 
 
   @Override
-  public void tearDown() {
+  protected void tearDown() throws Exception {
     BooleanQuery.setMaxClauseCount(originalMaxClauses);
+    super.tearDown();
   }
 
 }

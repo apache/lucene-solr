@@ -1,12 +1,11 @@
 package org.apache.lucene.index;
 
-import junit.framework.TestCase;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Collections;
 /*
@@ -24,13 +23,12 @@ import java.util.Collections;
  *
  */
 
-
-public class TestTermVectorAccessor extends TestCase {
+public class TestTermVectorAccessor extends LuceneTestCase {
 
   public void test() throws Exception {
 
     Directory dir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(Version.LUCENE_CURRENT, Collections.emptySet()), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT, Collections.emptySet()), true, IndexWriter.MaxFieldLength.UNLIMITED);
 
     Document doc;
 

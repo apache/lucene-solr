@@ -22,7 +22,6 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.util.Version;
 
 /**
  * Test IndicTokenizer
@@ -30,7 +29,7 @@ import org.apache.lucene.util.Version;
 public class TestIndicTokenizer extends BaseTokenStreamTestCase {
   /** Test tokenizing Indic vowels, signs, and punctuation */
   public void testBasics() throws IOException {
-    TokenStream ts = new IndicTokenizer(Version.LUCENE_CURRENT,
+    TokenStream ts = new IndicTokenizer(TEST_VERSION_CURRENT,
         new StringReader("मुझे हिंदी का और अभ्यास करना होगा ।"));
     assertTokenStreamContents(ts,
         new String[] { "मुझे", "हिंदी", "का", "और", "अभ्यास", "करना", "होगा" });
@@ -38,7 +37,7 @@ public class TestIndicTokenizer extends BaseTokenStreamTestCase {
   
   /** Test that words with format chars such as ZWJ are kept */
   public void testFormat() throws Exception {
-    TokenStream ts = new IndicTokenizer(Version.LUCENE_CURRENT,
+    TokenStream ts = new IndicTokenizer(TEST_VERSION_CURRENT,
         new StringReader("शार्‍मा शार्‍मा"));
     assertTokenStreamContents(ts, new String[] { "शार्‍मा", "शार्‍मा" });
   }

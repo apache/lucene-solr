@@ -78,29 +78,23 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
   }
 
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  protected void tearDown() throws Exception {
     readerA.close();
     readerB.close();
     readerX.close();
+    super.tearDown();
   }
 
   public void testSanity() throws IOException {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    double [] doubles;
-    int [] ints;
+    cache.getDoubles(readerA, "theDouble");
+    cache.getDoubles(readerA, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER);
+    cache.getDoubles(readerB, "theDouble", FieldCache.DEFAULT_DOUBLE_PARSER);
 
-    doubles = cache.getDoubles(readerA, "theDouble");
-    doubles = cache.getDoubles(readerA, "theDouble", 
-                               FieldCache.DEFAULT_DOUBLE_PARSER);
-    doubles = cache.getDoubles(readerB, "theDouble", 
-                               FieldCache.DEFAULT_DOUBLE_PARSER);
-
-    ints = cache.getInts(readerX, "theInt");
-    ints = cache.getInts(readerX, "theInt", 
-                         FieldCache.DEFAULT_INT_PARSER);
+    cache.getInts(readerX, "theInt");
+    cache.getInts(readerX, "theInt", FieldCache.DEFAULT_INT_PARSER);
 
     // // // 
 
@@ -118,15 +112,9 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    int [] ints;
-    String [] strings;
-    byte [] bytes;
-
-    ints = cache.getInts(readerX, "theInt", FieldCache.DEFAULT_INT_PARSER);
-    strings = cache.getStrings(readerX, "theInt");
-
-    // this one is ok
-    bytes = cache.getBytes(readerX, "theByte");
+    cache.getInts(readerX, "theInt", FieldCache.DEFAULT_INT_PARSER);
+    cache.getStrings(readerX, "theInt");
+    cache.getBytes(readerX, "theByte");
 
     // // // 
 
@@ -148,15 +136,11 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    String [] strings;
-    byte [] bytes;
+    cache.getStrings(readerA, "theString");
+    cache.getStrings(readerB, "theString");
+    cache.getStrings(readerX, "theString");
 
-    strings = cache.getStrings(readerA, "theString");
-    strings = cache.getStrings(readerB, "theString");
-    strings = cache.getStrings(readerX, "theString");
-
-    // this one is ok
-    bytes = cache.getBytes(readerX, "theByte");
+    cache.getBytes(readerX, "theByte");
 
 
     // // // 

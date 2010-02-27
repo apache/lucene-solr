@@ -72,7 +72,7 @@ public class FuzzyAttributeImpl extends AttributeImpl
   @Override
   public boolean equals(Object other) {
 
-    if (other instanceof FuzzyAttributeImpl && other != null
+    if (other instanceof FuzzyAttributeImpl
         && ((FuzzyAttributeImpl) other).prefixLength == this.prefixLength) {
 
       return true;

@@ -351,7 +351,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     // term text into textStart address
 
     // Get the text of this term.
-    final char[] tokenText = termAtt.termBuffer();;
+    final char[] tokenText = termAtt.termBuffer();
     final int tokenTextLen = termAtt.termLength();
 
     // Compute hashcode & replace any invalid UTF16 sequences

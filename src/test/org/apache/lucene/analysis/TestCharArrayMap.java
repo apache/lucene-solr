@@ -76,7 +76,8 @@ public class TestCharArrayMap extends LuceneTestCase {
     int n=0;
     for (Object o : cs) {
       assertTrue(cm.containsKey(o));
-      assertTrue(cm.containsKey((char[]) o));
+      char[] co = (char[]) o;
+      assertTrue(cm.containsKey(co, 0, co.length));
       n++;
     }
     assertEquals(hm.size(), n);

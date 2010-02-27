@@ -86,10 +86,10 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
 
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  protected void tearDown() throws Exception {
     searcher.close();
     directory.close();
+    super.tearDown();
   }
 
   public void testNotCloseEnough() throws Exception {
@@ -474,7 +474,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     query.add(new Term("palindrome", "three"));
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("just sloppy enough", 1, hits.length);
-    float score2 = hits[0].score;
+    //float score2 = hits[0].score;
     //System.out.println("palindrome: two three: "+score2);
     QueryUtils.check(query,searcher);
     
@@ -488,7 +488,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     query.add(new Term("palindrome", "two"));
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("just sloppy enough", 1, hits.length);
-    float score3 = hits[0].score;
+    //float score3 = hits[0].score;
     //System.out.println("palindrome: three two: "+score3);
     QueryUtils.check(query,searcher);
 
@@ -536,7 +536,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     query.add(new Term("palindrome", "three"));
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("just sloppy enough", 1, hits.length);
-    float score2 = hits[0].score;
+    //float score2 = hits[0].score;
     //System.out.println("palindrome: one two three: "+score2);
     QueryUtils.check(query,searcher);
     
@@ -551,7 +551,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     query.add(new Term("palindrome", "one"));
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("just sloppy enough", 1, hits.length);
-    float score3 = hits[0].score;
+    //float score3 = hits[0].score;
     //System.out.println("palindrome: three two one: "+score3);
     QueryUtils.check(query,searcher);
 

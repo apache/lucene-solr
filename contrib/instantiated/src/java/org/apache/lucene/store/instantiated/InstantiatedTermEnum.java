@@ -19,14 +19,10 @@ package org.apache.lucene.store.instantiated;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 
-import java.io.IOException;
-import java.util.Arrays;
-
 /**
  * A {@link org.apache.lucene.index.TermEnum} navigating an {@link org.apache.lucene.store.instantiated.InstantiatedIndexReader}.
  */
-public class InstantiatedTermEnum
-    extends TermEnum {
+public class InstantiatedTermEnum extends TermEnum {
 
   private final InstantiatedIndexReader reader;
 

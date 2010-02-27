@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
@@ -302,70 +301,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
     mainDir.close();
   }
   
-  private class DeleteThreads {
-    final static int NUM_THREADS = 5;
-    final Thread[] threads = new Thread[NUM_THREADS];
-    IndexWriter mainWriter;
-    List<Term> deletedTerms = new ArrayList<Term>();
-    LinkedList<Term> toDeleteTerms = new LinkedList<Term>();
-    Random random;
-    final List<Throwable> failures = new ArrayList<Throwable>();
-    
-    public DeleteThreads(IndexWriter mainWriter) throws IOException {
-      this.mainWriter = mainWriter;
-      IndexReader reader = mainWriter.getReader();
-      int maxDoc = reader.maxDoc();
-      random = newRandom();
-      int iter = random.nextInt(maxDoc);
-      for (int x=0; x < iter; x++) {
-        int doc = random.nextInt(iter);
-        String id = reader.document(doc).get("id");
-        toDeleteTerms.add(new Term("id", id));
-      }
-    }
-    
-    Term getDeleteTerm() {
-      synchronized (toDeleteTerms) {
-        return toDeleteTerms.removeFirst();
-      }
-    }
-    
-    void launchThreads(final int numIter) {
-      for (int i = 0; i < NUM_THREADS; i++) {
-        threads[i] = new Thread() {
-          @Override
-          public void run() {
-            try {
-              Term term = getDeleteTerm();
-              mainWriter.deleteDocuments(term);
-              synchronized (deletedTerms) {
-                deletedTerms.add(term);
-              }
-            } catch (Throwable t) {
-              handle(t);
-            }
-          }
-        };
-      }
-    }
-    
-    void handle(Throwable t) {
-      t.printStackTrace(System.out);
-      synchronized (failures) {
-        failures.add(t);
-      }
-    }
-    
-    void joinThreads() {
-      for (int i = 0; i < NUM_THREADS; i++)
-        try {
-          threads[i].join();
-        } catch (InterruptedException ie) {
-          throw new ThreadInterruptedException(ie);
-        }
-    }
-  }
-  
   private class AddDirectoriesThreads {
     Directory addDir;
     final static int NUM_THREADS = 5;
@@ -558,16 +493,15 @@ public class TestIndexWriterReader extends LuceneTestCase {
     return doc;
   }
 
-  /**
+  /*
    * Delete a document by term and return the doc id
-   * 
-   * @return
    * 
    * public static int deleteDocument(Term term, IndexWriter writer) throws
    * IOException { IndexReader reader = writer.getReader(); TermDocs td =
    * reader.termDocs(term); int doc = -1; //if (td.next()) { // doc = td.doc();
    * //} //writer.deleteDocuments(term); td.close(); return doc; }
    */
+  
   public static void createIndex(Directory dir1, String indexName,
       boolean multiSegment) throws IOException {
     IndexWriter w = new IndexWriter(dir1, new WhitespaceAnalyzer(TEST_VERSION_CURRENT),

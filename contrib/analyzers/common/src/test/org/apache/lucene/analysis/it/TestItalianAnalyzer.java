@@ -23,18 +23,17 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestItalianAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new ItalianAnalyzer(Version.LUCENE_CURRENT);
+    new ItalianAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new ItalianAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new ItalianAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTermReuse(a, "abbandonata", "abbandon");
     checkOneTermReuse(a, "abbandonati", "abbandon");
@@ -46,7 +45,7 @@ public class TestItalianAnalyzer extends BaseTokenStreamTestCase {
   public void testExclude() throws IOException {
     Set<String> exclusionSet = new HashSet<String>();
     exclusionSet.add("abbandonata");
-    Analyzer a = new ItalianAnalyzer(Version.LUCENE_CURRENT, 
+    Analyzer a = new ItalianAnalyzer(TEST_VERSION_CURRENT, 
         ItalianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "abbandonata", "abbandonata");
     checkOneTermReuse(a, "abbandonati", "abbandon");

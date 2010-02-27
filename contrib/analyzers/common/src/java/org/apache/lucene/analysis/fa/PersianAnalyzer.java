@@ -25,7 +25,6 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
-import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
@@ -136,12 +135,13 @@ public final class PersianAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * Creates {@link TokenStreamComponents} used to tokenize all the text in the provided
-   * {@link Reader}.
+   * Creates
+   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * used to tokenize all the text in the provided {@link Reader}.
    * 
-   * @return {@link TokenStreamComponents} built from a {@link ArabicLetterTokenizer}
-   *         filtered with {@link LowerCaseFilter}, 
-   *         {@link ArabicNormalizationFilter},
+   * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   *         built from a {@link ArabicLetterTokenizer} filtered with
+   *         {@link LowerCaseFilter}, {@link ArabicNormalizationFilter},
    *         {@link PersianNormalizationFilter} and Persian Stop words
    */
   @Override

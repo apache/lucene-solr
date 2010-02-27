@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 
-import junit.framework.TestCase;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -42,7 +41,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     public IndexSearcher s;
 
     @Override
-    public void setUp() throws Exception {
+    protected void setUp() throws Exception {
         super.setUp();
 
 
@@ -338,7 +337,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         // The constrained query
         // should be a superset to the unconstrained query.
         if (top2.totalHits > top1.totalHits) {
-          TestCase.fail("Constrained results not a subset:\n"
+          fail("Constrained results not a subset:\n"
                         + CheckHits.topdocsString(top1,0,0)
                         + CheckHits.topdocsString(top2,0,0)
                         + "for query:" + q2.toString());
@@ -355,7 +354,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
               float otherScore = top1.scoreDocs[other].score;
               // check if scores match
               if (Math.abs(otherScore-score)>1.0e-6f) {
-                        TestCase.fail("Doc " + id + " scores don't match\n"
+                        fail("Doc " + id + " scores don't match\n"
                 + CheckHits.topdocsString(top1,0,0)
                 + CheckHits.topdocsString(top2,0,0)
                 + "for query:" + q2.toString());
@@ -364,7 +363,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
           }
 
           // check if subset
-          if (!found) TestCase.fail("Doc " + id + " not found\n"
+          if (!found) fail("Doc " + id + " not found\n"
                 + CheckHits.topdocsString(top1,0,0)
                 + CheckHits.topdocsString(top2,0,0)
                 + "for query:" + q2.toString());

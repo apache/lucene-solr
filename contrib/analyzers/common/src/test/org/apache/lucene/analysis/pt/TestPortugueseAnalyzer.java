@@ -23,18 +23,17 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestPortugueseAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new PortugueseAnalyzer(Version.LUCENE_CURRENT);
+    new PortugueseAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new PortugueseAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new PortugueseAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTermReuse(a, "quilométricas", "quilométr");
     checkOneTermReuse(a, "quilométricos", "quilométr");
@@ -46,7 +45,7 @@ public class TestPortugueseAnalyzer extends BaseTokenStreamTestCase {
   public void testExclude() throws IOException {
     Set<String> exclusionSet = new HashSet<String>();
     exclusionSet.add("quilométricas");
-    Analyzer a = new PortugueseAnalyzer(Version.LUCENE_CURRENT, 
+    Analyzer a = new PortugueseAnalyzer(TEST_VERSION_CURRENT, 
         PortugueseAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "quilométricas", "quilométricas");
     checkOneTermReuse(a, "quilométricos", "quilométr");

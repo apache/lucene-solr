@@ -38,7 +38,6 @@ import org.apache.lucene.analysis.LowerCaseTokenizer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.StopFilter;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -78,7 +77,6 @@ import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LocalizedTestCase;
-import org.apache.lucene.util.Version;
 
 /**
  * This test case is a copy of the core Lucene query parser test, it was adapted
@@ -144,7 +142,7 @@ public class TestQPHelper extends LocalizedTestCase {
     /** Filters LowerCaseTokenizer with StopFilter. */
     @Override
     public final TokenStream tokenStream(String fieldName, Reader reader) {
-      return new QPTestFilter(new LowerCaseTokenizer(Version.LUCENE_CURRENT, reader));
+      return new QPTestFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, reader));
     }
   }
 
@@ -197,14 +195,14 @@ public class TestQPHelper extends LocalizedTestCase {
   private int originalMaxClauses;
 
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
     super.setUp();
     originalMaxClauses = BooleanQuery.getMaxClauseCount();
   }
 
   public StandardQueryParser getParser(Analyzer a) throws Exception {
     if (a == null)
-      a = new SimpleAnalyzer(Version.LUCENE_CURRENT);
+      a = new SimpleAnalyzer(TEST_VERSION_CURRENT);
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(a);
 
@@ -294,7 +292,7 @@ public class TestQPHelper extends LocalizedTestCase {
 
   public Query getQueryDOA(String query, Analyzer a) throws Exception {
     if (a == null)
-      a = new SimpleAnalyzer(Version.LUCENE_CURRENT);
+      a = new SimpleAnalyzer(TEST_VERSION_CURRENT);
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(a);
     qp.setDefaultOperator(Operator.AND);
@@ -314,7 +312,7 @@ public class TestQPHelper extends LocalizedTestCase {
   }
 
   public void testConstantScoreAutoRewrite() throws Exception {
-    StandardQueryParser qp = new StandardQueryParser(new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
+    StandardQueryParser qp = new StandardQueryParser(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     Query q = qp.parse("foo*bar", "field");
     assertTrue(q instanceof WildcardQuery);
     assertEquals(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT, ((MultiTermQuery) q).getRewriteMethod());
@@ -339,9 +337,9 @@ public class TestQPHelper extends LocalizedTestCase {
   public void testSimple() throws Exception {
     assertQueryEquals("\"term germ\"~2", null, "\"term germ\"~2");
     assertQueryEquals("term term term", null, "term term term");
-    assertQueryEquals("t�rm term term", new WhitespaceAnalyzer(Version.LUCENE_CURRENT),
+    assertQueryEquals("t�rm term term", new WhitespaceAnalyzer(TEST_VERSION_CURRENT),
         "t�rm term term");
-    assertQueryEquals("�mlaut", new WhitespaceAnalyzer(Version.LUCENE_CURRENT), "�mlaut");
+    assertQueryEquals("�mlaut", new WhitespaceAnalyzer(TEST_VERSION_CURRENT), "�mlaut");
 
     assertQueryEquals("\"\"", new KeywordAnalyzer(), "");
     assertQueryEquals("foo:\"\"", new KeywordAnalyzer(), "foo:");
@@ -398,7 +396,7 @@ public class TestQPHelper extends LocalizedTestCase {
   }
 
   public void testPunct() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
     assertQueryEquals("a&b", a, "a&b");
     assertQueryEquals("a&&b", a, "a&&b");
     assertQueryEquals(".NET", a, ".NET");
@@ -419,7 +417,7 @@ public class TestQPHelper extends LocalizedTestCase {
     assertQueryEquals("term 1.0 1 2", null, "term");
     assertQueryEquals("term term1 term2", null, "term term term");
 
-    Analyzer a = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
+    Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT);
     assertQueryEquals("3", a, "3");
     assertQueryEquals("term 1.0 1 2", a, "term 1.0 1 2");
     assertQueryEquals("term term1 term2", a, "term term1 term2");
@@ -573,7 +571,7 @@ public class TestQPHelper extends LocalizedTestCase {
   public void testFarsiRangeCollating() throws Exception {
 
     RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true,
+    IndexWriter iw = new IndexWriter(ramDir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true,
         IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
@@ -583,7 +581,7 @@ public class TestQPHelper extends LocalizedTestCase {
     IndexSearcher is = new IndexSearcher(ramDir, true);
 
     StandardQueryParser qp = new StandardQueryParser();
-    qp.setAnalyzer(new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
+    qp.setAnalyzer(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
 
     // Neither Java 1.4.2 nor 1.5.0 has Farsi Locale collation available in
     // RuleBasedCollator. However, the Arabic Locale seems to order the
@@ -737,7 +735,7 @@ public class TestQPHelper extends LocalizedTestCase {
   }
 
   public void testEscaped() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
 
     /*
      * assertQueryEquals("\\[brackets", a, "\\[brackets");
@@ -836,7 +834,7 @@ public class TestQPHelper extends LocalizedTestCase {
   }
 
   public void testQueryStringEscaping() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
 
     assertEscapedQueryEquals("a-b:c", a, "a\\-b\\:c");
     assertEscapedQueryEquals("a+b:c", a, "a\\+b\\:c");
@@ -905,7 +903,7 @@ public class TestQPHelper extends LocalizedTestCase {
   }
 
   public void testBoost() throws Exception {
-    StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(Version.LUCENE_CURRENT, Collections.singleton("on"));
+    StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(TEST_VERSION_CURRENT, Collections.singleton("on"));
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(oneStopAnalyzer);
 
@@ -921,7 +919,7 @@ public class TestQPHelper extends LocalizedTestCase {
     assertNotNull(q);
 
     StandardQueryParser qp2 = new StandardQueryParser();
-    qp2.setAnalyzer(new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
+    qp2.setAnalyzer(new StandardAnalyzer(TEST_VERSION_CURRENT));
 
     q = qp2.parse("the^3", "field");
     // "the" is a stop word so the result is an empty query:
@@ -951,7 +949,7 @@ public class TestQPHelper extends LocalizedTestCase {
 
   public void testCustomQueryParserWildcard() {
     try {
-      new QPTestParser(new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("a?t", "contents");
+      new QPTestParser(new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("a?t", "contents");
       fail("Wildcard queries should not be allowed");
     } catch (QueryNodeException expected) {
       // expected exception
@@ -960,7 +958,7 @@ public class TestQPHelper extends LocalizedTestCase {
 
   public void testCustomQueryParserFuzzy() throws Exception {
     try {
-      new QPTestParser(new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("xunit~", "contents");
+      new QPTestParser(new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("xunit~", "contents");
       fail("Fuzzy queries should not be allowed");
     } catch (QueryNodeException expected) {
       // expected exception
@@ -971,7 +969,7 @@ public class TestQPHelper extends LocalizedTestCase {
     BooleanQuery.setMaxClauseCount(2);
     try {
       StandardQueryParser qp = new StandardQueryParser();
-      qp.setAnalyzer(new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
+      qp.setAnalyzer(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
 
       qp.parse("one two three", "field");
       fail("ParseException expected due to too many boolean clauses");
@@ -985,7 +983,7 @@ public class TestQPHelper extends LocalizedTestCase {
    */
   public void testPrecedence() throws Exception {
     StandardQueryParser qp = new StandardQueryParser();
-    qp.setAnalyzer(new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
+    qp.setAnalyzer(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
 
     Query query1 = qp.parse("A AND B OR C AND D", "field");
     Query query2 = qp.parse("+A +B +C +D", "field");
@@ -996,7 +994,7 @@ public class TestQPHelper extends LocalizedTestCase {
   public void testLocalDateFormat() throws IOException, QueryNodeException {
 
     RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true,
+    IndexWriter iw = new IndexWriter(ramDir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true,
         IndexWriter.MaxFieldLength.LIMITED);
     addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
     addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
@@ -1077,7 +1075,7 @@ public class TestQPHelper extends LocalizedTestCase {
   public void testStopwords() throws Exception {
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(
-        new StopAnalyzer(Version.LUCENE_CURRENT, StopFilter.makeStopSet(Version.LUCENE_CURRENT, "the", "foo" )));
+        new StopAnalyzer(TEST_VERSION_CURRENT, StopFilter.makeStopSet(TEST_VERSION_CURRENT, "the", "foo" )));
 
     Query result = qp.parse("a:the OR a:foo", "a");
     assertNotNull("result is null and it shouldn't be", result);
@@ -1100,7 +1098,7 @@ public class TestQPHelper extends LocalizedTestCase {
   public void testPositionIncrement() throws Exception {
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(
-        new StopAnalyzer(Version.LUCENE_CURRENT, StopFilter.makeStopSet(Version.LUCENE_CURRENT, "the", "in", "are", "this" )));
+        new StopAnalyzer(TEST_VERSION_CURRENT, StopFilter.makeStopSet(TEST_VERSION_CURRENT, "the", "in", "are", "this" )));
 
     qp.setEnablePositionIncrements(true);
 
@@ -1121,7 +1119,7 @@ public class TestQPHelper extends LocalizedTestCase {
 
   public void testMatchAllDocs() throws Exception {
     StandardQueryParser qp = new StandardQueryParser();
-    qp.setAnalyzer(new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
+    qp.setAnalyzer(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
 
     assertEquals(new MatchAllDocsQuery(), qp.parse("*:*", "field"));
     assertEquals(new MatchAllDocsQuery(), qp.parse("(*:*)", "field"));
@@ -1133,7 +1131,7 @@ public class TestQPHelper extends LocalizedTestCase {
   private void assertHits(int expected, String query, IndexSearcher is)
       throws IOException, QueryNodeException {
     StandardQueryParser qp = new StandardQueryParser();
-    qp.setAnalyzer(new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
+    qp.setAnalyzer(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     qp.setLocale(Locale.ENGLISH);
 
     Query q = qp.parse(query, "date");
@@ -1153,9 +1151,9 @@ public class TestQPHelper extends LocalizedTestCase {
   }
 
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  protected void tearDown() throws Exception {
     BooleanQuery.setMaxClauseCount(originalMaxClauses);
+    super.tearDown();
   }
 
   private class CannedTokenStream extends TokenStream {

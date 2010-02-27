@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.standard;
 import java.io.IOException;
 import java.io.Reader;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;

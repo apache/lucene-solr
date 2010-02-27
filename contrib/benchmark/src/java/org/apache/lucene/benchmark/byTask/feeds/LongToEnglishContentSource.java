@@ -13,10 +13,12 @@ import java.util.Date;
 public class LongToEnglishContentSource extends ContentSource{
   private long counter = Long.MIN_VALUE + 10;
 
+  @Override
   public void close() throws IOException {
 
   }
   //TODO: reduce/clean up synchonization
+  @Override
   public synchronized DocData getNextDocData(DocData docData) throws NoMoreDataException, IOException {
     docData.clear();
     docData.setBody(English.longToEnglish(counter));

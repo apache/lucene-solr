@@ -402,7 +402,7 @@ import java.util.Collection;
  *
  *      The sum of squared weights (of the query terms) is
  *      computed by the query {@link org.apache.lucene.search.Weight} object.
- *      For example, a {@link org.apache.lucene.search.BooleanQuery boolean query}
+ *      For example, a {@link org.apache.lucene.search.BooleanQuery}
  *      computes this value as:
  *
  *      <br>&nbsp;<br>
@@ -609,7 +609,7 @@ public abstract class Similarity implements Serializable {
    * @return the calculated float norm
    */
   public float computeNorm(String field, FieldInvertState state) {
-    return (float) (state.getBoost() * lengthNorm(field, state.getLength()));
+    return (state.getBoost() * lengthNorm(field, state.getLength()));
   }
   
   /** Computes the normalization value for a field given the total number of

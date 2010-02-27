@@ -345,7 +345,7 @@ public class QueryParserWrapper {
     try {
       QueryNode queryTree = this.syntaxParser.parse(query, getField());
       queryTree = this.processorPipeline.process(queryTree);
-      return (Query) this.builder.build(queryTree);
+      return this.builder.build(queryTree);
 
     } catch (QueryNodeException e) {
       throw new ParseException("parse exception");

@@ -46,7 +46,7 @@ public class TestSpans extends LuceneTestCase {
   public static final String field = "field";
 
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
     IndexWriter writer= new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);

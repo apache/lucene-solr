@@ -42,8 +42,8 @@ public class TestDocument extends LuceneTestCase
   {
     Document doc = new Document();
     Fieldable stringFld = new Field("string", binaryVal, Field.Store.YES, Field.Index.NO);
-    Fieldable binaryFld = new Field("binary", binaryVal.getBytes(), Field.Store.YES);
-    Fieldable binaryFld2 = new Field("binary", binaryVal2.getBytes(), Field.Store.YES);
+    Fieldable binaryFld = new Field("binary", binaryVal.getBytes());
+    Fieldable binaryFld2 = new Field("binary", binaryVal2.getBytes());
     
     doc.add(stringFld);
     doc.add(binaryFld);
@@ -259,8 +259,7 @@ public class TestDocument extends LuceneTestCase
     }
 
   public void testFieldSetValueChangeBinary() {
-    Field field1 = new Field("field1", new byte[0],
-                             Field.Store.YES);
+    Field field1 = new Field("field1", new byte[0]);
     Field field2 = new Field("field2", "",
                              Field.Store.YES, Field.Index.ANALYZED);
     try {

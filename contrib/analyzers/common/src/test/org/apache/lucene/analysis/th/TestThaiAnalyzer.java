@@ -18,7 +18,6 @@ package org.apache.lucene.analysis.th;
  */
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.util.Version;
 
 /**
  * Test case for ThaiAnalyzer, modified from TestFrenchAnalyzer
@@ -32,7 +31,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	 * testcase for offsets
 	 */
 	public void testOffsets() throws Exception {
-		assertAnalyzesTo(new ThaiAnalyzer(Version.LUCENE_CURRENT), "เดอะนิวยอร์กไทมส์", 
+		assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT), "เดอะนิวยอร์กไทมส์", 
 				new String[] { "เด", "อะนิว", "ยอ", "ร์ก", "ไทมส์"},
 				new int[] { 0, 2, 7, 9, 12 },
 				new int[] { 2, 7, 9, 12, 17});
@@ -50,7 +49,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	 * Instead, allow the definition of alphanum to include relevant categories like nonspacing marks!
 	 */
 	public void testBuggyTokenType() throws Exception {
-		assertAnalyzesTo(new ThaiAnalyzer(Version.LUCENE_CURRENT), "เดอะนิวยอร์กไทมส์ ๑๒๓", 
+		assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT), "เดอะนิวยอร์กไทมส์ ๑๒๓", 
 				new String[] { "เด", "อะนิว", "ยอ", "ร์ก", "ไทมส์", "๑๒๓" },
 				new String[] { "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>" });
 	}
@@ -64,7 +63,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	*/
 
 	public void testAnalyzer() throws Exception {
-		ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_CURRENT);
+		ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT);
 	
 		assertAnalyzesTo(analyzer, "", new String[] {});
 
@@ -89,7 +88,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	 * Test that position increments are adjusted correctly for stopwords.
 	 */
 	public void testPositionIncrements() throws Exception {
-	  ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_CURRENT);
+	  ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT);
 
 	  assertAnalyzesTo(analyzer, "ประโยคว่า the ประโยคว่า",
 	          new String[] { "ประโยค", "ว่า", "ประโยค", "ว่า" },
@@ -106,7 +105,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	}
 	
 	public void testReusableTokenStream() throws Exception {
-	  ThaiAnalyzer analyzer = new ThaiAnalyzer(Version.LUCENE_CURRENT);
+	  ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT);
 	  assertAnalyzesToReuse(analyzer, "", new String[] {});
 
       assertAnalyzesToReuse(

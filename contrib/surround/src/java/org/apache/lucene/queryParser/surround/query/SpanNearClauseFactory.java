@@ -52,23 +52,17 @@ Operations:
    - SpanNotQuery: treat similar to subquery SpanNearQuery. (ok?)
  */
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Iterator;
-
-import java.util.Comparator;
-import java.util.Arrays;
-
-import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
-
 import org.apache.lucene.search.Query;
-
-import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
+import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 
 

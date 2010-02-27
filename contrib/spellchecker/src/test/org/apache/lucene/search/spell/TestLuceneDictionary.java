@@ -20,8 +20,6 @@ package org.apache.lucene.search.spell;
 import java.io.IOException;
 import java.util.Iterator;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -29,27 +27,26 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Test case for LuceneDictionary.
  * It first creates a simple index and then a couple of instances of LuceneDictionary
  * on different fields and checks if all the right text comes back.
- *
  */
-public class TestLuceneDictionary extends TestCase {
+public class TestLuceneDictionary extends LuceneTestCase {
 
   private Directory store = new RAMDirectory();
 
   private IndexReader indexReader = null;
 
   private LuceneDictionary ld;
-  private Iterator it;
+  private Iterator<String> it;
 
   @Override
-  public void setUp() throws Exception {
-
-    IndexWriter writer = new IndexWriter(store, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
+  protected void setUp() throws Exception {
+    super.setUp();
+    IndexWriter writer = new IndexWriter(store, new WhitespaceAnalyzer(LuceneTestCase.TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
 
     Document doc;
 

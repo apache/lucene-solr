@@ -307,7 +307,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         //int count = 0;
         for (final IndexInput ip : allIndexInputs) {
           BufferedIndexInput bii = (BufferedIndexInput) ip;
-          int bufferSize = 1024+(int) Math.abs(rand.nextInt() % 32768);
+          int bufferSize = 1024+Math.abs(rand.nextInt() % 32768);
           bii.setBufferSize(bufferSize);
           //count++;
         }
@@ -317,7 +317,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       @Override
       public IndexInput openInput(String name, int bufferSize) throws IOException {
         // Make random changes to buffer size
-        bufferSize = 1+(int) Math.abs(rand.nextInt() % 10);
+        bufferSize = 1+Math.abs(rand.nextInt() % 10);
         IndexInput f = dir.openInput(name, bufferSize);
         allIndexInputs.add(f);
         return f;

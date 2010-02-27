@@ -143,7 +143,7 @@ public class TestScorerPerf extends LuceneTestCase {
       @Override
       public DocIdSet getDocIdSet(IndexReader reader) {
         return new DocIdBitSet(rnd);
-      };
+      }
     });
     bq.add(q, BooleanClause.Occur.MUST);
     if (validate) {

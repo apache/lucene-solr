@@ -150,7 +150,7 @@ public class TestQueryParser extends LocalizedTestCase {
   private int originalMaxClauses;
 
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
     super.setUp();
     originalMaxClauses = BooleanQuery.getMaxClauseCount();
   }
@@ -1017,9 +1017,9 @@ public class TestQueryParser extends LocalizedTestCase {
   }
 
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  protected void tearDown() throws Exception {
     BooleanQuery.setMaxClauseCount(originalMaxClauses);
+    super.tearDown();
   }
 
   // LUCENE-2002: make sure defaults for StandardAnalyzer's

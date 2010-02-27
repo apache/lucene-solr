@@ -479,7 +479,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
     int numDocs = reader.numDocs();
     Float minIdO = Float.valueOf(minId + .5f);
-    Float medIdO = Float.valueOf(minIdO.floatValue() + ((float) (maxId-minId))/2.0f);
+    Float medIdO = Float.valueOf(minIdO.floatValue() + ((maxId-minId))/2.0f);
         
     ScoreDoc[] result;
     Query q = new TermQuery(new Term("body","body"));
@@ -507,7 +507,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
     int numDocs = reader.numDocs();
     Double minIdO = Double.valueOf(minId + .5);
-    Double medIdO = Double.valueOf(minIdO.floatValue() + ((double) (maxId-minId))/2.0);
+    Double medIdO = Double.valueOf(minIdO.floatValue() + ((maxId-minId))/2.0);
         
     ScoreDoc[] result;
     Query q = new TermQuery(new Term("body","body"));

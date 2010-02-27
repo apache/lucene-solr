@@ -20,8 +20,6 @@ package org.apache.lucene.store.db;
 import java.io.IOException;
 
 import com.sleepycat.db.DatabaseEntry;
-import com.sleepycat.db.internal.Db;
-import com.sleepycat.db.internal.DbTxn;
 import com.sleepycat.db.DatabaseException;
 
 

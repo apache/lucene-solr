@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.util.Version;
 
 public class TestCJKTokenizer extends BaseTokenStreamTestCase {
   
@@ -42,7 +41,7 @@ public class TestCJKTokenizer extends BaseTokenStreamTestCase {
   }
 
   public void checkCJKToken(final String str, final TestToken[] out_tokens) throws IOException {
-    Analyzer analyzer = new CJKAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer analyzer = new CJKAnalyzer(TEST_VERSION_CURRENT);
     String terms[] = new String[out_tokens.length];
     int startOffsets[] = new int[out_tokens.length];
     int endOffsets[] = new int[out_tokens.length];
@@ -57,7 +56,7 @@ public class TestCJKTokenizer extends BaseTokenStreamTestCase {
   }
   
   public void checkCJKTokenReusable(final Analyzer a, final String str, final TestToken[] out_tokens) throws IOException {
-    Analyzer analyzer = new CJKAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer analyzer = new CJKAnalyzer(TEST_VERSION_CURRENT);
     String terms[] = new String[out_tokens.length];
     int startOffsets[] = new int[out_tokens.length];
     int endOffsets[] = new int[out_tokens.length];
@@ -213,13 +212,13 @@ public class TestCJKTokenizer extends BaseTokenStreamTestCase {
   }
   
   public void testTokenStream() throws Exception {
-    Analyzer analyzer = new CJKAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer analyzer = new CJKAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(analyzer, "\u4e00\u4e01\u4e02", 
         new String[] { "\u4e00\u4e01", "\u4e01\u4e02"});
   }
   
   public void testReusableTokenStream() throws Exception {
-    Analyzer analyzer = new CJKAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer analyzer = new CJKAnalyzer(TEST_VERSION_CURRENT);
     String str = "\u3042\u3044\u3046\u3048\u304aabc\u304b\u304d\u304f\u3051\u3053";
     
     TestToken[] out_tokens = { 

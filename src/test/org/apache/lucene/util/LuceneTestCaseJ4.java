@@ -56,17 +56,16 @@ import static org.junit.Assert.fail;
  * @Before - replaces teardown
  * @Test - any public method with this annotation is a test case, regardless
  * of its name
- * <p/>
- * <p/>
+ * <p>
+ * <p>
  * See Junit4 documentation for a complete list of features at
  * http://junit.org/junit/javadoc/4.7/
- * <p/>
+ * <p>
  * Import from org.junit rather than junit.framework.
- * <p/>
+ * <p>
  * You should be able to use this class anywhere you used LuceneTestCase
  * if you annotate your derived class correctly with the annotations above
- * @see assertSaneFieldCaches
- *      <p/>
+ * @see #assertSaneFieldCaches(String)
  */
 
 
@@ -233,7 +232,7 @@ public class LuceneTestCaseJ4 {
    * @param iter   Each next() is toString()ed and logged on it's own line. If iter is null this is logged differnetly then an empty iterator.
    * @param stream Stream to log messages to.
    */
-  public static void dumpIterator(String label, Iterator iter,
+  public static void dumpIterator(String label, Iterator<?> iter,
                                   PrintStream stream) {
     stream.println("*** BEGIN " + label + " ***");
     if (null == iter) {
@@ -249,11 +248,11 @@ public class LuceneTestCaseJ4 {
   /**
    * Convinience method for logging an array.  Wraps the array in an iterator and delegates
    *
-   * @see dumpIterator(String,Iterator,PrintStream)
+   * @see #dumpIterator(String,Iterator,PrintStream)
    */
   public static void dumpArray(String label, Object[] objs,
                                PrintStream stream) {
-    Iterator iter = (null == objs) ? null : Arrays.asList(objs).iterator();
+    Iterator<?> iter = (null == objs) ? null : Arrays.asList(objs).iterator();
     dumpIterator(label, iter, stream);
   }
 

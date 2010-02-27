@@ -44,7 +44,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer,
   /**
    * This map stores hyphenation exceptions
    */
-  protected HashMap<String,ArrayList> stoplist;
+  protected HashMap<String,ArrayList<Object>> stoplist;
 
   /**
    * This map stores the character classes
@@ -57,7 +57,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer,
   private transient TernaryTree ivalues;
 
   public HyphenationTree() {
-    stoplist = new HashMap<String,ArrayList>(23); // usually a small table
+    stoplist = new HashMap<String,ArrayList<Object>>(23); // usually a small table
     classmap = new TernaryTree();
     vspace = new ByteVector();
     vspace.alloc(1); // this reserves index 0, which we don't use
@@ -363,7 +363,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer,
     if (stoplist.containsKey(sw)) {
       // assume only simple hyphens (Hyphen.pre="-", Hyphen.post = Hyphen.no =
       // null)
-      ArrayList hw = stoplist.get(sw);
+      ArrayList<Object> hw = stoplist.get(sw);
       int j = 0;
       for (i = 0; i < hw.size(); i++) {
         Object o = hw.get(i);
@@ -443,7 +443,7 @@ public class HyphenationTree extends TernaryTree implements PatternConsumer,
    * @param hyphenatedword a vector of alternating strings and
    *        {@link Hyphen hyphen} objects.
    */
-  public void addException(String word, ArrayList hyphenatedword) {
+  public void addException(String word, ArrayList<Object> hyphenatedword) {
     stoplist.put(word, hyphenatedword);
   }
 

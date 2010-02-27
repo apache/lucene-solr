@@ -26,7 +26,7 @@ import org.apache.lucene.search.TermQuery;
 import java.util.*;
 import java.io.IOException;
 
-import junit.framework.TestCase;
+import junit.framework.Assert;
 
 public class TestStressIndexing2 extends LuceneTestCase {
   static int maxFields=4;
@@ -644,7 +644,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
         }
       } catch (Throwable e) {
         e.printStackTrace();
-        TestCase.fail(e.toString());
+        Assert.fail(e.toString());
       }
 
       synchronized (this) {

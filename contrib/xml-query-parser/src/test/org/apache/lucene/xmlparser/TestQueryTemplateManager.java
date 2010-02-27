@@ -7,8 +7,6 @@ import java.util.StringTokenizer;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Field;
@@ -16,6 +14,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -39,10 +38,10 @@ import org.xml.sax.SAXException;
  * This class illustrates how form input (such as from a web page or Swing gui) can be
  * turned into Lucene queries using a choice of XSL templates for different styles of queries.
  */
-public class TestQueryTemplateManager extends TestCase {
+public class TestQueryTemplateManager extends LuceneTestCase {
 
 	CoreParser builder;
-	Analyzer analyzer=new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT);
+	Analyzer analyzer=new StandardAnalyzer(TEST_VERSION_CURRENT);
 	private IndexSearcher searcher;
 	
 	//A collection of documents' field values for use in our tests
@@ -160,5 +159,6 @@ public class TestQueryTemplateManager extends TestCase {
 	@Override
 	protected void tearDown() throws Exception {
 		searcher.close();
+    super.tearDown();
 	}
 }

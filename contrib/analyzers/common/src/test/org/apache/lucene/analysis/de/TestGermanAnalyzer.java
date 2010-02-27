@@ -29,38 +29,38 @@ import org.apache.lucene.util.Version;
 
 public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
   public void testReusableTokenStream() throws Exception {
-    Analyzer a = new GermanAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new GermanAnalyzer(TEST_VERSION_CURRENT);
     checkOneTermReuse(a, "Tisch", "tisch");
     checkOneTermReuse(a, "Tische", "tisch");
     checkOneTermReuse(a, "Tischen", "tisch");
   }
   
   public void testExclusionTableBWCompat() throws IOException {
-    GermanStemFilter filter = new GermanStemFilter(new LowerCaseTokenizer(Version.LUCENE_CURRENT, 
+    GermanStemFilter filter = new GermanStemFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, 
         new StringReader("Fischen Trinken")));
-    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("fischen");
     filter.setExclusionSet(set);
     assertTokenStreamContents(filter, new String[] { "fischen", "trink" });
   }
 
   public void testWithKeywordAttribute() throws IOException {
-    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("fischen");
     GermanStemFilter filter = new GermanStemFilter(
-        new KeywordMarkerTokenFilter(new LowerCaseTokenizer(Version.LUCENE_CURRENT, new StringReader( 
+        new KeywordMarkerTokenFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader( 
             "Fischen Trinken")), set));
     assertTokenStreamContents(filter, new String[] { "fischen", "trink" });
   }
 
   public void testWithKeywordAttributeAndExclusionTable() throws IOException {
-    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("fischen");
-    CharArraySet set1 = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    CharArraySet set1 = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set1.add("trinken");
     set1.add("fischen");
     GermanStemFilter filter = new GermanStemFilter(
-        new KeywordMarkerTokenFilter(new LowerCaseTokenizer(Version.LUCENE_CURRENT, new StringReader(
+        new KeywordMarkerTokenFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, new StringReader(
             "Fischen Trinken")), set));
     filter.setExclusionSet(set1);
     assertTokenStreamContents(filter, new String[] { "fischen", "trinken" });
@@ -71,7 +71,7 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
    * when using reusable token streams.
    */
   public void testExclusionTableReuse() throws Exception {
-    GermanAnalyzer a = new GermanAnalyzer(Version.LUCENE_CURRENT);
+    GermanAnalyzer a = new GermanAnalyzer(TEST_VERSION_CURRENT);
     checkOneTermReuse(a, "tischen", "tisch");
     a.setStemExclusionTable(new String[] { "tischen" });
     checkOneTermReuse(a, "tischen", "tischen");
@@ -81,7 +81,7 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
    * these only pass with LUCENE_CURRENT, not if you use o.a.l.a.de.GermanStemmer
    */
   public void testGermanSpecials() throws Exception {
-    GermanAnalyzer a = new GermanAnalyzer(Version.LUCENE_CURRENT);
+    GermanAnalyzer a = new GermanAnalyzer(TEST_VERSION_CURRENT);
     // a/o/u + e is equivalent to the umlaut form
     checkOneTermReuse(a, "Schaltflächen", "schaltflach");
     checkOneTermReuse(a, "Schaltflaechen", "schaltflach");

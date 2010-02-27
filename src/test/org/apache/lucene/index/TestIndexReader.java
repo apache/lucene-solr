@@ -366,7 +366,7 @@ public class TestIndexReader extends LuceneTestCase
         writer.close();
         writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
         Document doc = new Document();
-        doc.add(new Field("bin1", bin, Field.Store.YES));
+        doc.add(new Field("bin1", bin));
         doc.add(new Field("junk", "junk text", Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(doc);
         writer.close();
@@ -511,11 +511,8 @@ public class TestIndexReader extends LuceneTestCase
 
     // Make sure you can set norms & commit even if a reader
     // is open against the index:
-    public void testWritingNorms() throws IOException
-    {
+    public void testWritingNorms() throws IOException {
         String tempDir = "target/test";
-        if (tempDir == null)
-            throw new IOException("tempDir undefined, cannot run test");
 
         File indexDir = new File(tempDir, "lucenetestnormwriter");
         Directory dir = FSDirectory.open(indexDir);

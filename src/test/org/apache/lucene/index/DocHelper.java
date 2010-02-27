@@ -154,7 +154,7 @@ class DocHelper {
       LAZY_FIELD_BINARY_BYTES = "These are some binary field bytes".getBytes("UTF8");
     } catch (UnsupportedEncodingException e) {
     }
-    lazyFieldBinary = new Field(LAZY_FIELD_BINARY_KEY, LAZY_FIELD_BINARY_BYTES, Field.Store.YES);
+    lazyFieldBinary = new Field(LAZY_FIELD_BINARY_KEY, LAZY_FIELD_BINARY_BYTES);
     fields[fields.length - 2] = lazyFieldBinary;
     LARGE_LAZY_FIELD_TEXT = buffer.toString();
     largeLazyField = new Field(LARGE_LAZY_FIELD_KEY, LARGE_LAZY_FIELD_TEXT, Field.Store.YES, Field.Index.ANALYZED);

@@ -100,7 +100,7 @@ public class SimpleFSLockFactory extends FSLockFactory {
       }
     }
   }
-};
+}
 
 class SimpleFSLock extends Lock {
 

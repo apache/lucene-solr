@@ -46,7 +46,7 @@ public class TestDateSort extends LuceneTestCase {
   private static Directory directory;
 
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
     super.setUp();
     // Create an index writer.
     directory = new RAMDirectory();

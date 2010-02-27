@@ -60,7 +60,6 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
     FieldsReader reader = new FieldsReader(dir, TEST_SEGMENT_NAME, fieldInfos);
-    assertTrue(reader != null);
     assertTrue(reader.size() == 1);
     Document doc = reader.doc(0, null);
     assertTrue(doc != null);
@@ -98,7 +97,6 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
     FieldsReader reader = new FieldsReader(dir, TEST_SEGMENT_NAME, fieldInfos);
-    assertTrue(reader != null);
     assertTrue(reader.size() == 1);
     Set<String> loadFieldNames = new HashSet<String>();
     loadFieldNames.add(DocHelper.TEXT_FIELD_1_KEY);
@@ -148,7 +146,6 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
     FieldsReader reader = new FieldsReader(dir, TEST_SEGMENT_NAME, fieldInfos);
-    assertTrue(reader != null);
     assertTrue(reader.size() == 1);
     Set<String> loadFieldNames = new HashSet<String>();
     loadFieldNames.add(DocHelper.TEXT_FIELD_1_KEY);
@@ -177,7 +174,6 @@ public class TestFieldsReader extends LuceneTestCase {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
     FieldsReader reader = new FieldsReader(dir, TEST_SEGMENT_NAME, fieldInfos);
-    assertTrue(reader != null);
     assertTrue(reader.size() == 1);
     LoadFirstFieldSelector fieldSelector = new LoadFirstFieldSelector();
     Document doc = reader.doc(0, fieldSelector);
@@ -227,13 +223,13 @@ public class TestFieldsReader extends LuceneTestCase {
 
     for (int i = 0; i < length; i++) {
       reader = new FieldsReader(tmpDir, TEST_SEGMENT_NAME, fieldInfos);
-      assertTrue(reader != null);
       assertTrue(reader.size() == 1);
 
       Document doc;
       doc = reader.doc(0, null);//Load all of them
       assertTrue("doc is null and it shouldn't be", doc != null);
       Fieldable field = doc.getFieldable(DocHelper.LARGE_LAZY_FIELD_KEY);
+      assertTrue("field is null and it shouldn't be", field != null);
       assertTrue("field is lazy", field.isLazy() == false);
       String value;
       long start;
@@ -243,7 +239,6 @@ public class TestFieldsReader extends LuceneTestCase {
       value = field.stringValue();
       finish = System.currentTimeMillis();
       assertTrue("value is null and it shouldn't be", value != null);
-      assertTrue("field is null and it shouldn't be", field != null);
       regularTime += (finish - start);
       reader.close();
       reader = null;

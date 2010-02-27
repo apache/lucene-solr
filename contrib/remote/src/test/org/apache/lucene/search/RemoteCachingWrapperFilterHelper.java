@@ -18,9 +18,8 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.BitSet;
 
-import junit.framework.TestCase;
+import junit.framework.Assert;
 
 import org.apache.lucene.index.IndexReader;
 
@@ -45,11 +44,11 @@ public class RemoteCachingWrapperFilterHelper extends RemoteCachingWrapperFilter
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     Filter cachedFilter = FilterManager.getInstance().getFilter(filter);
     
-    TestCase.assertNotNull("Filter should not be null", cachedFilter);
+    Assert.assertNotNull("Filter should not be null", cachedFilter);
     if (!shouldHaveCache) {
-      TestCase.assertSame("First time filter should be the same ", filter, cachedFilter);
+      Assert.assertSame("First time filter should be the same ", filter, cachedFilter);
     } else {
-      TestCase.assertNotSame("We should have a cached version of the filter", filter, cachedFilter);
+      Assert.assertNotSame("We should have a cached version of the filter", filter, cachedFilter);
     }
     
     if (filter instanceof CachingWrapperFilterHelper) {

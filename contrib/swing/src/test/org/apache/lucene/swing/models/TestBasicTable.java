@@ -27,11 +27,11 @@ import junit.framework.TestCase;
 public class TestBasicTable extends TestCase {
     private TableModel baseTableModel;
     private TableSearcher tableSearcher;
-    private List list;
+    private List<RestaurantInfo> list;
 
     @Override
     protected void setUp() throws Exception {
-        list = new ArrayList();
+        list = new ArrayList<RestaurantInfo>();
         list.add(DataStore.canolis);
         list.add(DataStore.chris);
 

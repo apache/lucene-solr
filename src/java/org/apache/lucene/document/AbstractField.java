@@ -18,6 +18,7 @@ package org.apache.lucene.document;
 import org.apache.lucene.search.PhraseQuery; // for javadocs
 import org.apache.lucene.search.spans.SpanQuery; // for javadocs
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.util.StringHelper; // for javadocs
 
 
@@ -85,7 +86,7 @@ public abstract class AbstractField implements Fieldable {
    * the range of that encoding.
    *
    * @see org.apache.lucene.document.Document#setBoost(float)
-   * @see org.apache.lucene.search.Similarity#computeNorm(String, org.apache.lucene.index.FieldInvertState)
+   * @see org.apache.lucene.search.Similarity#computeNorm(String, FieldInvertState)
    * @see org.apache.lucene.search.Similarity#encodeNormValue(float)
    */
   public void setBoost(float boost) {

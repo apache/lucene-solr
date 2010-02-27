@@ -42,7 +42,7 @@ public interface PatternConsumer {
    * his own hyphenation. A hyphenatedword is a vector of alternating String's
    * and {@link Hyphen Hyphen} instances
    */
-  void addException(String word, ArrayList hyphenatedword);
+  void addException(String word, ArrayList<Object> hyphenatedword);
 
   /**
    * Add hyphenation patterns.

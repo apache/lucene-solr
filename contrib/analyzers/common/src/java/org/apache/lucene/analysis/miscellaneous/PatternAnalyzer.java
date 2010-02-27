@@ -311,7 +311,7 @@ public final class PatternAnalyzer extends Analyzer {
 
       return new String(output, 0, len);
     } finally {
-      if (input != null) input.close();
+      input.close();
     }
   }
   

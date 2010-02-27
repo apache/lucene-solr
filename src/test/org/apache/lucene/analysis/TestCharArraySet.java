@@ -327,6 +327,7 @@ public class TestCharArraySet extends LuceneTestCase {
     }
   }
   
+  @SuppressWarnings("deprecated")
   public void testCopyCharArraySetBWCompat() {
     CharArraySet setIngoreCase = new CharArraySet(TEST_VERSION_CURRENT, 10, true);
     CharArraySet setCaseSensitive = new CharArraySet(TEST_VERSION_CURRENT, 10, false);
@@ -341,6 +342,7 @@ public class TestCharArraySet extends LuceneTestCase {
     setCaseSensitive.addAll(Arrays.asList(TEST_STOP_WORDS));
     setCaseSensitive.add(Integer.valueOf(1));
 
+    // This should use the deprecated methods, because it checks a bw compatibility.
     CharArraySet copy = CharArraySet.copy(setIngoreCase);
     CharArraySet copyCaseSens = CharArraySet.copy(setCaseSensitive);
 
@@ -474,8 +476,9 @@ public class TestCharArraySet extends LuceneTestCase {
     for (String stopword : TEST_STOP_WORDS) {
       assertFalse(CharArraySet.EMPTY_SET.contains(stopword));
     }
+    assertFalse(CharArraySet.EMPTY_SET.contains("foo"));
     assertFalse(CharArraySet.EMPTY_SET.contains((Object) "foo"));
-    assertFalse(CharArraySet.EMPTY_SET.contains((Object) "foo".toCharArray()));
+    assertFalse(CharArraySet.EMPTY_SET.contains("foo".toCharArray()));
     assertFalse(CharArraySet.EMPTY_SET.contains("foo".toCharArray(),0,3));
   }
   

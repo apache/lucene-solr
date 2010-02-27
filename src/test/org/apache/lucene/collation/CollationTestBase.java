@@ -40,9 +40,6 @@ import org.apache.lucene.util.IndexableBinaryStringTools;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
-import java.nio.CharBuffer;
-import java.nio.ByteBuffer;
-
 
 public class CollationTestBase extends LuceneTestCase {
 
@@ -60,13 +57,11 @@ public class CollationTestBase extends LuceneTestCase {
    * @return The encoded collation key for the original String
    */
   protected String encodeCollationKey(byte[] keyBits) {
-    ByteBuffer begBuf = ByteBuffer.wrap(keyBits);
     // Ensure that the backing char[] array is large enough to hold the encoded
     // Binary String
-    char[] encodedBegArray 
-      = new char[IndexableBinaryStringTools.getEncodedLength(begBuf)];
-    CharBuffer encodedBegBuf = CharBuffer.wrap(encodedBegArray); 
-    IndexableBinaryStringTools.encode(begBuf, encodedBegBuf);
+    int encodedLength = IndexableBinaryStringTools.getEncodedLength(keyBits, 0, keyBits.length);
+    char[] encodedBegArray = new char[encodedLength];
+    IndexableBinaryStringTools.encode(keyBits, 0, keyBits.length, encodedBegArray, 0, encodedLength);
     return new String(encodedBegArray);
   }
     

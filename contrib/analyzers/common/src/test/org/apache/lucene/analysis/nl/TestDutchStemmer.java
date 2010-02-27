@@ -127,14 +127,14 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
   }
   
   public void testSnowballCorrectness() throws Exception {
-    Analyzer a = new DutchAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT);
     checkOneTermReuse(a, "opheffen", "opheff");
     checkOneTermReuse(a, "opheffende", "opheff");
     checkOneTermReuse(a, "opheffing", "opheff");
   }
   
   public void testReusableTokenStream() throws Exception {
-    Analyzer a = new DutchAnalyzer(Version.LUCENE_CURRENT); 
+    Analyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT); 
     checkOneTermReuse(a, "lichaamsziek", "lichaamsziek");
     checkOneTermReuse(a, "lichamelijk", "licham");
     checkOneTermReuse(a, "lichamelijke", "licham");
@@ -146,7 +146,7 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
    * when using reusable token streams.
    */
   public void testExclusionTableReuse() throws Exception {
-    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_CURRENT);
+    DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT);
     checkOneTermReuse(a, "lichamelijk", "licham");
     a.setStemExclusionTable(new String[] { "lichamelijk" });
     checkOneTermReuse(a, "lichamelijk", "lichamelijk");
@@ -157,10 +157,10 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
   public void testExclusionTableViaCtor() throws IOException {
     CharArraySet set = new CharArraySet(Version.LUCENE_30, 1, true);
     set.add("lichamelijk");
-    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_CURRENT, CharArraySet.EMPTY_SET, set);
+    DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
     assertAnalyzesToReuse(a, "lichamelijk lichamelijke", new String[] { "lichamelijk", "licham" });
     
-    a = new DutchAnalyzer(Version.LUCENE_CURRENT, CharArraySet.EMPTY_SET, set);
+    a = new DutchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(a, "lichamelijk lichamelijke", new String[] { "lichamelijk", "licham" });
 
   }
@@ -170,7 +170,7 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
    * when using reusable token streams.
    */
   public void testStemDictionaryReuse() throws Exception {
-    DutchAnalyzer a = new DutchAnalyzer(Version.LUCENE_CURRENT);
+    DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT);
     checkOneTermReuse(a, "lichamelijk", "licham");
     a.setStemDictionary(customDictFile);
     checkOneTermReuse(a, "lichamelijk", "somethingentirelydifferent");
@@ -196,7 +196,7 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
   }
   
   private void check(final String input, final String expected) throws Exception {
-    checkOneTerm(new DutchAnalyzer(Version.LUCENE_CURRENT), input, expected); 
+    checkOneTerm(new DutchAnalyzer(TEST_VERSION_CURRENT), input, expected); 
   }
   
 }

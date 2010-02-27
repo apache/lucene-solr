@@ -30,7 +30,6 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -331,26 +330,22 @@ public class TestLockFactory extends LuceneTestCase {
                     e.printStackTrace(System.out);
                     break;
                 }
-                if (searcher != null) {
-                    ScoreDoc[] hits = null;
-                    try {
-                        hits = searcher.search(query, null, 1000).scoreDocs;
-                    } catch (IOException e) {
-                        hitException = true;
-                        System.out.println("Stress Test Index Searcher: search hit unexpected exception: " + e.toString());
-                        e.printStackTrace(System.out);
-                        break;
-                    }
-                    // System.out.println(hits.length() + " total results");
-                    try {
-                        searcher.close();
-                    } catch (IOException e) {
-                        hitException = true;
-                        System.out.println("Stress Test Index Searcher: close hit unexpected exception: " + e.toString());
-                        e.printStackTrace(System.out);
-                        break;
-                    }
-                    searcher = null;
+                try {
+                  searcher.search(query, null, 1000);
+                } catch (IOException e) {
+                  hitException = true;
+                  System.out.println("Stress Test Index Searcher: search hit unexpected exception: " + e.toString());
+                  e.printStackTrace(System.out);
+                  break;
+                }
+                // System.out.println(hits.length() + " total results");
+                try {
+                  searcher.close();
+                } catch (IOException e) {
+                  hitException = true;
+                  System.out.println("Stress Test Index Searcher: close hit unexpected exception: " + e.toString());
+                  e.printStackTrace(System.out);
+                  break;
                 }
             }
         }

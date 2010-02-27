@@ -245,7 +245,7 @@ final class JustCompileSearch {
     }
 
     @Override
-    public Comparable value(int slot) {
+    public Comparable<?> value(int slot) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     

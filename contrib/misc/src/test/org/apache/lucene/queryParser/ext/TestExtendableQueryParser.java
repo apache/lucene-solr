@@ -26,7 +26,6 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.Version;
 
 /**
  * Testcase for the class {@link ExtendableQueryParser}
@@ -47,10 +46,10 @@ public class TestExtendableQueryParser extends TestQueryParser {
   public QueryParser getParser(Analyzer a, Extensions extensions)
       throws Exception {
     if (a == null)
-      a = new SimpleAnalyzer(Version.LUCENE_CURRENT);
+      a = new SimpleAnalyzer(TEST_VERSION_CURRENT);
     QueryParser qp = extensions == null ? new ExtendableQueryParser(
-        Version.LUCENE_CURRENT, "field", a) : new ExtendableQueryParser(
-        Version.LUCENE_CURRENT, "field", a, extensions);
+        TEST_VERSION_CURRENT, "field", a) : new ExtendableQueryParser(
+        TEST_VERSION_CURRENT, "field", a, extensions);
     qp.setDefaultOperator(QueryParser.OR_OPERATOR);
     return qp;
   }

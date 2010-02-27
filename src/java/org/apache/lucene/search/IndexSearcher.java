@@ -36,8 +36,8 @@ import org.apache.lucene.util.ReaderUtil;
  * or {@link #search(Query,Filter,int)} methods. For performance reasons it is 
  * recommended to open only one IndexSearcher and use it for all of your searches.
  * 
- * <a name="thread-safety"></a><p><b>NOTE</b>: {@link
- * <code>IndexSearcher</code>} instances are completely
+ * <a name="thread-safety"></a><p><b>NOTE</b>: <code>{@link
+ * IndexSearcher}</code> instances are completely
  * thread safe, meaning multiple threads can call any of its
  * methods, concurrently.  If your application requires
  * external synchronization, you should <b>not</b>
@@ -55,9 +55,9 @@ public class IndexSearcher extends Searcher {
 
   /** Creates a searcher searching the index in the named
    *  directory, with readOnly=true
+   * @param path directory where IndexReader will be opened
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
-   * @param path directory where IndexReader will be opened
    */
   public IndexSearcher(Directory path) throws CorruptIndexException, IOException {
     this(IndexReader.open(path, true), true);
@@ -68,11 +68,11 @@ public class IndexSearcher extends Searcher {
    *  gives much better concurrent performance, unless you
    *  intend to do write operations (delete documents or
    *  change norms) with the underlying IndexReader.
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
    * @param path directory where IndexReader will be opened
    * @param readOnly if true, the underlying IndexReader
    * will be opened readOnly
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
    */
   public IndexSearcher(Directory path, boolean readOnly) throws CorruptIndexException, IOException {
     this(IndexReader.open(path, readOnly), true);

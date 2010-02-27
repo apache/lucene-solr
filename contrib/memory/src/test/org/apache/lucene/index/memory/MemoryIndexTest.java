@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
@@ -52,7 +51,6 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.util.Version;
 
 /**
 Verifies that Lucene MemoryIndex and RAMDirectory have the same behaviour,
@@ -202,7 +200,6 @@ the^3
 public class MemoryIndexTest extends BaseTokenStreamTestCase {
   
   private Analyzer analyzer;
-  private boolean fastMode = false;
   
   private final boolean verbose = false;
   
@@ -271,16 +268,14 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       }
     }
     
-    boolean toLowerCase = true;
 //    boolean toLowerCase = false;
 //    Set stopWords = null;
-    Set<?> stopWords = StopAnalyzer.ENGLISH_STOP_WORDS_SET;
     
     Analyzer[] analyzers = new Analyzer[] { 
-        new SimpleAnalyzer(Version.LUCENE_CURRENT),
-        new StopAnalyzer(Version.LUCENE_CURRENT),
-        new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT),
-//        new WhitespaceAnalyzer(Version.LUCENE_CURRENT),
+        new SimpleAnalyzer(TEST_VERSION_CURRENT),
+        new StopAnalyzer(TEST_VERSION_CURRENT),
+        new StandardAnalyzer(TEST_VERSION_CURRENT),
+//        new WhitespaceAnalyzer(TEST_VERSION_CURRENT),
 //        new PatternAnalyzer(PatternAnalyzer.NON_WORD_PATTERN, false, null),
 //        new PatternAnalyzer(PatternAnalyzer.NON_WORD_PATTERN, true, stopWords),        
 //        new SnowballAnalyzer("English", StopAnalyzer.ENGLISH_STOP_WORDS),
@@ -465,7 +460,8 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     }
   }
   
-  private int getMemorySize(Object index) {
+  // for debugging purposes
+  int getMemorySize(Object index) {
     if (index instanceof Directory) {
       try {
         Directory dir = (Directory) index;
@@ -486,7 +482,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
   }
   
   private Query parseQuery(String expression) throws ParseException {
-    QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, FIELD_NAME, analyzer);
+    QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, analyzer);
 //    parser.setPhraseSlop(0);
     return parser.parse(expression);
   }
@@ -559,7 +555,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       System.arraycopy(output, 0, buffer, 0, len);
       return buffer;
     } finally {
-      if (input != null) input.close();
+      input.close();
     }
   }
   

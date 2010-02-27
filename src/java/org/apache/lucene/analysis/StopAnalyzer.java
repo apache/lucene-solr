@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.List;
 
-import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
 import org.apache.lucene.util.Version;
 
 /** Filters {@link LetterTokenizer} with {@link LowerCaseFilter} and {@link StopFilter}.
@@ -91,9 +90,12 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * Creates {@link TokenStreamComponents} used to tokenize all the text in the provided {@link Reader}.
-   *
-   * @return {@link TokenStreamComponents} built from a {@link LowerCaseTokenizer} filtered with
+   * Creates
+   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * used to tokenize all the text in the provided {@link Reader}.
+   * 
+   * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   *         built from a {@link LowerCaseTokenizer} filtered with
    *         {@link StopFilter}
    */
   @Override

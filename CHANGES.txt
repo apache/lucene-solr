@@ -186,7 +186,9 @@ Optimizations
 
 * LUCENE-2195: Speedup CharArraySet if set is empty.
   (Simon Willnauer via Robert Muir)
-   
+
+* LUCENE-2285: Code cleanup. (Shai Erera via Uwe Schindler)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
@@ -209,10 +211,11 @@ Test Cases
 
 * LUCENE-2170: Fix thread starvation problems.  (Uwe Schindler)
 
-* LUCENE-2248, LUCENE-2251: Refactor tests to not use Version.LUCENE_CURRENT,
-  but instead use a global static value from LuceneTestCase(J4), that
-  contains the release version.  (Uwe Schindler, Simon Willnauer)
-  
+* LUCENE-2248, LUCENE-2251, LUCENE-2285: Refactor tests to not use
+  Version.LUCENE_CURRENT, but instead use a global static value
+  from LuceneTestCase(J4), that contains the release version.
+  (Uwe Schindler, Simon Willnauer, Shai Erera)
+
 ================== Release 2.9.2 / 3.0.1 2010-02-26 ====================
 
 Changes in backwards compatibility policy

@@ -34,7 +34,7 @@ public class TimeData {
   /** Total memory at the end of measurement interval. */
   public long totalMem = 0L;
 
-  public TimeData() {};
+  public TimeData() {}
 
   public TimeData(String name) {
     this.name = name;
@@ -78,7 +78,7 @@ public class TimeData {
 
   /** Get rate of processing, defined as number of processed records per second. */
   public double getRate() {
-    double rps = (double) count * 1000.0 / (double) (elapsed>0 ? elapsed : 1); // assume at least 1ms for any countable op
+    double rps = count * 1000.0 / (elapsed > 0 ? elapsed : 1); // assume at least 1ms for any countable op
     return rps;
   }
 

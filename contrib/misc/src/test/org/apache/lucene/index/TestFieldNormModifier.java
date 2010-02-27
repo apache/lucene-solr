@@ -20,8 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Arrays;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -34,12 +32,13 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Tests changing of field norms with a custom similarity and with fake norms.
  */
-public class TestFieldNormModifier extends TestCase {
+public class TestFieldNormModifier extends LuceneTestCase {
+  
   public TestFieldNormModifier(String name) {
     super(name);
   }
@@ -57,8 +56,9 @@ public class TestFieldNormModifier extends TestCase {
   };
   
   @Override
-  public void setUp() throws Exception {
-    IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(Version.LUCENE_CURRENT), true, MaxFieldLength.UNLIMITED);
+  protected void setUp() throws Exception {
+    super.setUp();
+    IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, MaxFieldLength.UNLIMITED);
     
     for (int i = 0; i < NUM_DOCS; i++) {
       Document d = new Document();

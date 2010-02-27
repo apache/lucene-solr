@@ -17,7 +17,6 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import java.util.Arrays;
 import java.util.AbstractSet;
 import java.util.Collection;
 import java.util.Iterator;

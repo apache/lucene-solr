@@ -642,7 +642,7 @@ public class OpenBitSet extends DocIdSet implements Cloneable, Serializable {
   public Object clone() {
     try {
       OpenBitSet obs = (OpenBitSet)super.clone();
-      obs.bits = (long[]) obs.bits.clone();  // hopefully an array clone is as fast(er) than arraycopy
+      obs.bits = obs.bits.clone();  // hopefully an array clone is as fast(er) than arraycopy
       return obs;
     } catch (CloneNotSupportedException e) {
       throw new RuntimeException(e);

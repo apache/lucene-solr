@@ -124,7 +124,7 @@ public final class RamUsageEstimator {
     // add to seen
     seen.put(obj, null);
 
-    Class clazz = obj.getClass();
+    Class<?> clazz = obj.getClass();
     if (clazz.isArray()) {
       return sizeOfArray(obj);
     }
@@ -167,7 +167,7 @@ public final class RamUsageEstimator {
       return 0;
     }
     long size = arraySize;
-    Class arrayElementClazz = obj.getClass().getComponentType();
+    Class<?> arrayElementClazz = obj.getClass().getComponentType();
     if (arrayElementClazz.isPrimitive()) {
       size += len * memoryModel.getPrimitiveSize(arrayElementClazz);
     } else {

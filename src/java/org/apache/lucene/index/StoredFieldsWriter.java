@@ -63,7 +63,6 @@ final class StoredFieldsWriter {
     if (fieldsWriter == null) {
       final String docStoreSegment = docWriter.getDocStoreSegment();
       if (docStoreSegment != null) {
-        assert docStoreSegment != null;
         fieldsWriter = new FieldsWriter(docWriter.directory,
                                         docStoreSegment,
                                         fieldInfos);

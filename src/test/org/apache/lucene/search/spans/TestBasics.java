@@ -52,7 +52,7 @@ public class TestBasics extends LuceneTestCase {
   private IndexSearcher searcher;
 
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
     IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, 

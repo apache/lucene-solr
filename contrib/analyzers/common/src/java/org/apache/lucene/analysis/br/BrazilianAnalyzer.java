@@ -29,7 +29,6 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
-import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
 import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
@@ -191,12 +190,16 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
 		excltable = WordlistLoader.getWordSet( exclusionlist );
 		setPreviousTokenStream(null); // force a new stemmer to be created
 	}
+
   /**
-   * Creates {@link TokenStreamComponents} used to tokenize all the text in the provided {@link Reader}.
-   *
-   * @return  {@link TokenStreamComponents} built from a {@link StandardTokenizer} filtered with
-   *      {@link LowerCaseFilter}, {@link StandardFilter}, {@link StopFilter}, and 
-   *          {@link BrazilianStemFilter}.
+   * Creates
+   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * used to tokenize all the text in the provided {@link Reader}.
+   * 
+   * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   *         built from a {@link StandardTokenizer} filtered with
+   *         {@link LowerCaseFilter}, {@link StandardFilter}, {@link StopFilter}
+   *         , and {@link BrazilianStemFilter}.
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName,

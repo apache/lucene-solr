@@ -160,7 +160,7 @@ public abstract class FieldComparator {
    * @param slot the value
    * @return value in this slot upgraded to Comparable
    */
-  public abstract Comparable value(int slot);
+  public abstract Comparable<?> value(int slot);
 
   /** Parses field's values as byte (using {@link
    *  FieldCache#getBytes} and sorts by ascending value */
@@ -203,7 +203,7 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable value(int slot) {
+    public Comparable<?> value(int slot) {
       return Byte.valueOf(values[slot]);
     }
   }
@@ -249,7 +249,7 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable value(int slot) {
+    public Comparable<?> value(int slot) {
       return Integer.valueOf(docIDs[slot]);
     }
   }
@@ -310,7 +310,7 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable value(int slot) {
+    public Comparable<?> value(int slot) {
       return Double.valueOf(values[slot]);
     }
   }
@@ -375,7 +375,7 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable value(int slot) {
+    public Comparable<?> value(int slot) {
       return Float.valueOf(values[slot]);
     }
   }
@@ -444,7 +444,7 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable value(int slot) {
+    public Comparable<?> value(int slot) {
       return Integer.valueOf(values[slot]);
     }
   }
@@ -509,7 +509,7 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable value(int slot) {
+    public Comparable<?> value(int slot) {
       return Long.valueOf(values[slot]);
     }
   }
@@ -564,7 +564,7 @@ public abstract class FieldComparator {
     }
     
     @Override
-    public Comparable value(int slot) {
+    public Comparable<?> value(int slot) {
       return Float.valueOf(scores[slot]);
     }
   }
@@ -610,7 +610,7 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable value(int slot) {
+    public Comparable<?> value(int slot) {
       return Short.valueOf(values[slot]);
     }
   }
@@ -676,7 +676,7 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable value(int slot) {
+    public Comparable<?> value(int slot) {
       return values[slot];
     }
   }
@@ -825,7 +825,7 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable value(int slot) {
+    public Comparable<?> value(int slot) {
       return values[slot];
     }
 
@@ -904,7 +904,7 @@ public abstract class FieldComparator {
     }
 
     @Override
-    public Comparable value(int slot) {
+    public Comparable<?> value(int slot) {
       return values[slot];
     }
   }

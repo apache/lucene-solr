@@ -70,7 +70,7 @@ public abstract class DocValues {
    * @param doc document whose double value is requested.
    */
   public double doubleVal(int doc) {
-    return (double) floatVal(doc);
+    return floatVal(doc);
   }
   
   /**

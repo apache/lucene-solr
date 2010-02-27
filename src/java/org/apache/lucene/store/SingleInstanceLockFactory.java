@@ -51,7 +51,7 @@ public class SingleInstanceLockFactory extends LockFactory {
       }
     }
   }
-};
+}
 
 class SingleInstanceLock extends Lock {
 

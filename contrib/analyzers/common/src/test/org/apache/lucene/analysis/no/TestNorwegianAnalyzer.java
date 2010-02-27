@@ -23,18 +23,17 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestNorwegianAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new NorwegianAnalyzer(Version.LUCENE_CURRENT);
+    new NorwegianAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new NorwegianAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new NorwegianAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTermReuse(a, "havnedistriktene", "havnedistrikt");
     checkOneTermReuse(a, "havnedistrikter", "havnedistrikt");
@@ -46,7 +45,7 @@ public class TestNorwegianAnalyzer extends BaseTokenStreamTestCase {
   public void testExclude() throws IOException {
     Set<String> exclusionSet = new HashSet<String>();
     exclusionSet.add("havnedistriktene");
-    Analyzer a = new NorwegianAnalyzer(Version.LUCENE_CURRENT, 
+    Analyzer a = new NorwegianAnalyzer(TEST_VERSION_CURRENT, 
         NorwegianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "havnedistriktene", "havnedistriktene");
     checkOneTermReuse(a, "havnedistrikter", "havnedistrikt");

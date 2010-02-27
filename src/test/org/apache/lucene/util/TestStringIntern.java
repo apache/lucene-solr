@@ -16,9 +16,6 @@
  */
 
 package org.apache.lucene.util;
-
-import junit.framework.TestCase;
-
 import java.util.Random;
 
 public class TestStringIntern extends LuceneTestCase {
@@ -48,7 +45,6 @@ public class TestStringIntern extends LuceneTestCase {
     int nThreads = 20;
     // final int iter=100000;
     final int iter=1000000;
-    final boolean newStrings=true;
     
     // try native intern
     // StringHelper.interner = new StringInterner();
@@ -64,20 +60,20 @@ public class TestStringIntern extends LuceneTestCase {
           for (int j=0; j<iter; j++) {
             int idx = rand.nextInt(testStrings.length);
             String s = testStrings[idx];
-            if (newStrings == true && rand.nextBoolean()) s = new String(s); // make a copy half of the time
+            if (rand.nextBoolean()) s = new String(s); // make a copy half of the time
             String interned = StringHelper.intern(s);
             String prevInterned = myInterned[idx];
             String otherInterned = internedStrings[idx];
 
             // test against other threads
             if (otherInterned != null && otherInterned != interned) {
-              TestCase.fail();
+              fail();
             }
             internedStrings[idx] = interned;
 
             // test against local copy
             if (prevInterned != null && prevInterned != interned) {
-              TestCase.fail();
+              fail();
             }
             myInterned[idx] = interned;
           }

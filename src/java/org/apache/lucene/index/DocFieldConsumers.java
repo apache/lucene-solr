@@ -132,21 +132,21 @@ final class DocFieldConsumers extends DocFieldConsumer {
 
   class PerDoc extends DocumentsWriter.DocWriter {
 
-    DocumentsWriter.DocWriter one;
-    DocumentsWriter.DocWriter two;
+    DocumentsWriter.DocWriter writerOne;
+    DocumentsWriter.DocWriter writerTwo;
 
     @Override
     public long sizeInBytes() {
-      return one.sizeInBytes() + two.sizeInBytes();
+      return writerOne.sizeInBytes() + writerTwo.sizeInBytes();
     }
 
     @Override
     public void finish() throws IOException {
       try {
         try {
-          one.finish();
+          writerOne.finish();
         } finally {
-          two.finish();
+          writerTwo.finish();
         }
       } finally {
         freePerDoc(this);
@@ -157,9 +157,9 @@ final class DocFieldConsumers extends DocFieldConsumer {
     public void abort() {
       try {
         try {
-          one.abort();
+          writerOne.abort();
         } finally {
-          two.abort();
+          writerTwo.abort();
         }
       } finally {
         freePerDoc(this);

@@ -28,7 +28,6 @@ import org.apache.lucene.analysis.KeywordTokenizer;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.util.Version;
 
 /**
  * Test the German stemmer. The stemming algorithm is known to work less 
@@ -40,7 +39,7 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
 
   public void testStemming() throws Exception {
     Tokenizer tokenizer = new KeywordTokenizer(new StringReader(""));
-    TokenFilter filter = new GermanStemFilter(new LowerCaseFilter(Version.LUCENE_CURRENT, tokenizer));
+    TokenFilter filter = new GermanStemFilter(new LowerCaseFilter(TEST_VERSION_CURRENT, tokenizer));
     // read test cases from external file:
     File dataDir = new File(System.getProperty("dataDir", "./bin"));
     File testFile = new File(dataDir, "org/apache/lucene/analysis/de/data.txt");

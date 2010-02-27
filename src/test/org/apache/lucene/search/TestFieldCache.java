@@ -65,8 +65,8 @@ public class TestFieldCache extends LuceneTestCase {
       FieldCache cache = FieldCache.DEFAULT;
       ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
       cache.setInfoStream(new PrintStream(bos));
-      double [] doubles = cache.getDoubles(reader, "theDouble");
-      float [] floats = cache.getFloats(reader, "theDouble");
+      cache.getDoubles(reader, "theDouble");
+      cache.getFloats(reader, "theDouble");
       assertTrue(bos.toString().indexOf("WARNING") != -1);
     } finally {
       FieldCache.DEFAULT.purgeAllCaches();

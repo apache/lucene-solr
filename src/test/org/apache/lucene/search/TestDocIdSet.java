@@ -35,7 +35,6 @@ import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 public class TestDocIdSet extends LuceneTestCase {
   public void testFilteredDocIdSet() throws Exception {
@@ -95,8 +94,8 @@ public class TestDocIdSet extends LuceneTestCase {
     int[] answer = new int[]{4,6,8};
     boolean same = Arrays.equals(answer, docs);
     if (!same) {
-      System.out.println("answer: "+_TestUtil.arrayToString(answer));
-      System.out.println("gotten: "+_TestUtil.arrayToString(docs));
+      System.out.println("answer: " + Arrays.toString(answer));
+      System.out.println("gotten: " + Arrays.toString(docs));
       fail();
     }
   }

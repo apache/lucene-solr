@@ -62,7 +62,6 @@ public class DefaultPhraseSlopAttributeImpl extends AttributeImpl
   public boolean equals(Object other) {
 
     if (other instanceof DefaultPhraseSlopAttributeImpl
-        && other != null
         && ((DefaultPhraseSlopAttributeImpl) other).defaultPhraseSlop == this.defaultPhraseSlop) {
 
       return true;

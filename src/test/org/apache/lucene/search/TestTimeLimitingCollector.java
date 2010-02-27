@@ -97,7 +97,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
   }
 
   @Override
-  public void tearDown() throws Exception {
+  protected void tearDown() throws Exception {
     searcher.close();
     super.tearDown();
   }

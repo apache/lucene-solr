@@ -28,16 +28,10 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.util.Version;
 
 public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   static final File dataDir = new File(System.getProperty("dataDir", "./bin"));
   static final File testFile = new File(dataDir, "org/apache/lucene/analysis/compound/da_UTF8.xml");
-
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-  }
 
   public void testHyphenationCompoundWordsDA() throws Exception {
     String[] dict = { "læse", "hest" };
@@ -47,8 +41,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter
         .getHyphenationTree(reader);
 
-    HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(Version.LUCENE_CURRENT, 
-        new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader(
+    HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(TEST_VERSION_CURRENT, 
+        new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
             "min veninde som er lidt af en læsehest")), hyphenator,
         dict, CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
@@ -67,8 +61,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         .getHyphenationTree(reader);
 
     // the word basket will not be added due to the longest match option
-    HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(Version.LUCENE_CURRENT, 
-        new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader(
+    HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(TEST_VERSION_CURRENT, 
+        new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
             "basketballkurv")), hyphenator, dict,
         CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE, 40, true);
@@ -84,8 +78,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         "Pelar", "Glas", "Ögon", "Fodral", "Bas", "Fiol", "Makare", "Gesäll",
         "Sko", "Vind", "Rute", "Torkare", "Blad" };
 
-    DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(Version.LUCENE_CURRENT, 
-        new WhitespaceTokenizer(Version.LUCENE_CURRENT, 
+    DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT, 
+        new WhitespaceTokenizer(TEST_VERSION_CURRENT, 
             new StringReader(
                 "Bildörr Bilmotor Biltak Slagborr Hammarborr Pelarborr Glasögonfodral Basfiolsfodral Basfiolsfodralmakaregesäll Skomakare Vindrutetorkare Vindrutetorkarblad abba")),
         dict);
@@ -113,8 +107,8 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         "Pelar", "Glas", "Ögon", "Fodral", "Bas", "Fiols", "Makare", "Gesäll",
         "Sko", "Vind", "Rute", "Torkare", "Blad", "Fiolsfodral" };
 
-    DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(Version.LUCENE_CURRENT, 
-        new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader("Basfiolsfodralmakaregesäll")),
+    DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT, 
+        new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("Basfiolsfodralmakaregesäll")),
         dict, CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, true);
@@ -129,9 +123,9 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
     String[] dict = { "Rind", "Fleisch", "Draht", "Schere", "Gesetz",
         "Aufgabe", "Überwachung" };
 
-    Tokenizer wsTokenizer = new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader(
+    Tokenizer wsTokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
         "Rindfleischüberwachungsgesetz"));
-    DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(Version.LUCENE_CURRENT, 
+    DictionaryCompoundWordTokenFilter tf = new DictionaryCompoundWordTokenFilter(TEST_VERSION_CURRENT, 
         wsTokenizer, dict,
         CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,

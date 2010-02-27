@@ -63,7 +63,7 @@ public class FieldDateResolutionMapAttributeImpl extends AttributeImpl
   @Override
   public boolean equals(Object other) {
 
-    if (other instanceof FieldDateResolutionMapAttributeImpl && other != null
+    if (other instanceof FieldDateResolutionMapAttributeImpl
         && ((FieldDateResolutionMapAttributeImpl) other).dateRes.equals(this.dateRes) ) {
 
       return true;

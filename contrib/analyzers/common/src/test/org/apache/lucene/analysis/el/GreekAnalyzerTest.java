@@ -32,7 +32,7 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
 	 * @throws Exception in case an error occurs
 	 */
 	public void testAnalyzer() throws Exception {
-		Analyzer a = new GreekAnalyzer(Version.LUCENE_CURRENT);
+		Analyzer a = new GreekAnalyzer(TEST_VERSION_CURRENT);
 		// Verify the correct analysis of capitals and small accented letters
 		assertAnalyzesTo(a, "\u039c\u03af\u03b1 \u03b5\u03be\u03b1\u03b9\u03c1\u03b5\u03c4\u03b9\u03ba\u03ac \u03ba\u03b1\u03bb\u03ae \u03ba\u03b1\u03b9 \u03c0\u03bb\u03bf\u03cd\u03c3\u03b9\u03b1 \u03c3\u03b5\u03b9\u03c1\u03ac \u03c7\u03b1\u03c1\u03b1\u03ba\u03c4\u03ae\u03c1\u03c9\u03bd \u03c4\u03b7\u03c2 \u0395\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03ae\u03c2 \u03b3\u03bb\u03ce\u03c3\u03c3\u03b1\u03c2",
 				new String[] { "\u03bc\u03b9\u03b1", "\u03b5\u03be\u03b1\u03b9\u03c1\u03b5\u03c4\u03b9\u03ba\u03b1", "\u03ba\u03b1\u03bb\u03b7", "\u03c0\u03bb\u03bf\u03c5\u03c3\u03b9\u03b1", "\u03c3\u03b5\u03b9\u03c1\u03b1", "\u03c7\u03b1\u03c1\u03b1\u03ba\u03c4\u03b7\u03c1\u03c9\u03bd",
@@ -48,7 +48,7 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
 	}
 	
 	public void testReusableTokenStream() throws Exception {
-	    Analyzer a = new GreekAnalyzer(Version.LUCENE_CURRENT);
+	    Analyzer a = new GreekAnalyzer(TEST_VERSION_CURRENT);
 	    // Verify the correct analysis of capitals and small accented letters
 	    assertAnalyzesToReuse(a, "\u039c\u03af\u03b1 \u03b5\u03be\u03b1\u03b9\u03c1\u03b5\u03c4\u03b9\u03ba\u03ac \u03ba\u03b1\u03bb\u03ae \u03ba\u03b1\u03b9 \u03c0\u03bb\u03bf\u03cd\u03c3\u03b9\u03b1 \u03c3\u03b5\u03b9\u03c1\u03ac \u03c7\u03b1\u03c1\u03b1\u03ba\u03c4\u03ae\u03c1\u03c9\u03bd \u03c4\u03b7\u03c2 \u0395\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03ae\u03c2 \u03b3\u03bb\u03ce\u03c3\u03c3\u03b1\u03c2",
 	            new String[] { "\u03bc\u03b9\u03b1", "\u03b5\u03be\u03b1\u03b9\u03c1\u03b5\u03c4\u03b9\u03ba\u03b1", "\u03ba\u03b1\u03bb\u03b7", "\u03c0\u03bb\u03bf\u03c5\u03c3\u03b9\u03b1", "\u03c3\u03b5\u03b9\u03c1\u03b1", "\u03c7\u03b1\u03c1\u03b1\u03ba\u03c4\u03b7\u03c1\u03c9\u03bd",

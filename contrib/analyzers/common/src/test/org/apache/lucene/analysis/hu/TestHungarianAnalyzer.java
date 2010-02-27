@@ -23,18 +23,17 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestHungarianAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new HungarianAnalyzer(Version.LUCENE_CURRENT);
+    new HungarianAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new HungarianAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new HungarianAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTermReuse(a, "babakocsi", "babakocs");
     checkOneTermReuse(a, "babakocsijáért", "babakocs");
@@ -46,7 +45,7 @@ public class TestHungarianAnalyzer extends BaseTokenStreamTestCase {
   public void testExclude() throws IOException {
     Set<String> exclusionSet = new HashSet<String>();
     exclusionSet.add("babakocsi");
-    Analyzer a = new HungarianAnalyzer(Version.LUCENE_CURRENT, 
+    Analyzer a = new HungarianAnalyzer(TEST_VERSION_CURRENT, 
         HungarianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "babakocsi", "babakocsi");
     checkOneTermReuse(a, "babakocsijáért", "babakocs");

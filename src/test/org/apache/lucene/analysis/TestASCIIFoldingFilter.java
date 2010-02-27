@@ -1892,7 +1892,7 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
     ASCIIFoldingFilter filter = new ASCIIFoldingFilter(stream);
     TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
     Iterator<String> expectedIter = expectedOutputTokens.iterator();
-    while (expectedIter.hasNext()) {;
+    while (expectedIter.hasNext()) {
       assertTermEquals(expectedIter.next(), filter, termAtt);
     }
     assertFalse(filter.incrementToken());

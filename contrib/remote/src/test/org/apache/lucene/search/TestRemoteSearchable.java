@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.*;
@@ -59,7 +58,7 @@ public class TestRemoteSearchable extends LuceneTestCase {
   private static void startServer() throws Exception {
     // construct an index
     RAMDirectory indexStore = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(indexStore,new SimpleAnalyzer(Version.LUCENE_CURRENT),true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(indexStore,new SimpleAnalyzer(TEST_VERSION_CURRENT),true, IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("test", "test text", Field.Store.YES, Field.Index.ANALYZED));
     doc.add(new Field("other", "other test text", Field.Store.YES, Field.Index.ANALYZED));
@@ -86,9 +85,9 @@ public class TestRemoteSearchable extends LuceneTestCase {
     assertTrue("document is null and it shouldn't be", document != null);
     assertEquals("test text", document.get("test"));
     assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 2, document.getFields().size() == 2);
-    Set ftl = new HashSet();
+    Set<String> ftl = new HashSet<String>();
     ftl.add("other");
-    FieldSelector fs = new SetBasedFieldSelector(ftl, Collections.EMPTY_SET);
+    FieldSelector fs = new SetBasedFieldSelector(ftl, Collections.<String>emptySet());
     document = searcher.doc(0, fs);
     assertTrue("document is null and it shouldn't be", document != null);
     assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 1, document.getFields().size() == 1);

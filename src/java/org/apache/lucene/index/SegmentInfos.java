@@ -705,9 +705,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
               message("fallback to prior segment file '" + prevSegmentFileName + "'");
               try {
                 Object v = doBody(prevSegmentFileName);
-                if (exc != null) {
-                  message("success on fallback " + prevSegmentFileName);
-                }
+                message("success on fallback " + prevSegmentFileName);
                 return v;
               } catch (IOException err2) {
                 message("secondary Exception on '" + prevSegmentFileName + "': " + err2 + "'; will retry");

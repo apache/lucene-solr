@@ -36,7 +36,7 @@ public class TestBinaryDocument extends LuceneTestCase
   public void testBinaryFieldInIndex()
     throws Exception
   {
-    Fieldable binaryFldStored = new Field("binaryStored", binaryValStored.getBytes(), Field.Store.YES);
+    Fieldable binaryFldStored = new Field("binaryStored", binaryValStored.getBytes());
     Fieldable stringFldStored = new Field("stringStored", binaryValStored, Field.Store.YES, Field.Index.NO, Field.TermVector.NO);
 
     try {
@@ -45,7 +45,6 @@ public class TestBinaryDocument extends LuceneTestCase
       fail();
     }
     catch (IllegalArgumentException iae) {
-      ;
     }
     
     Document doc = new Document();
@@ -87,8 +86,8 @@ public class TestBinaryDocument extends LuceneTestCase
   public void testCompressionTools()
     throws Exception
   {
-    Fieldable binaryFldCompressed = new Field("binaryCompressed", CompressionTools.compress(binaryValCompressed.getBytes()), Field.Store.YES);
-    Fieldable stringFldCompressed = new Field("stringCompressed", CompressionTools.compressString(binaryValCompressed), Field.Store.YES);
+    Fieldable binaryFldCompressed = new Field("binaryCompressed", CompressionTools.compress(binaryValCompressed.getBytes()));
+    Fieldable stringFldCompressed = new Field("stringCompressed", CompressionTools.compressString(binaryValCompressed));
     
     Document doc = new Document();
     

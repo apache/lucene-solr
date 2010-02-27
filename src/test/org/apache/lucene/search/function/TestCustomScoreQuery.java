@@ -84,7 +84,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   }
 
   // must have static class otherwise serialization tests fail
-  @SuppressWarnings({"SerializableHasSerializationMethods", "serial"})
   private static class CustomAddQuery extends CustomScoreQuery {
     // constructor
     CustomAddQuery(Query q, ValueSourceQuery qValSrc) {
@@ -120,7 +119,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
   }
 
   // must have static class otherwise serialization tests fail
-  @SuppressWarnings({"SerializableHasSerializationMethods", "serial"})
   private static class CustomMulAddQuery extends CustomScoreQuery {
     // constructor
     CustomMulAddQuery(Query q, ValueSourceQuery qValSrc1, ValueSourceQuery qValSrc2) {
@@ -179,7 +177,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
         @Override
         public float customScore(int doc, float subScore, float valSrcScore) throws IOException {
           assertTrue(doc <= reader.maxDoc());
-          return (float) values[doc];
+          return values[doc];
         }
       };
     }
@@ -224,7 +222,6 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     original = new CustomScoreQuery(q);
     rewritten = (CustomScoreQuery) original.rewrite(s.getIndexReader());
     assertTrue("rewritten query should not be identical, as TermRangeQuery rewrites", original != rewritten);
-    assertTrue("rewritten query should be a CustomScoreQuery", rewritten instanceof CustomScoreQuery);
     assertTrue("no hits for query", s.search(rewritten,1).totalHits > 0);
     assertEquals(s.search(q,1).totalHits, s.search(original,1).totalHits);
     assertEquals(s.search(q,1).totalHits, s.search(rewritten,1).totalHits);

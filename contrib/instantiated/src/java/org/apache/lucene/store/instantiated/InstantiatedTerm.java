@@ -16,12 +16,10 @@ package org.apache.lucene.store.instantiated;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Term;
-
 import java.io.Serializable;
 import java.util.Comparator;
-import java.util.Collections;
-import java.util.Arrays;
+
+import org.apache.lucene.index.Term;
 
 /**
  * A term in the inverted index, coupled to the documents it occurs in.

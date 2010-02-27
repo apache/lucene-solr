@@ -107,6 +107,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
 
   // LUCENE-1150: Just a compile time test, to ensure the
   // StandardAnalyzer constants remain publicly accessible
+  @SuppressWarnings("unused")
   public void _testStandardConstants() {
     int x = StandardTokenizer.ALPHANUM;
     x = StandardTokenizer.APOSTROPHE;

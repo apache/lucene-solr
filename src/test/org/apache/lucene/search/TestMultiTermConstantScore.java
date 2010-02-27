@@ -56,7 +56,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   }
 
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
     super.setUp();
 
     String[] data = new String[] { "A 1 2 3 4 5 6", "Z       4 5 6", null,

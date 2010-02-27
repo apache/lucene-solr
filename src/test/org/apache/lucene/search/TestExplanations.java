@@ -54,13 +54,13 @@ public class TestExplanations extends LuceneTestCase {
     new QueryParser(TEST_VERSION_CURRENT, FIELD, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
 
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  protected void tearDown() throws Exception {
     searcher.close();
+    super.tearDown();
   }
   
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
     IndexWriter writer= new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true,

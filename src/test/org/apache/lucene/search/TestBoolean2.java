@@ -47,7 +47,7 @@ public class TestBoolean2 extends LuceneTestCase {
   private int mulFactor;
 
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
     IndexWriter writer= new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
@@ -93,9 +93,10 @@ public class TestBoolean2 extends LuceneTestCase {
   }
 
   @Override
-  public void tearDown() throws Exception {
+  protected void tearDown() throws Exception {
     reader.close();
     dir2.close();
+    super.tearDown();
   }
 
   private String[] docFields = {

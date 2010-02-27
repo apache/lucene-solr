@@ -22,18 +22,17 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.LuceneTestCase;
 
-import junit.framework.TestCase;
-
-public class TestMultiPassIndexSplitter extends TestCase {
+public class TestMultiPassIndexSplitter extends LuceneTestCase {
   IndexReader input;
   int NUM_DOCS = 11;
 
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
+    super.setUp();
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true,
+    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true,
             MaxFieldLength.LIMITED);
     Document doc;
     for (int i = 0; i < NUM_DOCS; i++) {

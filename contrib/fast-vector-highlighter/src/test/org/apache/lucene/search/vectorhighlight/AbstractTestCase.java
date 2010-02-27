@@ -21,11 +21,8 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Collection;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -47,9 +44,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.LuceneTestCase;
 
-public abstract class AbstractTestCase extends TestCase {
+public abstract class AbstractTestCase extends LuceneTestCase {
 
   protected final String F = "f";
   protected final String F1 = "f1";
@@ -87,11 +84,12 @@ public abstract class AbstractTestCase extends TestCase {
 
   @Override
   protected void setUp() throws Exception {
-    analyzerW = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
+    super.setUp();
+    analyzerW = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
     analyzerB = new BigramAnalyzer();
     analyzerK = new KeywordAnalyzer();
-    paW = new QueryParser(Version.LUCENE_CURRENT,  F, analyzerW );
-    paB = new QueryParser(Version.LUCENE_CURRENT,  F, analyzerB );
+    paW = new QueryParser(TEST_VERSION_CURRENT,  F, analyzerW );
+    paB = new QueryParser(TEST_VERSION_CURRENT,  F, analyzerB );
     dir = new RAMDirectory();
   }
   
@@ -101,6 +99,7 @@ public abstract class AbstractTestCase extends TestCase {
       reader.close();
       reader = null;
     }
+    super.tearDown();
   }
 
   protected Query tq( String text ){
@@ -282,7 +281,7 @@ public abstract class AbstractTestCase extends TestCase {
         }
         charBufferIndex = 0;
       }
-      int c = (int)charBuffer[charBufferIndex++];
+      int c = charBuffer[charBufferIndex++];
       nextStartOffset++;
       return c;
     }
@@ -291,11 +290,13 @@ public abstract class AbstractTestCase extends TestCase {
       return delimiters.indexOf( c ) >= 0;
     }
     
+    @Override
     public void reset( Reader input ) throws IOException {
       super.reset( input );
       reset();
     }
     
+    @Override
     public void reset() throws IOException {
       startTerm = 0;
       nextStartOffset = 0;

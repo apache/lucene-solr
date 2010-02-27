@@ -31,7 +31,7 @@ import java.util.Map;
  */
 public class DistanceHandler {
 
-  public enum Precision {EXACT, TWOFEET, TWENTYFEET, TWOHUNDREDFEET};
+  public enum Precision {EXACT, TWOFEET, TWENTYFEET, TWOHUNDREDFEET}
   
   private Map<Integer,Double> distances;
   private Map<String, Double> distanceLookupCache;

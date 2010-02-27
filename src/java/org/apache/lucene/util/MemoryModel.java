@@ -38,7 +38,7 @@ public abstract class MemoryModel {
    *        short, double, int
    * @return the size in bytes of given primitive Class
    */
-  public abstract int getPrimitiveSize(Class clazz);
+  public abstract int getPrimitiveSize(Class<?> clazz);
 
   /**
    * @return size of reference

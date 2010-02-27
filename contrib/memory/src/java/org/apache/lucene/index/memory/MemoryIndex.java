@@ -793,41 +793,41 @@ public class MemoryIndex implements Serializable {
   
       return new TermEnum() {
   
-        private int i = ix; // index into info.sortedTerms
-        private int j = jx; // index into sortedFields
+        private int srtTermsIdx = ix; // index into info.sortedTerms
+        private int srtFldsIdx = jx; // index into sortedFields
           
         @Override
         public boolean next() {
           if (DEBUG) System.err.println("TermEnum.next");
-          if (j >= sortedFields.length) return false;
-          Info info = getInfo(j);
-          if (++i < info.sortedTerms.length) return true;
+          if (srtFldsIdx >= sortedFields.length) return false;
+          Info info = getInfo(srtFldsIdx);
+          if (++srtTermsIdx < info.sortedTerms.length) return true;
   
           // move to successor
-          j++;
-          i = 0;
-          if (j >= sortedFields.length) return false;
-          getInfo(j).sortTerms();
+          srtFldsIdx++;
+          srtTermsIdx = 0;
+          if (srtFldsIdx >= sortedFields.length) return false;
+          getInfo(srtFldsIdx).sortTerms();
           return true;
         }
   
         @Override
         public Term term() {
-          if (DEBUG) System.err.println("TermEnum.term: " + i);
-          if (j >= sortedFields.length) return null;
-          Info info = getInfo(j);
-          if (i >= info.sortedTerms.length) return null;
+          if (DEBUG) System.err.println("TermEnum.term: " + srtTermsIdx);
+          if (srtFldsIdx >= sortedFields.length) return null;
+          Info info = getInfo(srtFldsIdx);
+          if (srtTermsIdx >= info.sortedTerms.length) return null;
 //          if (DEBUG) System.err.println("TermEnum.term: " + i + ", " + info.sortedTerms[i].getKey());
-          return createTerm(info, j, info.sortedTerms[i].getKey());
+          return createTerm(info, srtFldsIdx, info.sortedTerms[srtTermsIdx].getKey());
         }
         
         @Override
         public int docFreq() {
           if (DEBUG) System.err.println("TermEnum.docFreq");
-          if (j >= sortedFields.length) return 0;
-          Info info = getInfo(j);
-          if (i >= info.sortedTerms.length) return 0;
-          return numPositions(info.getPositions(i));
+          if (srtFldsIdx >= sortedFields.length) return 0;
+          Info info = getInfo(srtFldsIdx);
+          if (srtTermsIdx >= info.sortedTerms.length) return 0;
+          return numPositions(info.getPositions(srtTermsIdx));
         }
   
         @Override

@@ -188,10 +188,10 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     TopDocs hits;
     query = newPhraseQuery("field", "nine hundred ninety nine", true);
     hits = searcher.search(query, null, 100);
+    assertTrue("hits is null and it shouldn't be", hits != null);
     ScoreDoc doc = hits.scoreDocs[0];
     //		System.out.println("Doc: " + doc.toString());
     //		System.out.println("Explain: " + searcher.explain(query, doc.doc));
-    assertTrue("hits is null and it shouldn't be", hits != null);
     assertTrue("there should only be one hit", hits.totalHits == 1);
     // should have score = 3 because adjacent terms have payloads of 2,4
     assertTrue(doc.score + " does not equal: " + 3, doc.score == 3); 

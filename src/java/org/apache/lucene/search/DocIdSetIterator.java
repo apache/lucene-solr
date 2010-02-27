@@ -28,8 +28,6 @@ import java.io.IOException;
  */
 public abstract class DocIdSetIterator {
   
-  private int doc = -1;
-  
   /**
    * When returned by {@link #nextDoc()}, {@link #advance(int)} and
    * {@link #docID()} it means there are no more docs in the iterator.

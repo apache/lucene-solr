@@ -104,7 +104,7 @@ public class IndexableBinaryStringTools {
   public static int getEncodedLength(byte[] inputArray, int inputOffset,
       int inputLength) {
     // Use long for intermediaries to protect against overflow
-    return (int)(((long)inputLength * 8L + 14L) / 15L) + 1;
+    return (int)((8L * inputLength + 14L) / 15L) + 1;
   }
 
 

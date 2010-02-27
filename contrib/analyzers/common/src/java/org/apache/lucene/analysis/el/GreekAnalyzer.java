@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.el;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
@@ -120,15 +119,17 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase
     {
       this(matchVersion, stopwords.keySet());
     }
-  
-   /**
-    * Creates {@link TokenStreamComponents} used to tokenize all the text in the
-    * provided {@link Reader}.
-    * 
-    * @return {@link TokenStreamComponents} built from a
-    *         {@link StandardTokenizer} filtered with
-    *         {@link GreekLowerCaseFilter}, {@link StandardFilter} and {@link StopFilter}
-    */
+
+  /**
+   * Creates
+   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * used to tokenize all the text in the provided {@link Reader}.
+   * 
+   * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   *         built from a {@link StandardTokenizer} filtered with
+   *         {@link GreekLowerCaseFilter}, {@link StandardFilter} and
+   *         {@link StopFilter}
+   */
     @Override
     protected TokenStreamComponents createComponents(String fieldName,
         Reader reader) {

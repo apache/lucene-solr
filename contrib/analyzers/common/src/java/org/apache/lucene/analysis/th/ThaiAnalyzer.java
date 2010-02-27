@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.th;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.ReusableAnalyzerBase;
-import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.StopFilter;
@@ -45,12 +44,14 @@ public final class ThaiAnalyzer extends ReusableAnalyzerBase {
   }
 
   /**
-   * Creates {@link TokenStreamComponents} used to tokenize all the text in the
-   * provided {@link Reader}.
+   * Creates
+   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * used to tokenize all the text in the provided {@link Reader}.
    * 
-   * @return {@link TokenStreamComponents} built from a
-   *         {@link StandardTokenizer} filtered with {@link StandardFilter},
-   *         {@link ThaiWordFilter}, and {@link StopFilter}
+   * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   *         built from a {@link StandardTokenizer} filtered with
+   *         {@link StandardFilter}, {@link ThaiWordFilter}, and
+   *         {@link StopFilter}
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName,

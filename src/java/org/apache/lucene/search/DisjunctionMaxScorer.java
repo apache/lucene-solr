@@ -84,7 +84,7 @@ class DisjunctionMaxScorer extends Scorer {
     return doc;
   }
 
-  /** Determine the current document score.  Initially invalid, until {@link #next()} is called the first time.
+  /** Determine the current document score.  Initially invalid, until {@link #nextDoc()} is called the first time.
    * @return the score of the current generated document
    */
   @Override

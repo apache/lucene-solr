@@ -51,10 +51,7 @@ import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
  * </p>
  * @see #assertSaneFieldCaches
  *
- * @deprecated Replaced by {@link #LuceneTestCaseJ4}
- *
  */
-@Deprecated
 public abstract class LuceneTestCase extends TestCase {
 
   public static final Version TEST_VERSION_CURRENT = LuceneTestCaseJ4.TEST_VERSION_CURRENT;
@@ -213,7 +210,7 @@ public abstract class LuceneTestCase extends TestCase {
 
   /** 
    * Convinience method for logging an array.  Wraps the array in an iterator and delegates
-   * @see dumpIterator(String,Iterator,PrintStream)
+   * @see #dumpIterator(String,Iterator,PrintStream)
    */
   public static void dumpArray(String label, Object[] objs, 
                                PrintStream stream) {

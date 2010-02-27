@@ -52,8 +52,8 @@ public class NoLockFactory extends LockFactory {
   }
 
   @Override
-  public void clearLock(String lockName) {};
-};
+  public void clearLock(String lockName) {}
+}
 
 class NoLock extends Lock {
   @Override

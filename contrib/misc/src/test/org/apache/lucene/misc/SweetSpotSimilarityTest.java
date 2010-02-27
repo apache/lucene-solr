@@ -18,30 +18,10 @@
 
 package org.apache.lucene.misc;
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.DefaultSimilarity;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.search.DisjunctionMaxQuery;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanClause.Occur;
-
-import junit.framework.Test;
 import junit.framework.TestCase;
-import junit.framework.TestSuite;
 
-import java.io.File;
-import java.math.BigDecimal;
-import java.util.Random;
-import java.util.Date;
-import java.util.List;
-import java.util.Arrays;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Iterator;
+import org.apache.lucene.search.DefaultSimilarity;
+import org.apache.lucene.search.Similarity;
 
 /**
  * Test of the SweetSpotSimilarity

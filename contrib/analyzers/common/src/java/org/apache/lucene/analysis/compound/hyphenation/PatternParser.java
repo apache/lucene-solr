@@ -51,7 +51,7 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
 
   StringBuilder token;
 
-  ArrayList exception;
+  ArrayList<Object> exception;
 
   char hyphenChar;
 
@@ -199,8 +199,8 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
     return pat.toString();
   }
 
-  protected ArrayList normalizeException(ArrayList ex) {
-    ArrayList res = new ArrayList();
+  protected ArrayList<Object> normalizeException(ArrayList<?> ex) {
+    ArrayList<Object> res = new ArrayList<Object>();
     for (int i = 0; i < ex.size(); i++) {
       Object item = ex.get(i);
       if (item instanceof String) {
@@ -230,7 +230,7 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
     return res;
   }
 
-  protected String getExceptionWord(ArrayList ex) {
+  protected String getExceptionWord(ArrayList<?> ex) {
     StringBuilder res = new StringBuilder();
     for (int i = 0; i < ex.size(); i++) {
       Object item = ex.get(i);
@@ -291,7 +291,7 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
       currElement = ELEM_PATTERNS;
     } else if (local.equals("exceptions")) {
       currElement = ELEM_EXCEPTIONS;
-      exception = new ArrayList();
+      exception = new ArrayList<Object>();
     } else if (local.equals("hyphen")) {
       if (token.length() > 0) {
         exception.add(token.toString());
@@ -308,6 +308,7 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
    *      java.lang.String, java.lang.String)
    */
   @Override
+  @SuppressWarnings("unchecked")
   public void endElement(String uri, String local, String raw) {
 
     if (token.length() > 0) {
@@ -319,7 +320,7 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
         case ELEM_EXCEPTIONS:
           exception.add(word);
           exception = normalizeException(exception);
-          consumer.addException(getExceptionWord(exception),
+          consumer.addException(getExceptionWord(exception), 
               (ArrayList) exception.clone());
           break;
         case ELEM_PATTERNS:
@@ -344,6 +345,7 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
   /**
    * @see org.xml.sax.ContentHandler#characters(char[], int, int)
    */
+  @SuppressWarnings("unchecked")
   @Override
   public void characters(char ch[], int start, int length) {
     StringBuffer chars = new StringBuffer(length);
@@ -428,7 +430,7 @@ public class PatternParser extends DefaultHandler implements PatternConsumer {
     System.out.println("class: " + c);
   }
 
-  public void addException(String w, ArrayList e) {
+  public void addException(String w, ArrayList<Object> e) {
     System.out.println("exception: " + w + " : " + e.toString());
   }
 

@@ -48,9 +48,8 @@ public class DbStoreTest extends LuceneTestCase {
     protected Database index, blocks;
     
     @Override
-    public void setUp()
-        throws Exception
-    {
+    protected void setUp() throws Exception {
+      super.setUp();
         if (!dbHome.exists())
             dbHome.mkdir();
         else
@@ -101,15 +100,14 @@ public class DbStoreTest extends LuceneTestCase {
     }
 
     @Override
-    public void tearDown()
-        throws Exception
-    {
+    protected void tearDown() throws Exception {
         if (index != null)
             index.close();
         if (blocks != null)
             blocks.close();
         if (env != null)
             env.close();
+        super.tearDown();
     }
 
     public void testBytes()
@@ -128,13 +126,12 @@ public class DbStoreTest extends LuceneTestCase {
     
         Date veryStart = new Date();
         Date start = new Date();
-        Transaction txn = null;
+        Transaction txn = env.beginTransaction(null, null);
         Directory store = null;
 
         System.out.println("Writing files byte by byte");
 
         try {
-            txn = env.beginTransaction(null, null);
             store = new DbDirectory(txn, index, blocks);
 
             for (int i = 0; i < count; i++) {
@@ -154,13 +151,6 @@ public class DbStoreTest extends LuceneTestCase {
         } catch (IOException e) {
             txn.abort();
             txn = null;
-            throw e;
-        } catch (DatabaseException e) {
-            if (txn != null)
-            {
-                txn.abort();
-                txn = null;
-            }
             throw e;
         } finally {
             if (txn != null)
@@ -281,13 +271,12 @@ public class DbStoreTest extends LuceneTestCase {
     
         Date veryStart = new Date();
         Date start = new Date();
-        Transaction txn = null;
+        Transaction txn = env.beginTransaction(null, null);
         Directory store = null;
 
         System.out.println("Writing files as one byte array");
 
         try {
-            txn = env.beginTransaction(null, null);
             store = new DbDirectory(txn, index, blocks);
 
             for (int i = 0; i < count; i++) {
@@ -305,13 +294,6 @@ public class DbStoreTest extends LuceneTestCase {
         } catch (IOException e) {
             txn.abort();
             txn = null;
-            throw e;
-        } catch (DatabaseException e) {
-            if (txn != null)
-            {
-                txn.abort();
-                txn = null;
-            }
             throw e;
         } finally {
             if (txn != null)

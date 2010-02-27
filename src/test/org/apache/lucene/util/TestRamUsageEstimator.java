@@ -22,23 +22,17 @@ import junit.framework.TestCase;
 public class TestRamUsageEstimator extends TestCase {
 
   public void testBasic() {
-    String string = new String("test str");
     RamUsageEstimator rue = new RamUsageEstimator();
-    long size = rue.estimateRamUsage(string);
-    //System.out.println("size:" + size);
+    rue.estimateRamUsage("test str");
     
-    string = new String("test strin");
-    size = rue.estimateRamUsage(string);
-    //System.out.println("size:" + size);
+    rue.estimateRamUsage("test strin");
     
     Holder holder = new Holder();
     holder.holder = new Holder("string2", 5000L);
-    size = rue.estimateRamUsage(holder);
-    //System.out.println("size:" + size);
+    rue.estimateRamUsage(holder);
     
     String[] strings = new String[]{new String("test strin"), new String("hollow"), new String("catchmaster")};
-    size = rue.estimateRamUsage(strings);
-    //System.out.println("size:" + size);
+    rue.estimateRamUsage(strings);
   }
   
   private static final class Holder {

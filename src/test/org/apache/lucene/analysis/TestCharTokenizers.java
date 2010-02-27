@@ -172,7 +172,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
       return Character.isLetter(c);
     }
 
-    @Override
+    @Deprecated @Override
     protected boolean isTokenChar(char c) {
       return Character.isLetter(c);
     }
@@ -183,7 +183,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
       super(matchVersion, input);
     }
 
-    @Override
+    @Deprecated @Override
     protected char normalize(char c) {
       return c;
     }
@@ -200,7 +200,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
       super(matchVersion, input);
     }
 
-    @Override
+    @Deprecated @Override
     protected char normalize(char c) {
       return c;
     }
@@ -215,7 +215,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
       return Character.isLetter(c);
     }
 
-    @Override
+    @Deprecated @Override
     protected boolean isTokenChar(char c) {
       return Character.isLetter(c);
     }

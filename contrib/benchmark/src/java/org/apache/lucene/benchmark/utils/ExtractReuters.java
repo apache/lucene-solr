@@ -94,14 +94,12 @@ public class ExtractReuters
             StringBuffer outBuffer = new StringBuffer(1024);
 
             String line = null;
-            int index = -1;
             int docNumber = 0;
             while ((line = reader.readLine()) != null)
             {
                 //when we see a closing reuters tag, flush the file
 
-                if ((index = line.indexOf("</REUTERS")) == -1)
-                {
+                if (line.indexOf("</REUTERS") == -1) {
                     //Replace the SGM escape sequences
 
                     buffer.append(line).append(' ');//accumulate the strings for now, then apply regular expression to get the pieces,

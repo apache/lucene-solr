@@ -45,7 +45,7 @@ import org.apache.lucene.util.AttributeSource;
  */
 public abstract class QueryConfigHandler extends AttributeSource {
 
-  private LinkedList<FieldConfigListener> listeners = new LinkedList<FieldConfigListener>();;
+  private LinkedList<FieldConfigListener> listeners = new LinkedList<FieldConfigListener>();
 
   /**
    * Returns an implementation of

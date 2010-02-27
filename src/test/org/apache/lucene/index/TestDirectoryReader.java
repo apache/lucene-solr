@@ -122,13 +122,6 @@ public class TestDirectoryReader extends LuceneTestCase {
     assertEquals( 1, reader.numDocs() );
   }
         
-  
-  public void _testTermVectors() {
-    MultiReader reader = new MultiReader(readers);
-    assertTrue(reader != null);
-  }
-  
-
   public void testIsCurrent() throws IOException {
     RAMDirectory ramDir1=new RAMDirectory();
     addDoc(ramDir1, "test foo", true);

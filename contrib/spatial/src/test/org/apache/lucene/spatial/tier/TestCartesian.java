@@ -21,8 +21,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -49,18 +47,11 @@ import org.apache.lucene.spatial.tier.projections.IProjector;
 import org.apache.lucene.spatial.tier.projections.SinusoidalProjector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.Version;
 
-/**
- *
- */
-public class TestCartesian extends TestCase{
+public class TestCartesian extends LuceneTestCase {
 
-  /**
-   * @param args
-   */
-  
   private Directory directory;
   private IndexSearcher searcher;
   // reston va
@@ -76,10 +67,11 @@ public class TestCartesian extends TestCase{
 
 
   @Override
-  protected void setUp() throws IOException {
+  protected void setUp() throws Exception {
+    super.setUp();
     directory = new RAMDirectory();
 
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
     
     setUpPlotter( 2, 15);
     
@@ -495,8 +487,8 @@ public class TestCartesian extends TestCase{
       // As the radius filter has performed the distance calculations
       // already, pass in the filter to reuse the results.
       // 
-      DistanceFieldComparatorSource dsort = new DistanceFieldComparatorSource(dq.distanceFilter);
-      Sort sort = new Sort(new SortField("foo", dsort));
+      //DistanceFieldComparatorSource dsort = new DistanceFieldComparatorSource(dq.distanceFilter);
+      //Sort sort = new Sort(new SortField("foo", dsort));
 	    
       // Perform the search, using the term query, the serial chain filter, and the
       // distance sort

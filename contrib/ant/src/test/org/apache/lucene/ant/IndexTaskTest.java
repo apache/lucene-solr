@@ -20,8 +20,6 @@ package org.apache.lucene.ant;
 import java.io.File;
 import java.io.IOException;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.queryParser.QueryParser;
@@ -31,13 +29,13 @@ import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.tools.ant.Project;
 import org.apache.tools.ant.types.FileSet;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  *  Test cases for index task
  *
  */
-public class IndexTaskTest extends TestCase {
+public class IndexTaskTest extends LuceneTestCase {
     private final static String docHandler =
             "org.apache.lucene.ant.FileExtensionDocumentHandler";
 
@@ -55,7 +53,8 @@ public class IndexTaskTest extends TestCase {
      *@exception  IOException  Description of Exception
      */
     @Override
-    public void setUp() throws Exception {
+    protected void setUp() throws Exception {
+      super.setUp();
         Project project = new Project();
 
         IndexTask task = new IndexTask();
@@ -71,12 +70,12 @@ public class IndexTaskTest extends TestCase {
 
         dir = FSDirectory.open(indexDir);
         searcher = new IndexSearcher(dir, true);
-        analyzer = new StopAnalyzer(Version.LUCENE_CURRENT);
+        analyzer = new StopAnalyzer(TEST_VERSION_CURRENT);
     }
 
 
     public void testSearch() throws Exception {
-      Query query = new QueryParser(Version.LUCENE_CURRENT, "contents",analyzer).parse("test");
+      Query query = new QueryParser(TEST_VERSION_CURRENT, "contents",analyzer).parse("test");
 
         int numHits = searcher.search(query, null, 1000).totalHits;
 
@@ -88,9 +87,10 @@ public class IndexTaskTest extends TestCase {
      * TODO: remove indexDir?
      */
     @Override
-    public void tearDown() throws IOException {
+    protected void tearDown() throws Exception {
         searcher.close();
         dir.close();
+        super.tearDown();
     }
 }
 

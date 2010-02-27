@@ -30,7 +30,7 @@ public class DataStore {
     private static final String STEAK_CATEGORY = "Steak";
     private static int id = 0;
 
-    static Collection restaurants = new ArrayList();
+    static Collection<RestaurantInfo> restaurants = new ArrayList<RestaurantInfo>();
     static RestaurantInfo pinos = new RestaurantInfo();
     static RestaurantInfo canolis = new RestaurantInfo();
     static RestaurantInfo picadillo = new RestaurantInfo();
@@ -47,7 +47,7 @@ public class DataStore {
     static RestaurantInfo outback4 = new RestaurantInfo();
 
 
-    public static Iterator getRestaurants(){
+    public static Iterator<RestaurantInfo> getRestaurants(){
         return restaurants.iterator();
     }
 

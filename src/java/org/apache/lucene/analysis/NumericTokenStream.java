@@ -22,8 +22,6 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.document.NumericField; // for javadocs
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 import org.apache.lucene.search.NumericRangeFilter; // for javadocs
-import org.apache.lucene.search.SortField; // for javadocs
-import org.apache.lucene.search.FieldCache; // javadocs
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -162,7 +160,7 @@ public final class NumericTokenStream extends TokenStream {
    * <code>new Field(name, new NumericTokenStream(precisionStep).setIntValue(value))</code>
    */
   public NumericTokenStream setIntValue(final int value) {
-    this.value = (long) value;
+    this.value = value;
     valSize = 32;
     shift = 0;
     return this;
@@ -188,7 +186,7 @@ public final class NumericTokenStream extends TokenStream {
    * <code>new Field(name, new NumericTokenStream(precisionStep).setFloatValue(value))</code>
    */
   public NumericTokenStream setFloatValue(final float value) {
-    this.value = (long) NumericUtils.floatToSortableInt(value);
+    this.value = NumericUtils.floatToSortableInt(value);
     valSize = 32;
     shift = 0;
     return this;

@@ -445,11 +445,8 @@ public class TestPayloads extends LuceneTestCase {
             boolean hasNext = input.incrementToken();
             if (hasNext) {
                 if (offset + length <= data.length) {
-                    Payload p = null;
-                    if (p == null) {
-                        p = new Payload();
-                        payloadAtt.setPayload(p);
-                    }
+                    Payload p = new Payload();
+                    payloadAtt.setPayload(p);
                     p.setData(data, offset, length);
                     offset += length;                
                 } else {

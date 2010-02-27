@@ -391,8 +391,8 @@ public final class ShingleFilter extends TokenFilter {
     }
 
     /**
-     * {@see #advance()}
      * @return the current value.  
+     * @see #advance()
      */
     public int getValue() {
       return value;

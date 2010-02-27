@@ -67,10 +67,9 @@ public class TestParallelTermEnum extends LuceneTestCase {
 
     @Override
     protected void tearDown() throws Exception {
-        super.tearDown();
-
         ir1.close();
         ir2.close();
+        super.tearDown();
     }
 
     public void test1() throws IOException {

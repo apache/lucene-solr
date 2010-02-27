@@ -79,7 +79,7 @@ public final class NGramTokenFilter extends TokenFilter {
         if (!input.incrementToken()) {
           return false;
         } else {
-          curTermBuffer = (char[]) termAtt.termBuffer().clone();
+          curTermBuffer = termAtt.termBuffer().clone();
           curTermLength = termAtt.termLength();
           curGramSize = minGram;
           curPos = 0;

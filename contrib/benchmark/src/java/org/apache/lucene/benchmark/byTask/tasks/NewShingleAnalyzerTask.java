@@ -18,12 +18,10 @@ package org.apache.lucene.benchmark.byTask.tasks;
  */
 
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.util.StringTokenizer;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.shingle.ShingleAnalyzerWrapper;
-import org.apache.lucene.analysis.shingle.ShingleFilter;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.util.Version;
 
@@ -39,8 +37,6 @@ import org.apache.lucene.util.Version;
 public class NewShingleAnalyzerTask extends PerfTask {
 
   private String analyzerClassName = "standard.StandardAnalyzer";
-  private static final String shingleAnalyzerClassName
-    = "org.apache.lucene.analysis.shingle.ShingleAnalyzerWrapper";
   private int maxShingleSize = 2;
   private boolean outputUnigrams = true;
   

@@ -30,7 +30,7 @@ import java.util.Map;
 public class InstantiatedDocument
     implements Serializable {
 
-  private static long serialVersionUID = 1l;
+  private static final long serialVersionUID = 1l;
 
   private Document document;
 

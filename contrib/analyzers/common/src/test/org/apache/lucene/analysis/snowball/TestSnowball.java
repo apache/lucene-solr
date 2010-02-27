@@ -33,13 +33,13 @@ import org.apache.lucene.util.Version;
 public class TestSnowball extends BaseTokenStreamTestCase {
 
   public void testEnglish() throws Exception {
-    Analyzer a = new SnowballAnalyzer(Version.LUCENE_CURRENT, "English");
+    Analyzer a = new SnowballAnalyzer(TEST_VERSION_CURRENT, "English");
     assertAnalyzesTo(a, "he abhorred accents",
         new String[]{"he", "abhor", "accent"});
   }
   
   public void testStopwords() throws Exception {
-    Analyzer a = new SnowballAnalyzer(Version.LUCENE_CURRENT, "English",
+    Analyzer a = new SnowballAnalyzer(TEST_VERSION_CURRENT, "English",
         StandardAnalyzer.STOP_WORDS_SET);
     assertAnalyzesTo(a, "the quick brown fox jumped",
         new String[]{"quick", "brown", "fox", "jump"});
@@ -50,7 +50,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
    * we lowercase I correct for non-Turkish languages in either case.
    */
   public void testEnglishLowerCase() throws Exception {
-    Analyzer a = new SnowballAnalyzer(Version.LUCENE_CURRENT, "English");
+    Analyzer a = new SnowballAnalyzer(TEST_VERSION_CURRENT, "English");
     assertAnalyzesTo(a, "cryogenic", new String[] { "cryogen" });
     assertAnalyzesTo(a, "CRYOGENIC", new String[] { "cryogen" });
     
@@ -63,7 +63,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
    * Test turkish lowercasing
    */
   public void testTurkish() throws Exception {
-    Analyzer a = new SnowballAnalyzer(Version.LUCENE_CURRENT, "Turkish");
+    Analyzer a = new SnowballAnalyzer(TEST_VERSION_CURRENT, "Turkish");
 
     assertAnalyzesTo(a, "ağacı", new String[] { "ağaç" });
     assertAnalyzesTo(a, "AĞACI", new String[] { "ağaç" });
@@ -84,7 +84,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
 
   
   public void testReusableTokenStream() throws Exception {
-    Analyzer a = new SnowballAnalyzer(Version.LUCENE_CURRENT, "English");
+    Analyzer a = new SnowballAnalyzer(TEST_VERSION_CURRENT, "English");
     assertAnalyzesToReuse(a, "he abhorred accents",
         new String[]{"he", "abhor", "accent"});
     assertAnalyzesToReuse(a, "she abhorred him",

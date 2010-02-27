@@ -20,8 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.HashSet;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -30,9 +28,9 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class DuplicateFilterTest extends TestCase
-{
+public class DuplicateFilterTest extends LuceneTestCase {
 	private static final String KEY_FIELD = "url";
 	private RAMDirectory directory;
 	private IndexReader reader;
@@ -40,10 +38,10 @@ public class DuplicateFilterTest extends TestCase
 	private IndexSearcher searcher;
 
 	@Override
-	protected void setUp() throws Exception
-	{
+	protected void setUp() throws Exception {
+    super.setUp();
 		directory = new RAMDirectory();
-		IndexWriter writer = new IndexWriter(directory, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
+		IndexWriter writer = new IndexWriter(directory, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
 		
 		//Add series of docs with filterable fields : url, text and dates  flags
 		addDoc(writer, "http://lucene.apache.org", "lucene 1.4.3 available", "20040101");
@@ -62,11 +60,11 @@ public class DuplicateFilterTest extends TestCase
 	}
 	
 	@Override
-	protected void tearDown() throws Exception
-	{
+	protected void tearDown() throws Exception {
 		reader.close();
 		searcher.close();
 		directory.close();
+		super.tearDown();
 	}
 
 	private void addDoc(IndexWriter writer, String url, String text, String date) throws IOException

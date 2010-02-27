@@ -22,7 +22,6 @@ import java.io.Reader;
 import java.util.Set;
 
 import org.apache.lucene.analysis.LowerCaseFilter;
-import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
 import org.apache.lucene.analysis.StopFilter;
@@ -106,15 +105,16 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
   }
 
   /**
-   * Creates {@link TokenStreamComponents} used to tokenize all the text in the provided
-   * {@link Reader}.
+   * Creates
+   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * used to tokenize all the text in the provided {@link Reader}.
    * 
-   * @return {@link TokenStreamComponents} built from a {@link IndicTokenizer}
-   *         filtered with {@link LowerCaseFilter}, 
-   *         {@link IndicNormalizationFilter},
-   *         {@link HindiNormalizationFilter},
-   *         {@link KeywordMarkerTokenFilter} if a stem exclusion set is provided,
-   *         {@link HindiStemFilter}, and Hindi Stop words
+   * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   *         built from a {@link IndicTokenizer} filtered with
+   *         {@link LowerCaseFilter}, {@link IndicNormalizationFilter},
+   *         {@link HindiNormalizationFilter}, {@link KeywordMarkerTokenFilter}
+   *         if a stem exclusion set is provided, {@link HindiStemFilter}, and
+   *         Hindi Stop words
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName,

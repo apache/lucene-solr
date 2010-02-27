@@ -23,18 +23,17 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestSpanishAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new SpanishAnalyzer(Version.LUCENE_CURRENT);
+    new SpanishAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new SpanishAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new SpanishAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTermReuse(a, "chicana", "chican");
     checkOneTermReuse(a, "chicano", "chican");
@@ -46,7 +45,7 @@ public class TestSpanishAnalyzer extends BaseTokenStreamTestCase {
   public void testExclude() throws IOException {
     Set<String> exclusionSet = new HashSet<String>();
     exclusionSet.add("chicano");
-    Analyzer a = new SpanishAnalyzer(Version.LUCENE_CURRENT, 
+    Analyzer a = new SpanishAnalyzer(TEST_VERSION_CURRENT, 
         SpanishAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "chicana", "chican");
     checkOneTermReuse(a, "chicano", "chicano");

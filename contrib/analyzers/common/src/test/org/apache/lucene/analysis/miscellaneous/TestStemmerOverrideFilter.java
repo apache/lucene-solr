@@ -10,7 +10,6 @@ import org.apache.lucene.analysis.KeywordTokenizer;
 import org.apache.lucene.analysis.PorterStemFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.util.Version;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -38,7 +37,7 @@ public class TestStemmerOverrideFilter extends BaseTokenStreamTestCase {
     dictionary.put("booked", "books");
     Tokenizer tokenizer = new KeywordTokenizer(new StringReader("booked"));
     TokenStream stream = new PorterStemFilter(
-        new StemmerOverrideFilter(Version.LUCENE_CURRENT, tokenizer, dictionary));
+        new StemmerOverrideFilter(TEST_VERSION_CURRENT, tokenizer, dictionary));
     assertTokenStreamContents(stream, new String[] { "books" });
   }
 }

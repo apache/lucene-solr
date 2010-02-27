@@ -66,7 +66,7 @@ public class FieldBoostMapAttributeImpl extends AttributeImpl
   @Override
   public boolean equals(Object other) {
 
-    if (other instanceof FieldBoostMapAttributeImpl && other != null
+    if (other instanceof FieldBoostMapAttributeImpl
         && ((FieldBoostMapAttributeImpl) other).boosts.equals(this.boosts) ) {
 
       return true;

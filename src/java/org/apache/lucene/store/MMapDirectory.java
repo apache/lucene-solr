@@ -375,7 +375,7 @@ public class MMapDirectory extends FSDirectory {
         RuntimeException newException = new RuntimeException(ioe);
         newException.initCause(ioe);
         throw newException;
-      };
+      }
       return clone;
     }
   
@@ -404,7 +404,7 @@ public class MMapDirectory extends FSDirectory {
     File f =  new File(getDirectory(), name);
     RandomAccessFile raf = new RandomAccessFile(f, "r");
     try {
-      return (raf.length() <= (long) maxBBuf)
+      return (raf.length() <= maxBBuf)
              ? (IndexInput) new MMapIndexInput(raf)
              : (IndexInput) new MultiMMapIndexInput(raf, maxBBuf);
     } finally {

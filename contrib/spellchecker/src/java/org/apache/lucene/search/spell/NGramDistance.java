@@ -138,7 +138,7 @@ public class NGramDistance implements StringDistance {
 
     // our last action in the above loop was to switch d and p, so p now
     // actually has the most recent cost counts
-    return 1.0f - ((float) p[sl] / Math.max(tl, sl));
+    return 1.0f - (p[sl] / Math.max(tl, sl));
   }
 
 }

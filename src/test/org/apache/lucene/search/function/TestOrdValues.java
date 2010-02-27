@@ -34,7 +34,6 @@ import org.junit.Test;
  * <p/>
  * The exact score tests use TopDocs top to verify the exact score.
  */
-@SuppressWarnings({"UseOfSystemOutOrSystemErr"})
 public class TestOrdValues extends FunctionTestSetup {
 
   /* @override constructor */

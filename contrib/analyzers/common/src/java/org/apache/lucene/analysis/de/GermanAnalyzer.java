@@ -29,7 +29,6 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
-import org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents; // javadoc @link
 import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
@@ -222,16 +221,17 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
     exclusionSet = WordlistLoader.getWordSet(exclusionlist);
     setPreviousTokenStream(null); // force a new stemmer to be created
   }
-  
+
   /**
-   * Creates {@link TokenStreamComponents} used to tokenize all the text in the
-   * provided {@link Reader}.
+   * Creates
+   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * used to tokenize all the text in the provided {@link Reader}.
    * 
-   * @return {@link TokenStreamComponents} built from a
-   *         {@link StandardTokenizer} filtered with {@link StandardFilter},
-   *         {@link LowerCaseFilter}, {@link StopFilter}, 
-   *         {@link KeywordMarkerTokenFilter} if a stem exclusion set is provided, and
-   *         {@link SnowballFilter}
+   * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   *         built from a {@link StandardTokenizer} filtered with
+   *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
+   *         , {@link KeywordMarkerTokenFilter} if a stem exclusion set is
+   *         provided, and {@link SnowballFilter}
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName,

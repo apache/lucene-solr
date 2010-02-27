@@ -40,7 +40,6 @@ public class TestMultiReader extends TestDirectoryReader {
 
     assertTrue(dir != null);
     assertTrue(sis != null);
-    assertTrue(reader != null);
     
     return reader;
   }

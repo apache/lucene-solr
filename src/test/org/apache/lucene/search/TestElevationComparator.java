@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.*;
+import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
@@ -70,7 +71,7 @@ public class TestElevationComparator extends LuceneTestCase {
         new SortField(null, SortField.SCORE, reversed)
       );
 
-    TopDocsCollector topCollector = TopFieldCollector.create(sort, 50, false, true, true, true);
+    TopDocsCollector<Entry> topCollector = TopFieldCollector.create(sort, 50, false, true, true, true);
     searcher.search(newq, null, topCollector);
 
     TopDocs topDocs = topCollector.topDocs(0, 10);
@@ -171,7 +172,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
      }
 
      @Override
-     public Comparable value(int slot) {
+     public Comparable<?> value(int slot) {
        return Integer.valueOf(values[slot]);
      }
    };

@@ -45,7 +45,7 @@ public abstract class FilteredDocIdSetIterator extends DocIdSetIterator {
    * Validation method to determine whether a docid should be in the result set.
    * @param doc docid to be tested
    * @return true if input docid should be in the result set, false otherwise.
-   * @see #FilteredDocIdSetIterator(DocIdSetIterator).
+   * @see #FilteredDocIdSetIterator(DocIdSetIterator)
    */
   abstract protected boolean match(int doc) throws IOException;
 	

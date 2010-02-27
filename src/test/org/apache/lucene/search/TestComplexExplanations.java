@@ -32,7 +32,7 @@ public class TestComplexExplanations extends TestExplanations {
    * nice with boosts of 0.0
    */
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
     super.setUp();
     searcher.setSimilarity(createQnorm1Similarity());
   }

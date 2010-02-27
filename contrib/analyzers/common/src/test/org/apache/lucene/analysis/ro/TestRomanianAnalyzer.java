@@ -23,18 +23,17 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestRomanianAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new RomanianAnalyzer(Version.LUCENE_CURRENT);
+    new RomanianAnalyzer(TEST_VERSION_CURRENT);
   }
   
   /** test stopwords and stemming */
   public void testBasics() throws IOException {
-    Analyzer a = new RomanianAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new RomanianAnalyzer(TEST_VERSION_CURRENT);
     // stemming
     checkOneTermReuse(a, "absenţa", "absenţ");
     checkOneTermReuse(a, "absenţi", "absenţ");
@@ -46,7 +45,7 @@ public class TestRomanianAnalyzer extends BaseTokenStreamTestCase {
   public void testExclude() throws IOException {
     Set<String> exclusionSet = new HashSet<String>();
     exclusionSet.add("absenţa");
-    Analyzer a = new RomanianAnalyzer(Version.LUCENE_CURRENT, 
+    Analyzer a = new RomanianAnalyzer(TEST_VERSION_CURRENT, 
         RomanianAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "absenţa", "absenţa");
     checkOneTermReuse(a, "absenţi", "absenţ");

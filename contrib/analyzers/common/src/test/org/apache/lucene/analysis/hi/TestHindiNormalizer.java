@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.util.Version;
 
 /**
  * Test HindiNormalizer
@@ -60,7 +59,7 @@ public class TestHindiNormalizer extends BaseTokenStreamTestCase {
     check("आईऊॠॡऐऔीूॄॣैौ", "अइउऋऌएओिुृॢेो");
   }
   private void check(String input, String output) throws IOException {
-    Tokenizer tokenizer = new WhitespaceTokenizer(Version.LUCENE_CURRENT, 
+    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, 
         new StringReader(input));
     TokenFilter tf = new HindiNormalizationFilter(tokenizer);
     assertTokenStreamContents(tf, new String[] { output });

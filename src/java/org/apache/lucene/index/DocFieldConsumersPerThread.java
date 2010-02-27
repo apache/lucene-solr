@@ -62,8 +62,8 @@ final class DocFieldConsumersPerThread extends DocFieldConsumerPerThread {
       both.docID = docState.docID;
       assert oneDoc.docID == docState.docID;
       assert twoDoc.docID == docState.docID;
-      both.one = oneDoc;
-      both.two = twoDoc;
+      both.writerOne = oneDoc;
+      both.writerTwo = twoDoc;
       return both;
     }
   }

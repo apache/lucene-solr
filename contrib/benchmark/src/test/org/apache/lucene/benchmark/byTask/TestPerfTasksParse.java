@@ -19,8 +19,6 @@ package org.apache.lucene.benchmark.byTask;
 
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Iterator;
-
 import junit.framework.TestCase;
 
 import org.apache.lucene.benchmark.byTask.tasks.PerfTask;

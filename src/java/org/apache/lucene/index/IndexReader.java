@@ -67,7 +67,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  </p>
 
  <a name="thread-safety"></a><p><b>NOTE</b>: {@link
- <code>IndexReader</code>} instances are completely thread
+ IndexReader} instances are completely thread
  safe, meaning multiple threads can call any of its methods,
  concurrently.  If your application requires external
  synchronization, you should <b>not</b> synchronize on the
@@ -428,8 +428,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * mutable state obeys "copy on write" semantics to ensure
    * the changes are not seen by other readers.
    * <p>
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
    */
   @Override
   public synchronized Object clone() {

@@ -20,8 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.WeakHashMap;
 
-import junit.framework.TestCase;
-
+import junit.framework.Assert;
 import org.apache.lucene.index.IndexReader;
 
 /**
@@ -51,9 +50,9 @@ public class CachingWrapperFilterHelper extends CachingWrapperFilter {
     synchronized (cache) {  // check cache
       DocIdSet cached = cache.get(reader);
       if (shouldHaveCache) {
-        TestCase.assertNotNull("Cache should have data ", cached);
+        Assert.assertNotNull("Cache should have data ", cached);
       } else {
-        TestCase.assertNull("Cache should be null " + cached , cached);
+        Assert.assertNull("Cache should be null " + cached , cached);
       }
       if (cached != null) {
         return cached;
@@ -77,7 +76,7 @@ public class CachingWrapperFilterHelper extends CachingWrapperFilter {
   @Override
   public boolean equals(Object o) {
     if (!(o instanceof CachingWrapperFilterHelper)) return false;
-    return this.filter.equals((CachingWrapperFilterHelper)o);
+    return this.filter.equals(o);
   }
   
   @Override

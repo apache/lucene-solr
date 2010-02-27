@@ -30,7 +30,6 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.EmptyTokenStream;
 import org.apache.lucene.analysis.payloads.PayloadHelper;
-import org.apache.lucene.analysis.shingle.ShingleMatrixFilter.Matrix.Column;
 import org.apache.lucene.analysis.shingle.ShingleMatrixFilter.Matrix.Column.Row;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;

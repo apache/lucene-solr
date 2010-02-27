@@ -19,8 +19,6 @@ package org.apache.lucene.queryParser.analyzing;
 
 import java.io.Reader;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.ASCIIFoldingFilter;
 import org.apache.lucene.analysis.LowerCaseFilter;
@@ -28,12 +26,12 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.util.Version;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * @version $Revision$, $Date$
  */
-public class TestAnalyzingQueryParser extends TestCase {
+public class TestAnalyzingQueryParser extends LuceneTestCase {
 
   private Analyzer a;
 
@@ -47,7 +45,8 @@ public class TestAnalyzingQueryParser extends TestCase {
   private String[] fuzzyExpected;
 
   @Override
-  public void setUp() {
+  protected void setUp() throws Exception {
+    super.setUp();
     wildcardInput = new String[] { "übersetzung über*ung",
         "Mötley Cr\u00fce Mötl?* Crü?", "Renée Zellweger Ren?? Zellw?ger" };
     wildcardExpected = new String[] { "ubersetzung uber*ung", "motley crue motl?* cru?",
@@ -99,7 +98,7 @@ public class TestAnalyzingQueryParser extends TestCase {
   }
 
   private String parseWithAnalyzingQueryParser(String s, Analyzer a) throws ParseException {
-    AnalyzingQueryParser qp = new AnalyzingQueryParser(Version.LUCENE_CURRENT, "field", a);
+    AnalyzingQueryParser qp = new AnalyzingQueryParser(TEST_VERSION_CURRENT, "field", a);
     org.apache.lucene.search.Query q = qp.parse(s);
     return q.toString("field");
   }
@@ -112,10 +111,10 @@ class ASCIIAnalyzer extends org.apache.lucene.analysis.Analyzer {
 
   @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new StandardTokenizer(Version.LUCENE_CURRENT, reader);
+    TokenStream result = new StandardTokenizer(LuceneTestCase.TEST_VERSION_CURRENT, reader);
     result = new StandardFilter(result);
     result = new ASCIIFoldingFilter(result);
-    result = new LowerCaseFilter(result);
+    result = new LowerCaseFilter(LuceneTestCase.TEST_VERSION_CURRENT, result);
     return result;
   }
 }

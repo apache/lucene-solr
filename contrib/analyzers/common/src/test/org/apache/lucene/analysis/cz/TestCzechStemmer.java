@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.util.Version;
 
 /**
  * Test the Czech Stemmer.
@@ -38,7 +37,7 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
    * Test showing how masculine noun forms conflate
    */
   public void testMasculineNouns() throws IOException {
-    CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_CURRENT);
+    CzechAnalyzer cz = new CzechAnalyzer(TEST_VERSION_CURRENT);
     
     /* animate ending with a hard consonant */
     assertAnalyzesTo(cz, "pán", new String[] { "pán" });
@@ -106,7 +105,7 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
    * Test showing how feminine noun forms conflate
    */
   public void testFeminineNouns() throws IOException {
-    CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_CURRENT);
+    CzechAnalyzer cz = new CzechAnalyzer(TEST_VERSION_CURRENT);
     
     /* ending with hard consonant */
     assertAnalyzesTo(cz, "kost", new String[] { "kost" });
@@ -150,7 +149,7 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
    * Test showing how neuter noun forms conflate
    */
   public void testNeuterNouns() throws IOException {
-    CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_CURRENT);
+    CzechAnalyzer cz = new CzechAnalyzer(TEST_VERSION_CURRENT);
     
     /* ending with o */
     assertAnalyzesTo(cz, "město", new String[] { "měst" });
@@ -193,7 +192,7 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
    * Test showing how adjectival forms conflate
    */
   public void testAdjectives() throws IOException {
-    CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_CURRENT);
+    CzechAnalyzer cz = new CzechAnalyzer(TEST_VERSION_CURRENT);
     
     /* ending with ý/á/é */
     assertAnalyzesTo(cz, "mladý", new String[] { "mlad" });
@@ -221,7 +220,7 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
    * Test some possessive suffixes
    */
   public void testPossessive() throws IOException {
-    CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_CURRENT);
+    CzechAnalyzer cz = new CzechAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(cz, "Karlův", new String[] { "karl" });
     assertAnalyzesTo(cz, "jazykový", new String[] { "jazyk" });
   }
@@ -230,7 +229,7 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
    * Test some exceptional rules, implemented as rewrites.
    */
   public void testExceptions() throws IOException {
-    CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_CURRENT);
+    CzechAnalyzer cz = new CzechAnalyzer(TEST_VERSION_CURRENT);
     
     /* rewrite of št -> sk */
     assertAnalyzesTo(cz, "český", new String[] { "česk" });
@@ -270,16 +269,16 @@ public class TestCzechStemmer extends BaseTokenStreamTestCase {
    * Test that very short words are not stemmed.
    */
   public void testDontStem() throws IOException {
-    CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_CURRENT);
+    CzechAnalyzer cz = new CzechAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(cz, "e", new String[] { "e" });
     assertAnalyzesTo(cz, "zi", new String[] { "zi" });
   }
   
   public void testWithKeywordAttribute() throws IOException {
-    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("hole");
     CzechStemFilter filter = new CzechStemFilter(new KeywordMarkerTokenFilter(
-        new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader("hole desek")), set));
+        new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("hole desek")), set));
     assertTokenStreamContents(filter, new String[] { "hole", "desk" });
   }
   

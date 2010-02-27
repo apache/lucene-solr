@@ -124,7 +124,7 @@ public final class TeeSinkTokenFilter extends TokenFilter {
    * This instance is exhausted after this, but all sinks are instant available.
    */
   public void consumeAllTokens() throws IOException {
-    while (incrementToken());
+    while (incrementToken()) {}
   }
   
   @Override

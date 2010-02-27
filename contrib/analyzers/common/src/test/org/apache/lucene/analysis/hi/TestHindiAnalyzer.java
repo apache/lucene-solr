@@ -5,7 +5,6 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.util.Version;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -31,11 +30,11 @@ public class TestHindiAnalyzer extends BaseTokenStreamTestCase {
   /** This test fails with NPE when the 
    * stopwords file is missing in classpath */
   public void testResourcesAvailable() {
-    new HindiAnalyzer(Version.LUCENE_CURRENT);
+    new HindiAnalyzer(TEST_VERSION_CURRENT);
   }
   
   public void testBasics() throws Exception {
-    Analyzer a = new HindiAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new HindiAnalyzer(TEST_VERSION_CURRENT);
     // two ways to write 'hindi' itself.
     checkOneTermReuse(a, "हिन्दी", "हिंद");
     checkOneTermReuse(a, "हिंदी", "हिंद");
@@ -44,7 +43,7 @@ public class TestHindiAnalyzer extends BaseTokenStreamTestCase {
   public void testExclusionSet() throws Exception {
     Set<String> exclusionSet = new HashSet<String>();
     exclusionSet.add("हिंदी");
-    Analyzer a = new HindiAnalyzer(Version.LUCENE_CURRENT, 
+    Analyzer a = new HindiAnalyzer(TEST_VERSION_CURRENT, 
         HindiAnalyzer.getDefaultStopSet(), exclusionSet);
     checkOneTermReuse(a, "हिंदी", "हिंदी");
   }

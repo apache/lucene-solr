@@ -48,7 +48,6 @@ public class MultiReader extends IndexReader implements Cloneable {
   * left to the subreaders. </p>
   * <p>Note that all subreaders are closed if this Multireader is closed.</p>
   * @param subReaders set of (sub)readers
-  * @throws IOException
   */
   public MultiReader(IndexReader... subReaders) {
     initialize(subReaders, true);
@@ -61,7 +60,6 @@ public class MultiReader extends IndexReader implements Cloneable {
    * @param closeSubReaders indicates whether the subreaders should be closed
    * when this MultiReader is closed
    * @param subReaders set of (sub)readers
-   * @throws IOException
    */
   public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) {
     initialize(subReaders, closeSubReaders);

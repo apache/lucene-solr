@@ -85,8 +85,6 @@ public class TestAtomicUpdate extends LuceneTestCase {
 
   private static class IndexerThread extends TimedThread {
     IndexWriter writer;
-    public int count;
-
     public IndexerThread(IndexWriter writer, TimedThread[] threads) {
       super(threads);
       this.writer = writer;

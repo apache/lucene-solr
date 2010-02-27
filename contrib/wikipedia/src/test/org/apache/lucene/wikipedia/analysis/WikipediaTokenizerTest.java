@@ -67,7 +67,7 @@ public class WikipediaTokenizerTest extends BaseTokenStreamTestCase {
             "'''same [[Category:foo]] goes for this '''''and2 [[Category:foo]] and this" +
             " [http://foo.boo.com/test/test/ Test Test] [http://foo.boo.com/test/test/test.html Test Test]" +
             " [http://foo.boo.com/test/test/test.html?g=b&c=d Test Test] <ref>Citation</ref> <sup>martian</sup> <span class=\"glue\">code</span>";
-    Map tcm = new HashMap();//map tokens to types
+    Map<String,String> tcm = new HashMap<String,String>();//map tokens to types
     tcm.put("link", WikipediaTokenizer.INTERNAL_LINK);
     tcm.put("display", WikipediaTokenizer.INTERNAL_LINK);
     tcm.put("info", WikipediaTokenizer.INTERNAL_LINK);
@@ -144,7 +144,7 @@ public class WikipediaTokenizerTest extends BaseTokenStreamTestCase {
     while (tf.incrementToken()) {
       String tokText = termAtt.term();
       //System.out.println("Text: " + tokText + " Type: " + token.type());
-      String expectedType = (String) tcm.get(tokText);
+      String expectedType = tcm.get(tokText);
       assertTrue("expectedType is null and it shouldn't be for: " + tf.toString(), expectedType != null);
       assertTrue(typeAtt.type() + " is not equal to " + expectedType + " for " + tf.toString(), typeAtt.type().equals(expectedType) == true);
       count++;
@@ -264,7 +264,7 @@ public class WikipediaTokenizerTest extends BaseTokenStreamTestCase {
   }
 
   public void testLucene1133() throws Exception {
-    Set untoks = new HashSet();
+    Set<String> untoks = new HashSet<String>();
     untoks.add(WikipediaTokenizer.CATEGORY);
     untoks.add(WikipediaTokenizer.ITALICS);
     //should be exactly the same, regardless of untoks
@@ -342,7 +342,7 @@ public class WikipediaTokenizerTest extends BaseTokenStreamTestCase {
   }
 
   public void testBoth() throws Exception {
-    Set untoks = new HashSet();
+    Set<String> untoks = new HashSet<String>();
     untoks.add(WikipediaTokenizer.CATEGORY);
     untoks.add(WikipediaTokenizer.ITALICS);
     String test = "[[Category:a b c d]] [[Category:e f g]] [[link here]] [[link there]] ''italics here'' something ''more italics'' [[Category:h   i   j]]";

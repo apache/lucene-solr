@@ -188,7 +188,7 @@ class DisjunctionSumScorer extends Scorer {
   }
   
   /** Returns the score of the current document matching the query.
-   * Initially invalid, until {@link #next()} is called the first time.
+   * Initially invalid, until {@link #nextDoc()} is called the first time.
    */
   @Override
   public float score() throws IOException { return currentScore; }
@@ -199,7 +199,7 @@ class DisjunctionSumScorer extends Scorer {
   }
   
   /** Returns the number of subscorers matching the current document.
-   * Initially invalid, until {@link #next()} is called the first time.
+   * Initially invalid, until {@link #nextDoc()} is called the first time.
    */
   public int nrMatchers() {
     return nrMatchers;

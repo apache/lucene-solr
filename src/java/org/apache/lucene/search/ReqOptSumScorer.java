@@ -59,7 +59,7 @@ class ReqOptSumScorer extends Scorer {
   }
   
   /** Returns the score of the current document matching the query.
-   * Initially invalid, until {@link #next()} is called the first time.
+   * Initially invalid, until {@link #nextDoc()} is called the first time.
    * @return The score of the required scorer, eventually increased by the score
    * of the optional scorer when it also matches the current document.
    */

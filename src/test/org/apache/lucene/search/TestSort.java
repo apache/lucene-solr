@@ -37,6 +37,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.DocIdBitSet;
@@ -207,7 +208,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   }
 
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
     super.setUp();
     full = getFullIndex();
     searchX = getXIndex();
@@ -446,7 +447,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     }
 
     @Override
-    public Comparable value(int slot) {
+    public Comparable<?> value(int slot) {
       return Integer.valueOf(slotValues[slot]);
     }
   }
@@ -747,7 +748,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     Sort[] sort = new Sort[] { new Sort(SortField.FIELD_DOC), new Sort() };
     for (int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
-      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, false,
+      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, false,
           false, false, true);
       
       full.search(q, tdc);
@@ -766,7 +767,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
     for (int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
-      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, true, false,
+      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, false,
           false, true);
       
       full.search(q, tdc);
@@ -786,7 +787,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
     for (int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
-      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, true, true,
+      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true,
           false, true);
       
       full.search(q, tdc);
@@ -806,7 +807,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
     for (int i = 0; i < sort.length; i++) {
       Query q = new MatchAllDocsQuery();
-      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, true, true,
+      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true,
           true, true);
       
       full.search(q, tdc);
@@ -854,7 +855,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     bq.setMinimumNumberShouldMatch(1);
     for (int i = 0; i < sort.length; i++) {
       for (int j = 0; j < tfcOptions.length; j++) {
-        TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10,
+        TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10,
             tfcOptions[j][0], tfcOptions[j][1], tfcOptions[j][2], false);
 
         assertTrue(tdc.getClass().getName().endsWith("$"+actualTFCClasses[j]));
@@ -873,7 +874,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     // Two Sort criteria to instantiate the multi/single comparators.
     Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };
     for (int i = 0; i < sort.length; i++) {
-      TopDocsCollector tdc = TopFieldCollector.create(sort[i], 10, true, true, true, true);
+      TopDocsCollector<Entry> tdc = TopFieldCollector.create(sort[i], 10, true, true, true, true);
       TopDocs td = tdc.topDocs();
       assertEquals(0, td.totalHits);
       assertTrue(Float.isNaN(td.getMaxScore()));

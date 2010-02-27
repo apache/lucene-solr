@@ -38,7 +38,7 @@ public class Entities {
 	new Character((char)Integer.parseInt(entity.substring(start), radix));
       return c.toString();
     } else {
-      String s = (String)decoder.get(entity);
+      String s = decoder.get(entity);
       if (s != null)
 	return s;
       else return "";
@@ -49,17 +49,15 @@ public class Entities {
     int length = s.length();
     StringBuffer buffer = new StringBuffer(length * 2);
     for (int i = 0; i < length; i++) {
-      char c = s.charAt(i);
-      int j = (int)c;
+      int j = s.charAt(i);
       if (j < 0x100 && encoder[j] != null) {
 	buffer.append(encoder[j]);		  // have a named encoding
 	buffer.append(';');
       } else if (j < 0x80) {
-	buffer.append(c);			  // use ASCII value
+	buffer.append((char) j);			  // use ASCII value
       } else {
 	buffer.append("&#");			  // use numeric encoding
-	buffer.append((int)c);
-	buffer.append(';');
+	buffer.append(j).append(';');
       }
     }
     return buffer.toString();

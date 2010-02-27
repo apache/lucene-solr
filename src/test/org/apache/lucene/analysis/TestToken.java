@@ -35,7 +35,6 @@ public class TestToken extends LuceneTestCase {
     Token t = new Token();
     char[] content = "hello".toCharArray();
     t.setTermBuffer(content, 0, content.length);
-    char[] buf = t.termBuffer();
     assertNotSame(t.termBuffer(), content);
     assertEquals("hello", t.term());
     assertEquals("word", t.type());

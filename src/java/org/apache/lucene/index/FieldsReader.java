@@ -352,9 +352,9 @@ final class FieldsReader implements Cloneable {
       final byte[] b = new byte[toRead];
       fieldsStream.readBytes(b, 0, b.length);
       if (compressed) {
-        doc.add(new Field(fi.name, uncompress(b), Field.Store.YES));
+        doc.add(new Field(fi.name, uncompress(b)));
       } else {
-        doc.add(new Field(fi.name, b, Field.Store.YES));
+        doc.add(new Field(fi.name, b));
       }
     } else {
       Field.Store store = Field.Store.YES;
@@ -400,7 +400,7 @@ final class FieldsReader implements Cloneable {
     sizebytes[1] = (byte) (bytesize>>>16);
     sizebytes[2] = (byte) (bytesize>>> 8);
     sizebytes[3] = (byte)  bytesize      ;
-    doc.add(new Field(fi.name, sizebytes, Field.Store.YES));
+    doc.add(new Field(fi.name, sizebytes));
     return size;
   }
 

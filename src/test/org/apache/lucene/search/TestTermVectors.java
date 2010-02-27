@@ -39,7 +39,7 @@ public class TestTermVectors extends LuceneTestCase {
   }
 
   @Override
-  public void setUp() throws Exception {                  
+  protected void setUp() throws Exception {                  
     super.setUp();
     IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(TEST_VERSION_CURRENT), true,
                                          IndexWriter.MaxFieldLength.LIMITED);
@@ -233,7 +233,6 @@ public class TestTermVectors extends LuceneTestCase {
     try {
       IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, 
                                            IndexWriter.MaxFieldLength.LIMITED);
-      assertTrue(writer != null);
       writer.addDocument(testDoc1);
       writer.addDocument(testDoc2);
       writer.addDocument(testDoc3);

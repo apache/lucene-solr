@@ -210,10 +210,10 @@ public final class NumericUtils {
       if (ch>0x7f) {
         throw new NumberFormatException(
           "Invalid prefixCoded numerical value representation (char "+
-          Integer.toHexString((int)ch)+" at position "+i+" is invalid)"
+          Integer.toHexString(ch)+" at position "+i+" is invalid)"
         );
       }
-      sortableBits |= (long)ch;
+      sortableBits |= ch;
     }
     return (sortableBits << shift) ^ 0x8000000000000000L;
   }
@@ -237,10 +237,10 @@ public final class NumericUtils {
       if (ch>0x7f) {
         throw new NumberFormatException(
           "Invalid prefixCoded numerical value representation (char "+
-          Integer.toHexString((int)ch)+" at position "+i+" is invalid)"
+          Integer.toHexString(ch)+" at position "+i+" is invalid)"
         );
       }
-      sortableBits |= (int)ch;
+      sortableBits |= ch;
     }
     return (sortableBits << shift) ^ 0x80000000;
   }
@@ -346,7 +346,7 @@ public final class NumericUtils {
   public static void splitIntRange(final IntRangeBuilder builder,
     final int precisionStep,  final int minBound, final int maxBound
   ) {
-    splitRange(builder, 32, precisionStep, (long)minBound, (long)maxBound);
+    splitRange(builder, 32, precisionStep, minBound, maxBound);
   }
   
   /** This helper does the splitting for both 32 and 64 bit. */

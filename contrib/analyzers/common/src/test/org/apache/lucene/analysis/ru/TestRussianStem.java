@@ -30,8 +30,8 @@ import java.util.ArrayList;
 @Deprecated
 public class TestRussianStem extends LuceneTestCase
 {
-    private ArrayList words = new ArrayList();
-    private ArrayList stems = new ArrayList();
+    private ArrayList<String> words = new ArrayList<String>();
+    private ArrayList<String> stems = new ArrayList<String>();
 
     public TestRussianStem(String name)
     {
@@ -42,8 +42,7 @@ public class TestRussianStem extends LuceneTestCase
      * @see TestCase#setUp()
      */
     @Override
-    protected void setUp() throws Exception
-    {
+    protected void setUp() throws Exception {
         super.setUp();
         //System.out.println(new java.util.Date());
         String str;
@@ -75,15 +74,6 @@ public class TestRussianStem extends LuceneTestCase
         inStems.close();
     }
 
-    /**
-     * @see TestCase#tearDown()
-     */
-    @Override
-    protected void tearDown() throws Exception
-    {
-        super.tearDown();
-    }
-
     public void testStem()
     {
         for (int i = 0; i < words.size(); i++)
@@ -91,7 +81,7 @@ public class TestRussianStem extends LuceneTestCase
             //if ( (i % 100) == 0 ) System.err.println(i);
             String realStem =
                 RussianStemmer.stemWord(
-                    (String) words.get(i));
+                    words.get(i));
             assertEquals("unicode", stems.get(i), realStem);
         }
     }

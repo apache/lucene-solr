@@ -61,7 +61,7 @@ final class TermsHash extends InvertedDocConsumer {
     //       targets 25-50% fill factor; approximate this
     //       as 3X # pointers
     bytesPerPosting = consumer.bytesPerPosting() + 4*DocumentsWriter.POINTER_NUM_BYTE;
-    postingsFreeChunk = (int) (DocumentsWriter.BYTE_BLOCK_SIZE / bytesPerPosting);
+    postingsFreeChunk = (DocumentsWriter.BYTE_BLOCK_SIZE / bytesPerPosting);
   }
 
   @Override

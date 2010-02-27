@@ -43,8 +43,9 @@ public class TestMoreLikeThis extends LuceneTestCase {
 
     @Override
     protected void setUp() throws Exception {
+      super.setUp();
 	directory = new RAMDirectory();
-	IndexWriter writer = new IndexWriter(directory, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT),
+	IndexWriter writer = new IndexWriter(directory, new StandardAnalyzer(TEST_VERSION_CURRENT),
 		true, MaxFieldLength.UNLIMITED);
 
 	// Add series of docs with specific information for MoreLikeThis
@@ -62,6 +63,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
 	reader.close();
 	searcher.close();
 	directory.close();
+  super.tearDown();
     }
 
     private void addDoc(IndexWriter writer, String text) throws IOException {
@@ -96,7 +98,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
 	for (int i = 0; i < clauses.size(); i++) {
 	    BooleanClause clause =  clauses.get(i);
 	    TermQuery tq = (TermQuery) clause.getQuery();
-	    Float termBoost = (Float) originalValues.get(tq.getTerm().text());
+	    Float termBoost = originalValues.get(tq.getTerm().text());
 	    assertNotNull("Expected term " + tq.getTerm().text(), termBoost);
 
 	    float totalBoost = termBoost.floatValue() * boostFactor;

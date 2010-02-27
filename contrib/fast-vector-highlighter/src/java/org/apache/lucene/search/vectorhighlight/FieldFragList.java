@@ -29,7 +29,6 @@ import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseIn
  */
 public class FieldFragList {
 
-  private final int fragCharSize;
   List<WeightedFragInfo> fragInfos = new ArrayList<WeightedFragInfo>();
 
   /**
@@ -38,7 +37,6 @@ public class FieldFragList {
    * @param fragCharSize the length (number of chars) of a fragment
    */
   public FieldFragList( int fragCharSize ){
-    this.fragCharSize = fragCharSize;
   }
 
   /**

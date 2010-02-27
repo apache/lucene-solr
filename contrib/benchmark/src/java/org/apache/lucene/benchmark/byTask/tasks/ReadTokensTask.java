@@ -140,6 +140,6 @@ public class ReadTokensTask extends PerfTask {
       }
     }
     @Override
-    public void close() {};
+    public void close() {}
   }
 }

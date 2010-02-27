@@ -48,7 +48,7 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
   }
   
   public void testStopWord() throws Exception {
-    assertAnalyzesTo(new CzechAnalyzer(Version.LUCENE_CURRENT), "Pokud mluvime o volnem", 
+    assertAnalyzesTo(new CzechAnalyzer(TEST_VERSION_CURRENT), "Pokud mluvime o volnem", 
         new String[] { "mluvim", "voln" });
   }
   
@@ -63,7 +63,7 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
   }
   
   public void testReusableTokenStream() throws Exception {
-    Analyzer analyzer = new CzechAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer analyzer = new CzechAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesToReuse(analyzer, "Pokud mluvime o volnem", new String[] { "mluvim", "voln" });
     assertAnalyzesToReuse(analyzer, "Česká Republika", new String[] { "česk", "republik" });
   }
@@ -112,9 +112,9 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
   }
   
   public void testWithStemExclusionSet() throws IOException{
-    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("hole");
-    CzechAnalyzer cz = new CzechAnalyzer(Version.LUCENE_CURRENT, CharArraySet.EMPTY_SET, set);
+    CzechAnalyzer cz = new CzechAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(cz, "hole desek", new String[] {"hole", "desk"});
   }
 }

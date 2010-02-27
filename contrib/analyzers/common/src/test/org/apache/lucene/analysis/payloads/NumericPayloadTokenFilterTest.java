@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -38,7 +37,7 @@ public class NumericPayloadTokenFilterTest extends BaseTokenStreamTestCase {
   public void test() throws IOException {
     String test = "The quick red fox jumped over the lazy brown dogs";
 
-    NumericPayloadTokenFilter nptf = new NumericPayloadTokenFilter(new WordTokenFilter(new WhitespaceTokenizer(Version.LUCENE_CURRENT, new StringReader(test))), 3, "D");
+    NumericPayloadTokenFilter nptf = new NumericPayloadTokenFilter(new WordTokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(test))), 3, "D");
     boolean seenDogs = false;
     TermAttribute termAtt = nptf.getAttribute(TermAttribute.class);
     TypeAttribute typeAtt = nptf.getAttribute(TypeAttribute.class);

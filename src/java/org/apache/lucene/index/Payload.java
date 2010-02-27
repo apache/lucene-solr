@@ -164,7 +164,7 @@ public class Payload implements Serializable, Cloneable {
       // Only copy the part of data that belongs to this Payload
       if (offset == 0 && length == data.length) {
         // It is the whole thing, so just clone it.
-        clone.data = (byte[]) data.clone();
+        clone.data = data.clone();
       }
       else {
         // Just get the part

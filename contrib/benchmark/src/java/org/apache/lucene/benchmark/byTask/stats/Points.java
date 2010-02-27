@@ -29,8 +29,6 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
  */
 public class Points {
 
-  private Config config;
-  
   // stat points ordered by their start time. 
   // for now we collect points as TaskStats objects.
   // later might optimize to collect only native data.
@@ -44,7 +42,6 @@ public class Points {
    * Create a Points statistics object. 
    */
   public Points (Config config) {
-    this.config = config;
   }
 
   /**

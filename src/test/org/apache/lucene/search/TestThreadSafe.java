@@ -16,7 +16,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -65,7 +64,7 @@ public class TestThreadSafe extends LuceneTestCase {
         }
       } catch (Throwable th) {
         failure=th.toString();
-        TestCase.fail(failure);
+        fail(failure);
       }
     }
 
@@ -135,7 +134,7 @@ public class TestThreadSafe extends LuceneTestCase {
       tarr[i].join();
     }
     if (failure!=null) {
-      TestCase.fail(failure);
+      fail(failure);
     }
   }
 

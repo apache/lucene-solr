@@ -208,7 +208,7 @@ class TermVectorsReader implements Cloneable {
     // make all effort to close up. Keep the first exception
     // and throw it as a new one.
     IOException keep = null;
-    if (tvx != null) try { tvx.close(); } catch (IOException e) { if (keep == null) keep = e; }
+    if (tvx != null) try { tvx.close(); } catch (IOException e) { keep = e; }
     if (tvd != null) try { tvd.close(); } catch (IOException e) { if (keep == null) keep = e; }
     if (tvf  != null) try {  tvf.close(); } catch (IOException e) { if (keep == null) keep = e; }
     if (keep != null) throw (IOException) keep.fillInStackTrace();

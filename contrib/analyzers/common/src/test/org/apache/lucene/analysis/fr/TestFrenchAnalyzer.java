@@ -32,7 +32,7 @@ import org.apache.lucene.util.Version;
 public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
 
 	public void testAnalyzer() throws Exception {
-		FrenchAnalyzer fa = new FrenchAnalyzer(Version.LUCENE_CURRENT);
+		FrenchAnalyzer fa = new FrenchAnalyzer(TEST_VERSION_CURRENT);
 	
 		assertAnalyzesTo(fa, "", new String[] {
 		});
@@ -204,7 +204,7 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
 	  }
 	
 	public void testReusableTokenStream() throws Exception {
-	  FrenchAnalyzer fa = new FrenchAnalyzer(Version.LUCENE_CURRENT);
+	  FrenchAnalyzer fa = new FrenchAnalyzer(TEST_VERSION_CURRENT);
 	  // stopwords
       assertAnalyzesToReuse(
           fa,
@@ -229,27 +229,27 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
 	 * when using reusable token streams.
 	 */
 	public void testExclusionTableReuse() throws Exception {
-	  FrenchAnalyzer fa = new FrenchAnalyzer(Version.LUCENE_CURRENT);
+	  FrenchAnalyzer fa = new FrenchAnalyzer(TEST_VERSION_CURRENT);
 	  assertAnalyzesToReuse(fa, "habitable", new String[] { "habit" });
 	  fa.setStemExclusionTable(new String[] { "habitable" });
 	  assertAnalyzesToReuse(fa, "habitable", new String[] { "habitable" });
 	}
 	
   public void testExclusionTableViaCtor() throws Exception {
-    CharArraySet set = new CharArraySet(Version.LUCENE_CURRENT, 1, true);
+    CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("habitable");
-    FrenchAnalyzer fa = new FrenchAnalyzer(Version.LUCENE_CURRENT,
+    FrenchAnalyzer fa = new FrenchAnalyzer(TEST_VERSION_CURRENT,
         CharArraySet.EMPTY_SET, set);
     assertAnalyzesToReuse(fa, "habitable chiste", new String[] { "habitable",
         "chist" });
 
-    fa = new FrenchAnalyzer(Version.LUCENE_CURRENT, CharArraySet.EMPTY_SET, set);
+    fa = new FrenchAnalyzer(TEST_VERSION_CURRENT, CharArraySet.EMPTY_SET, set);
     assertAnalyzesTo(fa, "habitable chiste", new String[] { "habitable",
         "chist" });
   }
   
   public void testElision() throws Exception {
-    FrenchAnalyzer fa = new FrenchAnalyzer(Version.LUCENE_CURRENT);
+    FrenchAnalyzer fa = new FrenchAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(fa, "voir l'embrouille", new String[] { "voir", "embrouill" });
   }
   

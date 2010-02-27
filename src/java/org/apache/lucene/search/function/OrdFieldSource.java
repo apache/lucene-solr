@@ -74,7 +74,7 @@ public class OrdFieldSource extends ValueSource {
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#floatVal(int) */
       @Override
       public float floatVal(int doc) {
-        return (float)arr[doc];
+        return arr[doc];
       }
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#strVal(int) */
       @Override

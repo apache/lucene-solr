@@ -21,7 +21,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.LowerCaseFilter;
@@ -29,7 +28,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestSynonymTokenFilter extends BaseTokenStreamTestCase {
   File dataDir = new File(System.getProperty("dataDir", "./bin"));
@@ -96,8 +94,8 @@ public class TestSynonymTokenFilter extends BaseTokenStreamTestCase {
     
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream ts = new WhitespaceTokenizer(reader);
-      ts = new LowerCaseFilter(Version.LUCENE_CURRENT, ts);
+      TokenStream ts = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
+      ts = new LowerCaseFilter(TEST_VERSION_CURRENT, ts);
       ts = new SynonymTokenFilter(ts, synonyms, maxSynonyms);
       return ts;
     }
@@ -105,7 +103,7 @@ public class TestSynonymTokenFilter extends BaseTokenStreamTestCase {
     private class SavedStreams {
       Tokenizer source;
       TokenStream result;
-    };
+    }
     
     @Override
     public TokenStream reusableTokenStream(String fieldName, Reader reader)
@@ -113,8 +111,8 @@ public class TestSynonymTokenFilter extends BaseTokenStreamTestCase {
       SavedStreams streams = (SavedStreams) getPreviousTokenStream();
       if (streams == null) {
         streams = new SavedStreams();
-        streams.source = new WhitespaceTokenizer(reader);
-        streams.result = new LowerCaseFilter(Version.LUCENE_CURRENT, streams.source);
+        streams.source = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
+        streams.result = new LowerCaseFilter(TEST_VERSION_CURRENT, streams.source);
         streams.result = new SynonymTokenFilter(streams.result, synonyms, maxSynonyms);
         setPreviousTokenStream(streams);
       } else {

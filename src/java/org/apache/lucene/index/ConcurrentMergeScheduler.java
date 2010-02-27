@@ -350,13 +350,13 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
   protected class MergeThread extends Thread {
 
-    IndexWriter writer;
+    IndexWriter tWriter;
     MergePolicy.OneMerge startMerge;
     MergePolicy.OneMerge runningMerge;
     private volatile boolean done;
 
     public MergeThread(IndexWriter writer, MergePolicy.OneMerge startMerge) throws IOException {
-      this.writer = writer;
+      this.tWriter = writer;
       this.startMerge = startMerge;
     }
 
@@ -408,9 +408,9 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
           // Subsequent times through the loop we do any new
           // merge that writer says is necessary:
-          merge = writer.getNextMerge();
+          merge = tWriter.getNextMerge();
           if (merge != null) {
-            writer.mergeInit(merge);
+            tWriter.mergeInit(merge);
             updateMergeThreads();
             if (verbose())
               message("  merge thread: do another merge " + merge.segString(dir));

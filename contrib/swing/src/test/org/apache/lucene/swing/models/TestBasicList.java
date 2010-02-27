@@ -28,11 +28,11 @@ import junit.framework.TestCase;
 public class TestBasicList extends TestCase {
     private ListModel baseListModel;
     private ListSearcher listSearcher;
-    private List list;
+    private List<RestaurantInfo> list;
 
     @Override
     protected void setUp() throws Exception {
-        list = new ArrayList();
+        list = new ArrayList<RestaurantInfo>();
         list.add(DataStore.canolis);
         list.add(DataStore.chris);
 

@@ -24,9 +24,9 @@ import javax.swing.AbstractListModel;
 
 
 public class BaseListModel extends AbstractListModel {
-    private List data = new ArrayList();
+    private List<Object> data = new ArrayList<Object>();
 
-    public BaseListModel(Iterator iterator) {
+    public BaseListModel(Iterator<?> iterator) {
         while (iterator.hasNext()) {
             data.add(iterator.next());
         }

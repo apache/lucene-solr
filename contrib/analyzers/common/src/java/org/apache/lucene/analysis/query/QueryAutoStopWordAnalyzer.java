@@ -192,7 +192,7 @@ public final class QueryAutoStopWordAnalyzer extends Analyzer {
      * if there stopwords, it is a StopFilter around wrapped.
      */
     TokenStream withStopFilter;
-  };
+  }
   
   @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader)

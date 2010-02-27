@@ -43,7 +43,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
   private RAMDirectory dir;
 
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
     super.setUp();
     dir = new RAMDirectory();
   }

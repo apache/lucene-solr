@@ -36,7 +36,6 @@ import org.apache.lucene.analysis.LowerCaseTokenizer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.StopFilter;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -73,7 +72,6 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LocalizedTestCase;
-import org.apache.lucene.util.Version;
 
 /**
  * This test case is a copy of the core Lucene query parser test, it was adapted
@@ -139,7 +137,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     /** Filters LowerCaseTokenizer with StopFilter. */
     @Override
     public final TokenStream tokenStream(String fieldName, Reader reader) {
-      return new QPTestFilter(new LowerCaseTokenizer(Version.LUCENE_CURRENT, reader));
+      return new QPTestFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, reader));
     }
   }
 
@@ -210,14 +208,14 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
   private int originalMaxClauses;
 
   @Override
-  public void setUp() throws Exception {
+  protected void setUp() throws Exception {
     super.setUp();
     originalMaxClauses = BooleanQuery.getMaxClauseCount();
   }
 
   public QueryParserWrapper getParser(Analyzer a) throws Exception {
     if (a == null)
-      a = new SimpleAnalyzer(Version.LUCENE_CURRENT);
+      a = new SimpleAnalyzer(TEST_VERSION_CURRENT);
     QueryParserWrapper qp = new QueryParserWrapper("field", a);
     qp.setDefaultOperator(QueryParserWrapper.OR_OPERATOR);
     return qp;
@@ -302,7 +300,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
 
   public Query getQueryDOA(String query, Analyzer a) throws Exception {
     if (a == null)
-      a = new SimpleAnalyzer(Version.LUCENE_CURRENT);
+      a = new SimpleAnalyzer(TEST_VERSION_CURRENT);
     QueryParserWrapper qp = new QueryParserWrapper("field", a);
     qp.setDefaultOperator(QueryParserWrapper.AND_OPERATOR);
     return qp.parse(query);
@@ -329,9 +327,9 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
   public void testSimple() throws Exception {
     assertQueryEquals("\"term germ\"~2", null, "\"term germ\"~2");
     assertQueryEquals("term term term", null, "term term term");
-    assertQueryEquals("t�rm term term", new WhitespaceAnalyzer(Version.LUCENE_CURRENT),
+    assertQueryEquals("t�rm term term", new WhitespaceAnalyzer(TEST_VERSION_CURRENT),
         "t�rm term term");
-    assertQueryEquals("�mlaut", new WhitespaceAnalyzer(Version.LUCENE_CURRENT), "�mlaut");
+    assertQueryEquals("�mlaut", new WhitespaceAnalyzer(TEST_VERSION_CURRENT), "�mlaut");
 
     assertQueryEquals("\"\"", new KeywordAnalyzer(), "");
     assertQueryEquals("foo:\"\"", new KeywordAnalyzer(), "foo:");
@@ -386,7 +384,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
         "+(title:dog title:cat) -author:\"bob dole\"");
 
     QueryParserWrapper qp = new QueryParserWrapper("field",
-        new StandardAnalyzer(Version.LUCENE_CURRENT));
+        new StandardAnalyzer(TEST_VERSION_CURRENT));
     // make sure OR is the default:
     assertEquals(QueryParserWrapper.OR_OPERATOR, qp.getDefaultOperator());
     qp.setDefaultOperator(QueryParserWrapper.AND_OPERATOR);
@@ -396,7 +394,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
   }
 
   public void testPunct() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
     assertQueryEquals("a&b", a, "a&b");
     assertQueryEquals("a&&b", a, "a&&b");
     assertQueryEquals(".NET", a, ".NET");
@@ -417,7 +415,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     assertQueryEquals("term 1.0 1 2", null, "term");
     assertQueryEquals("term term1 term2", null, "term term term");
 
-    Analyzer a = new StandardAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT);
     assertQueryEquals("3", a, "3");
     assertQueryEquals("term 1.0 1 2", a, "term 1.0 1 2");
     assertQueryEquals("term term1 term2", a, "term term1 term2");
@@ -552,7 +550,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     assertEquals(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT, ((TermRangeQuery)getQuery("[ a TO z]", null)).getRewriteMethod());
 
     QueryParserWrapper qp = new QueryParserWrapper("field",
-        new SimpleAnalyzer(Version.LUCENE_CURRENT));
+        new SimpleAnalyzer(TEST_VERSION_CURRENT));
     
     qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     assertEquals(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE,((TermRangeQuery)qp.parse("[ a TO z]")).getRewriteMethod());
@@ -571,7 +569,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
   public void testFarsiRangeCollating() throws Exception {
 
     RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true,
+    IndexWriter iw = new IndexWriter(ramDir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true,
         IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
@@ -581,7 +579,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     IndexSearcher is = new IndexSearcher(ramDir, true);
 
     QueryParserWrapper qp = new QueryParserWrapper("content",
-        new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
+        new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
 
     // Neither Java 1.4.2 nor 1.5.0 has Farsi Locale collation available in
     // RuleBasedCollator. However, the Arabic Locale seems to order the Farsi
@@ -683,7 +681,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     final String monthField = "month";
     final String hourField = "hour";
     QueryParserWrapper qp = new QueryParserWrapper("field",
-        new SimpleAnalyzer(Version.LUCENE_CURRENT));
+        new SimpleAnalyzer(TEST_VERSION_CURRENT));
 
     // Don't set any date resolution and verify if DateField is used
     assertDateRangeQueryEquals(qp, defaultField, startDate, endDate,
@@ -727,7 +725,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
   }
 
   public void testEscaped() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
 
     /*
      * assertQueryEquals("\\[brackets", a, "\\[brackets");
@@ -824,7 +822,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
   }
 
   public void testQueryStringEscaping() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
 
     assertEscapedQueryEquals("a-b:c", a, "a\\-b\\:c");
     assertEscapedQueryEquals("a+b:c", a, "a\\+b\\:c");
@@ -893,7 +891,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
   }
 
   public void testBoost() throws Exception {
-    StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(Version.LUCENE_CURRENT, Collections.singleton("on"));
+    StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(TEST_VERSION_CURRENT, Collections.singleton("on"));
     QueryParserWrapper qp = new QueryParserWrapper("field", oneStopAnalyzer);
     Query q = qp.parse("on^1.0");
     assertNotNull(q);
@@ -907,7 +905,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     assertNotNull(q);
 
     QueryParserWrapper qp2 = new QueryParserWrapper("field",
-        new StandardAnalyzer(Version.LUCENE_CURRENT));
+        new StandardAnalyzer(TEST_VERSION_CURRENT));
     q = qp2.parse("the^3");
     // "the" is a stop word so the result is an empty query:
     assertNotNull(q);
@@ -935,7 +933,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
 
   public void testCustomQueryParserWildcard() {
     try {
-      new QPTestParser("contents", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("a?t");
+      new QPTestParser("contents", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("a?t");
       fail("Wildcard queries should not be allowed");
     } catch (ParseException expected) {
       // expected exception
@@ -944,7 +942,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
 
   public void testCustomQueryParserFuzzy() throws Exception {
     try {
-      new QPTestParser("contents", new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).parse("xunit~");
+      new QPTestParser("contents", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("xunit~");
       fail("Fuzzy queries should not be allowed");
     } catch (ParseException expected) {
       // expected exception
@@ -955,7 +953,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     BooleanQuery.setMaxClauseCount(2);
     try {
       QueryParserWrapper qp = new QueryParserWrapper("field",
-          new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
+          new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
       qp.parse("one two three");
       fail("ParseException expected due to too many boolean clauses");
     } catch (ParseException expected) {
@@ -968,7 +966,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
    */
   public void testPrecedence() throws Exception {
     QueryParserWrapper qp = new QueryParserWrapper("field",
-        new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
+        new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     Query query1 = qp.parse("A AND B OR C AND D");
     Query query2 = qp.parse("+A +B +C +D");
 
@@ -978,7 +976,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
   public void testLocalDateFormat() throws IOException, ParseException {
 
     RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new WhitespaceAnalyzer(Version.LUCENE_CURRENT), true,
+    IndexWriter iw = new IndexWriter(ramDir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true,
         IndexWriter.MaxFieldLength.LIMITED);
     addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
     addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
@@ -1057,7 +1055,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
   }
 
   public void testStopwords() throws Exception {
-    QueryParserWrapper qp = new QueryParserWrapper("a", new StopAnalyzer(Version.LUCENE_CURRENT, StopFilter.makeStopSet(Version.LUCENE_CURRENT, "the", "foo")));
+    QueryParserWrapper qp = new QueryParserWrapper("a", new StopAnalyzer(TEST_VERSION_CURRENT, StopFilter.makeStopSet(TEST_VERSION_CURRENT, "the", "foo")));
     Query result = qp.parse("a:the OR a:foo");
     assertNotNull("result is null and it shouldn't be", result);
     assertTrue("result is not a BooleanQuery", result instanceof BooleanQuery);
@@ -1076,7 +1074,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
   }
 
   public void testPositionIncrement() throws Exception {
-    QueryParserWrapper qp = new QueryParserWrapper("a", new StopAnalyzer(Version.LUCENE_CURRENT, StopFilter.makeStopSet(Version.LUCENE_CURRENT, "the", "in", "are", "this")));
+    QueryParserWrapper qp = new QueryParserWrapper("a", new StopAnalyzer(TEST_VERSION_CURRENT, StopFilter.makeStopSet(TEST_VERSION_CURRENT, "the", "in", "are", "this")));
     qp.setEnablePositionIncrements(true);
     String qtxt = "\"the words in poisitions pos02578 are stopped in this phrasequery\"";
     // 0 2 5 7 8
@@ -1095,7 +1093,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
 
   public void testMatchAllDocs() throws Exception {
     QueryParserWrapper qp = new QueryParserWrapper("field",
-        new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
+        new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     assertEquals(new MatchAllDocsQuery(), qp.parse("*:*"));
     assertEquals(new MatchAllDocsQuery(), qp.parse("(*:*)"));
     BooleanQuery bq = (BooleanQuery) qp.parse("+*:* -*:*");
@@ -1106,7 +1104,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
   private void assertHits(int expected, String query, IndexSearcher is)
       throws ParseException, IOException {
     QueryParserWrapper qp = new QueryParserWrapper("date",
-        new WhitespaceAnalyzer(Version.LUCENE_CURRENT));
+        new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     qp.setLocale(Locale.ENGLISH);
     Query q = qp.parse(query);
     ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
@@ -1125,9 +1123,9 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
   }
 
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  protected void tearDown() throws Exception {
     BooleanQuery.setMaxClauseCount(originalMaxClauses);
+    super.tearDown();
   }
 
 }

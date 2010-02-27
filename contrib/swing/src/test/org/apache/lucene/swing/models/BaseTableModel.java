@@ -24,10 +24,10 @@ import javax.swing.table.AbstractTableModel;
 
 
 public class BaseTableModel extends AbstractTableModel {
-    private List columnNames = new ArrayList();
-    private List rows = new ArrayList();
+    private List<String> columnNames = new ArrayList<String>();
+    private List<Object> rows = new ArrayList<Object>();
 
-    public BaseTableModel(Iterator data) {
+    public BaseTableModel(Iterator<?> data) {
         columnNames.add("Name");
         columnNames.add("Type");
         columnNames.add("Phone");
@@ -37,7 +37,7 @@ public class BaseTableModel extends AbstractTableModel {
         columnNames.add("Zip");
 
         while (data.hasNext()) {
-            Object nextRow = (Object) data.next();
+            Object nextRow = data.next();
             rows.add(nextRow);
         }
     }
@@ -66,7 +66,7 @@ public class BaseTableModel extends AbstractTableModel {
     }
 
     @Override
-    public Class getColumnClass(int columnIndex) {
+    public Class<?> getColumnClass(int columnIndex) {
         return String.class;
     }
 

@@ -70,7 +70,6 @@ public class TestStressIndexing extends LuceneTestCase {
 
   private class IndexerThread extends TimedThread {
     IndexWriter writer;
-    public int count;
     int nextID;
 
     public IndexerThread(IndexWriter writer, TimedThread[] threads) {

@@ -62,7 +62,7 @@ public class BoostAttributeImpl extends AttributeImpl
   @Override
   public boolean equals(Object other) {
 
-    if (other instanceof BoostAttributeImpl && other != null
+    if (other instanceof BoostAttributeImpl
         && ((BoostAttributeImpl) other).boost == this.boost) {
 
       return true;

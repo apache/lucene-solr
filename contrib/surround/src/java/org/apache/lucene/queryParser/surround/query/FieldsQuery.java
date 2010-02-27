@@ -57,7 +57,6 @@ public class FieldsQuery extends SrndQuery { /* mostly untested */
         qc = (SrndQuery) q.clone();
         queries.add( new FieldsQuery( qc, fni.next(), fieldOp));
       }
-      boolean infix = true;
       OrQuery oq = new OrQuery(queries,
                               true /* infix OR for field names */,
                               OrOperatorName);

@@ -49,9 +49,6 @@ public class TestQualityRun extends TestCase {
 
   private static boolean DEBUG = Boolean.getBoolean("tests.verbose");
   
-  /**
-   * @param arg0
-   */
   public TestQualityRun(String name) {
     super(name);
   }

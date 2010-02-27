@@ -44,7 +44,7 @@ public abstract class SimpleTerm
     return this.toStringUnquoted().compareTo( ost.toStringUnquoted());
   }
   
-  protected void suffixToString(StringBuilder r) {;} /* override for prefix query */
+  protected void suffixToString(StringBuilder r) {} /* override for prefix query */
   
   @Override
   public String toString() {

@@ -46,7 +46,7 @@ public class TestRAMDirectory extends LuceneTestCase {
   
   // setup the index
   @Override
-  public void setUp () throws Exception {
+  protected void setUp () throws Exception {
     super.setUp();
     String tempDir = System.getProperty("java.io.tmpdir");
     if (tempDir == null)
@@ -152,12 +152,12 @@ public class TestRAMDirectory extends LuceneTestCase {
   } 
 
   @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
+  protected void tearDown() throws Exception {
     // cleanup 
     if (indexDir != null && indexDir.exists()) {
       rmDir (indexDir);
     }
+    super.tearDown();
   }
 
   // LUCENE-1196

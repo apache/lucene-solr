@@ -2,7 +2,6 @@ package org.apache.lucene.xmlparser.builders;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spans.SpanQuery;
-import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.payloads.PayloadTermQuery;
 import org.apache.lucene.search.payloads.AveragePayloadFunction;
 import org.apache.lucene.xmlparser.DOMUtils;

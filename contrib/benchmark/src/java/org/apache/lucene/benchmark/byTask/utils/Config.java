@@ -100,7 +100,6 @@ public class Config {
   /**
    * Create config without algorithm - useful for a programmatic perf test.
    * @param props - configuration properties.
-   * @throws IOException
    */
   public Config (Properties props) {
     this.props = props;
@@ -109,6 +108,7 @@ public class Config {
     }
   }
 
+  @SuppressWarnings("unchecked")
   private void printProps() {
     System.out.println("------------> config properties:");
     List<String> propKeys = new ArrayList(props.keySet());
