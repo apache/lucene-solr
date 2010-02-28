@@ -76,13 +76,13 @@ public class DefaultSimilarity extends Similarity {
     return overlap / (float)maxOverlap;
   }
 
-  // Default false
-  protected boolean discountOverlaps;
+  // Default true
+  protected boolean discountOverlaps = true;
 
   /** Determines whether overlap tokens (Tokens with
    *  0 position increment) are ignored when computing
-   *  norm.  By default this is false, meaning overlap
-   *  tokens are counted just like non-overlap tokens.
+   *  norm.  By default this is true, meaning overlap
+   *  tokens do not count when computing norms.
    *
    *  @lucene.experimental
    *
