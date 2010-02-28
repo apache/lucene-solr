@@ -121,6 +121,10 @@ Optimizations
    take advantage of this for faster performance.
    (Steven Rowe, Uwe Schindler, Robert Muir)
 
+ * LUCENE-2194, LUCENE-2201, LUCENE-2288: Snowball stemmers in contrib/analyzers
+   have been optimized to work on char[] and remove unnecessary object creation.
+   (Shai Erera, Robert Muir)
+
 Test Cases
 
  * LUCENE-2115: Cutover contrib tests to use Java5 generics.  (Kay Kay
