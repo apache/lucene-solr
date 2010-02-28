@@ -285,8 +285,8 @@ public class AttributeSource {
    * @see #restoreState
    */
   public static final class State implements Cloneable {
-    private AttributeImpl attribute;
-    private State next;
+    AttributeImpl attribute;
+    State next;
     
     @Override
     public Object clone() {
