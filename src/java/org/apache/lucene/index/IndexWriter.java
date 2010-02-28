@@ -4156,9 +4156,9 @@ public class IndexWriter implements Closeable {
 
 
     Map<String,String> details = new HashMap<String,String>();
-    details.put("optimize", merge.optimize+"");
-    details.put("mergeFactor", end+"");
-    details.put("mergeDocStores", mergeDocStores+"");
+    details.put("optimize", Boolean.toString(merge.optimize));
+    details.put("mergeFactor", Integer.toString(end));
+    details.put("mergeDocStores", Boolean.toString(mergeDocStores));
     setDiagnostics(merge.info, "merge", details);
 
     // Also enroll the merged segment into mergingSegments;
@@ -4176,11 +4176,11 @@ public class IndexWriter implements Closeable {
     Map<String,String> diagnostics = new HashMap<String,String>();
     diagnostics.put("source", source);
     diagnostics.put("lucene.version", Constants.LUCENE_VERSION);
-    diagnostics.put("os", Constants.OS_NAME+"");
-    diagnostics.put("os.arch", Constants.OS_ARCH+"");
-    diagnostics.put("os.version", Constants.OS_VERSION+"");
-    diagnostics.put("java.version", Constants.JAVA_VERSION+"");
-    diagnostics.put("java.vendor", Constants.JAVA_VENDOR+"");
+    diagnostics.put("os", Constants.OS_NAME);
+    diagnostics.put("os.arch", Constants.OS_ARCH);
+    diagnostics.put("os.version", Constants.OS_VERSION);
+    diagnostics.put("java.version", Constants.JAVA_VERSION);
+    diagnostics.put("java.vendor", Constants.JAVA_VENDOR);
     if (details != null) {
       diagnostics.putAll(details);
     }
