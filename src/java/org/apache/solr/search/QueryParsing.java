@@ -264,7 +264,7 @@ public class QueryParsing {
             needOrder = false;
           }
         }
-      } else if (chars[i] == '(' && functionDepth == 0) {
+      } else if (chars[i] == '(' && functionDepth >= 0) {
         buffer.append(chars[i]);
         functionDepth++;
       } else if (chars[i] == ')' && functionDepth > 0) {
