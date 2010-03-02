@@ -88,6 +88,10 @@ New Features
 
 * SOLR-1268: Incorporate FastVectorHighlighter (koji)
 
+* SOLR-1750: SystemInfoRequestHandler added for simpler programmatic access
+  to info currently available from registry.jsp and stats.jsp
+  (ehatcher, hossman)
+
 Optimizations
 ----------------------
 
