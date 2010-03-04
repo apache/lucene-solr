@@ -308,8 +308,11 @@ class DirectoryReader extends IndexReader implements Cloneable {
     }
     buffer.append(getClass().getSimpleName());
     buffer.append('(');
-    for(SegmentReader r : subReaders) {
-      buffer.append(r);
+    for(int i=0;i<subReaders.length;i++) {
+      if (i > 0) {
+        buffer.append(' ');
+      }
+      buffer.append(subReaders[i]);
     }
     buffer.append(')');
     return buffer.toString();
