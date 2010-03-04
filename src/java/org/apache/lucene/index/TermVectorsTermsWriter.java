@@ -248,9 +248,9 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
 
   class PerDoc extends DocumentsWriter.DocWriter {
 
-    // TODO: use something more memory efficient; for small
-    // docs the 1024 buffer size of RAMOutputStream wastes alot
-    RAMOutputStream perDocTvf = new RAMOutputStream();
+    final DocumentsWriter.PerDocBuffer buffer = docWriter.newPerDocBuffer();
+    RAMOutputStream perDocTvf = new RAMOutputStream(buffer);
+
     int numVectorFields;
 
     int[] fieldNumbers = new int[1];
@@ -258,6 +258,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
 
     void reset() {
       perDocTvf.reset();
+      buffer.recycle();
       numVectorFields = 0;
     }
 
@@ -281,7 +282,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
 
     @Override
     public long sizeInBytes() {
-      return perDocTvf.sizeInBytes();
+      return buffer.getSizeInBytes();
     }
 
     @Override

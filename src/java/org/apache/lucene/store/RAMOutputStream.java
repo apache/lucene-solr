@@ -40,7 +40,7 @@ public class RAMOutputStream extends IndexOutput {
     this(new RAMFile());
   }
 
-  RAMOutputStream(RAMFile f) {
+  public RAMOutputStream(RAMFile f) {
     file = f;
 
     // make sure that we switch to the
@@ -66,14 +66,13 @@ public class RAMOutputStream extends IndexOutput {
     }
   }
 
-  /** Resets this to an empty buffer. */
+  /** Resets this to an empty file. */
   public void reset() {
-    try {
-      seek(0);
-    } catch (IOException e) {                     // should never happen
-      throw new RuntimeException(e.toString());
-    }
-
+    currentBuffer = null;
+    currentBufferIndex = -1;
+    bufferPosition = 0;
+    bufferStart = 0;
+    bufferLength = 0;
     file.setLength(0);
   }
 

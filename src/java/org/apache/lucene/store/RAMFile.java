@@ -20,44 +20,45 @@ package org.apache.lucene.store;
 import java.util.ArrayList;
 import java.io.Serializable;
 
-class RAMFile implements Serializable {
+/** @lucene.internal */
+public class RAMFile implements Serializable {
 
   private static final long serialVersionUID = 1l;
 
-  private ArrayList<byte[]> buffers = new ArrayList<byte[]>();
+  protected ArrayList<byte[]> buffers = new ArrayList<byte[]>();
   long length;
   RAMDirectory directory;
-  long sizeInBytes;
+  protected long sizeInBytes;
 
   // This is publicly modifiable via Directory.touchFile(), so direct access not supported
   private long lastModified = System.currentTimeMillis();
 
   // File used as buffer, in no RAMDirectory
-  RAMFile() {}
+  protected RAMFile() {}
   
   RAMFile(RAMDirectory directory) {
     this.directory = directory;
   }
 
   // For non-stream access from thread that might be concurrent with writing
-  synchronized long getLength() {
+  public synchronized long getLength() {
     return length;
   }
 
-  synchronized void setLength(long length) {
+  protected synchronized void setLength(long length) {
     this.length = length;
   }
 
   // For non-stream access from thread that might be concurrent with writing
-  synchronized long getLastModified() {
+  public synchronized long getLastModified() {
     return lastModified;
   }
 
-  synchronized void setLastModified(long lastModified) {
+  protected synchronized void setLastModified(long lastModified) {
     this.lastModified = lastModified;
   }
 
-  final byte[] addBuffer(int size) {
+  protected final byte[] addBuffer(int size) {
     byte[] buffer = newBuffer(size);
     synchronized(this) {
       buffers.add(buffer);
@@ -70,11 +71,11 @@ class RAMFile implements Serializable {
     return buffer;
   }
 
-  final synchronized byte[] getBuffer(int index) {
+  protected final synchronized byte[] getBuffer(int index) {
     return buffers.get(index);
   }
 
-  final synchronized int numBuffers() {
+  protected final synchronized int numBuffers() {
     return buffers.size();
   }
 
@@ -84,11 +85,11 @@ class RAMFile implements Serializable {
    * @param size size of allocated buffer.
    * @return allocated buffer.
    */
-  byte[] newBuffer(int size) {
+  protected byte[] newBuffer(int size) {
     return new byte[size];
   }
 
-  synchronized long getSizeInBytes() {
+  public synchronized long getSizeInBytes() {
     return sizeInBytes;
   }
   

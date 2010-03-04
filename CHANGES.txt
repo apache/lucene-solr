@@ -101,6 +101,12 @@ Bug fixes
 * LUCENE-2273: FieldCacheImpl.getCacheEntries() used WeakHashMap
   incorrectly and lead to ConcurrentModificationException.
   (Uwe Schindler, Robert Muir)
+
+* LUCENE-2283: Use shared memory pool for term vector and stored
+  fields buffers. This memory will be reclaimed if needed according to
+  the configured RAM Buffer Size for the IndexWriter.  This also fixes
+  potentially excessive memory usage when many threads are indexing a
+  mix of small and large documents.  (Tim Smith via Mike McCandless)
   
 New features
 

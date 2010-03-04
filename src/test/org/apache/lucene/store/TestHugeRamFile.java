@@ -33,7 +33,7 @@ public class TestHugeRamFile extends LuceneTestCase {
     private long capacity = 0;
     private HashMap<Integer,byte[]> singleBuffers = new HashMap<Integer,byte[]>();
     @Override
-    byte[] newBuffer(int size) {
+    protected byte[] newBuffer(int size) {
       capacity += size;
       if (capacity <= MAX_VALUE) {
         // below maxint we reuse buffers
