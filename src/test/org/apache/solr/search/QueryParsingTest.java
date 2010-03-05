@@ -100,6 +100,12 @@ public class QueryParsingTest extends AbstractSolrTestCase {
     //Not thrilled about the fragility of string matching here, but...
     //the value sources get wrapped, so the out field is different than the input
     assertEquals(flds[0].getField(), "pow(float(weight),const(2.0))");
+    
+    //test functions (more deep)
+    sort = QueryParsing.parseSort("sum(product(r_f,sum(d_f,t_f,1)),a_f) asc", schema);
+    flds = sort.getSort();
+    assertEquals(flds[0].getType(), SortField.CUSTOM);
+    assertEquals(flds[0].getField(), "sum(product(float(r_f),sum(float(d_f),float(t_f),const(1.0))),float(a_f))");
 
     sort = QueryParsing.parseSort("pow(weight,                 2)         desc", schema);
     flds = sort.getSort();

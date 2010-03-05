@@ -70,6 +70,9 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
   }
 
   public void testSomeStuff() throws Exception {
+    doTestSomeStuff("dismax");
+  }
+  public void doTestSomeStuff(final String qt) throws Exception {
     populate();
 
     assertQ("basic match",
@@ -91,7 +94,7 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
 
     assertQ("multi qf",
             req("q", "cool"
-                ,"qt", "dismax"
+                ,"qt", qt
                 ,"version", "2.0"
                 ,"qf", "subject"
                 ,"qf", "features_t"
@@ -101,7 +104,7 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
 
     assertQ("boost query",
             req("q", "cool stuff"
-                ,"qt", "dismax"
+                ,"qt", qt
                 ,"version", "2.0"
                 ,"bq", "subject:hell^400"
                 )
@@ -113,7 +116,7 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
 
     assertQ("multi boost query",
             req("q", "cool stuff"
-                ,"qt", "dismax"
+                ,"qt", qt
                 ,"version", "2.0"
                 ,"bq", "subject:hell^400"
                 ,"bq", "subject:cool^4"
@@ -138,14 +141,14 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
             );
 
     assertQ("relying on ALTQ from config",
-            req( "qt", "dismax",
+            req( "qt", qt,
                  "fq", "id:666",
                  "facet", "false" )
             ,"//*[@numFound='1']"
             );
     
     assertQ("explicit ALTQ",
-            req( "qt", "dismax",
+            req( "qt", qt,
                  "q.alt", "id:9999",
                  "fq", "id:666",
                  "facet", "false" )
@@ -153,12 +156,12 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
             );
 
     assertQ("no query slop == no match",
-            req( "qt", "dismax",
+            req( "qt", qt,
                  "q", "\"cool chick\"" )
             ,"//*[@numFound='0']"
             );
     assertQ("query slop == match",
-            req( "qt", "dismax",
+            req( "qt", qt,
                  "qs", "2",
                  "q", "\"cool chick\"" )
             ,"//*[@numFound='1']"
@@ -195,14 +198,23 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
   public void testOldStyleDefaults() throws Exception {
 
     lrf = h.getRequestFactory
-      ("dismax", 0, 20,
+      ("dismaxOldStyleDefaults", 0, 20,
        "version","2.0",
        "facet", "true",
        "facet.field","t_s"
        );
-    testSomeStuff();
+    doTestSomeStuff("dismaxOldStyleDefaults");
   }
 
+  public void testSimplestParams() throws Exception {
+    populate();
 
+    assertQ("match w/o only q param",
+            req("qt", "dismaxNoDefaults",
+                "q","guide")
+            ,"//*[@numFound='2']"
+            );
+    
+  }
   
 }

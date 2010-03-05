@@ -293,6 +293,8 @@
      <int name="ps">100</int>
     </lst>
   </requestHandler>
+  <requestHandler name="dismaxNoDefaults" class="solr.DisMaxRequestHandler" >
+  </requestHandler>
   <requestHandler name="old" class="solr.tst.OldRequestHandler" >
     <int name="myparam">1000</int>
     <float name="ratio">1.4142135</float>

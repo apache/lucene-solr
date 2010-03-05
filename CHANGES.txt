@@ -33,7 +33,7 @@ Upgrading from Solr 1.4
 
 Versions of Major Components
 ---------------------
-Apache Lucene 2.9.2-rc2
+Apache Lucene 2.9.2
 Apache Tika 0.6
 Carrot2 3.1.0
 
@@ -87,6 +87,10 @@ New Features
 * SOLR-1697: PluginInfo should load plugins w/o class attribute also (noble)
 
 * SOLR-1268: Incorporate FastVectorHighlighter (koji)
+
+* SOLR-1750: SystemInfoRequestHandler added for simpler programmatic access
+  to info currently available from registry.jsp and stats.jsp
+  (ehatcher, hossman)
 
 Optimizations
 ----------------------
@@ -249,6 +253,10 @@ Other Changes
 * SOLR-1695: Improved error messages when adding a document that does not
   contain exactly one value for the uniqueKey field (hossman)
 
+* SOLR-1776: DismaxQParser and ExtendedDismaxQParser now use the schema.xml
+  "defaultSearchField" as the default value for the "qf" param instead of failing
+  with an error when "qf" is not specified.  (hossman)
+  
 Build
 ----------------------
 
@@ -259,6 +267,9 @@ Documentation
 
 * SOLR-1590: Javadoc for XMLWriter#startTag
   (Chris A. Mattmann via hossman)
+
+* SOLR-1792: Documented peculiar behavior of TestHarness.LocalRequestFactory
+  (hossman)
 
 ================== Release 1.4.0 ==================
 Release Date:  See http://lucene.apache.org/solr for the official release date.

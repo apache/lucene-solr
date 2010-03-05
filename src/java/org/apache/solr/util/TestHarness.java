@@ -552,6 +552,24 @@ public class TestHarness {
     public Map<String,String> args = new HashMap<String,String>();
     public LocalRequestFactory() {
     }
+    /**
+     * Creates a LocalSolrQueryRequest based on variable args; for
+     * historical reasons, this method has some peculiar behavior:
+     * <ul>
+     *   <li>If there is a single arg, then it is treated as the "q"
+     *       param, and the LocalSolrQueryRequest consists of that query
+     *       string along with "qt", "start", and "rows" params (based
+     *       on the qtype, start, and limit properties of this factory)
+     *       along with any other default "args" set on this factory.
+     *   </li>
+     *   <li>If there are multiple args, then there must be an even number
+     *       of them, and each pair of args is used as a key=value param in
+     *       the LocalSolrQueryRequest.  <b>NOTE: In this usage, the "qtype",
+     *       "start", "limit", and "args" properties of this factory are
+     *       ignored.</b>
+     *   </li>
+     * </ul>
+     */
     public LocalSolrQueryRequest makeRequest(String ... q) {
       if (q.length==1) {
         return new LocalSolrQueryRequest(TestHarness.this.getCore(),

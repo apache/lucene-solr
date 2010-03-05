@@ -84,7 +84,7 @@ public class CoreContainer
 
   private String zkHost;
   
-  private String defaultCoreName = DEFAULT_DEFAULT_CORE_NAME;
+  private String defaultCoreName = "";
 
 
   public CoreContainer() {
@@ -313,7 +313,7 @@ public class CoreContainer
     solrHome = loader.getInstanceDir();
     try {
       Config cfg = new Config(loader, null, cfgis, null);
-      String dcoreName = cfg.get("solr/@defaultCoreName", null);
+      String dcoreName = cfg.get("solr/cores/@defaultCoreName", null);
       if(dcoreName != null) {
         defaultCoreName = dcoreName;
       }
@@ -1056,7 +1056,7 @@ public class CoreContainer
   
   private static final String DEF_SOLR_XML ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
           "<solr persistent=\"false\">\n" +
-          "  <cores adminPath=\"/admin/cores\">\n" +
+          "  <cores adminPath=\"/admin/cores\" defaultCoreName=\"" + DEFAULT_DEFAULT_CORE_NAME + "\">\n" +
           "    <core name=\""+ DEFAULT_DEFAULT_CORE_NAME + "\" instanceDir=\".\" />\n" +
           "  </cores>\n" +
           "</solr>";
