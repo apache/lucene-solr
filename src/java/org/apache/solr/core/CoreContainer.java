@@ -70,7 +70,7 @@ public class CoreContainer
   protected String solrHome;
   protected String solrConfigFilenameOverride;
 
-  private String defaultCoreName = DEFAULT_DEFAULT_CORE_NAME;
+  private String defaultCoreName = "";
 
   public CoreContainer() {
     solrHome = SolrResourceLoader.locateSolrHome();
@@ -212,7 +212,7 @@ public class CoreContainer
     solrHome = loader.getInstanceDir();
     try {
       Config cfg = new Config(loader, null, cfgis, null);
-      String dcoreName = cfg.get("solr/@defaultCoreName", null);
+      String dcoreName = cfg.get("solr/cores/@defaultCoreName", null);
       if(dcoreName != null) {
         defaultCoreName = dcoreName;
       }
@@ -573,6 +573,10 @@ public class CoreContainer
     return coreAdminHandler;
   }
   
+  public String getDefaultCoreName() {
+    return defaultCoreName;
+  }
+  
   // all of the following properties aren't synchronized
   // but this should be OK since they normally won't be changed rapidly
   public boolean isPersistent() {
@@ -773,7 +777,7 @@ public class CoreContainer
   }
   private static final String DEF_SOLR_XML ="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n" +
           "<solr persistent=\"false\">\n" +
-          "  <cores adminPath=\"/admin/cores\">\n" +
+          "  <cores adminPath=\"/admin/cores\" defaultCoreName=\"" + DEFAULT_DEFAULT_CORE_NAME + "\">\n" +
           "    <core name=\""+ DEFAULT_DEFAULT_CORE_NAME + "\" instanceDir=\".\" />\n" +
           "  </cores>\n" +
           "</solr>";
