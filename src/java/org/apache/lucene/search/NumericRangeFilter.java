@@ -31,7 +31,7 @@ import org.apache.lucene.util.NumericUtils; // for javadocs
  * factory methods, eg:
  *
  * <pre>
- * Filter f = NumericRangeFilter.newFloatRange("weight", 0.3f, 0.10f, true, true);
+ * Filter f = NumericRangeFilter.newFloatRange("weight", 0.03f, 0.10f, true, true);
  * </pre>
  *
  * accepts all documents whose float valued "weight" field

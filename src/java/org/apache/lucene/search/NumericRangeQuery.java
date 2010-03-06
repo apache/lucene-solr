@@ -42,7 +42,7 @@ import org.apache.lucene.index.TermEnum;
  * factory methods, eg:
  *
  * <pre>
- * Query q = NumericRangeQuery.newFloatRange("weight", 0.3f, 0.10f, true, true);
+ * Query q = NumericRangeQuery.newFloatRange("weight", 0.03f, 0.10f, true, true);
  * </pre>
  *
  * matches all documents whose float valued "weight" field
