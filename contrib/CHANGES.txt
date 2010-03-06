@@ -54,6 +54,9 @@ Bug fixes
  
  * LUCENE-2284: MatchAllDocsQueryNode toString() created an invalid XML tag.
    (Frank Wesemann via Robert Muir)
+
+ * LUCENE-2277: QueryNodeImpl threw ConcurrentModificationException on 
+   add(List<QueryNode>). (Frank Wesemann via Robert Muir)
    
 API Changes
 

@@ -74,7 +74,7 @@ public abstract class QueryNodeImpl implements QueryNode, Cloneable {
           .getLocalizedMessage(QueryParserMessages.NODE_ACTION_NOT_SUPPORTED));
     }
 
-    for (QueryNode child : getChildren()) {
+    for (QueryNode child : children) {
       add(child);
     }
 
