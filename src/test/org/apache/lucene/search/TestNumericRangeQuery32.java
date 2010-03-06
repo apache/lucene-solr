@@ -204,6 +204,16 @@ public class TestNumericRangeQuery32 extends LuceneTestCaseJ4 {
     assertEquals("First doc", startOffset, Integer.parseInt(doc.get(field)) );
     doc=searcher.doc(sd[sd.length-1].doc);
     assertEquals("Last doc", (count-1)*distance+startOffset, Integer.parseInt(doc.get(field)) );
+    
+    q=NumericRangeQuery.newIntRange(field, precisionStep, null, upper, false, true);
+    topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
+    sd = topDocs.scoreDocs;
+    assertNotNull(sd);
+    assertEquals("Score doc count", count, sd.length );
+    doc=searcher.doc(sd[0].doc);
+    assertEquals("First doc", startOffset, Integer.parseInt(doc.get(field)) );
+    doc=searcher.doc(sd[sd.length-1].doc);
+    assertEquals("Last doc", (count-1)*distance+startOffset, Integer.parseInt(doc.get(field)) );
   }
   
   @Test
@@ -235,6 +245,16 @@ public class TestNumericRangeQuery32 extends LuceneTestCaseJ4 {
     assertEquals("First doc", count*distance+startOffset, Integer.parseInt(doc.get(field)) );
     doc=searcher.doc(sd[sd.length-1].doc);
     assertEquals("Last doc", (noDocs-1)*distance+startOffset, Integer.parseInt(doc.get(field)) );
+
+    q=NumericRangeQuery.newIntRange(field, precisionStep, lower, null, true, false);
+    topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
+    sd = topDocs.scoreDocs;
+    assertNotNull(sd);
+    assertEquals("Score doc count", noDocs-count, sd.length );
+    doc=searcher.doc(sd[0].doc);
+    assertEquals("First doc", count*distance+startOffset, Integer.parseInt(doc.get(field)) );
+    doc=searcher.doc(sd[sd.length-1].doc);
+    assertEquals("Last doc", (noDocs-1)*distance+startOffset, Integer.parseInt(doc.get(field)) );
   }
   
   @Test
@@ -250,6 +270,57 @@ public class TestNumericRangeQuery32 extends LuceneTestCaseJ4 {
   @Test
   public void testRightOpenRange_2bit() throws Exception {
     testRightOpenRange(2);
+  }
+  
+  @Test
+  public void testInfiniteValues() throws Exception {
+    RAMDirectory dir = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT),
+      true, MaxFieldLength.UNLIMITED);
+    Document doc = new Document();
+    doc.add(new NumericField("float").setFloatValue(Float.NEGATIVE_INFINITY));
+    doc.add(new NumericField("int").setIntValue(Integer.MIN_VALUE));
+    writer.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new NumericField("float").setFloatValue(Float.POSITIVE_INFINITY));
+    doc.add(new NumericField("int").setIntValue(Integer.MAX_VALUE));
+    writer.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new NumericField("float").setFloatValue(0.0f));
+    doc.add(new NumericField("int").setIntValue(0));
+    writer.addDocument(doc);
+    writer.close();
+    
+    IndexSearcher s = new IndexSearcher(dir);
+    
+    Query q=NumericRangeQuery.newIntRange("int", null, null, true, true);
+    TopDocs topDocs = s.search(q, 10);
+    assertEquals("Score doc count", 3,  topDocs.scoreDocs.length );
+    
+    q=NumericRangeQuery.newIntRange("int", null, null, false, false);
+    topDocs = s.search(q, 10);
+    assertEquals("Score doc count", 3,  topDocs.scoreDocs.length );
+
+    q=NumericRangeQuery.newIntRange("int", Integer.MIN_VALUE, Integer.MAX_VALUE, true, true);
+    topDocs = s.search(q, 10);
+    assertEquals("Score doc count", 3,  topDocs.scoreDocs.length );
+    
+    q=NumericRangeQuery.newIntRange("int", Integer.MIN_VALUE, Integer.MAX_VALUE, false, false);
+    topDocs = s.search(q, 10);
+    assertEquals("Score doc count", 1,  topDocs.scoreDocs.length );
+
+    q=NumericRangeQuery.newFloatRange("float", null, null, true, true);
+    topDocs = s.search(q, 10);
+    assertEquals("Score doc count", 3,  topDocs.scoreDocs.length );
+
+    q=NumericRangeQuery.newFloatRange("float", null, null, false, false);
+    topDocs = s.search(q, 10);
+    assertEquals("Score doc count", 3,  topDocs.scoreDocs.length );
+
+    s.close();
+    dir.close();
   }
   
   private void testRandomTrieAndClassicRangeQuery(int precisionStep) throws Exception {

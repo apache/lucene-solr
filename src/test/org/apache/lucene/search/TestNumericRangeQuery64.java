@@ -212,6 +212,16 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
     assertEquals("First doc", startOffset, Long.parseLong(doc.get(field)) );
     doc=searcher.doc(sd[sd.length-1].doc);
     assertEquals("Last doc", (count-1)*distance+startOffset, Long.parseLong(doc.get(field)) );
+
+    q=NumericRangeQuery.newLongRange(field, precisionStep, null, upper, false, true);
+    topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
+    sd = topDocs.scoreDocs;
+    assertNotNull(sd);
+    assertEquals("Score doc count", count, sd.length );
+    doc=searcher.doc(sd[0].doc);
+    assertEquals("First doc", startOffset, Long.parseLong(doc.get(field)) );
+    doc=searcher.doc(sd[sd.length-1].doc);
+    assertEquals("Last doc", (count-1)*distance+startOffset, Long.parseLong(doc.get(field)) );
   }
   
   @Test
@@ -248,6 +258,16 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
     assertEquals("First doc", count*distance+startOffset, Long.parseLong(doc.get(field)) );
     doc=searcher.doc(sd[sd.length-1].doc);
     assertEquals("Last doc", (noDocs-1)*distance+startOffset, Long.parseLong(doc.get(field)) );
+
+    q=NumericRangeQuery.newLongRange(field, precisionStep, lower, null, true, false);
+    topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
+    sd = topDocs.scoreDocs;
+    assertNotNull(sd);
+    assertEquals("Score doc count", noDocs-count, sd.length );
+    doc=searcher.doc(sd[0].doc);
+    assertEquals("First doc", count*distance+startOffset, Long.parseLong(doc.get(field)) );
+    doc=searcher.doc(sd[sd.length-1].doc);
+    assertEquals("Last doc", (noDocs-1)*distance+startOffset, Long.parseLong(doc.get(field)) );
   }
   
   @Test
@@ -268,6 +288,57 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
   @Test
   public void testRightOpenRange_2bit() throws Exception {
     testRightOpenRange(2);
+  }
+  
+  @Test
+  public void testInfiniteValues() throws Exception {
+    RAMDirectory dir = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT),
+      true, MaxFieldLength.UNLIMITED);
+    Document doc = new Document();
+    doc.add(new NumericField("double").setDoubleValue(Double.NEGATIVE_INFINITY));
+    doc.add(new NumericField("long").setLongValue(Long.MIN_VALUE));
+    writer.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new NumericField("double").setDoubleValue(Double.POSITIVE_INFINITY));
+    doc.add(new NumericField("long").setLongValue(Long.MAX_VALUE));
+    writer.addDocument(doc);
+    
+    doc = new Document();
+    doc.add(new NumericField("double").setDoubleValue(0.0));
+    doc.add(new NumericField("long").setLongValue(0L));
+    writer.addDocument(doc);
+    writer.close();
+    
+    IndexSearcher s = new IndexSearcher(dir);
+    
+    Query q=NumericRangeQuery.newLongRange("long", null, null, true, true);
+    TopDocs topDocs = s.search(q, 10);
+    assertEquals("Score doc count", 3,  topDocs.scoreDocs.length );
+    
+    q=NumericRangeQuery.newLongRange("long", null, null, false, false);
+    topDocs = s.search(q, 10);
+    assertEquals("Score doc count", 3,  topDocs.scoreDocs.length );
+
+    q=NumericRangeQuery.newLongRange("long", Long.MIN_VALUE, Long.MAX_VALUE, true, true);
+    topDocs = s.search(q, 10);
+    assertEquals("Score doc count", 3,  topDocs.scoreDocs.length );
+    
+    q=NumericRangeQuery.newLongRange("long", Long.MIN_VALUE, Long.MAX_VALUE, false, false);
+    topDocs = s.search(q, 10);
+    assertEquals("Score doc count", 1,  topDocs.scoreDocs.length );
+
+    q=NumericRangeQuery.newDoubleRange("double", null, null, true, true);
+    topDocs = s.search(q, 10);
+    assertEquals("Score doc count", 3,  topDocs.scoreDocs.length );
+
+    q=NumericRangeQuery.newDoubleRange("double", null, null, false, false);
+    topDocs = s.search(q, 10);
+    assertEquals("Score doc count", 3,  topDocs.scoreDocs.length );
+
+    s.close();
+    dir.close();
   }
   
   private void testRandomTrieAndClassicRangeQuery(int precisionStep) throws Exception {
