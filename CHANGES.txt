@@ -192,6 +192,9 @@ Bug Fixes
 * SOLR-1777: fieldTypes with sortMissingLast=true or sortMissingFirst=true can
   result in incorrectly sorted results.  (yonik)
 
+* SOLR-1798: Small memory leak (~100 bytes) in fastLRUCache for every
+  commit. (yonik)
+
 
 Other Changes
 ----------------------

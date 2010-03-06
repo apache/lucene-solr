@@ -384,7 +384,7 @@ public class ConcurrentLRUCache<K,V> {
     CacheEntry<K,V> o = map.remove(key);
     if (o == null) return;
     stats.size.decrementAndGet();
-    stats.evictionCounter++;
+    stats.evictionCounter.incrementAndGet();
     if(evictionListener != null) evictionListener.evictedEntry(o.key,o.value);
   }
 
@@ -518,7 +518,7 @@ public class ConcurrentLRUCache<K,V> {
             nonLivePutCounter = new AtomicLong(0),
             missCounter = new AtomicLong();
     private final AtomicInteger size = new AtomicInteger();
-    private long evictionCounter = 0;
+    private AtomicLong evictionCounter = new AtomicLong();
 
     public long getCumulativeLookups() {
       return (accessCounter.get() - putCounter.get() - nonLivePutCounter.get()) + missCounter.get();
@@ -533,7 +533,7 @@ public class ConcurrentLRUCache<K,V> {
     }
 
     public long getCumulativeEvictions() {
-      return evictionCounter;
+      return evictionCounter.get();
     }
 
     public int getCurrentSize() {
@@ -546,6 +546,15 @@ public class ConcurrentLRUCache<K,V> {
 
     public long getCumulativeMisses() {
       return missCounter.get();
+    }
+
+    public void add(Stats other) {
+      accessCounter.addAndGet(other.accessCounter.get());
+      putCounter.addAndGet(other.putCounter.get());
+      nonLivePutCounter.addAndGet(other.nonLivePutCounter.get());
+      missCounter.addAndGet(other.missCounter.get());
+      evictionCounter.addAndGet(other.evictionCounter.get());
+      size.set(Math.max(size.get(), other.size.get()));
     }
   }
 

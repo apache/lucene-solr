@@ -45,7 +45,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
  */
 public class FastLRUCache<K,V> implements SolrCache<K,V> {
 
-  private List<ConcurrentLRUCache.Stats> cumulativeStats;
+  // contains the statistics objects for all open caches of the same type
+  private List<ConcurrentLRUCache.Stats> statsList;
 
   private long warmupTime = 0;
 
@@ -104,16 +105,18 @@ public class FastLRUCache<K,V> implements SolrCache<K,V> {
     cache = new ConcurrentLRUCache<K,V>(limit, minLimit, acceptableLimit, initialSize, newThread, false, null);
     cache.setAlive(false);
 
-    if (persistence == null) {
+    statsList = (List<ConcurrentLRUCache.Stats>) persistence;
+    if (statsList == null) {
       // must be the first time a cache of this type is being created
       // Use a CopyOnWriteArrayList since puts are very rare and iteration may be a frequent operation
       // because it is used in getStatistics()
-      persistence = new CopyOnWriteArrayList<ConcurrentLRUCache.Stats>();
-    }
+      statsList = new CopyOnWriteArrayList<ConcurrentLRUCache.Stats>();
 
-    cumulativeStats = (List<ConcurrentLRUCache.Stats>) persistence;
-    cumulativeStats.add(cache.getStats());
-    return cumulativeStats;
+      // the first entry will be for cumulative stats of caches that have been closed.
+      statsList.add(new ConcurrentLRUCache.Stats());
+    }
+    statsList.add(cache.getStats());
+    return statsList;
   }
 
   public String name() {
@@ -131,7 +134,6 @@ public class FastLRUCache<K,V> implements SolrCache<K,V> {
 
   public V get(K key) {
     return cache.get(key);
-
   }
 
   public void clear() {
@@ -177,6 +179,9 @@ public class FastLRUCache<K,V> implements SolrCache<K,V> {
 
 
   public void close() {
+    // add the stats to the cumulative stats object (the first in the statsList)
+    statsList.get(0).add(cache.getStats());
+    statsList.remove(cache.getStats());
     cache.destroy();
   }
 
@@ -243,7 +248,7 @@ public class FastLRUCache<K,V> implements SolrCache<K,V> {
     long cevictions = 0;
 
     // NOTE: It is safe to iterate on a CopyOnWriteArrayList
-    for (ConcurrentLRUCache.Stats statistiscs : cumulativeStats) {
+    for (ConcurrentLRUCache.Stats statistiscs : statsList) {
       clookups += statistiscs.getCumulativeLookups();
       chits += statistiscs.getCumulativeHits();
       cinserts += statistiscs.getCumulativePuts();
