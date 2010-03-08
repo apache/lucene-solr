@@ -162,38 +162,36 @@ public abstract class MultiTermQuery extends Query {
    *  @see #setRewriteMethod */
   public final static RewriteMethod SCORING_BOOLEAN_QUERY_REWRITE = new ScoringBooleanQueryRewrite();
 
-  /** A rewrite method that first translates each term into
-   *  {@link BooleanClause.Occur#SHOULD} clause in a
-   *  BooleanQuery, and keeps the scores as computed by the
-   *  query.
-   *
-   * <p>This rewrite mode only uses the top scoring terms
-   * so it will not overflow the boolean max clause count.
-   * It is the default rewrite mode for {@link FuzzyQuery}.
-   *
-   *  @see #setRewriteMethod */
-  public static final class TopTermsScoringBooleanQueryRewrite extends BooleanQueryRewrite {
+
+  /**
+   * Base rewrite method for collecting only the top terms
+   * via a priority queue.
+   */
+  public static abstract class TopTermsBooleanQueryRewrite extends BooleanQueryRewrite {
     private final int size;
     
     /** 
-     * Create a TopTermsScoringBooleanQueryRewrite for 
+     * Create a TopTermsBooleanQueryRewrite for 
      * at most <code>size</code> terms.
      * <p>
      * NOTE: if {@link BooleanQuery#getMaxClauseCount} is smaller than 
      * <code>size</code>, then it will be used instead. 
      */
-    public TopTermsScoringBooleanQueryRewrite(int size) {
+    public TopTermsBooleanQueryRewrite(int size) {
       this.size = size;
     }
     
     /** 
-     * Create a TopTermsScoringBooleanQueryRewrite that is limited
+     * Create a TopTermsBooleanQueryRewrite that is limited
      * to at most {@link BooleanQuery#getMaxClauseCount} terms. 
      */
-    public TopTermsScoringBooleanQueryRewrite() {
+    public TopTermsBooleanQueryRewrite() {
       this(Integer.MAX_VALUE);
     }
     
+    /** Return a suitable Query for a MultiTermQuery term. */
+    protected abstract Query getQuery(Term term);
+
     @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
       final int maxSize = Math.min(size, BooleanQuery.getMaxClauseCount());
@@ -218,7 +216,7 @@ public abstract class MultiTermQuery extends Query {
       
       final BooleanQuery bq = new BooleanQuery(true);
       for (final ScoreTerm st : stQueue) {
-        TermQuery tq = new TermQuery(st.term);    // found a match
+        Query tq = getQuery(st.term);    // found a match
         tq.setBoost(query.getBoost() * st.boost); // set the boost
         bq.add(tq, BooleanClause.Occur.SHOULD);   // add to query
       }
@@ -239,7 +237,7 @@ public abstract class MultiTermQuery extends Query {
       if (this == obj) return true;
       if (obj == null) return false;
       if (getClass() != obj.getClass()) return false;
-      TopTermsScoringBooleanQueryRewrite other = (TopTermsScoringBooleanQueryRewrite) obj;
+      TopTermsBooleanQueryRewrite other = (TopTermsBooleanQueryRewrite) obj;
       if (size != other.size) return false;
       return true;
     }
@@ -257,6 +255,84 @@ public abstract class MultiTermQuery extends Query {
     }
   }
 
+  /**
+   * A rewrite method that first translates each term into
+   * {@link BooleanClause.Occur#SHOULD} clause in a BooleanQuery, and keeps the
+   * scores as computed by the query.
+   * 
+   * <p>
+   * This rewrite mode only uses the top scoring terms so it will not overflow
+   * the boolean max clause count. It is the default rewrite mode for
+   * {@link FuzzyQuery}.
+   * 
+   * @see #setRewriteMethod
+   */
+  public static final class TopTermsScoringBooleanQueryRewrite extends
+      TopTermsBooleanQueryRewrite {
+
+    /** 
+     * Create a TopTermsScoringBooleanQueryRewrite that is limited
+     * to at most {@link BooleanQuery#getMaxClauseCount} terms. 
+     */
+    public TopTermsScoringBooleanQueryRewrite() {
+      super();
+    }
+
+    /** 
+     * Create a TopTermsScoringBooleanQueryRewrite for 
+     * at most <code>size</code> terms.
+     * <p>
+     * NOTE: if {@link BooleanQuery#getMaxClauseCount} is smaller than 
+     * <code>size</code>, then it will be used instead. 
+     */
+    public TopTermsScoringBooleanQueryRewrite(int size) {
+      super(size);
+    }
+    
+    @Override
+    protected Query getQuery(Term term) {
+      return new TermQuery(term);
+    }
+  }
+  
+  /**
+   * A rewrite method that first translates each term into
+   * {@link BooleanClause.Occur#SHOULD} clause in a BooleanQuery, but the scores
+   * are only computed as the boost.
+   * <p>
+   * This rewrite method only uses the top scoring terms so it will not overflow
+   * the boolean max clause count.
+   * 
+   * @see #setRewriteMethod
+   */
+  public static final class TopTermsBoostOnlyBooleanQueryRewrite extends
+      TopTermsBooleanQueryRewrite {
+    
+    /** 
+     * Create a TopTermsBoostOnlyBooleanQueryRewrite that is limited
+     * to at most {@link BooleanQuery#getMaxClauseCount} terms. 
+     */
+    public TopTermsBoostOnlyBooleanQueryRewrite() {
+      super();
+    }
+
+    /** 
+     * Create a TopTermsBoostOnlyBooleanQueryRewrite for 
+     * at most <code>size</code> terms.
+     * <p>
+     * NOTE: if {@link BooleanQuery#getMaxClauseCount} is smaller than 
+     * <code>size</code>, then it will be used instead. 
+     */
+    public TopTermsBoostOnlyBooleanQueryRewrite(int size) {
+      super(size);
+    }
+    
+    @Override
+    protected Query getQuery(Term term) {
+      return new ConstantScoreQuery(new QueryWrapperFilter(new TermQuery(term)));
+    }
+  }
+  
   private static class ConstantScoreBooleanQueryRewrite extends ScoringBooleanQueryRewrite implements Serializable {
     @Override
     public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {

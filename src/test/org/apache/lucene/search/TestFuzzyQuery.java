@@ -311,6 +311,30 @@ public class TestFuzzyQuery extends LuceneTestCase {
     assertEquals(0, hits.length);
   }
   
+  /** Test the TopTermsBoostOnlyBooleanQueryRewrite rewrite method. */
+  public void testBoostOnlyRewrite() throws Exception {
+    RAMDirectory directory = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT),
+        true, IndexWriter.MaxFieldLength.LIMITED);
+    addDoc("Lucene", writer);
+    addDoc("Lucene", writer);
+    addDoc("Lucenne", writer);
+    writer.optimize();
+    writer.close();
+    IndexSearcher searcher = new IndexSearcher(directory, true);
+    IndexReader reader = searcher.getIndexReader();
+    FuzzyQuery query = new FuzzyQuery(new Term("field", "Lucene"));
+    query.setRewriteMethod(new MultiTermQuery.TopTermsBoostOnlyBooleanQueryRewrite());
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals(3, hits.length);
+    // normally, 'Lucenne' would be the first result as IDF will skew the score.
+    assertEquals("Lucene", reader.document(hits[0].doc).get("field"));
+    assertEquals("Lucene", reader.document(hits[1].doc).get("field"));
+    assertEquals("Lucenne", reader.document(hits[2].doc).get("field"));
+    searcher.close();
+    reader.close();
+  }
+  
   public void testGiga() throws Exception {
 
     StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
