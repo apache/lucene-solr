@@ -107,6 +107,11 @@ Bug fixes
   the configured RAM Buffer Size for the IndexWriter.  This also fixes
   potentially excessive memory usage when many threads are indexing a
   mix of small and large documents.  (Tim Smith via Mike McCandless)
+
+* LUCENE-2300: If IndexWriter is pooling reader (because NRT reader
+  has been obtained), and addIndexes* is run, do not pool the
+  readers from the external directory.  This is harmless (NRT reader is
+  correct), but a waste of resources.  (Mike McCandless)
   
 New features
 
