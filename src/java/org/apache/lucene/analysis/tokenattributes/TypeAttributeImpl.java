@@ -26,7 +26,6 @@ import org.apache.lucene.util.AttributeImpl;
  */
 public class TypeAttributeImpl extends AttributeImpl implements TypeAttribute, Cloneable, Serializable {
   private String type;
-  public static final String DEFAULT_TYPE = "word";
   
   public TypeAttributeImpl() {
     this(DEFAULT_TYPE); 
@@ -59,7 +58,8 @@ public class TypeAttributeImpl extends AttributeImpl implements TypeAttribute, C
     }
     
     if (other instanceof TypeAttributeImpl) {
-      return type.equals(((TypeAttributeImpl) other).type);
+      final TypeAttributeImpl o = (TypeAttributeImpl) other;
+      return (this.type == null ? o.type == null : this.type.equals(o.type));
     }
     
     return false;
@@ -67,7 +67,7 @@ public class TypeAttributeImpl extends AttributeImpl implements TypeAttribute, C
 
   @Override
   public int hashCode() {
-    return type.hashCode();
+    return (type == null) ? 0 : type.hashCode();
   }
   
   @Override

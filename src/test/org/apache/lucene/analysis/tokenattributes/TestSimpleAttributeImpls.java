@@ -64,7 +64,7 @@ public class TestSimpleAttributeImpls extends LuceneTestCase {
   
   public void testTypeAttribute() throws Exception {
     TypeAttributeImpl att = new TypeAttributeImpl();
-    assertEquals(TypeAttributeImpl.DEFAULT_TYPE, att.type());
+    assertEquals(TypeAttribute.DEFAULT_TYPE, att.type());
 
     att.setType("hallo");
     assertEquals("type=hallo", att.toString());
@@ -76,7 +76,7 @@ public class TestSimpleAttributeImpls extends LuceneTestCase {
     assertEquals("hallo", att2.type());
     
     att.clear();
-    assertEquals(TypeAttributeImpl.DEFAULT_TYPE, att.type());
+    assertEquals(TypeAttribute.DEFAULT_TYPE, att.type());
   }
   
   public void testPayloadAttribute() throws Exception {

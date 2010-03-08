@@ -23,6 +23,10 @@ import org.apache.lucene.util.Attribute;
  * A Token's lexical type. The Default value is "word". 
  */
 public interface TypeAttribute extends Attribute {
+
+  /** the default type */
+  public static final String DEFAULT_TYPE = "word";
+
   /** Returns this Token's lexical type.  Defaults to "word". */
   public String type();
 

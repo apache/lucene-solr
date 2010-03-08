@@ -199,6 +199,10 @@ Optimizations
 
 * LUCENE-2285: Code cleanup. (Shai Erera via Uwe Schindler)
 
+* LUCENE-2303: Remove code duplication in Token class by subclassing
+  TermAttributeImpl, move DEFAULT_TYPE constant to TypeInterface, improve
+  null-handling for TypeAttribute.  (Uwe Schindler)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 

@@ -194,7 +194,7 @@ public class TermAttributeImpl extends AttributeImpl implements TermAttribute, C
       return true;
     }
     
-    if (other instanceof TermAttribute) {
+    if (other instanceof TermAttributeImpl) {
       initTermBuffer();
       TermAttributeImpl o = ((TermAttributeImpl) other);
       o.initTermBuffer();

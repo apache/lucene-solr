@@ -17,6 +17,7 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.tokenattributes.TermAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
@@ -25,11 +26,9 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.TermPositions;     // for javadoc
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeImpl;
-import org.apache.lucene.util.RamUsageEstimator;
 
 /** 
   A Token is an occurrence of a term from the text of a field.  It consists of
@@ -116,16 +115,10 @@ import org.apache.lucene.util.RamUsageEstimator;
 
   @see org.apache.lucene.index.Payload
 */
-public class Token extends AttributeImpl 
-                   implements Cloneable, TermAttribute, TypeAttribute, PositionIncrementAttribute,
+public class Token extends TermAttributeImpl 
+                   implements TypeAttribute, PositionIncrementAttribute,
                               FlagsAttribute, OffsetAttribute, PayloadAttribute {
 
-  public static final String DEFAULT_TYPE = "word";
-
-  private static int MIN_BUFFER_SIZE = 10;
-
-  private char[] termBuffer;
-  private int termLength;
   private int startOffset,endOffset;
   private String type = DEFAULT_TYPE;
   private int flags;
@@ -273,139 +266,6 @@ public class Token extends AttributeImpl
     return positionIncrement;
   }
 
-  /** Returns the Token's term text.
-   * 
-   * This method has a performance penalty
-   * because the text is stored internally in a char[].  If
-   * possible, use {@link #termBuffer()} and {@link
-   * #termLength()} directly instead.  If you really need a
-   * String, use this method, which is nothing more than
-   * a convenience call to <b>new String(token.termBuffer(), 0, token.termLength())</b>
-   */
-  public final String term() {
-    initTermBuffer();
-    return new String(termBuffer, 0, termLength);
-  }
-
-  /** Copies the contents of buffer, starting at offset for
-   *  length characters, into the termBuffer array.
-   *  @param buffer the buffer to copy
-   *  @param offset the index in the buffer of the first character to copy
-   *  @param length the number of characters to copy
-   */
-  public final void setTermBuffer(char[] buffer, int offset, int length) {
-    growTermBuffer(length);
-    System.arraycopy(buffer, offset, termBuffer, 0, length);
-    termLength = length;
-  }
-
-  /** Copies the contents of buffer into the termBuffer array.
-   *  @param buffer the buffer to copy
-   */
-  public final void setTermBuffer(String buffer) {
-    final int length = buffer.length();
-    growTermBuffer(length);
-    buffer.getChars(0, length, termBuffer, 0);
-    termLength = length;
-  }
-
-  /** Copies the contents of buffer, starting at offset and continuing
-   *  for length characters, into the termBuffer array.
-   *  @param buffer the buffer to copy
-   *  @param offset the index in the buffer of the first character to copy
-   *  @param length the number of characters to copy
-   */
-  public final void setTermBuffer(String buffer, int offset, int length) {
-    assert offset <= buffer.length();
-    assert offset + length <= buffer.length();
-    growTermBuffer(length);
-    buffer.getChars(offset, offset + length, termBuffer, 0);
-    termLength = length;
-  }
-
-  /** Returns the internal termBuffer character array which
-   *  you can then directly alter.  If the array is too
-   *  small for your token, use {@link
-   *  #resizeTermBuffer(int)} to increase it.  After
-   *  altering the buffer be sure to call {@link
-   *  #setTermLength} to record the number of valid
-   *  characters that were placed into the termBuffer. */
-  public final char[] termBuffer() {
-    initTermBuffer();
-    return termBuffer;
-  }
-
-  /** Grows the termBuffer to at least size newSize, preserving the
-   *  existing content. Note: If the next operation is to change
-   *  the contents of the term buffer use
-   *  {@link #setTermBuffer(char[], int, int)},
-   *  {@link #setTermBuffer(String)}, or
-   *  {@link #setTermBuffer(String, int, int)}
-   *  to optimally combine the resize with the setting of the termBuffer.
-   *  @param newSize minimum size of the new termBuffer
-   *  @return newly created termBuffer with length >= newSize
-   */
-  public char[] resizeTermBuffer(int newSize) {
-    if (termBuffer == null) {
-      // The buffer is always at least MIN_BUFFER_SIZE
-      termBuffer = new char[ArrayUtil.oversize(newSize < MIN_BUFFER_SIZE ? MIN_BUFFER_SIZE : newSize, RamUsageEstimator.NUM_BYTES_CHAR)]; 
-    } else {
-      if(termBuffer.length < newSize){
-        // Not big enough; create a new array with slight
-        // over allocation and preserve content
-        final char[] newCharBuffer = new char[ArrayUtil.oversize(newSize, RamUsageEstimator.NUM_BYTES_CHAR)];
-        System.arraycopy(termBuffer, 0, newCharBuffer, 0, termBuffer.length);
-        termBuffer = newCharBuffer;
-      }
-    } 
-    return termBuffer;   
-  }
-
-  /** Allocates a buffer char[] of at least newSize, without preserving the existing content.
-   * its always used in places that set the content 
-   *  @param newSize minimum size of the buffer
-   */
-  private void growTermBuffer(int newSize) {
-    if (termBuffer == null) {
-      // The buffer is always at least MIN_BUFFER_SIZE    
-      termBuffer = new char[ArrayUtil.oversize(newSize < MIN_BUFFER_SIZE ? MIN_BUFFER_SIZE : newSize, RamUsageEstimator.NUM_BYTES_CHAR)];
-    } else {
-      if(termBuffer.length < newSize){
-        // Not big enough; create a new array with slight
-        // over allocation:
-        termBuffer = new char[ArrayUtil.oversize(newSize, RamUsageEstimator.NUM_BYTES_CHAR)];
-      }
-    } 
-  }
-  
-  private void initTermBuffer() {
-    if (termBuffer == null) {
-      termBuffer = new char[ArrayUtil.oversize(MIN_BUFFER_SIZE, RamUsageEstimator.NUM_BYTES_CHAR)];
-      termLength = 0;
-    }
-  }
-
-  /** Return number of valid characters (length of the term)
-   *  in the termBuffer array. */
-  public final int termLength() {
-    initTermBuffer();
-    return termLength;
-  }
-
-  /** Set number of valid characters (length of the term) in
-   *  the termBuffer array. Use this to truncate the termBuffer
-   *  or to synchronize with external manipulation of the termBuffer.
-   *  Note: to grow the size of the array,
-   *  use {@link #resizeTermBuffer(int)} first.
-   *  @param length the truncated length
-   */
-  public final void setTermLength(int length) {
-    initTermBuffer();
-    if (length > termBuffer.length)
-      throw new IllegalArgumentException("length " + length + " exceeds the size of the termBuffer (" + termBuffer.length + ")");
-    termLength = length;
-  }
-
   /** Returns this Token's starting offset, the position of the first character
     corresponding to this token in the source text.
 
@@ -490,15 +350,10 @@ public class Token extends AttributeImpl
   
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append('(');
-    initTermBuffer();
-    if (termBuffer == null)
-      sb.append("null");
-    else
-      sb.append(termBuffer, 0, termLength);
-      sb.append(',').append(startOffset).append(',').append(endOffset);
-    if (!type.equals("word"))
+    final StringBuilder sb = new StringBuilder();
+    sb.append('(').append(term()).append(',')
+      .append(startOffset).append(',').append(endOffset);
+    if (!"word".equals(type))
       sb.append(",type=").append(type);
     if (positionIncrement != 1)
       sb.append(",posIncr=").append(positionIncrement);
@@ -511,9 +366,8 @@ public class Token extends AttributeImpl
    */
   @Override
   public void clear() {
+    super.clear();
     payload = null;
-    // Leave termBuffer to allow re-use
-    termLength = 0;
     positionIncrement = 1;
     flags = 0;
     startOffset = endOffset = 0;
@@ -524,9 +378,6 @@ public class Token extends AttributeImpl
   public Object clone() {
     Token t = (Token)super.clone();
     // Do a deep clone
-    if (termBuffer != null) {
-      t.termBuffer = termBuffer.clone();
-    }
     if (payload != null) {
       t.payload = (Payload) payload.clone();
     }
@@ -554,46 +405,30 @@ public class Token extends AttributeImpl
       return true;
 
     if (obj instanceof Token) {
-      Token other = (Token) obj;
-
-      initTermBuffer();
-      other.initTermBuffer();
-      
-      if (termLength == other.termLength &&
-          startOffset == other.startOffset &&
+      final Token other = (Token) obj;
+      return (startOffset == other.startOffset &&
           endOffset == other.endOffset && 
           flags == other.flags &&
           positionIncrement == other.positionIncrement &&
-          subEqual(type, other.type) &&
-          subEqual(payload, other.payload)) {
-        for(int i=0;i<termLength;i++)
-          if (termBuffer[i] != other.termBuffer[i])
-            return false;
-        return true;
-      } else
-        return false;
+          (type == null ? other.type == null : type.equals(other.type)) &&
+          (payload == null ? other.payload == null : payload.equals(other.payload)) &&
+          super.equals(obj)
+      );
     } else
       return false;
   }
 
-  private boolean subEqual(Object o1, Object o2) {
-    if (o1 == null)
-      return o2 == null;
-    else
-      return o1.equals(o2);
-  }
-
   @Override
   public int hashCode() {
-    initTermBuffer();
-    int code = termLength;
+    int code = super.hashCode();
     code = code * 31 + startOffset;
     code = code * 31 + endOffset;
     code = code * 31 + flags;
     code = code * 31 + positionIncrement;
-    code = code * 31 + type.hashCode();
-    code = (payload == null ? code : code * 31 + payload.hashCode());
-    code = code * 31 + ArrayUtil.hashCode(termBuffer, 0, termLength);
+    if (type != null)
+      code = code * 31 + type.hashCode();
+    if (payload != null)
+      code = code * 31 + payload.hashCode();
     return code;
   }
       
@@ -703,8 +538,7 @@ public class Token extends AttributeImpl
    * @param prototype
    */
   public void reinit(Token prototype) {
-    prototype.initTermBuffer();
-    setTermBuffer(prototype.termBuffer, 0, prototype.termLength);
+    setTermBuffer(prototype.termBuffer(), 0, prototype.termLength());
     positionIncrement = prototype.positionIncrement;
     flags = prototype.flags;
     startOffset = prototype.startOffset;
@@ -755,8 +589,7 @@ public class Token extends AttributeImpl
         to.payload = (Payload) payload.clone();
       }
     } else {
-      initTermBuffer();
-      ((TermAttribute) target).setTermBuffer(termBuffer, 0, termLength);
+      super.copyTo(target);
       ((OffsetAttribute) target).setOffset(startOffset, endOffset);
       ((PositionIncrementAttribute) target).setPositionIncrement(positionIncrement);
       ((PayloadAttribute) target).setPayload((payload == null) ? null : (Payload) payload.clone());
