@@ -322,6 +322,22 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
     assertTrue(val + " is not equal to " + "linkNews", val.equals("linkNews") == true);//there are two <a> tags, and they get collapesd
   }
 
+  /** test arabic PDF extraction is functional */
+  public void testArabicPDF() throws Exception {
+    ExtractingRequestHandler handler = (ExtractingRequestHandler) 
+      h.getCore().getRequestHandler("/update/extract");
+    assertTrue("handler is null and it shouldn't be", handler != null);
+
+    loadLocal("arabic.pdf", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
+        "fmap.creator", "extractedCreator", "fmap.Keywords", "extractedKeywords",
+        "fmap.Author", "extractedAuthor",
+        "fmap.content", "wdf_nocase",
+       "literal.id", "one",
+        "fmap.Last-Modified", "extractedDate");
+    assertQ(req("wdf_nocase:السلم"), "//result[@numFound=0]");
+    assertU(commit());
+    assertQ(req("wdf_nocase:السلم"), "//result[@numFound=1]");
+  }
 
   SolrQueryResponse loadLocal(String filename, String... args) throws Exception {
     LocalSolrQueryRequest req = (LocalSolrQueryRequest) req(args);

@@ -29,6 +29,7 @@ $Id:$
 
 * SOLR-1738: Upgrade to Tika 0.6 (gsingers)
 
+* SOLR-18913: Add ICU4j to libs and add tests for Arabic extraction (Robert Muir via gsingers)
 
 ================== Release 1.4.0 ==================
 
