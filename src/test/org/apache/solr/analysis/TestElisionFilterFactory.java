@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.solr.common.ResourceLoader;
+import org.apache.solr.core.SolrResourceLoader;
 
 /**
  * Simple tests to ensure the French elision filter factory is working.
@@ -38,7 +39,7 @@ public class TestElisionFilterFactory extends BaseTokenTestCase {
     Reader reader = new StringReader("l'avion");
     Tokenizer tokenizer = new WhitespaceTokenizer(reader);
     ElisionFilterFactory factory = new ElisionFilterFactory();
-    ResourceLoader loader = solrConfig.getResourceLoader();
+    ResourceLoader loader = new SolrResourceLoader(null, null);
     Map<String,String> args = new HashMap<String,String>();
     args.put("articles", "frenchArticles.txt");
     factory.init(args);

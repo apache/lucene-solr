@@ -23,36 +23,23 @@ import java.util.Map;
 
 import junit.framework.TestCase;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.payloads.FloatEncoder;
 import org.apache.lucene.analysis.payloads.DelimitedPayloadTokenFilter;
+import org.apache.lucene.analysis.payloads.FloatEncoder;
 import org.apache.lucene.analysis.payloads.PayloadHelper;
-import org.apache.lucene.util.Attribute;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.solr.common.ResourceLoader;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.core.SolrResourceLoader;
 
-public class TestDelimitedPayloadTokenFilterFactory extends AbstractSolrTestCase{
-
-
-  public String getSchemaFile() {
-    return "schema.xml";
-  }
-
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
-  }
+public class TestDelimitedPayloadTokenFilterFactory extends TestCase {
 
   public void testEncoder() throws Exception {
     Map<String,String> args = new HashMap<String, String>();
     args.put(DelimitedPayloadTokenFilterFactory.ENCODER_ATTR, "float");
     DelimitedPayloadTokenFilterFactory factory = new DelimitedPayloadTokenFilterFactory();
     factory.init(args);
-    ResourceLoader loader = h.getCore().getResourceLoader();
+    ResourceLoader loader = new SolrResourceLoader(null, null);
     factory.inform(loader);
 
     TokenStream input = new WhitespaceTokenizer(new StringReader("the|0.1 quick|0.1 red|0.1"));
@@ -74,7 +61,7 @@ public class TestDelimitedPayloadTokenFilterFactory extends AbstractSolrTestCase
     args.put(DelimitedPayloadTokenFilterFactory.DELIMITER_ATTR, "*");
     DelimitedPayloadTokenFilterFactory factory = new DelimitedPayloadTokenFilterFactory();
     factory.init(args);
-    ResourceLoader loader = h.getCore().getResourceLoader();
+    ResourceLoader loader = new SolrResourceLoader(null, null);
     factory.inform(loader);
 
     TokenStream input = new WhitespaceTokenizer(new StringReader("the*0.1 quick*0.1 red*0.1"));

@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.SolrResourceLoader;
 import org.tartarus.snowball.ext.EnglishStemmer;
 
 import java.io.IOException;
@@ -114,7 +115,7 @@ public class SnowballPorterFilterFactoryTest extends BaseTokenTestCase {
    */
   public void testProtected() throws Exception {
     SnowballPorterFilterFactory factory = new SnowballPorterFilterFactory();
-    ResourceLoader loader = solrConfig.getResourceLoader();
+    ResourceLoader loader = new SolrResourceLoader(null, null);
     Map<String,String> args = new HashMap<String,String>();
     args.put("protected", "protwords.txt");
     args.put("language", "English");

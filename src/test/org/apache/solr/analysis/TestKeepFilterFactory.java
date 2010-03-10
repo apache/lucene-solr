@@ -16,29 +16,24 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.common.ResourceLoader;
+import org.apache.solr.core.SolrResourceLoader;
 
 import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
+
+import junit.framework.TestCase;
 
 
 /**
  *
  *
  **/
-public class TestKeepFilterFactory extends AbstractSolrTestCase{
-  public String getSchemaFile() {
-    return "schema-stop-keep.xml";
-  }
-
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
-  }
+public class TestKeepFilterFactory extends TestCase{
 
   public void testInform() throws Exception {
-    ResourceLoader loader = solrConfig.getResourceLoader();
+    ResourceLoader loader = new SolrResourceLoader(null, null);
     assertTrue("loader is null and it shouldn't be", loader != null);
     KeepWordFilterFactory factory = new KeepWordFilterFactory();
     Map<String, String> args = new HashMap<String, String>();

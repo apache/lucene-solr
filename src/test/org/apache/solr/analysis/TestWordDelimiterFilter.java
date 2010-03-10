@@ -27,20 +27,24 @@ import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.miscellaneous.SingleTokenTokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.solr.util.AbstractSolrTestCase;
+
+import static org.apache.solr.analysis.BaseTokenTestCase.*;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 
 /**
  * New WordDelimiterFilter tests... most of the tests are in ConvertedLegacyTest
  */
-public class TestWordDelimiterFilter extends BaseTokenTestCase {
+public class TestWordDelimiterFilter extends AbstractSolrTestCase {
   public String getSchemaFile() { return "solr/conf/schema.xml"; }
   public String getSolrConfigFile() { return "solr/conf/solrconfig.xml"; }
-
 
   public void posTst(String v1, String v2, String s1, String s2) {
     assertU(adoc("id",  "42",

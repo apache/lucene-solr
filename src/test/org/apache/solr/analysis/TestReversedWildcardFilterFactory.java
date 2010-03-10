@@ -30,8 +30,11 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrQueryParser;
+import org.apache.solr.util.AbstractSolrTestCase;
 
-public class TestReversedWildcardFilterFactory extends BaseTokenTestCase {
+import static org.apache.solr.analysis.BaseTokenTestCase.*;
+
+public class TestReversedWildcardFilterFactory extends AbstractSolrTestCase {
   Map<String,String> args = new HashMap<String, String>();
   ReversedWildcardFilterFactory factory = new ReversedWildcardFilterFactory();
   IndexSchema schema;

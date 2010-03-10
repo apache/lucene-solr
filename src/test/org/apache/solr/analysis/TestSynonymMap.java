@@ -22,9 +22,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import junit.framework.TestCase;
+
 import org.apache.lucene.analysis.Token;
 
-public class TestSynonymMap extends AnalysisTestCase {
+public class TestSynonymMap extends TestCase {
 
   public void testInvalidMappingRules() throws Exception {
     SynonymMap synMap = new SynonymMap( true );

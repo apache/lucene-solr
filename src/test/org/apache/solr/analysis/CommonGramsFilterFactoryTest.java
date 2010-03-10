@@ -20,8 +20,8 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.common.ResourceLoader;
+import org.apache.solr.core.SolrResourceLoader;
 
 import java.io.StringReader;
 import java.util.Set;
@@ -34,16 +34,9 @@ import java.util.HashMap;
  * so this won't break if stop filter test files change
  **/
 public class CommonGramsFilterFactoryTest extends BaseTokenTestCase {
-  public String getSchemaFile() {
-    return "schema-stop-keep.xml";
-  }
-
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
-  }
 
   public void testInform() throws Exception {
-    ResourceLoader loader = solrConfig.getResourceLoader();
+    ResourceLoader loader = new SolrResourceLoader(null, null);
     assertTrue("loader is null and it shouldn't be", loader != null);
     CommonGramsFilterFactory factory = new CommonGramsFilterFactory();
     Map<String, String> args = new HashMap<String, String>();
@@ -75,7 +68,7 @@ public class CommonGramsFilterFactoryTest extends BaseTokenTestCase {
    * If no words are provided, then a set of english default stopwords is used.
    */
   public void testDefaults() throws Exception {
-    ResourceLoader loader = solrConfig.getResourceLoader();
+    ResourceLoader loader = new SolrResourceLoader(null, null);
     assertTrue("loader is null and it shouldn't be", loader != null);
     CommonGramsFilterFactory factory = new CommonGramsFilterFactory();
     Map<String, String> args = new HashMap<String, String>();

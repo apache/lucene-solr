@@ -20,6 +20,8 @@ package org.apache.solr.analysis;
 import java.io.IOException;
 import java.io.StringReader;
 
+import junit.framework.TestCase;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -30,7 +32,7 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 /**
  * General token testing helper functions
  */
-public abstract class BaseTokenTestCase extends AnalysisTestCase
+public abstract class BaseTokenTestCase extends TestCase
 {
   // some helpers to test Analyzers and TokenStreams:
   // these are taken from Lucene's BaseTokenStreamTestCase
