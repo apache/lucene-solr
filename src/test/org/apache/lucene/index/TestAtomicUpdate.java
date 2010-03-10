@@ -19,20 +19,19 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.document.*;
-import org.apache.lucene.analysis.*;
 
 import java.util.Random;
 import java.io.File;
 import java.io.IOException;
 
 public class TestAtomicUpdate extends LuceneTestCase {
-  private static final Analyzer ANALYZER = new SimpleAnalyzer(TEST_VERSION_CURRENT);
-  private Random RANDOM;
+  
+  private static final class MockIndexWriter extends IndexWriter {
 
-  public class MockIndexWriter extends IndexWriter {
+    static Random RANDOM;
 
-    public MockIndexWriter(Directory dir, Analyzer a, boolean create, IndexWriter.MaxFieldLength mfl) throws IOException {
-      super(dir, a, create, mfl);
+    public MockIndexWriter(Directory dir, IndexWriterConfig conf) throws IOException {
+      super(dir, conf);
     }
 
     @Override
@@ -126,9 +125,8 @@ public class TestAtomicUpdate extends LuceneTestCase {
 
     TimedThread[] threads = new TimedThread[4];
 
-    IndexWriter writer = new MockIndexWriter(directory, ANALYZER, true, IndexWriter.MaxFieldLength.UNLIMITED);
-    writer.setMaxBufferedDocs(7);
-    writer.setMergeFactor(3);
+    IndexWriter writer = new MockIndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT).setMaxBufferedDocs(7));
+    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(3);
 
     // Establish a base index of 100 docs:
     for(int i=0;i<100;i++) {
@@ -183,7 +181,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
     FSDirectory.
   */
   public void testAtomicUpdates() throws Exception {
-    RANDOM = newRandom();
+    MockIndexWriter.RANDOM = newRandom();
     Directory directory;
 
     // First in a RAM directory:

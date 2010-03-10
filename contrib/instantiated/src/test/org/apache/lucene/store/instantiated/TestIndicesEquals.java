@@ -30,6 +30,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
@@ -60,7 +61,9 @@ public class TestIndicesEquals extends LuceneTestCase {
     RAMDirectory dir = new RAMDirectory();
 
     // create dir data
-    IndexWriter indexWriter = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter indexWriter = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setAnalyzer(new StandardAnalyzer(
+        TEST_VERSION_CURRENT)));
     for (int i = 0; i < 20; i++) {
       Document document = new Document();
       assembleDocument(document, i);
@@ -84,7 +87,9 @@ public class TestIndicesEquals extends LuceneTestCase {
     InstantiatedIndex ii = new InstantiatedIndex();
 
     // create dir data
-    IndexWriter indexWriter = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter indexWriter = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setAnalyzer(new StandardAnalyzer(
+        TEST_VERSION_CURRENT)));
     for (int i = 0; i < 500; i++) {
       Document document = new Document();
       assembleDocument(document, i);

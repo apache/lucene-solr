@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -113,7 +113,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     RAMDirectory rd = new RAMDirectory();
-    IndexWriter w = new IndexWriter(rd, analyzer, MaxFieldLength.UNLIMITED);
+    IndexWriter w = new IndexWriter(rd, new IndexWriterConfig(TEST_VERSION_CURRENT).setAnalyzer(analyzer));
     for (int i = 0; i < docsContent.length; i++) {
       Document doc = new Document();
       doc.add(new Field("name", docsContent[i].name, Field.Store.YES,

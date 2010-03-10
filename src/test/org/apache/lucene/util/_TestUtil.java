@@ -56,7 +56,7 @@ public class _TestUtil {
   }
 
   public static void syncConcurrentMerges(IndexWriter writer) {
-    syncConcurrentMerges(writer.getMergeScheduler());
+    syncConcurrentMerges(writer.getConfig().getMergeScheduler());
   }
 
   public static void syncConcurrentMerges(MergeScheduler ms) {

@@ -25,8 +25,8 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -39,7 +39,8 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 	protected void setUp() throws Exception	{
 	  super.setUp();
 		directory = new RAMDirectory();
-		IndexWriter writer = new IndexWriter(directory, analyzer,true, MaxFieldLength.UNLIMITED);
+		IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setAnalyzer(analyzer));
 		
 		//Add series of docs with misspelt names
 		addDoc(writer, "jonathon smythe","1");

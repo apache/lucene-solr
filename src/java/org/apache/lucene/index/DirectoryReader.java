@@ -742,7 +742,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
       if (writeLock == null) {
         Lock writeLock = directory.makeLock(IndexWriter.WRITE_LOCK_NAME);
-        if (!writeLock.obtain(IndexWriter.WRITE_LOCK_TIMEOUT)) // obtain write lock
+        if (!writeLock.obtain(IndexWriterConfig.WRITE_LOCK_TIMEOUT)) // obtain write lock
           throw new LockObtainFailedException("Index locked for write: " + writeLock);
         this.writeLock = writeLock;
 

@@ -19,13 +19,12 @@ package org.apache.lucene.search;
 
 import java.util.HashSet;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
@@ -54,9 +53,8 @@ public class TermsFilterTest extends LuceneTestCase {
 	{
 		String fieldName="field1";
 		RAMDirectory rd=new RAMDirectory();
-		IndexWriter w=new IndexWriter(rd,new WhitespaceAnalyzer(TEST_VERSION_CURRENT),MaxFieldLength.UNLIMITED);
-		for (int i = 0; i < 100; i++)
-		{
+		IndexWriter w = new IndexWriter(rd, new IndexWriterConfig(TEST_VERSION_CURRENT));
+		for (int i = 0; i < 100; i++) {
 			Document doc=new Document();
 			int term=i*10; //terms are units of 10;
 			doc.add(new Field(fieldName,""+term,Field.Store.YES,Field.Index.NOT_ANALYZED));

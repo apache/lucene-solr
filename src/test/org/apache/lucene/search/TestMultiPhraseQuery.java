@@ -17,12 +17,12 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -45,7 +45,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase
 
     public void testPhrasePrefix() throws IOException {
         RAMDirectory indexStore = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(TEST_VERSION_CURRENT));
         add("blueberry pie", writer);
         add("blueberry strudel", writer);
         add("blueberry pizza", writer);
@@ -139,7 +139,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase
       // The contained PhraseMultiQuery must contain exactly one term array.
 
       RAMDirectory indexStore = new RAMDirectory();
-      IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(TEST_VERSION_CURRENT));
       add("blueberry pie", writer);
       add("blueberry chewing gum", writer);
       add("blue raspberry pie", writer);
@@ -167,7 +167,9 @@ public class TestMultiPhraseQuery extends LuceneTestCase
     
   public void testPhrasePrefixWithBooleanQuery() throws IOException {
     RAMDirectory indexStore = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(indexStore, new StandardAnalyzer(TEST_VERSION_CURRENT, Collections.emptySet()), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setAnalyzer(new StandardAnalyzer(
+        TEST_VERSION_CURRENT, Collections.emptySet())));
     add("This is a test", "object", writer);
     add("a note", "note", writer);
     writer.close();

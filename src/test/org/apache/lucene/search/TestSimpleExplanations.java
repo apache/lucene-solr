@@ -21,6 +21,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -316,8 +317,12 @@ public class TestSimpleExplanations extends TestExplanations {
     Document lDoc3 = new Document();
     lDoc3.add(new Field("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
 
-    IndexWriter writerA = new IndexWriter(indexStoreA, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
-    IndexWriter writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writerA = new IndexWriter(indexStoreA, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setAnalyzer(new StandardAnalyzer(
+        TEST_VERSION_CURRENT)));
+    IndexWriter writerB = new IndexWriter(indexStoreB, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setAnalyzer(new StandardAnalyzer(
+        TEST_VERSION_CURRENT)));
 
     writerA.addDocument(lDoc);
     writerA.addDocument(lDoc2);

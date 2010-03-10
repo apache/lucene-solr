@@ -44,8 +44,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestMultiLevelSkipList extends LuceneTestCase {
   public void testSimpleSkip() throws IOException {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new PayloadAnalyzer(), true,
-                                         IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setAnalyzer(new PayloadAnalyzer()));
     Term term = new Term("test", "a");
     for (int i = 0; i < 5000; i++) {
       Document d1 = new Document();

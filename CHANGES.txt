@@ -76,6 +76,15 @@ API Changes
   use by external code. In addition it offers a matchExtension method which 
   callers can use to query whether a certain file matches a certain extension.
   (Shai Erera via Mike McCandless)  
+  
+* LUCENE-2294: IndexWriter constructors have been deprecated in favor of a 
+  single ctor which accepts IndexWriterConfig and a Directory. You can set all
+  the parameters related to IndexWriter on IndexWriterConfig. The different 
+  setter/getter methods were deprecated as well. One should call 
+  writer.getConfig().getXYZ() to query for a parameter XYZ.
+  Additionally, the setter/getter related to MergePolicy were deprecated as 
+  well. One should interact with the MergePolicy directly.
+  (Shai Erera via Mike McCandless)
 
 * LUCENE-124: Add a TopTermsBoostOnlyBooleanQueryRewrite to MultiTermQuery.
   This rewrite method is similar to TopTermsScoringBooleanQueryRewrite, but

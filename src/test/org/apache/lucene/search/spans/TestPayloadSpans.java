@@ -35,6 +35,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DefaultSimilarity;
@@ -114,9 +115,9 @@ public class TestPayloadSpans extends LuceneTestCase {
   public IndexSearcher getSpanNotSearcher()
       throws IOException {
     RAMDirectory directory = new RAMDirectory();
-    PayloadAnalyzer analyzer = new PayloadAnalyzer();
-    IndexWriter writer = new IndexWriter(directory, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED);
-    writer.setSimilarity(similarity);
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setAnalyzer(new PayloadAnalyzer()).setSimilarity(
+        similarity));
 
     Document doc = new Document();
     doc.add(new Field(PayloadHelper.FIELD, "one two three one four three",
@@ -254,8 +255,8 @@ public class TestPayloadSpans extends LuceneTestCase {
   public void testShrinkToAfterShortestMatch() throws CorruptIndexException,
       LockObtainFailedException, IOException {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new TestPayloadAnalyzer(),
-        IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setAnalyzer(new TestPayloadAnalyzer()));
     Document doc = new Document();
     doc.add(new Field("content", new StringReader("a b c d e f g h i j a k")));
     writer.addDocument(doc);
@@ -288,8 +289,8 @@ public class TestPayloadSpans extends LuceneTestCase {
   public void testShrinkToAfterShortestMatch2() throws CorruptIndexException,
       LockObtainFailedException, IOException {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new TestPayloadAnalyzer(),
-        IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setAnalyzer(new TestPayloadAnalyzer()));
     Document doc = new Document();
     doc.add(new Field("content", new StringReader("a b a d k f a h i k a k")));
     writer.addDocument(doc);
@@ -321,8 +322,8 @@ public class TestPayloadSpans extends LuceneTestCase {
   public void testShrinkToAfterShortestMatch3() throws CorruptIndexException,
       LockObtainFailedException, IOException {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new TestPayloadAnalyzer(),
-        IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setAnalyzer(new TestPayloadAnalyzer()));
     Document doc = new Document();
     doc.add(new Field("content", new StringReader("j k a l f k k p a t a k l k t a")));
     writer.addDocument(doc);
@@ -359,9 +360,9 @@ public class TestPayloadSpans extends LuceneTestCase {
   
   public void testPayloadSpanUtil() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    PayloadAnalyzer analyzer = new PayloadAnalyzer();
-    IndexWriter writer = new IndexWriter(directory, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED);
-    writer.setSimilarity(similarity);
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setAnalyzer(new PayloadAnalyzer()).setSimilarity(
+        similarity));
     Document doc = new Document();
     doc.add(new Field(PayloadHelper.FIELD,"xx rr yy mm  pp", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
@@ -418,11 +419,9 @@ public class TestPayloadSpans extends LuceneTestCase {
   
   private IndexSearcher getSearcher() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    PayloadAnalyzer analyzer = new PayloadAnalyzer();
     String[] docs = new String[]{"xx rr yy mm  pp","xx yy mm rr pp", "nopayload qq ss pp np", "one two three four five six seven eight nine ten eleven", "nine one two three four five six seven eight eleven ten"};
-    IndexWriter writer = new IndexWriter(directory, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED);
-
-    writer.setSimilarity(similarity);
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setAnalyzer(new PayloadAnalyzer()).setSimilarity(similarity));
 
     Document doc = null;
     for(int i = 0; i < docs.length; i++) {

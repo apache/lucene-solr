@@ -16,9 +16,12 @@
 
 package org.apache.lucene.store.instantiated;
 
-import junit.framework.TestCase;
+import java.io.IOException;
+import java.util.Arrays;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.IndexSearcher;
@@ -26,11 +29,9 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
-import java.util.Arrays;
-import java.io.IOException;
-
-public class TestEmptyIndex extends TestCase {
+public class TestEmptyIndex extends LuceneTestCase {
 
   public void testSearch() throws Exception {
 
@@ -60,7 +61,7 @@ public class TestEmptyIndex extends TestCase {
     // make sure a Directory acts the same
 
     Directory d = new RAMDirectory();
-    new IndexWriter(d, null, true, IndexWriter.MaxFieldLength.UNLIMITED).close();
+    new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT)).close();
     r = IndexReader.open(d, false);
     testNorms(r);
     r.close();
@@ -93,7 +94,7 @@ public class TestEmptyIndex extends TestCase {
     // make sure a Directory acts the same
 
     Directory d = new RAMDirectory();
-    new IndexWriter(d, null, true, IndexWriter.MaxFieldLength.UNLIMITED).close();
+    new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT)).close();
     r = IndexReader.open(d, false);
     termEnumTest(r);
     r.close();

@@ -17,21 +17,30 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.document.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.document.FieldSelectorResult;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document.LoadFirstFieldSelector;
+import org.apache.lucene.document.SetBasedFieldSelector;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.BufferedIndexInput;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
 
 public class TestFieldsReader extends LuceneTestCase {
   private RAMDirectory dir = new RAMDirectory();
@@ -50,8 +59,9 @@ public class TestFieldsReader extends LuceneTestCase {
     fieldInfos = new FieldInfos();
     DocHelper.setupDoc(testDoc);
     fieldInfos.add(testDoc);
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
-    writer.setUseCompoundFile(false);
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(false);
+    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundDocStore(false);
     writer.addDocument(testDoc);
     writer.close();
   }
@@ -207,8 +217,8 @@ public class TestFieldsReader extends LuceneTestCase {
     FSDirectory tmpDir = FSDirectory.open(file);
     assertTrue(tmpDir != null);
 
-    IndexWriter writer = new IndexWriter(tmpDir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
-    writer.setUseCompoundFile(false);
+    IndexWriter writer = new IndexWriter(tmpDir, new IndexWriterConfig(TEST_VERSION_CURRENT).setOpenMode(OpenMode.CREATE));
+    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(false);
     writer.addDocument(testDoc);
     writer.close();
 
@@ -387,7 +397,8 @@ public class TestFieldsReader extends LuceneTestCase {
 
     try {
       Directory dir = new FaultyFSDirectory(indexDir);
-      IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+          TEST_VERSION_CURRENT).setOpenMode(OpenMode.CREATE));
       for(int i=0;i<2;i++)
         writer.addDocument(testDoc);
       writer.optimize();

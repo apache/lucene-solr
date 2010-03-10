@@ -25,12 +25,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -242,8 +244,8 @@ public class TestBufferedIndexInput extends LuceneTestCase {
       File indexDir = new File(System.getProperty("tempDir"), "testSetBufferSize");
       MockFSDirectory dir = new MockFSDirectory(indexDir, newRandom());
       try {
-        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
-        writer.setUseCompoundFile(false);
+        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setOpenMode(OpenMode.CREATE));
+        ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(false);
         for(int i=0;i<37;i++) {
           Document doc = new Document();
           doc.add(new Field("content", "aaa bbb ccc ddd" + i, Field.Store.YES, Field.Index.ANALYZED));
@@ -294,7 +296,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
 
       public MockFSDirectory(File path, Random rand) throws IOException {
         this.rand = rand;
-        lockFactory = new NoLockFactory();
+        lockFactory = NoLockFactory.getNoLockFactory();
         dir = new SimpleFSDirectory(path, null);
       }
 

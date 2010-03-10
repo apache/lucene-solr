@@ -19,9 +19,9 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -32,7 +32,7 @@ import org.apache.lucene.util.OpenBitSetDISI;
 public class TestCachingWrapperFilter extends LuceneTestCase {
   public void testCachingWorks() throws Exception {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT));
     writer.close();
 
     IndexReader reader = IndexReader.open(dir, true);
@@ -71,7 +71,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   
   public void testIsCacheAble() throws Exception {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT));
     writer.close();
 
     IndexReader reader = IndexReader.open(dir, true);

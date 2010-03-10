@@ -28,7 +28,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -45,8 +45,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
     protected void setUp() throws Exception {
       super.setUp();
 	directory = new RAMDirectory();
-	IndexWriter writer = new IndexWriter(directory, new StandardAnalyzer(TEST_VERSION_CURRENT),
-		true, MaxFieldLength.UNLIMITED);
+	IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT).setAnalyzer(new StandardAnalyzer(TEST_VERSION_CURRENT)));
 
 	// Add series of docs with specific information for MoreLikeThis
 	addDoc(writer, "lucene");

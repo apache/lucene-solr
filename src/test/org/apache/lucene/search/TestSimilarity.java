@@ -22,10 +22,10 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.Explanation.IDFExplanation;
@@ -63,9 +63,8 @@ public class TestSimilarity extends LuceneTestCase {
 
   public void testSimilarity() throws Exception {
     RAMDirectory store = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, 
-                                         IndexWriter.MaxFieldLength.LIMITED);
-    writer.setSimilarity(new SimpleSimilarity());
+    IndexWriter writer = new IndexWriter(store, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setSimilarity(new SimpleSimilarity()));
     
     Document d1 = new Document();
     d1.add(new Field("field", "a c", Field.Store.YES, Field.Index.ANALYZED));

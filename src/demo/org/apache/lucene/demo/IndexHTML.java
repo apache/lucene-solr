@@ -21,8 +21,10 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 
@@ -77,8 +79,9 @@ public class IndexHTML {
         deleting = true;
         indexDocs(root, index, create);
       }
-      writer = new IndexWriter(FSDirectory.open(index), new StandardAnalyzer(Version.LUCENE_CURRENT), create, 
-                               new IndexWriter.MaxFieldLength(1000000));
+      writer = new IndexWriter(FSDirectory.open(index), new IndexWriterConfig(
+          Version.LUCENE_CURRENT).setAnalyzer(new StandardAnalyzer(
+          Version.LUCENE_CURRENT)).setMaxFieldLength(1000000).setOpenMode(create ? OpenMode.CREATE : OpenMode.CREATE_OR_APPEND));
       indexDocs(root, index, create);		  // add new docs
 
       System.out.println("Optimizing index...");

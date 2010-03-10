@@ -19,14 +19,13 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.document.*;
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.*;
 
 import java.util.Random;
 import java.io.File;
 
 public class TestStressIndexing extends LuceneTestCase {
-  private static final Analyzer ANALYZER = new SimpleAnalyzer(TEST_VERSION_CURRENT);
   private Random RANDOM;
 
   private static abstract class TimedThread extends Thread {
@@ -118,15 +117,13 @@ public class TestStressIndexing extends LuceneTestCase {
     stress test.
   */
   public void runStressTest(Directory directory, MergeScheduler mergeScheduler) throws Exception {
-    IndexWriter modifier = new IndexWriter(directory, ANALYZER, true, IndexWriter.MaxFieldLength.UNLIMITED);
-
-    modifier.setMaxBufferedDocs(10);
+    IndexWriter modifier = new IndexWriter(directory, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(
+        10).setMergeScheduler(mergeScheduler));
 
     TimedThread[] threads = new TimedThread[4];
     int numThread = 0;
 
-    if (mergeScheduler != null)
-      modifier.setMergeScheduler(mergeScheduler);
 
     // One modifier that writes 10 docs then removes 5, over
     // and over:

@@ -11,6 +11,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.RAMDirectory;
@@ -141,7 +142,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
 		
 		//Create an index
 		RAMDirectory dir=new RAMDirectory();
-		IndexWriter w=new IndexWriter(dir,analyzer,true, IndexWriter.MaxFieldLength.UNLIMITED);
+		IndexWriter w=new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setAnalyzer(analyzer));
 		for (int i = 0; i < docFieldValues.length; i++)
 		{
 			w.addDocument(getDocumentFromString(docFieldValues[i]));

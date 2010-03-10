@@ -19,11 +19,10 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -109,7 +108,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     
     // populate an index with 30 documents, this should be enough for the test.
     // The documents have no content - the test uses MatchAllDocsQuery().
-    IndexWriter writer = new IndexWriter(dir, new KeywordAnalyzer(), MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT));
     for (int i = 0; i < 30; i++) {
       writer.addDocument(new Document());
     }

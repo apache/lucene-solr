@@ -17,14 +17,21 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.SimpleAnalyzer;
-import org.apache.lucene.document.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
+
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.document.FieldSelectorResult;
+import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-
-import java.util.*;
+import org.apache.lucene.util.LuceneTestCase;
 
 
 /**
@@ -63,10 +70,10 @@ public class TestLazyBug extends LuceneTestCase {
     Directory dir = new RAMDirectory();
     try {
       Random r = newRandom();
-      Analyzer analyzer = new SimpleAnalyzer(TEST_VERSION_CURRENT);
-      IndexWriter writer = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
-      
-      writer.setUseCompoundFile(false);
+      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT));
+      LogMergePolicy lmp = (LogMergePolicy) writer.getMergePolicy();
+      lmp.setUseCompoundFile(false);
+      lmp.setUseCompoundDocStore(false);
       
       for (int d = 1; d <= NUM_DOCS; d++) {
         Document doc = new Document();

@@ -17,12 +17,12 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
@@ -33,8 +33,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
 
   public void testBasic() throws Exception {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), true,
-        IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT));
     Document doc = new Document();
     doc.add(new Field("field", "value", Store.NO, Index.ANALYZED));
     writer.addDocument(doc);

@@ -20,8 +20,8 @@ package org.apache.lucene.search;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
@@ -36,7 +36,7 @@ public class TestPrefixQuery extends LuceneTestCase {
     String[] categories = new String[] {"/Computers",
                                         "/Computers/Mac",
                                         "/Computers/Windows"};
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT));
     for (int i = 0; i < categories.length; i++) {
       Document doc = new Document();
       doc.add(new Field("category", categories[i], Field.Store.YES, Field.Index.NOT_ANALYZED));

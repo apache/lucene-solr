@@ -34,6 +34,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -103,10 +105,11 @@ public class TestSort extends LuceneTestCase implements Serializable {
   // create an index of all the documents, or just the x, or just the y documents
   private Searcher getIndex (boolean even, boolean odd)
   throws IOException {
-    RAMDirectory indexStore = new RAMDirectory ();
-    IndexWriter writer = new IndexWriter (indexStore, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
-    writer.setMaxBufferedDocs(2);
-    writer.setMergeFactor(1000);
+    RAMDirectory indexStore = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setAnalyzer(new SimpleAnalyzer(
+        TEST_VERSION_CURRENT)).setMaxBufferedDocs(2));
+    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(1000);
     for (int i=0; i<data.length; ++i) {
       if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
         Document doc = new Document();
@@ -140,9 +143,10 @@ public class TestSort extends LuceneTestCase implements Serializable {
   
   private IndexSearcher getFullStrings() throws CorruptIndexException, LockObtainFailedException, IOException {
     RAMDirectory indexStore = new RAMDirectory ();
-    IndexWriter writer = new IndexWriter (indexStore, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
-    writer.setMaxBufferedDocs(4);
-    writer.setMergeFactor(97);
+    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setAnalyzer(new SimpleAnalyzer(
+        TEST_VERSION_CURRENT)).setMaxBufferedDocs(4));
+    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(97);
     for (int i=0; i<NUM_STRINGS; i++) {
         Document doc = new Document();
         String num = getRandomCharString(getRandomNumber(2, 8), 48, 52);
@@ -153,7 +157,6 @@ public class TestSort extends LuceneTestCase implements Serializable {
         doc.add (new Field ("string2", num2, Field.Store.NO, Field.Index.NOT_ANALYZED));
         doc.add (new Field ("tracer2", num2, Field.Store.YES, Field.Index.NO));
         doc.setBoost(2);  // produce some scores above 1.0
-        writer.setMaxBufferedDocs(getRandomNumber(2, 12));
         writer.addDocument (doc);
       
     }

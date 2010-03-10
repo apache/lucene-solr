@@ -21,7 +21,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.document.*;
 
 import java.util.Random;
@@ -104,8 +105,8 @@ public class TestThreadSafe extends LuceneTestCase {
   String[] words = "now is the time for all good men to come to the aid of their country".split(" ");
 
   void buildDir(Directory dir, int nDocs, int maxFields, int maxFieldLen) throws IOException {
-    IndexWriter iw = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
-    iw.setMaxBufferedDocs(10);
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10));
     for (int j=0; j<nDocs; j++) {
       Document d = new Document();
       int nFields = r.nextInt(maxFields);

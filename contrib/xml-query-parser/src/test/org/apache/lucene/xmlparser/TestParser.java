@@ -12,12 +12,14 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Version;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -63,7 +65,7 @@ public class TestParser extends TestCase {
 		{
 			BufferedReader d = new BufferedReader(new InputStreamReader(TestParser.class.getResourceAsStream("reuters21578.txt"))); 
 			dir=new RAMDirectory();
-			IndexWriter writer=new IndexWriter(dir,analyzer,true, IndexWriter.MaxFieldLength.UNLIMITED);
+			IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_24).setAnalyzer(analyzer));
 			String line = d.readLine();		
 			while(line!=null)
 			{

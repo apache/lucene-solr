@@ -18,10 +18,10 @@ package org.apache.lucene.spatial.tier;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.QueryWrapperFilter;
@@ -44,7 +44,7 @@ public class TestDistance extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     directory = new RAMDirectory();
-    writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT));
     addData(writer);
     
   }

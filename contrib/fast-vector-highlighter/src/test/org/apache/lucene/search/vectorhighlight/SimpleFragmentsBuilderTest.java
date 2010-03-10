@@ -24,7 +24,8 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.Query;
 
 public class SimpleFragmentsBuilderTest extends AbstractTestCase {
@@ -118,7 +119,9 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
   }
   
   protected void makeUnstoredIndex() throws Exception {
-    IndexWriter writer = new IndexWriter( dir, analyzerW, true, MaxFieldLength.LIMITED );
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setOpenMode(OpenMode.CREATE).setAnalyzer(
+        analyzerW));
     Document doc = new Document();
     doc.add( new Field( F, "aaa", Store.NO, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
     writer.addDocument( doc );

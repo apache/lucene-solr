@@ -23,11 +23,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
@@ -47,8 +48,7 @@ public class TestLockFactory extends LuceneTestCase {
         // Lock prefix should have been set:
         assertTrue("lock prefix was not set by the RAMDirectory", lf.lockPrefixSet);
 
-        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true,
-                                             IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT));
 
         // add 100 documents (so that commit lock is used)
         for (int i = 0; i < 100; i++) {
@@ -80,15 +80,13 @@ public class TestLockFactory extends LuceneTestCase {
         assertTrue("RAMDirectory.setLockFactory did not take",
                    NoLockFactory.class.isInstance(dir.getLockFactory()));
 
-        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true,
-                                             IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT));
 
         // Create a 2nd IndexWriter.  This is normally not allowed but it should run through since we're not
         // using any locks:
         IndexWriter writer2 = null;
         try {
-            writer2 = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), false,
-                                      IndexWriter.MaxFieldLength.LIMITED);
+            writer2 = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setOpenMode(OpenMode.APPEND));
         } catch (Exception e) {
             e.printStackTrace(System.out);
             fail("Should not have hit an IOException with no locking");
@@ -108,14 +106,12 @@ public class TestLockFactory extends LuceneTestCase {
         assertTrue("RAMDirectory did not use correct LockFactory: got " + dir.getLockFactory(),
                    SingleInstanceLockFactory.class.isInstance(dir.getLockFactory()));
 
-        IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true,
-                                             IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT));
 
         // Create a 2nd IndexWriter.  This should fail:
         IndexWriter writer2 = null;
         try {
-            writer2 = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), false,
-                                      IndexWriter.MaxFieldLength.LIMITED);
+            writer2 = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setOpenMode(OpenMode.APPEND));
             fail("Should have hit an IOException with two IndexWriters on default SingleInstanceLockFactory");
         } catch (IOException e) {
         }
@@ -151,8 +147,7 @@ public class TestLockFactory extends LuceneTestCase {
         FSDirectory fs1 = FSDirectory.open(indexDir, lockFactory);
 
         // First create a 1 doc index:
-        IndexWriter w = new IndexWriter(fs1, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true,
-                                        IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter w = new IndexWriter(fs1, new IndexWriterConfig(TEST_VERSION_CURRENT).setOpenMode(OpenMode.CREATE));
         addDoc(w);
         w.close();
 
@@ -261,12 +256,10 @@ public class TestLockFactory extends LuceneTestCase {
         }
         @Override
         public void run() {
-            WhitespaceAnalyzer analyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
             IndexWriter writer = null;
             for(int i=0;i<this.numIteration;i++) {
                 try {
-                    writer = new IndexWriter(dir, analyzer, false,
-                                             IndexWriter.MaxFieldLength.LIMITED);
+                    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setOpenMode(OpenMode.APPEND));
                 } catch (IOException e) {
                     if (e.toString().indexOf(" timed out:") == -1) {
                         hitException = true;

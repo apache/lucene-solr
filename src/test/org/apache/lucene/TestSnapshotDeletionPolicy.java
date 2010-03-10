@@ -31,6 +31,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexCommit;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.TestIndexWriter;
@@ -67,9 +68,10 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     Directory dir = new MockRAMDirectory();
 
     SnapshotDeletionPolicy dp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
-    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), dp, IndexWriter.MaxFieldLength.UNLIMITED);
-    // Force frequent flushes
-    writer.setMaxBufferedDocs(2);
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setAnalyzer(
+        new StandardAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(dp)
+        .setMaxBufferedDocs(2));
     Document doc = new Document();
     doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     for(int i=0;i<7;i++) {
@@ -83,7 +85,9 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     writer.close();
     copyFiles(dir, cp);
     
-    writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), dp, IndexWriter.MaxFieldLength.UNLIMITED);
+    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT)
+        .setAnalyzer(new StandardAnalyzer(TEST_VERSION_CURRENT))
+        .setIndexDeletionPolicy(dp));
     copyFiles(dir, cp);
     for(int i=0;i<7;i++) {
       writer.addDocument(doc);
@@ -95,7 +99,9 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     writer.close();
     copyFiles(dir, cp);
     dp.release();
-    writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), dp, IndexWriter.MaxFieldLength.UNLIMITED);
+    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT)
+        .setAnalyzer(new StandardAnalyzer(TEST_VERSION_CURRENT))
+        .setIndexDeletionPolicy(dp));
     writer.close();
     try {
       copyFiles(dir, cp);
@@ -111,10 +117,10 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     final long stopTime = System.currentTimeMillis() + 1000;
 
     SnapshotDeletionPolicy dp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
-    final IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), dp, IndexWriter.MaxFieldLength.UNLIMITED);
-
-    // Force frequent flushes
-    writer.setMaxBufferedDocs(2);
+    final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setAnalyzer(
+        new StandardAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(dp)
+        .setMaxBufferedDocs(2));
 
     final Thread t = new Thread() {
         @Override

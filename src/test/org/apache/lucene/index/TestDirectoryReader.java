@@ -22,6 +22,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -187,7 +188,10 @@ public class TestDirectoryReader extends LuceneTestCase {
   }
 
   private void addDoc(RAMDirectory ramDir1, String s, boolean create) throws IOException {
-    IndexWriter iw = new IndexWriter(ramDir1, new StandardAnalyzer(TEST_VERSION_CURRENT), create, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter iw = new IndexWriter(ramDir1, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setAnalyzer(
+        new StandardAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(
+        create ? OpenMode.CREATE : OpenMode.APPEND));
     Document doc = new Document();
     doc.add(new Field("body", s, Field.Store.YES, Field.Index.ANALYZED));
     iw.addDocument(doc);

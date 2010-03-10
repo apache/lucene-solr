@@ -18,12 +18,11 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.store.RAMDirectory;
@@ -116,8 +115,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     query.setSlop(slop);
 
     RAMDirectory ramDir = new RAMDirectory();
-    WhitespaceAnalyzer analyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
-    IndexWriter writer = new IndexWriter(ramDir, analyzer, MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT));
     writer.addDocument(doc);
     writer.close();
 

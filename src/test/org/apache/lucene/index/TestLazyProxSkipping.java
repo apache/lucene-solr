@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
@@ -60,9 +59,9 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         int numDocs = 500;
         
         Directory directory = new SeekCountingDirectory();
-        IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
-        writer.setUseCompoundFile(false);
-        writer.setMaxBufferedDocs(10);
+        IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT).setMaxBufferedDocs(10));
+        ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(false);
+        ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundDocStore(false);
         for (int i = 0; i < numDocs; i++) {
             Document doc = new Document();
             String content;
@@ -118,7 +117,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     
     public void testSeek() throws IOException {
         Directory directory = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT));
         for (int i = 0; i < 10; i++) {
             Document doc = new Document();
             doc.add(new Field(this.field, "a b", Field.Store.YES, Field.Index.ANALYZED));

@@ -28,7 +28,7 @@ public class TestTermVectorAccessor extends LuceneTestCase {
   public void test() throws Exception {
 
     Directory dir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT, Collections.emptySet()), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setAnalyzer(new StandardAnalyzer(TEST_VERSION_CURRENT, Collections.emptySet())));
 
     Document doc;
 

@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -55,8 +56,9 @@ public class TestBasics extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, 
-                                         IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+        TEST_VERSION_CURRENT).setAnalyzer(new SimpleAnalyzer(
+        TEST_VERSION_CURRENT)));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();

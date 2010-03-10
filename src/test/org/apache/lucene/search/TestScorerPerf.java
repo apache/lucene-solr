@@ -8,10 +8,11 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
@@ -44,7 +45,7 @@ public class TestScorerPerf extends LuceneTestCase {
       // Create a dummy index with nothing in it.
     // This could possibly fail if Lucene starts checking for docid ranges...
     RAMDirectory rd = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(rd,new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter iw = new IndexWriter(rd, new IndexWriterConfig(TEST_VERSION_CURRENT));
     iw.addDocument(new Document());
     iw.close();
     s = new IndexSearcher(rd, true);
@@ -59,7 +60,7 @@ public class TestScorerPerf extends LuceneTestCase {
       terms[i] = new Term("f",Character.toString((char)('A'+i)));
     }
 
-    IndexWriter iw = new IndexWriter(dir,new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setOpenMode(OpenMode.CREATE));
     for (int i=0; i<nDocs; i++) {
       Document d = new Document();
       for (int j=0; j<nTerms; j++) {

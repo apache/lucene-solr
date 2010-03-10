@@ -48,7 +48,7 @@ final class SegmentMerger {
   
   private Directory directory;
   private String segment;
-  private int termIndexInterval = IndexWriter.DEFAULT_TERM_INDEX_INTERVAL;
+  private int termIndexInterval = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
 
   private List<IndexReader> readers = new ArrayList<IndexReader>();
   private FieldInfos fieldInfos;
@@ -96,7 +96,7 @@ final class SegmentMerger {
         }
       };
     }
-    termIndexInterval = writer.getTermIndexInterval();
+    termIndexInterval = writer.getConfig().getTermIndexInterval();
   }
   
   boolean hasProx() {

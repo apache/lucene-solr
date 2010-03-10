@@ -22,12 +22,11 @@ import java.util.Locale;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -43,7 +42,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
     final Random rnd = newRandom();
 
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT));
     
     DecimalFormat format = new DecimalFormat("00000000000", new DecimalFormatSymbols(Locale.US));
     

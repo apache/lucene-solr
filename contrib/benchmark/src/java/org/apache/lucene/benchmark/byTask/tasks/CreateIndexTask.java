@@ -21,9 +21,12 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.index.IndexDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.util.Version;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -99,7 +102,7 @@ public class CreateIndexTask extends PerfTask {
 
     final double ramBuffer = config.get("ram.flush.mb",OpenIndexTask.DEFAULT_RAM_FLUSH_MB);
     final int maxBuffered = config.get("max.buffered",OpenIndexTask.DEFAULT_MAX_BUFFERED);
-    if (maxBuffered == IndexWriter.DISABLE_AUTO_FLUSH) {
+    if (maxBuffered == IndexWriterConfig.DISABLE_AUTO_FLUSH) {
       writer.setRAMBufferSizeMB(ramBuffer);
       writer.setMaxBufferedDocs(maxBuffered);
     } else {
@@ -147,10 +150,9 @@ public class CreateIndexTask extends PerfTask {
     Config config = runData.getConfig();
     
     IndexWriter writer = new IndexWriter(runData.getDirectory(),
-                                         runData.getAnalyzer(),
-                                         true,
-                                         getIndexDeletionPolicy(config),
-                                         IndexWriter.MaxFieldLength.LIMITED);
+        new IndexWriterConfig(Version.LUCENE_31).setAnalyzer(
+            runData.getAnalyzer()).setOpenMode(OpenMode.CREATE)
+            .setIndexDeletionPolicy(getIndexDeletionPolicy(config)));
     setIndexWriterConfig(writer, config);
     runData.setIndexWriter(writer);
     return 1;
