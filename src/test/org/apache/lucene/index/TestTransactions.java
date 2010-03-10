@@ -19,16 +19,13 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Random;
+import org.apache.lucene.store.*;
+import org.apache.lucene.util.*;
+import org.apache.lucene.analysis.*;
+import org.apache.lucene.document.*;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.util.English;
-import org.apache.lucene.util.LuceneTestCase;
-
-public class TestTransactions extends LuceneTestCase {
-  
+public class TestTransactions extends LuceneTestCase
+{
   private Random RANDOM;
   private static volatile boolean doFail;
 
@@ -91,15 +88,17 @@ public class TestTransactions extends LuceneTestCase {
     @Override
     public void doWork() throws Throwable {
 
-      IndexWriter writer1 = new IndexWriter(dir1, new IndexWriterConfig(TEST_VERSION_CURRENT).setMaxBufferedDocs(3));
-      ((LogMergePolicy) writer1.getMergePolicy()).setMergeFactor(2);
-      ((ConcurrentMergeScheduler) writer1.getConfig().getMergeScheduler()).setSuppressExceptions();
+      IndexWriter writer1 = new IndexWriter(dir1, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+      writer1.setMaxBufferedDocs(3);
+      writer1.setMergeFactor(2);
+      ((ConcurrentMergeScheduler) writer1.getMergeScheduler()).setSuppressExceptions();
 
+      IndexWriter writer2 = new IndexWriter(dir2, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
       // Intentionally use different params so flush/merge
       // happen @ different times
-      IndexWriter writer2 = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT).setMaxBufferedDocs(2));
-      ((LogMergePolicy) writer2.getMergePolicy()).setMergeFactor(3);
-      ((ConcurrentMergeScheduler) writer2.getConfig().getMergeScheduler()).setSuppressExceptions();
+      writer2.setMaxBufferedDocs(2);
+      writer2.setMergeFactor(3);
+      ((ConcurrentMergeScheduler) writer2.getMergeScheduler()).setSuppressExceptions();
 
       update(writer1);
       update(writer2);
@@ -179,7 +178,7 @@ public class TestTransactions extends LuceneTestCase {
   }
 
   public void initIndex(Directory dir) throws Throwable {
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
     for(int j=0; j<7; j++) {
       Document d = new Document();
       int n = RANDOM.nextInt();

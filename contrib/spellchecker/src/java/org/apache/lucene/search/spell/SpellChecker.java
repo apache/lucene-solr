@@ -20,14 +20,12 @@ package org.apache.lucene.search.spell;
 import java.io.IOException;
 import java.util.Iterator;
 
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -36,7 +34,6 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Version;
 
 /**
  * <p>
@@ -142,7 +139,8 @@ public class SpellChecker implements java.io.Closeable {
     synchronized (modifyCurrentIndexLock) {
       ensureOpen();
       if (!IndexReader.indexExists(spellIndexDir)) {
-          IndexWriter writer = new IndexWriter(spellIndexDir, new IndexWriterConfig(Version.LUCENE_CURRENT));
+          IndexWriter writer = new IndexWriter(spellIndexDir, null, true,
+              IndexWriter.MaxFieldLength.UNLIMITED);
           writer.close();
       }
       swapSearcher(spellIndexDir);
@@ -355,8 +353,7 @@ public class SpellChecker implements java.io.Closeable {
     synchronized (modifyCurrentIndexLock) {
       ensureOpen();
       final Directory dir = this.spellIndex;
-      final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-          Version.LUCENE_CURRENT).setOpenMode(OpenMode.CREATE));
+      final IndexWriter writer = new IndexWriter(dir, null, true, IndexWriter.MaxFieldLength.UNLIMITED);
       writer.close();
       swapSearcher(dir);
     }
@@ -391,8 +388,10 @@ public class SpellChecker implements java.io.Closeable {
     synchronized (modifyCurrentIndexLock) {
       ensureOpen();
       final Directory dir = this.spellIndex;
-      final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_CURRENT).setRAMBufferSizeMB(ramMB));
-      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(mergeFactor);
+      final IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(),
+          IndexWriter.MaxFieldLength.UNLIMITED);
+      writer.setMergeFactor(mergeFactor);
+      writer.setRAMBufferSizeMB(ramMB);
   
       Iterator<String> iter = dict.getWordsIterator();
       while (iter.hasNext()) {

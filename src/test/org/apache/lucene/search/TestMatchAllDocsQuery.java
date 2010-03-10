@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.QueryParser;
@@ -41,8 +40,8 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
   public void testQuery() throws Exception {
 
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT).setAnalyzer(analyzer).setMaxBufferedDocs(2));
+    IndexWriter iw = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
+    iw.setMaxBufferedDocs(2);  // force multi-segment
     addDoc("one", iw, 1f);
     addDoc("two", iw, 20f);
     addDoc("three four", iw, 300f);

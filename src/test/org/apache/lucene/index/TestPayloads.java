@@ -30,12 +30,12 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
@@ -100,7 +100,7 @@ public class TestPayloads extends LuceneTestCase {
         rnd = newRandom();
         Directory ram = new RAMDirectory();
         PayloadAnalyzer analyzer = new PayloadAnalyzer();
-        IndexWriter writer = new IndexWriter(ram, new IndexWriterConfig(TEST_VERSION_CURRENT).setAnalyzer(analyzer));
+        IndexWriter writer = new IndexWriter(ram, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
         Document d = new Document();
         // this field won't have any payloads
         d.add(new Field("f1", "This field has no payloads", Field.Store.NO, Field.Index.ANALYZED));
@@ -127,8 +127,7 @@ public class TestPayloads extends LuceneTestCase {
         
         // now we add another document which has payloads for field f3 and verify if the SegmentMerger
         // enabled payloads for that field
-        writer = new IndexWriter(ram, new IndexWriterConfig(TEST_VERSION_CURRENT)
-          .setAnalyzer(analyzer).setOpenMode(OpenMode.CREATE));
+        writer = new IndexWriter(ram, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
         d = new Document();
         d.add(new Field("f1", "This field has no payloads", Field.Store.NO, Field.Index.ANALYZED));
         d.add(new Field("f2", "This field has payloads in all docs", Field.Store.NO, Field.Index.ANALYZED));
@@ -169,9 +168,7 @@ public class TestPayloads extends LuceneTestCase {
     // different tests to verify the payload encoding
     private void performTest(Directory dir) throws Exception {
         PayloadAnalyzer analyzer = new PayloadAnalyzer();
-        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-            TEST_VERSION_CURRENT).setAnalyzer(analyzer)
-            .setOpenMode(OpenMode.CREATE));
+        IndexWriter writer = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
         
         // should be in sync with value in TermInfosWriter
         final int skipInterval = 16;
@@ -308,8 +305,7 @@ public class TestPayloads extends LuceneTestCase {
         
         // test long payload
         analyzer = new PayloadAnalyzer();
-        writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT)
-        .setAnalyzer(analyzer).setOpenMode(OpenMode.CREATE));
+        writer = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
         String singleTerm = "lucene";
         
         d = new Document();
@@ -469,7 +465,7 @@ public class TestPayloads extends LuceneTestCase {
         final ByteArrayPool pool = new ByteArrayPool(numThreads, 5);
         
         Directory dir = new RAMDirectory();
-        final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT));
+        final IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
         final String field = "test";
         
         Thread[] ingesters = new Thread[numThreads];

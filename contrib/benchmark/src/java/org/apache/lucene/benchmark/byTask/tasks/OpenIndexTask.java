@@ -21,9 +21,7 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 
@@ -41,10 +39,10 @@ import java.io.IOException;
  */
 public class OpenIndexTask extends PerfTask {
 
-  public static final int DEFAULT_MAX_BUFFERED = IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS;
-  public static final int DEFAULT_MAX_FIELD_LENGTH = IndexWriterConfig.UNLIMITED_FIELD_LENGTH;
+  public static final int DEFAULT_MAX_BUFFERED = IndexWriter.DEFAULT_MAX_BUFFERED_DOCS;
+  public static final int DEFAULT_MAX_FIELD_LENGTH = IndexWriter.DEFAULT_MAX_FIELD_LENGTH;
   public static final int DEFAULT_MERGE_PFACTOR = LogMergePolicy.DEFAULT_MERGE_FACTOR;
-  public static final double DEFAULT_RAM_FLUSH_MB = (int) IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB;
+  public static final double DEFAULT_RAM_FLUSH_MB = (int) IndexWriter.DEFAULT_RAM_BUFFER_SIZE_MB;
   private String commitUserData;
 
   public OpenIndexTask(PerfRunData runData) {
@@ -63,9 +61,10 @@ public class OpenIndexTask extends PerfTask {
     }
     
     IndexWriter writer = new IndexWriter(runData.getDirectory(),
-        new IndexWriterConfig(Version.LUCENE_CURRENT).setAnalyzer(
-            runData.getAnalyzer()).setIndexDeletionPolicy(
-            CreateIndexTask.getIndexDeletionPolicy(config)).setIndexCommit(ic));
+                                         runData.getAnalyzer(),
+                                         CreateIndexTask.getIndexDeletionPolicy(config),
+                                         IndexWriter.MaxFieldLength.UNLIMITED,
+                                         ic);
     CreateIndexTask.setIndexWriterConfig(writer, config);
     runData.setIndexWriter(writer);
     return 1;

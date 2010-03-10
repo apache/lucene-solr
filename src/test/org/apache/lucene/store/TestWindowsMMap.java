@@ -27,8 +27,6 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 
 public class TestWindowsMMap extends LuceneTestCase {
@@ -73,9 +71,7 @@ public class TestWindowsMMap extends LuceneTestCase {
     // interior filters.
     StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT, Collections.emptySet());
     // TODO: something about lock timeouts and leftover locks.
-    IndexWriter writer = new IndexWriter(storeDirectory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT).setAnalyzer(analyzer)
-        .setOpenMode(OpenMode.CREATE));
+    IndexWriter writer = new IndexWriter(storeDirectory, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
     IndexSearcher searcher = new IndexSearcher(storeDirectory, true);
     
     for(int dx = 0; dx < 1000; dx ++) {

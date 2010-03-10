@@ -18,8 +18,9 @@ package org.apache.lucene.index;
 
 import java.io.File;
 
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -34,7 +35,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     _TestUtil.rmDir(destDir);
     destDir.mkdirs();
     FSDirectory fsDir = FSDirectory.open(dir);
-    IndexWriter iw = new IndexWriter(fsDir, new IndexWriterConfig(TEST_VERSION_CURRENT).setOpenMode(OpenMode.CREATE));
+    IndexWriter iw = new IndexWriter(fsDir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, MaxFieldLength.UNLIMITED);
     for (int x=0; x < 100; x++) {
       Document doc = TestIndexWriterReader.createDocument(x, "index", 5);
       iw.addDocument(doc);

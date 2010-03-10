@@ -22,7 +22,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.FSDirectory;
 
 /**
@@ -75,10 +74,10 @@ public class TestIndexWriterLockRelease extends LuceneTestCase {
     public void testIndexWriterLockRelease() throws IOException {
         FSDirectory dir = FSDirectory.open(this.__test_dir);
         try {
-            new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setOpenMode(OpenMode.APPEND));
+            new IndexWriter(dir, new org.apache.lucene.analysis.standard.StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
         } catch (FileNotFoundException e) {
             try {
-                new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setOpenMode(OpenMode.APPEND));
+                new IndexWriter(dir, new org.apache.lucene.analysis.standard.StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
             } catch (FileNotFoundException e1) {
             }
         } finally {

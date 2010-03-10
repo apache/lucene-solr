@@ -2,9 +2,9 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.util.LuceneTestCase;
 
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.MockRAMDirectory;
 
 /**
@@ -27,7 +27,8 @@ import org.apache.lucene.store.MockRAMDirectory;
 /**
  * Tests {@link Document} class.
  */
-public class TestBinaryDocument extends LuceneTestCase {
+public class TestBinaryDocument extends LuceneTestCase
+{
 
   String binaryValStored = "this text will be stored as a byte array in the index";
   String binaryValCompressed = "this text will be also stored and compressed as a byte array in the index";
@@ -57,7 +58,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     /** add the doc to a ram index */
     MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.addDocument(doc);
     writer.close();
     
@@ -82,7 +83,9 @@ public class TestBinaryDocument extends LuceneTestCase {
     dir.close();
   }
   
-  public void testCompressionTools() throws Exception {
+  public void testCompressionTools()
+    throws Exception
+  {
     Fieldable binaryFldCompressed = new Field("binaryCompressed", CompressionTools.compress(binaryValCompressed.getBytes()));
     Fieldable stringFldCompressed = new Field("stringCompressed", CompressionTools.compressString(binaryValCompressed));
     
@@ -93,7 +96,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     /** add the doc to a ram index */
     MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.addDocument(doc);
     writer.close();
     

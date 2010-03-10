@@ -22,11 +22,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -50,8 +50,10 @@ public class TestTermScorer extends LuceneTestCase
         super.setUp();
         directory = new RAMDirectory();
 
-        IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT));
-        for (int i = 0; i < values.length; i++) {
+
+        IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+        for (int i = 0; i < values.length; i++)
+        {
             Document doc = new Document();
             doc.add(new Field(FIELD, values[i], Field.Store.YES, Field.Index.ANALYZED));
             writer.addDocument(doc);

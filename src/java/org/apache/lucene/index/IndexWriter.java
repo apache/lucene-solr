@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.DocumentsWriter.IndexingChain;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
@@ -29,7 +29,6 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 import java.io.Closeable;
@@ -180,11 +179,10 @@ public class IndexWriter implements Closeable {
   /**
    * Default value for the write lock timeout (1,000).
    * @see #setDefaultWriteLockTimeout
-   * @deprecated use {@link IndexWriterConfig#WRITE_LOCK_TIMEOUT} instead
    */
-  public static long WRITE_LOCK_TIMEOUT = IndexWriterConfig.WRITE_LOCK_TIMEOUT;
+  public static long WRITE_LOCK_TIMEOUT = 1000;
 
-  private long writeLockTimeout;
+  private long writeLockTimeout = WRITE_LOCK_TIMEOUT;
 
   /**
    * Name of the write lock in the index.
@@ -193,43 +191,36 @@ public class IndexWriter implements Closeable {
 
   /**
    * Value to denote a flush trigger is disabled
-   * @deprecated use {@link IndexWriterConfig#DISABLE_AUTO_FLUSH} instead
    */
-  public final static int DISABLE_AUTO_FLUSH = IndexWriterConfig.DISABLE_AUTO_FLUSH;
+  public final static int DISABLE_AUTO_FLUSH = -1;
 
   /**
    * Disabled by default (because IndexWriter flushes by RAM usage
    * by default). Change using {@link #setMaxBufferedDocs(int)}.
-   * @deprecated use {@link IndexWriterConfig#DEFAULT_MAX_BUFFERED_DOCS} instead.
    */
-  public final static int DEFAULT_MAX_BUFFERED_DOCS = IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS;
+  public final static int DEFAULT_MAX_BUFFERED_DOCS = DISABLE_AUTO_FLUSH;
 
   /**
    * Default value is 16 MB (which means flush when buffered
    * docs consume 16 MB RAM).  Change using {@link #setRAMBufferSizeMB}.
-   * @deprecated use {@link IndexWriterConfig#DEFAULT_RAM_BUFFER_SIZE_MB} instead.
    */
-  public final static double DEFAULT_RAM_BUFFER_SIZE_MB = IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB;
+  public final static double DEFAULT_RAM_BUFFER_SIZE_MB = 16.0;
 
   /**
    * Disabled by default (because IndexWriter flushes by RAM usage
    * by default). Change using {@link #setMaxBufferedDeleteTerms(int)}.
-   * @deprecated use {@link IndexWriterConfig#DEFAULT_MAX_BUFFERED_DELETE_TERMS} instead
    */
-  public final static int DEFAULT_MAX_BUFFERED_DELETE_TERMS = IndexWriterConfig.DEFAULT_MAX_BUFFERED_DELETE_TERMS;
+  public final static int DEFAULT_MAX_BUFFERED_DELETE_TERMS = DISABLE_AUTO_FLUSH;
 
   /**
    * Default value is 10,000. Change using {@link #setMaxFieldLength(int)}.
-   * 
-   * @deprecated see {@link IndexWriterConfig}
    */
   public final static int DEFAULT_MAX_FIELD_LENGTH = 10000;
 
   /**
    * Default value is 128. Change using {@link #setTermIndexInterval(int)}.
-   * @deprecated use {@link IndexWriterConfig#DEFAULT_TERM_INDEX_INTERVAL} instead.
    */
-  public final static int DEFAULT_TERM_INDEX_INTERVAL = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
+  public final static int DEFAULT_TERM_INDEX_INTERVAL = 128;
 
   /**
    * Absolute hard maximum length for a term.  If a term
@@ -253,11 +244,10 @@ public class IndexWriter implements Closeable {
   private int messageID = -1;
   volatile private boolean hitOOM;
 
-  private final Directory directory;  // where this index resides
-  private final Analyzer analyzer;    // how to analyze text
+  private Directory directory;  // where this index resides
+  private Analyzer analyzer;    // how to analyze text
 
-  // TODO 4.0: this should be made final once the setter is out
-  private /*final*/Similarity similarity = Similarity.getDefault(); // how to normalize
+  private Similarity similarity = Similarity.getDefault(); // how to normalize
 
   private volatile long changeCount; // increments every time a change is completed
   private long lastCommitChangeCount; // last changeCount that was committed
@@ -280,8 +270,7 @@ public class IndexWriter implements Closeable {
 
   private Lock writeLock;
 
-  // TODO 4.0: this should be made final once the setter is out
-  private /*final*/int termIndexInterval;
+  private int termIndexInterval = DEFAULT_TERM_INDEX_INTERVAL;
 
   private boolean closed;
   private boolean closing;
@@ -291,8 +280,7 @@ public class IndexWriter implements Closeable {
   private HashSet<SegmentInfo> mergingSegments = new HashSet<SegmentInfo>();
 
   private MergePolicy mergePolicy = new LogByteSizeMergePolicy(this);
-  // TODO 4.0: this should be made final once the setter is removed
-  private /*final*/MergeScheduler mergeScheduler;
+  private MergeScheduler mergeScheduler = new ConcurrentMergeScheduler();
   private LinkedList<MergePolicy.OneMerge> pendingMerges = new LinkedList<MergePolicy.OneMerge>();
   private Set<MergePolicy.OneMerge> runningMerges = new HashSet<MergePolicy.OneMerge>();
   private List<MergePolicy.OneMerge> mergeExceptions = new ArrayList<MergePolicy.OneMerge>();
@@ -319,11 +307,7 @@ public class IndexWriter implements Closeable {
   // deletes, doing merges, and reopening near real-time
   // readers.
   private volatile boolean poolReaders;
-
-  // The instance that was passed to the constructor. It is saved only in order
-  // to allow users to query an IndexWriter settings.
-  private final IndexWriterConfig config;
-
+  
   /**
    * Expert: returns a readonly reader, covering all
    * committed as well as un-committed changes to the index.
@@ -793,29 +777,19 @@ public class IndexWriter implements Closeable {
    *  Otherwise an IllegalArgumentException is thrown.</p>
    *
    *  @see #setUseCompoundFile(boolean)
-   *  @deprecated use {@link LogMergePolicy#getUseCompoundDocStore()} and
-   *  {@link LogMergePolicy#getUseCompoundFile()} directly.
    */
   public boolean getUseCompoundFile() {
     return getLogMergePolicy().getUseCompoundFile();
   }
 
-  /**
-   * <p>
-   * Setting to turn on usage of a compound file. When on, multiple files for
-   * each segment are merged into a single file when a new segment is flushed.
-   * </p>
-   * 
-   * <p>
-   * Note that this method is a convenience method: it just calls
-   * mergePolicy.setUseCompoundFile as long as mergePolicy is an instance of
-   * {@link LogMergePolicy}. Otherwise an IllegalArgumentException is thrown.
-   * </p>
-   * 
-   * @deprecated use {@link LogMergePolicy#setUseCompoundDocStore(boolean)} and
-   *             {@link LogMergePolicy#setUseCompoundFile(boolean)} directly.
-   *             Note that this method set the given value on both, therefore
-   *             you should consider doing the same.
+  /** <p>Setting to turn on usage of a compound file. When on,
+   *  multiple files for each segment are merged into a
+   *  single file when a new segment is flushed.</p>
+   *
+   *  <p>Note that this method is a convenience method: it
+   *  just calls mergePolicy.setUseCompoundFile as long as
+   *  mergePolicy is an instance of {@link LogMergePolicy}.
+   *  Otherwise an IllegalArgumentException is thrown.</p>
    */
   public void setUseCompoundFile(boolean value) {
     getLogMergePolicy().setUseCompoundFile(value);
@@ -825,25 +799,20 @@ public class IndexWriter implements Closeable {
   /** Expert: Set the Similarity implementation used by this IndexWriter.
    *
    * @see Similarity#setDefault(Similarity)
-   * @deprecated use {@link IndexWriterConfig#setSimilarity(Similarity)} instead
    */
   public void setSimilarity(Similarity similarity) {
     ensureOpen();
     this.similarity = similarity;
     docWriter.setSimilarity(similarity);
-    // Required so config.getSimilarity returns the right value. But this will
-    // go away together with the method in 4.0.
-    config.setSimilarity(similarity);
   }
 
   /** Expert: Return the Similarity implementation used by this IndexWriter.
    *
    * <p>This defaults to the current value of {@link Similarity#getDefault()}.
-   * @deprecated use {@link IndexWriterConfig#getSimilarity()} instead
    */
   public Similarity getSimilarity() {
     ensureOpen();
-    return similarity;
+    return this.similarity;
   }
 
   /** Expert: Set the interval between indexed terms.  Large values cause less
@@ -866,20 +835,15 @@ public class IndexWriter implements Closeable {
    * must be scanned for each random term access.
    *
    * @see #DEFAULT_TERM_INDEX_INTERVAL
-   * @deprecated use {@link IndexWriterConfig#setTermIndexInterval(int)}
    */
   public void setTermIndexInterval(int interval) {
     ensureOpen();
     this.termIndexInterval = interval;
-    // Required so config.getSimilarity returns the right value. But this will
-    // go away together with the method in 4.0.
-    config.setTermIndexInterval(interval);
   }
 
   /** Expert: Return the interval between indexed terms.
    *
    * @see #setTermIndexInterval(int)
-   * @deprecated use {@link IndexWriterConfig#getTermIndexInterval()}
    */
   public int getTermIndexInterval() {
     // We pass false because this method is called by SegmentMerger while we are in the process of closing
@@ -908,13 +872,10 @@ public class IndexWriter implements Closeable {
    *  if it does not exist and <code>create</code> is
    *  <code>false</code> or if there is any other low-level
    *  IO error
-   *  @deprecated use {@link #IndexWriter(Directory, IndexWriterConfig)} instead
    */
   public IndexWriter(Directory d, Analyzer a, boolean create, MaxFieldLength mfl)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    this(d, new IndexWriterConfig(Version.LUCENE_31).setAnalyzer(a).setOpenMode(
-        create ? OpenMode.CREATE : OpenMode.APPEND).setMaxFieldLength(
-        mfl.getLimit()));
+    init(d, a, create, null, mfl.getLimit(), null, null);
   }
 
   /**
@@ -934,12 +895,10 @@ public class IndexWriter implements Closeable {
    * @throws IOException if the directory cannot be
    *  read/written to or if there is any other low-level
    *  IO error
-   *  @deprecated use {@link #IndexWriter(Directory, IndexWriterConfig)} instead
    */
   public IndexWriter(Directory d, Analyzer a, MaxFieldLength mfl)
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    this(d, new IndexWriterConfig(Version.LUCENE_31).setAnalyzer(a)
-        .setMaxFieldLength(mfl.getLimit()));
+    init(d, a, null, mfl.getLimit(), null, null);
   }
 
   /**
@@ -959,13 +918,10 @@ public class IndexWriter implements Closeable {
    * @throws IOException if the directory cannot be
    *  read/written to or if there is any other low-level
    *  IO error
-   *  @deprecated use {@link #IndexWriter(Directory, IndexWriterConfig)} instead
    */
   public IndexWriter(Directory d, Analyzer a, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl)
     throws CorruptIndexException, LockObtainFailedException, IOException {
-    this(d, new IndexWriterConfig(Version.LUCENE_31).setAnalyzer(a)
-        .setMaxFieldLength(mfl.getLimit()).setIndexDeletionPolicy(
-            deletionPolicy));
+    init(d, a, deletionPolicy, mfl.getLimit(), null, null);
   }
 
   /**
@@ -991,13 +947,43 @@ public class IndexWriter implements Closeable {
    *  if it does not exist and <code>create</code> is
    *  <code>false</code> or if there is any other low-level
    *  IO error
-   *  @deprecated use {@link #IndexWriter(Directory, IndexWriterConfig)} instead
    */
   public IndexWriter(Directory d, Analyzer a, boolean create, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    this(d, new IndexWriterConfig(Version.LUCENE_31).setAnalyzer(a).setOpenMode(
-        create ? OpenMode.CREATE : OpenMode.APPEND).setMaxFieldLength(
-        mfl.getLimit()).setIndexDeletionPolicy(deletionPolicy));
+    init(d, a, create, deletionPolicy, mfl.getLimit(), null, null);
+  }
+  
+  /**
+   * Expert: constructs an IndexWriter with a custom {@link
+   * IndexDeletionPolicy} and {@link IndexingChain}, 
+   * for the index in <code>d</code>.
+   * Text will be analyzed with <code>a</code>.  If
+   * <code>create</code> is true, then a new, empty index
+   * will be created in <code>d</code>, replacing the index
+   * already there, if any.
+   *
+   * @param d the index directory
+   * @param a the analyzer to use
+   * @param create <code>true</code> to create the index or overwrite
+   *  the existing one; <code>false</code> to append to the existing
+   *  index
+   * @param deletionPolicy see <a href="#deletionPolicy">above</a>
+   * @param mfl whether or not to limit field lengths, value is in number of terms/tokens.  See {@link org.apache.lucene.index.IndexWriter.MaxFieldLength}.
+   * @param indexingChain the {@link DocConsumer} chain to be used to 
+   *  process documents
+   * @param commit which commit to open
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws LockObtainFailedException if another writer
+   *  has this index open (<code>write.lock</code> could not
+   *  be obtained)
+   * @throws IOException if the directory cannot be read/written to, or
+   *  if it does not exist and <code>create</code> is
+   *  <code>false</code> or if there is any other low-level
+   *  IO error
+   */
+  IndexWriter(Directory d, Analyzer a, boolean create, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl, IndexingChain indexingChain, IndexCommit commit)
+       throws CorruptIndexException, LockObtainFailedException, IOException {
+    init(d, a, create, deletionPolicy, mfl.getLimit(), indexingChain, commit);
   }
   
   /**
@@ -1031,74 +1017,44 @@ public class IndexWriter implements Closeable {
    *  if it does not exist and <code>create</code> is
    *  <code>false</code> or if there is any other low-level
    *  IO error
-   *  @deprecated use {@link #IndexWriter(Directory, IndexWriterConfig)} instead
    */
   public IndexWriter(Directory d, Analyzer a, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl, IndexCommit commit)
        throws CorruptIndexException, LockObtainFailedException, IOException {
-    this(d, new IndexWriterConfig(Version.LUCENE_31).setAnalyzer(a)
-        .setOpenMode(OpenMode.APPEND).setMaxFieldLength(mfl.getLimit())
-        .setIndexDeletionPolicy(deletionPolicy).setIndexCommit(commit));
+    init(d, a, false, deletionPolicy, mfl.getLimit(), null, commit);
   }
 
-  /**
-   * Constructs a new IndexWriter per the settings given in <code>conf</code>.
-   * Note that the passed in {@link IndexWriterConfig} is cloned and thus making
-   * changes to it after IndexWriter has been instantiated will not affect
-   * IndexWriter. Additionally, calling {@link #getConfig()} and changing the
-   * parameters does not affect that IndexWriter instance.
-   * <p>
-   * <b>NOTE:</b> by default, {@link IndexWriterConfig#getMaxFieldLength()}
-   * returns {@link IndexWriterConfig#UNLIMITED_FIELD_LENGTH}. Pay attention to
-   * whether this setting fits your application.
-   * 
-   * @param d
-   *          the index directory. The index is either created or appended
-   *          according <code>conf.getOpenMode()</code>.
-   * @param conf
-   *          the configuration settings according to which IndexWriter should
-   *          be initalized.
-   * @throws CorruptIndexException
-   *           if the index is corrupt
-   * @throws LockObtainFailedException
-   *           if another writer has this index open (<code>write.lock</code>
-   *           could not be obtained)
-   * @throws IOException
-   *           if the directory cannot be read/written to, or if it does not
-   *           exist and <code>conf.getOpenMode()</code> is
-   *           <code>OpenMode.APPEND</code> or if there is any other low-level
-   *           IO error
-   */
-  public IndexWriter(Directory d, IndexWriterConfig conf)
-      throws CorruptIndexException, LockObtainFailedException, IOException {
-    config = (IndexWriterConfig) conf.clone();
-    directory = d;
-    analyzer = conf.getAnalyzer();
-    setMessageID(defaultInfoStream);
-    maxFieldLength = conf.getMaxFieldLength();
-    termIndexInterval = conf.getTermIndexInterval();
-    writeLockTimeout = conf.getWriteLockTimeout();
-    similarity = conf.getSimilarity();
-    mergeScheduler = conf.getMergeScheduler();
-
-    OpenMode mode = conf.getOpenMode();
-    boolean create;
-    if (mode == OpenMode.CREATE) {
-      create = true;
-    } else if (mode == OpenMode.APPEND) {
-      create = false;
+  private void init(Directory d, Analyzer a, IndexDeletionPolicy deletionPolicy, 
+                    int maxFieldLength, IndexingChain indexingChain, IndexCommit commit)
+    throws CorruptIndexException, LockObtainFailedException, IOException {
+    if (IndexReader.indexExists(d)) {
+      init(d, a, false, deletionPolicy, maxFieldLength, indexingChain, commit);
     } else {
-      // CREATE_OR_APPEND - create only if an index does not exist
-      create = !IndexReader.indexExists(directory);
+      init(d, a, true, deletionPolicy, maxFieldLength, indexingChain, commit);
     }
+  }
+
+  private void init(Directory d, Analyzer a, final boolean create,  
+                    IndexDeletionPolicy deletionPolicy, int maxFieldLength,
+                    IndexingChain indexingChain, IndexCommit commit)
+    throws CorruptIndexException, LockObtainFailedException, IOException {
+
+    directory = d;
+    analyzer = a;
+    setMessageID(defaultInfoStream);
+    this.maxFieldLength = maxFieldLength;
+
+    if (indexingChain == null)
+      indexingChain = DocumentsWriter.DefaultIndexingChain;
 
     if (create) {
       // Clear the write lock in case it's leftover:
       directory.clearLock(WRITE_LOCK_NAME);
     }
 
-    writeLock = directory.makeLock(WRITE_LOCK_NAME);
+    Lock writeLock = directory.makeLock(WRITE_LOCK_NAME);
     if (!writeLock.obtain(writeLockTimeout)) // obtain write lock
       throw new LockObtainFailedException("Index locked for write: " + writeLock);
+    this.writeLock = writeLock;                   // save it
 
     try {
       if (create) {
@@ -1129,7 +1085,6 @@ public class IndexWriter implements Closeable {
       } else {
         segmentInfos.read(directory);
 
-        IndexCommit commit = conf.getIndexCommit();
         if (commit != null) {
           // Swap out all segments, but, keep metadata in
           // SegmentInfos, like version & generation, to
@@ -1153,14 +1108,14 @@ public class IndexWriter implements Closeable {
 
       setRollbackSegmentInfos(segmentInfos);
 
-      docWriter = new DocumentsWriter(directory, this, conf.getIndexingChain());
+      docWriter = new DocumentsWriter(directory, this, indexingChain);
       docWriter.setInfoStream(infoStream);
       docWriter.setMaxFieldLength(maxFieldLength);
 
       // Default deleter (for backwards compatibility) is
       // KeepOnlyLastCommitDeleter:
       deleter = new IndexFileDeleter(directory,
-                                     conf.getIndexDeletionPolicy(),
+                                     deletionPolicy == null ? new KeepOnlyLastCommitDeletionPolicy() : deletionPolicy,
                                      segmentInfos, infoStream, docWriter);
 
       if (deleter.startingCommitDeleted)
@@ -1170,22 +1125,20 @@ public class IndexWriter implements Closeable {
         // segments_N file.
         changeCount++;
 
-      docWriter.setMaxBufferedDeleteTerms(conf.getMaxBufferedDeleteTerms());
-      docWriter.setRAMBufferSizeMB(conf.getRAMBufferSizeMB());
-      docWriter.setMaxBufferedDocs(conf.getMaxBufferedDocs());
       pushMaxBufferedDocs();
 
       if (infoStream != null) {
+        message("init: create=" + create);
         messageState();
       }
 
     } catch (IOException e) {
-      writeLock.release();
-      writeLock = null;
+      this.writeLock.release();
+      this.writeLock = null;
       throw e;
     }
   }
-  
+
   private synchronized void setRollbackSegmentInfos(SegmentInfos infos) {
     rollbackSegmentInfos = (SegmentInfos) infos.clone();
     assert !rollbackSegmentInfos.hasExternalSegments(directory);
@@ -1195,19 +1148,6 @@ public class IndexWriter implements Closeable {
       rollbackSegments.put(rollbackSegmentInfos.info(i), Integer.valueOf(i));
   }
 
-  /**
-   * Returns the {@link IndexWriterConfig} that was passed to
-   * {@link #IndexWriter(Directory, IndexWriterConfig)}. This allows querying
-   * IndexWriter's settings.
-   * <p>
-   * <b>NOTE:</b> setting any parameter on the returned instance has not effect
-   * on the IndexWriter instance. If you need to change those settings after
-   * IndexWriter has been created, you need to instantiate a new IndexWriter.
-   */
-  public IndexWriterConfig getConfig() {
-    return config;
-  }
-  
   /**
    * Expert: set the merge policy used by this writer.
    */
@@ -1235,7 +1175,6 @@ public class IndexWriter implements Closeable {
 
   /**
    * Expert: set the merge scheduler used by this writer.
-   * @deprecated use {@link IndexWriterConfig#setMergeScheduler(MergeScheduler)} instead
    */
   synchronized public void setMergeScheduler(MergeScheduler mergeScheduler) throws CorruptIndexException, IOException {
     ensureOpen();
@@ -1249,16 +1188,12 @@ public class IndexWriter implements Closeable {
     this.mergeScheduler = mergeScheduler;
     if (infoStream != null)
       message("setMergeScheduler " + mergeScheduler);
-    // Required so config.getSimilarity returns the right value. But this will
-    // go away together with the method in 4.0.
-    config.setMergeScheduler(mergeScheduler);
   }
 
   /**
-   * Expert: returns the current MergeScheduler in use by this
+   * Expert: returns the current MergePolicy in use by this
    * writer.
-   * @see #setMergeScheduler(MergeScheduler)
-   * @deprecated use {@link IndexWriterConfig#getMergeScheduler()} instead
+   * @see #setMergePolicy
    */
   public MergeScheduler getMergeScheduler() {
     ensureOpen();
@@ -1284,7 +1219,6 @@ public class IndexWriter implements Closeable {
    * LogByteSizeMergePolicy}) also allows you to set this
    * limit by net size (in MB) of the segment, using {@link
    * LogByteSizeMergePolicy#setMaxMergeMB}.</p>
-   * @deprecated use {@link LogMergePolicy#setMaxMergeDocs(int)} directly.
    */
   public void setMaxMergeDocs(int maxMergeDocs) {
     getLogMergePolicy().setMaxMergeDocs(maxMergeDocs);
@@ -1300,7 +1234,6 @@ public class IndexWriter implements Closeable {
    * Otherwise an IllegalArgumentException is thrown.</p>
    *
    * @see #setMaxMergeDocs
-   * @deprecated use {@link LogMergePolicy#getMaxMergeDocs()} directly.
    */
   public int getMaxMergeDocs() {
     return getLogMergePolicy().getMaxMergeDocs();
@@ -1319,7 +1252,6 @@ public class IndexWriter implements Closeable {
    * is your memory, but you should anticipate an OutOfMemoryError.<p/>
    * By default, no more than {@link #DEFAULT_MAX_FIELD_LENGTH} terms
    * will be indexed for a field.
-   * @deprecated use {@link IndexWriterConfig#setMaxFieldLength(int)} instead
    */
   public void setMaxFieldLength(int maxFieldLength) {
     ensureOpen();
@@ -1327,16 +1259,12 @@ public class IndexWriter implements Closeable {
     docWriter.setMaxFieldLength(maxFieldLength);
     if (infoStream != null)
       message("setMaxFieldLength " + maxFieldLength);
-    // Required so config.getSimilarity returns the right value. But this will
-    // go away together with the method in 4.0.
-    config.setMaxFieldLength(maxFieldLength);
   }
 
   /**
    * Returns the maximum number of terms that will be
    * indexed for a single field in a document.
    * @see #setMaxFieldLength
-   * @deprecated use {@link IndexWriterConfig#getMaxFieldLength()} instead
    */
   public int getMaxFieldLength() {
     ensureOpen();
@@ -1361,7 +1289,6 @@ public class IndexWriter implements Closeable {
    * enabled but smaller than 2, or it disables maxBufferedDocs
    * when ramBufferSize is already disabled
    * @see #setRAMBufferSizeMB
-   * @deprecated use {@link IndexWriterConfig#setMaxBufferedDocs(int)} instead.
    */
   public void setMaxBufferedDocs(int maxBufferedDocs) {
     ensureOpen();
@@ -1376,9 +1303,6 @@ public class IndexWriter implements Closeable {
     pushMaxBufferedDocs();
     if (infoStream != null)
       message("setMaxBufferedDocs " + maxBufferedDocs);
-    // Required so config.getSimilarity returns the right value. But this will
-    // go away together with the method in 4.0.
-    config.setMaxBufferedDocs(maxBufferedDocs);
   }
 
   /**
@@ -1405,7 +1329,6 @@ public class IndexWriter implements Closeable {
    * Returns the number of buffered added documents that will
    * trigger a flush if enabled.
    * @see #setMaxBufferedDocs
-   * @deprecated use {@link IndexWriterConfig#getMaxBufferedDocs()} instead.
    */
   public int getMaxBufferedDocs() {
     ensureOpen();
@@ -1449,7 +1372,6 @@ public class IndexWriter implements Closeable {
    * @throws IllegalArgumentException if ramBufferSize is
    * enabled but non-positive, or it disables ramBufferSize
    * when maxBufferedDocs is already disabled
-   * @deprecated use {@link IndexWriterConfig#setRAMBufferSizeMB(double)} instead.
    */
   public void setRAMBufferSizeMB(double mb) {
     if (mb > 2048.0) {
@@ -1464,14 +1386,10 @@ public class IndexWriter implements Closeable {
     docWriter.setRAMBufferSizeMB(mb);
     if (infoStream != null)
       message("setRAMBufferSizeMB " + mb);
-    // Required so config.getSimilarity returns the right value. But this will
-    // go away together with the method in 4.0.
-    config.setRAMBufferSizeMB(mb);
   }
 
   /**
    * Returns the value set by {@link #setRAMBufferSizeMB} if enabled.
-   * @deprecated use {@link IndexWriterConfig#getRAMBufferSizeMB()} instead.
    */
   public double getRAMBufferSizeMB() {
     return docWriter.getRAMBufferSizeMB();
@@ -1488,7 +1406,6 @@ public class IndexWriter implements Closeable {
    * @throws IllegalArgumentException if maxBufferedDeleteTerms
    * is enabled but smaller than 1
    * @see #setRAMBufferSizeMB
-   * @deprecated use {@link IndexWriterConfig#setMaxBufferedDeleteTerms(int)} instead.
    */
   public void setMaxBufferedDeleteTerms(int maxBufferedDeleteTerms) {
     ensureOpen();
@@ -1499,16 +1416,12 @@ public class IndexWriter implements Closeable {
     docWriter.setMaxBufferedDeleteTerms(maxBufferedDeleteTerms);
     if (infoStream != null)
       message("setMaxBufferedDeleteTerms " + maxBufferedDeleteTerms);
-    // Required so config.getSimilarity returns the right value. But this will
-    // go away together with the method in 4.0.
-    config.setMaxBufferedDeleteTerms(maxBufferedDeleteTerms);
   }
 
   /**
    * Returns the number of buffered deleted terms that will
    * trigger a flush if enabled.
    * @see #setMaxBufferedDeleteTerms
-   * @deprecated use {@link IndexWriterConfig#getMaxBufferedDeleteTerms()} instead
    */
   public int getMaxBufferedDeleteTerms() {
     ensureOpen();
@@ -1529,7 +1442,6 @@ public class IndexWriter implements Closeable {
    * Otherwise an IllegalArgumentException is thrown.</p>
    *
    * <p>This must never be less than 2.  The default value is 10.
-   * @deprecated use {@link LogMergePolicy#setMergeFactor(int)} directly.
    */
   public void setMergeFactor(int mergeFactor) {
     getLogMergePolicy().setMergeFactor(mergeFactor);
@@ -1546,7 +1458,6 @@ public class IndexWriter implements Closeable {
    * Otherwise an IllegalArgumentException is thrown.</p>
    *
    * @see #setMergeFactor
-   * @deprecated use {@link LogMergePolicy#getMergeFactor()} directly.
    */
   public int getMergeFactor() {
     return getLogMergePolicy().getMergeFactor();
@@ -1583,11 +1494,15 @@ public class IndexWriter implements Closeable {
   }
 
   private void messageState() {
-    message("\ndir=" + directory + "\n" +
-            "mergePolicy=" + mergePolicy + "\n" + 
-            "index=" + segString() + "\n" +
-            "version=" + Constants.LUCENE_VERSION + "\n" +
-            config.toString());
+    message("setInfoStream: dir=" + directory +
+            " mergePolicy=" + mergePolicy +
+            " mergeScheduler=" + mergeScheduler +
+            " ramBufferSizeMB=" + docWriter.getRAMBufferSizeMB() +
+            " maxBufferedDocs=" + docWriter.getMaxBufferedDocs() +
+            " maxBuffereDeleteTerms=" + docWriter.getMaxBufferedDeleteTerms() +
+            " maxFieldLength=" + maxFieldLength +
+            " index=" + segString() +
+            " version=" + Constants.LUCENE_VERSION);
   }
 
   /**
@@ -1607,20 +1522,15 @@ public class IndexWriter implements Closeable {
   /**
    * Sets the maximum time to wait for a write lock (in milliseconds) for this instance of IndexWriter.  @see
    * @see #setDefaultWriteLockTimeout to change the default value for all instances of IndexWriter.
-   * @deprecated use {@link IndexWriterConfig#setWriteLockTimeout(long)} instead
    */
   public void setWriteLockTimeout(long writeLockTimeout) {
     ensureOpen();
     this.writeLockTimeout = writeLockTimeout;
-    // Required so config.getSimilarity returns the right value. But this will
-    // go away together with the method in 4.0.
-    config.setWriteLockTimeout(writeLockTimeout);
   }
 
   /**
    * Returns allowed timeout when acquiring the write lock.
    * @see #setWriteLockTimeout
-   * @deprecated use {@link IndexWriterConfig#getWriteLockTimeout()}
    */
   public long getWriteLockTimeout() {
     ensureOpen();
@@ -1630,20 +1540,18 @@ public class IndexWriter implements Closeable {
   /**
    * Sets the default (for any instance of IndexWriter) maximum time to wait for a write lock (in
    * milliseconds).
-   * @deprecated use {@link IndexWriterConfig#setDefaultWriteLockTimeout(long)} instead
    */
   public static void setDefaultWriteLockTimeout(long writeLockTimeout) {
-    IndexWriterConfig.setDefaultWriteLockTimeout(writeLockTimeout);
+    IndexWriter.WRITE_LOCK_TIMEOUT = writeLockTimeout;
   }
 
   /**
    * Returns default write lock timeout for newly
    * instantiated IndexWriters.
    * @see #setDefaultWriteLockTimeout
-   * @deprecated use {@link IndexWriterConfig#getDefaultWriteLockTimeout()} instead
    */
   public static long getDefaultWriteLockTimeout() {
-    return IndexWriterConfig.getDefaultWriteLockTimeout();
+    return IndexWriter.WRITE_LOCK_TIMEOUT;
   }
 
   /**
@@ -4877,13 +4785,9 @@ public class IndexWriter implements Closeable {
   }
 
   /**
-   * Specifies maximum field length (in number of tokens/terms) in
-   * {@link IndexWriter} constructors. {@link #setMaxFieldLength(int)} overrides
-   * the value set by the constructor.
-   * 
-   * @deprecated use {@link IndexWriterConfig} and pass
-   *             {@link IndexWriterConfig#UNLIMITED_FIELD_LENGTH} or your own
-   *             value.
+   * Specifies maximum field length (in number of tokens/terms) in {@link IndexWriter} constructors.
+   * {@link #setMaxFieldLength(int)} overrides the value set by
+   * the constructor.
    */
   public static final class MaxFieldLength {
 

@@ -51,7 +51,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.messages.MessageImpl;
 import org.apache.lucene.queryParser.core.QueryNodeException;
@@ -572,7 +571,8 @@ public class TestQPHelper extends LocalizedTestCase {
   public void testFarsiRangeCollating() throws Exception {
 
     RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter iw = new IndexWriter(ramDir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true,
+        IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
         Field.Index.NOT_ANALYZED));
@@ -994,7 +994,8 @@ public class TestQPHelper extends LocalizedTestCase {
   public void testLocalDateFormat() throws IOException, QueryNodeException {
 
     RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter iw = new IndexWriter(ramDir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true,
+        IndexWriter.MaxFieldLength.LIMITED);
     addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
     addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
     iw.close();
@@ -1192,7 +1193,7 @@ public class TestQPHelper extends LocalizedTestCase {
 
   public void testMultiPhraseQuery() throws Exception {
     MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setAnalyzer(new CannedAnalyzer()));
+    IndexWriter w = new IndexWriter(dir, new CannedAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     doc.add(new Field("field", "", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);

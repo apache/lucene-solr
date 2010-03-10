@@ -20,7 +20,6 @@ import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
@@ -57,8 +56,8 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
     Directory merged = new MockRAMDirectory();
 
-    IndexWriter writer = new IndexWriter(merged, new IndexWriterConfig(TEST_VERSION_CURRENT).setAnalyzer(new StandardAnalyzer(TEST_VERSION_CURRENT)));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(2);
+    IndexWriter writer = new IndexWriter(merged, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    writer.setMergeFactor(2);
 
     writer.addIndexesNoOptimize(new Directory[]{indexA, indexB});
     writer.optimize();
@@ -91,13 +90,12 @@ public class TestIndexWriterMerging extends LuceneTestCase
     return fail;
   }
 
-  private void fillIndex(Directory dir, int start, int numDocs) throws IOException {
+  private void fillIndex(Directory dir, int start, int numDocs) throws IOException
+  {
 
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT).setAnalyzer(
-        new StandardAnalyzer(TEST_VERSION_CURRENT))
-        .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(2));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(2);
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    writer.setMergeFactor(2);
+    writer.setMaxBufferedDocs(2);
 
     for (int i = start; i < (start + numDocs); i++)
     {

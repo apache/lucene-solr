@@ -35,9 +35,8 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.PhraseQuery;
@@ -327,9 +326,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   
   // make 1 doc with multi valued field
   protected void make1dmfIndex( Analyzer analyzer, String... values ) throws Exception {
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT).setAnalyzer(analyzer)
-        .setOpenMode(OpenMode.CREATE));
+    IndexWriter writer = new IndexWriter( dir, analyzer, true, MaxFieldLength.LIMITED );
     Document doc = new Document();
     for( String value: values )
       doc.add( new Field( F, value, Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
@@ -341,9 +338,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   
   // make 1 doc with multi valued & not analyzed field
   protected void make1dmfIndexNA( String... values ) throws Exception {
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT).setOpenMode(OpenMode.CREATE).setAnalyzer(
-        analyzerK));
+    IndexWriter writer = new IndexWriter( dir, analyzerK, true, MaxFieldLength.LIMITED );
     Document doc = new Document();
     for( String value: values )
       doc.add( new Field( F, value, Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );

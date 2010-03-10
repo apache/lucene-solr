@@ -42,7 +42,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Collector;
@@ -411,7 +410,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     RAMDirectory dir = new RAMDirectory();    
     IndexWriter writer = null;
     try {
-      writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setAnalyzer(analyzer));
+      writer = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED);
       writer.addDocument(doc);
       writer.optimize();
       return dir;

@@ -42,11 +42,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.IndexReader.FieldOption;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.queryParser.MultiFieldQueryParser;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Collector;
@@ -171,9 +169,7 @@ class LuceneMethods {
 
     public void optimize() throws IOException {
     //open the index writer. False: don't create a new one
-    IndexWriter indexWriter = new IndexWriter(indexName, new IndexWriterConfig(
-        Version.LUCENE_CURRENT).setAnalyzer(createAnalyzer()).setOpenMode(
-        OpenMode.APPEND));
+    IndexWriter indexWriter = new IndexWriter(indexName, createAnalyzer(), false, IndexWriter.MaxFieldLength.UNLIMITED);
     message("Starting to optimize index.");
     long start = System.currentTimeMillis();
     indexWriter.optimize();

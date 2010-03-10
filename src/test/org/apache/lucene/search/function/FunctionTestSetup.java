@@ -23,7 +23,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCaseJ4;
@@ -98,7 +97,8 @@ public class FunctionTestSetup extends LuceneTestCaseJ4 {
     super.setUp();
     dir = new RAMDirectory();
     anlzr = new StandardAnalyzer(TEST_VERSION_CURRENT);
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setAnalyzer(anlzr));
+    IndexWriter iw = new IndexWriter(dir, anlzr,
+            IndexWriter.MaxFieldLength.LIMITED);
     // add docs not exactly in natural ID order, to verify we do check the order of docs by scores
     int remaining = N_DOCS;
     boolean done[] = new boolean[N_DOCS];

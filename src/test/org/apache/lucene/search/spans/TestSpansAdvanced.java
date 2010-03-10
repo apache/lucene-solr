@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
@@ -56,9 +55,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
 
         // create test index
         mDirectory = new RAMDirectory();
-        final IndexWriter writer = new IndexWriter(mDirectory,
-        new IndexWriterConfig(TEST_VERSION_CURRENT)
-            .setAnalyzer(new StandardAnalyzer(TEST_VERSION_CURRENT)));
+        final IndexWriter writer = new IndexWriter(mDirectory, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
         addDocument(writer, "1", "I think it should work.");
         addDocument(writer, "2", "I think it should work.");
         addDocument(writer, "3", "I think it should work.");

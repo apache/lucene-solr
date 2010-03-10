@@ -19,7 +19,6 @@ package org.apache.lucene.search.payloads;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.RAMDirectory;
@@ -106,7 +105,9 @@ public class PayloadHelper {
   public IndexSearcher setUp(Similarity similarity, int numDocs) throws IOException {
     RAMDirectory directory = new RAMDirectory();
     PayloadAnalyzer analyzer = new PayloadAnalyzer();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT).setAnalyzer(analyzer).setSimilarity(similarity));
+    IndexWriter writer
+            = new IndexWriter(directory, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED);
+    writer.setSimilarity(similarity);
     //writer.infoStream = System.out;
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();

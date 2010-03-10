@@ -24,8 +24,6 @@ import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.RAMDirectory;
 
 public class BaseTestRangeFilter extends LuceneTestCase {
@@ -98,10 +96,8 @@ public class BaseTestRangeFilter extends LuceneTestCase {
         try {
             
             /* build an index */
-          IndexWriter writer = new IndexWriter(index.index, new IndexWriterConfig(
-              TEST_VERSION_CURRENT).setAnalyzer(
-                  new SimpleAnalyzer(TEST_VERSION_CURRENT))
-                  .setOpenMode(OpenMode.CREATE));
+            IndexWriter writer = new IndexWriter(index.index, new SimpleAnalyzer(TEST_VERSION_CURRENT), T, 
+                                                 IndexWriter.MaxFieldLength.LIMITED);
 
           for (int d = minId; d <= maxId; d++) {
                 Document doc = new Document();

@@ -18,10 +18,10 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -44,7 +44,9 @@ public class TestPrefixInBooleanQuery extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter writer = new IndexWriter(directory,
+                                         new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true,
+                                         IndexWriter.MaxFieldLength.LIMITED);
 
     for (int i = 0; i < 5137; ++i) {
       Document doc = new Document();

@@ -34,7 +34,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.LowerCaseTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
@@ -110,9 +109,10 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT).setAnalyzer(new PayloadAnalyzer()).setSimilarity(
-        similarity));
+    PayloadAnalyzer analyzer = new PayloadAnalyzer();
+    IndexWriter writer
+            = new IndexWriter(directory, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
+    writer.setSimilarity(similarity);
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();

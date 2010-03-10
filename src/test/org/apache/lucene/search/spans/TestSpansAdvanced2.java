@@ -22,9 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.*;
 
 /*******************************************************************************
@@ -42,10 +40,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
         super.setUp();
 
         // create test index
-        final IndexWriter writer = new IndexWriter(mDirectory,
-            new IndexWriterConfig(TEST_VERSION_CURRENT).setAnalyzer(
-                new StandardAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(
-                    OpenMode.APPEND));
+        final IndexWriter writer = new IndexWriter(mDirectory, new StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
         addDocument(writer, "A", "Should we, could we, would we?");
         addDocument(writer, "B", "It should.  Should it?");
         addDocument(writer, "C", "It shouldn't.");

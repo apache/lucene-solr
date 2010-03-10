@@ -32,12 +32,12 @@ import java.util.ArrayList;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -52,7 +52,8 @@ import org.apache.lucene.util._TestUtil;
   against it, and add documents to it.
 */
 
-public class TestBackwardsCompatibility extends LuceneTestCase {
+public class TestBackwardsCompatibility extends LuceneTestCase
+{
 
   // Uncomment these cases & run them on an older Lucene
   // version, to generate an index to test backwards
@@ -214,7 +215,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
         hasTested29++;
       }
 
-      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT));
+      IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
       w.optimize();
       w.close();
 
@@ -354,7 +355,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Directory dir = FSDirectory.open(new File(dirName));
 
     // open writer
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setOpenMode(OpenMode.APPEND));
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.UNLIMITED);
 
     // add 10 docs
     for(int i=0;i<10;i++) {
@@ -398,7 +399,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     searcher.close();
 
     // optimize
-    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setOpenMode(OpenMode.APPEND));
+    writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.UNLIMITED);
     writer.optimize();
     writer.close();
 
@@ -448,7 +449,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     searcher.close();
 
     // optimize
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setOpenMode(OpenMode.APPEND));
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.UNLIMITED);
     writer.optimize();
     writer.close();
 
@@ -470,9 +471,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dirName = fullDir(dirName);
 
     Directory dir = FSDirectory.open(new File(dirName));
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setMaxBufferedDocs(10));
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(doCFS);
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundDocStore(doCFS);
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    writer.setUseCompoundFile(doCFS);
+    writer.setMaxBufferedDocs(10);
     
     for(int i=0;i<35;i++) {
       addDoc(writer, i);
@@ -481,9 +482,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     writer.close();
 
     // open fresh writer so we get no prx file in the added segment
-    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setMaxBufferedDocs(10));
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(doCFS);
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundDocStore(doCFS);
+    writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+    writer.setUseCompoundFile(doCFS);
+    writer.setMaxBufferedDocs(10);
     addNoProxDoc(writer);
     writer.close();
 
@@ -508,7 +509,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     try {
       Directory dir = FSDirectory.open(new File(fullDir(outputDir)));
 
-      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT));
+      IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
+      writer.setRAMBufferSizeMB(16.0);
       for(int i=0;i<35;i++) {
         addDoc(writer, i);
       }

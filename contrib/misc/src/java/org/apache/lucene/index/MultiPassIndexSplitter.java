@@ -21,11 +21,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.OpenBitSet;
-import org.apache.lucene.util.Version;
 
 /**
  * This tool splits input index into multiple equal parts. The method employed
@@ -88,7 +88,8 @@ public class MultiPassIndexSplitter {
           }
         }
       }
-      IndexWriter w = new IndexWriter(outputs[i], new IndexWriterConfig(Version.LUCENE_CURRENT).setOpenMode(OpenMode.CREATE));
+      IndexWriter w = new IndexWriter(outputs[i], new WhitespaceAnalyzer(),
+              true, MaxFieldLength.UNLIMITED);
       System.err.println("Writing part " + (i + 1) + " ...");
       w.addIndexes(new IndexReader[]{input});
       w.close();

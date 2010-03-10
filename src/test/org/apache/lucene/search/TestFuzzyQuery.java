@@ -23,11 +23,11 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.Directory;
@@ -42,7 +42,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
   public void testFuzziness() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     addDoc("aaaaa", writer);
     addDoc("aaaab", writer);
     addDoc("aaabb", writer);
@@ -193,7 +193,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
   public void testFuzzinessLong() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     addDoc("aaaaaaa", writer);
     addDoc("segment", writer);
     writer.optimize();
@@ -281,7 +281,8 @@ public class TestFuzzyQuery extends LuceneTestCase {
   
   public void testTokenLengthOpt() throws IOException {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT),
+        true, IndexWriter.MaxFieldLength.LIMITED);
     addDoc("12345678911", writer);
     addDoc("segment", writer);
     writer.optimize();
@@ -313,7 +314,8 @@ public class TestFuzzyQuery extends LuceneTestCase {
   /** Test the TopTermsBoostOnlyBooleanQueryRewrite rewrite method. */
   public void testBoostOnlyRewrite() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT),
+        true, IndexWriter.MaxFieldLength.LIMITED);
     addDoc("Lucene", writer);
     addDoc("Lucene", writer);
     addDoc("Lucenne", writer);
@@ -338,7 +340,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
 
     Directory index = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(index, new IndexWriterConfig(TEST_VERSION_CURRENT).setAnalyzer(analyzer));
+    IndexWriter w = new IndexWriter(index, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED);
 
     addDoc("Lucene in Action", w);
     addDoc("Lucene for Dummies", w);

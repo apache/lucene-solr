@@ -92,9 +92,8 @@ public class TestTermVectorsReader extends LuceneTestCase {
     }
     Arrays.sort(tokens);
 
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setAnalyzer(new MyAnalyzer()));
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(false);
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundDocStore(false);
+    IndexWriter writer = new IndexWriter(dir, new MyAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    writer.setUseCompoundFile(false);
     Document doc = new Document();
     for(int i=0;i<testFields.length;i++) {
       final Field.TermVector tv;

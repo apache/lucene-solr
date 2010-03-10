@@ -18,9 +18,9 @@ package org.apache.lucene;
  */
 import java.io.IOException;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.document.Document;
@@ -86,14 +86,15 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
     
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT).setMergeScheduler(new MyMergeScheduler())
-        .setMaxBufferedDocs(2).setRAMBufferSizeMB(
-            IndexWriterConfig.DISABLE_AUTO_FLUSH));
+    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    MyMergeScheduler ms = new MyMergeScheduler();
+    writer.setMergeScheduler(ms);
+    writer.setMaxBufferedDocs(2);
+    writer.setRAMBufferSizeMB(IndexWriter.DISABLE_AUTO_FLUSH);
     for(int i=0;i<20;i++)
       writer.addDocument(doc);
 
-    ((MyMergeScheduler) writer.getConfig().getMergeScheduler()).sync();
+    ms.sync();
     writer.close();
     
     assertTrue(mergeThreadCreated);

@@ -17,17 +17,20 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 
 import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
 
 public class TestConcurrentMergeScheduler extends LuceneTestCase {
   
+  private static final Analyzer ANALYZER = new SimpleAnalyzer(TEST_VERSION_CURRENT);
+
   private static class FailOnlyOnFlush extends MockRAMDirectory.Failure {
     boolean doFail;
     boolean hitExc;
@@ -65,7 +68,10 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     FailOnlyOnFlush failure = new FailOnlyOnFlush();
     directory.failOn(failure);
 
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT).setMaxBufferedDocs(2));
+    IndexWriter writer = new IndexWriter(directory, ANALYZER, true, IndexWriter.MaxFieldLength.UNLIMITED);
+    ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+    writer.setMergeScheduler(cms);
+    writer.setMaxBufferedDocs(2);
     Document doc = new Document();
     Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
@@ -109,7 +115,9 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
     RAMDirectory directory = new MockRAMDirectory();
 
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter writer = new IndexWriter(directory, ANALYZER, true, IndexWriter.MaxFieldLength.UNLIMITED);
+    ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+    writer.setMergeScheduler(cms);
 
     LogDocMergePolicy mp = new LogDocMergePolicy(writer);
     writer.setMergePolicy(mp);
@@ -149,10 +157,12 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
     RAMDirectory directory = new MockRAMDirectory();
 
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT).setMaxBufferedDocs(2));
+    IndexWriter writer = new IndexWriter(directory, ANALYZER, true, IndexWriter.MaxFieldLength.UNLIMITED);
 
     for(int iter=0;iter<7;iter++) {
+      ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+      writer.setMergeScheduler(cms);
+      writer.setMaxBufferedDocs(2);
 
       for(int j=0;j<21;j++) {
         Document doc = new Document();
@@ -164,9 +174,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       TestIndexWriter.assertNoUnreferencedFiles(directory, "testNoExtraFiles");
 
       // Reopen
-      writer = new IndexWriter(directory, new IndexWriterConfig(
-          TEST_VERSION_CURRENT).setOpenMode(OpenMode.APPEND)
-          .setMaxBufferedDocs(2));
+      writer = new IndexWriter(directory, ANALYZER, false, IndexWriter.MaxFieldLength.UNLIMITED);
     }
 
     writer.close();
@@ -181,10 +189,13 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
 
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT).setMaxBufferedDocs(2));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(100);
+    IndexWriter writer = new IndexWriter(directory, ANALYZER, true, IndexWriter.MaxFieldLength.UNLIMITED);
 
     for(int iter=0;iter<10;iter++) {
+      ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
+      writer.setMergeScheduler(cms);
+      writer.setMaxBufferedDocs(2);
+      writer.setMergeFactor(100);
 
       for(int j=0;j<201;j++) {
         idField.setValue(Integer.toString(iter*201+j));
@@ -199,7 +210,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
       // Force a bunch of merge threads to kick off so we
       // stress out aborting them on close:
-      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(3);
+      writer.setMergeFactor(3);
       writer.addDocument(doc);
       writer.commit();
 
@@ -210,8 +221,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       reader.close();
 
       // Reopen
-      writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT).setOpenMode(OpenMode.APPEND));
-      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(100);
+      writer = new IndexWriter(directory, ANALYZER, false, IndexWriter.MaxFieldLength.UNLIMITED);
     }
     writer.close();
 

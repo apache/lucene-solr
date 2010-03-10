@@ -21,9 +21,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -61,7 +59,8 @@ public class TestPhraseQuery extends LuceneTestCase {
         return 100;
       }
     };
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT).setAnalyzer(analyzer));
+    IndexWriter writer = new IndexWriter(directory, analyzer, true, 
+                                         IndexWriter.MaxFieldLength.LIMITED);
     
     Document doc = new Document();
     doc.add(new Field("field", "one two three four five", Field.Store.YES, Field.Index.ANALYZED));
@@ -208,7 +207,8 @@ public class TestPhraseQuery extends LuceneTestCase {
   public void testPhraseQueryWithStopAnalyzer() throws Exception {
     RAMDirectory directory = new RAMDirectory();
     StopAnalyzer stopAnalyzer = new StopAnalyzer(Version.LUCENE_24);
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(Version.LUCENE_24).setAnalyzer(stopAnalyzer));
+    IndexWriter writer = new IndexWriter(directory, stopAnalyzer, true, 
+                                         IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("field", "the stop words are here", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
@@ -239,7 +239,8 @@ public class TestPhraseQuery extends LuceneTestCase {
   
   public void testPhraseQueryInConjunctionScorer() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, 
+                                         IndexWriter.MaxFieldLength.LIMITED);
     
     Document doc = new Document();
     doc.add(new Field("source", "marketing info", Field.Store.YES, Field.Index.ANALYZED));
@@ -274,7 +275,8 @@ public class TestPhraseQuery extends LuceneTestCase {
     
     searcher.close();
     
-    writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT).setOpenMode(OpenMode.CREATE));
+    writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, 
+                             IndexWriter.MaxFieldLength.LIMITED);
     doc = new Document();
     doc.add(new Field("contents", "map entry woo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
@@ -323,7 +325,8 @@ public class TestPhraseQuery extends LuceneTestCase {
   
   public void testSlopScoring() throws IOException {
     Directory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, 
+                                         IndexWriter.MaxFieldLength.LIMITED);
 
     Document doc = new Document();
     doc.add(new Field("field", "foo firstname lastname foo", Field.Store.YES, Field.Index.ANALYZED));

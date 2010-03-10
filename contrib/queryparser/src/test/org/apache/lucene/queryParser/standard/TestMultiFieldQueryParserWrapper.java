@@ -40,11 +40,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * Tests multi field query parsing using the
- * {@link MultiFieldQueryParserWrapper}.
- * 
- * @deprecated this tests test the deprecated MultiFieldQueryParserWrapper, so
- *             when the latter is gone, so should this test.
+ * Tests multi field query parsing using the {@link MultiFieldQueryParserWrapper}.
  */
 public class TestMultiFieldQueryParserWrapper extends LuceneTestCase {
 

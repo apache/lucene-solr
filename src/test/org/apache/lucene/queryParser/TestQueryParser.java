@@ -46,7 +46,6 @@ import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanQuery;
@@ -473,7 +472,8 @@ public class TestQueryParser extends LocalizedTestCase {
   public void testFarsiRangeCollating() throws Exception {
     
     RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter iw = new IndexWriter(ramDir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, 
+                                     IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     doc.add(new Field("content","\u0633\u0627\u0628", 
                       Field.Store.YES, Field.Index.NOT_ANALYZED));
@@ -882,7 +882,7 @@ public class TestQueryParser extends LocalizedTestCase {
 
   public void testLocalDateFormat() throws IOException, ParseException {
     RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter iw = new IndexWriter(ramDir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
     addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
     iw.close();
@@ -1028,7 +1028,7 @@ public class TestQueryParser extends LocalizedTestCase {
   public void testPositionIncrements() throws Exception {
     Directory dir = new MockRAMDirectory();
     Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT);
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setAnalyzer(a));
+    IndexWriter w = new IndexWriter(dir, a, IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     doc.add(new Field("f", "the wizard of ozzy", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);

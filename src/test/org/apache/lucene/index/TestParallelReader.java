@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.MapFieldSelector;
@@ -105,7 +106,7 @@ public class TestParallelReader extends LuceneTestCase {
 
     // one document only:
     Directory dir2 = new MockRAMDirectory();
-    IndexWriter w2 = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter w2 = new IndexWriter(dir2, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     Document d3 = new Document();
     d3.add(new Field("f3", "v1", Field.Store.YES, Field.Index.ANALYZED));
     w2.addDocument(d3);
@@ -150,13 +151,13 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir2 = getDir2();
     
     // add another document to ensure that the indexes are not optimized
-    IndexWriter modifier = new IndexWriter(dir1, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter modifier = new IndexWriter(dir1, new StandardAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
     Document d = new Document();
     d.add(new Field("f1", "v1", Field.Store.YES, Field.Index.ANALYZED));
     modifier.addDocument(d);
     modifier.close();
     
-    modifier = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    modifier = new IndexWriter(dir2, new StandardAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
     d = new Document();
     d.add(new Field("f2", "v2", Field.Store.YES, Field.Index.ANALYZED));
     modifier.addDocument(d);
@@ -169,7 +170,7 @@ public class TestParallelReader extends LuceneTestCase {
     assertFalse(pr.isOptimized());
     pr.close();
     
-    modifier = new IndexWriter(dir1, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    modifier = new IndexWriter(dir1, new StandardAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
     modifier.optimize();
     modifier.close();
     
@@ -181,7 +182,7 @@ public class TestParallelReader extends LuceneTestCase {
     pr.close();
 
     
-    modifier = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    modifier = new IndexWriter(dir2, new StandardAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
     modifier.optimize();
     modifier.close();
     
@@ -232,7 +233,7 @@ public class TestParallelReader extends LuceneTestCase {
   // Fields 1-4 indexed together:
   private Searcher single() throws IOException {
     Directory dir = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter w = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     Document d1 = new Document();
     d1.add(new Field("f1", "v1", Field.Store.YES, Field.Index.ANALYZED));
     d1.add(new Field("f2", "v1", Field.Store.YES, Field.Index.ANALYZED));
@@ -262,7 +263,7 @@ public class TestParallelReader extends LuceneTestCase {
 
   private Directory getDir1() throws IOException {
     Directory dir1 = new MockRAMDirectory();
-    IndexWriter w1 = new IndexWriter(dir1, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter w1 = new IndexWriter(dir1, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     Document d1 = new Document();
     d1.add(new Field("f1", "v1", Field.Store.YES, Field.Index.ANALYZED));
     d1.add(new Field("f2", "v1", Field.Store.YES, Field.Index.ANALYZED));
@@ -277,7 +278,7 @@ public class TestParallelReader extends LuceneTestCase {
 
   private Directory getDir2() throws IOException {
     Directory dir2 = new RAMDirectory();
-    IndexWriter w2 = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    IndexWriter w2 = new IndexWriter(dir2, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     Document d3 = new Document();
     d3.add(new Field("f3", "v1", Field.Store.YES, Field.Index.ANALYZED));
     d3.add(new Field("f4", "v1", Field.Store.YES, Field.Index.ANALYZED));

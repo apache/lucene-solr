@@ -2,7 +2,6 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -152,11 +151,10 @@ public class TestDocument extends LuceneTestCase
      *
      * @throws Exception on error
      */
-    public void testGetValuesForIndexedDocument() throws Exception {
+    public void testGetValuesForIndexedDocument() throws Exception
+    {
         RAMDirectory dir = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT).setAnalyzer(new StandardAnalyzer(
-        TEST_VERSION_CURRENT)));
+        IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
         writer.addDocument(makeDocumentWithFields());
         writer.close();
 
@@ -227,9 +225,7 @@ public class TestDocument extends LuceneTestCase
       doc.add(new Field("keyword", "test", Field.Store.YES, Field.Index.NOT_ANALYZED));
 
       RAMDirectory dir = new RAMDirectory();
-      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT).setAnalyzer(new StandardAnalyzer(
-        TEST_VERSION_CURRENT)));
+      IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
       writer.addDocument(doc);
       field.setValue("id2");
       writer.addDocument(doc);

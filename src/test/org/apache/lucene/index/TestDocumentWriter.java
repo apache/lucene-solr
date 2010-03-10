@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
@@ -60,7 +61,8 @@ public class TestDocumentWriter extends LuceneTestCase {
   public void testAddDocument() throws Exception {
     Document testDoc = new Document();
     DocHelper.setupDoc(testDoc);
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT));
+    Analyzer analyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+    IndexWriter writer = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
     writer.addDocument(testDoc);
     writer.commit();
     SegmentInfo info = writer.newestSegment();
@@ -117,7 +119,7 @@ public class TestDocumentWriter extends LuceneTestCase {
       }
     };
 
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setAnalyzer(analyzer));
+    IndexWriter writer = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
 
     Document doc = new Document();
     doc.add(new Field("repeated", "repeated one", Field.Store.YES, Field.Index.ANALYZED));
@@ -180,7 +182,7 @@ public class TestDocumentWriter extends LuceneTestCase {
       }
     };
 
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT).setAnalyzer(analyzer));
+    IndexWriter writer = new IndexWriter(dir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
 
     Document doc = new Document();
     doc.add(new Field("f1", "a 5 a a", Field.Store.YES, Field.Index.ANALYZED));
@@ -205,9 +207,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
 
   public void testPreAnalyzedField() throws IOException {
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT).setAnalyzer(new SimpleAnalyzer(
-        TEST_VERSION_CURRENT)));
+    IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     
     doc.add(new Field("preanalyzed", new TokenStream() {
@@ -266,9 +266,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     doc.add(new Field("f2", "v1", Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("f2", "v2", Store.YES, Index.NOT_ANALYZED, TermVector.NO));
 
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT).setAnalyzer(new StandardAnalyzer(
-        TEST_VERSION_CURRENT)));
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.addDocument(doc);
     writer.close();
 
@@ -301,9 +299,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     doc.add(f);
     doc.add(new Field("f2", "v2", Store.YES, Index.NO));
 
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT).setAnalyzer(new StandardAnalyzer(
-        TEST_VERSION_CURRENT)));
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.addDocument(doc);
     writer.optimize(); // be sure to have a single segment
     writer.close();

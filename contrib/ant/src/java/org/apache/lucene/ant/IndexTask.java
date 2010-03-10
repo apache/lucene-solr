@@ -38,10 +38,7 @@ import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Searcher;
@@ -283,17 +280,15 @@ public class IndexTask extends Task {
 
       log("checkLastModified = " + checkLastModified, Project.MSG_VERBOSE);
 
-      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-          Version.LUCENE_CURRENT).setAnalyzer(analyzer).setOpenMode(
-          create ? OpenMode.CREATE : OpenMode.APPEND));
-      LogMergePolicy lmp = (LogMergePolicy) writer.getMergePolicy();
-      lmp.setUseCompoundFile(useCompoundIndex);
-      lmp.setUseCompoundDocStore(useCompoundIndex);
-      lmp.setMergeFactor(mergeFactor);
+      IndexWriter writer =
+        new IndexWriter(dir, analyzer, create, IndexWriter.MaxFieldLength.LIMITED);
+
+      writer.setUseCompoundFile(useCompoundIndex);
       int totalFiles = 0;
       int totalIndexed = 0;
       int totalIgnored = 0;
       try {
+        writer.setMergeFactor(mergeFactor);
 
         for (int i = 0; i < rcs.size(); i++) {
           ResourceCollection rc = rcs.elementAt(i);

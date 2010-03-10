@@ -30,10 +30,10 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermVectorOffsetInfo;
+import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
@@ -50,13 +50,13 @@ public class FieldTermStack {
   LinkedList<TermInfo> termList = new LinkedList<TermInfo>();
   
   public static void main( String[] args ) throws Exception {
-    Analyzer analyzer = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer analyzer = new WhitespaceAnalyzer();
     QueryParser parser = new QueryParser(Version.LUCENE_CURRENT,  "f", analyzer );
     Query query = parser.parse( "a x:b" );
     FieldQuery fieldQuery = new FieldQuery( query, true, false );
     
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_CURRENT).setAnalyzer(analyzer));
+    IndexWriter writer = new IndexWriter( dir, analyzer, MaxFieldLength.LIMITED );
     Document doc = new Document();
     doc.add( new Field( "f", "a a a b b c a b b c d e f", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
     doc.add( new Field( "f", "b a b a f", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );

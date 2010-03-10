@@ -22,7 +22,6 @@ import java.text.Collator;
 import java.util.Locale;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.analysis.SimpleAnalyzer;
@@ -339,10 +338,9 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
     public void testFarsi() throws Exception {
             
         /* build an index */
-      RAMDirectory farsiIndex = new RAMDirectory();
-      IndexWriter writer = new IndexWriter(farsiIndex, new IndexWriterConfig(
-          TEST_VERSION_CURRENT).setAnalyzer(new SimpleAnalyzer(
-              TEST_VERSION_CURRENT)));
+        RAMDirectory farsiIndex = new RAMDirectory();
+        IndexWriter writer = new IndexWriter(farsiIndex, new SimpleAnalyzer(TEST_VERSION_CURRENT), T, 
+                                             IndexWriter.MaxFieldLength.LIMITED);
         Document doc = new Document();
         doc.add(new Field("content","\u0633\u0627\u0628", 
                           Field.Store.YES, Field.Index.NOT_ANALYZED));
@@ -380,9 +378,9 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
             
         /* build an index */
         RAMDirectory danishIndex = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(danishIndex, new IndexWriterConfig(
-            TEST_VERSION_CURRENT).setAnalyzer(new SimpleAnalyzer(
-                TEST_VERSION_CURRENT)));
+        IndexWriter writer = new IndexWriter
+            (danishIndex, new SimpleAnalyzer(TEST_VERSION_CURRENT), T, 
+             IndexWriter.MaxFieldLength.LIMITED);
         // Danish collation orders the words below in the given order
         // (example taken from TestSort.testInternationalSort() ).
         String[] words = { "H\u00D8T", "H\u00C5T", "MAND" };

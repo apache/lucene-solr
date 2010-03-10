@@ -28,7 +28,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.SegmentReader.Norm;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
@@ -119,10 +118,10 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     Directory dir3 = FSDirectory.open(indexDir3);
 
     createIndex(dir3);
-    IndexWriter iw = new IndexWriter(dir3, new IndexWriterConfig(
-        TEST_VERSION_CURRENT).setAnalyzer(anlzr).setOpenMode(OpenMode.APPEND)
-        .setMaxBufferedDocs(5));
-    ((LogMergePolicy) iw.getMergePolicy()).setMergeFactor(3);
+    IndexWriter iw = new IndexWriter(dir3, anlzr, false,
+        IndexWriter.MaxFieldLength.LIMITED);
+    iw.setMaxBufferedDocs(5);
+    iw.setMergeFactor(3);
     iw.addIndexesNoOptimize(new Directory[] { dir1, dir2 });
     iw.optimize();
     iw.close();
@@ -138,9 +137,9 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     doTestNorms(dir3);
 
     // now with optimize
-    iw = new IndexWriter(dir3, new IndexWriterConfig(TEST_VERSION_CURRENT)
-        .setAnalyzer(anlzr).setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(5));
-    ((LogMergePolicy) iw.getMergePolicy()).setMergeFactor(3);
+    iw = new IndexWriter(dir3, anlzr, false, IndexWriter.MaxFieldLength.LIMITED);
+    iw.setMaxBufferedDocs(5);
+    iw.setMergeFactor(3);
     iw.optimize();
     iw.close();
     verifyIndex(dir3);
@@ -239,13 +238,12 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   }
   
   private void createIndex(Directory dir) throws IOException {
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT).setAnalyzer(anlzr).setOpenMode(OpenMode.CREATE)
-        .setMaxBufferedDocs(5).setSimilarity(similarityOne));
-    LogMergePolicy lmp = (LogMergePolicy) iw.getMergePolicy();
-    lmp.setMergeFactor(3);
-    lmp.setUseCompoundFile(true);
-    lmp.setUseCompoundDocStore(true);
+    IndexWriter iw = new IndexWriter(dir, anlzr, true,
+        IndexWriter.MaxFieldLength.LIMITED);
+    iw.setMaxBufferedDocs(5);
+    iw.setMergeFactor(3);
+    iw.setSimilarity(similarityOne);
+    iw.setUseCompoundFile(true);
     iw.close();
   }
 
@@ -292,13 +290,12 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
 
   private void addDocs(Directory dir, int ndocs, boolean compound)
       throws IOException {
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT).setAnalyzer(anlzr).setOpenMode(OpenMode.APPEND)
-        .setMaxBufferedDocs(5).setSimilarity(similarityOne));
-    LogMergePolicy lmp = (LogMergePolicy) iw.getMergePolicy();
-    lmp.setMergeFactor(3);
-    lmp.setUseCompoundFile(compound);
-    lmp.setUseCompoundDocStore(compound);
+    IndexWriter iw = new IndexWriter(dir, anlzr, false,
+        IndexWriter.MaxFieldLength.LIMITED);
+    iw.setMaxBufferedDocs(5);
+    iw.setMergeFactor(3);
+    iw.setSimilarity(similarityOne);
+    iw.setUseCompoundFile(compound);
     for (int i = 0; i < ndocs; i++) {
       iw.addDocument(newDoc());
     }
