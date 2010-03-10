@@ -43,7 +43,7 @@ import org.apache.solr.search.SolrIndexReader;
  * &lt;/types&gt;
  * &lt;fields&gt;
  *  ...
- *  &lt;dynamicField name="random*" type="rand" indexed="true" stored="false"/&gt;
+ *  &lt;dynamicField name="random*" type="random" indexed="true" stored="false"/&gt;
  *  ...
  * &lt;/fields&gt;
  * </pre>
