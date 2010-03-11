@@ -63,6 +63,30 @@
 		change in 2.1).
             </p>
 
+            <p>
+	        In version 2.4, Strings are now written as true UTF-8
+	        byte sequence, not Java's modified UTF-8.  See issue
+	        LUCENE-510 for details.
+            </p>
+
+	    <p>
+	        In version 2.9, an optional opaque Map&lt;String,String&gt;
+	        CommitUserData may be passed to IndexWriter's commit
+	        methods (and later retrieved), which is recorded in
+	        the segments_N file.  See issue LUCENE-1382 for
+	        details.  Also, diagnostics were added to each segment
+	        written recording details about why it was written
+	        (due to flush, merge; which OS/JRE was used; etc.).
+	        See issue LUCENE-1654 for details.
+            </p>
+	    
+	    <p>
+	        In version 3.0, compressed fields are no longer
+	        written to the index (they can still be read, but on
+	        merge the new segment will write them,
+	        uncompressed). See issue LUCENE-1960 for details.
+            </p>
+
         </section>
 
         <section id="Definitions"><title>Definitions</title>
