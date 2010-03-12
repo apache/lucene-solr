@@ -105,9 +105,24 @@ public final class ASCIIFoldingFilter extends TokenFilter {
       output = new char[ArrayUtil.oversize(maxSizeNeeded, RamUsageEstimator.NUM_BYTES_CHAR)];
     }
 
-    outputPos = 0;
+    outputPos = foldToASCII(input, 0, output, 0, length);
+  }
 
-    for (int pos = 0 ; pos < length ; ++pos) {
+  /**
+   * Converts characters above ASCII to their ASCII equivalents.  For example,
+   * accents are removed from accented characters.
+   * @param input     The characters to fold
+   * @param inputPos  Index of the first character to fold
+   * @param output    The result of the folding. Should be of size >= {@code length * 4}.
+   * @param outputPos Index of output where to put the result of the folding
+   * @param length    The number of characters to fold
+   * @return length of output
+   * @lucene.internal
+   */
+  public static final int foldToASCII(char input[], int inputPos, char output[], int outputPos, int length)
+  {
+    final int end = inputPos + length;
+    for (int pos = inputPos; pos < end ; ++pos) {
       final char c = input[pos];
 
       // Quick test: if it's not in range then just keep current character
@@ -2028,5 +2043,6 @@ public final class ASCIIFoldingFilter extends TokenFilter {
         }
       }
     }
+    return outputPos;
   }
 }

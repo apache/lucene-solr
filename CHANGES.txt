@@ -83,6 +83,9 @@ API Changes
   with FuzzyQuery to ensure that exact matches are always scored higher, 
   because only the boost will be used in scoring.  (Robert Muir)
   
+* LUCENE-2015: Add a static method foldToASCII to ASCIIFoldingFilter to 
+  expose its folding logic.  (Cédrik Lime via Robert Muir)
+  
 Bug fixes
 
 * LUCENE-2119: Don't throw NegativeArraySizeException if you pass
