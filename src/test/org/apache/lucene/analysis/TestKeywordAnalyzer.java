@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.queryParser.QueryParser;
@@ -41,9 +42,9 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory,
-                                         new SimpleAnalyzer(TEST_VERSION_CURRENT),
-                                         true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new SimpleAnalyzer(
+        TEST_VERSION_CURRENT)));
 
     Document doc = new Document();
     doc.add(new Field("partnum", "Q36", Field.Store.YES, Field.Index.NOT_ANALYZED));
@@ -70,7 +71,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
 
   public void testMutipleDocument() throws Exception {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir,new KeywordAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer()));
     Document doc = new Document();
     doc.add(new Field("partnum", "Q36", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);

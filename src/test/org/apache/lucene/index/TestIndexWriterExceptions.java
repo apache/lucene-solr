@@ -24,7 +24,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -111,11 +110,11 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
   ThreadLocal<Thread> doFail = new ThreadLocal<Thread>();
 
-  public class MockIndexWriter extends IndexWriter {
+  private class MockIndexWriter extends IndexWriter {
     Random r = new java.util.Random(17);
 
-    public MockIndexWriter(Directory dir, Analyzer a, boolean create, MaxFieldLength mfl) throws IOException {
-      super(dir, a, create, mfl);
+    public MockIndexWriter(Directory dir, IndexWriterConfig conf) throws IOException {
+      super(dir, conf);
     }
 
     @Override
@@ -134,10 +133,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testRandomExceptions() throws Throwable {
     MockRAMDirectory dir = new MockRAMDirectory();
 
-    MockIndexWriter writer  = new MockIndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
-    ((ConcurrentMergeScheduler) writer.getMergeScheduler()).setSuppressExceptions();
+    MockIndexWriter writer  = new MockIndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setRAMBufferSizeMB(0.1));
+    ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
     //writer.setMaxBufferedDocs(10);
-    writer.setRAMBufferSizeMB(0.1);
 
     if (DEBUG)
       writer.setInfoStream(System.out);
@@ -172,10 +170,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   public void testRandomExceptionsThreads() throws Throwable {
 
     MockRAMDirectory dir = new MockRAMDirectory();
-    MockIndexWriter writer  = new MockIndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
-    ((ConcurrentMergeScheduler) writer.getMergeScheduler()).setSuppressExceptions();
+    MockIndexWriter writer  = new MockIndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setRAMBufferSizeMB(0.2));
+    ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
     //writer.setMaxBufferedDocs(10);
-    writer.setRAMBufferSizeMB(0.2);
 
     if (DEBUG)
       writer.setInfoStream(System.out);

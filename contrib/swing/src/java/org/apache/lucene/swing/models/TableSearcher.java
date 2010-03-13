@@ -29,6 +29,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.MultiFieldQueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -115,7 +116,7 @@ public class TableSearcher extends AbstractTableModel {
      * @param tableModel The table model to decorate
      */
     public TableSearcher(TableModel tableModel) {
-        analyzer = new WhitespaceAnalyzer();
+        analyzer = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
         tableModelListener = new TableModelHandler();
         setTableModel(tableModel);
         tableModel.addTableModelListener(tableModelListener);
@@ -163,7 +164,8 @@ public class TableSearcher extends AbstractTableModel {
         try {
             // recreate the RAMDirectory
             directory = new RAMDirectory();
-            IndexWriter writer = new IndexWriter(directory, analyzer, true, IndexWriter.MaxFieldLength.UNLIMITED);
+            IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+                Version.LUCENE_CURRENT, analyzer));
 
             // iterate through all rows
             for (int row=0; row < tableModel.getRowCount(); row++){

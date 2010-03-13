@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.IndexSearcher;
@@ -69,8 +70,8 @@ public class CollationTestBase extends LuceneTestCase {
                                             String firstEnd, String secondBeg,
                                             String secondEnd) throws Exception {
     RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter
-      (ramDir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
     doc.add(new Field("content", "\u0633\u0627\u0628", 
                       Field.Store.YES, Field.Index.ANALYZED));
@@ -101,8 +102,8 @@ public class CollationTestBase extends LuceneTestCase {
                                             String firstEnd, String secondBeg,
                                             String secondEnd) throws Exception {
     RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter
-      (ramDir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
 
     // Unicode order would include U+0633 in [ U+062F - U+0698 ], but Farsi
@@ -125,13 +126,12 @@ public class CollationTestBase extends LuceneTestCase {
     searcher.close();
   }
 
-  public void testFarsiTermRangeQuery
-    (Analyzer analyzer, String firstBeg, String firstEnd, 
-     String secondBeg, String secondEnd) throws Exception {
+  public void testFarsiTermRangeQuery(Analyzer analyzer, String firstBeg,
+      String firstEnd, String secondBeg, String secondEnd) throws Exception {
 
     RAMDirectory farsiIndex = new RAMDirectory();
-    IndexWriter writer = new IndexWriter
-      (farsiIndex, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(farsiIndex, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
     doc.add(new Field("content", "\u0633\u0627\u0628", 
                       Field.Store.YES, Field.Index.ANALYZED));
@@ -178,8 +178,8 @@ public class CollationTestBase extends LuceneTestCase {
     analyzer.addAnalyzer("France", franceAnalyzer);
     analyzer.addAnalyzer("Sweden", swedenAnalyzer);
     analyzer.addAnalyzer("Denmark", denmarkAnalyzer);
-    IndexWriter writer = new IndexWriter 
-      (indexStore, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, analyzer));
 
     // document data:
     // the tracer field is used to determine which document was hit

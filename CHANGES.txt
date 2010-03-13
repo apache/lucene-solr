@@ -86,6 +86,15 @@ API Changes
 * LUCENE-2015: Add a static method foldToASCII to ASCIIFoldingFilter to 
   expose its folding logic.  (Cédrik Lime via Robert Muir)
   
+* LUCENE-2294: IndexWriter constructors have been deprecated in favor of a 
+  single ctor which accepts IndexWriterConfig and a Directory. You can set all
+  the parameters related to IndexWriter on IndexWriterConfig. The different 
+  setter/getter methods were deprecated as well. One should call 
+  writer.getConfig().getXYZ() to query for a parameter XYZ.
+  Additionally, the setter/getter related to MergePolicy were deprecated as 
+  well. One should interact with the MergePolicy directly.
+  (Shai Erera via Mike McCandless)
+
 Bug fixes
 
 * LUCENE-2119: Don't throw NegativeArraySizeException if you pass

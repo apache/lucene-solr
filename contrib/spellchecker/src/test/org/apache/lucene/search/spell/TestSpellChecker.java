@@ -32,6 +32,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
@@ -54,7 +55,8 @@ public class TestSpellChecker extends LuceneTestCase {
     
     //create a user index
     userindex = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(userindex, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(userindex, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
 
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();

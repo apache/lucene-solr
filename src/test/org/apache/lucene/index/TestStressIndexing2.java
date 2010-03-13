@@ -14,19 +14,30 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.*;
-import org.apache.lucene.document.*;
-import org.apache.lucene.analysis.*;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.search.TermQuery;
-
-import java.util.*;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 
 import junit.framework.Assert;
+
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util._TestUtil;
 
 public class TestStressIndexing2 extends LuceneTestCase {
   static int maxFields=4;
@@ -40,8 +51,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
   public class MockIndexWriter extends IndexWriter {
 
-    public MockIndexWriter(Directory dir, Analyzer a, boolean create, IndexWriter.MaxFieldLength mfl) throws IOException {
-      super(dir, a, create, mfl);
+    public MockIndexWriter(Directory dir, IndexWriterConfig conf) throws IOException {
+      super(dir, conf);
     }
 
     @Override
@@ -123,20 +134,19 @@ public class TestStressIndexing2 extends LuceneTestCase {
   
   public DocsAndWriter indexRandomIWReader(int nThreads, int iterations, int range, Directory dir) throws IOException, InterruptedException {
     Map<String,Document> docs = new HashMap<String,Document>();
-    IndexWriter w = new MockIndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
-    w.setUseCompoundFile(false);
-
+    IndexWriter w = new MockIndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE).setRAMBufferSizeMB(
+        0.1).setMaxBufferedDocs(maxBufferedDocs));
+    LogMergePolicy lmp = (LogMergePolicy) w.getMergePolicy();
+    lmp.setUseCompoundFile(false);
+    lmp.setUseCompoundDocStore(false);
+    lmp.setMergeFactor(mergeFactor);
     /***
         w.setMaxMergeDocs(Integer.MAX_VALUE);
         w.setMaxFieldLength(10000);
         w.setRAMBufferSizeMB(1);
         w.setMergeFactor(10);
     ***/
-
-    // force many merges
-    w.setMergeFactor(mergeFactor);
-    w.setRAMBufferSizeMB(.1);
-    w.setMaxBufferedDocs(maxBufferedDocs);
 
     threads = new IndexingThread[nThreads];
     for (int i=0; i<threads.length; i++) {
@@ -175,13 +185,13 @@ public class TestStressIndexing2 extends LuceneTestCase {
   public Map<String,Document> indexRandom(int nThreads, int iterations, int range, Directory dir) throws IOException, InterruptedException {
     Map<String,Document> docs = new HashMap<String,Document>();
     for(int iter=0;iter<3;iter++) {
-      IndexWriter w = new MockIndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
-      w.setUseCompoundFile(false);
-
-      // force many merges
-      w.setMergeFactor(mergeFactor);
-      w.setRAMBufferSizeMB(.1);
-      w.setMaxBufferedDocs(maxBufferedDocs);
+      IndexWriter w = new MockIndexWriter(dir, new IndexWriterConfig(
+          TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE)
+          .setRAMBufferSizeMB(0.1).setMaxBufferedDocs(maxBufferedDocs));
+      LogMergePolicy lmp = (LogMergePolicy) w.getMergePolicy();
+      lmp.setUseCompoundFile(false);
+      lmp.setUseCompoundDocStore(false);
+      lmp.setMergeFactor(mergeFactor);
 
       threads = new IndexingThread[nThreads];
       for (int i=0; i<threads.length; i++) {
@@ -218,7 +228,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
   
   public static void indexSerial(Map<String,Document> docs, Directory dir) throws IOException {
-    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
 
     // index all docs in a single thread
     Iterator<Document> iter = docs.values().iterator();
@@ -409,7 +419,6 @@ public class TestStressIndexing2 extends LuceneTestCase {
       Fieldable f2 = ff2.get(i);
       if (f1.isBinary()) {
         assert(f2.isBinary());
-        //TODO
       } else {
         String s1 = f1.stringValue();
         String s2 = f2.stringValue();

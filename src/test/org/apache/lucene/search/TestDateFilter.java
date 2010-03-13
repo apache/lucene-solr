@@ -23,6 +23,7 @@ import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -34,25 +35,21 @@ import java.io.IOException;
   *
   * @version $Revision$
   */
-public class TestDateFilter
-    extends LuceneTestCase
-{
-    public TestDateFilter(String name)
-    {
-	super(name);
-    }
+public class TestDateFilter extends LuceneTestCase {
+  public TestDateFilter(String name) {
+    super(name);
+  }
 
     /**
      *
      */
-    public static void testBefore()
-	throws IOException
-    {
-	// create an index
-        RAMDirectory indexStore = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+  public static void testBefore() throws IOException {
+    // create an index
+    RAMDirectory indexStore = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
 
- 	long now = System.currentTimeMillis();
+    long now = System.currentTimeMillis();
 
  	Document doc = new Document();
  	// add time that is in the past
@@ -111,7 +108,7 @@ public class TestDateFilter
     {
 	// create an index
         RAMDirectory indexStore = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
 
  	long now = System.currentTimeMillis();
 

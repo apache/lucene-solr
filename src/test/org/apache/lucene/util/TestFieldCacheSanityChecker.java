@@ -21,6 +21,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.RAMDirectory;
@@ -45,10 +46,8 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     RAMDirectory dirA = new RAMDirectory();
     RAMDirectory dirB = new RAMDirectory();
 
-    IndexWriter wA = new IndexWriter(dirA, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, 
-                                     IndexWriter.MaxFieldLength.LIMITED);
-    IndexWriter wB = new IndexWriter(dirB, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, 
-                                     IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter wA = new IndexWriter(dirA, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter wB = new IndexWriter(dirB, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
 
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;

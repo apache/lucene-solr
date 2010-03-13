@@ -20,9 +20,9 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.NoLockFactory;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
@@ -35,10 +35,8 @@ public class TestCrash extends LuceneTestCase {
   private IndexWriter initIndex(MockRAMDirectory dir) throws IOException {
     dir.setLockFactory(NoLockFactory.getNoLockFactory());
 
-    IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.UNLIMITED);
-    //writer.setMaxBufferedDocs(2);
-    writer.setMaxBufferedDocs(10);
-    ((ConcurrentMergeScheduler) writer.getMergeScheduler()).setSuppressExceptions();
+    IndexWriter writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(10));
+    ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
 
     Document doc = new Document();
     doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.ANALYZED));
@@ -51,7 +49,7 @@ public class TestCrash extends LuceneTestCase {
 
   private void crash(final IndexWriter writer) throws IOException {
     final MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
-    ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) writer.getMergeScheduler();
+    ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler();
     dir.crash();
     cms.sync();
     dir.clearCrash();

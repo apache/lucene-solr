@@ -22,6 +22,7 @@ import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -58,7 +59,8 @@ public class TestRemoteSearchable extends LuceneTestCase {
   private static void startServer() throws Exception {
     // construct an index
     RAMDirectory indexStore = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(indexStore,new SimpleAnalyzer(TEST_VERSION_CURRENT),true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
     doc.add(new Field("test", "test text", Field.Store.YES, Field.Index.ANALYZED));
     doc.add(new Field("other", "other test text", Field.Store.YES, Field.Index.ANALYZED));

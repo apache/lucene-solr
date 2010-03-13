@@ -32,13 +32,12 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
 
   public void testIndexing() throws Exception {
     Directory mainDir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(mainDir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT),
-        IndexWriter.MaxFieldLength.LIMITED);
-    writer.setUseCompoundFile(false);
+    IndexWriter writer = new IndexWriter(mainDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(10));
+    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(2);
+    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(false);
+    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundDocStore(false);
     IndexReader reader = writer.getReader(); // start pooling readers
     reader.close();
-    writer.setMergeFactor(2);
-    writer.setMaxBufferedDocs(10);
     RunThread[] indexThreads = new RunThread[4];
     for (int x=0; x < indexThreads.length; x++) {
       indexThreads[x] = new RunThread(x % 2, writer);

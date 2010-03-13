@@ -27,6 +27,7 @@ import java.util.Locale;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker;
@@ -36,12 +37,15 @@ import org.apache.lucene.benchmark.byTask.stats.TaskStats;
 import org.apache.lucene.collation.CollationKeyAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.search.FieldCache.StringIndex;
 import org.apache.lucene.search.FieldCache;
@@ -96,7 +100,9 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     assertEquals("TestSearchTask was supposed to be called!",279,CountingSearchTestTask.numSearches);
     assertTrue("Index does not exist?...!", IndexReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write. 
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),null,false, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+            .setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory(), true);
     assertEquals("1000 docs were added to the index, this is what we expect to find!",1000,ir.numDocs());
@@ -182,7 +188,7 @@ public class TestPerfTasksLogic extends LuceneTestCase {
 
     assertTrue("Index does not exist?...!", IndexReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write.
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),null,false, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory(), true);
     assertEquals("100 docs were added to the index, this is what we expect to find!",100,ir.numDocs());
@@ -221,7 +227,7 @@ public class TestPerfTasksLogic extends LuceneTestCase {
 
     assertTrue("Index does not exist?...!", IndexReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write.
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),null,false,IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory(), true);
     assertEquals("1000 docs were added to the index, this is what we expect to find!",1000,ir.numDocs());
@@ -294,7 +300,7 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     assertEquals("TestSearchTask was supposed to be called!",139,CountingSearchTestTask.numSearches);
     assertTrue("Index does not exist?...!", IndexReader.indexExists(benchmark.getRunData().getDirectory()));
     // now we should be able to open the index for write. 
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),null,false,IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(), new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
     iw.close();
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory(), true);
     assertEquals("1 docs were added to the index, this is what we expect to find!",1,ir.numDocs());
@@ -417,7 +423,9 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     benchmark = execBenchmark(algLines2);
 
     // now we should be able to open the index for write. 
-    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),null,false,IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter iw = new IndexWriter(benchmark.getRunData().getDirectory(),
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+            .setOpenMode(OpenMode.APPEND));
     iw.close();
 
     IndexReader ir = IndexReader.open(benchmark.getRunData().getDirectory(), true);
@@ -655,7 +663,9 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     // 2. execute the algorithm  (required in every "logic" test)
     Benchmark benchmark = execBenchmark(algLines);
 
-    assertTrue("did not use the specified MergeScheduler", ((MyMergeScheduler) benchmark.getRunData().getIndexWriter().getMergeScheduler()).called);
+    assertTrue("did not use the specified MergeScheduler",
+        ((MyMergeScheduler) benchmark.getRunData().getIndexWriter().getConfig()
+            .getMergeScheduler()).called);
     benchmark.getRunData().getIndexWriter().close();
 
     // 3. test number of docs in the index
@@ -743,10 +753,10 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     // 2. execute the algorithm  (required in every "logic" test)
     Benchmark benchmark = execBenchmark(algLines);
     final IndexWriter writer = benchmark.getRunData().getIndexWriter();
-    assertEquals(2, writer.getMaxBufferedDocs());
-    assertEquals(IndexWriter.DISABLE_AUTO_FLUSH, (int) writer.getRAMBufferSizeMB());
-    assertEquals(3, writer.getMergeFactor());
-    assertFalse(writer.getUseCompoundFile());
+    assertEquals(2, writer.getConfig().getMaxBufferedDocs());
+    assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, (int) writer.getConfig().getRAMBufferSizeMB());
+    assertEquals(3, ((LogMergePolicy) writer.getMergePolicy()).getMergeFactor());
+    assertFalse(((LogMergePolicy) writer.getMergePolicy()).getUseCompoundFile());
     writer.close();
     Directory dir = benchmark.getRunData().getDirectory();
     IndexReader reader = IndexReader.open(dir, true);

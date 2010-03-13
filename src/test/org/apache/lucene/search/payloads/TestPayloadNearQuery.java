@@ -27,6 +27,7 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DefaultSimilarity;
@@ -101,10 +102,8 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
-    PayloadAnalyzer analyzer = new PayloadAnalyzer();
-    IndexWriter writer
-      = new IndexWriter(directory, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
-    writer.setSimilarity(similarity);
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();

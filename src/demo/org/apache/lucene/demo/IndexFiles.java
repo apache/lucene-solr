@@ -19,6 +19,8 @@ package org.apache.lucene.demo;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
 
@@ -55,7 +57,9 @@ public class IndexFiles {
     
     Date start = new Date();
     try {
-      IndexWriter writer = new IndexWriter(FSDirectory.open(INDEX_DIR), new StandardAnalyzer(Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer = new IndexWriter(FSDirectory.open(INDEX_DIR),
+          new IndexWriterConfig(Version.LUCENE_CURRENT, new StandardAnalyzer(
+              Version.LUCENE_CURRENT)).setOpenMode(OpenMode.CREATE));
       System.out.println("Indexing to directory '" +INDEX_DIR+ "'...");
       indexDocs(writer, docDir);
       System.out.println("Optimizing...");

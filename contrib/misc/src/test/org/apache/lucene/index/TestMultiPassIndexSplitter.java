@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -32,8 +31,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true,
-            MaxFieldLength.LIMITED);
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     Document doc;
     for (int i = 0; i < NUM_DOCS; i++) {
       doc = new Document();

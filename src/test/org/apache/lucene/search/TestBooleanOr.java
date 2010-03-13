@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -135,7 +136,8 @@ public class TestBooleanOr extends LuceneTestCase {
     RAMDirectory rd = new RAMDirectory();
 
     //
-    IndexWriter writer = new IndexWriter(rd, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(rd, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
 
     //
     Document d = new Document();

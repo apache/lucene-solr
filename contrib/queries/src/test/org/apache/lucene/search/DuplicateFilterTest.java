@@ -25,6 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.store.RAMDirectory;
@@ -41,7 +42,8 @@ public class DuplicateFilterTest extends LuceneTestCase {
 	protected void setUp() throws Exception {
     super.setUp();
 		directory = new RAMDirectory();
-		IndexWriter writer = new IndexWriter(directory, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
+		IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
 		
 		//Add series of docs with filterable fields : url, text and dates  flags
 		addDoc(writer, "http://lucene.apache.org", "lucene 1.4.3 available", "20040101");

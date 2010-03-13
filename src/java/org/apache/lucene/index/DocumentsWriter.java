@@ -138,7 +138,7 @@ final class DocumentsWriter {
   private DocFieldProcessor docFieldProcessor;
 
   PrintStream infoStream;
-  int maxFieldLength = IndexWriter.DEFAULT_MAX_FIELD_LENGTH;
+  int maxFieldLength = IndexWriterConfig.UNLIMITED_FIELD_LENGTH;
   Similarity similarity;
 
   List<String> newFiles;
@@ -223,7 +223,7 @@ final class DocumentsWriter {
     abstract DocConsumer getChain(DocumentsWriter documentsWriter);
   }
   
-  static final IndexingChain DefaultIndexingChain = new IndexingChain() {
+  static final IndexingChain defaultIndexingChain = new IndexingChain() {
 
     @Override
     DocConsumer getChain(DocumentsWriter documentsWriter) {
@@ -270,22 +270,22 @@ final class DocumentsWriter {
 
   // The max number of delete terms that can be buffered before
   // they must be flushed to disk.
-  private int maxBufferedDeleteTerms = IndexWriter.DEFAULT_MAX_BUFFERED_DELETE_TERMS;
+  private int maxBufferedDeleteTerms = IndexWriterConfig.DEFAULT_MAX_BUFFERED_DELETE_TERMS;
 
   // How much RAM we can use before flushing.  This is 0 if
   // we are flushing by doc count instead.
-  private long ramBufferSize = (long) (IndexWriter.DEFAULT_RAM_BUFFER_SIZE_MB*1024*1024);
+  private long ramBufferSize = (long) (IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB*1024*1024);
   private long waitQueuePauseBytes = (long) (ramBufferSize*0.1);
   private long waitQueueResumeBytes = (long) (ramBufferSize*0.05);
 
   // If we've allocated 5% over our RAM budget, we then
   // free down to 95%
-  private long freeTrigger = (long) (IndexWriter.DEFAULT_RAM_BUFFER_SIZE_MB*1024*1024*1.05);
-  private long freeLevel = (long) (IndexWriter.DEFAULT_RAM_BUFFER_SIZE_MB*1024*1024*0.95);
+  private long freeTrigger = (long) (IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB*1024*1024*1.05);
+  private long freeLevel = (long) (IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB*1024*1024*0.95);
 
   // Flush @ this number of docs.  If ramBufferSize is
   // non-zero we will flush by RAM usage instead.
-  private int maxBufferedDocs = IndexWriter.DEFAULT_MAX_BUFFERED_DOCS;
+  private int maxBufferedDocs = IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS;
 
   private int flushedDocCount;                      // How many docs already flushed to index
 
@@ -304,7 +304,7 @@ final class DocumentsWriter {
   DocumentsWriter(Directory directory, IndexWriter writer, IndexingChain indexingChain) throws IOException {
     this.directory = directory;
     this.writer = writer;
-    this.similarity = writer.getSimilarity();
+    this.similarity = writer.getConfig().getSimilarity();
     flushedDocCount = writer.maxDoc();
 
     consumer = indexingChain.getChain(this);
@@ -342,8 +342,8 @@ final class DocumentsWriter {
 
   /** Set how much RAM we can use before flushing. */
   synchronized void setRAMBufferSizeMB(double mb) {
-    if (mb == IndexWriter.DISABLE_AUTO_FLUSH) {
-      ramBufferSize = IndexWriter.DISABLE_AUTO_FLUSH;
+    if (mb == IndexWriterConfig.DISABLE_AUTO_FLUSH) {
+      ramBufferSize = IndexWriterConfig.DISABLE_AUTO_FLUSH;
       waitQueuePauseBytes = 4*1024*1024;
       waitQueueResumeBytes = 2*1024*1024;
     } else {
@@ -356,7 +356,7 @@ final class DocumentsWriter {
   }
 
   synchronized double getRAMBufferSizeMB() {
-    if (ramBufferSize == IndexWriter.DISABLE_AUTO_FLUSH) {
+    if (ramBufferSize == IndexWriterConfig.DISABLE_AUTO_FLUSH) {
       return ramBufferSize;
     } else {
       return ramBufferSize/1024./1024.;
@@ -587,7 +587,7 @@ final class DocumentsWriter {
 
   synchronized private void initFlushState(boolean onlyDocStore) {
     initSegmentName(onlyDocStore);
-    flushState = new SegmentWriteState(this, directory, segment, docStoreSegment, numDocsInRAM, numDocsInStore, writer.getTermIndexInterval());
+    flushState = new SegmentWriteState(this, directory, segment, docStoreSegment, numDocsInRAM, numDocsInStore, writer.getConfig().getTermIndexInterval());
   }
 
   /** Flush all pending docs to a new segment */
@@ -766,7 +766,7 @@ final class DocumentsWriter {
       // always get N docs when we flush by doc count, even if
       // > 1 thread is adding documents:
       if (!flushPending &&
-          maxBufferedDocs != IndexWriter.DISABLE_AUTO_FLUSH
+          maxBufferedDocs != IndexWriterConfig.DISABLE_AUTO_FLUSH
           && numDocsInRAM >= maxBufferedDocs) {
         flushPending = true;
         state.doFlushAfter = true;
@@ -928,9 +928,9 @@ final class DocumentsWriter {
   }
 
   synchronized boolean deletesFull() {
-    return (ramBufferSize != IndexWriter.DISABLE_AUTO_FLUSH &&
+    return (ramBufferSize != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
             (deletesInRAM.bytesUsed + deletesFlushed.bytesUsed + numBytesUsed) >= ramBufferSize) ||
-      (maxBufferedDeleteTerms != IndexWriter.DISABLE_AUTO_FLUSH &&
+      (maxBufferedDeleteTerms != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
        ((deletesInRAM.size() + deletesFlushed.size()) >= maxBufferedDeleteTerms));
   }
 
@@ -943,9 +943,9 @@ final class DocumentsWriter {
     // too-frequent flushing of a long tail of tiny segments
     // when merges (which always apply deletes) are
     // infrequent.
-    return (ramBufferSize != IndexWriter.DISABLE_AUTO_FLUSH &&
+    return (ramBufferSize != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
             (deletesInRAM.bytesUsed + deletesFlushed.bytesUsed) >= ramBufferSize/2) ||
-      (maxBufferedDeleteTerms != IndexWriter.DISABLE_AUTO_FLUSH &&
+      (maxBufferedDeleteTerms != IndexWriterConfig.DISABLE_AUTO_FLUSH &&
        ((deletesInRAM.size() + deletesFlushed.size()) >= maxBufferedDeleteTerms));
   }
 
@@ -1115,7 +1115,7 @@ final class DocumentsWriter {
   }
 
   synchronized boolean doBalanceRAM() {
-    return ramBufferSize != IndexWriter.DISABLE_AUTO_FLUSH && !bufferIsFull && (numBytesUsed+deletesInRAM.bytesUsed+deletesFlushed.bytesUsed >= ramBufferSize || numBytesAlloc >= freeTrigger);
+    return ramBufferSize != IndexWriterConfig.DISABLE_AUTO_FLUSH && !bufferIsFull && (numBytesUsed+deletesInRAM.bytesUsed+deletesFlushed.bytesUsed >= ramBufferSize || numBytesAlloc >= freeTrigger);
   }
 
   /** Does the synchronized work to finish/flush the

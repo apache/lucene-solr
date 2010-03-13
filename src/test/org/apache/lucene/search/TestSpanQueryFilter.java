@@ -23,6 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
@@ -39,8 +40,7 @@ public class TestSpanQueryFilter extends LuceneTestCase {
 
   public void testFilterWorks() throws Exception {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, 
-                                         IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
     for (int i = 0; i < 500; i++) {
       Document document = new Document();
       document.add(new Field("field", English.intToEnglish(i) + " equals " + English.intToEnglish(i),

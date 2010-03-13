@@ -28,7 +28,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -47,16 +47,14 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
    */
   public void testEmptyIndex() throws IOException {
     RAMDirectory rd1 = new MockRAMDirectory();
-    IndexWriter iw = new IndexWriter(rd1, new SimpleAnalyzer(TEST_VERSION_CURRENT), true,
-                                     MaxFieldLength.UNLIMITED);
+    IndexWriter iw = new IndexWriter(rd1, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
     iw.close();
 
     RAMDirectory rd2 = new MockRAMDirectory(rd1);
 
     RAMDirectory rdOut = new MockRAMDirectory();
 
-    IndexWriter iwOut = new IndexWriter(rdOut, new SimpleAnalyzer(TEST_VERSION_CURRENT), true,
-                                        MaxFieldLength.UNLIMITED);
+    IndexWriter iwOut = new IndexWriter(rdOut, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
     ParallelReader pr = new ParallelReader();
     pr.add(IndexReader.open(rd1,true));
     pr.add(IndexReader.open(rd2,true));
@@ -80,8 +78,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
   public void testEmptyIndexWithVectors() throws IOException {
     RAMDirectory rd1 = new MockRAMDirectory();
     {
-      IndexWriter iw = new IndexWriter(rd1, new SimpleAnalyzer(TEST_VERSION_CURRENT), true,
-                                       MaxFieldLength.UNLIMITED);
+      IndexWriter iw = new IndexWriter(rd1, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
       Document doc = new Document();
       doc.add(new Field("test", "", Store.NO, Index.ANALYZED,
                         TermVector.YES));
@@ -95,16 +92,14 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       ir.deleteDocument(0);
       ir.close();
 
-      iw = new IndexWriter(rd1, new SimpleAnalyzer(TEST_VERSION_CURRENT), false,
-                           MaxFieldLength.UNLIMITED);
+      iw = new IndexWriter(rd1, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
       iw.optimize();
       iw.close();
     }
 
     RAMDirectory rd2 = new MockRAMDirectory();
     {
-      IndexWriter iw = new IndexWriter(rd2, new SimpleAnalyzer(TEST_VERSION_CURRENT), true,
-                                       MaxFieldLength.UNLIMITED);
+      IndexWriter iw = new IndexWriter(rd2, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
       Document doc = new Document();
       iw.addDocument(doc);
       iw.close();
@@ -112,8 +107,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
 
     RAMDirectory rdOut = new MockRAMDirectory();
 
-    IndexWriter iwOut = new IndexWriter(rdOut, new SimpleAnalyzer(TEST_VERSION_CURRENT), true,
-                                        MaxFieldLength.UNLIMITED);
+    IndexWriter iwOut = new IndexWriter(rdOut, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
     ParallelReader pr = new ParallelReader();
     pr.add(IndexReader.open(rd1,true));
     pr.add(IndexReader.open(rd2,true));

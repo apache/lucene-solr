@@ -23,7 +23,6 @@ import java.util.Arrays;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.IndexSearcher;
@@ -58,7 +57,9 @@ public class TestFieldNormModifier extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    IndexWriter writer = new IndexWriter(store, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(store, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new SimpleAnalyzer(
+        TEST_VERSION_CURRENT)));
     
     for (int i = 0; i < NUM_DOCS; i++) {
       Document d = new Document();

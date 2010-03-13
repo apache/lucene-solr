@@ -19,6 +19,7 @@ package org.apache.lucene.search.regex;
 
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
@@ -40,8 +41,8 @@ public class TestRegexQuery extends LuceneTestCase {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
     try {
-      IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, 
-                                           IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+          TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
       Document doc = new Document();
       doc.add(new Field(FN, "the quick brown fox jumps over the lazy dog", Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);

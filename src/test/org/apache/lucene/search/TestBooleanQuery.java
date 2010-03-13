@@ -18,9 +18,10 @@ package org.apache.lucene.search;
  */
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -60,7 +61,8 @@ public class TestBooleanQuery extends LuceneTestCase {
   // LUCENE-1630
   public void testNullOrSubScorer() throws Throwable {
     Directory dir = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
     doc.add(new Field("field", "a b c d", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);

@@ -25,7 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.TimeLimitingCollector.TimeExceededException;
 import org.apache.lucene.store.Directory;
@@ -75,7 +75,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
         "blueberry pizza",
     };
     Directory directory = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, MaxFieldLength.UNLIMITED);
+    IndexWriter iw = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     
     for (int i=0; i<N_DOCS; i++) {
       add(docText[i%docText.length], iw);

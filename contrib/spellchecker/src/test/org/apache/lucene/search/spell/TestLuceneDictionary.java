@@ -25,6 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -46,7 +47,7 @@ public class TestLuceneDictionary extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    IndexWriter writer = new IndexWriter(store, new WhitespaceAnalyzer(LuceneTestCase.TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(store, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
 
     Document doc;
 

@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -57,9 +58,8 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         };
 
         index = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(index,
-                                             new WhitespaceAnalyzer(TEST_VERSION_CURRENT),
-                                             true, IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writer = new IndexWriter(index, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
 
         for (int i = 0; i < data.length; i++) {
             Document doc = new Document();

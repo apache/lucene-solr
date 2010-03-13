@@ -25,7 +25,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiSearcher;
 import org.apache.lucene.search.spans.SpanFirstQuery;
@@ -44,7 +46,8 @@ public class TestSpanRegexQuery extends LuceneTestCase {
 
   public void testSpanRegex() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
     // doc.add(new Field("field", "the quick brown fox jumps over the lazy dog",
     // Field.Store.NO, Field.Index.ANALYZED));
@@ -109,15 +112,15 @@ public class TestSpanRegexQuery extends LuceneTestCase {
         Field.Index.ANALYZED_NO_NORMS));
 
     // creating first index writer
-    IndexWriter writerA = new IndexWriter(indexStoreA, new StandardAnalyzer(TEST_VERSION_CURRENT),
-        true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writerA = new IndexWriter(indexStoreA, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE));
     writerA.addDocument(lDoc);
     writerA.optimize();
     writerA.close();
 
     // creating second index writer
-    IndexWriter writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(TEST_VERSION_CURRENT),
-        true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writerB = new IndexWriter(indexStoreB, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE));
     writerB.addDocument(lDoc2);
     writerB.optimize();
     writerB.close();

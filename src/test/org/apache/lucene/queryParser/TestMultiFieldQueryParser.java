@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -283,7 +284,7 @@ public class TestMultiFieldQueryParser extends LuceneTestCase {
   public void testStopWordSearching() throws Exception {
     Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
     Directory ramDir = new RAMDirectory();
-    IndexWriter iw =  new IndexWriter(ramDir, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter iw =  new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
     doc.add(new Field("body", "blah the footest blah", Field.Store.NO, Field.Index.ANALYZED));
     iw.addDocument(doc);

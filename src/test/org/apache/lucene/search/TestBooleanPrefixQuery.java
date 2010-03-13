@@ -23,6 +23,7 @@ import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -79,7 +80,8 @@ public class TestBooleanPrefixQuery extends LuceneTestCase {
     Query rw2 = null;
     IndexReader reader = null;
     try {
-      IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+          TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
       for (int i = 0; i < categories.length; i++) {
         Document doc = new Document();
         doc.add(new Field("category", categories[i], Field.Store.YES, Field.Index.NOT_ANALYZED));

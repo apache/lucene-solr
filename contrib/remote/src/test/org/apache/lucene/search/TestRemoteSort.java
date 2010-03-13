@@ -35,6 +35,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -109,9 +111,10 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
   private Searcher getIndex (boolean even, boolean odd)
   throws IOException {
     RAMDirectory indexStore = new RAMDirectory ();
-    IndexWriter writer = new IndexWriter (indexStore, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
-    writer.setMaxBufferedDocs(2);
-    writer.setMergeFactor(1000);
+    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
+        .setMaxBufferedDocs(2));
+    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(1000);
     for (int i=0; i<data.length; ++i) {
       if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
         Document doc = new Document();

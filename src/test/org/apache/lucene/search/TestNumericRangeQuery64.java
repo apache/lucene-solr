@@ -24,7 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.apache.lucene.util.NumericUtils;
@@ -48,8 +48,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT),
-    true, MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     
     NumericField
       field8 = new NumericField("field8", 8, Field.Store.YES, true),
@@ -293,8 +292,8 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
   @Test
   public void testInfiniteValues() throws Exception {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT),
-      true, MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
     doc.add(new NumericField("double").setDoubleValue(Double.NEGATIVE_INFINITY));
     doc.add(new NumericField("long").setLongValue(Long.MIN_VALUE));

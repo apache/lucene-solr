@@ -21,6 +21,7 @@ import java.io.IOException;
 
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.analysis.SimpleAnalyzer;
@@ -531,7 +532,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
   // test using a sparse index (with deleted docs). The DocIdSet should be not cacheable, as it uses TermDocs if the range contains 0
   public void testSparseIndex() throws IOException {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(TEST_VERSION_CURRENT), T, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
 
     for (int d = -20; d <= 20; d++) {
       Document doc = new Document();

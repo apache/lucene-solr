@@ -22,6 +22,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.RAMDirectory;
@@ -48,7 +49,7 @@ public class TestFilteredQuery extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter (directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter (directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
 
     Document doc = new Document();
     doc.add (new Field("field", "one two three four five", Field.Store.YES, Field.Index.ANALYZED));

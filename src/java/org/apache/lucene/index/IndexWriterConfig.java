@@ -1,0 +1,518 @@
+package org.apache.lucene.index;
+
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.index.DocumentsWriter.IndexingChain;
+import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
+import org.apache.lucene.search.Similarity;
+import org.apache.lucene.util.Version;
+
+/**
+ * Holds all the configuration of {@link IndexWriter}. This object is only used
+ * while constructing a new IndexWriter. Those settings cannot be changed
+ * afterwards, except instantiating a new IndexWriter.
+ * <p>
+ * All setter methods return {@link IndexWriterConfig} to allow chaining
+ * settings conveniently. Thus someone can do:
+ * 
+ * <pre>
+ * IndexWriterConfig conf = new IndexWriterConfig(analyzer);
+ * conf.setter1().setter2();
+ * </pre>
+ * 
+ * @since 3.1
+ */
+public final class IndexWriterConfig implements Cloneable {
+
+  public static final int UNLIMITED_FIELD_LENGTH = Integer.MAX_VALUE;
+
+  /**
+   * Specifies the open mode for {@link IndexWriter}:
+   * <ul>
+   * {@link #CREATE} - creates a new index or overwrites an existing one.
+   * {@link #CREATE_OR_APPEND} - creates a new index if one does not exist,
+   * otherwise it opens the index and documents will be appended.
+   * {@link #APPEND} - opens an existing index.
+   * </ul>
+   */
+  public static enum OpenMode { CREATE, APPEND, CREATE_OR_APPEND }
+  
+  /** Default value is 128. Change using {@link #setTermIndexInterval(int)}. */
+  public static final int DEFAULT_TERM_INDEX_INTERVAL = 128;
+
+  /** Denotes a flush trigger is disabled. */
+  public final static int DISABLE_AUTO_FLUSH = -1;
+
+  /** Disabled by default (because IndexWriter flushes by RAM usage by default). */
+  public final static int DEFAULT_MAX_BUFFERED_DELETE_TERMS = DISABLE_AUTO_FLUSH;
+
+  /** Disabled by default (because IndexWriter flushes by RAM usage by default). */
+  public final static int DEFAULT_MAX_BUFFERED_DOCS = DISABLE_AUTO_FLUSH;
+
+  /**
+   * Default value is 16 MB (which means flush when buffered docs consume
+   * approximately 16 MB RAM).
+   */
+  public final static double DEFAULT_RAM_BUFFER_SIZE_MB = 16.0;
+
+  /**
+   * Default value for the write lock timeout (1,000 ms).
+   * 
+   * @see #setDefaultWriteLockTimeout(long)
+   */
+  public static long WRITE_LOCK_TIMEOUT = 1000;
+
+  /**
+   * Sets the default (for any instance) maximum time to wait for a write lock
+   * (in milliseconds).
+   */
+  public static void setDefaultWriteLockTimeout(long writeLockTimeout) {
+    WRITE_LOCK_TIMEOUT = writeLockTimeout;
+  }
+
+  /**
+   * Returns the default write lock timeout for newly instantiated
+   * IndexWriterConfigs.
+   * 
+   * @see #setDefaultWriteLockTimeout(long)
+   */
+  public static long getDefaultWriteLockTimeout() {
+    return WRITE_LOCK_TIMEOUT;
+  }
+
+  private Analyzer analyzer;
+  private IndexDeletionPolicy delPolicy;
+  private IndexCommit commit;
+  private OpenMode openMode;
+  private int maxFieldLength;
+  private Similarity similarity;
+  private int termIndexInterval;
+  private MergeScheduler mergeScheduler;
+  private long writeLockTimeout;
+  private int maxBufferedDeleteTerms;
+  private double ramBufferSizeMB;
+  private int maxBufferedDocs;
+  private IndexingChain indexingChain;
+  private IndexReaderWarmer mergedSegmentWarmer;
+  
+  // required for clone
+  private Version matchVersion;
+
+  /**
+   * Creates a new config that with defaults that match the specified
+   * {@link Version} as well as the default {@link Analyzer}. {@link Version} is
+   * a placeholder for future changes. The default settings are relevant to 3.1
+   * and before. In the future, if different settings will apply to different
+   * versions, they will be documented here.
+   */
+  public IndexWriterConfig(Version matchVersion, Analyzer analyzer) {
+    this.matchVersion = matchVersion;
+    this.analyzer = analyzer;
+    delPolicy = new KeepOnlyLastCommitDeletionPolicy();
+    commit = null;
+    openMode = OpenMode.CREATE_OR_APPEND;
+    maxFieldLength = UNLIMITED_FIELD_LENGTH;
+    similarity = Similarity.getDefault();
+    termIndexInterval = DEFAULT_TERM_INDEX_INTERVAL;
+    mergeScheduler = new ConcurrentMergeScheduler();
+    writeLockTimeout = WRITE_LOCK_TIMEOUT;
+    maxBufferedDeleteTerms = DEFAULT_MAX_BUFFERED_DELETE_TERMS;
+    ramBufferSizeMB = DEFAULT_RAM_BUFFER_SIZE_MB;
+    maxBufferedDocs = DEFAULT_MAX_BUFFERED_DOCS;
+    indexingChain = DocumentsWriter.defaultIndexingChain;
+    mergedSegmentWarmer = null;
+  }
+  
+  @Override
+  public Object clone() {
+    // Shallow clone is the only thing that's possible, since parameters like
+    // analyzer, index commit etc. do not implemnt Cloneable.
+    try {
+      return super.clone();
+    } catch (CloneNotSupportedException e) {
+      // should not happen
+      throw new RuntimeException(e);
+    }
+  }
+
+  /** Returns the default analyzer to use for indexing documents. */
+  public Analyzer getAnalyzer() {
+    return analyzer;
+  }
+
+  /** Specifies {@link OpenMode} of that index. */
+  public IndexWriterConfig setOpenMode(OpenMode openMode) {
+    this.openMode = openMode;
+    return this;
+  }
+  
+  /** Returns the {@link OpenMode} set by {@link #setOpenMode(OpenMode)}. */
+  public OpenMode getOpenMode() {
+    return openMode;
+  }
+
+  /**
+   * Expert: allows an optional {@link IndexDeletionPolicy} implementation to be
+   * specified. You can use this to control when prior commits are deleted from
+   * the index. The default policy is {@link KeepOnlyLastCommitDeletionPolicy}
+   * which removes all prior commits as soon as a new commit is done (this
+   * matches behavior before 2.2). Creating your own policy can allow you to
+   * explicitly keep previous "point in time" commits alive in the index for
+   * some time, to allow readers to refresh to the new commit without having the
+   * old commit deleted out from under them. This is necessary on filesystems
+   * like NFS that do not support "delete on last close" semantics, which
+   * Lucene's "point in time" search normally relies on.
+   * <p>
+   * <b>NOTE:</b> the deletion policy cannot be null. If <code>null</code> is
+   * passed, the deletion policy will be set to the default.
+   */
+  public IndexWriterConfig setIndexDeletionPolicy(IndexDeletionPolicy delPolicy) {
+    this.delPolicy = delPolicy == null ? new KeepOnlyLastCommitDeletionPolicy() : delPolicy;
+    return this;
+  }
+
+  /**
+   * Returns the {@link IndexDeletionPolicy} specified in
+   * {@link #setIndexDeletionPolicy(IndexDeletionPolicy)} or the default
+   * {@link KeepOnlyLastCommitDeletionPolicy}/
+   */
+  public IndexDeletionPolicy getIndexDeletionPolicy() {
+    return delPolicy;
+  }
+
+  /**
+   * The maximum number of terms that will be indexed for a single field in a
+   * document. This limits the amount of memory required for indexing, so that
+   * collections with very large files will not crash the indexing process by
+   * running out of memory. This setting refers to the number of running terms,
+   * not to the number of different terms.
+   * <p>
+   * <b>NOTE:</b> this silently truncates large documents, excluding from the
+   * index all terms that occur further in the document. If you know your source
+   * documents are large, be sure to set this value high enough to accomodate
+   * the expected size. If you set it to {@link #UNLIMITED_FIELD_LENGTH}, then
+   * the only limit is your memory, but you should anticipate an
+   * OutOfMemoryError.
+   * <p>
+   * By default it is set to {@link #UNLIMITED_FIELD_LENGTH}.
+   */
+  public IndexWriterConfig setMaxFieldLength(int maxFieldLength) {
+    this.maxFieldLength = maxFieldLength;
+    return this;
+  }
+
+  /**
+   * Returns the maximum number of terms that will be indexed for a single field
+   * in a document.
+   * 
+   * @see #setMaxFieldLength(int)
+   */
+  public int getMaxFieldLength() {
+    return maxFieldLength;
+  }
+
+  /**
+   * Expert: allows to open a certain commit point. The default is null which
+   * opens the latest commit point.
+   */
+  public IndexWriterConfig setIndexCommit(IndexCommit commit) {
+    this.commit = commit;
+    return this;
+  }
+
+  /**
+   * Returns the {@link IndexCommit} as specified in
+   * {@link #setIndexCommit(IndexCommit)} or the default, <code>null</code>
+   * which specifies to open the latest index commit point.
+   */
+  public IndexCommit getIndexCommit() {
+    return commit;
+  }
+
+  /**
+   * Expert: set the {@link Similarity} implementation used by this IndexWriter.
+   * <p>
+   * <b>NOTE:</b> the similarity cannot be null. If <code>null</code> is passed,
+   * the similarity will be set to the default.
+   * 
+   * @see Similarity#setDefault(Similarity)
+   */
+  public IndexWriterConfig setSimilarity(Similarity similarity) {
+    this.similarity = similarity == null ? Similarity.getDefault() : similarity;
+    return this;
+  }
+
+  /**
+   * Expert: returns the {@link Similarity} implementation used by this
+   * IndexWriter. This defaults to the current value of
+   * {@link Similarity#getDefault()}.
+   */
+  public Similarity getSimilarity() {
+    return similarity;
+  }
+  
+  /**
+   * Expert: set the interval between indexed terms. Large values cause less
+   * memory to be used by IndexReader, but slow random-access to terms. Small
+   * values cause more memory to be used by an IndexReader, and speed
+   * random-access to terms.
+   * <p>
+   * This parameter determines the amount of computation required per query
+   * term, regardless of the number of documents that contain that term. In
+   * particular, it is the maximum number of other terms that must be scanned
+   * before a term is located and its frequency and position information may be
+   * processed. In a large index with user-entered query terms, query processing
+   * time is likely to be dominated not by term lookup but rather by the
+   * processing of frequency and positional data. In a small index or when many
+   * uncommon query terms are generated (e.g., by wildcard queries) term lookup
+   * may become a dominant cost.
+   * <p>
+   * In particular, <code>numUniqueTerms/interval</code> terms are read into
+   * memory by an IndexReader, and, on average, <code>interval/2</code> terms
+   * must be scanned for each random term access.
+   * 
+   * @see #DEFAULT_TERM_INDEX_INTERVAL
+   */
+  public IndexWriterConfig setTermIndexInterval(int interval) {
+    this.termIndexInterval = interval;
+    return this;
+  }
+
+  /**
+   * Returns the interval between indexed terms.
+   * 
+   * @see #setTermIndexInterval(int)
+   */
+  public int getTermIndexInterval() {
+    return termIndexInterval;
+  }
+
+  /**
+   * Expert: sets the merge scheduler used by this writer. The default is
+   * {@link ConcurrentMergeScheduler}.
+   * <p>
+   * <b>NOTE:</b> the merge scheduler cannot be null. If <code>null</code> is
+   * passed, the merge scheduler will be set to the default.
+   */
+  public IndexWriterConfig setMergeScheduler(MergeScheduler mergeScheduler) {
+    this.mergeScheduler = mergeScheduler == null ? new ConcurrentMergeScheduler() : mergeScheduler;
+    return this;
+  }
+
+  /**
+   * Returns the {@link MergeScheduler} that was set by
+   * {@link #setMergeScheduler(MergeScheduler)}
+   */
+  public MergeScheduler getMergeScheduler() {
+    return mergeScheduler;
+  }
+
+  /**
+   * Sets the maximum time to wait for a write lock (in milliseconds) for this
+   * instance. You can change the default value for all instances by calling
+   * {@link #setDefaultWriteLockTimeout(long)}.
+   */
+  public IndexWriterConfig setWriteLockTimeout(long writeLockTimeout) {
+    this.writeLockTimeout = writeLockTimeout;
+    return this;
+  }
+  
+  /**
+   * Returns allowed timeout when acquiring the write lock.
+   * 
+   * @see #setWriteLockTimeout(long)
+   */
+  public long getWriteLockTimeout() {
+    return writeLockTimeout;
+  }
+
+  /**
+   * Determines the minimal number of delete terms required before the buffered
+   * in-memory delete terms are applied and flushed. If there are documents
+   * buffered in memory at the time, they are merged and a new segment is
+   * created.
+
+   * <p>Disabled by default (writer flushes by RAM usage).
+   * 
+   * @throws IllegalArgumentException if maxBufferedDeleteTerms
+   * is enabled but smaller than 1
+   * @see #setRAMBufferSizeMB
+   */
+  public IndexWriterConfig setMaxBufferedDeleteTerms(int maxBufferedDeleteTerms) {
+    if (maxBufferedDeleteTerms != DISABLE_AUTO_FLUSH
+        && maxBufferedDeleteTerms < 1)
+      throw new IllegalArgumentException(
+          "maxBufferedDeleteTerms must at least be 1 when enabled");
+    this.maxBufferedDeleteTerms = maxBufferedDeleteTerms;
+    return this;
+  }
+
+  /**
+   * Returns the number of buffered deleted terms that will trigger a flush if
+   * enabled.
+   * 
+   * @see #setMaxBufferedDeleteTerms(int)
+   */
+  public int getMaxBufferedDeleteTerms() {
+    return maxBufferedDeleteTerms;
+  }
+
+  /**
+   * Determines the amount of RAM that may be used for buffering added documents
+   * and deletions before they are flushed to the Directory. Generally for
+   * faster indexing performance it's best to flush by RAM usage instead of
+   * document count and use as large a RAM buffer as you can.
+   * 
+   * <p>
+   * When this is set, the writer will flush whenever buffered documents and
+   * deletions use this much RAM. Pass in {@link #DISABLE_AUTO_FLUSH} to prevent
+   * triggering a flush due to RAM usage. Note that if flushing by document
+   * count is also enabled, then the flush will be triggered by whichever comes
+   * first.
+   * 
+   * <p>
+   * <b>NOTE</b>: the account of RAM usage for pending deletions is only
+   * approximate. Specifically, if you delete by Query, Lucene currently has no
+   * way to measure the RAM usage of individual Queries so the accounting will
+   * under-estimate and you should compensate by either calling commit()
+   * periodically yourself, or by using {@link #setMaxBufferedDeleteTerms(int)}
+   * to flush by count instead of RAM usage (each buffered delete Query counts 
+   * as one).
+   * 
+   * <p>
+   * <b>NOTE</b>: because IndexWriter uses <code>int</code>s when managing its
+   * internal storage, the absolute maximum value for this setting is somewhat
+   * less than 2048 MB. The precise limit depends on various factors, such as
+   * how large your documents are, how many fields have norms, etc., so it's
+   * best to set this value comfortably under 2048.
+   * 
+   * <p>
+   * The default value is {@link #DEFAULT_RAM_BUFFER_SIZE_MB}.
+   * 
+   * @throws IllegalArgumentException
+   *           if ramBufferSize is enabled but non-positive, or it disables
+   *           ramBufferSize when maxBufferedDocs is already disabled
+   */
+  public IndexWriterConfig setRAMBufferSizeMB(double ramBufferSizeMB) {
+    if (ramBufferSizeMB > 2048.0) {
+      throw new IllegalArgumentException("ramBufferSize " + ramBufferSizeMB
+          + " is too large; should be comfortably less than 2048");
+    }
+    if (ramBufferSizeMB != DISABLE_AUTO_FLUSH && ramBufferSizeMB <= 0.0)
+      throw new IllegalArgumentException(
+          "ramBufferSize should be > 0.0 MB when enabled");
+    if (ramBufferSizeMB == DISABLE_AUTO_FLUSH && maxBufferedDocs == DISABLE_AUTO_FLUSH)
+      throw new IllegalArgumentException(
+          "at least one of ramBufferSize and maxBufferedDocs must be enabled");
+    this.ramBufferSizeMB = ramBufferSizeMB;
+    return this;
+  }
+
+  /** Returns the value set by {@link #setRAMBufferSizeMB(double)} if enabled. */
+  public double getRAMBufferSizeMB() {
+    return ramBufferSizeMB;
+  }
+
+  /**
+   * Determines the minimal number of documents required before the buffered
+   * in-memory documents are flushed as a new Segment. Large values generally
+   * give faster indexing.
+   * 
+   * <p>
+   * When this is set, the writer will flush every maxBufferedDocs added
+   * documents. Pass in {@link #DISABLE_AUTO_FLUSH} to prevent triggering a
+   * flush due to number of buffered documents. Note that if flushing by RAM
+   * usage is also enabled, then the flush will be triggered by whichever comes
+   * first.
+   * 
+   * <p>
+   * Disabled by default (writer flushes by RAM usage).
+   * 
+   * @see #setRAMBufferSizeMB(double)
+   * 
+   * @throws IllegalArgumentException
+   *           if maxBufferedDocs is enabled but smaller than 2, or it disables
+   *           maxBufferedDocs when ramBufferSize is already disabled
+   */
+  public IndexWriterConfig setMaxBufferedDocs(int maxBufferedDocs) {
+    if (maxBufferedDocs != DISABLE_AUTO_FLUSH && maxBufferedDocs < 2)
+      throw new IllegalArgumentException(
+          "maxBufferedDocs must at least be 2 when enabled");
+    if (maxBufferedDocs == DISABLE_AUTO_FLUSH
+        && ramBufferSizeMB == DISABLE_AUTO_FLUSH)
+      throw new IllegalArgumentException(
+          "at least one of ramBufferSize and maxBufferedDocs must be enabled");
+    this.maxBufferedDocs = maxBufferedDocs;
+    return this;
+  }
+
+  /**
+   * Returns the number of buffered added documents that will trigger a flush if
+   * enabled.
+   * 
+   * @see #setMaxBufferedDocs(int)
+   */
+  public int getMaxBufferedDocs() {
+    return maxBufferedDocs;
+  }
+
+  /** Set the merged segment warmer. See {@link IndexReaderWarmer}. */
+  public IndexWriterConfig setMergedSegmentWarmer(IndexReaderWarmer mergeSegmentWarmer) {
+    this.mergedSegmentWarmer = mergeSegmentWarmer;
+    return this;
+  }
+
+  /** Returns the current merged segment warmer. See {@link IndexReaderWarmer}. */
+  public IndexReaderWarmer getMergedSegmentWarmer() {
+    return mergedSegmentWarmer;
+  }
+
+
+  /** Expert: sets the {@link DocConsumer} chain to be used to process documents. */
+  IndexWriterConfig setIndexingChain(IndexingChain indexingChain) {
+    this.indexingChain = indexingChain == null ? DocumentsWriter.defaultIndexingChain : indexingChain;
+    return this;
+  }
+  
+  /** Returns the indexing chain set on {@link #setIndexingChain(IndexingChain)}. */
+  IndexingChain getIndexingChain() {
+    return indexingChain;
+  }
+  
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("matchVersion=").append(matchVersion).append("\n");
+    sb.append("analyzer=").append(analyzer.getClass().getName()).append("\n");
+    sb.append("delPolicy=").append(delPolicy.getClass().getName()).append("\n");
+    sb.append("commit=").append(commit == null ? "null" : commit.getClass().getName()).append("\n");
+    sb.append("openMode=").append(openMode).append("\n");
+    sb.append("maxFieldLength=").append(maxFieldLength).append("\n");
+    sb.append("similarity=").append(similarity.getClass().getName()).append("\n");
+    sb.append("termIndexInterval=").append(termIndexInterval).append("\n");
+    sb.append("mergeScheduler=").append(mergeScheduler.getClass().getName()).append("\n");
+    sb.append("default WRITE_LOCK_TIMEOUT=").append(WRITE_LOCK_TIMEOUT).append("\n");
+    sb.append("writeLockTimeout=").append(writeLockTimeout).append("\n");
+    sb.append("maxBufferedDeleteTerms=").append(maxBufferedDeleteTerms).append("\n");
+    sb.append("ramBufferSizeMB=").append(ramBufferSizeMB).append("\n");
+    sb.append("maxBufferedDocs=").append(maxBufferedDocs).append("\n");
+    sb.append("mergedSegmentWarmer=").append(mergedSegmentWarmer).append("\n");
+    return sb.toString();
+  }
+}

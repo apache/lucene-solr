@@ -27,6 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.store.Directory;
@@ -37,7 +38,8 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
   
   public void testCaching() throws IOException {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
     TokenStream stream = new TokenStream() {
       private int index = 0;

@@ -17,9 +17,10 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -37,7 +38,7 @@ public class TestTopScoreDocCollector extends LuceneTestCase {
   public void testOutOfOrderCollection() throws Exception {
 
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, null, MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     for (int i = 0; i < 10; i++) {
       writer.addDocument(new Document());
     }

@@ -37,7 +37,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -171,8 +171,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
 
   private void doTestReopenWithCommit (Directory dir, boolean withReopen) throws IOException {
-    IndexWriter iwriter = new IndexWriter(dir, new KeywordAnalyzer(), true, MaxFieldLength.LIMITED);
-    iwriter.setMergeScheduler(new SerialMergeScheduler());
+    IndexWriter iwriter = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new KeywordAnalyzer()).setOpenMode(
+        OpenMode.CREATE).setMergeScheduler(new SerialMergeScheduler()));
     IndexReader reader = IndexReader.open(dir, false);
     try {
       int M = 3;
@@ -702,7 +703,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     final Directory dir = new MockRAMDirectory();
     final int n = 30;
 
-    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
     for (int i = 0; i < n; i++) {
       writer.addDocument(createDocument(i, 3));
     }
@@ -721,7 +723,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
           modifier.deleteDocument(i % modifier.maxDoc());
           modifier.close();
         } else {
-          IndexWriter modifier = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+          IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(
+              TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
           modifier.addDocument(createDocument(n + i, 6));
           modifier.close();
         }
@@ -946,7 +949,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   
   public static void createIndex(Directory dir, boolean multiSegment) throws IOException {
     IndexWriter.unlock(dir);
-    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
 
     w.setMergePolicy(new LogDocMergePolicy(w));
     
@@ -991,7 +994,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   static void modifyIndex(int i, Directory dir) throws IOException {
     switch (i) {
       case 0: {
-        IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
         w.deleteDocuments(new Term("field2", "a11"));
         w.deleteDocuments(new Term("field2", "b30"));
         w.close();
@@ -1006,13 +1009,13 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         break;
       }
       case 2: {
-        IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
         w.optimize();
         w.close();
         break;
       }
       case 3: {
-        IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
         w.addDocument(createDocument(101, 4));
         w.optimize();
         w.addDocument(createDocument(102, 4));
@@ -1028,7 +1031,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         break;
       }
       case 5: {
-        IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
         w.addDocument(createDocument(101, 4));
         w.close();
         break;
@@ -1192,7 +1195,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
   public void testReopenOnCommit() throws Throwable {
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), new KeepAllCommits(), IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(new KeepAllCommits()));
     for(int i=0;i<4;i++) {
       Document doc = new Document();
       doc.add(new Field("id", ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));

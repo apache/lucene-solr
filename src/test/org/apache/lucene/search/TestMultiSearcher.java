@@ -25,7 +25,9 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SetBasedFieldSelector;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -54,9 +56,7 @@ public class TestMultiSearcher extends LuceneTestCase
 		return new MultiSearcher(searchers);
 	}
 
-    public void testEmptyIndex()
-        throws Exception
-    {
+    public void testEmptyIndex() throws Exception {
         // creating two directories for indices
         Directory indexStoreA = new MockRAMDirectory();
         Directory indexStoreB = new MockRAMDirectory();
@@ -82,9 +82,9 @@ public class TestMultiSearcher extends LuceneTestCase
         lDoc3.add(new Field("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
 
         // creating an index writer for the first index
-        IndexWriter writerA = new IndexWriter(indexStoreA, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writerA = new IndexWriter(indexStoreA, new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
         // creating an index writer for the second index, but writing nothing
-        IndexWriter writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writerB = new IndexWriter(indexStoreB, new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
 
         //--------------------------------------------------------------------
         // scenario 1
@@ -128,7 +128,10 @@ public class TestMultiSearcher extends LuceneTestCase
         //--------------------------------------------------------------------
 
         // adding one document to the empty index
-        writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
+        writerB = new IndexWriter(indexStoreB, new IndexWriterConfig(
+            TEST_VERSION_CURRENT, 
+                new StandardAnalyzer(TEST_VERSION_CURRENT))
+                .setOpenMode(OpenMode.APPEND));
         writerB.addDocument(lDoc);
         writerB.optimize();
         writerB.close();
@@ -174,7 +177,10 @@ public class TestMultiSearcher extends LuceneTestCase
         readerB.close();
 
         // optimizing the index with the writer
-        writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
+        writerB = new IndexWriter(indexStoreB, new IndexWriterConfig(
+            TEST_VERSION_CURRENT, 
+                new StandardAnalyzer(TEST_VERSION_CURRENT))
+                .setOpenMode(OpenMode.APPEND));
         writerB.optimize();
         writerB.close();
 
@@ -215,7 +221,9 @@ public class TestMultiSearcher extends LuceneTestCase
         IndexWriter indexWriter=null;
         
         try {
-            indexWriter=new IndexWriter(directory, new KeywordAnalyzer(), create, IndexWriter.MaxFieldLength.LIMITED);
+          indexWriter = new IndexWriter(directory, new IndexWriterConfig(
+              TEST_VERSION_CURRENT, new KeywordAnalyzer()).setOpenMode(
+                  create ? OpenMode.CREATE : OpenMode.APPEND));
             
             for (int i=0; i<nDocs; i++) {
                 indexWriter.addDocument(createDocument("doc" + i, contents2));

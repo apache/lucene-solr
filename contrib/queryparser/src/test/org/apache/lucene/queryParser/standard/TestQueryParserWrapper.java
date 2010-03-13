@@ -78,6 +78,9 @@ import org.apache.lucene.util.LocalizedTestCase;
  * to use new {@link QueryParserWrapper} instead of the old query parser.
  * 
  * Tests QueryParser.
+ * 
+ * @deprecated this entire test case tests QueryParserWrapper which is
+ *             deprecated. When QPW is gone, so will the test.
  */
 public class TestQueryParserWrapper extends LocalizedTestCase {
 

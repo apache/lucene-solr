@@ -31,6 +31,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.MultiFieldQueryParser;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
@@ -87,7 +88,7 @@ public class ListSearcher extends AbstractListModel {
     private ListDataListener listModelListener;
 
     public ListSearcher(ListModel newModel) {
-        analyzer = new WhitespaceAnalyzer();
+        analyzer = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
         setListModel(newModel);
         listModelListener = new ListModelHandler();
         newModel.addListDataListener(listModelListener);
@@ -117,7 +118,7 @@ public class ListSearcher extends AbstractListModel {
         try {
             // recreate the RAMDirectory
             directory = new RAMDirectory();
-            IndexWriter writer = new IndexWriter(directory, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
+            IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(Version.LUCENE_CURRENT, analyzer));
 
             // iterate through all rows
             for (int row=0; row < listModel.getSize(); row++){

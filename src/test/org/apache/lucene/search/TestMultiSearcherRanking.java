@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
@@ -113,13 +114,11 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
     super.setUp();
     // create MultiSearcher from two seperate searchers
     Directory d1 = new RAMDirectory();
-    IndexWriter iw1 = new IndexWriter(d1, new StandardAnalyzer(TEST_VERSION_CURRENT), true,
-                                      IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter iw1 = new IndexWriter(d1, new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
     addCollection1(iw1);
     iw1.close();
     Directory d2 = new RAMDirectory();
-    IndexWriter iw2 = new IndexWriter(d2, new StandardAnalyzer(TEST_VERSION_CURRENT), true,
-                                      IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter iw2 = new IndexWriter(d2, new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
     addCollection2(iw2);
     iw2.close();
 
@@ -130,8 +129,7 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
 
     // create IndexSearcher which contains all documents
     Directory d = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(d, new StandardAnalyzer(TEST_VERSION_CURRENT), true,
-                                     IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter iw = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
     addCollection1(iw);
     addCollection2(iw);
     iw.close();

@@ -23,6 +23,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.store.RAMDirectory;
@@ -33,13 +34,10 @@ import java.util.LinkedList;
 /**
  * This class tests PhrasePrefixQuery class.
  */
-public class TestPhrasePrefixQuery
-    extends LuceneTestCase
-{
-    public TestPhrasePrefixQuery(String name)
-    {
-        super(name);
-    }
+public class TestPhrasePrefixQuery extends LuceneTestCase {
+  public TestPhrasePrefixQuery(String name) {
+    super(name);
+  }
 
     /**
      *
@@ -48,7 +46,7 @@ public class TestPhrasePrefixQuery
         throws IOException
     {
         RAMDirectory indexStore = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(indexStore, new SimpleAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
         Document doc1 = new Document();
         Document doc2 = new Document();
         Document doc3 = new Document();

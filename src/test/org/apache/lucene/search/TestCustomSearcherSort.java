@@ -34,6 +34,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -70,7 +71,7 @@ implements Serializable {
   private Directory getIndex()
   throws IOException {
           RAMDirectory indexStore = new RAMDirectory ();
-          IndexWriter writer = new IndexWriter (indexStore, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+          IndexWriter writer = new IndexWriter (indexStore, new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
           RandomGen random = new RandomGen(newRandom());
           for (int i=0; i<INDEX_SIZE; ++i) { // don't decrease; if to low the problem doesn't show up
           Document doc = new Document();

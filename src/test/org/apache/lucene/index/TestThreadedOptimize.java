@@ -24,6 +24,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.English;
 
@@ -53,15 +54,15 @@ public class TestThreadedOptimize extends LuceneTestCase {
 
   public void runTest(Directory directory, MergeScheduler merger) throws Exception {
 
-    IndexWriter writer = new IndexWriter(directory, ANALYZER, true, IndexWriter.MaxFieldLength.UNLIMITED);
-    writer.setMaxBufferedDocs(2);
-    if (merger != null)
-      writer.setMergeScheduler(merger);
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, ANALYZER)
+        .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(2).setMergeScheduler(
+            merger));
 
     for(int iter=0;iter<NUM_ITER;iter++) {
       final int iterFinal = iter;
 
-      writer.setMergeFactor(1000);
+      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(1000);
 
       for(int i=0;i<200;i++) {
         Document d = new Document();
@@ -70,7 +71,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
         writer.addDocument(d);
       }
 
-      writer.setMergeFactor(4);
+      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(4);
       //writer.setInfoStream(System.out);
 
       Thread[] threads = new Thread[NUM_THREADS];
@@ -118,8 +119,9 @@ public class TestThreadedOptimize extends LuceneTestCase {
       assertEquals(expectedDocCount, writer.maxDoc());
 
       writer.close();
-      writer = new IndexWriter(directory, ANALYZER, false, IndexWriter.MaxFieldLength.UNLIMITED);
-      writer.setMaxBufferedDocs(2);
+      writer = new IndexWriter(directory, new IndexWriterConfig(
+          TEST_VERSION_CURRENT, ANALYZER).setOpenMode(
+          OpenMode.APPEND).setMaxBufferedDocs(2));
 
       IndexReader reader = IndexReader.open(directory, true);
       assertTrue(reader.isOptimized());

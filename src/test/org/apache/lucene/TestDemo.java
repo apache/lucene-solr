@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
@@ -49,8 +50,9 @@ public class TestDemo extends LuceneTestCase {
     Directory directory = new RAMDirectory();
     // To store an index on disk, use this instead:
     //Directory directory = FSDirectory.open("/tmp/testindex");
-    IndexWriter iwriter = new IndexWriter(directory, analyzer, true,
-                                          new IndexWriter.MaxFieldLength(25000));
+    IndexWriter iwriter = new IndexWriter(directory, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, analyzer).setMaxFieldLength(25000));
+    
     Document doc = new Document();
     String text = "This is the text to be indexed.";
     doc.add(new Field("fieldname", text, Field.Store.YES,
