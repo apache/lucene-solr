@@ -138,7 +138,7 @@ public class TestDirectory extends LuceneTestCase {
 
   // LUCENE-1468
   public void testFSDirectoryFilter() throws IOException {
-    checkDirectoryFilter(FSDirectory.open(new File("test")));
+    checkDirectoryFilter(FSDirectory.open(new File(System.getProperty("tempDir"),"test")));
   }
 
   // LUCENE-1468

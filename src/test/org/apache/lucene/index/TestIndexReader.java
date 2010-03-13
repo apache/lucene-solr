@@ -507,9 +507,7 @@ public class TestIndexReader extends LuceneTestCase
     // Make sure you can set norms & commit even if a reader
     // is open against the index:
     public void testWritingNorms() throws IOException {
-        String tempDir = "target/test";
-
-        File indexDir = new File(tempDir, "lucenetestnormwriter");
+        File indexDir = new File(System.getProperty("tempDir"), "lucenetestnormwriter");
         Directory dir = FSDirectory.open(indexDir);
         IndexWriter writer;
         IndexReader reader;
