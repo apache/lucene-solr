@@ -244,6 +244,11 @@ Test Cases
   from LuceneTestCase(J4), that contains the release version.
   (Uwe Schindler, Simon Willnauer, Shai Erera)
 
+* LUCENE-2313: Add VERBOSE to LuceneTestCase(J4) to control verbosity
+  of tests. If VERBOSE==false (default) tests should not print anything
+  other than errors to System.(out|err). The setting can be changed with
+  -Dtests.verbose=true on test invokation.  (Shai Erera via Uwe Schindler)
+
 ================== Release 2.9.2 / 3.0.1 2010-02-26 ====================
 
 Changes in backwards compatibility policy

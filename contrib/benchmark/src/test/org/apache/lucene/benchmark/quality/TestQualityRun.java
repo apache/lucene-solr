@@ -35,8 +35,7 @@ import org.apache.lucene.benchmark.quality.utils.SimpleQQParser;
 import org.apache.lucene.benchmark.quality.utils.SubmissionReport;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.FSDirectory;
-
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Test that quality run does its job.
@@ -45,9 +44,7 @@ import junit.framework.TestCase;
  * this test will not work correctly, as it does not dynamically
  * generate its test trec topics/qrels!
  */
-public class TestQualityRun extends TestCase {
-
-  private static boolean DEBUG = Boolean.getBoolean("tests.verbose");
+public class TestQualityRun extends LuceneTestCase {
   
   public TestQualityRun(String name) {
     super(name);
@@ -63,7 +60,7 @@ public class TestQualityRun extends TestCase {
     int maxResults = 1000;
     String docNameField = "doctitle"; // orig docID is in the linedoc format title 
     
-    PrintWriter logger = DEBUG ? new PrintWriter(System.out,true) : null;
+    PrintWriter logger = VERBOSE ? new PrintWriter(System.out,true) : null;
 
     // <tests src dir> for topics/qrels files - src/test/org/apache/lucene/benchmark/quality
     File srcTestDir = new File(new File(new File(new File(new File(
@@ -89,7 +86,7 @@ public class TestQualityRun extends TestCase {
     QualityQueryParser qqParser = new SimpleQQParser("title","body");
     QualityBenchmark qrun = new QualityBenchmark(qqs, qqParser, searcher, docNameField);
     
-    SubmissionReport submitLog = DEBUG ? new SubmissionReport(logger, "TestRun") : null;
+    SubmissionReport submitLog = VERBOSE ? new SubmissionReport(logger, "TestRun") : null;
     qrun.setMaxResults(maxResults);
     QualityStats stats[] = qrun.execute(judge, submitLog, logger);
     

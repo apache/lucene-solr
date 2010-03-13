@@ -77,6 +77,12 @@ import static org.junit.Assert.fail;
 //@RunWith(RunBareWrapper.class)
 public class LuceneTestCaseJ4 {
 
+  /**
+   * true iff tests are run in verbose mode. Note: if it is false, tests are not
+   * expected to print any messages.
+   */
+  public static final boolean VERBOSE = Boolean.getBoolean("tests.verbose");
+
   /** Change this when development starts for new Lucene version: */
   public static final Version TEST_VERSION_CURRENT = Version.LUCENE_31;
 

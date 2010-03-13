@@ -54,6 +54,12 @@ import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
  */
 public abstract class LuceneTestCase extends TestCase {
 
+  /**
+   * true iff tests are run in verbose mode. Note: if it is false, tests are not
+   * expected to print any messages.
+   */
+  public static final boolean VERBOSE = LuceneTestCaseJ4.VERBOSE;
+
   public static final Version TEST_VERSION_CURRENT = LuceneTestCaseJ4.TEST_VERSION_CURRENT;
 
   private int savedBoolMaxClauseCount;
