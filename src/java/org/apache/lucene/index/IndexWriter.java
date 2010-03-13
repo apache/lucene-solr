@@ -4954,7 +4954,7 @@ public class IndexWriter implements Closeable {
    * Set the merged segment warmer. See {@link IndexReaderWarmer}.
    * 
    * @deprecated use
-   *             {@link IndexWriterConfig#setMergedSegmentWarmer(IndexReaderWarmer)}
+   *             {@link IndexWriterConfig#setMergedSegmentWarmer}
    *             instead.
    */
   public void setMergedSegmentWarmer(IndexReaderWarmer warmer) {
