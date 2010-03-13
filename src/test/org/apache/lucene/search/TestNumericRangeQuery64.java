@@ -141,7 +141,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
         default:
           return;
       }
-      System.out.println("Found "+terms+" distinct terms in range for field '"+field+"'"+type+".");
+      if (VERBOSE) System.out.println("Found "+terms+" distinct terms in range for field '"+field+"'"+type+".");
       ScoreDoc[] sd = topDocs.scoreDocs;
       assertNotNull(sd);
       assertEquals("Score doc count"+type, count, sd.length );
@@ -204,7 +204,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
     long upper=(count-1)*distance + (distance/3) + startOffset;
     NumericRangeQuery<Long> q=NumericRangeQuery.newLongRange(field, precisionStep, null, upper, true, true);
     TopDocs topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
-    System.out.println("Found "+q.getTotalNumberOfTerms()+" distinct terms in left open range for field '"+field+"'.");
+    if (VERBOSE) System.out.println("Found "+q.getTotalNumberOfTerms()+" distinct terms in left open range for field '"+field+"'.");
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", count, sd.length );
@@ -250,7 +250,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
     long lower=(count-1)*distance + (distance/3) +startOffset;
     NumericRangeQuery<Long> q=NumericRangeQuery.newLongRange(field, precisionStep, lower, null, true, true);
     TopDocs topDocs = searcher.search(q, null, noDocs, Sort.INDEXORDER);
-    System.out.println("Found "+q.getTotalNumberOfTerms()+" distinct terms in right open range for field '"+field+"'.");
+    if (VERBOSE) System.out.println("Found "+q.getTotalNumberOfTerms()+" distinct terms in right open range for field '"+field+"'.");
     ScoreDoc[] sd = topDocs.scoreDocs;
     assertNotNull(sd);
     assertEquals("Score doc count", noDocs-count, sd.length );
@@ -386,7 +386,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
     }
     if (precisionStep == Integer.MAX_VALUE) {
       assertEquals("Total number of terms should be equal for unlimited precStep", termCountT, termCountC);
-    } else {
+    } else if (VERBOSE) {
       System.out.println("Average number of terms during random search on '" + field + "':");
       System.out.println(" Trie query: " + (((double)termCountT)/(10*4)));
       System.out.println(" Classical query: " + (((double)termCountC)/(10*4)));
