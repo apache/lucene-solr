@@ -1015,8 +1015,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
     hasChanges = false;
   }
 
-  /** Implements commit.  NOTE: subclasses should override
-   *  this.  In 3.0 this will become an abstract method. */
+  /** Implements commit.  */
   protected abstract void doCommit(Map<String, String> commitUserData) throws IOException;
 
   /**
