@@ -123,15 +123,20 @@ public class TestEvaluatorBag {
     ContextImpl context = new ContextImpl(null, resolver, null, Context.FULL_DUMP, Collections.EMPTY_MAP, null, null);
     Context.CURRENT_CONTEXT.set(context);
     try {
-      long time = System.currentTimeMillis();
-      assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date(time - 2*86400*1000)),
+      Calendar calendar = new GregorianCalendar();
+      calendar.add(Calendar.DAY_OF_YEAR, -2);
+
+      assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(calendar.getTime()),
               dateFormatEval.evaluate("'NOW-2DAYS','yyyy-MM-dd HH:mm'", Context.CURRENT_CONTEXT.get()));
 
+      calendar = new GregorianCalendar();
+      Date date = calendar.getTime();
+      
       Map<String, Object> map = new HashMap<String, Object>();
-      map.put("key", new Date(time));
+      map.put("key", date);
       resolver.addNamespace("A", map);
 
-      assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(new Date(time)),
+      assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(date),
               dateFormatEval.evaluate("A.key, 'yyyy-MM-dd HH:mm'", Context.CURRENT_CONTEXT.get()));
     } finally {
       Context.CURRENT_CONTEXT.remove();

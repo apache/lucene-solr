@@ -261,6 +261,9 @@ Other Changes
 * SOLR-1776: DismaxQParser and ExtendedDismaxQParser now use the schema.xml
   "defaultSearchField" as the default value for the "qf" param instead of failing
   with an error when "qf" is not specified.  (hossman)
+
+* SOLR-1821: Fix TimeZone-dependent test failure in TestEvaluatorBag.
+  (Chris Male via rmuir)
   
 Build
 ----------------------
