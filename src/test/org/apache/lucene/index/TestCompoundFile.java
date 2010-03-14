@@ -57,7 +57,7 @@ public class TestCompoundFile extends LuceneTestCase
     @Override
     protected void setUp() throws Exception {
        super.setUp();
-       File file = new File(System.getProperty("tempDir"), "testIndex");
+       File file = new File(TEMP_DIR, "testIndex");
        _TestUtil.rmDir(file);
        // use a simple FSDir here, to be sure to have SimpleFSInputs
        dir = new SimpleFSDirectory(file,null);
@@ -66,6 +66,7 @@ public class TestCompoundFile extends LuceneTestCase
     @Override
     protected void tearDown() throws Exception {
        dir.close();
+       _TestUtil.rmDir(new File(TEMP_DIR, "testIndex"));
        super.tearDown();
     }
 

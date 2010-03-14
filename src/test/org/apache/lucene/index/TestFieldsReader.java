@@ -210,10 +210,8 @@ public class TestFieldsReader extends LuceneTestCase {
    * @throws Exception
    */
   public void testLazyPerformance() throws Exception {
-    String tmpIODir = System.getProperty("tempDir");
     String userName = System.getProperty("user.name");
-    String path = tmpIODir + File.separator + "lazyDir" + userName;
-    File file = new File(path);
+    File file = new File(TEMP_DIR, "lazyDir" + userName);
     _TestUtil.rmDir(file);
     FSDirectory tmpDir = FSDirectory.open(file);
     assertTrue(tmpDir != null);
@@ -391,10 +389,7 @@ public class TestFieldsReader extends LuceneTestCase {
 
   // LUCENE-1262
   public void testExceptions() throws Throwable {
-    String tempDir = System.getProperty("java.io.tmpdir");
-    if (tempDir == null)
-      throw new IOException("java.io.tmpdir undefined, cannot run test");
-    File indexDir = new File(tempDir, "testfieldswriterexceptions");
+    File indexDir = new File(TEMP_DIR, "testfieldswriterexceptions");
 
     try {
       Directory dir = new FaultyFSDirectory(indexDir);

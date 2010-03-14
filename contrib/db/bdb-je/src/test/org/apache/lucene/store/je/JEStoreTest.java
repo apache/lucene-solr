@@ -46,7 +46,7 @@ import com.sleepycat.je.Transaction;
  *
  */
 public class JEStoreTest extends LuceneTestCase {
-    protected File dbHome = new File(System.getProperty("java.io.tmpdir"),"index");
+    protected File dbHome = new File(TEMP_DIR,"index");
 
     protected Environment env;
 

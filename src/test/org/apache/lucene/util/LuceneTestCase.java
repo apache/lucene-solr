@@ -17,7 +17,9 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.PrintStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Random;
@@ -60,7 +62,11 @@ public abstract class LuceneTestCase extends TestCase {
    */
   public static final boolean VERBOSE = LuceneTestCaseJ4.VERBOSE;
 
+  /** Use this constant when creating Analyzers and any other version-dependent stuff. */
   public static final Version TEST_VERSION_CURRENT = LuceneTestCaseJ4.TEST_VERSION_CURRENT;
+
+  /** Create indexes in this directory, optimally use a subdir, named after the test */
+  public static final File TEMP_DIR = LuceneTestCaseJ4.TEMP_DIR;
 
   private int savedBoolMaxClauseCount;
   
@@ -248,6 +254,18 @@ public abstract class LuceneTestCase extends TestCase {
     }
     this.seed = Long.valueOf(seed);
     return new Random(seed);
+  }
+  
+  /** Gets a resource from the classpath as {@link File}. This method should only be used,
+   * if a real file is needed. To get a stream, code should prefer
+   * {@link Class#getResourceAsStream} using {@code this.getClass()}.
+   */
+  protected File getDataFile(String name) throws IOException {
+    try {
+      return new File(this.getClass().getResource(name).toURI());
+    } catch (Exception e) {
+      throw new IOException("Cannot find resource: " + name);
+    }
   }
   
   @Override

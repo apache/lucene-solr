@@ -28,7 +28,9 @@ import org.junit.Rule;
 import org.junit.rules.TestWatchman;
 import org.junit.runners.model.FrameworkMethod;
 
+import java.io.File;
 import java.io.PrintStream;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Random;
@@ -58,8 +60,7 @@ import static org.junit.Assert.fail;
  * of its name
  * <p>
  * <p>
- * See Junit4 documentation for a complete list of features at
- * http://junit.org/junit/javadoc/4.7/
+ * See Junit4 <a href="http://junit.org/junit/javadoc/4.7/">documentation</a> for a complete list of features.
  * <p>
  * Import from org.junit rather than junit.framework.
  * <p>
@@ -83,8 +84,19 @@ public class LuceneTestCaseJ4 {
    */
   public static final boolean VERBOSE = Boolean.getBoolean("tests.verbose");
 
-  /** Change this when development starts for new Lucene version: */
+  /** Use this constant when creating Analyzers and any other version-dependent stuff.
+   * <p><b>NOTE:</b> Change this when development starts for new Lucene version:
+   */
   public static final Version TEST_VERSION_CURRENT = Version.LUCENE_31;
+  
+  /** Create indexes in this directory, optimally use a subdir, named after the test */
+  public static final File TEMP_DIR;
+  static {
+    String s = System.getProperty("tempDir", System.getProperty("java.io.tmpdir"));
+    if (s == null)
+      throw new RuntimeException("To run tests, you need to define system property 'tempDir' or 'java.io.tmpdir'.");
+    TEMP_DIR = new File(s);
+  }
 
   private int savedBoolMaxClauseCount;
 
@@ -100,7 +112,7 @@ public class LuceneTestCaseJ4 {
     }
   }
   private List<UncaughtExceptionEntry> uncaughtExceptions = Collections.synchronizedList(new ArrayList<UncaughtExceptionEntry>());
-
+  
   // This is how we get control when errors occur.
   // Think of this as start/end/success/failed
   // events.
@@ -290,6 +302,18 @@ public class LuceneTestCaseJ4 {
 
   public String getName() {
     return this.name;
+  }
+  
+  /** Gets a resource from the classpath as {@link File}. This method should only be used,
+   * if a real file is needed. To get a stream, code should prefer
+   * {@link Class#getResourceAsStream} using {@code this.getClass()}.
+   */
+  protected File getDataFile(String name) throws IOException {
+    try {
+      return new File(this.getClass().getResource(name).toURI());
+    } catch (Exception e) {
+      throw new IOException("Cannot find resource: " + name);
+    }
   }
 
   // We get here from InterceptTestCaseEvents on the 'failed' event....

@@ -63,7 +63,7 @@ public class TestWindowsMMap extends LuceneTestCase {
   }
   
   private final static String storePathname = 
-    new File(System.getProperty("tempDir"),"testLuceneMmap").getAbsolutePath();
+    new File(TEMP_DIR,"testLuceneMmap").getAbsolutePath();
 
   public void testMmapIndex() throws Exception {
     FSDirectory storeDirectory;

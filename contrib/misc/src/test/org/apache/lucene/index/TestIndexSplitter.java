@@ -27,11 +27,10 @@ import org.apache.lucene.util._TestUtil;
 
 public class TestIndexSplitter extends LuceneTestCase {
   public void test() throws Exception {
-    String tmpDir = System.getProperty("java.io.tmpdir");
-    File dir = new File(tmpDir, "testfilesplitter");
+    File dir = new File(TEMP_DIR, "testfilesplitter");
     _TestUtil.rmDir(dir);
     dir.mkdirs();
-    File destDir = new File(tmpDir, "testfilesplitterdest");
+    File destDir = new File(TEMP_DIR, "testfilesplitterdest");
     _TestUtil.rmDir(destDir);
     destDir.mkdirs();
     FSDirectory fsDir = FSDirectory.open(dir);
@@ -61,7 +60,7 @@ public class TestIndexSplitter extends LuceneTestCase {
     assertEquals(50, r.maxDoc());
     
     // now test cmdline
-    File destDir2 = new File(tmpDir, "testfilesplitterdest2");
+    File destDir2 = new File(TEMP_DIR, "testfilesplitterdest2");
     _TestUtil.rmDir(destDir2);
     destDir2.mkdirs();
     IndexSplitter.main(new String[] {dir.getAbsolutePath(), destDir2.getAbsolutePath(), splitSegName});

@@ -41,10 +41,7 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
     Tokenizer tokenizer = new KeywordTokenizer(new StringReader(""));
     TokenFilter filter = new GermanStemFilter(new LowerCaseFilter(TEST_VERSION_CURRENT, tokenizer));
     // read test cases from external file:
-    File dataDir = new File(System.getProperty("dataDir", "./bin"));
-    File testFile = new File(dataDir, "org/apache/lucene/analysis/de/data.txt");
-    FileInputStream fis = new FileInputStream(testFile);
-    InputStreamReader isr = new InputStreamReader(fis, "iso-8859-1");
+    InputStreamReader isr = new InputStreamReader(getClass().getResourceAsStream("data.txt"), "iso-8859-1");
     BufferedReader breader = new BufferedReader(isr);
     while(true) {
       String line = breader.readLine();
@@ -61,6 +58,5 @@ public class TestGermanStemFilter extends BaseTokenStreamTestCase {
     }
     breader.close();
     isr.close();
-    fis.close();
   }
 }

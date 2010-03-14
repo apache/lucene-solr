@@ -43,7 +43,7 @@ import org.apache.lucene.util.LuceneTestCase;
  * Adapted from org.apache.lucene.StoreTest with larger files and random bytes.
  */
 public class DbStoreTest extends LuceneTestCase {
-    protected File dbHome = new File(System.getProperty("java.io.tmpdir"),"index");
+    protected File dbHome = new File(TEMP_DIR,"index");
     protected Environment env;
     protected Database index, blocks;
     

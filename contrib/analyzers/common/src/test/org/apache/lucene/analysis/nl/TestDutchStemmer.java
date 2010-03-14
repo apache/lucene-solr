@@ -32,8 +32,6 @@ import org.apache.lucene.util.Version;
  * 
  */
 public class TestDutchStemmer extends BaseTokenStreamTestCase {
-  File dataDir = new File(System.getProperty("dataDir", "./bin"));
-  File customDictFile = new File(dataDir, "org/apache/lucene/analysis/nl/customStemDict.txt");
   
   public void testWithSnowballExamples() throws Exception {
 	 check("lichaamsziek", "lichaamsziek");
@@ -172,6 +170,7 @@ public class TestDutchStemmer extends BaseTokenStreamTestCase {
   public void testStemDictionaryReuse() throws Exception {
     DutchAnalyzer a = new DutchAnalyzer(TEST_VERSION_CURRENT);
     checkOneTermReuse(a, "lichamelijk", "licham");
+    File customDictFile = getDataFile("customStemDict.txt");
     a.setStemDictionary(customDictFile);
     checkOneTermReuse(a, "lichamelijk", "somethingentirelydifferent");
   }

@@ -51,6 +51,7 @@ import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.RAMDirectory; // for javadocs
+import org.apache.lucene.util.Constants; // for javadocs
 
 /**
  * High-performance single-document main memory Apache Lucene fulltext search index. 
@@ -1207,7 +1208,7 @@ public class MemoryIndex implements Serializable {
   ///////////////////////////////////////////////////////////////////////////////
   private static final class VM {
         
-    public static final int PTR = is64BitVM() ? 8 : 4;    
+    public static final int PTR = Constants.JRE_IS_64BIT ? 8 : 4;    
 
     // bytes occupied by primitive data types
     public static final int BOOLEAN = 1;
@@ -1270,18 +1271,6 @@ public class MemoryIndex implements Serializable {
     
     public static int sizeOfArrayIntList(int len) {
         return sizeOfObject(PTR + INT) + sizeOfIntArray(len);
-    }
-    
-    private static boolean is64BitVM() {
-        try {
-            int bits = Integer.getInteger("sun.arch.data.model", 0).intValue();
-            if (bits != 0) return bits == 64;
-
-            // fallback if sun.arch.data.model isn't available
-            return System.getProperty("java.vm.name").toLowerCase().indexOf("64") >= 0;
-        } catch (Throwable t) {
-            return false; // better safe than sorry (applets, security managers, etc.) ...
-        }
     }
     
     /** logarithm to the base 2. Example: log2(4) == 2, log2(8) == 3 */

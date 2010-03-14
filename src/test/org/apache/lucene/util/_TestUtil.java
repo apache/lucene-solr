@@ -33,10 +33,7 @@ public class _TestUtil {
   /** Returns temp dir, containing String arg in its name;
    *  does not create the directory. */
   public static File getTempDir(String desc) {
-    String tempDir = System.getProperty("java.io.tmpdir");
-    if (tempDir == null)
-      throw new RuntimeException("java.io.tmpdir undefined, cannot run test");
-    return new File(tempDir, desc + "." + new Random().nextLong());
+    return new File(LuceneTestCaseJ4.TEMP_DIR, desc + "." + new Random().nextLong());
   }
 
   public static void rmDir(File dir) throws IOException {

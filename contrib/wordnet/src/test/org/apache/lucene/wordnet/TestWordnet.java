@@ -33,17 +33,15 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestWordnet extends LuceneTestCase {
   private Searcher searcher;
-  
-  File dataDir = new File(System.getProperty("dataDir", "./bin"));
-  File testFile = new File(dataDir, "org/apache/lucene/wordnet/testSynonyms.txt");
-  
+    
   String storePathName = 
-    new File(System.getProperty("tempDir"),"testLuceneWordnet").getAbsolutePath();
+    new File(TEMP_DIR,"testLuceneWordnet").getAbsolutePath();
   
   @Override
   protected void setUp() throws Exception {
     super.setUp();
     // create a temporary synonym index
+    File testFile = getDataFile("testSynonyms.txt");
     String commandLineArgs[] = { testFile.getAbsolutePath(), storePathName };
     
     try {

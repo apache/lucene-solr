@@ -623,7 +623,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public static String fullDir(String dirName) throws IOException {
-    return new File(System.getProperty("tempDir"), dirName).getCanonicalPath();
+    return new File(TEMP_DIR, dirName).getCanonicalPath();
   }
 
   static final String TEXT_TO_COMPRESS = "this is a compressed field and should appear in 3.0 as an uncompressed field after merge";

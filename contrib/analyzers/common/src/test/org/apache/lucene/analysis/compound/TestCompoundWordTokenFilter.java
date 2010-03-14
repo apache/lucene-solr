@@ -30,9 +30,6 @@ import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
-  static final File dataDir = new File(System.getProperty("dataDir", "./bin"));
-  static final File testFile = new File(dataDir, "org/apache/lucene/analysis/compound/da_UTF8.xml");
-
   public void testHyphenationCompoundWordsDA() throws Exception {
     String[] dict = { "læse", "hest" };
 
@@ -143,6 +140,6 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   }
 
   private Reader getHyphenationReader() throws Exception {
-    return new InputStreamReader(new FileInputStream(testFile), "UTF-8");
+    return new InputStreamReader(getClass().getResourceAsStream("da_UTF8.xml"), "UTF-8");
   }
 }

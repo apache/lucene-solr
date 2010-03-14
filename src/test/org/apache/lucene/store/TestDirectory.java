@@ -35,7 +35,7 @@ public class TestDirectory extends LuceneTestCase {
     } catch (AlreadyClosedException ace) {
     }
 
-    dir = FSDirectory.open(new File(System.getProperty("tempDir")));
+    dir = FSDirectory.open(TEMP_DIR);
     dir.close();
     try {
       dir.createOutput("test");
@@ -48,7 +48,7 @@ public class TestDirectory extends LuceneTestCase {
   // Test that different instances of FSDirectory can coexist on the same
   // path, can read, write, and lock files.
   public void testDirectInstantiation() throws Exception {
-    File path = new File(System.getProperty("tempDir"));
+    File path = new File(TEMP_DIR, "testDirectInstantiation");
 
     int sz = 3;
     Directory[] dirs = new Directory[sz];
@@ -116,11 +116,13 @@ public class TestDirectory extends LuceneTestCase {
       dir.close();
       assertFalse(dir.isOpen);
     }
+    
+    _TestUtil.rmDir(path);
   }
 
   // LUCENE-1464
   public void testDontCreate() throws Throwable {
-    File path = new File(System.getProperty("tempDir"), "doesnotexist");
+    File path = new File(TEMP_DIR, "doesnotexist");
     try {
       assertTrue(!path.exists());
       Directory dir = new SimpleFSDirectory(path, null);
@@ -138,7 +140,7 @@ public class TestDirectory extends LuceneTestCase {
 
   // LUCENE-1468
   public void testFSDirectoryFilter() throws IOException {
-    checkDirectoryFilter(FSDirectory.open(new File(System.getProperty("tempDir"),"test")));
+    checkDirectoryFilter(FSDirectory.open(new File(TEMP_DIR,"test")));
   }
 
   // LUCENE-1468
@@ -155,7 +157,7 @@ public class TestDirectory extends LuceneTestCase {
 
   // LUCENE-1468
   public void testCopySubdir() throws Throwable {
-    File path = new File(System.getProperty("tempDir"), "testsubdir");
+    File path = new File(TEMP_DIR, "testsubdir");
     try {
       path.mkdirs();
       new File(path, "subdir").mkdirs();
@@ -168,7 +170,7 @@ public class TestDirectory extends LuceneTestCase {
 
   // LUCENE-1468
   public void testNotDirectory() throws Throwable {
-    File path = new File(System.getProperty("tempDir"), "testnotdir");
+    File path = new File(TEMP_DIR, "testnotdir");
     Directory fsDir = new SimpleFSDirectory(path, null);
     try {
       IndexOutput out = fsDir.createOutput("afile");

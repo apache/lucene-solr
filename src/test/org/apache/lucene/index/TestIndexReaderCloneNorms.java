@@ -82,14 +82,8 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
    * optimize.
    */
   public void testNorms() throws IOException {
-    // tmp dir
-    String tempDir = System.getProperty("java.io.tmpdir");
-    if (tempDir == null) {
-      throw new IOException("java.io.tmpdir undefined, cannot run test");
-    }
-
     // test with a single index: index1
-    File indexDir1 = new File(tempDir, "lucenetestindex1");
+    File indexDir1 = new File(TEMP_DIR, "lucenetestindex1");
     Directory dir1 = FSDirectory.open(indexDir1);
     IndexWriter.unlock(dir1);
 
@@ -108,14 +102,14 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     modifiedNorms = new ArrayList<Float>();
     numDocNorms = 0;
 
-    File indexDir2 = new File(tempDir, "lucenetestindex2");
+    File indexDir2 = new File(TEMP_DIR, "lucenetestindex2");
     Directory dir2 = FSDirectory.open(indexDir2);
 
     createIndex(dir2);
     doTestNorms(dir2);
 
     // add index1 and index2 to a third index: index3
-    File indexDir3 = new File(tempDir, "lucenetestindex3");
+    File indexDir3 = new File(TEMP_DIR, "lucenetestindex3");
     Directory dir3 = FSDirectory.open(indexDir3);
 
     createIndex(dir3);

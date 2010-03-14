@@ -507,7 +507,7 @@ public class TestIndexReader extends LuceneTestCase
     // Make sure you can set norms & commit even if a reader
     // is open against the index:
     public void testWritingNorms() throws IOException {
-        File indexDir = new File(System.getProperty("tempDir"), "lucenetestnormwriter");
+        File indexDir = new File(TEMP_DIR, "lucenetestnormwriter");
         Directory dir = FSDirectory.open(indexDir);
         IndexWriter writer;
         IndexReader reader;
@@ -685,12 +685,12 @@ public class TestIndexReader extends LuceneTestCase
     }
 
   private Directory getDirectory() throws IOException {
-    return FSDirectory.open(new File(System.getProperty("tempDir"), "testIndex"));
+    return FSDirectory.open(new File(TEMP_DIR, "testIndex"));
   }
 
   public void testFilesOpenClose() throws IOException {
         // Create initial data set
-        File dirFile = new File(System.getProperty("tempDir"), "testIndex");
+        File dirFile = new File(TEMP_DIR, "testIndex");
         Directory dir = getDirectory();
         IndexWriter writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
         addDoc(writer, "test");
@@ -719,7 +719,7 @@ public class TestIndexReader extends LuceneTestCase
     }
 
     public void testLastModified() throws Exception {
-      final File fileDir = new File(System.getProperty("tempDir"), "testIndex");
+      final File fileDir = new File(TEMP_DIR, "testIndex");
       for(int i=0;i<2;i++) {
         try {
           final Directory dir;
@@ -1148,8 +1148,7 @@ public class TestIndexReader extends LuceneTestCase
     }
 
     public void testOpenReaderAfterDelete() throws IOException {
-      File dirFile = new File(System.getProperty("tempDir"),
-                          "deletetest");
+      File dirFile = new File(TEMP_DIR, "deletetest");
       Directory dir = FSDirectory.open(dirFile);
       try {
         IndexReader.open(dir, false);

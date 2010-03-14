@@ -413,7 +413,6 @@
 	      <sysproperty key="tests.verbose" value="${tests.verbose}"/>
 	
 	      <!-- TODO: create propertyset for test properties, so each project can have its own set -->
-	      <sysproperty key="dataDir" file="@{dataDir}"/>
 	      <sysproperty key="tempDir" file="@{tempDir}"/>
 	      <sysproperty key="java.io.tmpdir" file="@{tempDir}"/>
 	      <sysproperty key="lucene.version" value="${dev.version}"/>

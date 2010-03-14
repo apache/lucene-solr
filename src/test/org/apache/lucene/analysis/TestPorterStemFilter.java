@@ -36,8 +36,7 @@ public class TestPorterStemFilter extends BaseTokenStreamTestCase {
   public void testPorterStemFilter() throws Exception {
     Tokenizer tokenizer = new KeywordTokenizer(new StringReader(""));
     TokenStream filter = new PorterStemFilter(tokenizer);   
-    ZipFile zipFile = new ZipFile(
-        new File(getClass().getResource("porterTestData.zip").toURI()));
+    ZipFile zipFile = new ZipFile(getDataFile("porterTestData.zip"));
     InputStream voc = zipFile.getInputStream(zipFile.getEntry("voc.txt"));
     InputStream out = zipFile.getInputStream(zipFile.getEntry("output.txt"));
     BufferedReader vocReader = new BufferedReader(new InputStreamReader(

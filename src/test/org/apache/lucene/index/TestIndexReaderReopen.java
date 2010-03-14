@@ -1097,10 +1097,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    String tempDir = System.getProperty("java.io.tmpdir");
-    if (tempDir == null)
-      throw new IOException("java.io.tmpdir undefined, cannot run test");
-    indexDir = new File(tempDir, "IndexReaderReopen");
+    indexDir = new File(TEMP_DIR, "IndexReaderReopen");
   }
   
   public void testCloseOrig() throws Throwable {

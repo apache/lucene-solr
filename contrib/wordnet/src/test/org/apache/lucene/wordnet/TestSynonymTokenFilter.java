@@ -30,11 +30,10 @@ import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 
 public class TestSynonymTokenFilter extends BaseTokenStreamTestCase {
-  File dataDir = new File(System.getProperty("dataDir", "./bin"));
-  File testFile = new File(dataDir, "org/apache/lucene/wordnet/testSynonyms.txt");
+  final String testFile = "testSynonyms.txt";
   
   public void testSynonyms() throws Exception {
-    SynonymMap map = new SynonymMap(new FileInputStream(testFile));
+    SynonymMap map = new SynonymMap(getClass().getResourceAsStream(testFile));
     /* all expansions */
     Analyzer analyzer = new SynonymWhitespaceAnalyzer(map, Integer.MAX_VALUE);
     assertAnalyzesTo(analyzer, "Lost in the woods",
@@ -45,7 +44,7 @@ public class TestSynonymTokenFilter extends BaseTokenStreamTestCase {
   }
   
   public void testSynonymsSingleQuote() throws Exception {
-    SynonymMap map = new SynonymMap(new FileInputStream(testFile));
+    SynonymMap map = new SynonymMap(getClass().getResourceAsStream(testFile));
     /* all expansions */
     Analyzer analyzer = new SynonymWhitespaceAnalyzer(map, Integer.MAX_VALUE);
     assertAnalyzesTo(analyzer, "king",
@@ -53,7 +52,7 @@ public class TestSynonymTokenFilter extends BaseTokenStreamTestCase {
   }
   
   public void testSynonymsLimitedAmount() throws Exception {
-    SynonymMap map = new SynonymMap(new FileInputStream(testFile));
+    SynonymMap map = new SynonymMap(getClass().getResourceAsStream(testFile));
     /* limit to one synonym expansion */
     Analyzer analyzer = new SynonymWhitespaceAnalyzer(map, 1);
     assertAnalyzesTo(analyzer, "Lost in the woods",
@@ -67,7 +66,7 @@ public class TestSynonymTokenFilter extends BaseTokenStreamTestCase {
   }
   
   public void testReusableTokenStream() throws Exception {
-    SynonymMap map = new SynonymMap(new FileInputStream(testFile));
+    SynonymMap map = new SynonymMap(getClass().getResourceAsStream(testFile));
     /* limit to one synonym expansion */
     Analyzer analyzer = new SynonymWhitespaceAnalyzer(map, 1);
     assertAnalyzesToReuse(analyzer, "Lost in the woods",

@@ -58,7 +58,7 @@ public class TestDoc extends LuceneTestCase {
     @Override
     protected void setUp() throws Exception {
         super.setUp();
-        workDir = new File(System.getProperty("tempDir"),"TestDoc");
+        workDir = new File(TEMP_DIR,"TestDoc");
         workDir.mkdirs();
 
         indexDir = new File(workDir, "testIndex");

@@ -4322,7 +4322,7 @@ public class TestIndexWriter extends LuceneTestCase {
   // create=true does not remove non-index files
   
   public void testOtherFiles() throws Throwable {
-    File indexDir = new File(System.getProperty("tempDir"), "otherfiles");
+    File indexDir = new File(TEMP_DIR, "otherfiles");
     Directory dir = FSDirectory.open(indexDir);
     try {
       // Create my own random file:

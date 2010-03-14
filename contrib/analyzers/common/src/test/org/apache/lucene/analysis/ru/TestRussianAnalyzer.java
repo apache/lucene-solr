@@ -41,14 +41,6 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
 
     private InputStreamReader sampleUnicode;
 
-    private File dataDir;
-
-    @Override
-    protected void setUp() throws Exception {
-      super.setUp();
-      dataDir = new File(System.getProperty("dataDir", "./bin"));
-    }
-
     /**
      * @deprecated remove this test and its datafiles in Lucene 4.0
      * the Snowball version has its own data tests.
@@ -59,12 +51,12 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
         RussianAnalyzer ra = new RussianAnalyzer(Version.LUCENE_30);
         inWords =
             new InputStreamReader(
-                new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/testUTF8.txt")),
+                getClass().getResourceAsStream("testUTF8.txt"),
                 "UTF-8");
 
         sampleUnicode =
             new InputStreamReader(
-                new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/resUTF8.htm")),
+                getClass().getResourceAsStream("resUTF8.htm"),
                 "UTF-8");
 
         TokenStream in = ra.tokenStream("all", inWords);

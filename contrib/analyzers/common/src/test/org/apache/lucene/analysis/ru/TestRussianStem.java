@@ -47,13 +47,11 @@ public class TestRussianStem extends LuceneTestCase
         //System.out.println(new java.util.Date());
         String str;
         
-        File dataDir = new File(System.getProperty("dataDir", "./bin"));
-
         // open and read words into an array list
         BufferedReader inWords =
             new BufferedReader(
                 new InputStreamReader(
-                    new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/wordsUTF8.txt")),
+                    getClass().getResourceAsStream("wordsUTF8.txt"),
                     "UTF-8"));
         while ((str = inWords.readLine()) != null)
         {
@@ -65,7 +63,7 @@ public class TestRussianStem extends LuceneTestCase
         BufferedReader inStems =
             new BufferedReader(
                 new InputStreamReader(
-                    new FileInputStream(new File(dataDir, "/org/apache/lucene/analysis/ru/stemsUTF8.txt")),
+                    getClass().getResourceAsStream("stemsUTF8.txt"),
                     "UTF-8"));
         while ((str = inStems.readLine()) != null)
         {

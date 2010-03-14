@@ -35,8 +35,6 @@ import org.apache.lucene.util.Version;
  *
  */
 public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
-  File dataDir = new File(System.getProperty("dataDir", "./bin"));
-  File customStopFile = new File(dataDir, "org/apache/lucene/analysis/cz/customStopWordFile.txt");
   
   /**
    * @deprecated Remove this test when support for 3.0 indexes is no longer needed.
@@ -105,7 +103,7 @@ public class TestCzechAnalyzer extends BaseTokenStreamTestCase {
     assertAnalyzesToReuse(cz, "Česká Republika", 
       new String[] { "česká", "republika" });
     
-    InputStream stopwords = new FileInputStream(customStopFile);
+    InputStream stopwords = getClass().getResourceAsStream("customStopWordFile.txt");
     cz.loadStopWords(stopwords, "UTF-8");
     
     assertAnalyzesToReuse(cz, "Česká Republika", new String[] { "česká" });

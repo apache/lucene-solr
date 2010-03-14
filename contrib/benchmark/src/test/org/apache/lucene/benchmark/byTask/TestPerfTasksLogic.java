@@ -378,7 +378,7 @@ public class TestPerfTasksLogic extends LuceneTestCase {
    * Test WriteLineDoc and LineDocSource.
    */
   public void testLineDocFile() throws Exception {
-    File lineFile = new File(System.getProperty("tempDir"), "test.reuters.lines.txt");
+    File lineFile = new File(TEMP_DIR, "test.reuters.lines.txt");
 
     // We will call WriteLineDocs this many times
     final int NUM_TRY_DOCS = 50;

@@ -35,18 +35,24 @@ import org.apache.lucene.analysis.Tokenizer;
  */
 public class TestSnowballVocab extends BaseTokenStreamTestCase {
   private Tokenizer tokenizer = new KeywordTokenizer(new StringReader(""));
-  static final File dataDir = new File(System.getProperty("dataDir", "./bin"));
-  static final File dataRoot = new File(dataDir, 
-      "org/apache/lucene/analysis/snowball/data");
+  File dataRoot = null;
+  
+  @Override
+  protected void setUp() throws Exception {
+    super.setUp();
+    try {
+      dataRoot = getDataFile("data");
+    } catch (IOException ioe) {
+      dataRoot = null;
+      System.err.println("WARN: This test was disabled, as the svn checkout of snowball test files is not supported on your system!");
+    }
+  }
   
   /**
    * Run all languages against their snowball vocabulary tests.
    */
   public void testStemmers() throws IOException {
-    if (!dataRoot.exists()) {
-      System.err.println("WARN: This test was disabled, as the svn checkout of snowball test files is not supported on your system!");
-      return;
-    }
+    if (dataRoot == null) return;
     assertCorrectOutput("Danish", "danish");
     assertCorrectOutput("Dutch", "dutch");
     assertCorrectOutput("English", "english");
