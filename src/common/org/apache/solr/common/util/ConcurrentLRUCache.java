@@ -366,12 +366,12 @@ public class ConcurrentLRUCache<K,V> {
     // necessary because maxSize is private in base class
     public Object myInsertWithOverflow(Object element) {
       if (size() < myMaxSize) {
-        put(element);
+        add(element);
         return null;
       } else if (size() > 0 && !lessThan(element, heap[1])) {
         Object ret = heap[1];
         heap[1] = element;
-        adjustTop();
+        updateTop();
         return ret;
       } else {
         return element;

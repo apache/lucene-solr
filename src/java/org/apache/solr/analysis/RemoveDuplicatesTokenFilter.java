@@ -17,41 +17,69 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.solr.util.ArraysUtils;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.solr.util.CharArrayMap;
 
 import java.io.IOException;
 
 /**
- * A TokenFilter which filters out Tokens at the same position and Term
- * text as the previous token in the stream.
+ * A TokenFilter which filters out Tokens at the same position and Term text as the previous token in the stream.
  */
-public class RemoveDuplicatesTokenFilter extends BufferedTokenStream {
-  public RemoveDuplicatesTokenFilter(TokenStream input) {super(input);}
-  protected Token process(Token t) throws IOException {
-    Token tok = read();
-    while (tok != null && tok.getPositionIncrement()==0) {
-      if (null != t) {
-        write(t);
-        t = null;
+public final class RemoveDuplicatesTokenFilter extends TokenFilter {
+
+  private final TermAttribute termAttribute = (TermAttribute) addAttribute(TermAttribute.class);
+  private final PositionIncrementAttribute posIncAttribute =  (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+  
+  // keep a seen 'set' after each term with posInc > 0
+  // for now use CharArrayMap vs CharArraySet, as it has clear()
+  private final CharArrayMap<Boolean> previous = new CharArrayMap<Boolean>(8, false);
+
+  /**
+   * Creates a new RemoveDuplicatesTokenFilter
+   *
+   * @param in TokenStream that will be filtered
+   */
+  public RemoveDuplicatesTokenFilter(TokenStream in) {
+    super(in);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public boolean incrementToken() throws IOException {
+    while (input.incrementToken()) {
+      final char term[] = termAttribute.termBuffer();
+      final int length = termAttribute.termLength();
+      final int posIncrement = posIncAttribute.getPositionIncrement();
+      
+      if (posIncrement > 0) {
+        previous.clear();
       }
-      boolean dup=false;
-      for (Token outTok : output()) {
-        int tokLen = tok.termLength();
-        if (outTok.termLength() == tokLen && ArraysUtils.equals(outTok.termBuffer(), 0, tok.termBuffer(), 0, tokLen)) {
-          dup=true;
-          //continue;;
-        }
+      
+      boolean duplicate = (posIncrement == 0 && previous.get(term, 0, length) != null);
+      
+      // clone the term, and add to the set of seen terms.
+      char saved[] = new char[length];
+      System.arraycopy(term, 0, saved, 0, length);
+      previous.put(saved, Boolean.TRUE);
+      
+      if (!duplicate) {
+        return true;
       }
-      if (!dup){
-        write(tok);
-      }
-      tok = read();
     }
-    if (tok != null) {
-      pushBack(tok);
-    }
-    return t;
+    return false;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    previous.clear();
   }
 } 

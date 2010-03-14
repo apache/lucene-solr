@@ -20,6 +20,8 @@ package org.apache.solr.analysis;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * When the plain text is extracted from documents, we will often have many words hyphenated and broken into
@@ -52,46 +54,89 @@ import org.apache.lucene.analysis.*;
  */
 public final class HyphenatedWordsFilter extends TokenFilter {
 
-	public HyphenatedWordsFilter(TokenStream in) {
-		super(in);
-	}
-
-
+  private final TermAttribute termAttribute = (TermAttribute) addAttribute(TermAttribute.class);
+  private final OffsetAttribute offsetAttribute = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+  
+  private final StringBuilder hyphenated = new StringBuilder();
+  private State savedState;
 
   /**
-	 * @inheritDoc
-	 * @see org.apache.lucene.analysis.TokenStream#next()
-	 */
-	public final Token next(Token in) throws IOException {
-		StringBuilder termText = new StringBuilder(25);
-		int startOffset = -1, firstPositionIncrement = -1, wordsMerged = 0;
-		Token lastToken = null;
-		for (Token token = input.next(in); token != null; token = input.next()) {
-			termText.append(token.termBuffer(), 0, token.termLength());
-			//current token ends with hyphen -> grab the next token and glue them together
-			if (termText.charAt(termText.length() - 1) == '-') {
-				wordsMerged++;
-				//remove the hyphen
-				termText.setLength(termText.length()-1);
-				if (startOffset == -1) {
-					startOffset = token.startOffset();
-					firstPositionIncrement = token.getPositionIncrement();
-				}
-				lastToken = token;
-			} else {
-				//shortcut returns token
-				if (wordsMerged == 0)
-					return token;
-				Token mergedToken = new Token(termText.toString(), startOffset, token.endOffset(), token.type());
-				mergedToken.setPositionIncrement(firstPositionIncrement);
-				return mergedToken;
-			}
-		}
-		//last token ending with hyphen? - we know that we have only one token in
-		//this situation, so we can safely return firstToken
-		if (startOffset != -1)
-			return lastToken;
-		else
-			return null; //end of token stream
-	}
+   * Creates a new HyphenatedWordsFilter
+   *
+   * @param in TokenStream that will be filtered
+   */
+  public HyphenatedWordsFilter(TokenStream in) {
+    super(in);
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public boolean incrementToken() throws IOException {
+    while (input.incrementToken()) {
+      char[] term = termAttribute.termBuffer();
+      int termLength = termAttribute.termLength();
+      
+      if (termLength > 0 && term[termLength - 1] == '-') {
+        // a hyphenated word
+        // capture the state of the first token only
+        if (savedState == null) {
+          savedState = captureState();
+        }
+        hyphenated.append(term, 0, termLength - 1);
+      } else if (savedState == null) {
+        // not part of a hyphenated word.
+        return true;
+      } else {
+        // the final portion of a hyphenated word
+        hyphenated.append(term, 0, termLength);
+        unhyphenate();
+        return true;
+      }
+    }
+    
+    if (savedState != null) {
+      // the final term ends with a hyphen
+      // add back the hyphen, for backwards compatibility.
+      hyphenated.append('-');
+      unhyphenate();
+      return true;
+    }
+    
+    return false;
+  }
+
+  /**
+   * {@inheritDoc}
+   */
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    hyphenated.setLength(0);
+    savedState = null;
+  }
+
+  // ================================================= Helper Methods ================================================
+
+  /**
+   * Writes the joined unhyphenated term
+   */
+  private void unhyphenate() {
+    int endOffset = offsetAttribute.endOffset();
+    
+    restoreState(savedState);
+    savedState = null;
+    
+    char term[] = termAttribute.termBuffer();
+    int length = hyphenated.length();
+    if (length > termAttribute.termLength()) {
+      term = termAttribute.resizeTermBuffer(length);
+    }
+    
+    hyphenated.getChars(0, length, term, 0);
+    termAttribute.setTermLength(length);
+    offsetAttribute.setOffset(offsetAttribute.startOffset(), endOffset);
+    hyphenated.setLength(0);
+  }
 }

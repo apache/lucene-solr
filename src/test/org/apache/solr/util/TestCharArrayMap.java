@@ -126,11 +126,12 @@ public class TestCharArrayMap extends TestCase {
 
     int ret=0;
     long start = System.currentTimeMillis();
-    String[] stopwords = StopAnalyzer.ENGLISH_STOP_WORDS;
+    Set<String> stopwords = (Set<String>) StopAnalyzer.ENGLISH_STOP_WORDS_SET;
     // words = "this is a different test to see what is really going on here... I hope it works well but I'm not sure it will".split(" ");
-    char[][] stopwordschars = new char[stopwords.length][];
-    for (int i=0; i<stopwords.length; i++) {
-      stopwordschars[i] = stopwords[i].toCharArray();
+    char[][] stopwordschars = new char[stopwords.size()][];
+    Iterator<String> it = stopwords.iterator();
+    for (int i=0; i<stopwords.size(); i++) {
+      stopwordschars[i] = it.next().toCharArray();
     }
 
     String[] testwords = "now is the time for all good men to come to the aid of their country".split(" ");

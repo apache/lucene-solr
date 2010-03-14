@@ -58,7 +58,7 @@ public class StopFilterFactory extends BaseTokenFilterFactory implements Resourc
         throw new RuntimeException(e);
       }
     } else {
-      stopWords = (CharArraySet) StopFilter.makeStopSet(StopAnalyzer.ENGLISH_STOP_WORDS, ignoreCase);
+      stopWords = (CharArraySet) StopAnalyzer.ENGLISH_STOP_WORDS_SET;
     }
   }
   //Force the use of a char array set, as it is the most performant, although this may break things if Lucene ever goes away from it.  See SOLR-1095
@@ -79,8 +79,7 @@ public class StopFilterFactory extends BaseTokenFilterFactory implements Resourc
   }
 
   public StopFilter create(TokenStream input) {
-    StopFilter stopFilter = new StopFilter(input,stopWords,ignoreCase);
-    stopFilter.setEnablePositionIncrements(enablePositionIncrements);
+    StopFilter stopFilter = new StopFilter(enablePositionIncrements, input,stopWords,ignoreCase);
     return stopFilter;
   }
 }

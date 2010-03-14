@@ -20,6 +20,7 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.util.Version;
 
 import java.io.Reader;
 import java.io.IOException;
@@ -31,11 +32,6 @@ import java.io.IOException;
 @Deprecated
 public class HTMLStripStandardTokenizerFactory extends BaseTokenizerFactory {
   public Tokenizer create(Reader input) {
-    return new StandardTokenizer(new HTMLStripReader(input)) {
-      @Override
-      public void reset(Reader reader) throws IOException {
-        super.reset(new HTMLStripReader(reader));
-      }
-    };
+    return new StandardTokenizer(Version.LUCENE_24, new HTMLStripReader(input));
   }
 }

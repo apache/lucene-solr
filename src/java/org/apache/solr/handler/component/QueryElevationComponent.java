@@ -38,8 +38,8 @@ import javax.xml.xpath.XPathExpressionException;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
@@ -298,10 +298,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     TokenStream tokens = analyzer.reusableTokenStream( "", new StringReader( query ) );
     tokens.reset();
     
-    Token token = tokens.next();
-    while( token != null ) {
-      norm.append( new String(token.termBuffer(), 0, token.termLength()) );
-      token = tokens.next();
+    TermAttribute termAtt = (TermAttribute) tokens.addAttribute(TermAttribute.class);
+    while( tokens.incrementToken() ) {
+      norm.append( termAtt.termBuffer(), 0, termAtt.termLength() );
     }
     return norm.toString();
   }

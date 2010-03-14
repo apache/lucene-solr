@@ -22,12 +22,10 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.spell.PlainTextDictionary;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.solr.common.util.NamedList;
@@ -98,7 +96,7 @@ public class FileBasedSpellChecker extends AbstractLuceneSpellChecker {
 
         for (String s : lines) {
           Document d = new Document();
-          d.add(new Field(WORD_FIELD_NAME, s, Field.Store.NO, Field.Index.TOKENIZED));
+          d.add(new Field(WORD_FIELD_NAME, s, Field.Store.NO, Field.Index.ANALYZED));
           writer.addDocument(d);
         }
         writer.optimize();

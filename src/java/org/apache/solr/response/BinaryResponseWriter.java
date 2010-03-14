@@ -140,7 +140,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
         if(sf != null) ft =sf.getType();
         Object val;
         if (ft == null) {  // handle fields not in the schema
-          if (f.isBinary()) val = f.binaryValue();
+          if (f.isBinary()) val = f.getBinaryValue();
           else val = f.stringValue();
         } else {
           try {

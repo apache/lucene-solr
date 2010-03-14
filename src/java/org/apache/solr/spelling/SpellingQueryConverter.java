@@ -27,6 +27,11 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 
 /**
@@ -99,10 +104,22 @@ public class SpellingQueryConverter extends QueryConverter  {
       if (word.equals("AND") == false && word.equals("OR") == false) {
         try {
           stream = analyzer.reusableTokenStream("", new StringReader(word));
-          Token token;
-          while ((token = stream.next()) != null) {
+          // TODO: support custom attributes
+          TermAttribute termAtt = (TermAttribute) stream.addAttribute(TermAttribute.class);
+          FlagsAttribute flagsAtt = (FlagsAttribute) stream.addAttribute(FlagsAttribute.class);
+          TypeAttribute typeAtt = (TypeAttribute) stream.addAttribute(TypeAttribute.class);
+          PayloadAttribute payloadAtt = (PayloadAttribute) stream.addAttribute(PayloadAttribute.class);
+          PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) stream.addAttribute(PositionIncrementAttribute.class);
+          stream.reset();
+          while (stream.incrementToken()) {
+            Token token = new Token();
+            token.setTermBuffer(termAtt.termBuffer(), 0, termAtt.termLength());
             token.setStartOffset(matcher.start());
             token.setEndOffset(matcher.end());
+            token.setFlags(flagsAtt.getFlags());
+            token.setType(typeAtt.type());
+            token.setPayload(payloadAtt.getPayload());
+            token.setPositionIncrement(posIncAtt.getPositionIncrement());
             result.add(token);
           }
         } catch (IOException e) {

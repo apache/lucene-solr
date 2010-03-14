@@ -17,7 +17,6 @@
 
 package org.apache.solr.search;
 
-import org.apache.lucene.search.HitCollector;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.OpenBitSet;

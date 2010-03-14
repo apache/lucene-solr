@@ -53,8 +53,8 @@ public class DirectUpdateHandlerOptimizeTest extends AbstractSolrTestCase {
     for (int i = 0; i < 99; i++) {
       // Add a valid document
       cmd.doc = new Document();
-      cmd.doc.add(new Field("id", "id_" + i, Field.Store.YES, Field.Index.UN_TOKENIZED));
-      cmd.doc.add(new Field("subject", "subject_" + i, Field.Store.NO, Field.Index.TOKENIZED));
+      cmd.doc.add(new Field("id", "id_" + i, Field.Store.YES, Field.Index.NOT_ANALYZED));
+      cmd.doc.add(new Field("subject", "subject_" + i, Field.Store.NO, Field.Index.ANALYZED));
       updater.addDoc(cmd);
     }
 

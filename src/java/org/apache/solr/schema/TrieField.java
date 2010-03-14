@@ -93,7 +93,7 @@ public class TrieField extends FieldType {
 
   @Override
   public Object toObject(Fieldable f) {
-    byte[] arr = f.binaryValue();
+    byte[] arr = f.getBinaryValue();
     if (arr==null) return badFieldString(f);
     switch (type) {
       case INTEGER:
@@ -145,7 +145,7 @@ public class TrieField extends FieldType {
   }
 
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
-    byte[] arr = f.binaryValue();
+    byte[] arr = f.getBinaryValue();
     if (arr==null) {
       xmlWriter.writeStr(name, badFieldString(f));
       return;
@@ -173,7 +173,7 @@ public class TrieField extends FieldType {
   }
 
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
-    byte[] arr = f.binaryValue();
+    byte[] arr = f.getBinaryValue();
     if (arr==null) {
       writer.writeStr(name, badFieldString(f),true);
       return;
@@ -352,7 +352,7 @@ public class TrieField extends FieldType {
 
   @Override
   public String toExternal(Fieldable f) {
-    byte[] arr = f.binaryValue();
+    byte[] arr = f.getBinaryValue();
     if (arr==null) return badFieldString(f);
     switch (type) {
       case INTEGER:

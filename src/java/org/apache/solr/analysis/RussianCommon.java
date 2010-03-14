@@ -16,46 +16,46 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
-import org.apache.lucene.analysis.ru.*;
-import java.util.Map;
-import java.util.HashMap;
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-@Deprecated
-public class RussianCommon {
-  
-  private static Logger logger = LoggerFactory.getLogger(RussianCommon.class);
-  
-  private static Map<String,char[]> CHARSETS = new HashMap<String,char[]>();
-  static {
-    CHARSETS.put("UnicodeRussian",RussianCharsets.UnicodeRussian);
-    CHARSETS.put("KOI8",RussianCharsets.KOI8);
-    CHARSETS.put("CP1251",RussianCharsets.CP1251);
-  }
-  
-  public static char[] getCharset(String name) {
-    if (null == name)
-      return RussianCharsets.UnicodeRussian;
-
-    char[] charset = CHARSETS.get(name);
-    
-    if (charset.equals(RussianCharsets.UnicodeRussian))
-      logger.warn("Specifying UnicodeRussian is no longer required (default).  "
-          + "Use of the charset parameter will cause an error in Solr 1.5");
-    else
-      logger.warn("Support for this custom encoding is deprecated.  "
-          + "Use of the charset parameter will cause an error in Solr 1.5");
-    
-    if (null == charset) {
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-                              "Don't understand charset: " + name);
-    }
-    return charset;
-  }
-}
+//package org.apache.solr.analysis;
+//import org.apache.lucene.analysis.ru.*;
+//import java.util.Map;
+//import java.util.HashMap;
+//import org.apache.solr.core.SolrConfig;
+//import org.apache.solr.common.SolrException;
+//import org.apache.solr.common.SolrException.ErrorCode;
+//import org.slf4j.Logger;
+//import org.slf4j.LoggerFactory;
+//
+//@Deprecated
+//public class RussianCommon {
+//  
+//  private static Logger logger = LoggerFactory.getLogger(RussianCommon.class);
+//  
+//  private static Map<String,char[]> CHARSETS = new HashMap<String,char[]>();
+//  static {
+//    CHARSETS.put("UnicodeRussian",RussianCharsets.UnicodeRussian);
+//    CHARSETS.put("KOI8",RussianCharsets.KOI8);
+//    CHARSETS.put("CP1251",RussianCharsets.CP1251);
+//  }
+//  
+//  public static char[] getCharset(String name) {
+//    if (null == name)
+//      return RussianCharsets.UnicodeRussian;
+//
+//    char[] charset = CHARSETS.get(name);
+//    
+//    if (charset.equals(RussianCharsets.UnicodeRussian))
+//      logger.warn("Specifying UnicodeRussian is no longer required (default).  "
+//          + "Use of the charset parameter will cause an error in Solr 1.5");
+//    else
+//      logger.warn("Support for this custom encoding is deprecated.  "
+//          + "Use of the charset parameter will cause an error in Solr 1.5");
+//    
+//    if (null == charset) {
+//      throw new SolrException(ErrorCode.SERVER_ERROR,
+//                              "Don't understand charset: " + name);
+//    }
+//    return charset;
+//  }
+//}
 

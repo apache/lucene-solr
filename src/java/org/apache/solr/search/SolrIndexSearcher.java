@@ -342,22 +342,22 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     return qr;
   }
 
-  public Hits search(Query query, Filter filter, Sort sort) throws IOException {
-    // todo - when Solr starts accepting filters, need to
-    // change this conditional check (filter!=null) and create a new filter
-    // that ANDs them together if it already exists.
-
-    if (optimizer==null || filter!=null || !(query instanceof BooleanQuery)
-    ) {
-      return super.search(query,filter,sort);
-    } else {
-      Query[] newQuery = new Query[1];
-      Filter[] newFilter = new Filter[1];
-      optimizer.optimize((BooleanQuery)query, this, 0, newQuery, newFilter);
-
-      return super.search(newQuery[0], newFilter[0], sort);
-    }
-  }
+//  public Hits search(Query query, Filter filter, Sort sort) throws IOException {
+//    // todo - when Solr starts accepting filters, need to
+//    // change this conditional check (filter!=null) and create a new filter
+//    // that ANDs them together if it already exists.
+//
+//    if (optimizer==null || filter!=null || !(query instanceof BooleanQuery)
+//    ) {
+//      return super.search(query,filter,sort);
+//    } else {
+//      Query[] newQuery = new Query[1];
+//      Filter[] newFilter = new Filter[1];
+//      optimizer.optimize((BooleanQuery)query, this, 0, newQuery, newFilter);
+//
+//      return super.search(newQuery[0], newFilter[0], sort);
+//    }
+//  }
 
   /**
    * @return the indexDir on which this searcher is opened
@@ -697,10 +697,12 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   * This method is not cache-aware and no caches are checked.
   */
   public DocSet convertFilter(Filter lfilter) throws IOException {
-    BitSet bs = lfilter.bits(this.reader);
-    OpenBitSet obs = new OpenBitSet(bs.size());
-    for(int i=bs.nextSetBit(0); i>=0; i=bs.nextSetBit(i+1)) {
-      obs.fastSet(i);
+    DocIdSet docSet = lfilter.getDocIdSet(this.reader);
+    OpenBitSet obs = new OpenBitSet();
+    DocIdSetIterator it = docSet.iterator();
+    int doc;
+    while((doc = it.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+      obs.fastSet(doc);
     }
     return new BitDocSet(obs);
   }

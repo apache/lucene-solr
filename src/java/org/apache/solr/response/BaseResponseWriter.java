@@ -176,7 +176,7 @@ public abstract class BaseResponseWriter {
       Object val = null;
       if (ft == null) { // handle fields not in the schema
         if (f.isBinary())
-          val = f.binaryValue();
+          val = f.getBinaryValue();
         else
           val = f.stringValue();
       } else {

@@ -20,6 +20,13 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.AttributeSource; // javadoc @link
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -56,13 +63,23 @@ import java.util.LinkedList;
  * responsibility of the implementing subclass. In the "A" "B" => "A" "A" "B"
  * example above, the subclass must clone the additional "A" it creates.
  * 
- * @version $Id$
+ * @deprecated This class does not support custom attributes. Extend TokenFilter instead,
+ * using {@link AttributeSource#captureState()} and {@link AttributeSource#restoreState()}
+ * which support all attributes.
  */
+@Deprecated
 public abstract class BufferedTokenStream extends TokenFilter {
   // in the future, might be faster if we implemented as an array based CircularQueue
   private final LinkedList<Token> inQueue = new LinkedList<Token>();
   private final LinkedList<Token> outQueue = new LinkedList<Token>();
 
+  private final TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+  private final OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+  private final TypeAttribute typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
+  private final FlagsAttribute flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
+  private final PayloadAttribute payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+  private final PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+  
   public BufferedTokenStream(TokenStream input) {
     super(input);
   }
@@ -77,13 +94,13 @@ public abstract class BufferedTokenStream extends TokenFilter {
    */
   protected abstract Token process(Token t) throws IOException;
 
-  public final Token next() throws IOException {
+  public final boolean incrementToken() throws IOException {
     while (true) {
-      if (!outQueue.isEmpty()) return outQueue.removeFirst();
+      if (!outQueue.isEmpty()) return writeToken(outQueue.removeFirst());
       Token t = read();
-      if (null == t) return null;
+      if (null == t) return false;
       Token out = process(t);
-      if (null != out) return out;
+      if (null != out) return writeToken(out);
       // loop back to top in case process() put something on the output queue
     }
   }
@@ -94,7 +111,7 @@ public abstract class BufferedTokenStream extends TokenFilter {
    */
   protected Token read() throws IOException {
     if (inQueue.isEmpty()) {
-      Token t = input.next();
+      Token t = readToken();
       return t;
     }
     return inQueue.removeFirst();
@@ -120,13 +137,41 @@ public abstract class BufferedTokenStream extends TokenFilter {
   protected Token peek(int n) throws IOException {
     int fillCount = n-inQueue.size();
     for (int i=0; i < fillCount; i++) {
-      Token t = input.next();
+      Token t = readToken();
       if (null==t) return null;
       inQueue.addLast(t);
     }
     return inQueue.get(n-1);
   }
 
+  /** old api emulation for back compat */
+  private Token readToken() throws IOException {
+    if (!input.incrementToken()) {
+      return null;
+    } else {
+      Token token = new Token();
+      token.setTermBuffer(termAtt.termBuffer(), 0, termAtt.termLength());
+      token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
+      token.setType(typeAtt.type());
+      token.setFlags(flagsAtt.getFlags());
+      token.setPositionIncrement(posIncAtt.getPositionIncrement());
+      token.setPayload(payloadAtt.getPayload());
+      return token;
+    }
+  }
+  
+  /** old api emulation for back compat */
+  private boolean writeToken(Token token) throws IOException {
+    clearAttributes();
+    termAtt.setTermBuffer(token.termBuffer(), 0, token.termLength());
+    offsetAtt.setOffset(token.startOffset(), token.endOffset());
+    typeAtt.setType(token.type());
+    flagsAtt.setFlags(token.getFlags());
+    posIncAtt.setPositionIncrement(token.getPositionIncrement());
+    payloadAtt.setPayload(token.getPayload());
+    return true;
+  }
+  
   /**
    * Write a token to the buffered output stream
    */

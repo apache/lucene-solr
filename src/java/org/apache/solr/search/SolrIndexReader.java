@@ -455,11 +455,6 @@ public class SolrIndexReader extends FilterIndexReader {
   }
 
   @Override
-  public int getTermInfosIndexDivisor() {
-    return in.getTermInfosIndexDivisor();
-  }
-
-  @Override
   public void incRef() {
     in.incRef();
   }
@@ -480,11 +475,6 @@ public class SolrIndexReader extends FilterIndexReader {
   }
 
   @Override
-  public void setTermInfosIndexDivisor(int indexDivisor) throws IllegalStateException {
-    in.setTermInfosIndexDivisor(indexDivisor);
-  }
-
-  @Override
   public TermPositions termPositions(Term term) throws IOException {
     return in.termPositions(term);
   }
@@ -497,16 +487,6 @@ public class SolrIndexReader extends FilterIndexReader {
   @Override
   public Object getFieldCacheKey() {
     return in.getFieldCacheKey();
-  }
-
-  @Override
-  public boolean getDisableFakeNorms() {
-    return in.getDisableFakeNorms();
-  }
-
-  @Override
-  public void setDisableFakeNorms(boolean disableFakeNorms) {
-    in.setDisableFakeNorms(disableFakeNorms);
   }
 }
 

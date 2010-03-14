@@ -75,7 +75,7 @@ public class KeepWordFilterFactory extends BaseTokenFilterFactory implements Res
   }
 
   public KeepWordFilter create(TokenStream input) {
-    return new KeepWordFilter(input, words, ignoreCase);
+    return new KeepWordFilter(input, (Set)words, ignoreCase);
   }
 
   public CharArraySet getWords() {

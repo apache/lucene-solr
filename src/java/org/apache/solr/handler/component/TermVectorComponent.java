@@ -113,7 +113,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
     IndexSchema schema = rb.req.getSchema();
     String uniqFieldName = schema.getUniqueKeyField().getName();
     //Only load the id field
-    SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(Collections.singleton(uniqFieldName), Collections.emptySet());
+    SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(Collections.singleton(uniqFieldName), Collections.<String>emptySet());
     while (iter.hasNext()) {
       Integer docId = iter.next();
       NamedList docNL = new NamedList();

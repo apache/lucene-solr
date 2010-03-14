@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.spell.JaroWinklerDistance;
 import org.apache.lucene.search.spell.SpellChecker;
 import org.apache.lucene.search.spell.StringDistance;
+import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.util.AbstractSolrTestCase;
@@ -254,10 +255,10 @@ public class IndexBasedSpellCheckerTest extends AbstractSolrTestCase {
     File indexDir = new File(tmpDir, "spellingIdx" + new Date().getTime());
     //create a standalone index
     File altIndexDir = new File(tmpDir, "alternateIdx" + new Date().getTime());
-    IndexWriter iw = new IndexWriter(altIndexDir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter iw = new IndexWriter(FSDirectory.open(altIndexDir), new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
     for (int i = 0; i < ALT_DOCS.length; i++) {
       Document doc = new Document();
-      doc.add(new Field("title", ALT_DOCS[i], Field.Store.YES, Field.Index.TOKENIZED));
+      doc.add(new Field("title", ALT_DOCS[i], Field.Store.YES, Field.Index.ANALYZED));
       iw.addDocument(doc);
     }
     iw.optimize();

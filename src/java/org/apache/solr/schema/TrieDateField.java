@@ -63,7 +63,7 @@ public class TrieDateField extends DateField {
 
   @Override
   public Date toObject(Fieldable f) {
-    byte[] arr = f.binaryValue();
+    byte[] arr = f.getBinaryValue();
     if (arr==null) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,TrieField.badFieldString(f));
     return new Date(TrieField.toLong(arr));
   }
@@ -85,7 +85,7 @@ public class TrieDateField extends DateField {
 
   @Override
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {
-    byte[] arr = f.binaryValue();
+    byte[] arr = f.getBinaryValue();
     if (arr==null) {
       xmlWriter.writeStr(name, TrieField.badFieldString(f));
       return;
@@ -96,7 +96,7 @@ public class TrieDateField extends DateField {
 
   @Override
   public void write(TextResponseWriter writer, String name, Fieldable f) throws IOException {
-    byte[] arr = f.binaryValue();
+    byte[] arr = f.getBinaryValue();
     if (arr==null) {
       writer.writeStr(name, TrieField.badFieldString(f),true);
       return;
@@ -136,7 +136,7 @@ public class TrieDateField extends DateField {
 
   @Override
   public String toExternal(Fieldable f) {
-    byte[] arr = f.binaryValue();
+    byte[] arr = f.getBinaryValue();
     if (arr==null) return TrieField.badFieldString(f);
      return super.toExternal(new Date(TrieField.toLong(arr)));
   }

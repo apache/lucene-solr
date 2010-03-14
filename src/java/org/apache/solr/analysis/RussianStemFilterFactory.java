@@ -25,16 +25,10 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ru.RussianStemFilter;
 
 public class RussianStemFilterFactory extends BaseTokenFilterFactory {
-  @Deprecated
-  private char[] charset;
-  
-  public void init(Map<String, String> args) {
-    super.init(args);
-    charset = RussianCommon.getCharset(args.get("charset"));
-  }
+
 
   public RussianStemFilter create(TokenStream in) {
-    return new RussianStemFilter(in,charset);
+    return new RussianStemFilter(in);
   }
 }
 

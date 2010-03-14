@@ -20,6 +20,12 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
@@ -132,15 +138,20 @@ public class AnalysisRequestHandler extends RequestHandlerBase {
   static NamedList<NamedList<Object>> getTokens(TokenStream tstream) throws IOException {
     // outer is namedList since order of tokens is important
     NamedList<NamedList<Object>> tokens = new NamedList<NamedList<Object>>();
-    Token t = null;
-    while (((t = tstream.next()) != null)) {
+    // TODO: support custom attributes
+    TermAttribute termAtt = (TermAttribute) tstream.addAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = (OffsetAttribute) tstream.addAttribute(OffsetAttribute.class);
+    TypeAttribute typeAtt = (TypeAttribute) tstream.addAttribute(TypeAttribute.class);
+    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) tstream.addAttribute(PositionIncrementAttribute.class);
+    
+    while (tstream.incrementToken()) {
       NamedList<Object> token = new SimpleOrderedMap<Object>();
       tokens.add("token", token);
-      token.add("value", new String(t.termBuffer(), 0, t.termLength()));
-      token.add("start", t.startOffset());
-      token.add("end", t.endOffset());
-      token.add("posInc", t.getPositionIncrement());
-      token.add("type", t.type());
+      token.add("value", new String(termAtt.termBuffer(), 0, termAtt.termLength()));
+      token.add("start", offsetAtt.startOffset());
+      token.add("end", offsetAtt.endOffset());
+      token.add("posInc", posIncAtt.getPositionIncrement());
+      token.add("type", typeAtt.type());
       //TODO: handle payloads
     }
     return tokens;

@@ -100,7 +100,7 @@ public class FunctionQuery extends Query {
       int[] offsets = topReader.getLeafOffsets();
       int readerPos = SolrIndexReader.readerIndex(doc, offsets);
       int readerBase = offsets[readerPos];
-      return scorer(subReaders[readerPos], true, true).explain(doc-readerBase);
+      return ((AllScorer)scorer(subReaders[readerPos], true, true)).explain(doc-readerBase);
     }
   }
 

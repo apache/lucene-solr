@@ -19,12 +19,14 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.ArrayUtil;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Splits words into subwords and performs optional transformations on subword groups.
@@ -50,118 +52,108 @@ import java.util.List;
  *     - "Super-Duper-XL500-42-AutoCoder!" -> 0:"Super", 1:"Duper", 2:"XL", 2:"SuperDuperXL", 3:"500" 4:"42", 5:"Auto", 6:"Coder", 6:"AutoCoder"
  *
  *  One use for WordDelimiterFilter is to help match words with different subword delimiters.
- *  For example, if the source text contained "wi-fi" one may want "wifi" "WiFi" "wi-fi" "wi+fi"
- *  queries to all match.
- *  One way of doing so is to specify combinations="1" in the analyzer
- *  used for indexing, and combinations="0" (the default) in the analyzer
- *  used for querying.  Given that the current StandardTokenizer
- *  immediately removes many intra-word delimiters, it is recommended that
- *  this filter be used after a tokenizer that does not do this
- *  (such as WhitespaceTokenizer).
+ *  For example, if the source text contained "wi-fi" one may want "wifi" "WiFi" "wi-fi" "wi+fi" queries to all match.
+ *  One way of doing so is to specify combinations="1" in the analyzer used for indexing, and combinations="0" (the default)
+ *  in the analyzer used for querying.  Given that the current StandardTokenizer immediately removes many intra-word
+ *  delimiters, it is recommended that this filter be used after a tokenizer that does not do this (such as WhitespaceTokenizer).
  *
  *  @version $Id$
  */
 
 final class WordDelimiterFilter extends TokenFilter {
-  private final byte[] charTypeTable;
-
-  public static final int         LOWER=0x01;
-  public static final int         UPPER=0x02;
-  public static final int         DIGIT=0x04;
-  public static final int SUBWORD_DELIM=0x08;
+  
+  public static final int LOWER = 0x01;
+  public static final int UPPER = 0x02;
+  public static final int DIGIT = 0x04;
+  public static final int SUBWORD_DELIM = 0x08;
 
   // combinations: for testing, not for setting bits
-  public static final int    ALPHA=0x03;
-  public static final int    ALPHANUM=0x07;
-
-  // TODO: should there be a WORD_DELIM category for
-  // chars that only separate words (no catenation of subwords
-  // will be done if separated by these chars?)
-  // "," would be an obvious candidate...
-
-  static byte[] defaultWordDelimTable;
-  static {
-    byte[] tab = new byte[256];
-    for (int i=0; i<256; i++) {
-      byte code = 0;
-      if (Character.isLowerCase(i)) code |= LOWER;
-      else if (Character.isUpperCase(i)) code |= UPPER;
-      else if (Character.isDigit(i)) code |= DIGIT;
-      if (code==0) code=SUBWORD_DELIM;
-      tab[i]=code;
-    }
-    defaultWordDelimTable = tab;
-  }
+  public static final int ALPHA = 0x03;
+  public static final int ALPHANUM = 0x07;
 
   /**
-   * If 1, causes parts of words to be generated:
+   * If true, causes parts of words to be generated:
    * <p/>
    * "PowerShot" => "Power" "Shot"
    */
-  final int generateWordParts;
+  final boolean generateWordParts;
 
   /**
-   * If 1, causes number subwords to be generated:
+   * If true, causes number subwords to be generated:
    * <p/>
    * "500-42" => "500" "42"
    */
-  final int generateNumberParts;
+  final boolean generateNumberParts;
 
   /**
-   * If 1, causes maximum runs of word parts to be catenated:
+   * If true, causes maximum runs of word parts to be catenated:
    * <p/>
    * "wi-fi" => "wifi"
    */
-  final int catenateWords;
+  final boolean catenateWords;
 
   /**
-   * If 1, causes maximum runs of number parts to be catenated:
+   * If true, causes maximum runs of number parts to be catenated:
    * <p/>
    * "500-42" => "50042"
    */
-  final int catenateNumbers;
+  final boolean catenateNumbers;
 
   /**
-   * If 1, causes all subword parts to be catenated:
+   * If true, causes all subword parts to be catenated:
    * <p/>
    * "wi-fi-4000" => "wifi4000"
    */
-  final int catenateAll;
+  final boolean catenateAll;
 
   /**
-   * If 0, causes case changes to be ignored (subwords will only be generated
-   * given SUBWORD_DELIM tokens). (Defaults to 1)
-   */
-  final int splitOnCaseChange;
-
-  /**
-   * If 1, original words are preserved and added to the subword list (Defaults to 0)
+   * If true, original words are preserved and added to the subword list (Defaults to false)
    * <p/>
    * "500-42" => "500" "42" "500-42"
    */
-  final int preserveOriginal;
-
-  /**
-   * If 0, causes numeric changes to be ignored (subwords will only be generated
-   * given SUBWORD_DELIM tokens). (Defaults to 1)
-   */
-  final int splitOnNumerics;
-
-  /**
-   * If 1, causes trailing "'s" to be removed for each subword. (Defaults to 1)
-   * <p/>
-   * "O'Neil's" => "O", "Neil"
-   */
-  final int stemEnglishPossessive;
+  final boolean preserveOriginal;
   
   /**
    * If not null is the set of tokens to protect from being delimited
    *
    */
   final CharArraySet protWords;
+    
+  private final TermAttribute termAtttribute = (TermAttribute) addAttribute(TermAttribute.class);
+  private final OffsetAttribute offsetAttribute = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+  private final PositionIncrementAttribute posIncAttribute = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+  private final TypeAttribute typeAttribute = (TypeAttribute) addAttribute(TypeAttribute.class);
+
+  // used for iterating word delimiter breaks
+  private final WordDelimiterIterator iterator;
+
+  // used for concatenating runs of similar typed subwords (word,number)
+  private final WordDelimiterConcatenation concat = new WordDelimiterConcatenation();
+  // number of subwords last output by concat.
+  private int lastConcatCount = 0;
+
+  // used for catenate all
+  private final WordDelimiterConcatenation concatAll = new WordDelimiterConcatenation();
+
+  // used for accumulating position increment gaps
+  private int accumPosInc = 0;
+
+  private char savedBuffer[] = new char[1024];
+  private int savedStartOffset;
+  private int savedEndOffset;
+  private String savedType;
+  private boolean hasSavedState = false;
+  // if length by start + end offsets doesn't match the term text then assume
+  // this is a synonym and don't adjust the offsets.
+  private boolean hasIllegalOffsets = false;
+
+  // for a run of the same subword type within a word, have we output anything?
+  private boolean hasOutputToken = false;
+  // when preserve original is on, have we output any token following it?
+  // this token must have posInc=0!
+  private boolean hasOutputFollowingOriginal = false;
 
   /**
-   *
    * @param in Token stream to be filtered.
    * @param charTypeTable
    * @param generateWordParts If 1, causes parts of words to be generated: "PowerShot" => "Power" "Shot"
@@ -175,19 +167,27 @@ final class WordDelimiterFilter extends TokenFilter {
    * @param stemEnglishPossessive If 1, causes trailing "'s" to be removed for each subword: "O'Neil's" => "O", "Neil"
    * @param protWords If not null is the set of tokens to protect from being delimited
    */
-  public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll, int splitOnCaseChange, int preserveOriginal,int splitOnNumerics, int stemEnglishPossessive, CharArraySet protWords) {
+  public WordDelimiterFilter(TokenStream in,
+                             byte[] charTypeTable,
+                             int generateWordParts,
+                             int generateNumberParts,
+                             int catenateWords,
+                             int catenateNumbers,
+                             int catenateAll,
+                             int splitOnCaseChange,
+                             int preserveOriginal,
+                             int splitOnNumerics,
+                             int stemEnglishPossessive,
+                             CharArraySet protWords) {
     super(in);
-    this.generateWordParts = generateWordParts;
-    this.generateNumberParts = generateNumberParts;
-    this.catenateWords = catenateWords;
-    this.catenateNumbers = catenateNumbers;
-    this.catenateAll = catenateAll;
-    this.splitOnCaseChange = splitOnCaseChange;
-    this.preserveOriginal = preserveOriginal;
-    this.charTypeTable = charTypeTable;
-    this.splitOnNumerics = splitOnNumerics;
-    this.stemEnglishPossessive = stemEnglishPossessive;
+    this.generateWordParts = generateWordParts != 0;
+    this.generateNumberParts = generateNumberParts != 0;
+    this.catenateWords = catenateWords != 0;
+    this.catenateNumbers = catenateNumbers != 0;
+    this.catenateAll = catenateAll != 0;
+    this.preserveOriginal = preserveOriginal != 0;
     this.protWords = protWords;
+    this.iterator = new WordDelimiterIterator(charTypeTable, splitOnCaseChange != 0, splitOnNumerics != 0, stemEnglishPossessive != 0);
   }
   
   /**
@@ -198,8 +198,18 @@ final class WordDelimiterFilter extends TokenFilter {
    *             instead.
    */
   @Deprecated
-  public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll, int splitOnCaseChange, int preserveOriginal,int splitOnNumerics, CharArraySet protWords) {
-    this(in,charTypeTable,generateWordParts,generateNumberParts,catenateWords,catenateNumbers,catenateAll,splitOnCaseChange,preserveOriginal, 1, 1, null);
+  public WordDelimiterFilter(TokenStream in,
+                             byte[] charTypeTable,
+                             int generateWordParts,
+                             int generateNumberParts,
+                             int catenateWords,
+                             int catenateNumbers,
+                             int catenateAll,
+                             int splitOnCaseChange,
+                             int preserveOriginal,
+                             int splitOnNumerics,
+                             CharArraySet protWords) {
+    this(in, charTypeTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal, 1, 1, null);
   }
 
   /**
@@ -210,8 +220,16 @@ final class WordDelimiterFilter extends TokenFilter {
    *             instead.
    */
   @Deprecated
-  public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll, int splitOnCaseChange, int preserveOriginal) {
-    this(in,charTypeTable,generateWordParts,generateNumberParts,catenateWords,catenateNumbers,catenateAll,splitOnCaseChange,preserveOriginal, 1, null);
+  public WordDelimiterFilter(TokenStream in,
+                             byte[] charTypeTable,
+                             int generateWordParts,
+                             int generateNumberParts,
+                             int catenateWords,
+                             int catenateNumbers,
+                             int catenateAll,
+                             int splitOnCaseChange,
+                             int preserveOriginal) {
+    this(in, charTypeTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal, 1, null);
   }
 
   /**
@@ -227,8 +245,18 @@ final class WordDelimiterFilter extends TokenFilter {
    * @param stemEnglishPossessive If 1, causes trailing "'s" to be removed for each subword: "O'Neil's" => "O", "Neil"
    * @param protWords If not null is the set of tokens to protect from being delimited
    */
-  public WordDelimiterFilter(TokenStream in, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll, int splitOnCaseChange, int preserveOriginal,int splitOnNumerics, int stemEnglishPossessive, CharArraySet protWords) {
-    this(in, defaultWordDelimTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal, splitOnNumerics, stemEnglishPossessive, protWords);
+  public WordDelimiterFilter(TokenStream in,
+                             int generateWordParts,
+                             int generateNumberParts,
+                             int catenateWords,
+                             int catenateNumbers,
+                             int catenateAll,
+                             int splitOnCaseChange,
+                             int preserveOriginal,
+                             int splitOnNumerics,
+                             int stemEnglishPossessive,
+                             CharArraySet protWords) {
+    this(in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal, splitOnNumerics, stemEnglishPossessive, protWords);
   }
   
   /**
@@ -237,8 +265,17 @@ final class WordDelimiterFilter extends TokenFilter {
    *             instead.
    */
   @Deprecated
-  public WordDelimiterFilter(TokenStream in, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll, int splitOnCaseChange, int preserveOriginal,int splitOnNumerics, CharArraySet protWords) {
-    this(in, defaultWordDelimTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal, splitOnNumerics, 1, protWords);
+  public WordDelimiterFilter(TokenStream in,
+                             int generateWordParts,
+                             int generateNumberParts,
+                             int catenateWords,
+                             int catenateNumbers,
+                             int catenateAll,
+                             int splitOnCaseChange,
+                             int preserveOriginal,
+                             int splitOnNumerics,
+                             CharArraySet protWords) {
+    this(in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal, splitOnNumerics, 1, protWords);
   }
 
   /**   * Compatibility constructor
@@ -248,8 +285,15 @@ final class WordDelimiterFilter extends TokenFilter {
    *             instead.
    */
   @Deprecated
-  public WordDelimiterFilter(TokenStream in, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll, int splitOnCaseChange, int preserveOriginal) {
-    this(in, defaultWordDelimTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal);
+  public WordDelimiterFilter(TokenStream in,
+                             int generateWordParts,
+                             int generateNumberParts,
+                             int catenateWords,
+                             int catenateNumbers,
+                             int catenateAll,
+                             int splitOnCaseChange,
+                             int preserveOriginal) {
+    this(in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, splitOnCaseChange, preserveOriginal);
   }
   /**
    * Compatibility constructor
@@ -259,7 +303,13 @@ final class WordDelimiterFilter extends TokenFilter {
    *             instead.
    */
   @Deprecated
-  public WordDelimiterFilter(TokenStream in, byte[] charTypeTable, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll) {
+  public WordDelimiterFilter(TokenStream in,
+                             byte[] charTypeTable,
+                             int generateWordParts,
+                             int generateNumberParts,
+                             int catenateWords,
+                             int catenateNumbers,
+                             int catenateAll) {
     this(in, charTypeTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, 1, 0, 1, null);
   }
   /**
@@ -270,407 +320,365 @@ final class WordDelimiterFilter extends TokenFilter {
    *             instead.
    */
   @Deprecated
-  public WordDelimiterFilter(TokenStream in, int generateWordParts, int generateNumberParts, int catenateWords, int catenateNumbers, int catenateAll) {
-    this(in, defaultWordDelimTable, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, 1, 0, 1, null);
+  public WordDelimiterFilter(TokenStream in,
+                             int generateWordParts,
+                             int generateNumberParts,
+                             int catenateWords,
+                             int catenateNumbers,
+                             int catenateAll) {
+    this(in, WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, generateWordParts, generateNumberParts, catenateWords, catenateNumbers, catenateAll, 1, 0, 1, null);
   }
-
-
-  int charType(int ch) {
-    if (ch<charTypeTable.length) {
-      return charTypeTable[ch];
-    }
-    switch (Character.getType(ch)) {
-      case Character.UPPERCASE_LETTER: return UPPER;
-      case Character.LOWERCASE_LETTER: return LOWER;
-
-      case Character.TITLECASE_LETTER:
-      case Character.MODIFIER_LETTER:
-      case Character.OTHER_LETTER:
-      case Character.NON_SPACING_MARK:
-      case Character.ENCLOSING_MARK:  // depends what it encloses?
-      case Character.COMBINING_SPACING_MARK:
-        return ALPHA; 
-
-      case Character.DECIMAL_DIGIT_NUMBER:
-      case Character.LETTER_NUMBER:
-      case Character.OTHER_NUMBER:
-        return DIGIT;
-
-      // case Character.SPACE_SEPARATOR:
-      // case Character.LINE_SEPARATOR:
-      // case Character.PARAGRAPH_SEPARATOR:
-      // case Character.CONTROL:
-      // case Character.FORMAT:
-      // case Character.PRIVATE_USE:
-
-      case Character.SURROGATE:  // prevent splitting
-        return ALPHA|DIGIT;  
-
-      // case Character.DASH_PUNCTUATION:
-      // case Character.START_PUNCTUATION:
-      // case Character.END_PUNCTUATION:
-      // case Character.CONNECTOR_PUNCTUATION:
-      // case Character.OTHER_PUNCTUATION:
-      // case Character.MATH_SYMBOL:
-      // case Character.CURRENCY_SYMBOL:
-      // case Character.MODIFIER_SYMBOL:
-      // case Character.OTHER_SYMBOL:
-      // case Character.INITIAL_QUOTE_PUNCTUATION:
-      // case Character.FINAL_QUOTE_PUNCTUATION:
-
-      default: return SUBWORD_DELIM;
-    }
-  }
-
-  // use the type of the first char as the type
-  // of the token.
-  private int tokType(Token t) {
-    return charType(t.termBuffer()[0]);
-  }
-
-  // There isn't really an efficient queue class, so we will
-  // just use an array for now.
-  private ArrayList<Token> queue = new ArrayList<Token>(4);
-  private int queuePos=0;
-
-  // temporary working queue
-  private ArrayList<Token> tlist = new ArrayList<Token>(4);
-
-
-  private Token newTok(Token orig, int start, int end) {
-    int startOff = orig.startOffset();
-    int endOff = orig.endOffset();
-    // if length by start + end offsets doesn't match the term text then assume
-    // this is a synonym and don't adjust the offsets.
-    if (orig.termLength() == endOff-startOff) {
-      endOff = startOff + end;
-      startOff += start;     
-    }
-
-    return (Token)orig.clone(orig.termBuffer(), start, (end - start), startOff, endOff);
-  }
-
-
-  public final Token next(Token in) throws IOException {
-
-    // check the queue first
-    if (queuePos<queue.size()) {
-      return queue.get(queuePos++);
-    }
-
-    // reset the queue if it had been previously used
-    if (queuePos!=0) {
-      queuePos=0;
-      queue.clear();
-    }
-
-
-    // optimize for the common case: assume there will be
-    // no subwords (just a simple word)
-    //
-    // Would it actually be faster to check for the common form
-    // of isLetter() isLower()*, and then backtrack if it doesn't match?
-
-    int origPosIncrement = 0;
-    Token t;
-    while(true) {
-      // t is either returned, or a new token is made from it, so it should
-      // be safe to use the next(Token) method.
-      t = input.next(in);
-      if (t == null) return null;
-
-      char [] termBuffer = t.termBuffer();
-      int len = t.termLength();
-      int start=0;
-      if (len ==0) continue;
-
-      int posInc = t.getPositionIncrement();
-      origPosIncrement += posInc;
-
-      //skip protected tokens
-      if (protWords != null && protWords.contains(termBuffer, 0, len)) {
-        t.setPositionIncrement(origPosIncrement);
-        return t;
-      }
-
-      // Avoid calling charType more than once for each char (basically
-      // avoid any backtracking).
-      // makes code slightly more difficult, but faster.
-      int ch=termBuffer[start];
-      int type=charType(ch);
-
-      int numWords=0;
-
-      while (start< len) {
-        // first eat delimiters at the start of this subword
-        while ((type & SUBWORD_DELIM)!=0 && ++start< len) {
-          ch=termBuffer[start];
-          type=charType(ch);
+  
+  public boolean incrementToken() throws IOException {
+    while (true) {
+      if (!hasSavedState) {
+        // process a new input word
+        if (!input.incrementToken()) {
+          return false;
         }
 
-        int pos=start;
+        int termLength = termAtttribute.termLength();
+        char[] termBuffer = termAtttribute.termBuffer();
+        
+        accumPosInc += posIncAttribute.getPositionIncrement();
 
-        // save the type of the first char of the subword
-        // as a way to tell what type of subword token this is (number, word, etc)
-        int firstType=type;
-        int lastType=type;  // type of the previously read char
+        iterator.setText(termBuffer, termLength);
+        iterator.next();
 
-
-        while (pos< len) {
-
-          if ((type & lastType)==0) {  // no overlap in character type
-            // check and remove "'s" from the end of a token.
-            // the pattern to check for is
-            //   ALPHA "'" ("s"|"S") (SUBWORD_DELIM | END)
-            if (stemEnglishPossessive != 0 && ((lastType & ALPHA)!=0)) {
-              if (ch=='\'' && pos+1< len
-                      && (termBuffer[pos+1]=='s' || termBuffer[pos+1]=='S'))
-              {
-                int subWordEnd=pos;
-                if (pos+2>= len) {
-                  // end of string detected after "'s"
-                  pos+=2;
-                } else {
-                  // make sure that a delimiter follows "'s"
-                  int ch2 = termBuffer[pos+2];
-                  int type2 = charType(ch2);
-                  if ((type2 & SUBWORD_DELIM)!=0) {
-                    // if delimiter, move position pointer
-                    // to it (skipping over "'s"
-                    ch=ch2;
-                    type=type2;
-                    pos+=2;
-                  }
-                }
-
-                queue.add(newTok(t,start,subWordEnd));
-                if ((firstType & ALPHA)!=0) numWords++;
-                break;
-              }
-            }
-
-            // For case changes, only split on a transition from
-            // lower to upper case, not vice-versa.
-            // That will correctly handle the
-            // case of a word starting with a capital (won't split).
-            // It will also handle pluralization of
-            // an uppercase word such as FOOs (won't split).
-
-            if (splitOnCaseChange == 0 && 
-                (lastType & ALPHA) != 0 && (type & ALPHA) != 0) {
-              // ALPHA->ALPHA: always ignore if case isn't considered.
-            } else if ((lastType & UPPER)!=0 && (type & ALPHA)!=0) {
-              // UPPER->letter: Don't split
-            } else if(splitOnNumerics == 0 &&
-                ( ((lastType &  ALPHA) != 0 && (type & DIGIT) != 0) || ((lastType &  DIGIT) != 0 && (type & ALPHA) != 0) ) ) {
-              // ALPHA->NUMERIC, NUMERIC->ALPHA :Don't split
-            } else {
-              // NOTE: this code currently assumes that only one flag
-              // is set for each character now, so we don't have
-              // to explicitly check for all the classes of transitions
-              // listed below.
-
-              // LOWER->UPPER
-              // ALPHA->NUMERIC
-              // NUMERIC->ALPHA
-              // *->DELIMITER
-              queue.add(newTok(t,start,pos));
-              if ((firstType & ALPHA)!=0) numWords++;
-              break;
-            }
+        // word of no delimiters, or protected word: just return it
+        if ((iterator.current == 0 && iterator.end == termLength) ||
+            (protWords != null && protWords.contains(termBuffer, 0, termLength))) {
+          posIncAttribute.setPositionIncrement(accumPosInc);
+          accumPosInc = 0;
+          return true;
+        }
+        
+        // word of simply delimiters
+        if (iterator.end == WordDelimiterIterator.DONE && !preserveOriginal) {
+          // if the posInc is 1, simply ignore it in the accumulation
+          if (posIncAttribute.getPositionIncrement() == 1) {
+            accumPosInc--;
           }
-
-          if (++pos >= len) {
-            if (start==0) {
-              // the subword is the whole original token, so
-              // return it unchanged.
-              t.setPositionIncrement(origPosIncrement);
-              return t;
-            }
-
-            // optimization... if this is the only token,
-            // return it immediately.
-            if (queue.size()==0 && preserveOriginal == 0) {
-              // just adjust the text w/o changing the rest
-              // of the original token
-              t.setTermBuffer(termBuffer, start, len-start);
-              t.setStartOffset(t.startOffset() + start);
-              t.setPositionIncrement(origPosIncrement);              
-              return t;
-            }
-
-            Token newtok = newTok(t,start,pos);
-
-            queue.add(newtok);
-            if ((firstType & ALPHA)!=0) numWords++;
-            break;
-          }
-
-          lastType = type;
-          ch = termBuffer[pos];
-          type = charType(ch);
+          continue;
         }
 
-        // start of the next subword is the current position
-        start=pos;
+        saveState();
+
+        hasOutputToken = false;
+        hasOutputFollowingOriginal = !preserveOriginal;
+        lastConcatCount = 0;
+        
+        if (preserveOriginal) {
+          posIncAttribute.setPositionIncrement(accumPosInc);
+          accumPosInc = 0;
+          return true;
+        }
       }
-
-      // System.out.println("##########TOKEN=" + s + " ######### WORD DELIMITER QUEUE=" + str(queue));
-
-      final int numtok = queue.size();
-
-      // We reached the end of the current token.
-      // If the queue is empty, we should continue by reading
-      // the next token
-      if (numtok==0) {
-        // the token might have been all delimiters, in which
-        // case return it if we're meant to preserve it
-        if (preserveOriginal != 0) {
-          return t;
+      
+      // at the end of the string, output any concatenations
+      if (iterator.end == WordDelimiterIterator.DONE) {
+        if (!concat.isEmpty()) {
+          if (flushConcatenation(concat)) {
+            return true;
+          }
         }
-
-        // if this token had a "normal" gap of 1, remove it.
-        if (posInc==1) origPosIncrement-=1;
+        
+        if (!concatAll.isEmpty()) {
+          // only if we haven't output this same combo above!
+          if (concatAll.subwordCount > lastConcatCount) {
+            concatAll.writeAndClear();
+            return true;
+          }
+          concatAll.clear();
+        }
+        
+        // no saved concatenations, on to the next input word
+        hasSavedState = false;
         continue;
       }
-
-      // if number of tokens is 1, there are no catenations to be done.
-      if (numtok==1) {
-        break;
+      
+      // word surrounded by delimiters: always output
+      if (iterator.isSingleWord()) {
+        generatePart(true);
+        iterator.next();
+        return true;
       }
-
-
-      final int numNumbers = numtok - numWords;
-
-      // check conditions under which the current token
-      // queue may be used as-is (no catenations needed)
-      if (catenateAll==0    // no "everything" to catenate
-        && (catenateWords==0 || numWords<=1)   // no words to catenate
-        && (catenateNumbers==0 || numNumbers<=1)    // no numbers to catenate
-        && (generateWordParts!=0 || numWords==0)  // word generation is on
-        && (generateNumberParts!=0 || numNumbers==0)) // number generation is on
-      {
-        break;
+      
+      int wordType = iterator.type();
+      
+      // do we already have queued up incompatible concatenations?
+      if (!concat.isEmpty() && (concat.type & wordType) == 0) {
+        if (flushConcatenation(concat)) {
+          hasOutputToken = false;
+          return true;
+        }
+        hasOutputToken = false;
       }
-
-
-      // swap queue and the temporary working list, then clear the
-      // queue in preparation for adding all combinations back to it.
-      ArrayList<Token> tmp=tlist;
-      tlist=queue;
-      queue=tmp;
-      queue.clear();
-
-      if (numWords==0) {
-        // all numbers
-        addCombos(tlist,0,numtok,generateNumberParts!=0,catenateNumbers!=0 || catenateAll!=0, 1);
-        if (queue.size() > 0 || preserveOriginal!=0) break; else continue;
-      } else if (numNumbers==0) {
-        // all words
-        addCombos(tlist,0,numtok,generateWordParts!=0,catenateWords!=0 || catenateAll!=0, 1);
-        if (queue.size() > 0 || preserveOriginal!=0) break; else continue;
-      } else if (generateNumberParts==0 && generateWordParts==0 && catenateNumbers==0 && catenateWords==0) {
-        // catenate all *only*
-        // OPT:could be optimized to add to current queue...
-        addCombos(tlist,0,numtok,false,catenateAll!=0, 1);
-        if (queue.size() > 0 || preserveOriginal!=0) break; else continue;
+      
+      // add subwords depending upon options
+      if (shouldConcatenate(wordType)) {
+        if (concat.isEmpty()) {
+          concat.type = wordType;
+        }
+        concatenate(concat);
       }
-
-      //
-      // Find all adjacent tokens of the same type.
-      //
-      Token tok = tlist.get(0);
-      boolean isWord = (tokType(tok) & ALPHA) != 0;
-      boolean wasWord=isWord;
-
-      for(int i=0; i<numtok;) {
-          int j;
-          for (j=i+1; j<numtok; j++) {
-            wasWord=isWord;
-            tok = tlist.get(j);
-            isWord = (tokType(tok) & ALPHA) != 0;
-            if (isWord != wasWord) break;
-          }
-          if (wasWord) {
-            addCombos(tlist,i,j,generateWordParts!=0,catenateWords!=0,1);
-          } else {
-            addCombos(tlist,i,j,generateNumberParts!=0,catenateNumbers!=0,1);
-          }
-          i=j;
+      
+      // add all subwords (catenateAll)
+      if (catenateAll) {
+        concatenate(concatAll);
       }
-
-      // take care catenating all subwords
-      if (catenateAll!=0) {
-        addCombos(tlist,0,numtok,false,true,0);
+      
+      // if we should output the word or number part
+      if (shouldGenerateParts(wordType)) {
+        generatePart(false);
+        iterator.next();
+        return true;
       }
-
-      // NOTE: in certain cases, queue may be empty (for instance, if catenate
-      // and generate are both set to false).  Only exit the loop if the queue
-      // is not empty.
-      if (queue.size() > 0 || preserveOriginal!=0) break;
-    }
-
-    // System.out.println("##########AFTER COMBINATIONS:"+ str(queue));
-
-    if (preserveOriginal != 0) {
-      queuePos = 0;
-      if (queue.size() > 0) {
-        // overlap first token with the original
-        queue.get(0).setPositionIncrement(0);
-      }
-      return t;  // return the original
-    } else {
-      queuePos=1;
-      Token tok = queue.get(0);
-      tok.setPositionIncrement(origPosIncrement);
-      return tok;
+        
+      iterator.next();
     }
   }
 
-
-  // index "a","b","c" as  pos0="a", pos1="b", pos2="c", pos2="abc"
-  private void addCombos(List<Token> lst, int start, int end, boolean generateSubwords, boolean catenateSubwords, int posOffset) {
-    if (end-start==1) {
-      // always generate a word alone, even if generateSubwords=0 because
-      // the catenation of all the subwords *is* the subword.
-      queue.add(lst.get(start));
-      return;
-    }
-
-    StringBuilder sb = null;
-    if (catenateSubwords) sb=new StringBuilder();
-    Token firstTok=null;
-    Token tok=null;
-    for (int i=start; i<end; i++) {
-      tok = lst.get(i);
-      if (catenateSubwords) {
-        if (i==start) firstTok=tok;
-        sb.append(tok.termBuffer(), 0, tok.termLength());
-      }
-      if (generateSubwords) {
-        queue.add(tok);
-      }
-    }
-
-    if (catenateSubwords) {
-      Token concatTok = new Token(sb.toString(),
-              firstTok.startOffset(),
-              tok.endOffset(),
-              firstTok.type());
-      // if we indexed some other tokens, then overlap concatTok with the last.
-      // Otherwise, use the value passed in as the position offset.
-      concatTok.setPositionIncrement(generateSubwords==true ? 0 : posOffset);
-      queue.add(concatTok);
-    }
-  }
-
+  /**
+   * {@inheritDoc}
+   */
   @Override
   public void reset() throws IOException {
-    input.reset();
-    queuePos=0;
-    queue.clear();    
+    super.reset();
+    hasSavedState = false;
+    concat.clear();
+    concatAll.clear();
+    accumPosInc = 0;
   }
 
+  // ================================================= Helper Methods ================================================
+
+  /**
+   * Saves the existing attribute states
+   */
+  private void saveState() {
+    // otherwise, we have delimiters, save state
+    savedStartOffset = offsetAttribute.startOffset();
+    savedEndOffset = offsetAttribute.endOffset();
+    // if length by start + end offsets doesn't match the term text then assume this is a synonym and don't adjust the offsets.
+    hasIllegalOffsets = (savedEndOffset - savedStartOffset != termAtttribute.termLength());
+    savedType = typeAttribute.type();
+
+    if (savedBuffer.length < termAtttribute.termLength()) {
+      savedBuffer = new char[ArrayUtil.getNextSize(termAtttribute.termLength())];
+    }
+
+    System.arraycopy(termAtttribute.termBuffer(), 0, savedBuffer, 0, termAtttribute.termLength());
+    iterator.text = savedBuffer;
+
+    hasSavedState = true;
+  }
+
+  /**
+   * Flushes the given WordDelimiterConcatenation by either writing its concat and then clearing, or just clearing.
+   *
+   * @param concatenation WordDelimiterConcatenation that will be flushed
+   * @return {@code true} if the concatenation was written before it was cleared, {@code} false otherwise
+   */
+  private boolean flushConcatenation(WordDelimiterConcatenation concatenation) {
+    lastConcatCount = concatenation.subwordCount;
+    if (concatenation.subwordCount != 1 || !shouldGenerateParts(concatenation.type)) {
+      concatenation.writeAndClear();
+      return true;
+    }
+    concatenation.clear();
+    return false;
+  }
+
+  /**
+   * Determines whether to concatenate a word or number if the current word is the given type
+   *
+   * @param wordType Type of the current word used to determine if it should be concatenated
+   * @return {@code true} if concatenation should occur, {@code false} otherwise
+   */
+  private boolean shouldConcatenate(int wordType) {
+    return (catenateWords && isAlpha(wordType)) || (catenateNumbers && isDigit(wordType));
+  }
+
+  /**
+   * Determines whether a word/number part should be generated for a word of the given type
+   *
+   * @param wordType Type of the word used to determine if a word/number part should be generated
+   * @return {@code true} if a word/number part should be generated, {@code false} otherwise
+   */
+  private boolean shouldGenerateParts(int wordType) {
+    return (generateWordParts && isAlpha(wordType)) || (generateNumberParts && isDigit(wordType));
+  }
+
+  /**
+   * Concatenates the saved buffer to the given WordDelimiterConcatenation
+   *
+   * @param concatenation WordDelimiterConcatenation to concatenate the buffer to
+   */
+  private void concatenate(WordDelimiterConcatenation concatenation) {
+    if (concatenation.isEmpty()) {
+      concatenation.startOffset = savedStartOffset + iterator.current;
+    }
+    concatenation.append(savedBuffer, iterator.current, iterator.end - iterator.current);
+    concatenation.endOffset = savedStartOffset + iterator.end;
+  }
+
+  /**
+   * Generates a word/number part, updating the appropriate attributes
+   *
+   * @param isSingleWord {@code true} if the generation is occurring from a single word, {@code false} otherwise
+   */
+  private void generatePart(boolean isSingleWord) {
+    clearAttributes();
+    termAtttribute.setTermBuffer(savedBuffer, iterator.current, iterator.end - iterator.current);
+
+    int startOffSet = (isSingleWord || !hasIllegalOffsets) ? savedStartOffset + iterator.current : savedStartOffset;
+    int endOffSet = (hasIllegalOffsets) ? savedEndOffset : savedStartOffset + iterator.end;
+
+    offsetAttribute.setOffset(startOffSet, endOffSet);
+    posIncAttribute.setPositionIncrement(position(false));
+    typeAttribute.setType(savedType);
+  }
+
+  /**
+   * Get the position increment gap for a subword or concatenation
+   *
+   * @param inject true if this token wants to be injected
+   * @return position increment gap
+   */
+  private int position(boolean inject) {
+    int posInc = accumPosInc;
+
+    if (hasOutputToken) {
+      accumPosInc = 0;
+      return inject ? 0 : Math.max(1, posInc);
+    }
+
+    hasOutputToken = true;
+    
+    if (!hasOutputFollowingOriginal) {
+      // the first token following the original is 0 regardless
+      hasOutputFollowingOriginal = true;
+      return 0;
+    }
+    // clear the accumulated position increment
+    accumPosInc = 0;
+    return Math.max(1, posInc);
+  }
+
+  /**
+   * Checks if the given word type includes {@link #ALPHA}
+   *
+   * @param type Word type to check
+   * @return {@code true} if the type contains ALPHA, {@code false} otherwise
+   */
+  static boolean isAlpha(int type) {
+    return (type & ALPHA) != 0;
+  }
+
+  /**
+   * Checks if the given word type includes {@link #DIGIT}
+   *
+   * @param type Word type to check
+   * @return {@code true} if the type contains DIGIT, {@code false} otherwise
+   */
+  static boolean isDigit(int type) {
+    return (type & DIGIT) != 0;
+  }
+
+  /**
+   * Checks if the given word type includes {@link #SUBWORD_DELIM}
+   *
+   * @param type Word type to check
+   * @return {@code true} if the type contains SUBWORD_DELIM, {@code false} otherwise
+   */
+  static boolean isSubwordDelim(int type) {
+    return (type & SUBWORD_DELIM) != 0;
+  }
+
+  /**
+   * Checks if the given word type includes {@link #UPPER}
+   *
+   * @param type Word type to check
+   * @return {@code true} if the type contains UPPER, {@code false} otherwise
+   */
+  static boolean isUpper(int type) {
+    return (type & UPPER) != 0;
+  }
+
+  // ================================================= Inner Classes =================================================
+
+  /**
+   * A WDF concatenated 'run'
+   */
+  final class WordDelimiterConcatenation {
+    final StringBuilder buffer = new StringBuilder();
+    int startOffset;
+    int endOffset;
+    int type;
+    int subwordCount;
+
+    /**
+     * Appends the given text of the given length, to the concetenation at the given offset
+     *
+     * @param text Text to append
+     * @param offset Offset in the concetenation to add the text
+     * @param length Length of the text to append
+     */
+    void append(char text[], int offset, int length) {
+      buffer.append(text, offset, length);
+      subwordCount++;
+    }
+
+    /**
+     * Writes the concatenation to the attributes
+     */
+    void write() {
+      clearAttributes();
+      if (termAtttribute.termLength() < buffer.length()) {
+        termAtttribute.resizeTermBuffer(buffer.length());
+      }
+      char termbuffer[] = termAtttribute.termBuffer();
+      
+      buffer.getChars(0, buffer.length(), termbuffer, 0);
+      termAtttribute.setTermLength(buffer.length());
+        
+      if (hasIllegalOffsets) {
+        offsetAttribute.setOffset(savedStartOffset, savedEndOffset);
+      }
+      else {
+        offsetAttribute.setOffset(startOffset, endOffset);
+      }
+      posIncAttribute.setPositionIncrement(position(true));
+      typeAttribute.setType(savedType);
+      accumPosInc = 0;
+    }
+
+    /**
+     * Determines if the concatenation is empty
+     *
+     * @return {@code true} if the concatenation is empty, {@code false} otherwise
+     */
+    boolean isEmpty() {
+      return buffer.length() == 0;
+    }
+
+    /**
+     * Clears the concatenation and resets its state
+     */
+    void clear() {
+      buffer.setLength(0);
+      startOffset = endOffset = type = subwordCount = 0;
+    }
+
+    /**
+     * Convenience method for the common scenario of having to write the concetenation and then clearing its state
+     */
+    void writeAndClear() {
+      write();
+      clear();
+    }
+  }
   // questions:
   // negative numbers?  -42 indexed as just 42?
   // dollar sign?  $42

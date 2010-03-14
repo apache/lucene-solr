@@ -302,8 +302,8 @@ public abstract class FieldType extends FieldProperties {
   }
   protected Field.Index getFieldIndex(SchemaField field,
                                       String internalVal) {
-    return field.indexed() ? (isTokenized() ? Field.Index.TOKENIZED :
-                              Field.Index.UN_TOKENIZED) : Field.Index.NO;
+    return field.indexed() ? (isTokenized() ? Field.Index.ANALYZED :
+                              Field.Index.NOT_ANALYZED) : Field.Index.NO;
   }
 
   /**

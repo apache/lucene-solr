@@ -258,7 +258,7 @@ public class SpellCheckerRequestHandler extends RequestHandlerBase implements So
         }
         dirDescription = f.getAbsolutePath();
         log.info("using spell directory: " + dirDescription);
-        spellcheckerIndexDir = FSDirectory.getDirectory(f);
+        spellcheckerIndexDir = FSDirectory.open(f);
       } else {
         log.info("using RAM based spell directory");
       }

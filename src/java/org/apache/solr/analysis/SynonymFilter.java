@@ -20,6 +20,12 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.AttributeSource;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -39,11 +45,16 @@ import java.util.LinkedList;
 public class SynonymFilter extends TokenFilter {
 
   private final SynonymMap map;  // Map<String, SynonymMap>
-  private Iterator<Token> replacement;  // iterator over generated tokens
+  private Iterator<AttributeSource> replacement;  // iterator over generated tokens
 
   public SynonymFilter(TokenStream in, SynonymMap map) {
     super(in);
     this.map = map;
+    // just ensuring these exist attributes exist...
+    addAttribute(TermAttribute.class);
+    addAttribute(PositionIncrementAttribute.class);
+    addAttribute(OffsetAttribute.class);
+    addAttribute(TypeAttribute.class);
   }
 
 
@@ -65,74 +76,100 @@ public class SynonymFilter extends TokenFilter {
    *  - preserve original positionIncrement of first matched token
    */
   @Override
-  public Token next(Token target) throws IOException {
+  public boolean incrementToken() throws IOException {
     while (true) {
       // if there are any generated tokens, return them... don't try any
       // matches against them, as we specifically don't want recursion.
       if (replacement!=null && replacement.hasNext()) {
-        return replacement.next();
+        copy(this, replacement.next());
+        return true;
       }
 
       // common case fast-path of first token not matching anything
-      Token firstTok = nextTok(target);
-      if (firstTok == null) return null;
-      SynonymMap result = map.submap!=null ? map.submap.get(firstTok.termBuffer(), 0, firstTok.termLength()) : null;
-      if (result == null) return firstTok;
+      AttributeSource firstTok = nextTok();
+      if (firstTok == null) return false;
+      TermAttribute termAtt = (TermAttribute) firstTok.addAttribute(TermAttribute.class);
+      SynonymMap result = map.submap!=null ? map.submap.get(termAtt.termBuffer(), 0, termAtt.termLength()) : null;
+      if (result == null) {
+        copy(this, firstTok);
+        return true;
+      }
 
+      // fast-path failed, clone ourselves if needed
+      if (firstTok == this)
+        firstTok = cloneAttributes();
       // OK, we matched a token, so find the longest match.
 
-      matched = new LinkedList<Token>();
+      matched = new LinkedList<AttributeSource>();
 
       result = match(result);
 
       if (result==null) {
         // no match, simply return the first token read.
-        return firstTok;
+        copy(this, firstTok);
+        return true;
       }
 
       // reuse, or create new one each time?
-      ArrayList<Token> generated = new ArrayList<Token>(result.synonyms.length + matched.size() + 1);
+      ArrayList<AttributeSource> generated = new ArrayList<AttributeSource>(result.synonyms.length + matched.size() + 1);
 
       //
       // there was a match... let's generate the new tokens, merging
       // in the matched tokens (position increments need adjusting)
       //
-      Token lastTok = matched.isEmpty() ? firstTok : matched.getLast();
+      AttributeSource lastTok = matched.isEmpty() ? firstTok : matched.getLast();
       boolean includeOrig = result.includeOrig();
 
-      Token origTok = includeOrig ? firstTok : null;
-      int origPos = firstTok.getPositionIncrement();  // position of origTok in the original stream
+      AttributeSource origTok = includeOrig ? firstTok : null;
+      PositionIncrementAttribute firstPosIncAtt = (PositionIncrementAttribute) firstTok.addAttribute(PositionIncrementAttribute.class);
+      int origPos = firstPosIncAtt.getPositionIncrement();  // position of origTok in the original stream
       int repPos=0; // curr position in replacement token stream
       int pos=0;  // current position in merged token stream
 
       for (int i=0; i<result.synonyms.length; i++) {
         Token repTok = result.synonyms[i];
-        Token newTok = new Token(firstTok.startOffset(), lastTok.endOffset(), firstTok.type());
-        newTok.setTermBuffer(repTok.termBuffer(), 0, repTok.termLength());
+        AttributeSource newTok = firstTok.cloneAttributes();
+        TermAttribute newTermAtt = (TermAttribute) newTok.addAttribute(TermAttribute.class);
+        OffsetAttribute newOffsetAtt = (OffsetAttribute) newTok.addAttribute(OffsetAttribute.class);
+        TypeAttribute newTypeAtt = (TypeAttribute) newTok.addAttribute(TypeAttribute.class);
+        PositionIncrementAttribute newPosIncAtt = (PositionIncrementAttribute) newTok.addAttribute(PositionIncrementAttribute.class);
+
+        OffsetAttribute lastOffsetAtt = (OffsetAttribute) lastTok.addAttribute(OffsetAttribute.class);
+
+        newOffsetAtt.setOffset(newOffsetAtt.startOffset(), lastOffsetAtt.endOffset());
+        newTermAtt.setTermBuffer(repTok.termBuffer(), 0, repTok.termLength());
         repPos += repTok.getPositionIncrement();
         if (i==0) repPos=origPos;  // make position of first token equal to original
 
         // if necessary, insert original tokens and adjust position increment
         while (origTok != null && origPos <= repPos) {
-          origTok.setPositionIncrement(origPos-pos);
+          PositionIncrementAttribute origPosInc = (PositionIncrementAttribute) origTok.addAttribute(PositionIncrementAttribute.class);
+          origPosInc.setPositionIncrement(origPos-pos);
           generated.add(origTok);
-          pos += origTok.getPositionIncrement();
+          pos += origPosInc.getPositionIncrement();
           origTok = matched.isEmpty() ? null : matched.removeFirst();
-          if (origTok != null) origPos += origTok.getPositionIncrement();
+          if (origTok != null) {
+            origPosInc = (PositionIncrementAttribute) origTok.addAttribute(PositionIncrementAttribute.class);
+            origPos += origPosInc.getPositionIncrement();
+          }
         }
 
-        newTok.setPositionIncrement(repPos - pos);
+        newPosIncAtt.setPositionIncrement(repPos - pos);
         generated.add(newTok);
-        pos += newTok.getPositionIncrement();
+        pos += newPosIncAtt.getPositionIncrement();
       }
 
       // finish up any leftover original tokens
       while (origTok!=null) {
-        origTok.setPositionIncrement(origPos-pos);
+        PositionIncrementAttribute origPosInc = (PositionIncrementAttribute) origTok.addAttribute(PositionIncrementAttribute.class);
+        origPosInc.setPositionIncrement(origPos-pos);
         generated.add(origTok);
-        pos += origTok.getPositionIncrement();
+        pos += origPosInc.getPositionIncrement();
         origTok = matched.isEmpty() ? null : matched.removeFirst();
-        if (origTok != null) origPos += origTok.getPositionIncrement();
+        if (origTok != null) {
+          origPosInc = (PositionIncrementAttribute) origTok.addAttribute(PositionIncrementAttribute.class);
+          origPos += origPosInc.getPositionIncrement();
+        }
       }
 
       // what if we replaced a longer sequence with a shorter one?
@@ -151,27 +188,22 @@ public class SynonymFilter extends TokenFilter {
   // Defer creation of the buffer until the first time it is used to
   // optimize short fields with no matches.
   //
-  private LinkedList<Token> buffer;
-  private LinkedList<Token> matched;
+  private LinkedList<AttributeSource> buffer;
+  private LinkedList<AttributeSource> matched;
 
-  private Token nextTok() throws IOException {
+  private AttributeSource nextTok() throws IOException {
     if (buffer!=null && !buffer.isEmpty()) {
       return buffer.removeFirst();
     } else {
-      return input.next();
+      if (input.incrementToken()) {
+        return this;
+      } else
+        return null;
     }
   }
 
-  private Token nextTok(Token target) throws IOException {
-    if (buffer!=null && !buffer.isEmpty()) {
-      return buffer.removeFirst();
-    } else {
-      return input.next(target);
-    }
-  }
-
-  private void pushTok(Token t) {
-    if (buffer==null) buffer=new LinkedList<Token>();
+  private void pushTok(AttributeSource t) {
+    if (buffer==null) buffer=new LinkedList<AttributeSource>();
     buffer.addFirst(t);
   }
 
@@ -179,15 +211,20 @@ public class SynonymFilter extends TokenFilter {
     SynonymMap result = null;
 
     if (map.submap != null) {
-      Token tok = nextTok();
+      AttributeSource tok = nextTok();
       if (tok != null) {
+        // clone ourselves.
+        if (tok == this)
+          tok = cloneAttributes();
         // check for positionIncrement!=1?  if>1, should not match, if==0, check multiple at this level?
-        SynonymMap subMap = map.submap.get(tok.termBuffer(), 0, tok.termLength());
+        TermAttribute termAtt = (TermAttribute) tok.getAttribute(TermAttribute.class);
+        SynonymMap subMap = map.submap.get(termAtt.termBuffer(), 0, termAtt.termLength());
 
         if (subMap != null) {
           // recurse
           result = match(subMap);
         }
+;
         if (result != null) {
           matched.addFirst(tok);
         } else {
@@ -203,6 +240,15 @@ public class SynonymFilter extends TokenFilter {
     }
 
     return result;
+  }
+
+  private void copy(AttributeSource target, AttributeSource source) {
+    if (target == source)
+      return;
+    for (Iterator<AttributeImpl> sourceIt = source.getAttributeImplsIterator(), targetIt=target.getAttributeImplsIterator(); 
+         sourceIt.hasNext();) { 
+           sourceIt.next().copyTo(targetIt.next()); 
+    } 
   }
 
   @Override

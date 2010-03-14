@@ -16,17 +16,14 @@ package org.apache.solr.spelling;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.HighFrequencyDictionary;
 
+import java.io.File;
 import java.io.IOException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +60,7 @@ public class IndexBasedSpellChecker extends AbstractLuceneSpellChecker {
   private void initSourceReader() {
     if (sourceLocation != null) {
       try {
-        FSDirectory luceneIndexDir = FSDirectory.getDirectory(sourceLocation);
+        FSDirectory luceneIndexDir = FSDirectory.open(new File(sourceLocation));
         this.reader = IndexReader.open(luceneIndexDir);
       } catch (IOException e) {
         throw new RuntimeException(e);

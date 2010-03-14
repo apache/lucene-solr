@@ -133,18 +133,8 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
       }
     }
 
-    /** @deprecated use {@link #nextDoc()} instead. */
-    public boolean next() throws IOException {
-      return docIdSetIterator.nextDoc() != NO_MORE_DOCS;
-    }
-
     public int nextDoc() throws IOException {
       return docIdSetIterator.nextDoc();
-    }
-
-    /** @deprecated use {@link #docID()} instead. */
-    public int doc() {
-      return docIdSetIterator.doc();
     }
 
     public int docID() {
@@ -153,11 +143,6 @@ public class SolrConstantScoreQuery extends ConstantScoreQuery {
 
     public float score() throws IOException {
       return theScore;
-    }
-
-    /** @deprecated use {@link #advance(int)} instead. */
-    public boolean skipTo(int target) throws IOException {
-      return docIdSetIterator.advance(target) != NO_MORE_DOCS;
     }
 
     public int advance(int target) throws IOException {

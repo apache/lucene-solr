@@ -144,7 +144,7 @@ public class TestRequestHandler implements SolrRequestHandler {
         nl.add("myLong",999999999999L);
 
         Document doc = new Document();
-        doc.add(new Field("id","55",Field.Store.YES, Field.Index.UN_TOKENIZED));
+        doc.add(new Field("id","55",Field.Store.YES, Field.Index.NOT_ANALYZED));
         nl.add("myDoc",doc);
 
         nl.add("myResult",results);
@@ -172,8 +172,8 @@ public class TestRequestHandler implements SolrRequestHandler {
       //
       // test against hits
       //
-      Hits hits = searcher.search(query, lfilter, sort);
-      test(hits.length() == results.matches());
+      TopFieldDocs hits = searcher.search(query, lfilter, 1000, sort);
+      test(hits.totalHits == results.matches());
 
 
       DocList rrr2 = results.subset(start,limit);
@@ -189,7 +189,7 @@ public class TestRequestHandler implements SolrRequestHandler {
       ***/
 
       for (int i=0; i<results.size(); i++) {
-        test( iter.nextDoc() == hits.id(i+results.offset()) );
+        test( iter.nextDoc() == hits.scoreDocs[i].doc);
 
         // Document doesn't implement equals()
         // test( searcher.document(i).equals(hits.doc(i)));

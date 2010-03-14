@@ -33,6 +33,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
@@ -305,7 +306,6 @@ public class QueryComponent extends SearchComponent
   public void handleResponses(ResponseBuilder rb, ShardRequest sreq) {
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_TOP_IDS) != 0) {
       mergeIds(rb, sreq);
-      return;
     }
 
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
@@ -399,7 +399,8 @@ public class QueryComponent extends SearchComponent
 
       // Merge the docs via a priority queue so we don't have to sort *all* of the
       // documents... we only need to order the top (rows+start)
-      ShardFieldSortedHitQueue queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount());
+      ShardFieldSortedHitQueue queue;
+      queue = new ShardFieldSortedHitQueue(sortFields, ss.getOffset() + ss.getCount());
 
       long numFound = 0;
       Float maxScore=null;
@@ -451,7 +452,7 @@ public class QueryComponent extends SearchComponent
 
           shardDoc.sortFieldValues = sortFieldValues;
 
-          queue.insert(shardDoc);
+          queue.insertWithOverflow(shardDoc);
         } // end for-each-doc-in-response
       } // end for-each-response
 

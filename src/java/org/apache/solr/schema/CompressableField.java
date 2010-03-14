@@ -58,8 +58,10 @@ public abstract class CompressableField extends FieldType {
                                       String internalVal) {
     /* compress field if length exceeds threshold */
     if(field.isCompressed()) {
-      return internalVal.length() >= compressThreshold ? 
-        Field.Store.COMPRESS : Field.Store.YES;
+      // nocommit: handle compression
+      //return internalVal.length() >= compressThreshold ? 
+      //  Field.Store.COMPRESS : Field.Store.YES;
+      return Field.Store.YES;
     } else
       return super.getFieldStore(field, internalVal);
   } 

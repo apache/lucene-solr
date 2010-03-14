@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.highlight.*;
@@ -39,6 +40,7 @@ import org.apache.lucene.search.vectorhighlight.FastVectorHighlighter;
 import org.apache.lucene.search.vectorhighlight.FieldQuery;
 import org.apache.lucene.search.vectorhighlight.FragListBuilder;
 import org.apache.lucene.search.vectorhighlight.FragmentsBuilder;
+import org.apache.lucene.util.AttributeSource.State;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
@@ -512,28 +514,28 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
  */
 class TokenOrderingFilter extends TokenFilter {
   private final int windowSize;
-  private final LinkedList<Token> queue = new LinkedList<Token>();
+  private final LinkedList<OrderedToken> queue = new LinkedList<OrderedToken>();
   private boolean done=false;
-
+  private final OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+  
   protected TokenOrderingFilter(TokenStream input, int windowSize) {
     super(input);
     this.windowSize = windowSize;
   }
 
   @Override
-  public Token next() throws IOException {
+  public boolean incrementToken() throws IOException {
     while (!done && queue.size() < windowSize) {
-      Token newTok = input.next();
-      if (newTok==null) {
-        done=true;
+      if (!input.incrementToken()) {
+        done = true;
         break;
       }
 
       // reverse iterating for better efficiency since we know the
       // list is already sorted, and most token start offsets will be too.
-      ListIterator<Token> iter = queue.listIterator(queue.size());
+      ListIterator<OrderedToken> iter = queue.listIterator(queue.size());
       while(iter.hasPrevious()) {
-        if (newTok.startOffset() >= iter.previous().startOffset()) {
+        if (offsetAtt.startOffset() >= iter.previous().startOffset) {
           // insertion will be before what next() would return (what
           // we just compared against), so move back one so the insertion
           // will be after.
@@ -541,50 +543,82 @@ class TokenOrderingFilter extends TokenFilter {
           break;
         }
       }
-      iter.add(newTok);
+      OrderedToken ot = new OrderedToken();
+      ot.state = captureState();
+      ot.startOffset = offsetAtt.startOffset();
+      iter.add(ot);
     }
 
-    return queue.isEmpty() ? null : queue.removeFirst();
+    if (queue.isEmpty()) {
+      return false;
+    } else {
+      restoreState(queue.removeFirst().state);
+      return true;
+    }
   }
+}
+
+// for TokenOrderingFilter, so it can easily sort by startOffset
+class OrderedToken {
+  State state;
+  int startOffset;
 }
 
 class TermOffsetsTokenStream {
 
   TokenStream bufferedTokenStream = null;
-  Token bufferedToken;
+  OffsetAttribute bufferedOffsetAtt;
+  State bufferedToken;
+  int bufferedStartOffset;
+  int bufferedEndOffset;
   int startOffset;
   int endOffset;
 
   public TermOffsetsTokenStream( TokenStream tstream ){
     bufferedTokenStream = tstream;
+    bufferedOffsetAtt = (OffsetAttribute) bufferedTokenStream.addAttribute(OffsetAttribute.class);
     startOffset = 0;
     bufferedToken = null;
   }
 
   public TokenStream getMultiValuedTokenStream( final int length ){
     endOffset = startOffset + length;
-    return new TokenStream(){
-      Token token;
-      public Token next() throws IOException {
+    return new MultiValuedStream(length);
+  }
+  
+  class MultiValuedStream extends TokenStream {
+    private final int length;
+    OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+
+      MultiValuedStream(int length) { 
+        super(bufferedTokenStream.cloneAttributes());
+        this.length = length;
+      }
+      
+      public boolean incrementToken() throws IOException {
         while( true ){
-          if( bufferedToken == null )
-            bufferedToken = bufferedTokenStream.next();
-          if( bufferedToken == null ) return null;
-          if( startOffset <= bufferedToken.startOffset() &&
-              bufferedToken.endOffset() <= endOffset ){
-            token = bufferedToken;
-            bufferedToken = null;
-            token.setStartOffset( token.startOffset() - startOffset );
-            token.setEndOffset( token.endOffset() - startOffset );
-            return token;
+          if( bufferedToken == null ) {
+            if (!bufferedTokenStream.incrementToken())
+              return false;
+            bufferedToken = bufferedTokenStream.captureState();
+            bufferedStartOffset = bufferedOffsetAtt.startOffset();
+            bufferedEndOffset = bufferedOffsetAtt.endOffset();
           }
-          else if( bufferedToken.endOffset() > endOffset ){
+          
+          if( startOffset <= bufferedStartOffset &&
+              bufferedEndOffset <= endOffset ){
+            restoreState(bufferedToken);
+            bufferedToken = null;
+            offsetAtt.setOffset( offsetAtt.startOffset() - startOffset, offsetAtt.endOffset() - startOffset );
+            return true;
+          }
+          else if( bufferedEndOffset > endOffset ){
             startOffset += length + 1;
-            return null;
+            return false;
           }
           bufferedToken = null;
         }
       }
-    };
-  }
-}
+
+  };
+};

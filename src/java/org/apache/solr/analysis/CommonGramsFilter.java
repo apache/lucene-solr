@@ -14,20 +14,22 @@ import java.util.Arrays;
 import java.util.Set;
 
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /*
- * TODO: Rewrite to use new TokenStream api from lucene 2.9 when BufferedTokenStream uses it.
- * TODO: Consider implementing https://issues.apache.org/jira/browse/LUCENE-1688 changes to stop list and
- * associated constructors 
+ * TODO: Consider implementing https://issues.apache.org/jira/browse/LUCENE-1688 changes to stop list and associated constructors 
  */
 
 /**
  * Construct bigrams for frequently occurring terms while indexing. Single terms
  * are still indexed too, with bigrams overlaid. This is achieved through the
- * use of {@link Token#setPositionIncrement(int)}. Bigrams have a type
- * of "gram" Example
+ * use of {@link PositionIncrementAttribute#setPositionIncrement(int)}. Bigrams have a type
+ * of {@link #GRAM_TYPE} Example:
  * <ul>
  * <li>input:"the quick brown fox"</li>
  * <li>output:|"the","the-quick"|"brown"|"fox"|</li>
@@ -40,14 +42,23 @@ import org.apache.lucene.analysis.TokenStream;
 /*
  * Constructors and makeCommonSet based on similar code in StopFilter
  */
+public final class CommonGramsFilter extends TokenFilter {
 
-public class CommonGramsFilter extends BufferedTokenStream {
-
+  static final String GRAM_TYPE = "gram";
   private static final char SEPARATOR = '_';
 
   private final CharArraySet commonWords;
 
-  private StringBuilder buffer = new StringBuilder();
+  private final StringBuilder buffer = new StringBuilder();
+  
+  private final TermAttribute termAttribute = (TermAttribute) addAttribute(TermAttribute.class);
+  private final OffsetAttribute offsetAttribute = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+  private final TypeAttribute typeAttribute = (TypeAttribute) addAttribute(TypeAttribute.class);
+  private final PositionIncrementAttribute posIncAttribute = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+
+  private int lastStartOffset;
+  private boolean lastWasCommon;
+  private State savedState;
 
   /**
    * Construct a token stream filtering the given input using a Set of common
@@ -57,7 +68,6 @@ public class CommonGramsFilter extends BufferedTokenStream {
    * 
    * @param input TokenStream input in filter chain
    * @param commonWords The set of common words.
-   * 
    */
   public CommonGramsFilter(TokenStream input, Set commonWords) {
     this(input, commonWords, false);
@@ -80,8 +90,7 @@ public class CommonGramsFilter extends BufferedTokenStream {
    * @param commonWords The set of common words.
    * @param ignoreCase -Ignore case when constructing bigrams for common words.
    */
-  public CommonGramsFilter(TokenStream input, Set commonWords,
-      boolean ignoreCase) {
+  public CommonGramsFilter(TokenStream input, Set commonWords, boolean ignoreCase) {
     super(input);
     if (commonWords instanceof CharArraySet) {
       this.commonWords = (CharArraySet) commonWords;
@@ -89,7 +98,6 @@ public class CommonGramsFilter extends BufferedTokenStream {
       this.commonWords = new CharArraySet(commonWords.size(), ignoreCase);
       this.commonWords.addAll(commonWords);
     }
-    init();
   }
 
   /**
@@ -101,7 +109,6 @@ public class CommonGramsFilter extends BufferedTokenStream {
    */
   public CommonGramsFilter(TokenStream input, String[] commonWords) {
     this(input, commonWords, false);
-    init();
   }
 
   /**
@@ -112,33 +119,21 @@ public class CommonGramsFilter extends BufferedTokenStream {
    * @param commonWords words to be used in constructing bigrams
    * @param ignoreCase -Ignore case when constructing bigrams for common words.
    */
-  public CommonGramsFilter(TokenStream input, String[] commonWords,
-      boolean ignoreCase) {
+  public CommonGramsFilter(TokenStream input, String[] commonWords, boolean ignoreCase) {
     super(input);
-    this.commonWords = (CharArraySet) makeCommonSet(commonWords, ignoreCase);
-    init();
-  }
-
-  // Here for future moving to 2.9 api See StopFilter code
-
-  public void init() {
-    /**
-     * termAtt = (TermAttribute) addAttribute(TermAttribute.class); posIncrAtt
-     * =(PositionIncrementAttribute)
-     * addAttribute(PositionIncrementAttribute.class); typeAdd =(TypeAttribute)
-     * addAttribute(TypeAttribute.class);
-     */
+    this.commonWords = makeCommonSet(commonWords, ignoreCase);
   }
 
   /**
    * Build a CharArraySet from an array of common words, appropriate for passing
    * into the CommonGramsFilter constructor. This permits this commonWords
    * construction to be cached once when an Analyzer is constructed.
-   * 
-   * @see #makeCommonSet(java.lang.String[], boolean) passing false to
-   *      ignoreCase
+   *
+   * @param commonWords Array of common words which will be converted into the CharArraySet
+   * @return CharArraySet of the given words, appropriate for passing into the CommonGramFilter constructor
+   * @see #makeCommonSet(java.lang.String[], boolean) passing false to ignoreCase
    */
-  public static final CharArraySet makeCommonSet(String[] commonWords) {
+  public static CharArraySet makeCommonSet(String[] commonWords) {
     return makeCommonSet(commonWords, false);
   }
 
@@ -147,12 +142,11 @@ public class CommonGramsFilter extends BufferedTokenStream {
    * into the CommonGramsFilter constructor,case-sensitive if ignoreCase is
    * false.
    * 
-   * @param commonWords
+   * @param commonWords Array of common words which will be converted into the CharArraySet
    * @param ignoreCase If true, all words are lower cased first.
    * @return a Set containing the words
    */
-  public static final CharArraySet makeCommonSet(String[] commonWords,
-      boolean ignoreCase) {
+  public static CharArraySet makeCommonSet(String[] commonWords, boolean ignoreCase) {
     CharArraySet commonSet = new CharArraySet(commonWords.length, ignoreCase);
     commonSet.addAll(Arrays.asList(commonWords));
     return commonSet;
@@ -163,61 +157,95 @@ public class CommonGramsFilter extends BufferedTokenStream {
    * output the token. If the token and/or the following token are in the list
    * of common words also output a bigram with position increment 0 and
    * type="gram"
-   */
-  /*
-   * TODO: implement new lucene 2.9 API incrementToken() instead of deprecated
-   * Token.next() TODO:Consider adding an option to not emit unigram stopwords
+   *
+   * TODO:Consider adding an option to not emit unigram stopwords
    * as in CDL XTF BigramStopFilter, CommonGramsQueryFilter would need to be
-   * changed to work with this. TODO: Consider optimizing for the case of three
+   * changed to work with this.
+   *
+   * TODO: Consider optimizing for the case of three
    * commongrams i.e "man of the year" normally produces 3 bigrams: "man-of",
    * "of-the", "the-year" but with proper management of positions we could
    * eliminate the middle bigram "of-the"and save a disk seek and a whole set of
    * position lookups.
    */
-  public Token process(Token token) throws IOException {
-    Token next = peek(1);
-    // if this is the last token just spit it out. Any commongram would have
-    // been output in the previous call
-    if (next == null) {
-      return token;
+  public boolean incrementToken() throws IOException {
+    // get the next piece of input
+    if (savedState != null) {
+      restoreState(savedState);
+      savedState = null;
+      saveTermBuffer();
+      return true;
+    } else if (!input.incrementToken()) {
+        return false;
     }
-
-    /**
-     * if this token or next are common then construct a bigram with type="gram"
-     * position increment = 0, and put it in the output queue. It will be
-     * returned when super.next() is called, before this method gets called with
-     * a new token from the input stream See implementation of next() in
-     * BufferedTokenStream
+    
+    /* We build n-grams before and after stopwords. 
+     * When valid, the buffer always contains at least the separator.
+     * If its empty, there is nothing before this stopword.
      */
-
-    if (isCommon(token) || isCommon(next)) {
-      Token gram = gramToken(token, next);
-      write(gram);
+    if (lastWasCommon || (isCommon() && buffer.length() > 0)) {
+      savedState = captureState();
+      gramToken();
+      return true;      
     }
-    // we always return the unigram token
-    return token;
+
+    saveTermBuffer();
+    return true;
   }
 
-  /** True if token is for a common term. */
-  private boolean isCommon(Token token) {
-    return commonWords != null
-        && commonWords.contains(token.termBuffer(), 0, token.termLength());
-  }
-
-  /** Construct a compound token. */
-  private Token gramToken(Token first, Token second) {
-    buffer.setLength(0);
-    buffer.append(first.termText());
-    buffer.append(SEPARATOR);
-    buffer.append(second.termText());
-    Token result = new Token(buffer.toString(), first.startOffset(), second
-        .endOffset(), "gram");
-    result.setPositionIncrement(0);
-    return result;
-  }
-  
+  /**
+   * {@inheritDoc}
+   */
+  @Override
   public void reset() throws IOException {
     super.reset();
+    lastWasCommon = false;
+    savedState = null;
+    buffer.setLength(0);
+  }
+
+  // ================================================= Helper Methods ================================================
+
+  /**
+   * Determines if the current token is a common term
+   *
+   * @return {@code true} if the current token is a common term, {@code false} otherwise
+   */
+  private boolean isCommon() {
+    return commonWords != null && commonWords.contains(termAttribute.termBuffer(), 0, termAttribute.termLength());
+  }
+
+  /**
+   * Saves this information to form the left part of a gram
+   */
+  private void saveTermBuffer() {
+    buffer.setLength(0);
+    buffer.append(termAttribute.termBuffer(), 0, termAttribute.termLength());
+    buffer.append(SEPARATOR);
+    lastStartOffset = offsetAttribute.startOffset();
+    lastWasCommon = isCommon();
+  }
+
+  /**
+   * Constructs a compound token.
+   */
+  private void gramToken() {
+    buffer.append(termAttribute.termBuffer(), 0, termAttribute.termLength());
+    int endOffset = offsetAttribute.endOffset();
+
+    clearAttributes();
+
+    int length = buffer.length();
+    char termText[] = termAttribute.termBuffer();
+    if (length > termText.length) {
+      termText = termAttribute.resizeTermBuffer(length);
+    }
+    
+    buffer.getChars(0, length, termText, 0);
+    termAttribute.setTermLength(length);
+    posIncAttribute.setPositionIncrement(0);
+    offsetAttribute.setOffset(lastStartOffset, endOffset);
+    typeAttribute.setType(GRAM_TYPE);
     buffer.setLength(0);
   }
 }

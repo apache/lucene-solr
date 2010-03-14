@@ -17,10 +17,14 @@
 
 package org.apache.solr.search;
 
+import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrException;
 
+import java.io.IOException;
 import java.util.List;
 
 /** A hash key encapsulating a query, a list of filters, and a sort
@@ -38,7 +42,7 @@ public final class QueryResultKey {
   private static SortField[] defaultSort = new SortField[0];
 
 
-  public QueryResultKey(Query query, List<Query> filters, Sort sort, int nc_flags) {
+  public QueryResultKey(Query query, List<Query> filters, Sort sort, int nc_flags) throws IOException {
     this.query = query;
     this.sort = sort;
     this.filters = filters;

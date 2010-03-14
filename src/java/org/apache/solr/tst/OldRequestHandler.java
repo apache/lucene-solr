@@ -66,12 +66,11 @@ public class OldRequestHandler implements SolrRequestHandler {
       sort = QueryParsing.parseSort(commands.get(1), req.getSchema());
     }
 
-    Hits hits=null;
 
     try {
-      hits = req.getSearcher().search(query,filter,sort);
+      TopFieldDocs hits = req.getSearcher().search(query,filter, req.getStart()+req.getLimit(), sort);
 
-      int numHits = hits.length();
+      int numHits = hits.totalHits;
       int startRow = Math.min(numHits, req.getStart());
       int endRow = Math.min(numHits,req.getStart()+req.getLimit());
       int numRows = endRow-startRow;
@@ -79,8 +78,8 @@ public class OldRequestHandler implements SolrRequestHandler {
       int[] ids = new int[numRows];
       Document[] data = new Document[numRows];
       for (int i=startRow; i<endRow; i++) {
-        ids[i] = hits.id(i);
-        data[i] = hits.doc(i);
+        ids[i] = hits.scoreDocs[i].doc;
+        data[i] = req.getSearcher().doc(ids[i]);
       }
 
       rsp.add(null, new DocSlice(0,numRows,ids,null,numHits,0.0f));

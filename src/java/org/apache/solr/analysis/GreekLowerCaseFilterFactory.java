@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.el.GreekCharsets;
 import org.apache.lucene.analysis.el.GreekLowerCaseFilter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -32,40 +31,16 @@ import org.slf4j.LoggerFactory;
 
 public class GreekLowerCaseFilterFactory extends BaseTokenFilterFactory 
 {
-  @Deprecated
-  private static Map<String,char[]> CHARSETS = new HashMap<String,char[]>();
-  static {
-    CHARSETS.put("UnicodeGreek",GreekCharsets.UnicodeGreek);
-    CHARSETS.put("ISO",GreekCharsets.ISO);
-    CHARSETS.put("CP1253",GreekCharsets.CP1253);
-  }
-  
-  private char[] charset = GreekCharsets.UnicodeGreek;
 
   private static Logger logger = LoggerFactory.getLogger(GreekLowerCaseFilterFactory.class);
   
   @Override
   public void init(Map<String, String> args) {
     super.init(args);
-    String charsetName = args.get("charset");
-    if (null != charsetName) {
-      charset = CHARSETS.get(charsetName);
-      if (charset.equals(GreekCharsets.UnicodeGreek))
-        logger.warn("Specifying UnicodeGreek is no longer required (default).  "
-            + "Use of the charset parameter will cause an error in Solr 1.5");
-      else
-        logger.warn("Support for this custom encoding is deprecated.  "
-            + "Use of the charset parameter will cause an error in Solr 1.5");
-    } else {
-      charset = GreekCharsets.UnicodeGreek; /* default to unicode */
-    }
-    if (null == charset) {
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-                              "Don't understand charset: " + charsetName);
-    }
+
   }
   public GreekLowerCaseFilter create(TokenStream in) {
-    return new GreekLowerCaseFilter(in,charset);
+    return new GreekLowerCaseFilter(in);
   }
 }
 

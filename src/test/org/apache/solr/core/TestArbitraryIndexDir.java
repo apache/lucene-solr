@@ -30,11 +30,11 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.Hits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.TestHarness;
@@ -97,11 +97,11 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
     }
 
     //add a doc in the new index dir
-    Directory dir = FSDirectory.getDirectory(newDir);
-    IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(), new MaxFieldLength(1000));
+    Directory dir = FSDirectory.open(newDir);
+    IndexWriter iw = new IndexWriter(dir, new StandardAnalyzer(Version.LUCENE_24), new MaxFieldLength(1000));
     Document doc = new Document();
-    doc.add(new Field("id", "2", Field.Store.YES, Field.Index.TOKENIZED));
-    doc.add(new Field("name", "name2", Field.Store.YES, Field.Index.TOKENIZED));
+    doc.add(new Field("id", "2", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(new Field("name", "name2", Field.Store.YES, Field.Index.ANALYZED));
     iw.addDocument(doc);
     iw.commit();
     iw.close();

@@ -67,16 +67,16 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     
     // Add a valid document
     cmd.doc = new Document();
-    cmd.doc.add( new Field( "id", "AAA", Store.YES, Index.UN_TOKENIZED ) );
-    cmd.doc.add( new Field( "subject", "xxxxx", Store.YES, Index.UN_TOKENIZED ) );
+    cmd.doc.add( new Field( "id", "AAA", Store.YES, Index.NOT_ANALYZED ) );
+    cmd.doc.add( new Field( "subject", "xxxxx", Store.YES, Index.NOT_ANALYZED ) );
     updater.addDoc( cmd );
     
     // Add a document with multiple ids
     cmd.indexedId = null;  // reset the id for this add
     cmd.doc = new Document();
-    cmd.doc.add( new Field( "id", "AAA", Store.YES, Index.UN_TOKENIZED ) );
-    cmd.doc.add( new Field( "id", "BBB", Store.YES, Index.UN_TOKENIZED ) );
-    cmd.doc.add( new Field( "subject", "xxxxx", Store.YES, Index.UN_TOKENIZED ) );
+    cmd.doc.add( new Field( "id", "AAA", Store.YES, Index.NOT_ANALYZED ) );
+    cmd.doc.add( new Field( "id", "BBB", Store.YES, Index.NOT_ANALYZED ) );
+    cmd.doc.add( new Field( "subject", "xxxxx", Store.YES, Index.NOT_ANALYZED ) );
     try {
       updater.addDoc( cmd );
       fail( "added a document with multiple ids" );
@@ -86,7 +86,7 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     // Add a document without an id
     cmd.indexedId = null;  // reset the id for this add
     cmd.doc = new Document();
-    cmd.doc.add( new Field( "subject", "xxxxx", Store.YES, Index.UN_TOKENIZED ) );
+    cmd.doc.add( new Field( "subject", "xxxxx", Store.YES, Index.NOT_ANALYZED ) );
     try {
       updater.addDoc( cmd );
       fail( "added a document without an ids" );
@@ -325,7 +325,7 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     
     // Add a document
     cmd.doc = new Document();
-    cmd.doc.add( new Field( "id", id, Store.YES, Index.UN_TOKENIZED ) );
+    cmd.doc.add( new Field( "id", id, Store.YES, Index.NOT_ANALYZED ) );
     updater.addDoc( cmd );
   }
   

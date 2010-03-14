@@ -16,6 +16,7 @@
  */
 package org.apache.solr.core;
 
+import java.io.File;
 import java.io.IOException;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.util.AbstractSolrTestCase;
@@ -44,7 +45,7 @@ public class AlternateDirectoryTest extends AbstractSolrTestCase {
 
     public FSDirectory open(String path) throws IOException {
       openCalled = true;
-      return FSDirectory.getDirectory(path);
+      return FSDirectory.open(new File(path));
     }
 
   }

@@ -158,12 +158,11 @@ public class HighlighterTest extends AbstractSolrTestCase {
       TokenStream ts1 = tots.getMultiValuedTokenStream( v.length() );
       Analyzer a2 = new WhitespaceAnalyzer();
       TokenStream ts2 = a2.tokenStream( "", new StringReader( v ) );
-      Token t1 = new Token();
-      Token t2 = new Token();
-      for( t1 = ts1.next( t1 ); t1 != null; t1 = ts1.next( t1 ) ){
-        t2 = ts2.next( t2 );
-        assertEquals( t2, t1 );
+      while (ts1.incrementToken()) {
+        assertTrue(ts2.incrementToken());
+        assertEquals(ts1, ts2);
       }
+      assertFalse(ts2.incrementToken());
     }
   }
 

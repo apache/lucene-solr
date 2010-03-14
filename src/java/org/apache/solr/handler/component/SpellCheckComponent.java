@@ -33,6 +33,12 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -332,7 +338,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       // create token
       SpellCheckResponse.Suggestion suggestion = origVsSuggestion.get(original);
       Token token = new Token();
-      token.setTermText(original);
+      token.setTermBuffer(original);
       token.setStartOffset(suggestion.getStartOffset());
       token.setEndOffset(suggestion.getEndOffset());
 
@@ -364,10 +370,24 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
   private Collection<Token> getTokens(String q, Analyzer analyzer) throws IOException {
     Collection<Token> result = new ArrayList<Token>();
-    Token token = null;
     TokenStream ts = analyzer.reusableTokenStream("", new StringReader(q));
     ts.reset();
-    while ((token = ts.next()) != null){
+    // TODO: support custom attributes
+    TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = (OffsetAttribute) ts.addAttribute(OffsetAttribute.class);
+    TypeAttribute typeAtt = (TypeAttribute) ts.addAttribute(TypeAttribute.class);
+    FlagsAttribute flagsAtt = (FlagsAttribute) ts.addAttribute(FlagsAttribute.class);
+    PayloadAttribute payloadAtt = (PayloadAttribute) ts.addAttribute(PayloadAttribute.class);
+    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) ts.addAttribute(PositionIncrementAttribute.class);
+    
+    while (ts.incrementToken()){
+      Token token = new Token();
+      token.setTermBuffer(termAtt.termBuffer(), 0, termAtt.termLength());
+      token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
+      token.setType(typeAtt.type());
+      token.setFlags(flagsAtt.getFlags());
+      token.setPayload(payloadAtt.getPayload());
+      token.setPositionIncrement(posIncAtt.getPositionIncrement());
       result.add(token);
     }
     return result;

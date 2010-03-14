@@ -57,11 +57,11 @@ public class TestOpenBitSet extends TestCase {
     do {
       aa = a.nextSetBit(aa+1);
       if (rand.nextBoolean()) {
-        iterator.next();
-        bb = iterator.doc();
+        iterator.nextDoc();
+        bb = iterator.docID();
       } else {
-        iterator.skipTo(bb+1);
-        bb = iterator.doc();
+        iterator.advance(bb+1);
+        bb = iterator.docID();
       }
       assertEquals(aa == -1 ? DocIdSetIterator.NO_MORE_DOCS : aa, bb);
     } while (aa>=0);

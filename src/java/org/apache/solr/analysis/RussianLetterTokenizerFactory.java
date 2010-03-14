@@ -23,17 +23,10 @@ import java.util.Map;
 import org.apache.lucene.analysis.ru.RussianLetterTokenizer;
 
 public class RussianLetterTokenizerFactory extends BaseTokenizerFactory {
-  @Deprecated
-  private char[] charset;
-  
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    charset = RussianCommon.getCharset(args.get("charset"));
-  }
+
 
   public RussianLetterTokenizer create(Reader in) {
-    return new RussianLetterTokenizer(in,charset);
+    return new RussianLetterTokenizer(in);
   }
 }
 

@@ -23,17 +23,9 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ru.RussianLowerCaseFilter;
 
 public class RussianLowerCaseFilterFactory extends BaseTokenFilterFactory {
-  @Deprecated
-  private char[] charset;
-  
-  @Override
-  public void init(Map<String, String> args) {
-    super.init(args);
-    charset = RussianCommon.getCharset(args.get("charset"));
-  }
 
   public RussianLowerCaseFilter create(TokenStream in) {
-    return new RussianLowerCaseFilter(in,charset);
+    return new RussianLowerCaseFilter(in);
   }
 }
 

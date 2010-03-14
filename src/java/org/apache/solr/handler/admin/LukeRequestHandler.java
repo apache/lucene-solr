@@ -40,7 +40,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ConstantScoreRangeQuery;
+import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.PriorityQueue;
@@ -172,7 +172,8 @@ public class LukeRequestHandler extends RequestHandlerBase
     flags.append( (f != null && f.getOmitNorms())                  ? FieldFlag.OMIT_NORMS.getAbbreviation() : '-' );
     flags.append( (f != null && f.isLazy())                        ? FieldFlag.LAZY.getAbbreviation() : '-' );
     flags.append( (f != null && f.isBinary())                      ? FieldFlag.BINARY.getAbbreviation() : '-' );
-    flags.append( (f != null && f.isCompressed())                  ? FieldFlag.COMPRESSED.getAbbreviation() : '-' );
+    //nocommit: handle compressed
+    //flags.append( (f != null && f.isCompressed())                  ? FieldFlag.COMPRESSED.getAbbreviation() : '-' );
     flags.append( (false)                                          ? FieldFlag.SORT_MISSING_FIRST.getAbbreviation() : '-' ); // SchemaField Specific
     flags.append( (false)                                          ? FieldFlag.SORT_MISSING_LAST.getAbbreviation() : '-' ); // SchemaField Specific
     return flags.toString();
@@ -312,7 +313,7 @@ public class LukeRequestHandler extends RequestHandlerBase
 
       // If numTerms==0, the call is just asking for a quick field list
       if( ttinfo != null && sfield != null && sfield.indexed() ) {
-        Query q = new ConstantScoreRangeQuery(fieldName,null,null,false,false); 
+        Query q = new TermRangeQuery(fieldName,null,null,false,false); 
         TopDocs top = searcher.search( q, 1 );
         if( top.totalHits > 0 ) {
           // Find a document with this field
@@ -652,7 +653,7 @@ public class LukeRequestHandler extends RequestHandlerBase
         }
         
         if( terms.docFreq() > tiq.minFreq ) {
-          tiq.put(new TopTermQueue.TermInfo(terms.term(), terms.docFreq()));
+          tiq.add(new TopTermQueue.TermInfo(terms.term(), terms.docFreq()));
             if (tiq.size() > numTerms) { // if tiq full
             tiq.pop(); // remove lowest in tiq
             tiq.minFreq = ((TopTermQueue.TermInfo)tiq.top()).docFreq; // reset minFreq

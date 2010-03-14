@@ -161,29 +161,32 @@ public class SolrIndexWriter extends IndexWriter {
    *
    */
   public SolrIndexWriter(String name, String path, DirectoryFactory dirFactory, boolean create, IndexSchema schema) throws IOException {
-    super(getDirectory(path, dirFactory, null), false, schema.getAnalyzer(), create);
+    super(getDirectory(path, dirFactory, null), schema.getAnalyzer(), create, MaxFieldLength.LIMITED);
     init(name, schema, null);
   }
 
   @Deprecated
+  // nocommit: remove?
   public SolrIndexWriter(String name, String path, DirectoryFactory dirFactory, boolean create, IndexSchema schema, SolrIndexConfig config) throws IOException {
-    super(getDirectory(path, dirFactory, null), config.luceneAutoCommit, schema.getAnalyzer(), create);
+    super(getDirectory(path, dirFactory, null), schema.getAnalyzer(), create, MaxFieldLength.LIMITED);
     init(name, schema, config);
   }
   
   /**
    * @deprecated
    */
+  // nocommit: remove?
   public SolrIndexWriter(String name, String path, boolean create, IndexSchema schema) throws IOException {
-    super(getDirectory(path, null), false, schema.getAnalyzer(), create);
+    super(getDirectory(path, null), schema.getAnalyzer(), create, MaxFieldLength.LIMITED);
     init(name, schema, null);
   }
 
   /**
    * @deprecated
    */
+  // nocommit: remove?
   public SolrIndexWriter(String name, String path, boolean create, IndexSchema schema, SolrIndexConfig config) throws IOException {
-    super(getDirectory(path, config), config.luceneAutoCommit, schema.getAnalyzer(), create);
+    super(getDirectory(path, config), schema.getAnalyzer(), create, MaxFieldLength.LIMITED);
     init(name, schema, config);
   }
 

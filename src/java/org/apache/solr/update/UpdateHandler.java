@@ -18,11 +18,13 @@
 package org.apache.solr.update;
 
 
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.search.HitCollector;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.Scorer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -135,23 +137,40 @@ public abstract class UpdateHandler implements SolrInfoMBean {
   public abstract void close() throws IOException;
 
 
-  static class DeleteHitCollector extends HitCollector {
+  static class DeleteHitCollector extends Collector {
     public int deleted=0;
     public final SolrIndexSearcher searcher;
+    private int docBase;
 
     public DeleteHitCollector(SolrIndexSearcher searcher) {
       this.searcher = searcher;
     }
 
-    public void collect(int doc, float score) {
+    @Override
+    public void collect(int doc) {
       try {
-        searcher.getReader().deleteDocument(doc);
+        searcher.getReader().deleteDocument(doc + docBase);
         deleted++;
       } catch (IOException e) {
         // don't try to close the searcher on failure for now...
         // try { closeSearcher(); } catch (Exception ee) { SolrException.log(log,ee); }
         throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,"Error deleting doc# "+doc,e,false);
       }
+    }
+
+    @Override
+    public boolean acceptsDocsOutOfOrder() {
+      return false;
+    }
+
+    @Override
+    public void setNextReader(IndexReader arg0, int docBase) throws IOException {
+      this.docBase = docBase;
+    }
+
+    @Override
+    public void setScorer(Scorer scorer) throws IOException {
+      
     }
   }
 
