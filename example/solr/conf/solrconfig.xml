@@ -287,9 +287,9 @@
     Parameters as required by the implementation
   </indexReaderFactory >
   -->
-  <!-- To set the termInfosIndexDivisor, do this: -->
+  <!-- To set the setTermIndexInterval, do this: -->
   <!--<indexReaderFactory name="IndexReaderFactory" class="org.apache.solr.core.StandardIndexReaderFactory">
-    <int name="termInfosIndexDivisor">12</int>
+    <int name="setTermIndexInterval">12</int>
   </indexReaderFactory >-->
 
 

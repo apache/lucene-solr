@@ -140,7 +140,7 @@
   </updateHandler>
 
   <indexReaderFactory name="IndexReaderFactory" class="org.apache.solr.core.StandardIndexReaderFactory">
-    <int name="termInfosIndexDivisor">12</int>
+    <int name="setTermIndexInterval">12</int>
   </indexReaderFactory >
 
   <query>
