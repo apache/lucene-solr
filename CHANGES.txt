@@ -92,6 +92,8 @@ New Features
   to info currently available from registry.jsp and stats.jsp
   (ehatcher, hossman)
 
+* SOLR-1815: SolrJ now preserves the order of facet queries. (yonik)
+
 Optimizations
 ----------------------
 

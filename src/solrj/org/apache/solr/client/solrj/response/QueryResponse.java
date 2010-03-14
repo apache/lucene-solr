@@ -188,7 +188,7 @@ public class QueryResponse extends SolrResponseBase
   private void extractFacetInfo( NamedList<Object> info )
   {
     // Parse the queries
-    _facetQuery = new HashMap<String, Integer>();
+    _facetQuery = new LinkedHashMap<String, Integer>();
     NamedList<Integer> fq = (NamedList<Integer>) info.get( "facet_queries" );
     if (fq != null) {
       for( Map.Entry<String, Integer> entry : fq ) {
