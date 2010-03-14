@@ -58,7 +58,7 @@ public class StopFilterFactory extends BaseTokenFilterFactory implements Resourc
         throw new RuntimeException(e);
       }
     } else {
-      stopWords = (CharArraySet) StopAnalyzer.ENGLISH_STOP_WORDS_SET;
+      stopWords = new CharArraySet(StopAnalyzer.ENGLISH_STOP_WORDS_SET, ignoreCase);
     }
   }
   //Force the use of a char array set, as it is the most performant, although this may break things if Lucene ever goes away from it.  See SOLR-1095
