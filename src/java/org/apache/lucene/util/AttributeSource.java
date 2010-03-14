@@ -367,7 +367,7 @@ public class AttributeSource {
       AttributeImpl targetImpl = attributeImpls.get(state.attribute.getClass());
       if (targetImpl == null) {
         throw new IllegalArgumentException("State contains AttributeImpl of type " +
-          state.attribute.getClass() + " that is not in in this AttributeSource");
+          state.attribute.getClass().getName() + " that is not in in this AttributeSource");
       }
       state.attribute.copyTo(targetImpl);
       state = state.next;
@@ -491,7 +491,7 @@ public class AttributeSource {
         final AttributeImpl targetImpl = target.attributeImpls.get(state.attribute.getClass());
         if (targetImpl == null) {
           throw new IllegalArgumentException("This AttributeSource contains AttributeImpl of type " +
-            state.attribute.getClass() + " that is not in the target");
+            state.attribute.getClass().getName() + " that is not in the target");
         }
         state.attribute.copyTo(targetImpl);
       }
