@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<solr sharedLib="lib" persistent="true">
-	<cores adminPath="/admin/cores">
-		<core default="true" instanceDir="db" name="db"/>
-		<core default="false" instanceDir="rss" name="rss"/>
-		<core default="false" instanceDir="mail" name="mail"/>
-		<core default="false" instanceDir="tika" name="tika"/>
-	</cores>
-</solr>
