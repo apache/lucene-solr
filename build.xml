@@ -387,7 +387,7 @@
         </or>
       </not>
     </condition>
-    <junit printsummary="on"
+    <junit printsummary="no"
            haltonfailure="no"
            errorProperty="tests.failed"
            failureProperty="tests.failed"
