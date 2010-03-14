@@ -1,0 +1,133 @@
+#!/bin/bash
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Shell script to force a commit of all changes since last commit
+# for a Solr server
+
+orig_dir=$(pwd)
+cd ${0%/*}/..
+solr_root=$(pwd)
+cd ${orig_dir}
+curl_url=""
+
+unset solr_hostname solr_port webapp_name user verbose debug solr_url
+. ${solr_root}/bin/scripts-util
+
+# set up variables
+prog=${0##*/}
+log=${solr_root}/logs/${prog}.log
+
+# define usage string
+USAGE="\
+usage: $prog [-h hostname] [-p port] [-w webapp_name] [-u username] [-U url] [-v] [-V]
+       -h          specify Solr hostname (defaults to localhost)
+       -p          specify Solr port number
+       -w          specify name of Solr webapp (defaults to solr)
+       -u          specify user to sudo to before running script
+       -U          specify full update url (overrides -h,-p,-w parameters)
+       -v          increase verbosity
+       -V          output debugging info
+"
+
+# parse args
+while getopts h:p:w:u:U:vV OPTION
+do
+    case $OPTION in
+    h)
+        solr_hostname="$OPTARG"
+        ;;
+    p)
+        solr_port="$OPTARG"
+        ;;
+    w)
+        webapp_name="$OPTARG"
+        ;;
+    u)
+        user="$OPTARG"
+        ;;
+    U)
+        solr_url="$OPTARG"
+        ;;
+    v)
+        verbose="v"
+        ;;
+    V)
+        debug="V"
+        ;;
+    *)
+        echo "$USAGE"
+        exit 1
+    esac
+done
+
+[[ -n $debug ]] && set -x
+
+if [[ -n ${solr_url} ]]
+then
+  curl_url=${solr_url}
+else
+  if [[ -z ${solr_port} ]]
+  then
+    echo "Solr port number missing in $confFile or command line."
+    echo "$USAGE"
+    exit 1
+  fi
+
+  # use default hostname if not specified
+  if [[ -z ${solr_hostname} ]]
+  then
+    solr_hostname=localhost
+  fi
+
+  # use default webapp name if not specified
+  if [[ -z ${webapp_name} ]]
+  then
+    webapp_name=solr
+  fi
+  curl_url=http://${solr_hostname}:${solr_port}/${webapp_name}/update
+fi
+
+fixUser "$@"
+
+setStartTime
+
+logMessage started by $oldwhoami
+logMessage command: $0 $@
+
+rs=`curl ${curl_url} -s -H 'Content-type:text/xml; charset=utf-8' -d "<commit/>"`
+if [[ $? != 0 ]]
+then
+  logMessage failed to connect to Solr server at ${curl_url}
+  logMessage commit failed
+  logExit failed 1
+fi
+
+# check status of commit request - original format
+echo $rs | grep '<result.*status="0"' > /dev/null 2>&1
+if [[ $? != 0 ]]
+then
+# check status of commit request - new format
+  echo $rs | grep '<lst name="responseHeader"><int name="status">0</int>' > /dev/null 2>&1
+  if [[ $? != 0 ]]
+  then
+    logMessage commit request to Solr at ${curl_url} failed:
+    logMessage $rs
+    logExit failed 2
+  fi
+fi
+
+logExit ended 0

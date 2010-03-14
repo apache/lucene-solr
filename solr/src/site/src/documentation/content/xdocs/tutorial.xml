@@ -1,0 +1,510 @@
+<?xml version="1.0"?>
+<!DOCTYPE document PUBLIC "-//APACHE//DTD Documentation V2.0//EN"
+          "http://forrest.apache.org/dtd/document-v20.dtd">        
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+
+<document>
+
+<header>
+  <title>Solr tutorial</title> 
+</header> 
+
+<body>
+
+<section>
+<title>Overview</title>
+
+<p>
+This document covers the basics of running Solr using an example
+schema, and some sample data.
+</p>
+
+</section>
+
+<section>
+<title>Requirements</title>
+
+<p>
+To follow along with this tutorial, you will need...
+</p>
+
+<ol>
+  <li>Java 1.5 or greater.  Some places you can get it are from
+  <a href="http://java.sun.com/j2se/downloads.html">OpenJDK</a>,
+  <a href="http://java.sun.com/j2se/downloads.html">Sun</a>,
+  <a href="http://www.ibm.com/developerworks/java/jdk/">IBM</a>, or
+  <a href="http://www.oracle.com/technology/products/jrockit/index.html">Oracle</a>.
+  <br/>
+  Running <code>java -version</code> at the command line should indicate a version
+  number starting with 1.5.  Gnu's GCJ is not supported and does not work with Solr.
+  </li>
+  <li>A <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr/">Solr release</a>.
+  </li>
+</ol>
+</section>
+
+<section>
+<title>Getting Started</title>
+<p><strong>
+Please run the browser showing this tutorial and the Solr server on the same machine so tutorial links will correctly point to your Solr server.
+</strong></p>
+<p>
+Begin by unziping the Solr release and changing your working directory
+to be the "<code>example</code>" directory.  (Note that the base directory name may vary with the version of Solr downloaded.)  For example, with a shell in UNIX, Cygwin, or MacOS:
+</p>
+<source>
+user:~solr$ <strong>ls</strong>
+solr-nightly.zip
+user:~solr$ <strong>unzip -q solr-nightly.zip</strong>
+user:~solr$ <strong>cd solr-nightly/example/</strong>
+</source>
+
+<p>
+Solr can run in any Java Servlet Container of your choice, but to simplify
+this tutorial, the example index includes a small installation of Jetty.
+</p>
+<p>
+To launch Jetty with the Solr WAR, and the example configs, just run the <code>start.jar</code> ...
+</p>
+
+<source>
+user:~/solr/example$ <strong>java -jar start.jar</strong>
+2009-10-23 16:42:53.816::INFO:  Logging to STDERR via org.mortbay.log.StdErrLog
+2009-10-23 16:42:53.907::INFO:  jetty-6.1.3
+
+...
+
+Oct 23, 2009 4:41:56 PM org.apache.solr.core.SolrCore registerSearcher
+INFO: [] Registered new searcher Searcher@7c3885 main
+
+</source>
+<p>
+This will start up the Jetty application server on port 8983, and use your terminal to display the logging information from Solr.
+</p>
+<p>
+You can see that the Solr is running by loading <a href="http://localhost:8983/solr/admin/">http://localhost:8983/solr/admin/</a> in your web browser.  This is the main starting point for Administering Solr.
+</p>
+
+
+</section>
+
+
+
+<section>
+<title>Indexing Data</title>
+
+<p>
+Your Solr server is up and running, but it doesn't contain any data.  You can
+modify a Solr index by POSTing XML Documents containing instructions to add (or
+update) documents, delete documents, commit pending adds and deletes, and
+optimize your index.  
+</p>
+<p>
+The <code>exampledocs</code> directory contains samples of the types of
+instructions Solr expects, as well as a java utility for posting them from the
+command line (a <code>post.sh</code> shell script is also available, but for
+this tutorial we'll use the cross-platform Java client).  </p> <p> To try this,
+open a new terminal window, enter the exampledocs directory, and run
+"<code>java -jar post.jar</code>" on some of the XML files in that directory,
+indicating the URL of the Solr server:
+</p>
+
+<source>
+user:~/solr/example/exampledocs$ <strong>java -jar post.jar solr.xml monitor.xml</strong>
+SimplePostTool: version 1.2
+SimplePostTool: WARNING: Make sure your XML documents are encoded in UTF-8, other encodings are not currently supported
+SimplePostTool: POSTing files to http://localhost:8983/solr/update..
+SimplePostTool: POSTing file solr.xml
+SimplePostTool: POSTing file monitor.xml
+SimplePostTool: COMMITting Solr index changes..
+</source>
+
+<p>
+You have now indexed two documents in Solr, and committed these changes.  
+You can now search for "solr" using the "Make a Query" interface on the Admin screen, and you should get one result.  
+Clicking the "Search" button should take you to the following URL...
+</p>
+<p>
+<a href="http://localhost:8983/solr/select/?q=solr&amp;version=2.2&amp;start=0&amp;rows=10&amp;indent=on">http://localhost:8983/solr/select/?q=solr&amp;version=2.2&amp;start=0&amp;rows=10&amp;indent=on</a>
+</p>
+
+<p>
+You can index all of the sample data, using the following command (assuming your shell supports the *.xml notation):
+</p>
+
+<source>
+  user:~/solr/example/exampledocs$ <strong>java -jar post.jar *.xml</strong>
+SimplePostTool: version 1.2
+SimplePostTool: WARNING: Make sure your XML documents are encoded in UTF-8, other encodings are not currently supported
+SimplePostTool: POSTing files to http://localhost:8983/solr/update..
+SimplePostTool: POSTing file hd.xml
+SimplePostTool: POSTing file ipod_other.xml
+SimplePostTool: POSTing file ipod_video.xml
+SimplePostTool: POSTing file mem.xml
+SimplePostTool: POSTing file monitor.xml
+SimplePostTool: POSTing file monitor2.xml
+SimplePostTool: POSTing file mp500.xml
+SimplePostTool: POSTing file sd500.xml
+SimplePostTool: POSTing file solr.xml
+SimplePostTool: POSTing file spellchecker.xml
+SimplePostTool: POSTing file utf8-example.xml
+SimplePostTool: POSTing file vidcard.xml
+SimplePostTool: COMMITting Solr index changes..
+</source>
+
+<p>
+  ...and now you can search for all sorts of things using the default <a href="http://wiki.apache.org/solr/SolrQuerySyntax">Solr Query Syntax</a> (a superset of the Lucene query syntax)...
+</p>
+<ul>
+  <li><a href="http://localhost:8983/solr/select/?q=video">video</a></li>
+  <li><a href="http://localhost:8983/solr/select/?q=name:video">name:video</a></li>
+  <li><a href="http://localhost:8983/solr/select/?q=%2Bvideo+%2Bprice%3A[*+TO+400]">+video +price:[* TO 400]</a></li>
+
+</ul>
+
+<p></p>
+<p>
+  There are many other different ways to import your data into Solr... one can
+</p>
+<ul>
+  <li>Import records from a database using the 
+    <a href="http://wiki.apache.org/solr/DataImportHandler">Data Import Handler (DIH)</a>.
+  </li>
+  <li><a href="http://wiki.apache.org/solr/UpdateCSV">Load a CSV file</a> (comma separated values),
+   including those exported by Excel or MySQL.
+  </li> 
+  <li>Index binary documents such as Word and PDF with 
+    <a href="http://wiki.apache.org/solr/ExtractingRequestHandler">Solr Cell</a> (ExtractingRequestHandler).
+  </li>
+  <li>
+    Use <a href="http://wiki.apache.org/solr/Solrj">SolrJ</a> for Java or other Solr clients to
+    programatically create documents to send to Solr.
+  </li>
+
+</ul>
+
+</section>
+
+
+
+<section>
+<title>Updating Data</title>
+
+<p>
+You may have noticed that even though the file <code>solr.xml</code> has now
+been POSTed to the server twice, you still only get 1 result when searching for
+"solr".  This is because the example schema.xml specifies a "uniqueKey" field
+called "<code>id</code>".  Whenever you POST instructions to Solr to add a
+document with the same value for the uniqueKey as an existing document, it
+automatically replaces it for you.  You can see that that has happened by
+looking at the values for <code>numDocs</code> and <code>maxDoc</code> in the
+"CORE"/searcher section of the statistics page...  </p>
+<p>
+<a href="http://localhost:8983/solr/admin/stats.jsp">http://localhost:8983/solr/admin/stats.jsp</a>
+</p>
+
+<p>
+  <strong>numDocs</strong> represents the number of searchable documents in the
+  index (and will be larger than the number of XML files since some files
+  contained more than one <code>&lt;doc&gt;</code>). <strong>maxDoc</strong>
+  may be larger as the maxDoc count includes logically deleted documents that
+  have not yet been removed from the index. You can re-post the sample XML
+  files over and over again as much as you want and numDocs will never
+  increase,because the new documents will constantly be replacing the old.
+</p>
+<p>
+Go ahead and edit the existing XML files to change some of the data, and re-run
+the <code>java -jar post.jar</code> command, you'll see your changes reflected
+in subsequent searches.
+</p>
+
+  <section>
+    <title>Deleting Data</title>
+    <p>You can delete data by POSTing a delete command to the update URL and specifying the value
+      of the document's unique key field, or a query that matches multiple documents (be careful with that one!).  Since these commands
+      are smaller, we will specify them right on the command line rather than reference an XML file.
+    </p>
+    <p>Execute the following command to delete a document</p>
+    <source>java -Ddata=args -Dcommit=no -jar post.jar "&lt;delete>&lt;id>SP2514N&lt;/id>&lt;/delete>"</source>
+    <p>Now if you go to the <a href="http://localhost:8983/solr/admin/stats.jsp">statistics</a> page and scroll down
+       to the UPDATE_HANDLERS section and verify that "<code>deletesById : 1</code>"</p>
+    <p>If you search for <a href="http://localhost:8983/solr/select?q=id:SP2514N">id:SP2514N</a> it will still be found,
+       because index changes are not visible until, and a new searcher is opened.  To cause
+       this to happen, send a commit command to Solr (post.jar does this for you by default):</p>
+    <source>java -jar post.jar</source>
+    <p>Now re-execute the previous search and verify that no matching documents are found.  Also revisit the
+    statistics page and observe the changes in both the UPDATE_HANDLERS section and the CORE section.</p>
+    <p>Here is an example of using delete-by-query to delete anything with
+      <a href="http://localhost:8983/solr/select?q=name:DDR&amp;fl=name">DDR</a> in the name:</p>
+    <source>java -Ddata=args -jar post.jar "&lt;delete>&lt;query>name:DDR&lt;/query>&lt;/delete>"</source>
+
+    <p>Commit can be an expensive operation so it's best to make many changes to an index in a batch and
+      then send the commit command at the end.  There is also an optimize command that does the same thing as commit,
+      in addition to merging all index segments into a single segment, making it faster to search and causing any
+      deleted documents to be removed.  All of the update commands are documented <a href="http://wiki.apache.org/solr/UpdateXmlMessages">here</a>.
+    </p>
+
+    <p>To continue with the tutorial, re-add any documents you may have deleted by going to the <code>exampledocs</code> directory and executing</p>
+    <source>java -jar post.jar *.xml</source>
+
+  </section>
+
+</section>
+
+<section>
+  <title>Querying Data</title>
+
+  <p>
+    Searches are done via HTTP GET on the select URL with the query string in the q parameter.
+    You can pass a number of optional <a href="http://wiki.apache.org/solr/StandardRequestHandler">request parameters</a>
+    to the request handler to control what information is returned.  For example, you can use the "fl" parameter
+    to control what stored fields are returned, and if the relevancy score is returned...
+  </p>
+
+    <ul>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;fl=name,id">q=video&amp;fl=name,id</a>       (return only name and id fields)   </li>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;fl=name,id,score">q=video&amp;fl=name,id,score</a>  (return relevancy score as well) </li>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;fl=*,score">q=video&amp;fl=*,score</a>        (return all stored fields, as well as relevancy score)  </li>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=price desc&amp;fl=name,id,price">q=video&amp;sort=price desc&amp;fl=name,id,price</a>  (add sort specification: sort by price descending) </li>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;wt=json">q=video&amp;wt=json</a> (return response in JSON format)  </li>
+    </ul>
+
+  <p>
+    Solr provides a <a href="http://localhost:8983/solr/admin/form.jsp">query form</a> within the web admin interface
+    that allows setting the various request parameters and is useful when trying out or debugging queries.
+  </p>
+
+  <section>
+    <title>Sorting</title>
+
+    <p>
+      Solr provides a simple method to sort on one or more indexed fields.
+      Use the 'sort' parameter to specify "field direction" pairs...
+    </p>
+
+    <ul>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=price+desc">q=video&amp;sort=price desc</a></li>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=price+asc">q=video&amp;sort=price asc</a></li>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=inStock+asc,price+desc">q=video&amp;sort=inStock asc, price desc</a></li>
+    </ul>
+
+    <p>
+      "score" can also be used as a field name when specifying a sort...
+    </p>
+    <ul>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=score+desc">q=video&amp;sort=score desc</a></li>
+      <li><a href="http://localhost:8983/solr/select/?indent=on&amp;q=video&amp;sort=inStock+asc,score+desc">q=video&amp;sort=inStock asc, score desc</a></li>
+    </ul>
+
+    <p>
+      If no sort is specified, the default is <code>score desc</code> to return the matches having the highest relevancy.
+    </p>
+
+  </section>
+
+</section>
+
+
+<section>
+  <title>Highlighting</title>
+  <p>
+    Hit highlighting returns relevent snippets of each returned document, and highlights
+    keywords from the query within those context snippets.
+  </p>
+  <p>
+    The following example searches for <code>video card</code> and requests
+    highlighting on the fields <code>name,features</code>.  This causes a
+    <code>highlighting</code> section to be added to the response with the
+    words to highlight surrounded with <code>&lt;em&gt;</code> (for emphasis)
+    tags.
+  </p>
+  <p>
+    <a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=video+card&amp;fl=name,id&amp;hl=true&amp;hl.fl=name,features">...&amp;q=video card&amp;fl=name,id&amp;hl=true&amp;hl.fl=name,features</a>
+  </p>
+  <p>
+    More request parameters related to controlling highlighting may be found
+    <a href="http://wiki.apache.org/solr/HighlightingParameters">here</a>.
+  </p>
+
+</section> <!-- highlighting -->
+
+
+<section>
+  <title>Faceted Search</title>
+  <p>
+    Faceted search takes the documents matched by a query and generates counts for various
+    properties or categories.  Links are usually provided that allows users to "drill down" or
+    refine their search results based on the returned categories.
+  </p>
+  <p>
+    The following example searches for all documents (<code>*:*</code>) and
+    requests counts by the category field <code>cat</code>.
+  </p>
+  <p>
+    <a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name&amp;facet=true&amp;facet.field=cat">...&amp;q=*:*&amp;facet=true&amp;facet.field=cat</a>
+  </p>
+  <p>
+    Notice that although only the first 10 documents are returned in the results list,
+    the facet counts generated are for the complete set of documents that match the query.
+  </p>
+
+  <p>
+    We can facet multiple ways at the same time.  The following example adds a facet on the
+    boolean <code>inStock</code> field:
+  </p>
+  <p>
+    <a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name&amp;facet=true&amp;facet.field=cat&amp;facet.field=inStock">...&amp;q=*:*&amp;facet=true&amp;facet.field=cat&amp;facet.field=inStock</a>
+  </p>
+
+  <p>
+    Solr can also generate counts for arbitrary queries. The following example
+    queries for <code>ipod</code> and shows prices below and above 100 by using
+    range queries on the price field.
+  </p>
+
+  <p>
+    <a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=ipod&amp;fl=name&amp;facet=true&amp;facet.query=price:[0+TO+100]&amp;facet.query=price:[100+TO+*]">...&amp;q=ipod&amp;facet=true&amp;facet.query=price:[0 TO 100]&amp;facet.query=price:[100 TO *]</a>
+  </p>
+
+  <p>
+    One can even facet by date ranges.  This example requests counts for the manufacture date (<code>manufacturedate_dt</code> field) for each year between 2004 and 2010.
+  </p>
+
+  <p>
+    <a href="http://localhost:8983/solr/select/?wt=json&amp;indent=on&amp;q=*:*&amp;fl=name,manufacturedate_dt&amp;facet=true&amp;facet.date=manufacturedate_dt&amp;facet.date.start=2004-01-01T00:00:00Z&amp;facet.date.end=2010-01-01T00:00:00Z&amp;facet.date.gap=%2b1YEAR">...&amp;q=*:*&amp;facet=true&amp;facet.date=manufacturedate_dt&amp;facet.date.start=2004-01-01T00:00:00Z&amp;facet.date.end=2010-01-01T00:00:00Z&amp;facet.date.gap=+1YEAR</a>
+  </p>
+
+  <p>
+    More information on faceted search may be found on the 
+    <a href="http://wiki.apache.org/solr/SolrFacetingOverview">faceting overview</a>
+    and
+    <a href="http://wiki.apache.org/solr/SimpleFacetParameters">faceting parameters</a>
+    pages.
+  </p>
+
+</section> <!-- faceted search -->
+
+
+<section>
+  <title>Text Analysis</title>
+
+  <p>
+    Text fields are typically indexed by breaking the field into words and applying various transformations such as
+    lowercasing, removing plurals, or stemming to increase relevancy.  The same text transformations are normally
+    applied to any queries in order to match what is indexed.
+  </p>
+
+  <p>Example queries demonstrating relevancy improving transformations:</p>
+  <ul>
+    <li>A search for
+       <a href="http://localhost:8983/solr/select/?indent=on&amp;q=power-shot&amp;fl=name">power-shot</a>
+       matches <code>PowerShot</code>, and
+      <a href="http://localhost:8983/solr/select/?indent=on&amp;q=adata&amp;fl=name">adata</a>
+      matches <code>A-DATA</code> due to the use of WordDelimiterFilter and LowerCaseFilter.
+    </li>
+
+    <li>A search for
+      <a href="http://localhost:8983/solr/select/?indent=on&amp;q=features:recharging&amp;fl=name,features">features:recharging</a>
+       matches <code>Rechargeable</code> due to stemming with the EnglishPorterFilter.
+    </li>
+
+    <li>A search for
+       <a href="http://localhost:8983/solr/select/?indent=on&amp;q=&quot;1 gigabyte&quot;&amp;fl=name">"1 gigabyte"</a>
+       matches things with <code>GB</code>, and the misspelled
+      <a href="http://localhost:8983/solr/select/?indent=on&amp;q=pixima&amp;fl=name">pixima</a>
+       matches <code>Pixma</code> due to use of a SynonymFilter.
+    </li>
+
+  </ul>
+
+
+  <p>
+    The <a href="http://wiki.apache.org/solr/SchemaXml">schema</a> defines
+    the fields in the index and what type of analysis is applied to them.  The current schema your server is using
+    may be accessed via the <code>[SCHEMA]</code> link on the <a href="http://localhost:8983/solr/admin/">admin</a> page.
+  </p>
+
+
+  <p>A full description of the analysis components, Analyzers, Tokenizers, and TokenFilters
+    available for use is <a href="http://wiki.apache.org/solr/AnalyzersTokenizersTokenFilters">here</a>.
+  </p>
+
+
+  <section>
+    <title>Analysis Debugging</title>
+    <p>There is a handy <a href="http://localhost:8983/solr/admin/analysis.jsp">analysis</a>
+      debugging page where you can see how a text value is broken down into words,
+      and shows the resulting tokens after they pass through each filter in the chain.
+    </p>
+    <p>
+      <a href="http://localhost:8983/solr/admin/analysis.jsp?name=name&amp;val=Canon+Power-Shot+SD500">This</a>
+      shows how "<code>Canon Power-Shot SD500</code>" would be indexed as a value in the name field.  Each row of
+      the table shows the resulting tokens after having passed through the next TokenFilter in the Analyzer for the <code>name</code> field.
+      Notice how both <code>powershot</code> and <code>power</code>, <code>shot</code> are indexed.  Tokens generated at the same position
+      are shown in the same column, in this case <code>shot</code> and <code>powershot</code>.
+    </p>
+    <p>Selecting <a href="http://localhost:8983/solr/admin/analysis.jsp?name=name&amp;verbose=on&amp;val=Canon+Power-Shot+SD500">verbose output</a>
+    will show more details, such as the name of each analyzer component in the chain, token positions, and the start and end positions
+    of the token in the original text.
+    </p>
+    <p>Selecting <a href="http://localhost:8983/solr/admin/analysis.jsp?name=name&amp;highlight=on&amp;val=Canon+Power-Shot+SD500&amp;qval=Powershot sd-500">highlight matches</a>
+    when both index and query values are provided will take the resulting terms from the query value and highlight
+    all matches in the index value analysis.
+    </p>
+    <p><a href="http://localhost:8983/solr/admin/analysis.jsp?name=text&amp;highlight=on&amp;val=Four+score+and+seven+years+ago+our+fathers+brought+forth+on+this+continent+a+new+nation%2C+conceived+in+liberty+and+dedicated+to+the+proposition+that+all+men+are+created+equal.+&amp;qval=liberties+and+equality">Here</a>
+    is an example of stemming and stop-words at work.
+    </p>
+  </section>
+</section>
+
+<section>
+  <title>Conclusion</title>
+  <p>
+  Congratulations!  You successfully ran a small Solr instance, added some
+  documents, and made changes to the index.  You learned about queries, text
+  analysis, and the Solr admin interface.  You're ready to start using Solr on
+  your own project!  Continue on with the following steps:
+</p>
+<ul>
+  <li>Subscribe to the Solr <a href="mailing_lists.html">mailing lists</a>!</li>
+  <li>Make a copy of the Solr example directory as a template for your project.</li>
+  <li>Customize the schema and other config in solr/conf/ to meet your needs.</li> 
+</ul>
+
+<p>
+  Solr as a ton of other features that we haven't touched on here, including
+  <a href="http://wiki.apache.org/solr/DistributedSearch">distributed search</a>
+  to handle huge document collections,
+  <a href="http://wiki.apache.org/solr/FunctionQuery">function queries</a>,
+  <a href="http://wiki.apache.org/solr/StatsComponent">numeric field statistics</a>,
+  and
+  <a href="http://wiki.apache.org/solr/ClusteringComponent">search results clustering</a>.
+  Explore the <a href="http://wiki.apache.org/solr/">Solr Wiki</a> to find out
+  more details about Solr's many
+  <a href="features.html">features</a>.
+</p>
+
+<p>
+  Have Fun, and we'll see you on the Solr mailing lists!
+</p>
+
+</section>
+
+</body>
+</document>

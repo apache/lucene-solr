@@ -1,0 +1,96 @@
+.array-field {
+  border: 2px solid #474747;
+  background: #FFE9D8;
+  padding: 5px;
+  margin: 5px;
+}
+
+.array-field-list li {
+  list-style: circle;
+  margin-left: 20px;
+}
+
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 10pt;
+}
+
+.constraints-title {
+  background: gray;
+}
+
+.facet-fields {
+  float: left;
+  margin: 5px;
+  margin-top: 0px;
+  background: #FEC293;
+  border: 2px solid #474747;
+  width: 185px;
+  padding: 2px;
+}
+
+.facet-field {
+  font-weight: bold;
+}
+
+.highlight {
+  color: white;
+  background-color: gray;
+  border: 1px black solid;
+}
+
+.highlight-box {
+  margin-left: 15px;
+}
+
+.field-name {
+  font-weight: bold;
+}
+
+.highlighted-facet-field {
+  background: white;
+}
+
+#logo {
+  margin: 10px;
+}
+
+.query-box, .constraints {
+  padding: 5px;
+  margin: 5px;
+  border: 3px solid #474747;
+  color: white;
+  background: #FD9644;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.query-box input {
+  margin-left: 8px;
+  width: 85%;
+}
+
+.pagination {
+  padding-left: 33%;
+  font-weight: bold;
+  background: gray;
+  color: white;
+  margin: 5px;
+  margin-left: 200px;
+}
+
+.result-document {
+  border: 3px solid #474747;
+  background: #FEC293;
+  padding: 5px;
+  margin: 5px;
+  margin-left: 200px;
+}
+
+.selected-facet-field {
+  font-weight: bold;
+}
+
+li.show {
+  list-style: disc;
+}

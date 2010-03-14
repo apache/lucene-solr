@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<!DOCTYPE document PUBLIC "-//APACHE//DTD Documentation V2.0//EN"
+          "http://forrest.apache.org/dtd/document-v20.dtd">
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+<document>
+  
+  <header>
+    <title>Solr Mailing Lists</title>
+  </header>
+  
+  <body>
+  
+    <section>
+      <title>Users</title>
+
+      <p>If you use Solr, please subscribe to the Solr user mailing list.</p>
+
+      <p>
+        The Solr user mailing list is :
+        <a href="mailto:solr-user@lucene.apache.org">solr-user@lucene.apache.org</a>.
+      </p>      
+      <ul>
+        <li><a href="mailto:solr-user-subscribe@lucene.apache.org">Subscribe to List</a></li>
+        <li><a href="mailto:solr-user-unsubscribe@lucene.apache.org">Unsubscribe from List</a></li>
+        <li><a href="http://mail-archives.apache.org/mod_mbox/lucene-solr-user/">View List Archive</a>  (Alternate list archive providers can be found on the <a href="http://wiki.apache.org/solr/SolrResources">wiki</a>)
+        </li>
+      </ul>
+      <note>In order to post to the list, it is necessary to first subscribe to it.</note>
+    </section>
+  
+    <section>
+      <title>Developers</title>
+
+      <p>If you'd like to contribute to Solr, please subscribe to the
+      Solr developer mailing list.</p>
+
+      <p>
+        The Solr developer mailing list is :
+        <a href="mailto:solr-dev@lucene.apache.org">solr-dev@lucene.apache.org</a>.
+      </p>      
+      <ul>
+        <li><a href="mailto:solr-dev-subscribe@lucene.apache.org">Subscribe to List</a></li>
+        <li><a href="mailto:solr-dev-unsubscribe@lucene.apache.org">Unsubscribe from List</a></li>
+        <li><a href="http://mail-archives.apache.org/mod_mbox/lucene-solr-dev/">View List Archive</a>  (Alternate list archive providers can be found on the <a href="http://wiki.apache.org/solr/SolrResources">wiki</a>)
+        </li>
+      </ul>
+      <note>In order to post to the list, it is necessary to first subscribe to it.</note>
+    </section>
+  
+    <section>
+      <title>Commits</title>
+
+      <p>If you'd like to see changes made in Solr's <a
+      href="version_control.html">version control system</a>
+      then subscribe to the Solr commit mailing list.</p>
+
+      <ul>
+        <li><a href="mailto:solr-commits-subscribe@lucene.apache.org">Subscribe to List</a></li>
+        <li><a href="mailto:solr-commits-unsubscribe@lucene.apache.org">Unsubscribe from List</a></li>
+      </ul>
+    </section>
+  
+  </body>
+  
+</document>

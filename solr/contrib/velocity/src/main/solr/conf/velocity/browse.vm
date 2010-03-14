@@ -1,0 +1,67 @@
+#set($searcher=$request.searcher)
+#set($params=$request.params)
+<html>
+  <head>
+    <title>#param('title')</title>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+    <script type="text/javascript" src="/solr/admin/jquery-1.2.3.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="/solr/admin/file?file=/velocity/main.css&contentType=text/css"/>
+  </head>
+  <body>
+
+	<div>
+	  #parse("header.vm")
+
+	  #set($filter_queries = $params.getParams('fq'))
+	  #foreach($fq in $filter_queries)
+	  &gt; <a href="#url_for_filters($filter_queries.subList(0,$velocityCount))">$fq</a>
+	  #end
+	</div>
+
+	<div class="query-box">
+	  <form id="query-form" action="/solr/itas" method="GET">
+	    Query: <input type="text" name="q" value="$!params.get('q')"/>
+	  </form>
+	</div>
+
+    
+	<div class="facet-fields">
+	  #foreach($field in $response.facetFields)
+	  <span class="facet-field">$field.name</span>
+	  <ul>
+	    #foreach($facet in $field.values)
+	      #set($facetURL = "#url_for_nested_facet($field.name, $facet.name)")
+	      #if ($facetURL != '')
+	        <li><a href="$facetURL">$facet.name</a> ($facet.count)</li>
+	      #end
+	    #end
+	  </ul>
+	  #end
+	</div>
+
+	<div class="pagination">
+	  <span><span class="results-found">$page.results_found</span> results found in ${response.responseHeader.QTime} ms</span>
+	</div>
+
+	<div class="results">
+	  #foreach($doc in $response.results)
+	    #parse("hit.vm")
+	  #end
+	</div>
+
+	<div class="pagination">
+	  #link_to_previous_page("previous")
+	  <span class="results-found">$page.results_found</span> results found.
+	  Page <span class="page-num">$page.current_page_number</span> of <span
+	        class="page-count">$page.page_count</span>
+	  #link_to_next_page("next")
+
+	  <br/>
+	</div>
+
+	<div>
+	  #parse("footer.vm")
+	</div>
+
+	</body>
+</html>

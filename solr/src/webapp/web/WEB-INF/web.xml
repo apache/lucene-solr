@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE web-app PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN" "http://java.sun.com/dtd/web-app_2_3.dtd">
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<web-app>
+
+  <!-- Uncomment if you are trying to use a Resin version before 3.0.19.
+    Their XML implementation isn't entirely compatible with Xerces.
+    Below are the implementations to use with Sun's JVM.
+  <system-property javax.xml.xpath.XPathFactory=
+             "com.sun.org.apache.xpath.internal.jaxp.XPathFactoryImpl"/>
+  <system-property javax.xml.parsers.DocumentBuilderFactory=
+             "com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl"/>
+  <system-property javax.xml.parsers.SAXParserFactory=
+             "com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl"/>
+   -->
+
+  <!-- People who want to hardcode their "Solr Home" directly into the
+       WAR File can set the JNDI property here...
+   -->
+  <!--
+    <env-entry>
+       <env-entry-name>solr/home</env-entry-name>
+       <env-entry-value>/put/your/solr/home/here</env-entry-value>
+       <env-entry-type>java.lang.String</env-entry-type>
+    </env-entry>
+   -->
+   
+  <!-- Any path (name) registered in solrconfig.xml will be sent to that filter -->
+  <filter>
+    <filter-name>SolrRequestFilter</filter-name>
+    <filter-class>org.apache.solr.servlet.SolrDispatchFilter</filter-class>
+    <!-- If you are wiring Solr into a larger web application which controls
+         the web context root, you will probably want to mount Solr under
+         a path prefix (app.war with /app/solr mounted into it, for example).
+         You will need to put this prefix in front of the SolrDispatchFilter
+         url-pattern mapping too (/solr/*), and also on any paths for
+         legacy Solr servlet mappings you may be using.
+         For the admin JSP's to work properly in a path-prefixed configuration,
+         the admin folder containing the JSPs needs to be under the app context root
+         named to match the path-prefix.  For example:
+
+            .war
+               xxx
+                 admin
+                   stats.jsp
+    -->
+    <!--
+    <init-param>
+      <param-name>path-prefix</param-name>
+      <param-value>/xxx</param-value>
+    </init-param>
+    -->
+  </filter>
+
+  <filter-mapping>
+    <!--
+      NOTE: When using multicore, /admin JSP URLs with a core specified
+      such as /solr/coreName/admin/stats.jsp get forwarded by a
+      RequestDispatcher to /solr/admin/stats.jsp with the specified core
+      put into request scope keyed as "org.apache.solr.SolrCore".
+
+      It is unnecessary, and potentially problematic, to have the SolrDispatchFilter
+      configured to also filter on forwards.  Do not configure
+      this dispatcher as <dispatcher>FORWARD</dispatcher>.
+    -->
+    <filter-name>SolrRequestFilter</filter-name>
+    <url-pattern>/*</url-pattern>
+  </filter-mapping>
+
+  <!-- Otherwise it will continue to the old servlets -->
+  
+  <servlet>
+    <servlet-name>SolrServer</servlet-name>
+    <display-name>Solr</display-name>
+    <description>Solr Server</description>
+    <servlet-class>org.apache.solr.servlet.SolrServlet</servlet-class>
+    <load-on-startup>1</load-on-startup>
+  </servlet>
+
+  <servlet>
+    <servlet-name>SolrUpdate</servlet-name>
+    <display-name>SolrUpdate</display-name>
+    <description>Solr Update Handler</description>
+    <servlet-class>org.apache.solr.servlet.SolrUpdateServlet</servlet-class>
+    <load-on-startup>2</load-on-startup>
+  </servlet>
+
+  <servlet>
+    <servlet-name>Logging</servlet-name>
+    <servlet-class>org.apache.solr.servlet.LogLevelSelection</servlet-class>
+  </servlet>
+
+  <!-- @Deprecated -->
+  <servlet>
+    <servlet-name>ping</servlet-name>
+    <jsp-file>/admin/ping.jsp</jsp-file>
+  </servlet>
+
+  <servlet-mapping>
+    <servlet-name>SolrServer</servlet-name>
+    <url-pattern>/select/*</url-pattern>
+  </servlet-mapping>
+
+  <servlet-mapping>
+    <servlet-name>SolrUpdate</servlet-name>
+    <url-pattern>/update/*</url-pattern>
+  </servlet-mapping>
+
+  <servlet-mapping>
+    <servlet-name>Logging</servlet-name>
+    <url-pattern>/admin/logging</url-pattern>
+  </servlet-mapping>
+
+  <!-- @Deprecated -->
+  <servlet-mapping>
+    <servlet-name>ping</servlet-name>
+    <url-pattern>/admin/ping</url-pattern>
+  </servlet-mapping>
+
+  <!-- @Deprecated -->
+  <servlet-mapping>
+    <servlet-name>Logging</servlet-name>
+    <url-pattern>/admin/logging.jsp</url-pattern>
+  </servlet-mapping>
+  
+  <mime-mapping>
+    <extension>.xsl</extension>
+    <!-- per http://www.w3.org/TR/2006/PR-xslt20-20061121/ -->
+    <mime-type>application/xslt+xml</mime-type>
+  </mime-mapping>
+
+</web-app>

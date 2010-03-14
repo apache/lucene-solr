@@ -1,0 +1,41 @@
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+ contributor license agreements.  See the NOTICE file distributed with
+ this work for additional information regarding copyright ownership.
+ The ASF licenses this file to You under the Apache License, Version 2.0
+ (the "License"); you may not use this file except in compliance with
+ the License.  You may obtain a copy of the License at
+
+     http://www.apache.org/licenses/LICENSE-2.0
+
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+-->
+
+<add><doc>
+  <field name="id">0579B002</field>
+  <field name="name">Canon PIXMA MP500 All-In-One Photo Printer</field>
+  <field name="manu">Canon Inc.</field>
+  <field name="cat">electronics</field>
+  <field name="cat">multifunction printer</field>
+  <field name="cat">printer</field>
+  <field name="cat">scanner</field>
+  <field name="cat">copier</field>
+  <field name="features">Multifunction ink-jet color photo printer</field>
+  <field name="features">Flatbed scanner, optical scan resolution of 1,200 x 2,400 dpi</field>
+  <field name="features">2.5" color LCD preview screen</field>
+  <field name="features">Duplex Copying</field>
+  <field name="features">Printing speed up to 29ppm black, 19ppm color</field>
+  <field name="features">Hi-Speed USB</field>
+  <field name="features">memory card: CompactFlash, Micro Drive, SmartMedia, Memory Stick, Memory Stick Pro, SD Card, and MultiMediaCard</field>
+  <field name="weight">352</field>
+  <field name="price">179.99</field>
+  <field name="popularity">6</field>
+  <field name="inStock">true</field>
+  <!-- Buffalo store -->
+  <field name="store">45.17614,-93.87341</field>
+</doc></add>
+

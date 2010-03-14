@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ Licensed to the Apache Software Foundation (ASF) under one or more
+  contributor license agreements.  See the NOTICE file distributed with
+  this work for additional information regarding copyright ownership.
+  The ASF licenses this file to You under the Apache License, Version 2.0
+  (the "License"); you may not use this file except in compliance with
+  the License.  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+
+<!--
+Forrest site.xml
+
+This file contains an outline of the site's information content.  It is used to:
+- Generate the website menus (though these can be overridden - see docs)
+- Provide semantic, location-independent aliases for internal 'site:' URIs, eg
+<link href="site:changes"> links to changes.html (or ../changes.html if in
+  subdir).
+- Provide aliases for external URLs in the external-refs section.  Eg, <link
+  href="ext:cocoon"> links to http://cocoon.apache.org/ 
+
+See http://forrest.apache.org/docs/linking.html for more info
+-->
+
+<site label="Solr" href="" xmlns="http://apache.org/forrest/linkmap/1.0" tab="">
+   <!-- Note: No matter what you configure here, Forrest will always try to load
+       index.html when you request http://yourHost/.
+       'How can I use a start-up-page other than index.html?' in the FAQs has more 
+       information tells you how to change that. 
+   -->
+  <about label="About">
+    <index label="Welcome" href="index.html" description="Welcome to Solr"/>
+    <index label="Who We Are" href="who.html" description="Solr Committers"/>
+  </about>
+
+  <docs label="Documentation">
+    <features    label="Features"         href="features.html" />
+    <tutorial    label="Tutorial"         href="tutorial.html" />
+    <wiki        label="Docs (Wiki)" href="ext:wiki" />
+    <faq         label="FAQ"              href="ext:faq" />
+    <apidocs     label="All Javadoc"     href="api/index.html" />
+    <apidocs     label="SolrJ Javadoc"     href="api/solrj/index.html" />
+  </docs>
+
+  <resources label="Resources">
+    <download    label="Download"         href="ext:releases" />
+    <contact     label="Mailing Lists"    href="mailing_lists.html" />
+    <issues      label="Issue Tracking"   href="issue_tracking.html" />
+    <svn         label="Version Control"  href="version_control.html" />
+  </resources>
+  
+  <projects label="Related Projects">
+    <lucene     label="Lucene Java"      href="ext:lucene" />
+    <lucene     label="Nutch"            href="ext:nutch" />
+  </projects>
+  
+  <!--
+  The href must be wholesite.html/pdf  You can change the labels and node names
+  <all label="All">
+    <whole_site_html label="Whole Site HTML" href="wholesite.html"/>
+    <whole_site_pdf label="Whole Site PDF" href="wholesite.pdf"/>
+  </all>
+  -->
+
+  <external-refs>
+    <forrest href="http://forrest.apache.org/">
+      <linking href="docs/linking.html"/>
+      <validation href="docs/validation.html"/>
+      <webapp href="docs/your-project.html#webapp"/>
+      <dtd-docs href="docs/dtd-docs.html"/>
+    </forrest>
+    <cocoon href="http://cocoon.apache.org/"/>
+    <xml.apache.org href="http://xml.apache.org/"/>
+
+    <lucene    href="http://lucene.apache.org/java/" />
+    <nutch     href="http://lucene.apache.org/nutch/" />
+    <wiki      href="http://wiki.apache.org/solr/" />
+    <faq       href="http://wiki.apache.org/solr/FAQ" />
+    <nightly   href="http://people.apache.org/builds/lucene/solr/nightly/" /> 
+    <releases  href="http://www.apache.org/dyn/closer.cgi/lucene/solr/" />
+    
+  </external-refs>
+
+</site>
