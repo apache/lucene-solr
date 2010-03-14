@@ -25,6 +25,7 @@ import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestWatchman;
 import org.junit.runners.model.FrameworkMethod;
 
@@ -36,7 +37,10 @@ import java.util.Iterator;
 import java.util.Random;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
 import java.util.Collections;
+import java.lang.reflect.Method;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -113,6 +117,11 @@ public class LuceneTestCaseJ4 {
   }
   private List<UncaughtExceptionEntry> uncaughtExceptions = Collections.synchronizedList(new ArrayList<UncaughtExceptionEntry>());
   
+  // checks if class correctly annotated
+  private static final Object PLACEHOLDER = new Object();
+  private static final Map<Class<? extends LuceneTestCaseJ4>,Object> checkedClasses =
+    Collections.synchronizedMap(new WeakHashMap<Class<? extends LuceneTestCaseJ4>,Object>());
+  
   // This is how we get control when errors occur.
   // Think of this as start/end/success/failed
   // events.
@@ -127,7 +136,18 @@ public class LuceneTestCaseJ4 {
 
     @Override
     public void starting(FrameworkMethod method) {
+      // set current method name for logging
       LuceneTestCaseJ4.this.name = method.getName();
+      // check if the current test's class annotated all test* methods with @Test
+      final Class<? extends LuceneTestCaseJ4> clazz = LuceneTestCaseJ4.this.getClass();
+      if (!checkedClasses.containsKey(clazz)) {
+        checkedClasses.put(clazz, PLACEHOLDER);
+        for (Method m : clazz.getMethods()) {
+          if (m.getName().startsWith("test") && m.getAnnotation(Test.class) == null) {
+            fail("In class '" + clazz.getName() + "' the method '" + m.getName() + "' is not annotated with @Test.");
+          }
+        }
+      }
       super.starting(method);
     }
     
