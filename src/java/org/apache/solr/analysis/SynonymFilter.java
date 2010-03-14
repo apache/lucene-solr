@@ -224,7 +224,7 @@ public class SynonymFilter extends TokenFilter {
           // recurse
           result = match(subMap);
         }
-;
+
         if (result != null) {
           matched.addFirst(tok);
         } else {
