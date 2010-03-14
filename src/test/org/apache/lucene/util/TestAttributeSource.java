@@ -95,6 +95,18 @@ public class TestAttributeSource extends LuceneTestCase {
     assertNotSame("TypeAttribute of original and clone must be different instances", typeAtt2, typeAtt);
     assertEquals("TermAttribute of original and clone must be equal", termAtt2, termAtt);
     assertEquals("TypeAttribute of original and clone must be equal", typeAtt2, typeAtt);
+    
+    // test copy back
+    termAtt2.setTermBuffer("OtherTerm");
+    typeAtt2.setType("OtherType");
+    clone.copyTo(src);
+    assertEquals("TermAttribute of original must now contain updated term", "OtherTerm", termAtt.term());
+    assertEquals("TypeAttribute of original must now contain updated type", "OtherType", typeAtt.type());
+    // verify again:
+    assertNotSame("TermAttribute of original and clone must be different instances", termAtt2, termAtt);
+    assertNotSame("TypeAttribute of original and clone must be different instances", typeAtt2, typeAtt);
+    assertEquals("TermAttribute of original and clone must be equal", termAtt2, termAtt);
+    assertEquals("TypeAttribute of original and clone must be equal", typeAtt2, typeAtt);
   }
   
   public void testToStringAndMultiAttributeImplementations() {

@@ -365,8 +365,10 @@ public class AttributeSource {
     
     do {
       AttributeImpl targetImpl = attributeImpls.get(state.attribute.getClass());
-      if (targetImpl == null)
-        throw new IllegalArgumentException("State contains an AttributeImpl that is not in this AttributeSource");
+      if (targetImpl == null) {
+        throw new IllegalArgumentException("State contains AttributeImpl of type " +
+          state.attribute.getClass() + " that is not in in this AttributeSource");
+      }
       state.attribute.copyTo(targetImpl);
       state = state.next;
     } while (state != null);
@@ -446,28 +448,54 @@ public class AttributeSource {
   
   /**
    * Performs a clone of all {@link AttributeImpl} instances returned in a new
-   * AttributeSource instance. This method can be used to e.g. create another TokenStream
-   * with exactly the same attributes (using {@link #AttributeSource(AttributeSource)})
+   * {@code AttributeSource} instance. This method can be used to e.g. create another TokenStream
+   * with exactly the same attributes (using {@link #AttributeSource(AttributeSource)}).
+   * You can also use it as a (non-performant) replacement for {@link #captureState}, if you need to look
+   * into / modify the captured state.
    */
   public AttributeSource cloneAttributes() {
-    AttributeSource clone = new AttributeSource(this.factory);
+    final AttributeSource clone = new AttributeSource(this.factory);
     
-    // first clone the impls
     if (hasAttributes()) {
+      // first clone the impls
       if (currentState == null) {
         computeCurrentState();
       }
       for (State state = currentState; state != null; state = state.next) {
         clone.attributeImpls.put(state.attribute.getClass(), (AttributeImpl) state.attribute.clone());
       }
-    }
-    
-    // now the interfaces
-    for (Entry<Class<? extends Attribute>, AttributeImpl> entry : this.attributes.entrySet()) {
-      clone.attributes.put(entry.getKey(), clone.attributeImpls.get(entry.getValue().getClass()));
+      
+      // now the interfaces
+      for (Entry<Class<? extends Attribute>, AttributeImpl> entry : this.attributes.entrySet()) {
+        clone.attributes.put(entry.getKey(), clone.attributeImpls.get(entry.getValue().getClass()));
+      }
     }
     
     return clone;
+  }
+  
+  /**
+   * Copies the contents of this {@code AttributeSource} to the given target {@code AttributeSource}.
+   * The given instance has to provide all {@link Attribute}s this instance contains. 
+   * The actual attribute implementations must be identical in both {@code AttributeSource} instances;
+   * ideally both AttributeSource instances should use the same {@link AttributeFactory}.
+   * You can use this method as a replacement for {@link #restoreState}, if you use
+   * {@link #cloneAttributes} instead of {@link #captureState}.
+   */
+  public final void copyTo(AttributeSource target) {
+    if (hasAttributes()) {
+      if (currentState == null) {
+        computeCurrentState();
+      }
+      for (State state = currentState; state != null; state = state.next) {
+        final AttributeImpl targetImpl = target.attributeImpls.get(state.attribute.getClass());
+        if (targetImpl == null) {
+          throw new IllegalArgumentException("This AttributeSource contains AttributeImpl of type " +
+            state.attribute.getClass() + " that is not in the target");
+        }
+        state.attribute.copyTo(targetImpl);
+      }
+    }
   }
 
 }

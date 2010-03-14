@@ -167,6 +167,11 @@ New features
 * LUCENE-2247: Added a CharArrayMap<V> for performance improvements
   in some stemmers and synonym filters. (Uwe Schindler)
 
+* LUCENE-2314: Added AttributeSource.copyTo(AttributeSource) that
+  allows to use cloneAttributes() and this method as a replacement
+  for captureState()/restoreState(), if the state itsself
+  needs to be inspected/modified.  (Uwe Schindler)
+
 Optimizations
 
 * LUCENE-2075: Terms dict cache is now shared across threads instead
