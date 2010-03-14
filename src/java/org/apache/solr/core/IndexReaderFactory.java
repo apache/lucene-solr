@@ -39,7 +39,7 @@ public abstract class IndexReaderFactory implements NamedListInitializedPlugin {
    *
    */
   public void init(NamedList args) {
-    Integer v = (Integer)args.get("termInfosIndexDivisor");
+    Integer v = (Integer)args.get("setTermIndexInterval");
     if (v != null) {
       termInfosIndexDivisor = v.intValue();
     }
