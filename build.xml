@@ -31,10 +31,10 @@
   <!-- Destination for distribution files (demo WAR, src distro, etc.) -->
   <property name="dist" location="dist" />
 
-  
-
   <property name="clover.db.dir" location="${dest}/tests/clover/db"/>
   <property name="clover.report.dir" location="${dest}/tests/clover/reports"/>
+
+  <property name="junit.details" value="1"/>
 
     <available
             property="clover.present"
@@ -393,6 +393,7 @@
            failureProperty="tests.failed"
            dir="src/test/test-files/"
            >
+      <sysproperty key="java.util.logging.config.file" value="${common.dir}/testlogging.properties"/>
       <jvmarg line="${args}"/>
       <formatter type="brief" usefile="false" if="junit.details"/>
       <classpath refid="test.run.classpath"/>
