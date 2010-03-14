@@ -97,8 +97,7 @@ public class TestReversedWildcardFilterFactory extends AbstractSolrTestCase {
     assertTokenStreamContents(input,
         new String[] { "one", "two", "three", "si\uD834\uDD1Ex" },
         new int[] { 0, 4, 8, 14 },
-        new int[] { 3, 7, 13, 19 },
-        new int[] { 1, 1, 1, 1 }
+        new int[] { 3, 7, 13, 19 }
     );
   }
   

@@ -97,8 +97,7 @@ public class TestPatternTokenizerFactory extends BaseTokenTestCase
     assertTokenStreamContents(stream,
         new String[] { "Günther", "Günther", "is", "here" },
         new int[] { 0, 13, 26, 29 },
-        new int[] { 12, 25, 28, 33 },
-        new int[] { 1, 1, 1, 1 });
+        new int[] { 12, 25, 28, 33 });
     
     charStream = new MappingCharFilter( normMap, CharReader.get( new StringReader( INPUT ) ) );
     args.put( PatternTokenizerFactory.PATTERN, "Günther" );
@@ -109,8 +108,7 @@ public class TestPatternTokenizerFactory extends BaseTokenTestCase
     assertTokenStreamContents(stream,
         new String[] { "Günther", "Günther" },
         new int[] { 0, 13 },
-        new int[] { 12, 25 },
-        new int[] { 1, 1 });
+        new int[] { 12, 25 });
   }
   
   /** 
