@@ -169,11 +169,22 @@ public class TestRequestHandler implements SolrRequestHandler {
       // System.out.println("limit="+limit+" results.size()="+results.size()+" matches="+results.matches());
       test((start==0 && limit>=results.matches()) ? results.size()==results.matches() : true );
 
+    
       //
       // test against hits
       //
-      TopFieldDocs hits = searcher.search(query, lfilter, 1000, sort);
-      test(hits.totalHits == results.matches());
+      int numHits;
+      ScoreDoc[] scoreDocs;
+      if (sort != null) {
+        TopFieldDocs hits = searcher.search(query, lfilter, 1000, sort);
+        numHits = hits.totalHits;
+        scoreDocs = hits.scoreDocs;
+      } else {
+        TopDocs hits = searcher.search(query, lfilter, 1000);
+        numHits = hits.totalHits;
+        scoreDocs = hits.scoreDocs;
+      }
+      test(numHits == results.matches());
 
 
       DocList rrr2 = results.subset(start,limit);
@@ -189,7 +200,7 @@ public class TestRequestHandler implements SolrRequestHandler {
       ***/
 
       for (int i=0; i<results.size(); i++) {
-        test( iter.nextDoc() == hits.scoreDocs[i].doc);
+        test( iter.nextDoc() == scoreDocs[i].doc);
 
         // Document doesn't implement equals()
         // test( searcher.document(i).equals(hits.doc(i)));

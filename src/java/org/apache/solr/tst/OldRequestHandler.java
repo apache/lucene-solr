@@ -68,9 +68,21 @@ public class OldRequestHandler implements SolrRequestHandler {
 
 
     try {
-      TopFieldDocs hits = req.getSearcher().search(query,filter, req.getStart()+req.getLimit(), sort);
 
-      int numHits = hits.totalHits;
+      int numHits;
+      ScoreDoc[] scoreDocs;
+      if (sort != null) {
+        TopFieldDocs hits = req.getSearcher().search(query, filter,
+            req.getStart() + req.getLimit(), sort);
+        scoreDocs = hits.scoreDocs;
+        numHits = hits.totalHits;
+      } else {
+        TopDocs hits = req.getSearcher().search(query, filter,
+            req.getStart() + req.getLimit());
+        scoreDocs = hits.scoreDocs;
+        numHits = hits.totalHits;
+      }
+
       int startRow = Math.min(numHits, req.getStart());
       int endRow = Math.min(numHits,req.getStart()+req.getLimit());
       int numRows = endRow-startRow;
@@ -78,7 +90,7 @@ public class OldRequestHandler implements SolrRequestHandler {
       int[] ids = new int[numRows];
       Document[] data = new Document[numRows];
       for (int i=startRow; i<endRow; i++) {
-        ids[i] = hits.scoreDocs[i].doc;
+        ids[i] = scoreDocs[i].doc;
         data[i] = req.getSearcher().doc(ids[i]);
       }
 
