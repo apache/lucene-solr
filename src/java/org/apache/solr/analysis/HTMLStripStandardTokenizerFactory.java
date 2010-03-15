@@ -30,7 +30,8 @@ import org.apache.lucene.util.Version;
 @Deprecated
 public class HTMLStripStandardTokenizerFactory extends BaseTokenizerFactory {
   public Tokenizer create(Reader input) {
-    return new StandardTokenizer(Version.LUCENE_24, new HTMLStripReader(input));
+    assureMatchVersion();
+    return new StandardTokenizer(luceneMatchVersion, new HTMLStripReader(input));
     // nocommit: what to do about this?
 //    new HTMLStripReader(input)) {
 //      @Override
