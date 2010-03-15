@@ -64,7 +64,7 @@ public class HTMLStripCharFilterTest extends TestCase {
               + " Buffer so far: " + builder + "<EOB>", theChar == goldArray[position]);
       position++;
     }
-    assertTrue(gold + " is not equal to " + builder.toString(), gold.equals(builder.toString()) == true);
+    assertEquals(gold, builder.toString());
   }
 
   //Some sanity checks, but not a full-fledged check
@@ -97,8 +97,8 @@ public class HTMLStripCharFilterTest extends TestCase {
       builder.append((char)ch);
     }
     String result = builder.toString();
-    System.out.println("Resu: " + result + "<EOL>");
-    System.out.println("Gold: " + gold + "<EOL>");
+    // System.out.println("Resu: " + result + "<EOL>");
+    // System.out.println("Gold: " + gold + "<EOL>");
     assertTrue(result + " is not equal to " + gold + "<EOS>", result.equals(gold) == true);
   }
 
@@ -114,8 +114,8 @@ public class HTMLStripCharFilterTest extends TestCase {
       builder.append((char)ch);
     }
     String result = builder.toString();
-    System.out.println("Resu: " + result + "<EOL>");
-    System.out.println("Gold: " + gold + "<EOL>");
+    // System.out.println("Resu: " + result + "<EOL>");
+    // System.out.println("Gold: " + gold + "<EOL>");
     assertTrue(result + " is not equal to " + gold + "<EOS>", result.equals(gold) == true);
   }
 
@@ -131,8 +131,8 @@ public class HTMLStripCharFilterTest extends TestCase {
       builder.append((char)ch);
     }
     String result = builder.toString();
-    System.out.println("Resu: " + result + "<EOL>");
-    System.out.println("Gold: " + gold + "<EOL>");
+    // System.out.println("Resu: " + result + "<EOL>");
+    // System.out.println("Gold: " + gold + "<EOL>");
     assertTrue(result + " is not equal to " + gold, result.equals(gold) == true);
   }
 
@@ -147,7 +147,7 @@ public class HTMLStripCharFilterTest extends TestCase {
       builder.append((char)ch);
     }
     String result = builder.toString();
-    System.out.println("Result: " + result);
+    // System.out.println("Result: " + result);
     assertTrue("Escaped tag not preserved: "  + result.indexOf("reserved"), result.indexOf("reserved") == 9);
     assertTrue("Escaped tag not preserved: " + result.indexOf("reserved", 15), result.indexOf("reserved", 15) == 38);
     assertTrue("Escaped tag not preserved: " + result.indexOf("reserved", 41), result.indexOf("reserved", 41) == 54);
@@ -164,8 +164,8 @@ public class HTMLStripCharFilterTest extends TestCase {
       builder.append((char)ch);
     }
     String result = builder.toString();
-    System.out.println("Resu: " + result + "<EOL>");
-    System.out.println("Gold: " + gold + "<EOL>");
+    // System.out.println("Resu: " + result + "<EOL>");
+    // System.out.println("Gold: " + gold + "<EOL>");
     assertTrue(result + " is not equal to " + gold + "<EOS>", result.equals(gold) == true);
   }
 
@@ -205,7 +205,7 @@ public class HTMLStripCharFilterTest extends TestCase {
 
 
   private void processBuffer(String test, String assertMsg) throws IOException {
-    System.out.println("-------------------processBuffer----------");
+    // System.out.println("-------------------processBuffer----------");
     Reader reader = new HTMLStripCharFilter(CharReader.get(new BufferedReader(new StringReader(test))));//force the use of BufferedReader
     int ch = 0;
     StringBuilder builder = new StringBuilder();
@@ -214,7 +214,7 @@ public class HTMLStripCharFilterTest extends TestCase {
         builder.append((char)ch);
       }
     } finally {
-      System.out.println("String (trimmed): " + builder.toString().trim() + "<EOS>");
+      // System.out.println("String (trimmed): " + builder.toString().trim() + "<EOS>");
     }
     assertTrue(assertMsg + "::: " + builder.toString() + " is not equal to " + test, builder.toString().equals(test) == true);
   }
@@ -231,7 +231,7 @@ public class HTMLStripCharFilterTest extends TestCase {
         builder.append((char)ch);
       }
     } finally {
-      System.out.println("String: " + builder.toString());
+      // System.out.println("String: " + builder.toString());
     }
     assertTrue(builder.toString() + " is not equal to " + gold + "<EOS>", builder.toString().equals(gold) == true);
   }
