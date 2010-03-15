@@ -17,38 +17,14 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.solr.core.Config;
-import org.apache.solr.schema.IndexSchema;
-
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.lucene.util.Version;
-
 
 /**
  * Simple abstract implementation that handles init arg processing.
  * 
  * @version $Id$
  */
-public abstract class BaseTokenizerFactory implements TokenizerFactory {
+public abstract class BaseTokenizerFactory extends BaseTokenStreamFactory implements TokenizerFactory {
   public static final Logger log = LoggerFactory.getLogger(BaseTokenizerFactory.class);
-  
-  /** The init args */
-  protected Map<String,String> args;
-  
-  /** the luceneVersion arg */
-  protected Version luceneMatchVersion = null;
-
-  public void init(Map<String,String> args) {
-    this.args=args;
-    String matchVersion = args.get(IndexSchema.LUCENE_MATCH_VERSION_PARAM);
-    if (matchVersion != null) {
-      luceneMatchVersion = Config.parseLuceneVersionString(matchVersion);
-    }
-  }
-  
-  public Map<String,String> getArgs() {
-    return args;
-  }
 }

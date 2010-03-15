@@ -28,6 +28,7 @@ import java.io.Reader;
 
 public class StandardTokenizerFactory extends BaseTokenizerFactory {
   public StandardTokenizer create(Reader input) {
+    assureMatchVersion();
     return new StandardTokenizer(luceneMatchVersion, input);
   }
 }

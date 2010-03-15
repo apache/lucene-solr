@@ -17,71 +17,14 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.solr.core.Config;
-import org.apache.solr.schema.IndexSchema;
-
-import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.lucene.util.Version;
-
 
 /**
  * Simple abstract implementation that handles init arg processing.
  * 
  * @version $Id$
  */
-public abstract class BaseTokenFilterFactory implements TokenFilterFactory {
+public abstract class BaseTokenFilterFactory extends BaseTokenStreamFactory implements TokenFilterFactory {
   public static final Logger log = LoggerFactory.getLogger(BaseTokenFilterFactory.class);
-  
-  /** The init args */
-  protected Map<String,String> args;
-  
-  /** the luceneVersion arg */
-  protected Version luceneMatchVersion = null;
-
-  public void init(Map<String,String> args) {
-    this.args=args;
-    String matchVersion = args.get(IndexSchema.LUCENE_MATCH_VERSION_PARAM);
-    if (matchVersion != null) {
-      luceneMatchVersion = Config.parseLuceneVersionString(matchVersion);
-    }
-  }
-
-  public Map<String,String> getArgs() {
-    return args;
-  }
-
-  // TODO: move these somewhere that tokenizers and others
-  // can also use them...
-  protected int getInt(String name) {
-    return getInt(name,-1,false);
-  }
-
-  protected int getInt(String name, int defaultVal) {
-    return getInt(name,defaultVal,true);
-  }
-
-  protected int getInt(String name, int defaultVal, boolean useDefault) {
-    String s = args.get(name);
-    if (s==null) {
-      if (useDefault) return defaultVal;
-      throw new RuntimeException("Configuration Error: missing parameter '" + name + "'");
-    }
-    return Integer.parseInt(s);
-  }
-
-  protected boolean getBoolean(String name, boolean defaultVal) {
-    return getBoolean(name,defaultVal,true);
-  }
-
-  protected boolean getBoolean(String name, boolean defaultVal, boolean useDefault) {
-    String s = args.get(name);
-    if (s==null) {
-      if (useDefault) return defaultVal;
-      throw new RuntimeException("Configuration Error: missing parameter '" + name + "'");
-    }
-    return Boolean.parseBoolean(s);
-  }
-
 }

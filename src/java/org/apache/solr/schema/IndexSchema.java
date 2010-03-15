@@ -830,6 +830,11 @@ public final class IndexSchema {
           final String matchVersionStr = DOMUtil.getAttr(attrs, LUCENE_MATCH_VERSION_PARAM);
           final Version luceneMatchVersion = (matchVersionStr == null) ?
             solrConfig.luceneMatchVersion : Config.parseLuceneVersionString(matchVersionStr);
+          if (luceneMatchVersion == null) {
+            throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
+              "Configuration Error: Analyzer '" + clazz.getName() +
+              "' needs a 'luceneMatchVersion' parameter");
+          }
           return cnstr.newInstance(luceneMatchVersion);
         } catch (NoSuchMethodException nsme) {
           // otherwise use default ctor
