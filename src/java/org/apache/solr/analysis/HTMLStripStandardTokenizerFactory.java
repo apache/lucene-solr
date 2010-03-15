@@ -17,13 +17,11 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.TokenStream;
+import java.io.Reader;
+
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.util.Version;
-
-import java.io.Reader;
-import java.io.IOException;
 
 /**
  * @version $Id$
@@ -33,5 +31,12 @@ import java.io.IOException;
 public class HTMLStripStandardTokenizerFactory extends BaseTokenizerFactory {
   public Tokenizer create(Reader input) {
     return new StandardTokenizer(Version.LUCENE_24, new HTMLStripReader(input));
+    // nocommit: what to do about this?
+//    new HTMLStripReader(input)) {
+//      @Override
+//      public void reset(Reader reader) throws IOException {
+//        super.reset(new HTMLStripReader(reader));
+//      }
+//    };
   }
 }
