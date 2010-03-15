@@ -30,6 +30,10 @@ Upgrading from Solr 1.4
 
 * Old syntax of <highlighting> is deprecated (SOLR-1696)
 
+* The deprecated HTMLStripReader, HTMLStripWhitespaceTokenizerFactory and
+  HTMLStripStandardTokenizerFactory were removed. To strip HTML tags, 
+  HTMLStripCharFilter should be used instead, and it works with any 
+  Tokenizer of your choice.  (SOLR-1657)
 
 Versions of Major Components
 ---------------------
