@@ -122,7 +122,7 @@ public class TestSqlEntityProcessor {
         break;
       count++;
     }
-    Assert.assertEquals(2, local.get());
+    Assert.assertEquals(2, (int) local.get());
     Assert.assertEquals(4, count);
   }
 
