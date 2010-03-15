@@ -488,6 +488,11 @@ public class SolrIndexReader extends FilterIndexReader {
   public Object getFieldCacheKey() {
     return in.getFieldCacheKey();
   }
+
+  @Override
+  public int getTermInfosIndexDivisor() {
+    return in.getTermInfosIndexDivisor();
+  }
 }
 
 
