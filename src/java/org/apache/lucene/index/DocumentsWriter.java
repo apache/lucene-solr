@@ -125,7 +125,6 @@ final class DocumentsWriter {
 
   // Max # ThreadState instances; if there are more threads
   // than this they share ThreadStates
-  private final static int MAX_THREAD_STATE = 5;
   private DocumentsWriterThreadState[] threadStates = new DocumentsWriterThreadState[0];
   private final HashMap<Thread,DocumentsWriterThreadState> threadBindings = new HashMap<Thread,DocumentsWriterThreadState>();
 
@@ -140,6 +139,10 @@ final class DocumentsWriter {
   PrintStream infoStream;
   int maxFieldLength = IndexWriterConfig.UNLIMITED_FIELD_LENGTH;
   Similarity similarity;
+
+  // max # simultaneous threads; if there are more than
+  // this, they wait for others to finish first
+  private final int maxThreadStates;
 
   List<String> newFiles;
 
@@ -301,10 +304,11 @@ final class DocumentsWriter {
 
   private boolean closed;
 
-  DocumentsWriter(Directory directory, IndexWriter writer, IndexingChain indexingChain) throws IOException {
+  DocumentsWriter(Directory directory, IndexWriter writer, IndexingChain indexingChain, int maxThreadStates) throws IOException {
     this.directory = directory;
     this.writer = writer;
     this.similarity = writer.getConfig().getSimilarity();
+    this.maxThreadStates = maxThreadStates;
     flushedDocCount = writer.maxDoc();
 
     consumer = indexingChain.getChain(this);
@@ -721,7 +725,7 @@ final class DocumentsWriter {
         if (minThreadState == null || ts.numThreads < minThreadState.numThreads)
           minThreadState = ts;
       }
-      if (minThreadState != null && (minThreadState.numThreads == 0 || threadStates.length >= MAX_THREAD_STATE)) {
+      if (minThreadState != null && (minThreadState.numThreads == 0 || threadStates.length >= maxThreadStates)) {
         state = minThreadState;
         state.numThreads++;
       } else {

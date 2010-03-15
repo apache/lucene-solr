@@ -172,6 +172,11 @@ New features
   for captureState()/restoreState(), if the state itsself
   needs to be inspected/modified.  (Uwe Schindler)
 
+* LUCENE-2293: Expose control over max number of threads that
+  IndexWriter will allow to run concurrently while indexing
+  documents (previously this was hardwired to 5), using
+  IndexWriterConfig.setMaxThreadStates.  (Mike McCandless)
+
 Optimizations
 
 * LUCENE-2075: Terms dict cache is now shared across threads instead

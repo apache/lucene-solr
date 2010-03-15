@@ -84,7 +84,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
     // dir1 = FSDirectory.open("foofoofoo");
     Directory dir2 = new MockRAMDirectory();
     // mergeFactor=2; maxBufferedDocs=2; Map docs = indexRandom(1, 3, 2, dir1);
-    Map<String,Document> docs = indexRandom(10, 10, 100, dir1);
+    int maxThreadStates = 1+r.nextInt(10);
+    Map<String,Document> docs = indexRandom(10, 10, 100, dir1, maxThreadStates);
     indexSerial(docs, dir2);
 
     // verifying verify
@@ -101,6 +102,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       sameFieldOrder=r.nextBoolean();
       mergeFactor=r.nextInt(3)+2;
       maxBufferedDocs=r.nextInt(3)+2;
+      int maxThreadStates = 1+r.nextInt(10);
       seed++;
 
       int nThreads=r.nextInt(5)+1;
@@ -108,7 +110,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       int range=r.nextInt(20)+1;
       Directory dir1 = new MockRAMDirectory();
       Directory dir2 = new MockRAMDirectory();
-      Map<String,Document> docs = indexRandom(nThreads, iter, range, dir1);
+      Map<String,Document> docs = indexRandom(nThreads, iter, range, dir1, maxThreadStates);
       indexSerial(docs, dir2);
       verifyEquals(dir1, dir2, "id");
     }
@@ -182,12 +184,12 @@ public class TestStressIndexing2 extends LuceneTestCase {
     return dw;
   }
   
-  public Map<String,Document> indexRandom(int nThreads, int iterations, int range, Directory dir) throws IOException, InterruptedException {
+  public Map<String,Document> indexRandom(int nThreads, int iterations, int range, Directory dir, int maxThreadStates) throws IOException, InterruptedException {
     Map<String,Document> docs = new HashMap<String,Document>();
     for(int iter=0;iter<3;iter++) {
       IndexWriter w = new MockIndexWriter(dir, new IndexWriterConfig(
           TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE)
-          .setRAMBufferSizeMB(0.1).setMaxBufferedDocs(maxBufferedDocs));
+               .setRAMBufferSizeMB(0.1).setMaxBufferedDocs(maxBufferedDocs).setMaxThreadStates(maxThreadStates));
       LogMergePolicy lmp = (LogMergePolicy) w.getMergePolicy();
       lmp.setUseCompoundFile(false);
       lmp.setUseCompoundDocStore(false);

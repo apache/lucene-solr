@@ -98,6 +98,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     getters.add("getMaxBufferedDocs");
     getters.add("getIndexingChain");
     getters.add("getMergedSegmentWarmer");
+    getters.add("getMaxThreadStates");
     for (Method m : IndexWriterConfig.class.getDeclaredMethods()) {
       if (m.getDeclaringClass() == IndexWriterConfig.class && m.getName().startsWith("get")) {
         assertTrue("method " + m.getName() + " is not tested for defaults", getters.contains(m.getName()));

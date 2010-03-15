@@ -1153,7 +1153,7 @@ public class IndexWriter implements Closeable {
 
       setRollbackSegmentInfos(segmentInfos);
 
-      docWriter = new DocumentsWriter(directory, this, conf.getIndexingChain());
+      docWriter = new DocumentsWriter(directory, this, conf.getIndexingChain(), conf.getMaxThreadStates());
       docWriter.setInfoStream(infoStream);
       docWriter.setMaxFieldLength(maxFieldLength);
 
