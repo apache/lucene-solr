@@ -21,6 +21,7 @@
                  org.apache.lucene.index.Payload,
                  org.apache.lucene.analysis.CharReader,
                  org.apache.lucene.analysis.CharStream,
+                 org.apache.lucene.analysis.tokenattributes.*,
                  org.apache.solr.analysis.CharFilterFactory,
                  org.apache.solr.analysis.TokenFilterFactory,
                  org.apache.solr.analysis.TokenizerChain,
@@ -212,8 +213,26 @@
 
          final Iterator<Token> iter = tokens.iterator();
          tstream = filtfac.create( new TokenStream() {
-           public Token next() throws IOException {
-             return iter.hasNext() ? iter.next() : null;
+           TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+           OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute (OffsetAttribute.class);
+           TypeAttribute typeAtt = (TypeAttribute) addAttribute (TypeAttribute.class);
+           FlagsAttribute flagsAtt = (FlagsAttribute) addAttribute (FlagsAttribute.class);
+           PayloadAttribute payloadAtt = (PayloadAttribute) addAttribute (PayloadAttribute.class);
+           PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) addAttribute (PositionIncrementAttribute.class);
+           
+           public boolean incrementToken() throws IOException {
+             if (iter.hasNext()) {
+               Token token = iter.next();
+               termAtt.setTermBuffer(token.termBuffer(), 0, token.termLength());
+               offsetAtt.setOffset(token.startOffset(), token.endOffset());
+               typeAtt.setType(token.type());
+               flagsAtt.setFlags(token.getFlags());
+               posIncAtt.setPositionIncrement(token.getPositionIncrement());
+               payloadAtt.setPayload(token.getPayload());
+               return true;
+             } else {
+               return false;
+             }
            }
           }
          );
@@ -236,10 +255,26 @@
 
   static List<Token> getTokens(TokenStream tstream) throws IOException {
     List<Token> tokens = new ArrayList<Token>();
+    TermAttribute termAtt = (TermAttribute) tstream.addAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = (OffsetAttribute) tstream.addAttribute (OffsetAttribute.class);
+    TypeAttribute typeAtt = (TypeAttribute) tstream.addAttribute (TypeAttribute.class);
+    FlagsAttribute flagsAtt = (FlagsAttribute) tstream.addAttribute (FlagsAttribute.class);
+    PayloadAttribute payloadAtt = (PayloadAttribute) tstream.addAttribute (PayloadAttribute.class);
+    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) tstream.addAttribute (PositionIncrementAttribute.class);
+   
     while (true) {
-      Token t = tstream.next();
-      if (t==null) break;
-      tokens.add(t);
+      if (!tstream.incrementToken())
+        break;
+      else {
+      	Token token = new Token();
+      	token.setTermBuffer(termAtt.termBuffer(), 0, termAtt.termLength());
+      	token.setType(typeAtt.type());
+      	token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
+      	token.setPayload(payloadAtt.getPayload());
+      	token.setFlags(flagsAtt.getFlags());
+      	token.setPositionIncrement(posIncAtt.getPositionIncrement());
+      	tokens.add(token);
+      }
     }
     return tokens;
   }
@@ -254,13 +289,13 @@
     }
 
     public boolean equals(Object o) {
-      return ((Tok)o).token.termText().equals(token.termText());
+      return ((Tok)o).token.term().equals(token.term());
     }
     public int hashCode() {
-      return token.termText().hashCode();
+      return token.term().hashCode();
     }
     public String toString() {
-      return token.termText();
+      return token.term();
     }
   }
 
@@ -342,7 +377,7 @@
     boolean needRaw=false;
     int pos=0;
     for (Token t : tokens) {
-      if (!t.termText().equals(ft.indexedToReadable(t.termText()))) {
+      if (!t.term().equals(ft.indexedToReadable(t.term()))) {
         needRaw=true;
       }
 
@@ -391,7 +426,7 @@
 
     printRow(out,"term text", arr, new ToStr() {
       public String toStr(Object o) {
-        return ft.indexedToReadable( ((Tok)o).token.termText() );
+        return ft.indexedToReadable( ((Tok)o).token.term() );
       }
     }
             ,true
@@ -403,7 +438,7 @@
       printRow(out,"raw text", arr, new ToStr() {
         public String toStr(Object o) {
           // page is UTF-8, so anything goes.
-          return ((Tok)o).token.termText();
+          return ((Tok)o).token.term();
         }
       }
               ,true
