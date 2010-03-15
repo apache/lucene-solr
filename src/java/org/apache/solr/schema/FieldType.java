@@ -127,8 +127,12 @@ public abstract class FieldType extends FieldProperties {
   void setArgs(IndexSchema schema, Map<String,String> args) {
     // default to STORED, INDEXED, OMIT_TF_POSITIONS and MULTIVALUED depending on schema version
     properties = (STORED | INDEXED);
-    if (schema.getVersion()< 1.1f) properties |= MULTIVALUED;
-    if (schema.getVersion()> 1.1f) properties |= OMIT_TF_POSITIONS;
+    float schemaVersion = schema.getVersion();
+    if (schemaVersion < 1.1f) properties |= MULTIVALUED;
+    if (schemaVersion > 1.1f) properties |= OMIT_TF_POSITIONS;
+    if (schemaVersion < 1.3) {
+      args.remove("compressThreshold");
+    }
 
     this.args=args;
     Map<String,String> initArgs = new HashMap<String,String>(args);

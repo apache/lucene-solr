@@ -33,7 +33,6 @@ public enum FieldFlag {
   OMIT_TF('F', "Omit Tf"), 
   LAZY('L', "Lazy"), 
   BINARY('B', "Binary"), 
-  COMPRESSED('C', "Compressed"),
   SORT_MISSING_FIRST('f', "Sort Missing First"), 
   SORT_MISSING_LAST('l', "Sort Missing Last");
 

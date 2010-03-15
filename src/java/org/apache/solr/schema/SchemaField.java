@@ -83,7 +83,6 @@ public final class SchemaField extends FieldProperties {
   public boolean multiValued() { return (properties & MULTIVALUED)!=0; }
   public boolean sortMissingFirst() { return (properties & SORT_MISSING_FIRST)!=0; }
   public boolean sortMissingLast() { return (properties & SORT_MISSING_LAST)!=0; }
-  public boolean isCompressed() { return (properties & COMPRESSED)!=0; }
   public boolean isRequired() { return required; } 
 
   // things that should be determined by field type, not set as options
@@ -166,7 +165,7 @@ public final class SchemaField extends FieldProperties {
     // that depend on that.
     //
     if (on(falseProps,STORED)) {
-      int pp = STORED | BINARY | COMPRESSED;
+      int pp = STORED | BINARY;
       if (on(pp,trueProps)) {
         throw new RuntimeException("SchemaField: " + name + " conflicting stored field options:" + props);
       }

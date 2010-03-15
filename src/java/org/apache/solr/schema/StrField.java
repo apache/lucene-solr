@@ -33,7 +33,7 @@ import java.io.IOException;
 /**
  * @version $Id$
  */
-public class StrField extends CompressableField {
+public class StrField extends FieldType {
   protected void init(IndexSchema schema, Map<String,String> args) {
     super.init(schema, args);    
   }

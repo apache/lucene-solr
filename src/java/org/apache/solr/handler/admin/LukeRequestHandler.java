@@ -172,8 +172,6 @@ public class LukeRequestHandler extends RequestHandlerBase
     flags.append( (f != null && f.getOmitNorms())                  ? FieldFlag.OMIT_NORMS.getAbbreviation() : '-' );
     flags.append( (f != null && f.isLazy())                        ? FieldFlag.LAZY.getAbbreviation() : '-' );
     flags.append( (f != null && f.isBinary())                      ? FieldFlag.BINARY.getAbbreviation() : '-' );
-    //nocommit: handle compressed
-    //flags.append( (f != null && f.isCompressed())                  ? FieldFlag.COMPRESSED.getAbbreviation() : '-' );
     flags.append( (false)                                          ? FieldFlag.SORT_MISSING_FIRST.getAbbreviation() : '-' ); // SchemaField Specific
     flags.append( (false)                                          ? FieldFlag.SORT_MISSING_LAST.getAbbreviation() : '-' ); // SchemaField Specific
     return flags.toString();
@@ -202,7 +200,6 @@ public class LukeRequestHandler extends RequestHandlerBase
     flags.append( (f != null && f.omitTf())              ? FieldFlag.OMIT_TF.getAbbreviation() : '-' );
     flags.append( (lazy)                                 ? FieldFlag.LAZY.getAbbreviation() : '-' );
     flags.append( (binary)                               ? FieldFlag.BINARY.getAbbreviation() : '-' );
-    flags.append( (f != null && f.isCompressed())        ? FieldFlag.COMPRESSED.getAbbreviation() : '-' );
     flags.append( (f != null && f.sortMissingFirst() )   ? FieldFlag.SORT_MISSING_FIRST.getAbbreviation() : '-' );
     flags.append( (f != null && f.sortMissingLast() )    ? FieldFlag.SORT_MISSING_LAST.getAbbreviation() : '-' );
     return flags.toString();
@@ -224,7 +221,6 @@ public class LukeRequestHandler extends RequestHandlerBase
     key.add( String.valueOf(FieldFlag.OMIT_NORMS.getAbbreviation()), FieldFlag.OMIT_NORMS.getDisplay() );
     key.add( String.valueOf(FieldFlag.LAZY.getAbbreviation()), FieldFlag.LAZY.getDisplay() );
     key.add( String.valueOf(FieldFlag.BINARY.getAbbreviation()), FieldFlag.BINARY.getDisplay() );
-    key.add( String.valueOf(FieldFlag.COMPRESSED.getAbbreviation()), FieldFlag.COMPRESSED.getDisplay() );
     key.add( String.valueOf(FieldFlag.SORT_MISSING_FIRST.getAbbreviation()), FieldFlag.SORT_MISSING_FIRST.getDisplay() );
     key.add( String.valueOf(FieldFlag.SORT_MISSING_LAST.getAbbreviation()), FieldFlag.SORT_MISSING_LAST.getDisplay() );
     return key;

@@ -45,7 +45,7 @@ import java.io.StringReader;
  * Analyzers for field types using this implementation should be defined in the schema.
  * @version $Id$
  */
-public class TextField extends CompressableField {
+public class TextField extends FieldType {
   protected void init(IndexSchema schema, Map<String,String> args) {
     properties |= TOKENIZED;
     if (schema.getVersion()> 1.1f) properties &= ~OMIT_TF_POSITIONS;
