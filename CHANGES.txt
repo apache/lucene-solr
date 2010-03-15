@@ -21,7 +21,7 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 
 $Id$
 
-==================  1.5.0-dev ==================
+==================  3.1.0-dev ==================
 Upgrading from Solr 1.4
 ----------------------
 * The experimental ALIAS command is removed in Solr 1.5 (SOLR-1637)
