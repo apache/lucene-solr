@@ -45,7 +45,6 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTest {
     checkEngine(getClusteringEngine("default"), 10);
   }
 
-  // nocommit, what is wrong with this test: get the carrot2 guys to investigate
   public void testProduceSummary() throws Exception {
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
