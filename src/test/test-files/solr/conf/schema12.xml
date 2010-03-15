@@ -172,10 +172,16 @@
       <analyzer><tokenizer class="solr.WhitespaceTokenizerFactory"/></analyzer>
     </fieldtype>
     <fieldtype name="HTMLstandardtok" class="solr.TextField">
-      <analyzer><tokenizer class="solr.HTMLStripStandardTokenizerFactory"/></analyzer>
+      <analyzer>
+      <charFilter class="solr.HTMLStripCharFilterFactory"/>
+      <tokenizer class="solr.StandardTokenizerFactory"/>
+      </analyzer>
     </fieldtype>
     <fieldtype name="HTMLwhitetok" class="solr.TextField">
-      <analyzer><tokenizer class="solr.HTMLStripWhitespaceTokenizerFactory"/></analyzer>
+      <analyzer>
+      <charFilter class="solr.HTMLStripCharFilterFactory"/>
+      <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+      </analyzer>
     </fieldtype>
     <fieldtype name="standardtokfilt" class="solr.TextField">
       <analyzer>
