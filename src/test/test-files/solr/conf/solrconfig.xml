@@ -45,7 +45,7 @@
        not be changed if replication is in use. -->
   <dataDir>${solr.data.dir:./solr/data}</dataDir>
   
-  <luceneMatchVersion>LUCENE_30</luceneMatchVersion>
+  <luceneMatchVersion>3.1</luceneMatchVersion>
 
   <indexDefaults>
    <!-- Values here affect all index writers and act as a default

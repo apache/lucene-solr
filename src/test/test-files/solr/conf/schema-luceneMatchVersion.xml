@@ -22,7 +22,7 @@
       <tokenizer class="solr.StandardTokenizerFactory" luceneMatchVersion="LUCENE_20"/>
       <filter class="solr.StandardFilterFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.StopFilterFactory" luceneMatchVersion="LUCENE_24"/>
+      <filter class="solr.StopFilterFactory" luceneMatchVersion="2.4"/>
       <filter class="solr.EnglishPorterFilterFactory"/>
     </analyzer>
   </fieldtype>

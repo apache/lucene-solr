@@ -35,6 +35,9 @@
   <property name="clover.report.dir" location="${dest}/tests/clover/reports"/>
 
   <property name="junit.details" value="1"/>
+  
+  <!-- change this together with the default and test's solrconfig.xml after starting a new development branch: -->
+  <property name="tests.luceneMatchVersion" value="3.1"/>
 
     <available
             property="clover.present"
@@ -394,6 +397,7 @@
            dir="src/test/test-files/"
            >
       <sysproperty key="java.util.logging.config.file" value="${common.dir}/testlogging.properties"/>
+      <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
       <jvmarg line="${args}"/>
       <formatter type="brief" usefile="false" if="junit.details"/>
       <classpath refid="test.run.classpath"/>

@@ -37,7 +37,7 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 public abstract class BaseTokenTestCase extends TestCase
 {
   protected static final Map<String,String> DEFAULT_VERSION_PARAM = 
-    Collections.singletonMap("luceneMatchVersion", "LUCENE_30");
+    Collections.singletonMap("luceneMatchVersion", System.getProperty("tests.luceneMatchVersion", "LUCENE_CURRENT"));
 
   // some helpers to test Analyzers and TokenStreams:
   // these are taken from Lucene's BaseTokenStreamTestCase

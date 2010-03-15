@@ -284,16 +284,20 @@ public class Config {
   
   private static final AtomicBoolean versionWarningAlreadyLogged = new AtomicBoolean(false);
   
-  public static final Version parseLuceneVersionString(String matchVersion) {
-    matchVersion = matchVersion.toUpperCase();
+  public static final Version parseLuceneVersionString(final String matchVersion) {
+    String parsedMatchVersion = matchVersion.toUpperCase();
+    
+    // be lenient with the supplied version parameter
+    parsedMatchVersion = parsedMatchVersion.replaceFirst("^(\\d)\\.(\\d)$", "LUCENE_$1$2");
     
     final Version version;
     try {
-      version = Version.valueOf(matchVersion);
+      version = Version.valueOf(parsedMatchVersion);
     } catch (IllegalArgumentException iae) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
         "Invalid luceneMatchVersion '" + matchVersion +
-        "' property, valid values are: " + Arrays.toString(Version.values()), iae, false);    
+        "', valid values are: " + Arrays.toString(Version.values()) +
+        " or a string in format 'V.V'", iae, false);    
     }
     
     if (version == Version.LUCENE_CURRENT && !versionWarningAlreadyLogged.getAndSet(true)) {

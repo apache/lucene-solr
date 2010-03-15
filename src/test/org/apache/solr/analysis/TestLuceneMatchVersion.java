@@ -20,6 +20,7 @@ import java.io.StringReader;
 import java.lang.reflect.Field;
 
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.solr.core.Config;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.util.AbstractSolrTestCase;
@@ -42,7 +43,9 @@ public class TestLuceneMatchVersion extends AbstractSolrTestCase {
     return "solrconfig.xml";
   }
   
-  public static final Version DEFAULT_VERSION = Version.LUCENE_30;
+  // this must match the solrconfig.xml version for this test
+  public static final Version DEFAULT_VERSION =
+    Config.parseLuceneVersionString(System.getProperty("tests.luceneMatchVersion", "LUCENE_CURRENT"));
 
   public void testStandardTokenizerVersions() throws Exception {
     assertEquals(DEFAULT_VERSION, solrConfig.luceneMatchVersion);
