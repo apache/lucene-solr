@@ -19,7 +19,6 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.util.Version;
 
 import java.io.Reader;
 
@@ -29,6 +28,6 @@ import java.io.Reader;
 
 public class StandardTokenizerFactory extends BaseTokenizerFactory {
   public StandardTokenizer create(Reader input) {
-    return new StandardTokenizer(Version.LUCENE_24, input);
+    return new StandardTokenizer(luceneMatchVersion, input);
   }
 }

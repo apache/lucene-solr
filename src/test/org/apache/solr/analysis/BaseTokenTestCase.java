@@ -19,6 +19,8 @@ package org.apache.solr.analysis;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Map;
+import java.util.Collections;
 
 import junit.framework.TestCase;
 
@@ -34,6 +36,9 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
  */
 public abstract class BaseTokenTestCase extends TestCase
 {
+  protected static final Map<String,String> DEFAULT_VERSION_PARAM = 
+    Collections.singletonMap("luceneMatchVersion", "LUCENE_30");
+
   // some helpers to test Analyzers and TokenStreams:
   // these are taken from Lucene's BaseTokenStreamTestCase
    

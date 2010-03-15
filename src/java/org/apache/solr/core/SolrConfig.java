@@ -37,6 +37,7 @@ import org.apache.solr.spelling.QueryConverter;
 import org.apache.solr.highlight.SolrHighlighter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.index.IndexDeletionPolicy;
+import org.apache.lucene.util.Version;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -134,6 +135,8 @@ public class SolrConfig extends Config {
     reopenReaders = getBool("mainIndex/reopenReaders", true);
     
     booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", BooleanQuery.getMaxClauseCount());
+    luceneMatchVersion = getLuceneVersion("luceneMatchVersion", Version.LUCENE_24);
+
     filtOptEnabled = getBool("query/boolTofilterOptimizer/@enabled", false);
     filtOptCacheSize = getInt("query/boolTofilterOptimizer/@cacheSize",32);
     filtOptThreshold = getFloat("query/boolTofilterOptimizer/@threshold",.05f);
@@ -261,6 +264,7 @@ public class SolrConfig extends Config {
   public final int maxWarmingSearchers;
   public final boolean unlockOnStartup;
   public final boolean useColdSearcher;
+  public final Version luceneMatchVersion;
   protected String dataDir;
   
   //JMX configuration

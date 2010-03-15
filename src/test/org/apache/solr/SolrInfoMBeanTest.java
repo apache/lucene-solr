@@ -80,7 +80,7 @@ public class SolrInfoMBeanTest extends TestCase
         }
       }
     }
-    assertTrue( "there are at least 10 SolrInfoMBean that should be found in the classpath.", checked > 10 );
+    assertTrue( "there are at least 10 SolrInfoMBean that should be found in the classpath, found " + checked, checked > 10 );
   }
 
   private static List<Class> getClassesForPackage(String pckgname) throws Exception {

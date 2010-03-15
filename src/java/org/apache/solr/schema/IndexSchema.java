@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
@@ -46,6 +47,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.IOException;
 import java.util.*;
+import java.lang.reflect.Constructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +59,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class IndexSchema {
   public static final String DEFAULT_SCHEMA_FILE = "schema.xml";
+  public static final String LUCENE_MATCH_VERSION_PARAM = "luceneMatchVersion";
 
   final static Logger log = LoggerFactory.getLogger(IndexSchema.class);
   private final SolrConfig solrConfig;
@@ -818,7 +821,24 @@ public final class IndexSchema {
     NamedNodeMap attrs = node.getAttributes();
     String analyzerName = DOMUtil.getAttr(attrs,"class");
     if (analyzerName != null) {
-      return (Analyzer)loader.newInstance(analyzerName);
+      // nocommit: add support for CoreAware & Co here?
+      final Class<? extends Analyzer> clazz = loader.findClass(analyzerName).asSubclass(Analyzer.class);
+      try {
+        try {
+          // first try to use a ctor with version parameter (needed for many new Analyzers that have no default one anymore)
+          Constructor<? extends Analyzer> cnstr = clazz.getConstructor(Version.class);
+          final String matchVersionStr = DOMUtil.getAttr(attrs, LUCENE_MATCH_VERSION_PARAM);
+          final Version luceneMatchVersion = (matchVersionStr == null) ?
+            solrConfig.luceneMatchVersion : Config.parseLuceneVersionString(matchVersionStr);
+          return cnstr.newInstance(luceneMatchVersion);
+        } catch (NoSuchMethodException nsme) {
+          // otherwise use default ctor
+          return clazz.newInstance();
+        }
+      } catch (Exception e) {
+        throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
+              "Cannot load analyzer: "+analyzerName );
+      }
     }
 
     XPath xpath = XPathFactory.newInstance().newXPath();
@@ -832,7 +852,11 @@ public final class IndexSchema {
       @Override
       protected void init(CharFilterFactory plugin, Node node) throws Exception {
         if( plugin != null ) {
-          plugin.init( DOMUtil.toMapExcept(node.getAttributes(),"class") );
+          final Map<String,String> params = DOMUtil.toMapExcept(node.getAttributes(),"class");
+          // copy the luceneMatchVersion from config, if not set
+          if (!params.containsKey(LUCENE_MATCH_VERSION_PARAM))
+            params.put(LUCENE_MATCH_VERSION_PARAM, solrConfig.luceneMatchVersion.toString());
+          plugin.init( params );
           charFilters.add( plugin );
         }
       }
@@ -858,7 +882,11 @@ public final class IndexSchema {
           throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
               "The schema defines multiple tokenizers for: "+node );
         }
-        plugin.init( DOMUtil.toMapExcept(node.getAttributes(),"class") );
+        final Map<String,String> params = DOMUtil.toMapExcept(node.getAttributes(),"class");
+        // copy the luceneMatchVersion from config, if not set
+        if (!params.containsKey(LUCENE_MATCH_VERSION_PARAM))
+          params.put(LUCENE_MATCH_VERSION_PARAM, solrConfig.luceneMatchVersion.toString());
+        plugin.init( params );
         tokenizers.add( plugin );
       }
 
@@ -884,7 +912,11 @@ public final class IndexSchema {
       @Override
       protected void init(TokenFilterFactory plugin, Node node) throws Exception {
         if( plugin != null ) {
-          plugin.init( DOMUtil.toMapExcept(node.getAttributes(),"class") );
+          final Map<String,String> params = DOMUtil.toMapExcept(node.getAttributes(),"class");
+          // copy the luceneMatchVersion from config, if not set
+          if (!params.containsKey(LUCENE_MATCH_VERSION_PARAM))
+            params.put(LUCENE_MATCH_VERSION_PARAM, solrConfig.luceneMatchVersion.toString());
+          plugin.init( params );
           filters.add( plugin );
         }
       }

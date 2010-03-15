@@ -44,6 +44,8 @@
        It defaults to "index" if not present, and should probably
        not be changed if replication is in use. -->
   <dataDir>${solr.data.dir:./solr/data}</dataDir>
+  
+  <luceneMatchVersion>LUCENE_30</luceneMatchVersion>
 
   <indexDefaults>
    <!-- Values here affect all index writers and act as a default

@@ -29,9 +29,15 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import javax.xml.namespace.QName;
 import java.io.*;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.LinkedHashMap;
+import java.util.Collections;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.lucene.util.Version;
 
 /**
  * @version $Id$
@@ -266,6 +272,41 @@ public class Config {
      String val = getVal(path, false);
      return val!=null ? Double.parseDouble(val) : def;
    }
+   
+   public Version getLuceneVersion(String path) {
+     return parseLuceneVersionString(getVal(path, true));
+   }
+   
+   public Version getLuceneVersion(String path, Version def) {
+     String val = getVal(path, false);
+     return val!=null ? parseLuceneVersionString(val) : def;
+   }
+  
+  private static final AtomicBoolean versionWarningAlreadyLogged = new AtomicBoolean(false);
+  
+  public static final Version parseLuceneVersionString(String matchVersion) {
+    matchVersion = matchVersion.toUpperCase();
+    
+    final Version version;
+    try {
+      version = Version.valueOf(matchVersion);
+    } catch (IllegalArgumentException iae) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+        "Invalid luceneMatchVersion '" + matchVersion +
+        "' property, valid values are: " + Arrays.toString(Version.values()), iae, false);    
+    }
+    
+    if (version == Version.LUCENE_CURRENT && !versionWarningAlreadyLogged.getAndSet(true)) {
+      log.warn(
+        "You should not use LUCENE_CURRENT as luceneMatchVersion property: "+
+        "if you use this setting, and then Solr upgrades to a newer release of Lucene, "+
+        "sizable changes may happen. If precise back compatibility is important "+
+        "then you should instead explicitly specify an actual Lucene version."
+      );
+    }
+    
+    return version;
+  }
 
   // The following functions were moved to ResourceLoader
   //-----------------------------------------------------------------------------

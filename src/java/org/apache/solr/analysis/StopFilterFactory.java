@@ -51,8 +51,7 @@ public class StopFilterFactory extends BaseTokenFilterFactory implements Resourc
           }
           for (String file : files) {
             List<String> wlist = loader.getLines(file.trim());
-            //TODO: once StopFilter.makeStopSet(List) method is available, switch to using that so we can avoid a toArray() call
-            stopWords.addAll(StopFilter.makeStopSet((String[])wlist.toArray(new String[0]), ignoreCase));
+            stopWords.addAll(StopFilter.makeStopSet(wlist, ignoreCase));
           }
       } catch (IOException e) {
         throw new RuntimeException(e);
@@ -61,7 +60,7 @@ public class StopFilterFactory extends BaseTokenFilterFactory implements Resourc
       stopWords = new CharArraySet(StopAnalyzer.ENGLISH_STOP_WORDS_SET, ignoreCase);
     }
   }
-  //Force the use of a char array set, as it is the most performant, although this may break things if Lucene ever goes away from it.  See SOLR-1095
+
   private CharArraySet stopWords;
   private boolean ignoreCase;
   private boolean enablePositionIncrements;
@@ -74,12 +73,12 @@ public class StopFilterFactory extends BaseTokenFilterFactory implements Resourc
     return ignoreCase;
   }
 
-  public Set getStopWords() {
+  public Set<?> getStopWords() {
     return stopWords;
   }
 
   public StopFilter create(TokenStream input) {
-    StopFilter stopFilter = new StopFilter(enablePositionIncrements, input,stopWords,ignoreCase);
+    StopFilter stopFilter = new StopFilter(enablePositionIncrements,input,stopWords,ignoreCase);
     return stopFilter;
   }
 }
