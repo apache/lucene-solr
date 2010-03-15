@@ -19,8 +19,6 @@ package org.apache.lucene.queryParser.spans;
 
 import javax.management.Query;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
 import org.apache.lucene.queryParser.core.nodes.OrQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
@@ -29,6 +27,7 @@ import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorPipeline;
 import org.apache.lucene.queryParser.standard.parser.StandardSyntaxParser;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * This test case demonstrates how the new query parser can be used.<br/>
@@ -94,7 +93,7 @@ import org.apache.lucene.search.spans.SpanTermQuery;
  * @see UniqueFieldAttribute
  * 
  */
-public class TestSpanQueryParserSimpleSample extends TestCase {
+public class TestSpanQueryParserSimpleSample extends LuceneTestCase {
 
   public TestSpanQueryParserSimpleSample() {
     // empty constructor
@@ -102,12 +101,6 @@ public class TestSpanQueryParserSimpleSample extends TestCase {
 
   public TestSpanQueryParserSimpleSample(String testName) {
     super(testName);
-  }
-
-  public static junit.framework.Test suite() {
-    junit.framework.TestSuite suite = new junit.framework.TestSuite(
-        TestSpanQueryParserSimpleSample.class);
-    return suite;
   }
 
   public void testBasicDemo() throws Exception {
@@ -133,13 +126,13 @@ public class TestSpanQueryParserSimpleSample extends TestCase {
     spanProcessorPipeline.addProcessor(new UniqueFieldQueryNodeProcessor());
 
     // print to show out the QueryNode tree before being processed
-    System.out.println(queryTree);
+    if (VERBOSE) System.out.println(queryTree);
 
     // Process the QueryTree using our new Processors
     queryTree = spanProcessorPipeline.process(queryTree);
 
     // print to show out the QueryNode tree after being processed
-    System.out.println(queryTree);
+    if (VERBOSE) System.out.println(queryTree);
 
     // create a instance off the Builder
     SpansQueryTreeBuilder spansQueryTreeBuilder = new SpansQueryTreeBuilder();

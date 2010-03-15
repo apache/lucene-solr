@@ -151,13 +151,15 @@ public class TestCartesian extends LuceneTestCase {
     LatLng p1 = new FloatLatLng( 7.06, 171.2 );
     LatLng p2 = new FloatLatLng( 21.6032207, -158.0 );
     double miles = p1.arcDistance( p2, DistanceUnits.MILES );
-    System.out.println("testDistances");
-    System.out.println("miles:" + miles);
+    if (VERBOSE) {
+      System.out.println("testDistances");
+      System.out.println("miles:" + miles);
+    }
     assertEquals(2288.82495932794, miles); 
     LatLng p3 = new FloatLatLng( 41.6032207, -73.087749);
     LatLng p4 = new FloatLatLng( 55.0, 4.0 );
     miles = p3.arcDistance( p4, DistanceUnits.MILES );
-    System.out.println("miles:" + miles);
+    if (VERBOSE) System.out.println("miles:" + miles);
     assertEquals(3474.331719997617, miles); 
   }
 
@@ -170,12 +172,12 @@ public class TestCartesian extends LuceneTestCase {
     lat = 21.6032207;
     lng = -158.0;
 
-    System.out.println("testAntiM");
+    if (VERBOSE) System.out.println("testAntiM");
     // create a distance query
     final DistanceQueryBuilder dq = new DistanceQueryBuilder(lat, lng, miles,
         latField, lngField, CartesianTierPlotter.DEFALT_FIELD_PREFIX, true);
 
-    System.out.println(dq);
+    if (VERBOSE) System.out.println(dq);
     //create a term query to search against all documents
     Query tq = new TermQuery(new Term("metafile", "doc"));
 
@@ -188,7 +190,7 @@ public class TestCartesian extends LuceneTestCase {
         return new CustomScoreProvider(reader) {
           @Override // TODO: broken, as reader is not used!
           public float customScore(int doc, float subQueryScore, float valSrcScore){
-            System.out.println(doc);
+            if (VERBOSE) System.out.println(doc);
             if (dq.distanceFilter.getDistance(doc) == null)
               return 0;
 
@@ -228,11 +230,13 @@ public class TestCartesian extends LuceneTestCase {
     // Note Boundary Box filtering, is not accurate enough for most systems.
 
 
-    System.out.println("Distance Filter filtered: " + distances.size());
-    System.out.println("Results: " + results);
-    System.out.println("=============================");
-    System.out.println("Distances should be 2 "+ distances.size());
-    System.out.println("Results should be 2 "+ results);
+    if (VERBOSE) {
+      System.out.println("Distance Filter filtered: " + distances.size());
+      System.out.println("Results: " + results);
+      System.out.println("=============================");
+      System.out.println("Distances should be 2 "+ distances.size());
+      System.out.println("Results should be 2 "+ results);
+    }
 
     assertEquals(2, distances.size()); // fixed a store of only needed distances
     assertEquals(2, results);
@@ -247,7 +251,7 @@ public class TestCartesian extends LuceneTestCase {
 
       double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
       double llm = DistanceUtils.getInstance().getLLMDistance(lat, lng, rsLat, rsLng);
-      System.out.println("Name: "+ name +", Distance "+ distance); //(res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ hits.score(i));
+      if (VERBOSE) System.out.println("Name: "+ name +", Distance "+ distance); //(res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ hits.score(i));
       assertTrue(Math.abs((distance - llm)) < 1);
       assertTrue((distance < miles ));
       assertTrue(geo_distance >= lastDistance);
@@ -262,13 +266,13 @@ public class TestCartesian extends LuceneTestCase {
     lat = 41.6032207;
     lng = -73.087749;
 
-    System.out.println("testPoleFlipping");
+    if (VERBOSE) System.out.println("testPoleFlipping");
 
     // create a distance query
     final DistanceQueryBuilder dq = new DistanceQueryBuilder(lat, lng, miles,
         latField, lngField, CartesianTierPlotter.DEFALT_FIELD_PREFIX, true);
 
-    System.out.println(dq);
+    if (VERBOSE) System.out.println(dq);
     //create a term query to search against all documents
     Query tq = new TermQuery(new Term("metafile", "doc"));
 
@@ -281,7 +285,7 @@ public class TestCartesian extends LuceneTestCase {
         return new CustomScoreProvider(reader) {
           @Override // TODO: broken, as reader is not used!
           public float customScore(int doc, float subQueryScore, float valSrcScore){
-            System.out.println(doc);
+            if (VERBOSE) System.out.println(doc);
             if (dq.distanceFilter.getDistance(doc) == null)
               return 0;
 
@@ -321,11 +325,13 @@ public class TestCartesian extends LuceneTestCase {
     // Note Boundary Box filtering, is not accurate enough for most systems.
 
 
-    System.out.println("Distance Filter filtered: " + distances.size());
-    System.out.println("Results: " + results);
-    System.out.println("=============================");
-    System.out.println("Distances should be 18 "+ distances.size());
-    System.out.println("Results should be 18 "+ results);
+    if (VERBOSE) {
+      System.out.println("Distance Filter filtered: " + distances.size());
+      System.out.println("Results: " + results);
+      System.out.println("=============================");
+      System.out.println("Distances should be 18 "+ distances.size());
+      System.out.println("Results should be 18 "+ results);
+    }
 
     assertEquals(18, distances.size()); // fixed a store of only needed distances
     assertEquals(18, results);
@@ -339,11 +345,11 @@ public class TestCartesian extends LuceneTestCase {
 
       double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
       double llm = DistanceUtils.getInstance().getLLMDistance(lat, lng, rsLat, rsLng);
-      System.out.println("Name: "+ name +", Distance "+ distance); //(res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ hits.score(i));
+      if (VERBOSE) System.out.println("Name: "+ name +", Distance "+ distance); //(res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ hits.score(i));
       assertTrue(Math.abs((distance - llm)) < 1);
-      System.out.println("checking limit "+ distance + " < " + miles);
+      if (VERBOSE) System.out.println("checking limit "+ distance + " < " + miles);
       assertTrue((distance < miles ));
-      System.out.println("checking sort "+ geo_distance + " >= " + lastDistance);
+      if (VERBOSE) System.out.println("checking sort "+ geo_distance + " >= " + lastDistance);
       assertTrue(geo_distance >= lastDistance);
       lastDistance = geo_distance;
     }
@@ -363,7 +369,7 @@ public class TestCartesian extends LuceneTestCase {
       final DistanceQueryBuilder dq = new DistanceQueryBuilder(lat, lng, miles, 
                                                                latField, lngField, CartesianTierPlotter.DEFALT_FIELD_PREFIX, true);
      
-      System.out.println(dq);
+      if (VERBOSE) System.out.println(dq);
       //create a term query to search against all documents
       Query tq = new TermQuery(new Term("metafile", "doc"));
     
@@ -375,7 +381,7 @@ public class TestCartesian extends LuceneTestCase {
           return new CustomScoreProvider(reader) {
             @Override // TODO: broken, as reader is not used!
             public float customScore(int doc, float subQueryScore, float valSrcScore){
-              //System.out.println(doc);
+              if (VERBOSE) System.out.println(doc);
               if (dq.distanceFilter.getDistance(doc) == null)
                 return 0;
           
@@ -413,12 +419,13 @@ public class TestCartesian extends LuceneTestCase {
     
       // Note Boundary Box filtering, is not accurate enough for most systems.
     
-    
-      System.out.println("Distance Filter filtered: " + distances.size());
-      System.out.println("Results: " + results);
-      System.out.println("=============================");
-      System.out.println("Distances should be 7 "+ expected[x] + ":" + distances.size());
-      System.out.println("Results should be 7 "+ expected[x] + ":" + results);
+      if (VERBOSE) {
+        System.out.println("Distance Filter filtered: " + distances.size());
+        System.out.println("Results: " + results);
+        System.out.println("=============================");
+        System.out.println("Distances should be 7 "+ expected[x] + ":" + distances.size());
+        System.out.println("Results should be 7 "+ expected[x] + ":" + results);
+      }
 
       assertEquals(expected[x], distances.size()); // fixed a store of only needed distances
       assertEquals(expected[x], results);
@@ -433,7 +440,7 @@ public class TestCartesian extends LuceneTestCase {
       
         double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
         double llm = DistanceUtils.getInstance().getLLMDistance(lat, lng, rsLat, rsLng);
-        System.out.println("Name: "+ name +", Distance "+ distance); //(res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ hits.score(i));
+        if (VERBOSE) System.out.println("Name: "+ name +", Distance "+ distance); //(res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ hits.score(i));
         assertTrue(Math.abs((distance - llm)) < 1);
         assertTrue((distance < miles ));
         assertTrue(geo_distance > lastDistance);
@@ -457,7 +464,7 @@ public class TestCartesian extends LuceneTestCase {
       final DistanceQueryBuilder dq = new DistanceQueryBuilder(lat, lng, miles, 
                                                                geoHashPrefix, CartesianTierPlotter.DEFALT_FIELD_PREFIX, true);
 	     
-      System.out.println(dq);
+      if (VERBOSE) System.out.println(dq);
       //create a term query to search against all documents
       Query tq = new TermQuery(new Term("metafile", "doc"));
 	    
@@ -468,7 +475,7 @@ public class TestCartesian extends LuceneTestCase {
           return new CustomScoreProvider(reader) {
               @Override // TODO: broken, as reader is not used!
               public float customScore(int doc, float subQueryScore, float valSrcScore){
-              //System.out.println(doc);
+              if (VERBOSE) System.out.println(doc);
               if (dq.distanceFilter.getDistance(doc) == null)
                 return 0;
             
@@ -506,12 +513,13 @@ public class TestCartesian extends LuceneTestCase {
 	    
       // Note Boundary Box filtering, is not accurate enough for most systems.
 	    
-	    
-      System.out.println("Distance Filter filtered: " + distances.size());
-      System.out.println("Results: " + results);
-      System.out.println("=============================");
-      System.out.println("Distances should be 14 "+ expected[x] + ":" + distances.size());
-      System.out.println("Results should be 7 "+ expected[x] + ":" + results);
+	    if (VERBOSE) {
+        System.out.println("Distance Filter filtered: " + distances.size());
+        System.out.println("Results: " + results);
+        System.out.println("=============================");
+        System.out.println("Distances should be 14 "+ expected[x] + ":" + distances.size());
+        System.out.println("Results should be 7 "+ expected[x] + ":" + results);
+      }
 
       assertEquals(expected[x], distances.size());
       assertEquals(expected[x], results);
@@ -526,7 +534,7 @@ public class TestCartesian extends LuceneTestCase {
 	      
         double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
         double llm = DistanceUtils.getInstance().getLLMDistance(lat, lng, rsLat, rsLng);
-        System.out.println("Name: "+ name +", Distance (res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ scoreDocs[i].score);
+        if (VERBOSE) System.out.println("Name: "+ name +", Distance (res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ scoreDocs[i].score);
         assertTrue(Math.abs((distance - llm)) < 1);
         assertTrue((distance < miles ));
 	      

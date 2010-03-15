@@ -30,8 +30,6 @@ import java.util.HashSet;
 
 
 public class TestStopFilter extends BaseTokenStreamTestCase {
-
-  private final static boolean VERBOSE = false;
   
   // other StopFilter functionality is already tested by TestStopAnalyzer
 

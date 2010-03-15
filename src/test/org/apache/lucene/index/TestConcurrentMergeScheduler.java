@@ -50,7 +50,6 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         for (int i = 0; i < trace.length; i++) {
           if ("doFlush".equals(trace[i].getMethodName())) {
             hitExc = true;
-            //new RuntimeException().printStackTrace(System.out);
             throw new IOException("now failing during flush");
           }
         }

@@ -43,8 +43,6 @@ public class FunctionTestSetup extends LuceneTestCaseJ4 {
    */
   protected static float TEST_SCORE_TOLERANCE_DELTA = 0.001f;
 
-  protected static final boolean DBG = false; // change to true for logging to print
-
   protected static final int N_DOCS = 17; // select a primary number > 2
 
   protected static final String ID_FIELD = "id";
@@ -163,7 +161,7 @@ public class FunctionTestSetup extends LuceneTestCaseJ4 {
 
   // debug messages (change DBG to true for anything to print) 
   protected void log(Object o) {
-    if (DBG) {
+    if (VERBOSE) {
       System.out.println(o.toString());
     }
   }

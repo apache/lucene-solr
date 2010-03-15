@@ -258,10 +258,11 @@ Test Cases
   from LuceneTestCase(J4), that contains the release version.
   (Uwe Schindler, Simon Willnauer, Shai Erera)
 
-* LUCENE-2313: Add VERBOSE to LuceneTestCase(J4) to control verbosity
-  of tests. If VERBOSE==false (default) tests should not print anything
-  other than errors to System.(out|err). The setting can be changed with
-  -Dtests.verbose=true on test invokation.  (Shai Erera via Uwe Schindler)
+* LUCENE-2313, LUCENE-2322: Add VERBOSE to LuceneTestCase(J4) to control
+  verbosity of tests. If VERBOSE==false (default) tests should not print
+  anything other than errors to System.(out|err). The setting can be
+  changed with -Dtests.verbose=true on test invokation.
+  (Shai Erera, Paul Elschot, Uwe Schindler)
 
 * LUCENE-2318: Remove inconsistent system property code for retrieving
   temp and data directories inside test cases. It is now centralized in

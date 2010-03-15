@@ -214,7 +214,7 @@ implements Serializable {
     
     // Simply write to console - choosen to be independant of log4j etc 
     private void log(String message) {
-        System.out.println(message);
+        if (VERBOSE) System.out.println(message);
     }
     
     public class CustomSearcher extends IndexSearcher {

@@ -53,8 +53,6 @@ public class SrndTermQuery extends SimpleTerm {
           && it.text().equals(getTermText())
           && it.field().equals(fieldName)) {
         mtv.visitMatchingTerm(it);
-      } else {
-        System.out.println("No term in " + fieldName + " field for: " + toString());
       }
     } finally {
       enumerator.close();

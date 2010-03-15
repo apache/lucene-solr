@@ -48,7 +48,7 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl( "\"abcdefgh jklmnopqrs\"", "abcdefgh   jklmnopqrs" ), SimpleFragListBuilder.MIN_FRAG_CHAR_SIZE );
     assertEquals( 1, ffl.fragInfos.size() );
-    System.out.println( ffl.fragInfos.get( 0 ).toString() );
+    if (VERBOSE) System.out.println( ffl.fragInfos.get( 0 ).toString() );
     assertEquals( "subInfos=(abcdefghjklmnopqrs((0,21)))/1.0(0,21)", ffl.fragInfos.get( 0 ).toString() );
   }
   

@@ -207,7 +207,7 @@ public class TestScorerPerf extends LuceneTestCase {
       if (validate) assertEquals(result.cardinality(), hc.getCount());
       // System.out.println(hc.getCount());
     }
-    System.out.println("Average number of matches="+(nMatches/iter));
+    if (VERBOSE) System.out.println("Average number of matches="+(nMatches/iter));
     return ret;
   }
 
@@ -240,7 +240,7 @@ public class TestScorerPerf extends LuceneTestCase {
       nMatches += hc.getCount();
       ret += hc.getSum();
     }
-    System.out.println("Average number of matches="+(nMatches/iter));
+    if (VERBOSE) System.out.println("Average number of matches="+(nMatches/iter));
 
     return ret;
   }
@@ -282,7 +282,7 @@ public class TestScorerPerf extends LuceneTestCase {
       nMatches += hc.getCount();     
       ret += hc.getSum();
     }
-    System.out.println("Average number of matches="+(nMatches/iter));
+    if (VERBOSE) System.out.println("Average number of matches="+(nMatches/iter));
     return ret;
   }
 
@@ -335,7 +335,7 @@ public class TestScorerPerf extends LuceneTestCase {
       long start = System.currentTimeMillis();
       doConjunctions(500,6);
       long end = System.currentTimeMillis();
-      System.out.println("milliseconds="+(end-start));
+      if (VERBOSE) System.out.println("milliseconds="+(end-start));
     }
     s.close();
   }
@@ -349,7 +349,7 @@ public class TestScorerPerf extends LuceneTestCase {
       long start = System.currentTimeMillis();
       doNestedConjunctions(500,3,3);
       long end = System.currentTimeMillis();
-      System.out.println("milliseconds="+(end-start));
+      if (VERBOSE) System.out.println("milliseconds="+(end-start));
     }
     s.close();
   }
@@ -359,15 +359,15 @@ public class TestScorerPerf extends LuceneTestCase {
     r = newRandom();
     validate=false;
     RAMDirectory dir = new RAMDirectory();
-    System.out.println("Creating index");
+    if (VERBOSE) System.out.println("Creating index");
     createRandomTerms(100000,25,.5, dir);
     s = new IndexSearcher(dir, true);
-    System.out.println("Starting performance test");
+    if (VERBOSE) System.out.println("Starting performance test");
     for (int i=0; i<bigIter; i++) {
       long start = System.currentTimeMillis();
       doTermConjunctions(s,25,5,1000);
       long end = System.currentTimeMillis();
-      System.out.println("milliseconds="+(end-start));
+      if (VERBOSE) System.out.println("milliseconds="+(end-start));
     }
     s.close();
   }
@@ -376,15 +376,15 @@ public class TestScorerPerf extends LuceneTestCase {
     r = newRandom();
     validate=false;    
     RAMDirectory dir = new RAMDirectory();
-    System.out.println("Creating index");
+    if (VERBOSE) System.out.println("Creating index");
     createRandomTerms(100000,25,.2, dir);
     s = new IndexSearcher(dir, true);
-    System.out.println("Starting performance test");
+    if (VERBOSE) System.out.println("Starting performance test");
     for (int i=0; i<bigIter; i++) {
       long start = System.currentTimeMillis();
       doNestedTermConjunctions(s,25,3,3,200);
       long end = System.currentTimeMillis();
-      System.out.println("milliseconds="+(end-start));
+      if (VERBOSE) System.out.println("milliseconds="+(end-start));
     }
     s.close();
   }
@@ -394,15 +394,15 @@ public class TestScorerPerf extends LuceneTestCase {
     r = newRandom();
     validate=false;    
     RAMDirectory dir = new RAMDirectory();
-    System.out.println("Creating index");
+    if (VERBOSE) System.out.println("Creating index");
     createRandomTerms(100000,25,2,dir);
     s = new IndexSearcher(dir, true);
-    System.out.println("Starting performance test");
+    if (VERBOSE) System.out.println("Starting performance test");
     for (int i=0; i<bigIter; i++) {
       long start = System.currentTimeMillis();
       doSloppyPhrase(s,25,2,1000);
       long end = System.currentTimeMillis();
-      System.out.println("milliseconds="+(end-start));
+      if (VERBOSE) System.out.println("milliseconds="+(end-start));
     }
     s.close();
   }

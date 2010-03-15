@@ -50,7 +50,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestPayloadSpans extends LuceneTestCase {
-  private final static boolean DEBUG = true;
   private IndexSearcher searcher;
   private Similarity similarity = new DefaultSimilarity();
   protected IndexReader indexReader;
@@ -349,7 +348,7 @@ public class TestPayloadSpans extends LuceneTestCase {
       }
     }
     assertEquals(2, payloadSet.size());
-    if(DEBUG) {
+    if(VERBOSE) {
       for (final String payload : payloadSet)
         System.out.println("match:" +  payload);
       
@@ -375,10 +374,10 @@ public class TestPayloadSpans extends LuceneTestCase {
     PayloadSpanUtil psu = new PayloadSpanUtil(reader);
     
     Collection<byte[]> payloads = psu.getPayloadsForQuery(new TermQuery(new Term(PayloadHelper.FIELD, "rr")));
-    if(DEBUG)
+    if(VERBOSE)
       System.out.println("Num payloads:" + payloads.size());
     for (final byte [] bytes : payloads) {
-      if(DEBUG)
+      if(VERBOSE)
         System.out.println(new String(bytes));
     }
     
@@ -441,14 +440,14 @@ public class TestPayloadSpans extends LuceneTestCase {
     int cnt = 0;
 
     while (spans.next() == true) {
-      if(DEBUG)
+      if(VERBOSE)
         System.out.println("\nSpans Dump --");
       if (spans.isPayloadAvailable()) {
         Collection<byte[]> payload = spans.getPayload();
-        if(DEBUG)
+        if(VERBOSE)
           System.out.println("payloads for span:" + payload.size());
         for (final byte [] bytes : payload) {
-          if(DEBUG)
+          if(VERBOSE)
             System.out.println("doc:" + spans.doc() + " s:" + spans.start() + " e:" + spans.end() + " "
               + new String(bytes));
         }

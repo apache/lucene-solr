@@ -202,8 +202,6 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
   
   private Analyzer analyzer;
   
-  private final boolean verbose = false;
-  
   private static final String FIELD_NAME = "content";
 
   /** Runs the tests and/or benchmark */
@@ -227,7 +225,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       "src/java/test/org/apache/lucene/queryParser/*.java",
       "contrib/memory/src/java/org/apache/lucene/index/memory/*.java",
     });
-    System.out.println("files = " + java.util.Arrays.asList(files));
+    if (VERBOSE) System.out.println("files = " + java.util.Arrays.asList(files));
     String[] xargs = new String[] {
       "1", "1", "memram", 
       "@contrib/memory/src/test/org/apache/lucene/index/memory/testqueries.txt",
@@ -285,7 +283,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     boolean first = true;
 
     for (int iter=0; iter < iters; iter++) {
-      System.out.println("\n########### iteration=" + iter);
+      if (VERBOSE) System.out.println("\n########### iteration=" + iter);
       long start = System.currentTimeMillis();            
       long bytes = 0;
       
@@ -298,7 +296,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
           bytes += file.length();
           String text = toString(new FileInputStream(file), null);
           Document doc = createDocument(text);
-          if (verbose) System.out.println("\n*********** FILE=" + file);
+          if (VERBOSE) System.out.println("\n*********** FILE=" + file);
           
           boolean measureIndexing = false; // toggle this to measure query performance
           MemoryIndex memind = null;
@@ -342,7 +340,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
                 }
                 if (useRAMIndex) score2 = query(ramsearcher, query);
                 if (useMemIndex && useRAMIndex) {
-                  if (verbose) System.out.println("diff="+ (score1-score2) + ", query=" + queries[q] + ", s1=" + score1 + ", s2=" + score2);
+                  if (VERBOSE) System.out.println("diff="+ (score1-score2) + ", query=" + queries[q] + ", s1=" + score1 + ", s2=" + score2);
                   if (score1 != score2 || score1 < 0.0f || score2 < 0.0f || score1 > 1.0f || score2 > 1.0f) {
                     throw new IllegalStateException("BUG DETECTED:" + (i*(q+1)) + " at query=" + queries[q] + ", file=" + file + ", anal=" + analyzer);
                   }
@@ -351,20 +349,24 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
 
             } catch (Throwable t) {
               if (t instanceof OutOfMemoryError) t.printStackTrace();
-              System.out.println("Fatal error at query=" + queries[q] + ", file=" + file + ", anal=" + analyzer);
+              if (VERBOSE) System.out.println("Fatal error at query=" + queries[q] + ", file=" + file + ", anal=" + analyzer);
               throw t;
             }
           }
         }
       }
       long end = System.currentTimeMillis();
-      System.out.println("\nsecs = " + ((end-start)/1000.0f));
-      System.out.println("queries/sec= " + 
+      if (VERBOSE) {
+        System.out.println("\nsecs = " + ((end-start)/1000.0f));
+        System.out.println("queries/sec= " + 
         (1.0f * runs * queries.length * analyzers.length * files.length 
             / ((end-start)/1000.0f)));
-      float mb = (1.0f * bytes * queries.length * runs) / (1024.0f * 1024.0f);
-      System.out.println("MB/sec = " + (mb / ((end-start)/1000.0f)));
+        float mb = (1.0f * bytes * queries.length * runs) / (1024.0f * 1024.0f);
+        System.out.println("MB/sec = " + (mb / ((end-start)/1000.0f)));
+      }
     }
+    
+    if (!VERBOSE) return;
     
     if (useMemIndex && useRAMIndex) 
       System.out.println("No bug found. done.");

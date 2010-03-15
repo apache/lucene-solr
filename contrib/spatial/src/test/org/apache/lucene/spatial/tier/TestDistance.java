@@ -106,7 +106,7 @@ public class TestDistance extends LuceneTestCase {
     }
   }
  
-  
+  /* these tests do not test anything, as no assertions:
   public void testMiles() {
     double LLM = DistanceUtils.getInstance().getLLMDistance(lat, lng,39.012200001, -77.3942);
     System.out.println(LLM);
@@ -120,7 +120,7 @@ public class TestDistance extends LuceneTestCase {
     System.out.println("-->"+DistanceUtils.getInstance().getDistanceMi(44.30073, -78.32131, 43.687267, -79.39842));
     
   }
-
+  */
   
 //  public void testDistanceQueryCacheable() throws IOException {
 //

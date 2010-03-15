@@ -48,7 +48,7 @@ public class TestCheckIndex extends LuceneTestCase {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     CheckIndex checker = new CheckIndex(dir);
     checker.setInfoStream(new PrintStream(bos));
-    //checker.setInfoStream(System.out);
+    if (VERBOSE) checker.setInfoStream(System.out);
     CheckIndex.Status indexStatus = checker.checkIndex();
     if (indexStatus.clean == false) {
       System.out.println("CheckIndex failed");

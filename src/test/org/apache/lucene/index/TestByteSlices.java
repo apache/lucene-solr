@@ -65,36 +65,34 @@ public class TestByteSlices extends LuceneTestCase {
         counters[stream] = 0;
       }
       
-      boolean debug = false;
-
       for(int iter=0;iter<10000;iter++) {
         int stream = r.nextInt(NUM_STREAM);
-        if (debug)
+        if (VERBOSE)
           System.out.println("write stream=" + stream);
 
         if (starts[stream] == -1) {
           final int spot = pool.newSlice(ByteBlockPool.FIRST_LEVEL_SIZE);
           starts[stream] = uptos[stream] = spot + pool.byteOffset;
-          if (debug)
+          if (VERBOSE)
             System.out.println("  init to " + starts[stream]);
         }
 
         writer.init(uptos[stream]);
         int numValue = r.nextInt(20);
         for(int j=0;j<numValue;j++) {
-          if (debug)
+          if (VERBOSE)
             System.out.println("    write " + (counters[stream]+j));
           writer.writeVInt(counters[stream]+j);
           //writer.writeVInt(ti);
         }
         counters[stream] += numValue;
         uptos[stream] = writer.getAddress();
-        if (debug)
+        if (VERBOSE)
           System.out.println("    addr now " + uptos[stream]);
       }
     
       for(int stream=0;stream<NUM_STREAM;stream++) {
-        if (debug)
+        if (VERBOSE)
           System.out.println("  stream=" + stream + " count=" + counters[stream]);
 
         if (starts[stream] != uptos[stream]) {

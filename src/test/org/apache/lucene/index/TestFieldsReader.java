@@ -267,8 +267,10 @@ public class TestFieldsReader extends LuceneTestCase {
       reader.close();
 
     }
-    System.out.println("Average Non-lazy time (should be very close to zero): " + regularTime / length + " ms for " + length + " reads");
-    System.out.println("Average Lazy Time (should be greater than zero): " + lazyTime / length + " ms for " + length + " reads");
+    if (VERBOSE) {
+      System.out.println("Average Non-lazy time (should be very close to zero): " + regularTime / length + " ms for " + length + " reads");
+      System.out.println("Average Lazy Time (should be greater than zero): " + lazyTime / length + " ms for " + length + " reads");
+    }
   }
   
   public void testLoadSize() throws IOException {

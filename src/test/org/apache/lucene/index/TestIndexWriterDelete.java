@@ -407,7 +407,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
    */
   private void testOperationsOnDiskFull(boolean updates) throws IOException {
 
-    boolean debug = false;
     Term searchTerm = new Term("content", "aaa");
     int START_COUNT = 157;
     int END_COUNT = 144;
@@ -464,7 +463,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           if (diskRatio >= 6.0) {
             rate = 0.0;
           }
-          if (debug) {
+          if (VERBOSE) {
             System.out.println("\ncycle: " + diskFree + " bytes");
           }
           testName = "disk full during reader.close() @ " + thisDiskFree
@@ -472,7 +471,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         } else {
           thisDiskFree = 0;
           rate = 0.0;
-          if (debug) {
+          if (VERBOSE) {
             System.out.println("\ncycle: same writer: unlimited disk space");
           }
           testName = "reader re-use after disk full";
@@ -506,7 +505,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           }
         }
         catch (IOException e) {
-          if (debug) {
+          if (VERBOSE) {
             System.out.println("  hit IOException: " + e);
             e.printStackTrace(System.out);
           }

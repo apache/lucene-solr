@@ -54,7 +54,6 @@ public class SrndPrefixQuery extends SimpleTerm {
   {
     /* inspired by PrefixQuery.rewrite(): */
     TermEnum enumerator = reader.terms(getLucenePrefixTerm(fieldName));
-    boolean expanded = false;
     try {
       do {
         Term term = enumerator.term();
@@ -62,16 +61,12 @@ public class SrndPrefixQuery extends SimpleTerm {
             && term.text().startsWith(getPrefix())
             && term.field().equals(fieldName)) {
           mtv.visitMatchingTerm(term);
-          expanded = true;
         } else {
           break;
         }
       } while (enumerator.next());
     } finally {
       enumerator.close();
-    }
-    if (! expanded) {
-      System.out.println("No terms in " + fieldName + " field for: " + toString());
     }
   }
 }

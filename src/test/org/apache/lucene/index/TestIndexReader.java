@@ -277,7 +277,7 @@ public class TestIndexReader extends LuceneTestCase
     for (Iterator<TermVectorEntry> iterator = set.iterator(); iterator.hasNext();) {
       TermVectorEntry entry =  iterator.next();
       assertTrue("entry is null and it shouldn't be", entry != null);
-      System.out.println("Entry: " + entry);
+      if (VERBOSE) System.out.println("Entry: " + entry);
     }
     
   }
@@ -869,7 +869,6 @@ public class TestIndexReader extends LuceneTestCase
      */
     public void testDiskFull() throws IOException {
 
-      boolean debug = false;
       Term searchTerm = new Term("content", "aaa");
       int START_COUNT = 157;
       int END_COUNT = 144;
@@ -926,14 +925,14 @@ public class TestIndexReader extends LuceneTestCase
             if (diskRatio >= 6.0) {
               rate = 0.0;
             }
-            if (debug) {
+            if (VERBOSE) {
               System.out.println("\ncycle: " + diskFree + " bytes");
             }
             testName = "disk full during reader.close() @ " + thisDiskFree + " bytes";
           } else {
             thisDiskFree = 0;
             rate = 0.0;
-            if (debug) {
+            if (VERBOSE) {
               System.out.println("\ncycle: same writer: unlimited disk space");
             }
             testName = "reader re-use after disk full";
@@ -957,7 +956,7 @@ public class TestIndexReader extends LuceneTestCase
               done = true;
             }
           } catch (IOException e) {
-            if (debug) {
+            if (VERBOSE) {
               System.out.println("  hit IOException: " + e);
               e.printStackTrace(System.out);
             }

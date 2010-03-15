@@ -83,7 +83,6 @@ public class SrndTruncQuery extends SimpleTerm {
     String fieldName,
     MatchingTermVisitor mtv) throws IOException
   {
-    boolean expanded = false;
     int prefixLength = prefix.length();
     TermEnum enumerator = reader.terms(new Term(fieldName, prefix));
     Matcher matcher = pattern.matcher("");
@@ -98,7 +97,6 @@ public class SrndTruncQuery extends SimpleTerm {
             matcher.reset( text.substring(prefixLength));
             if (matcher.matches()) {
               mtv.visitMatchingTerm(term);
-              expanded = true;
             }
           }
         }
@@ -106,9 +104,6 @@ public class SrndTruncQuery extends SimpleTerm {
     } finally {
       enumerator.close();
       matcher.reset();
-    }
-    if (! expanded) {
-      System.out.println("No terms in " + fieldName + " field for: " + toString());
     }
   }
 }

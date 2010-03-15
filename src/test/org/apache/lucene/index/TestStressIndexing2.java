@@ -407,12 +407,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     Collections.sort(ff1, fieldNameComparator);
     Collections.sort(ff2, fieldNameComparator);
 
-    if (ff1.size() != ff2.size()) {
-      System.out.println(ff1);
-      System.out.println(ff2);
-      assertEquals(ff1.size(), ff2.size());
-    }
-
+    assertEquals(ff1 + " : " + ff2, ff1.size(), ff2.size());
 
     for (int i=0; i<ff1.size(); i++) {
       Fieldable f1 = ff1.get(i);
@@ -422,12 +417,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       } else {
         String s1 = f1.stringValue();
         String s2 = f2.stringValue();
-        if (!s1.equals(s2)) {
-          // print out whole doc on error
-          System.out.println(ff1);
-          System.out.println(ff2);          
-          assertEquals(s1,s2);
-        }
+        assertEquals(ff1 + " : " + ff2, s1,s2);
       }
     }
   }

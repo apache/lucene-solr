@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Field;
@@ -20,6 +18,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util.LuceneTestCase;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -37,7 +36,7 @@ import org.apache.lucene.util.Version;
  * limitations under the License.
  */
 
-public class TestParser extends TestCase {
+public class TestParser extends LuceneTestCase {
 
 	CoreParser builder;
 	static Directory dir;
@@ -45,11 +44,7 @@ public class TestParser extends TestCase {
 	Analyzer analyzer=new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_24); 
 	IndexReader reader;
 	private IndexSearcher searcher;
-	
-	//CHANGE THIS TO SEE OUTPUT
-	boolean printResults=false;
-	
-	
+
 	/*
 	 * @see TestCase#setUp()
 	 */
@@ -143,7 +138,7 @@ public class TestParser extends TestCase {
 	{
 			Query q=parse("FuzzyLikeThisQuery.xml");
 			//show rewritten fuzzyLikeThisQuery - see what is being matched on
-			if(printResults)
+			if(VERBOSE)
 			{
 				System.out.println(q.rewrite(reader));
 			}
@@ -210,7 +205,7 @@ public class TestParser extends TestCase {
 	{
 		TopDocs hits = searcher.search(q, null, numDocs);
 		assertTrue(qType +" should produce results ", hits.totalHits>0);
-		if(printResults)
+		if(VERBOSE)
 		{
 			System.out.println("========="+qType+"============");
 			ScoreDoc[] scoreDocs = hits.scoreDocs;

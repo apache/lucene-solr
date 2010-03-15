@@ -108,7 +108,7 @@ public class PayloadHelper {
     PayloadAnalyzer analyzer = new PayloadAnalyzer();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer).setSimilarity(similarity));
-    //writer.infoStream = System.out;
+    // writer.infoStream = System.out;
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
       doc.add(new Field(FIELD, English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));

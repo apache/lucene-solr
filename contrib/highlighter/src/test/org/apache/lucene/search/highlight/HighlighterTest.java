@@ -140,7 +140,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       String fragment = highlighter.getBestFragment(stream, storedField);
 
-      System.out.println(fragment);
+      if (VERBOSE) System.out.println(fragment);
     }
   }
   
@@ -156,7 +156,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     Query q = parser.parse("\"world Flatland\"~3");
     String expected = "I call our <B>world</B> <B>Flatland</B>, not because we call it so,";
     String observed = highlightField(q, "SOME_FIELD_NAME", s1);
-    System.out.println("Expected: \"" + expected + "\n" + "Observed: \"" + observed);
+    if (VERBOSE) System.out.println("Expected: \"" + expected + "\n" + "Observed: \"" + observed);
     assertEquals("Query in the default field results in text for *ANY* field being highlighted",
         expected, observed);
 
@@ -168,7 +168,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     q = parser.parse("text:\"world Flatland\"~3");
     expected = s1;
     observed = highlightField(q, FIELD_NAME, s1);
-    System.out.println("Expected: \"" + expected + "\n" + "Observed: \"" + observed);
+    if (VERBOSE) System.out.println("Expected: \"" + expected + "\n" + "Observed: \"" + observed);
     assertEquals(
         "Query in a named field does not result in highlighting when that field isn't in the query",
         s1, highlightField(q, FIELD_NAME, s1));
@@ -207,7 +207,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
-      System.out.println("\t" + result);
+      if (VERBOSE) System.out.println("\t" + result);
     }
 
     // Not sure we can assert anything here - just running to check we dont
@@ -256,7 +256,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
-      System.out.println("\t" + result);
+      if (VERBOSE) System.out.println("\t" + result);
     }
 
     assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
@@ -278,7 +278,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
-      System.out.println("\t" + result);
+      if (VERBOSE) System.out.println("\t" + result);
     }
 
     assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
@@ -300,7 +300,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
-      System.out.println("\t" + result);
+      if (VERBOSE) System.out.println("\t" + result);
     }
 
     assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
@@ -326,7 +326,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
-      System.out.println("\t" + result);
+      if (VERBOSE) System.out.println("\t" + result);
     }
     
     assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
@@ -350,7 +350,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
-      System.out.println("\t" + result);
+      if (VERBOSE) System.out.println("\t" + result);
     }
     
     assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
@@ -375,7 +375,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
 //      String result = 
         highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,"...");
-      //System.out.println("\t" + result);
+      //if (VERBOSE) System.out.println("\t" + result);
     }
 
 
@@ -396,7 +396,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
-      System.out.println("\t" + result);
+      if (VERBOSE) System.out.println("\t" + result);
     }
 
     assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
@@ -418,7 +418,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
-      System.out.println("\t" + result);
+      if (VERBOSE) System.out.println("\t" + result);
 
       assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
           numHighlights == 3);
@@ -441,7 +441,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       String result = highlighter.getBestFragments(tokenStream, text,
           maxNumFragmentsRequired, "...");
-      System.out.println("\t" + result);
+      if (VERBOSE) System.out.println("\t" + result);
 
     }
     
@@ -460,7 +460,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       String result = highlighter.getBestFragments(tokenStream, text,
           maxNumFragmentsRequired, "...");
-      System.out.println("\t" + result);
+      if (VERBOSE) System.out.println("\t" + result);
 
     }
   }
@@ -482,7 +482,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
-      System.out.println("\t" + result);
+      if (VERBOSE) System.out.println("\t" + result);
 
       assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
           numHighlights == 4);
@@ -551,7 +551,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
-      System.out.println("\t" + result);
+      if (VERBOSE) System.out.println("\t" + result);
     }
     // Not sure we can assert anything here - just running to check we dont
     // throw any exceptions
@@ -700,7 +700,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     // can't rewrite ConstantScore if you want to highlight it -
     // it rewrites to ConstantScoreQuery which cannot be highlighted
     // query = unReWrittenQuery.rewrite(reader);
-    System.out.println("Searching for: " + query.toString(FIELD_NAME));
+    if (VERBOSE) System.out.println("Searching for: " + query.toString(FIELD_NAME));
     hits = searcher.search(query, null, 1000);
 
     for (int i = 0; i < hits.totalHits; i++) {
@@ -720,7 +720,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           fragmentSeparator);
-      System.out.println("\t" + result);
+      if (VERBOSE) System.out.println("\t" + result);
     }
     assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
         numHighlights == 5);
@@ -748,7 +748,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           fragmentSeparator);
-      System.out.println("\t" + result);
+      if (VERBOSE) System.out.println("\t" + result);
     }
     assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
         numHighlights == 5);
@@ -776,7 +776,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           fragmentSeparator);
-      System.out.println("\t" + result);
+      if (VERBOSE) System.out.println("\t" + result);
     }
     assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
         numHighlights == 5);
@@ -932,7 +932,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
               HighlighterTest.this);
           highlighter.setTextFragmenter(new SimpleFragmenter(40));
           String result = highlighter.getBestFragment(tokenStream, text);
-          System.out.println("\t" + result);
+          if (VERBOSE) System.out.println("\t" + result);
         }
         assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
             numHighlights == 4);
@@ -1063,7 +1063,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
           Highlighter highlighter = getHighlighter(query, FIELD_NAME, tokenStream,
               HighlighterTest.this);
           String result = highlighter.getBestFragment(tokenStream, text);
-          System.out.println("\t" + result);
+          if (VERBOSE) System.out.println("\t" + result);
         }
         assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
             numHighlights == 4);
@@ -1097,7 +1097,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
           assertTrue("Failed to find correct number of text Fragments: " + fragmentResults.length
               + " vs " + stringResults.length, fragmentResults.length == stringResults.length);
           for (int j = 0; j < stringResults.length; j++) {
-            System.out.println(fragmentResults[j]);
+            if (VERBOSE) System.out.println(fragmentResults[j]);
             assertTrue("Failed to find same text Fragments: " + fragmentResults[j] + " found",
                 fragmentResults[j].toString().equals(stringResults[j]));
 
@@ -1215,7 +1215,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
         QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, analyzer);
         Query query = parser.parse("JF? or Kenned*");
-        System.out.println("Searching with primitive query");
+        if (VERBOSE) System.out.println("Searching with primitive query");
         // forget to set this and...
         // query=query.rewrite(reader);
         TopDocs hits = searcher.search(query, null, 1000);
@@ -1238,7 +1238,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
           String highlightedText = highlighter.getBestFragments(tokenStream, text,
               maxNumFragmentsRequired, "...");
 
-          System.out.println(highlightedText);
+          if (VERBOSE) System.out.println(highlightedText);
         }
         // We expect to have zero highlights if the query is multi-terms and is
         // not
@@ -1353,7 +1353,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, new StandardAnalyzer(TEST_VERSION_CURRENT));
     parser.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     query = parser.parse("multi*");
-    System.out.println("Searching for: " + query.toString(FIELD_NAME));
+    if (VERBOSE) System.out.println("Searching for: " + query.toString(FIELD_NAME));
     // at this point the multisearcher calls combine(query[])
     hits = multiSearcher.search(query, null, 1000);
 
@@ -1371,7 +1371,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       String text = multiSearcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
       TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
       String highlightedText = highlighter.getBestFragment(tokenStream, text);
-      System.out.println(highlightedText);
+      if (VERBOSE) System.out.println(highlightedText);
     }
     assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
         numHighlights == 2);
@@ -1645,7 +1645,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     for( int i = 0; i < hits.totalHits; i++ ){
       Document doc = searcher.doc( hits.scoreDocs[i].doc );
       String result = h.getBestFragment( a, "t_text1", doc.get( "t_text1" ));
-      System.out.println("result:" +  result);
+      if (VERBOSE) System.out.println("result:" +  result);
       assertEquals("more <B>random</B> words for second field", result);
     }
     searcher.close();
@@ -1698,7 +1698,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     // for any multi-term queries to work (prefix, wildcard, range,fuzzy etc)
     // you must use a rewritten query!
     query = unReWrittenQuery.rewrite(reader);
-    System.out.println("Searching for: " + query.toString(FIELD_NAME));
+    if (VERBOSE) System.out.println("Searching for: " + query.toString(FIELD_NAME));
     hits = searcher.search(query, null, 1000);
   }
 
@@ -1714,7 +1714,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
           "...");
-      System.out.println("\t" + result);
+      if (VERBOSE) System.out.println("\t" + result);
 
       assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
           numHighlights == expectedHighlights);
@@ -1936,16 +1936,16 @@ class SynonymTokenizer extends TokenStream {
 
         String result = highlighter.getBestFragments(tokenStream, text, maxNumFragmentsRequired,
             fragmentSeparator);
-        System.out.println("\t" + result);
+        if (HighlighterTest.VERBOSE) System.out.println("\t" + result);
       }
     }
 
     abstract void run() throws Exception;
 
     void start() throws Exception {
-      System.out.println("Run QueryScorer");
+      if (HighlighterTest.VERBOSE) System.out.println("Run QueryScorer");
       run();
-      System.out.println("Run QueryTermScorer");
+      if (HighlighterTest.VERBOSE) System.out.println("Run QueryTermScorer");
       mode = QUERY_TERM;
       run();
     }

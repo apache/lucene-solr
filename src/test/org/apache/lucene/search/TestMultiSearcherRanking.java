@@ -36,7 +36,6 @@ import java.io.IOException;
  */
 public class TestMultiSearcherRanking extends LuceneTestCase {
   
-  private final boolean verbose = false;  // set to true to output hits
   private final String FIELD_NAME = "body";
   private Searcher multiSearcher;
   private Searcher singleSearcher;
@@ -86,7 +85,7 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
    */
   private void checkQuery(String queryStr) throws IOException, ParseException {
     // check result hit ranking
-    if(verbose) System.out.println("Query: " + queryStr);
+    if(VERBOSE) System.out.println("Query: " + queryStr);
       QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, new StandardAnalyzer(TEST_VERSION_CURRENT));
     Query query = queryParser.parse(queryStr);
     ScoreDoc[] multiSearcherHits = multiSearcher.search(query, null, 1000).scoreDocs;
@@ -95,15 +94,15 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
     for (int i = 0; i < multiSearcherHits.length; i++) {
       Document docMulti = multiSearcher.doc(multiSearcherHits[i].doc);
       Document docSingle = singleSearcher.doc(singleSearcherHits[i].doc);
-      if(verbose) System.out.println("Multi:  " + docMulti.get(FIELD_NAME) + " score="
+      if(VERBOSE) System.out.println("Multi:  " + docMulti.get(FIELD_NAME) + " score="
           + multiSearcherHits[i].score);
-      if(verbose) System.out.println("Single: " + docSingle.get(FIELD_NAME) + " score="
+      if(VERBOSE) System.out.println("Single: " + docSingle.get(FIELD_NAME) + " score="
           + singleSearcherHits[i].score);
       assertEquals(multiSearcherHits[i].score, singleSearcherHits[i].score,
           0.001f);
       assertEquals(docMulti.get(FIELD_NAME), docSingle.get(FIELD_NAME));
     }
-    if(verbose) System.out.println();
+    if(VERBOSE) System.out.println();
   }
   
   /**

@@ -240,7 +240,6 @@ public class TestWildcard
    */
   public void testParsingAndSearching() throws Exception {
     String field = "content";
-    boolean dbg = false;
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, field, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     qp.setAllowLeadingWildcard(true);
     String docs[] = {
@@ -285,7 +284,7 @@ public class TestWildcard
     for (int i = 0; i < matchAll.length; i++) {
       String qtxt = matchAll[i];
       Query q = qp.parse(qtxt);
-      if (dbg) System.out.println("matchAll: qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
+      if (VERBOSE) System.out.println("matchAll: qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
       ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
       assertEquals(docs.length,hits.length);
     }
@@ -294,7 +293,7 @@ public class TestWildcard
     for (int i = 0; i < matchNone.length; i++) {
       String qtxt = matchNone[i];
       Query q = qp.parse(qtxt);
-      if (dbg) System.out.println("matchNone: qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
+      if (VERBOSE) System.out.println("matchNone: qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
       ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
       assertEquals(0,hits.length);
     }
@@ -304,7 +303,7 @@ public class TestWildcard
       for (int j = 0; j < matchOneDocPrefix[i].length; j++) {
         String qtxt = matchOneDocPrefix[i][j];
         Query q = qp.parse(qtxt);
-        if (dbg) System.out.println("match 1 prefix: doc="+docs[i]+" qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
+        if (VERBOSE) System.out.println("match 1 prefix: doc="+docs[i]+" qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
         assertEquals(PrefixQuery.class, q.getClass());
         ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
         assertEquals(1,hits.length);
@@ -317,7 +316,7 @@ public class TestWildcard
       for (int j = 0; j < matchOneDocWild[i].length; j++) {
         String qtxt = matchOneDocWild[i][j];
         Query q = qp.parse(qtxt);
-        if (dbg) System.out.println("match 1 wild: doc="+docs[i]+" qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
+        if (VERBOSE) System.out.println("match 1 wild: doc="+docs[i]+" qtxt="+qtxt+" q="+q+" "+q.getClass().getName());
         assertEquals(WildcardQuery.class, q.getClass());
         ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
         assertEquals(1,hits.length);

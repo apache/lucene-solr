@@ -84,7 +84,7 @@ public class TestSnowballVocab extends BaseTokenStreamTestCase {
    */
   private void assertCorrectOutput(String snowballLanguage, String dataDirectory)
       throws IOException {
-    System.err.println("checking snowball language: " + snowballLanguage);
+    if (VERBOSE) System.out.println("checking snowball language: " + snowballLanguage);
     TokenStream filter = new SnowballFilter(tokenizer, snowballLanguage);
     InputStream vocFile = new FileInputStream(new File(dataRoot, 
         dataDirectory + "/voc.txt"));

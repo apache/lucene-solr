@@ -56,7 +56,6 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestPerfTasksLogic extends LuceneTestCase {
 
-  private static final boolean DEBUG = false;
   static final String NEW_LINE = System.getProperty("line.separator");
   
   // properties in effect in all tests here
@@ -550,7 +549,7 @@ public class TestPerfTasksLogic extends LuceneTestCase {
   }
 
   private static void logTstLogic (String txt) {
-    if (!DEBUG) 
+    if (!VERBOSE) 
       return;
     System.out.println("Test logic of:");
     System.out.println(txt);
