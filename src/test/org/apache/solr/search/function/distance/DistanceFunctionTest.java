@@ -59,7 +59,7 @@ public class DistanceFunctionTest extends AbstractSolrTestCase {
     //Geo Hash Haversine
     //Can verify here: http://www.movable-type.co.uk/scripts/latlong.html, but they use a slightly different radius for the earth, so just be close
     assertQ(req("fl", "*,score", "q", "{!func}ghhsin(" + Constants.EARTH_RADIUS_KM + ", gh_s, \"" + GeoHashUtils.encode(32, -79) +
-            "\",)", "fq", "id:1"), "//float[@name='score']='122.30894'");
+            "\",)", "fq", "id:1"), "//float[@name='score']='122.309006'");
 
     assertQ(req("fl", "id,point_hash,score", "q", "{!func}recip(ghhsin(" + Constants.EARTH_RADIUS_KM + ", point_hash, \"" + GeoHashUtils.encode(32, -79) + "\"), 1, 1, 0)"),
             "//*[@numFound='7']", 
@@ -68,7 +68,7 @@ public class DistanceFunctionTest extends AbstractSolrTestCase {
             );
 
 
-    assertQ(req("fl", "*,score", "q", "{!func}ghhsin(" + Constants.EARTH_RADIUS_KM + ", gh_s, geohash(32, -79))", "fq", "id:1"), "//float[@name='score']='122.30894'");
+    assertQ(req("fl", "*,score", "q", "{!func}ghhsin(" + Constants.EARTH_RADIUS_KM + ", gh_s, geohash(32, -79))", "fq", "id:1"), "//float[@name='score']='122.309006'");
   }
 
   public void testVector() throws Exception {
