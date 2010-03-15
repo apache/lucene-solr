@@ -52,6 +52,6 @@ public class TestPropInject extends AbstractSolrTestCase {
   public void testPropsDefaults() throws Exception {
     IndexWriter writer = new ExposeWriterHandler().getWriter();
     ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler)writer.getMergeScheduler();
-    assertEquals(10, cms.getMaxThreadCount());
+    assertEquals(4, cms.getMaxThreadCount());
   }
 }

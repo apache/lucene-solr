@@ -94,7 +94,7 @@
       can perform merges in the background using separate threads.  The SerialMergeScheduler (Lucene 2.2 default) does not.
      -->
     <mergeScheduler class="org.apache.lucene.index.ConcurrentMergeScheduler">
-      <int name="maxThreadCount">10</int>
+      <int name="maxThreadCount">4</int>
     </mergeScheduler>
     <!-- these are global... can't currently override per index -->
     <writeLockTimeout>1000</writeLockTimeout>

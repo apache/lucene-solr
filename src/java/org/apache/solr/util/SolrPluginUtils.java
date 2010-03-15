@@ -988,9 +988,9 @@ public class SolrPluginUtils {
         Object val = entry.getValue();
         method.invoke(bean, val);
       } catch (InvocationTargetException e1) {
-        throw new RuntimeException("Error invoking setter " + setterName + "on class : " + clazz.getName(), e1);
+        throw new RuntimeException("Error invoking setter " + setterName + " on class : " + clazz.getName(), e1);
       } catch (IllegalAccessException e1) {
-        throw new RuntimeException("Error invoking setter " + setterName + "on class : " + clazz.getName(), e1);
+        throw new RuntimeException("Error invoking setter " + setterName + " on class : " + clazz.getName(), e1);
       }
     }
   }
