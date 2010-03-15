@@ -92,7 +92,7 @@
   <property name="javadoc.link.junit"
             value="http://junit.sourceforge.net/javadoc/"/>
   <property name="javadoc.link.lucene"
-            value="http://lucene.apache.org/java/2_9_0/api/all/"/>
+            value="http://lucene.apache.org/java/3_1_0/api/all/"/>
   <property name="javadoc.packages" value="org.apache.solr.*"/>
   <property name="build.docs" value="${dest}/docs"/>
   <property name="build.javadoc" value="${common.dir}/${build.docs}/api"/>
@@ -114,7 +114,7 @@
        The version suffix of the Lucene artifacts checked into "lib" 
        IF YOU CHANGE THIS, SANITY CHECK "javadoc.link.lucene"
   -->
-  <property name="lucene_version" value="3.0.1"/>
+  <property name="lucene_version" value="3.1-dev"/>
   <!-- The version number to assign to the Maven artifacts. -->
   <property name="maven_version" value="1.5-SNAPSHOT"/>
 
