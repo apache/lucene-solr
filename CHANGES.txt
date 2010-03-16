@@ -34,6 +34,14 @@ Upgrading from Solr 1.4
   HTMLStripStandardTokenizerFactory were removed. To strip HTML tags, 
   HTMLStripCharFilter should be used instead, and it works with any 
   Tokenizer of your choice.  (SOLR-1657)
+  
+* Field compression is no longer supported. Fields that were formally
+  compressed will be uncompressed as index segments are merged. For
+  shorter fields, this may actually be an improvement, as the compression
+  used was not very good for short text. Some indexes may get larger though.
+  The Lucene index format has changed due to the removal of native 
+  compression, and as a result, once you upgrade, previous versions of Solr
+  will no longer be able to read the index.
 
 Versions of Major Components
 ---------------------
