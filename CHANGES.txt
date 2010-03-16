@@ -24,6 +24,10 @@ $Id$
 ==================  3.1.0-dev ==================
 Upgrading from Solr 1.4
 ----------------------
+
+* The Lucene index format has changed and as a result, once you upgrade, 
+  previous versions of Solr will no longer be able to read your indices.
+
 * The experimental ALIAS command is removed in Solr 1.5 (SOLR-1637)
 
 * Using solr.xml is recommended for single cores also (SOLR-1621)
@@ -39,9 +43,6 @@ Upgrading from Solr 1.4
   compressed will be uncompressed as index segments are merged. For
   shorter fields, this may actually be an improvement, as the compression
   used was not very good for short text. Some indexes may get larger though.
-  The Lucene index format has changed due to the removal of native 
-  compression, and as a result, once you upgrade, previous versions of Solr
-  will no longer be able to read the index.
 
 Versions of Major Components
 ---------------------
