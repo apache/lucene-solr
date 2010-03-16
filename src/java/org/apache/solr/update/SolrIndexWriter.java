@@ -166,7 +166,6 @@ public class SolrIndexWriter extends IndexWriter {
   }
 
   @Deprecated
-  // nocommit: remove?
   public SolrIndexWriter(String name, String path, DirectoryFactory dirFactory, boolean create, IndexSchema schema, SolrIndexConfig config) throws IOException {
     super(getDirectory(path, dirFactory, null), schema.getAnalyzer(), create, MaxFieldLength.LIMITED);
     init(name, schema, config);
@@ -175,7 +174,6 @@ public class SolrIndexWriter extends IndexWriter {
   /**
    * @deprecated
    */
-  // nocommit: remove?
   public SolrIndexWriter(String name, String path, boolean create, IndexSchema schema) throws IOException {
     super(getDirectory(path, null), schema.getAnalyzer(), create, MaxFieldLength.LIMITED);
     init(name, schema, null);
@@ -184,7 +182,6 @@ public class SolrIndexWriter extends IndexWriter {
   /**
    * @deprecated
    */
-  // nocommit: remove?
   public SolrIndexWriter(String name, String path, boolean create, IndexSchema schema, SolrIndexConfig config) throws IOException {
     super(getDirectory(path, config), schema.getAnalyzer(), create, MaxFieldLength.LIMITED);
     init(name, schema, config);
