@@ -28,7 +28,7 @@ Upgrading from Solr 1.4
 * The Lucene index format has changed and as a result, once you upgrade, 
   previous versions of Solr will no longer be able to read your indices.
 
-* The experimental ALIAS command is removed in Solr 1.5 (SOLR-1637)
+* The experimental ALIAS command has been removed (SOLR-1637)
 
 * Using solr.xml is recommended for single cores also (SOLR-1621)
 
