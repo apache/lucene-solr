@@ -136,6 +136,7 @@ public class SolrConfig extends Config {
     
     booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", BooleanQuery.getMaxClauseCount());
     luceneMatchVersion = getLuceneVersion("luceneMatchVersion", Version.LUCENE_24);
+    log.info("Using Lucene MatchVersion: " + luceneMatchVersion);
 
     filtOptEnabled = getBool("query/boolTofilterOptimizer/@enabled", false);
     filtOptCacheSize = getInt("query/boolTofilterOptimizer/@cacheSize",32);

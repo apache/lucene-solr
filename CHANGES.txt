@@ -110,6 +110,9 @@ New Features
 
 * SOLR-1815: SolrJ now preserves the order of facet queries. (yonik)
 
+* SOLR-1677: Add support for choosing the Lucene Version for Lucene components within
+  Solr. (Uwe Schindler, Mark Miller)
+
 Optimizations
 ----------------------
 
