@@ -821,7 +821,7 @@ public final class IndexSchema {
     NamedNodeMap attrs = node.getAttributes();
     String analyzerName = DOMUtil.getAttr(attrs,"class");
     if (analyzerName != null) {
-      // nocommit: add support for CoreAware & Co here?
+      // No need to be core-aware as Analyzers are not in the core-aware list
       final Class<? extends Analyzer> clazz = loader.findClass(analyzerName).asSubclass(Analyzer.class);
       try {
         try {
