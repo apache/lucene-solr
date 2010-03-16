@@ -52,7 +52,7 @@
   <property name="svnversion.exe" value="svnversion" />
 
   <!-- Java Version we are compatible with -->
-  <property name="java.compat.version" value="1.6" />
+  <property name="java.compat.version" value="1.5" />
 
   <!-- Solr Implementation Version -->
   <!--
