@@ -36,7 +36,8 @@ public class RussianLetterTokenizerFactory extends BaseTokenizerFactory {
   }
 
   public RussianLetterTokenizer create(Reader in) {
-    return new RussianLetterTokenizer(in);
+    assureMatchVersion();
+    return new RussianLetterTokenizer(luceneMatchVersion,in);
   }
 }
 

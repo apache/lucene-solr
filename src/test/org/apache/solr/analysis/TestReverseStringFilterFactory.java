@@ -35,6 +35,7 @@ public class TestReverseStringFilterFactory extends BaseTokenTestCase {
     Reader reader = new StringReader("simple test");
     Tokenizer tokenizer = new WhitespaceTokenizer(reader);
     ReverseStringFilterFactory factory = new ReverseStringFilterFactory();
+    factory.init(DEFAULT_VERSION_PARAM);
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "elpmis", "tset" });
   }

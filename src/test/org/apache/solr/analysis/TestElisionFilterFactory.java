@@ -39,6 +39,7 @@ public class TestElisionFilterFactory extends BaseTokenTestCase {
     Reader reader = new StringReader("l'avion");
     Tokenizer tokenizer = new WhitespaceTokenizer(reader);
     ElisionFilterFactory factory = new ElisionFilterFactory();
+    factory.init(DEFAULT_VERSION_PARAM);
     ResourceLoader loader = new SolrResourceLoader(null, null);
     Map<String,String> args = new HashMap<String,String>();
     args.put("articles", "frenchArticles.txt");

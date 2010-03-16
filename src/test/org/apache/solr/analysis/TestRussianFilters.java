@@ -34,9 +34,8 @@ public class TestRussianFilters extends BaseTokenTestCase {
    */
   public void testTokenizer() throws Exception {
     Reader reader = new StringReader("Вместе с тем о силе электромагнитной 100");
-    Map<String,String> args = new HashMap<String,String>();
     RussianLetterTokenizerFactory factory = new RussianLetterTokenizerFactory();
-    factory.init(args);
+    factory.init(DEFAULT_VERSION_PARAM);
     Tokenizer stream = factory.create(reader);
     assertTokenStreamContents(stream, new String[] {"Вместе", "с", "тем", "о",
         "силе", "электромагнитной", "100"});
@@ -47,11 +46,10 @@ public class TestRussianFilters extends BaseTokenTestCase {
    */
   public void testLowerCase() throws Exception {
     Reader reader = new StringReader("Вместе с тем о силе электромагнитной 100");
-    Map<String,String> args = new HashMap<String,String>();
     RussianLetterTokenizerFactory factory = new RussianLetterTokenizerFactory();
-    factory.init(args);
+    factory.init(DEFAULT_VERSION_PARAM);
     RussianLowerCaseFilterFactory filterFactory = new RussianLowerCaseFilterFactory();
-    filterFactory.init(args);
+    filterFactory.init(DEFAULT_VERSION_PARAM);
     Tokenizer tokenizer = factory.create(reader);
     TokenStream stream = filterFactory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] {"вместе", "с", "тем", "о",
@@ -63,13 +61,12 @@ public class TestRussianFilters extends BaseTokenTestCase {
    */
   public void testStemmer() throws Exception {
     Reader reader = new StringReader("Вместе с тем о силе электромагнитной 100");
-    Map<String,String> args = new HashMap<String,String>();
     RussianLetterTokenizerFactory factory = new RussianLetterTokenizerFactory();
-    factory.init(args);
+    factory.init(DEFAULT_VERSION_PARAM);
     RussianLowerCaseFilterFactory caseFactory = new RussianLowerCaseFilterFactory();
-    caseFactory.init(args);
+    caseFactory.init(DEFAULT_VERSION_PARAM);
     RussianStemFilterFactory stemFactory = new RussianStemFilterFactory();
-    stemFactory.init(args);
+    stemFactory.init(DEFAULT_VERSION_PARAM);
     Tokenizer tokenizer = factory.create(reader);
     TokenStream stream = caseFactory.create(tokenizer);
     stream = stemFactory.create(stream);

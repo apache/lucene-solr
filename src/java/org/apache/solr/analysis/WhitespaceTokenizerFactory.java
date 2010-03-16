@@ -27,6 +27,7 @@ import java.io.Reader;
  */
 public class WhitespaceTokenizerFactory extends BaseTokenizerFactory {
   public WhitespaceTokenizer create(Reader input) {
-    return new WhitespaceTokenizer(input);
+    assureMatchVersion();
+    return new WhitespaceTokenizer(luceneMatchVersion,input);
   }
 }

@@ -78,7 +78,9 @@ public class StopFilterFactory extends BaseTokenFilterFactory implements Resourc
   }
 
   public StopFilter create(TokenStream input) {
-    StopFilter stopFilter = new StopFilter(enablePositionIncrements,input,stopWords,ignoreCase);
+    assureMatchVersion();
+    StopFilter stopFilter = new StopFilter(luceneMatchVersion,input,stopWords,ignoreCase);
+    stopFilter.setEnablePositionIncrements(enablePositionIncrements);
     return stopFilter;
   }
 }

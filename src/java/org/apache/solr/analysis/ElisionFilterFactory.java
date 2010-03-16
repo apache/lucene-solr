@@ -56,7 +56,8 @@ public class ElisionFilterFactory extends BaseTokenFilterFactory implements Reso
   }
 
   public ElisionFilter create(TokenStream input) {
-    return new ElisionFilter(input,articles);
+    assureMatchVersion();
+    return new ElisionFilter(luceneMatchVersion,input,articles);
   }
 }
 

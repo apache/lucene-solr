@@ -27,6 +27,7 @@ import java.io.Reader;
  */
 public class LowerCaseTokenizerFactory extends BaseTokenizerFactory {
   public LowerCaseTokenizer create(Reader input) {
-    return new LowerCaseTokenizer(input);
+    assureMatchVersion();
+    return new LowerCaseTokenizer(luceneMatchVersion,input);
   }
 }

@@ -28,7 +28,8 @@ import org.apache.lucene.analysis.reverse.ReverseStringFilter;
  */
 public class ReverseStringFilterFactory extends BaseTokenFilterFactory {
   public ReverseStringFilter create(TokenStream in) {
-    return new ReverseStringFilter(in);
+    assureMatchVersion();
+    return new ReverseStringFilter(luceneMatchVersion,in);
   }
 }
 

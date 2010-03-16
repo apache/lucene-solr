@@ -27,6 +27,7 @@ import java.io.Reader;
  */
 public class LetterTokenizerFactory extends BaseTokenizerFactory {
   public LetterTokenizer create(Reader input) {
-    return new LetterTokenizer(input);
+    assureMatchVersion();
+    return new LetterTokenizer(luceneMatchVersion, input);
   }
 }
