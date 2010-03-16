@@ -75,7 +75,7 @@ public class SolrQueryParser extends QueryParser {
    * @see IndexSchema#getDefaultSearchFieldName()
    */
   public SolrQueryParser(IndexSchema schema, String defaultField) {
-    super(Version.LUCENE_24, defaultField == null ? schema.getDefaultSearchFieldName() : defaultField, schema.getQueryAnalyzer());
+    super(schema.getSolrConfig().getLuceneVersion("luceneMatchVersion", Version.LUCENE_24), defaultField == null ? schema.getDefaultSearchFieldName() : defaultField, schema.getQueryAnalyzer());
     this.schema = schema;
     this.parser  = null;
     this.defaultField = defaultField;
