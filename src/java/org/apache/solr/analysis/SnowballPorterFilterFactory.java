@@ -122,10 +122,14 @@ class SnowballPorterFilter extends TokenFilter {
       return true;
     }
 
-    stemmer.setCurrent(new String(termBuffer, 0, len));//ugh, wish the Stemmer took a char array
+    stemmer.setCurrent(termBuffer, len);
     stemmer.stem();
-    String newstr = stemmer.getCurrent();
-    termAtt.setTermBuffer(newstr.toCharArray(), 0, newstr.length());
+    final char finalTerm[] = stemmer.getCurrentBuffer();
+    final int newLength = stemmer.getCurrentBufferLength();
+    if (finalTerm != termBuffer)
+      termAtt.setTermBuffer(finalTerm, 0, newLength);
+    else
+      termAtt.setTermLength(newLength);
 
     return true;
   }
