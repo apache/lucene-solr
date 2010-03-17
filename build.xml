@@ -17,9 +17,9 @@
     limitations under the License.
  -->
 
-<project name="lucene-solr" default="run-tests" basedir=".">
+<project name="lucene-solr" default="test" basedir=".">
 
-  <target name="run-tests">
+  <target name="test">
     <sequential>
       <subant target="test" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml"/>
