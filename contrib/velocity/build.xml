@@ -69,27 +69,27 @@
   <target name="compileTests" depends="compile">
   	<solr-javac destdir="target/test-classes"
   	                classpathref="test.classpath">
-  	  <src path="src/test/java" />
+  	  <src path="src/test" />
   	</solr-javac>
   </target>
 
   <target name="test" depends="compileTests">
   	<mkdir dir="${junit.output.dir}"/>
 
-  	<junit printsummary="on"
+  	<junit printsummary="true" showoutput="true"
            haltonfailure="no"
            errorProperty="tests.failed"
            failureProperty="tests.failed"
-           dir="src/test/resources/"
+           dir="src/main"
            >
-      <formatter type="brief" usefile="false" if="junit.details"/>
+      <formatter type="brief" usefile="false"/>
       <classpath refid="test.classpath"/>
-      <formatter type="xml"/>
+      <!--<formatter type="xml" usefile="false"/>-->
       <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
-        <fileset dir="src/test/java" includes="${junit.includes}"/>
+        <fileset dir="src/test" includes="${junit.includes}"/>
       </batchtest>
       <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
-        <fileset dir="src/test/java" includes="**/${testcase}.java"/>
+        <fileset dir="src/test" includes="**/${testcase}.java"/>
       </batchtest>
     </junit>
 
