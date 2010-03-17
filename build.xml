@@ -18,13 +18,41 @@
  -->
 
 <project name="lucene-solr" default="test" basedir=".">
-
+  <property name="lucene.version" value="3.1-dev" />
   <target name="test">
     <sequential>
       <subant target="test" inheritall="false" failonerror="true">
-        <fileset dir="lucene" includes="build.xml"/>
-        <fileset dir="solr" includes="build.xml"/>
+        <fileset dir="lucene" includes="build.xml" />
+      </subant>
+
+      <antcall target="lucene-jars-to-solr" />
+
+      <subant target="test" inheritall="false" failonerror="true">
+        <fileset dir="solr" includes="build.xml" />
       </subant>
     </sequential>
   </target>
+
+  <target name="lucene-jars-to-solr">
+    <!-- temp hack - copy lucene jars to solr -->
+    <copy todir="solr/lib" file="lucene/build/lucene-core-${lucene.version}.jar" />
+    <copy todir="solr/lib" file="lucene/build/contrib/analyzers/common/lucene-analyzers-${lucene.version}.jar" />
+    <copy todir="solr/lib" file="lucene/build/contrib/fast-vector-highlighter/lucene-fast-vector-highlighter-${lucene.version}.jar" />
+    <copy todir="solr/lib" file="lucene/build/contrib/highlighter/lucene-highlighter-${lucene.version}.jar" />
+    <copy todir="solr/lib" file="lucene/build/contrib/memory/lucene-memory-${lucene.version}.jar" />
+    <copy todir="solr/lib" file="lucene/build/contrib/misc/lucene-misc-${lucene.version}.jar" />
+    <copy todir="solr/lib" file="lucene/build/contrib/queries/lucene-queries-${lucene.version}.jar" />
+    <copy todir="solr/lib" file="lucene/build/contrib/spatial/lucene-spatial-${lucene.version}.jar" />
+    <copy todir="solr/lib" file="lucene/build/contrib/spellchecker/lucene-spellchecker-${lucene.version}.jar" />
+  </target>
+
+  <target name="clean">
+    <sequential>
+      <subant target="clean" inheritall="false" failonerror="true">
+        <fileset dir="lucene" includes="build.xml" />
+        <fileset dir="solr" includes="build.xml" />
+      </subant>
+    </sequential>
+  </target>
+
 </project>
