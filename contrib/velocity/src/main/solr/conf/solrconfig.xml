@@ -337,7 +337,7 @@
     -->
   <requestDispatcher handleSelect="true" >
     <!--Make sure your system has some authentication before enabling remote streaming!  -->
-    <requestParsers enableRemoteStreaming="false" multipartUploadLimitInKB="2048" />
+    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048" />
 
     <!-- Set HTTP caching related parameters (for proxy caches and clients).
           
@@ -397,6 +397,9 @@
      </lst>
 
   </requestHandler>
+
+  <requestHandler name="/mlt" class="solr.MoreLikeThisHandler"/>
+  <requestHandler name="/analysis/field" class="solr.FieldAnalysisRequestHandler" />
 
   <requestHandler name="/itas" class="solr.SearchHandler">
      <lst name="defaults">
