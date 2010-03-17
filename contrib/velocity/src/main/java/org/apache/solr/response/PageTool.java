@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.solr.request;
+package org.apache.solr.response;
 
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.common.SolrDocumentList;
