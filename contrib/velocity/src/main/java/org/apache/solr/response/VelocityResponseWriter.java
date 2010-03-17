@@ -15,37 +15,32 @@
  * limitations under the License.
  */
 
-package org.apache.solr.request;
+package org.apache.solr.response;
 
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
-import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
-import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.velocity.Template;
 import org.apache.velocity.VelocityContext;
-import org.apache.velocity.tools.generic.*;
 import org.apache.velocity.app.VelocityEngine;
+import org.apache.velocity.tools.generic.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringWriter;
-import java.io.Writer;
+import java.io.*;
 import java.util.Properties;
 
 public class VelocityResponseWriter implements QueryResponseWriter {
-  
+
+  // TODO: maybe pass this Logger to the template for logging from there?
   private static final Logger log = LoggerFactory.getLogger(VelocityResponseWriter.class);
 
   public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
     VelocityEngine engine = getEngine(request);  // TODO: have HTTP headers available for configuring engine
 
-    // TODO: Add layout capability, render to string buffer, then render layout
     Template template = getTemplate(engine, request);
 
     VelocityContext context = new VelocityContext();
@@ -67,10 +62,11 @@ public class VelocityResponseWriter implements QueryResponseWriter {
       rsp.setResponse(parsedResponse);
 
       // page only injected if QueryResponse works
-      context.put("page",new PageTool(request,response));  // page tool only makes sense for a SearchHandler request... *sigh*
+      context.put("page", new PageTool(request, response));  // page tool only makes sense for a SearchHandler request... *sigh*
     } catch (ClassCastException e) {
       // known edge case where QueryResponse's extraction assumes "response" is a SolrDocumentList
       // (AnalysisRequestHandler emits a "response")
+      e.printStackTrace();
       rsp = new SolrResponseBase();
       rsp.setResponse(parsedResponse);
     }
@@ -78,22 +74,23 @@ public class VelocityResponseWriter implements QueryResponseWriter {
 
     // Velocity context tools - TODO: make these pluggable
     context.put("esc", new EscapeTool());
-    context.put("sort", new SortTool());
-    context.put("number", new NumberTool());
-    context.put("list", new ListTool());
     context.put("date", new ComparisonDateTool());
+    context.put("list", new ListTool());
     context.put("math", new MathTool());
+    context.put("number", new NumberTool());
+    context.put("sort", new SortTool());
+
     context.put("engine", engine);  // for $engine.resourceExists(...)
 
     String layout_template = request.getParams().get("v.layout");
     String json_wrapper = request.getParams().get("v.json");
-    boolean wrap_response = (layout_template != null) || (json_wrapper !=null);
-    
+    boolean wrap_response = (layout_template != null) || (json_wrapper != null);
+
     // create output, optionally wrap it into a json object
     if (wrap_response) {
       StringWriter stringWriter = new StringWriter();
       template.merge(context, stringWriter);
-      
+
       if (layout_template != null) {
         context.put("content", stringWriter.toString());
         stringWriter = new StringWriter();
@@ -103,7 +100,7 @@ public class VelocityResponseWriter implements QueryResponseWriter {
           throw new IOException(e.getMessage());
         }
       }
-      
+
       if (json_wrapper != null) {
         writer.write(request.getParams().get("v.json") + "(");
         writer.write(getJSONWrap(stringWriter.toString()));
@@ -126,28 +123,30 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     engine.setProperty(VelocityEngine.FILE_RESOURCE_LOADER_PATH, baseDir.getAbsolutePath());
     engine.setProperty("params.resource.loader.instance", new SolrParamResourceLoader(request));
     SolrVelocityResourceLoader resourceLoader =
-      new SolrVelocityResourceLoader(request.getCore().getSolrConfig().getResourceLoader());
+        new SolrVelocityResourceLoader(request.getCore().getSolrConfig().getResourceLoader());
     engine.setProperty("solr.resource.loader.instance", resourceLoader);
+
+    // TODO: Externalize Velocity properties
     engine.setProperty(VelocityEngine.RESOURCE_LOADER, "params,file,solr");
     String propFile = request.getParams().get("v.properties");
-    try{
-      if( propFile == null )
+    try {
+      if (propFile == null)
         engine.init();
-      else{
+      else {
         InputStream is = null;
-        try{
-          is = resourceLoader.getResourceStream( propFile );
+        try {
+          is = resourceLoader.getResourceStream(propFile);
           Properties props = new Properties();
-          props.load( is );
-          engine.init( props );
+          props.load(is);
+          engine.init(props);
         }
-        finally{
-          if( is != null ) is.close();
+        finally {
+          if (is != null) is.close();
         }
       }
     }
-    catch( Exception e ){
-      throw new RuntimeException( e );
+    catch (Exception e) {
+      throw new RuntimeException(e);
     }
 
     return engine;
@@ -176,9 +175,9 @@ public class VelocityResponseWriter implements QueryResponseWriter {
   }
 
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    return request.getParams().get("v.contentType","text/html");
+    return request.getParams().get("v.contentType", "text/html");
   }
-  
+
   private String getJSONWrap(String xmlResult) {  // TODO: maybe noggit or Solr's JSON utilities can make this cleaner?
     // escape the double quotes and backslashes
     String replace1 = xmlResult.replaceAll("\\\\", "\\\\\\\\");
@@ -188,7 +187,7 @@ public class VelocityResponseWriter implements QueryResponseWriter {
     // wrap it in a JSON object
     return "{\"result\":\"" + replaced + "\"}";
   }
-  
+
   public void init(NamedList args) {
   }
 }
