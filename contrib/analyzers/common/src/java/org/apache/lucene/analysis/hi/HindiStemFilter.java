@@ -32,7 +32,7 @@ public final class HindiStemFilter extends TokenFilter {
   private final KeywordAttribute keywordAtt = addAttribute(KeywordAttribute.class);
   private final HindiStemmer stemmer = new HindiStemmer();
   
-  protected HindiStemFilter(TokenStream input) {
+  public HindiStemFilter(TokenStream input) {
     super(input);
   }
   
