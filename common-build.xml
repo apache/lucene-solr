@@ -513,6 +513,7 @@
     <fileset dir="${build.dir}" id="clover.test.result.files">
       <include name="**/test/TEST-*.xml" />
       <!-- do not include BW tests -->
+      <exclude name="backwards/**"/>
     </fileset>
     <clover-report>
        <current outfile="${clover.report.dir}" title="${final.name}" numThreads="0">
