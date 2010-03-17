@@ -42,8 +42,6 @@
   <property name="Name" value="Lucene"/>
   <property name="dev.version" value="3.1-dev"/>
   <property name="version" value="${dev.version}"/>
-  <property name="backwards.branch" value="lucene_3_0_back_compat_tests"/>
-  <property name="backwards.rev" value="922601"/>
   <property name="spec.version" value="${version}"/>	
   <property name="year" value="2000-${current.year}"/>
   <property name="final.name" value="lucene-${name}-${version}"/>
@@ -86,7 +84,6 @@
 
   <property name="src.dir" location="src/java"/>
   <property name="build.dir" location="build"/>
-  <property name="backwards.dir" location="backwards"/>
   <property name="dist.dir" location="dist"/>
   <property name="maven.dist.dir" location="dist/maven"/>
   <property name="m2.repository.url" value="file://${maven.dist.dir}"/>
@@ -95,10 +92,13 @@
   <property name="javacc.home" location="${common.dir}"/>
   <property name="jflex.home" location="${common.dir}"/>
 
+  <property name="backwards.dir" location="backwards"/>
+  <property name="build.dir.backwards" location="${build.dir}/backwards"/>
+
   <property name="junit.output.dir" location="${build.dir}/test"/>
-  <property name="junit.output.dir.backwards" location="${build.dir}/bw-test"/>
+  <property name="junit.output.dir.backwards" location="${build.dir.backwards}/test"/>
   <property name="junit.reports" location="${build.dir}/test/reports"/>
-  <property name="junit.reports.backwards" location="${build.dir}/bw-test/reports"/>
+  <property name="junit.reports.backwards" location="${build.dir.backwards}/test/reports"/>
   <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
   <property name="junit.excludes" value=""/>
 
@@ -547,8 +547,8 @@
       <!-- this fileset let's the task work for individual contribs,
            as well as the project as a whole
        -->
-      <fileset dir="${build.dir}">
-        <include name="**/bw-test/TEST-*.xml"/>
+      <fileset dir="${build.dir.backwards}">
+        <include name="**/test/TEST-*.xml"/>
       </fileset>
       <report format="frames" todir="${junit.reports.backwards}"/>
     </junitreport>

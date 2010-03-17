@@ -1,0 +1,167 @@
+<?xml version="1.0"?>
+<document>
+	  <header>
+          <title>
+	        Apache Lucene - Lucene Contrib
+		  </title>
+	  </header>
+      <body>
+
+      <section id="Contrib"><title>Lucene Contrib</title>
+	        <p>
+	          The Lucene Java project also contains a workspace, Lucene Contrib
+	          (formerly known as the Lucene Sandbox), that is open both to all Lucene 
+	          Java core committers and to developers whose commit rights are 
+	          restricted to the Contrib workspace; these developers are referred to 
+	          as "Contrib committers".  The Lucene Contrib workspace hosts the 
+	          following types of packages:
+	        </p>
+	        <ul>
+	          <li>Various third party contributions.</li>
+	          <li>
+	            Contributions with third party dependencies - the Lucene Java core
+	            distribution has no external runtime dependencies.
+	          </li>
+	          <li>
+	            New ideas that are intended for eventual inclusion into the Lucene 
+	            Java core.
+	          </li>
+	         </ul>
+	        <p>
+	          Users are free to experiment with the components developed in the
+	          Contrib workspace, but Contrib packages will not necessarily be
+	          maintained, particularly in their current state. The Lucene Java core 
+	          backwards compatibility commitments (see
+	          <a href="http://wiki.apache.org/lucene-java/BackwardsCompatibility"
+	            >http://wiki.apache.org/lucene-java/BackwardsCompatibility</a>)
+	          do not necessarily extend to the packages in the Contrib workspace.
+	          See the README.txt file for each Contrib package for details.  If the
+	          README.txt file does not address its backwards compatibility
+	          commitments, users should assume it does not make any compatibility
+	          commitments.
+	        </p>
+			<p>
+  			  See <a href="../changes/Contrib-Changes.html">Contrib CHANGES</a> for changes included in the current release.
+			</p>
+
+
+            <p>
+                You can access the current trunk Contrib repository at
+                <a href="http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/">http://svn.apache.org/repos/asf/lucene/java/trunk/contrib/</a>.
+            </p>
+
+            <section id="analyzers"><title>analyzers</title>
+                <p>Contributed Analyzers, Tokenizers, and Filters for various uses and languages.</p>
+                <p>See <a href="../api/contrib-analyzers/index.html">analyzers javadoc</a></p>
+            </section>
+            
+            <section id="ant"><title>ant</title>
+                <p>Ant task to create Lucene indexes.</p>
+                <p>See <a href="../api/contrib-ant/index.html">ant javadoc</a></p>
+            </section>
+            
+            <section id="benchmark"><title>benchmark</title>
+                <p>The benchmark contribution contains tools for benchmarking Lucene using standard, freely available corpora.</p>
+                <p>See <a href="../api/contrib-benchmark/index.html">benchmark javadoc</a></p>
+            </section>
+            
+            <section id="collation"><title>collation</title>
+                <p>CollationKeyFilter/Analyzer and ICUCollationKeyFilter/Analyzer - can be used as an efficient replacement for Locale 
+                sorting and Locale range queries as well as Locale-specific normalization </p>
+                <p>See <a href="../api/contrib-collation/index.html">collation javadoc</a></p>
+            </section>
+            
+            <section id="db"><title>db</title>
+                <p>Provides integration with Berkley DB.</p>
+                <p>See <a href="../api/contrib-db/index.html">db javadoc</a></p>
+            </section>
+            
+            <section id="highlighter"><title>highlighter</title>
+                <p>A set of classes for highlighting matching terms in search results.</p>
+                <p>See <a href="../api/contrib-highlighter/index.html">highlighter javadoc</a></p>
+            </section>
+            
+            <section id="fast-vector-highlighter"><title>fast-vector-highlighter</title>
+                <p>An alternative set of classes for highlighting matching terms in search results that relies on stored term vectors.
+                This highlighter can be much faster than the standard highlighter, especially on large fields.</p>
+                <p>See <a href="../api/contrib-fast-vector-highlighter/index.html">fast-vector-highlighter javadoc</a></p>
+            </section>
+
+            <section id="instantiated"><title>instantiated</title>
+                <p>RAM-based index that enables much faster searching than RAMDirectory in certain situations.</p>
+                <p>See <a href="../api/contrib-instantiated/index.html">instantiated javadoc</a></p>
+            </section>
+
+            <section id="lucli"><title>lucli</title>
+                <p>An application that allows Lucene index manipulation from the command-line.</p>
+                <p>See <a href="../api/contrib-lucli/index.html">lucli javadoc</a></p>
+            </section>
+            
+            <section id="memory"><title>memory</title>
+                <p>High-performance single-document main memory index.</p>
+                <p>See <a href="../api/contrib-memory/index.html">memory javadoc</a></p>
+            </section>         
+            
+            <section id="misc"><title>misc</title>
+                <p>A variety of miscellaneous files, including QueryParsers, and other alternate Lucene class implementations and tools.</p>
+                <p>See <a href="../api/contrib-misc/index.html">misc javadoc</a></p>
+            </section>
+            
+            <section id="queryparser"><title>queryparser</title>
+                <p>A new Lucene query parser implementation, which matches the syntax of the core QueryParser but offers a more modular architecture to enable customization.</p>
+                <p>See <a href="../api/contrib-queryparser/index.html">queryparser javadoc</a></p>
+            </section>                          
+ 
+            <section id="regex"><title>regex</title>
+                <p>Queries with additional regex matching capabilities.</p>
+                <p>See <a href="../api/contrib-regex/index.html">regex javadoc</a></p>
+            </section> 
+            
+            <section id="remote"><title>remote</title>
+                <p>Classes to help use Lucene with RMI.</p>
+                <p>See <a href="../api/contrib-remote/index.html">remote javadoc</a></p>
+            </section>    
+            
+            <section id="snowball"><title>snowball</title>
+                <p>Pre-compiled versions of the Snowball stemmers for Lucene.</p>
+                <p>See <a href="../api/contrib-snowball/index.html">snowball javadoc</a></p>
+            </section>               
+                        
+            <section id="spatial"><title>spatial</title>
+                <p>Classes to help with efficient distance based sorting.</p>
+                <p>See <a href="../api/contrib-spatial/index.html">spatial javadoc</a></p>
+            </section>    
+            
+            <section id="spellchecker"><title>spellchecker</title>
+                <p>Provides tools for spellchecking and suggestions with Lucene.</p>
+                <p>See <a href="../api/contrib-spellchecker/index.html">spellchecker javadoc</a></p>
+            </section>                
+  
+            <section id="surround"><title>surround</title>
+                <p>A QueryParser that supports the Span family of queries as well as pre and infix notation.</p>
+                <p>See <a href="../api/contrib-surround/index.html">surround javadoc</a></p>
+            </section>       
+            
+            <section id="swing"><title>swing</title>
+                <p>Swing components designed to integrate with Lucene.</p>
+                <p>See <a href="../api/contrib-swing/index.html">swing javadoc</a></p>
+            </section>    
+           
+            <section id="wikipedia"><title>wikipedia</title>
+                <p>Tools for working with wikipedia content.</p>
+                <p>See <a href="../api/contrib-wikipedia/index.html">wikipedia javadoc</a></p>
+            </section>   
+            
+            <section id="wordnet"><title>wordnet</title>
+                <p>Tools to help utilize wordnet synonyms with Lucene</p>
+                <p>See <a href="../api/contrib-wordnet/index.html">wordnet javadoc</a></p>
+            </section>  
+            
+            <section id="xml-query-parser"><title>xml-query-parser</title>
+                <p>A QueryParser that can read queries written in an XML format.</p>
+                <p>See <a href="../api/contrib-wordnet/index.html">xml-query-parser javadoc</a></p>
+            </section>  
+           
+		</section>
+    </body>
+</document>

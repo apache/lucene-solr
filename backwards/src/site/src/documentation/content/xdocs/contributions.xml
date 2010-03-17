@@ -1,0 +1,350 @@
+<?xml version="1.0"?>
+<document>
+	<header>
+        <title>
+	Apache Lucene - Contributions
+		</title>
+	</header>
+    <properties>
+        <author email="carlson@apache.org">
+            Peter Carlson
+        </author>
+    </properties>
+    <body>
+        <section id="Overview">
+            <title>Overview</title>
+            <p>This page lists external Lucene resources. If you have
+            written something that should be included, please post all
+            relevant information to one of the mailing lists.  Nothing
+            listed here is directly supported by the Lucene
+            developers, so if you encounter any problems with any of
+            this software, please use the author's contact information
+            to get help.</p>
+            <p>If you are looking for information on contributing patches or other improvements to Lucene, see
+            <a href="http://wiki.apache.org/lucene-java/HowToContribute">How To Contribute</a> on the Lucene Wiki.</p>
+        </section>
+
+        <section id="Lucene Tools">
+            <title>Lucene Tools</title>
+            <p>
+                Software that works with Lucene indices.
+            </p>
+            <section id="Luke"><title>Luke</title>
+                <table>
+                    <tr>
+                        <th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://www.getopt.org/luke/">
+                                http://www.getopt.org/luke/
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th width="%1">
+                            author
+                        </th>
+                        <td>
+                            Andrzej Bialecki
+                        </td>
+                    </tr>
+                </table>
+            </section>
+            <section id="LIMO (Lucene Index Monitor)">
+                <title>LIMO (Lucene Index Monitor)</title>
+                <table>
+                    <tr>
+                        <th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://limo.sf.net/">
+                                http://limo.sf.net/
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th width="%1">
+                            author
+                        </th>
+                        <td>
+                            Julien Nioche
+                        </td>
+                    </tr>
+                </table>
+            </section>
+        </section>
+
+        <section id="Lucene Document Converters">
+            <title>Lucene Document Converters</title>
+            <p>
+                Lucene requires information you want to index to be
+                converted into a Document class.  Here are
+                contributions for various solutions that convert different
+                content types to Lucene's Document classes.
+            </p>
+            <section id="XML Document #1">
+                <title>XML Document #1</title>
+                <table>
+                    <tr>
+                        <th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://marc.theaimsgroup.com/?l=lucene-dev&amp;m=100723333506246&amp;w=2">
+                                http://marc.theaimsgroup.com/?l=lucene-dev&amp;m=100723333506246&amp;w=2
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th width="%1">
+                            author
+                        </th>
+                        <td>
+                            Philip Ogren - ogren@mayo.edu
+                        </td>
+                    </tr>
+                </table>
+            </section>
+            <section id="XML Document #2">
+                <title>XML Document #2</title>
+                <table>
+                    <tr>
+                        <th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00346.html">
+                                http://www.mail-archive.com/lucene-user@jakarta.apache.org/msg00346.html
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th width="%1">
+                            author
+                        </th>
+                        <td>
+                            Peter Carlson - carlson@bookandhammer.com
+                        </td>
+                    </tr>
+                </table>
+            </section>
+            <section id="PDF Box">
+                <title>PDF Box</title>
+                <table>
+                    <tr>
+                        <th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://www.pdfbox.org/">
+                                http://www.pdfbox.org/
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th width="%1">
+                            author
+                        </th>
+                        <td>
+                            Ben Litchfield - ben@csh.rit.edu
+                        </td>
+                    </tr>
+                </table>
+            </section>
+            <section id="XPDF - PDF Document Conversion">
+                <title>XPDF - PDF Document Conversion</title>
+                <table>
+                    <tr>
+                        <th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://www.foolabs.com/xpdf">
+                                http://www.foolabs.com/xpdf
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th width="%1">
+                            author
+                        </th>
+                        <td>
+                            N/A
+                        </td>
+                    </tr>
+                </table>
+            </section>
+            <section id="PDFTextStream -- PDF text and metadata extraction">
+                <title>PDFTextStream -- PDF text and metadata extraction</title>
+                <table>
+                    <tr>
+                        <th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://snowtide.com">
+                                http://snowtide.com
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th width="%1">
+                            author
+                        </th>
+                        <td>
+                            N/A
+                        </td>
+                    </tr>
+                </table>
+            </section>
+            <section id="PJ Classic &amp; PJ Professional - PDF Document Conversion">
+                <title>PJ Classic &amp; PJ Professional - PDF Document Conversion</title>
+                <table>
+                    <tr>
+                        <th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href=" http://www.etymon.com/">
+                                http://www.etymon.com/
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th width="%1">
+                            author
+                        </th>
+                        <td>
+                            N/A
+                        </td>
+                    </tr>
+                </table>
+            </section>
+        </section>
+
+        <section id="Miscellaneous">
+            <title>Miscellaneous</title>
+            <p>
+            </p>
+            <section id="Arabic Analyzer for Java">
+                <title>Arabic Analyzer for Java</title>
+                <table>
+                    <tr>
+                        <th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://savannah.nongnu.org/projects/aramorph">
+                                http://savannah.nongnu.org/projects/aramorph
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th width="%1">
+                            author
+                        </th>
+                        <td>
+                            Pierrick Brihaye
+                        </td>
+                    </tr>
+                </table>
+            </section>
+            <section id="Phonetix">
+                <title>Phonetix</title>
+                <table>
+                    <tr>
+                        <th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://www.companywebstore.de/tangentum/mirror/en/products/phonetix/index.html">
+                                http://www.companywebstore.de/tangentum/mirror/en/products/phonetix/index.html
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th width="%1">
+                            author
+                        </th>
+                        <td>
+                            tangentum technologies
+                        </td>
+                    </tr>
+                </table>
+            </section>
+            <section id="ejIndex - JBoss MBean for Lucene">
+                <title>ejIndex - JBoss MBean for Lucene</title>
+                <p>
+                </p>
+                <table>
+                    <tr>
+                        <th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://ejindex.sourceforge.net/">
+                                http://ejindex.sourceforge.net/
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th width="%1">
+                            author
+                        </th>
+                        <td>
+                            Andy Scholz
+                        </td>
+                    </tr>
+                </table>
+            </section>
+            <section id="JavaCC">
+                <title>JavaCC</title>
+                <table>
+                    <tr>
+                        <th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="https://javacc.dev.java.net/">
+                                https://javacc.dev.java.net/
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th width="%1">
+                            author
+                        </th>
+                        <td>
+                            Sun Microsystems (java.net)
+                        </td>
+                    </tr>
+                </table>
+            </section>
+            <section id="LuSQL">
+                <title>LuSQL - Index databases with Lucene</title>
+                <table>
+                    <tr>
+                        <th width="%1">
+                            URL
+                        </th>
+                        <td>
+                            <a href="http://lab.cisti-icist.nrc-cnrc.gc.ca/cistilabswiki/index.php/LuSql">
+                                http://lab.cisti-icist.nrc-cnrc.gc.ca/cistilabswiki/index.php/LuSql
+                            </a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th width="%1">
+                            author
+                        </th>
+                        <td>
+                            Glen Newton
+                        </td>
+                    </tr>
+                </table>
+            </section>
+        </section>
+    </body>
+</document>

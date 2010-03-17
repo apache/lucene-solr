@@ -1,0 +1,253 @@
+<?xml version="1.0"?>
+
+<!--
+    Licensed to the Apache Software Foundation (ASF) under one or more
+    contributor license agreements.  See the NOTICE file distributed with
+    this work for additional information regarding copyright ownership.
+    The ASF licenses this file to You under the Apache License, Version 2.0
+    the "License"); you may not use this file except in compliance with
+    the License.  You may obtain a copy of the License at
+ 
+        http://www.apache.org/licenses/LICENSE-2.0
+ 
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+ -->
+
+<project name="lucene-demo" default="compile-demo" basedir=".">
+  <dirname file="${ant.file.common}" property="common.dir"/>
+
+  <property name="version" value="@PLACEHOLDER_version@"/>
+  <property name="javac.source" value="@PLACEHOLDER_javac.source@"/>
+  <property name="javac.target" value="@PLACEHOLDER_javac.target@"/>
+	
+  <property name="build.dir" location="build"/>
+	
+	
+  <property name="core.name" value="lucene-core-${version}"/>
+  <property name="demo.name" value="lucene-demos-${version}"/>
+  <property name="demo.war.name" value="luceneweb"/>
+
+  <property name="manifest.file" location="${build.dir}/MANIFEST.MF"/>
+
+  <!-- Build classpath -->
+  <path id="classpath">
+    <pathelement location="${common.dir}/${core.name}.jar"/>
+  </path>
+
+  <path id="demo.classpath">
+    <path refid="classpath"/>
+    <pathelement location="${build.dir}/classes/demo"/>
+  </path>
+	
+  <available
+    property="jar.core.present"
+	type="file"
+	file="${common.dir}/${core.name}.jar"
+  />
+
+  <target name="jar.core-check">
+    <fail unless="jar.core.present">
+	  ##################################################################
+	  ${common.dir}/${core.name}.jar not found.
+	  ##################################################################
+	</fail>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- J A R                                                              -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+
+  <target name="jar-demo" depends="compile-demo"
+	description="Build demo jar file">
+	<sequential>
+  	  <build-manifest/>
+	  <jar
+        destfile="${demo.name}.jar"
+        basedir="${build.dir}/classes/demo"
+        excludes="**/*.java"
+        manifest="${manifest.file}">
+        <metainf dir="${common.dir}">
+          <include name="LICENSE.txt"/>
+          <include name="NOTICE.txt"/>
+        </metainf>
+      </jar>
+    </sequential>
+  </target>
+
+  <target name="war-demo" depends="jar-demo"	
+	description="Build demo war file">
+	<sequential>
+  	  <build-manifest/>
+      <war destfile="${demo.war.name}.war"
+           webxml="src/jsp/WEB-INF/web.xml"
+           manifest="${manifest.file}">
+        <fileset dir="src/jsp" excludes="WEB-INF/web.xml"/>
+        <lib dir="." includes="${demo.name}.jar"/>
+        <lib dir="." includes="${core.name}.jar"/>
+        <metainf dir="${common.dir}">
+          <include name="LICENSE.txt"/>
+          <include name="NOTICE.txt"/>
+        </metainf>
+      </war>
+    </sequential>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- B U I L D  D E M O                                                 -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="compile-demo" depends="jar.core-check"
+	description="Compile demo classes">
+    <mkdir dir="${build.dir}/classes/demo"/>
+
+    <compile
+      srcdir="src/demo"
+      destdir="${build.dir}/classes/demo">
+      <classpath refid="demo.classpath"/>
+    </compile>
+  </target>
+	
+  <target name="clean"
+    description="Removes contents of build directory">
+    <delete dir="${build.dir}"/>
+    <delete dir="${common.dir}/demo-text-dir"/>
+    <delete dir="${common.dir}/demo-html-dir"/>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- R U N  T E X T  I N D E X I N G  D E M O                           -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="demo-index-text" depends="jar-demo"
+	description="Run text indexing demo (index the sources of the demo).">
+    <echo>----- (1) Prepare dir ----- </echo>
+    <echo>cd ${common.dir} </echo>
+    <echo>rmdir demo-text-dir </echo>
+    <delete dir="${common.dir}/demo-text-dir"/>
+    <echo>mkdir demo-text-dir </echo>
+    <mkdir dir="${common.dir}/demo-text-dir"/>
+    <echo>cd demo-text-dir </echo>
+    <echo>----- (2) Index the files located under ${common.dir}/src ----- </echo>
+    <invoke-java class="IndexFiles" params="${common.dir}/src/demo" paramsDisplay="../src/demo" type="text"/>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- R U N  T E X T  S E A R C H  D E M O                               -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="demo-search-text" depends="jar-demo"
+	description="Run interactive search demo.">
+    <echo>----- Interactive search ----- </echo>
+    <echo>cd demo-text-dir </echo>
+    <invoke-java class="SearchFiles" params="-index index" paramsDisplay="-index index" type="text"/>
+  </target>
+
+
+  <!-- ================================================================== -->
+  <!-- R U N  H T M L  I N D E X I N G  D E M O                           -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="demo-index-html" depends="jar-demo"
+	description="Run html indexing demo (index the javadocs).">
+    <echo>----- (1) Prepare dir ----- </echo>
+    <echo>cd ${common.dir} </echo>
+    <echo>rmdir demo-html-dir </echo>
+    <delete dir="${common.dir}/demo-html-dir"/>
+    <echo>mkdir demo-html-dir </echo>
+    <mkdir dir="${common.dir}/demo-html-dir"/>
+    <echo>cd demo-html-dir </echo>
+    <echo>----- (2) Index the files located under ${common.dir}/src ----- </echo>
+    <invoke-java class="IndexFiles" params="${common.dir}/docs/api" paramsDisplay="../docs/api" type="html"/>
+  </target>
+
+  <!-- ================================================================== -->
+  <!-- R U N  H T M L  S E A R C H  D E M O                               -->
+  <!-- ================================================================== -->
+  <!--                                                                    -->
+  <!-- ================================================================== -->
+  <target name="demo-search-html" depends="jar-demo"
+	description="Run interactive search demo.">
+    <echo>----- Interactive search ----- </echo>
+    <echo>cd demo-html-dir </echo>
+    <invoke-java class="SearchFiles" params="-index index" paramsDisplay="-index index" type="html"/>
+  </target>
+
+
+  <!--+
+      | M A C R O S
+      +-->
+      
+  <macrodef name="build-manifest" description="Builds a manifest file">
+  	<sequential>
+      <manifest file="${manifest.file}">
+        <attribute name="Specification-Title" value="Lucene Search Engine: demos"/>
+		<!-- spec version must match "digit+{.digit+}*" -->
+		<attribute name="Specification-Version" value="${version}"/>
+		<attribute name="Specification-Vendor"
+		           value="The Apache Software Foundation"/>
+		<attribute name="Implementation-Title" value="org.apache.lucene"/>
+		<!-- impl version can be any string -->
+		<attribute name="Implementation-Version"
+		           value="${version}"/>
+		<attribute name="Implementation-Vendor"
+		           value="The Apache Software Foundation"/>
+		<attribute name="X-Compile-Source-JDK" 
+		           value="${javac.source}"/>
+		<attribute name="X-Compile-Target-JDK" 
+		           value="${javac.target}"/>
+	  </manifest>
+  	</sequential>
+  </macrodef>
+      
+  <macrodef name="compile">
+    <attribute name="srcdir"/>
+    <attribute name="destdir"/>
+    <element name="nested" implicit="yes" optional="yes"/>
+
+    <sequential>
+      <mkdir dir="@{destdir}"/>
+      <javac
+        srcdir="@{srcdir}"
+        destdir="@{destdir}"
+        deprecation="off"
+        debug="on"
+        source="${javac.source}"
+        target="${javac.target}">
+        <nested/>
+      </javac>
+    </sequential>
+  </macrodef>
+
+  <macrodef name="invoke-java">
+    <attribute name="class"/>
+    <attribute name="params"/>
+    <attribute name="paramsDisplay"/>
+    <attribute name="type"/>
+    <sequential>
+      <echo>java -classpath "../${core.name}.jar;../${demo.name}.jar" org.apache.lucene.demo.@{class} @{paramsDisplay} </echo>
+      <java classname="org.apache.lucene.demo.@{class}"
+            dir="${common.dir}/demo-@{type}-dir"
+            fork="true"
+            failonerror="true"
+            maxmemory="128m"
+      >
+        <arg value="@{params}"/>
+        <classpath>
+           <pathelement location="${common.dir}/${core.name}.jar"/>
+           <pathelement location="${common.dir}/${demo.name}.jar"/>
+        </classpath>
+      </java>
+    </sequential>
+  </macrodef>
+
+</project>

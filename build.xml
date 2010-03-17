@@ -33,10 +33,6 @@
     <pathelement location="${build.dir}/classes/java"/>
   </path>
 
-  <path id="backwards.classpath">
-    <pathelement location="${build.dir}/${backwards.branch}/classes/java"/>
-  </path>
-
   <path id="demo.classpath">
     <path refid="classpath"/>
     <pathelement location="${build.dir}/classes/demo"/>
@@ -58,7 +54,7 @@
 
   <patternset id="src.dist.patterns"
               includes="src/,build.xml,*build*.xml,docs/,*.txt,contrib/,*pom.xml*,lib/"
-              excludes="contrib/db/*/lib/,contrib/*/ext-libs/,src/site/build/,contrib/benchmark/temp/**,contrib/benchmark/work/**"
+              excludes="contrib/db/*/lib/,contrib/*/ext-libs/,src/site/build/,contrib/benchmark/temp/,contrib/benchmark/work/,contrib/analyzers/common/src/test/org/apache/lucene/analysis/snowball/data/"
   />
   <patternset id="binary.build.dist.patterns"
               includes="${final.name}.jar,${demo.war.name}.war,${demo.name}.jar,docs/,contrib/*/*.jar,contrib/*/*.war, contrib/*/*/*.jar"
@@ -79,91 +75,58 @@
   <target name="test" depends="test-core, test-contrib, test-backwards"
           description="Runs all unit tests (core, contrib and back-compat)"
   />
+
+  <path id="backwards.compile.classpath">
+    <pathelement location="${build.dir.backwards}/classes/java"/>
+  </path>
 	
-  <path id="backwards.test.classpath">
+  <path id="backwards.test.compile.classpath">
     <path refid="junit-path"/>
-    <pathelement location="${build.dir}/${backwards.branch}/${backwards.branch}.jar"/>
+    <pathelement location="${build.dir.backwards}/classes/java"/>
   </path>
 	
   <path id="backwards.junit.classpath">
     <path refid="junit-path"/>
-    <pathelement location="${build.dir}/${backwards.branch}/classes/test"/>
+    <pathelement location="${build.dir.backwards}/classes/test"/>
     <pathelement location="${build.dir}/${final.name}.jar"/>
     <pathelement path="${java.class.path}"/>
   </path>
 
-  <available property="backwards.available" file="${backwards.dir}/${backwards.branch}/src"/>
+  <available property="backwards.available" file="${backwards.dir}/src"/>
   
-  <target name="init-backwards-checkout" unless="backwards.available" description="Creates the sparse svn checkout for backwards branch.">
-    <sequential>
-      <echo>Initial SVN checkout for '${backwards.branch}'...</echo>
-      <mkdir dir="${backwards.dir}"/>
-      <exec dir="${backwards.dir}" executable="${svn.exe}" failifexecutionfails="false" failonerror="true">
-        <arg line="checkout --trust-server-cert --non-interactive -r ${backwards.rev} --depth empty https://svn.apache.org/repos/asf/lucene/java/branches/${backwards.branch} ${backwards.branch}"/>
-      </exec>
-      <exec dir="${backwards.dir}" executable="${svn.exe}" failifexecutionfails="false" failonerror="true">
-        <arg line="update --trust-server-cert --non-interactive -r ${backwards.rev} --set-depth infinity ${backwards.branch}/src"/>
-      </exec>
-    </sequential>
-  </target>
-
-  <target name="download-backwards" depends="init-backwards-checkout" description="Downloads a previous Lucene version.">
-    <sequential>
-      <echo>Update backwards branch '${backwards.branch}' to revision ${backwards.rev}...</echo>
-      <exec dir="${backwards.dir}" executable="${svn.exe}" failifexecutionfails="false" failonerror="true">
-        <arg line="update --trust-server-cert --non-interactive -r ${backwards.rev} ${backwards.branch}"/>
-      </exec>
-    </sequential>
-  </target>
-	
   <!-- remove this -->
   <target name="test-tag" depends="test-backwards" description="deprecated"/>
+  
+  <target name="test-backwards-message" unless="backwards.available">
+<echo level="warning">WARNING: Backwards compatibility tests can only be run from SVN checkout.
+The source distribution does not contain sources of the previous Lucene Java version.</echo>
+  </target>
 
-  <target name="test-backwards" depends="download-backwards, compile-core, jar-core"
-  	description="Runs tests of a previous Lucene version.">
-	<sequential>
-    <available property="backwards.tests.available" file="${backwards.dir}/${backwards.branch}/src/test" />
+  <target name="test-backwards" depends="compile-core, jar-core, test-backwards-message"
+  	description="Runs tests of a previous Lucene version." if="backwards.available">
+    <sequential>
+      <mkdir dir="${build.dir.backwards}"/>	  
 
-	  <fail unless="backwards.tests.available">
-	  	Backwards branch '${backwards.branch}' could not be found in directory '${backwards.dir}'.
-	  </fail>
-	  <mkdir dir="${build.dir}/${backwards.branch}"/>	  
-
-	  <!-- first compile branch classes -->
-	  <compile
-	    srcdir="${backwards.dir}/${backwards.branch}/src/java"
-	    destdir="${build.dir}/${backwards.branch}/classes/java"
-      javac.source="${javac.source.backwards}" javac.target="${javac.target.backwards}">
-	  <classpath refid="backwards.classpath"/>
-	  </compile>
-
-	  <!-- compile jar for branch -->
-      <jarify basedir="${build.dir}/${backwards.branch}/classes/java"
-			  destfile="${build.dir}/${backwards.branch}/${backwards.branch}.jar" />
-		  	
-	  <!-- compile branch tests against branch jar -->	
-	  <compile-test-macro srcdir="${backwards.dir}/${backwards.branch}/src/test" destdir="${build.dir}/${backwards.branch}/classes/test"
-			  			  test.classpath="backwards.test.classpath" javac.source="${javac.source.backwards}" javac.target="${javac.target.backwards}"/>
-		
-	  <!-- run branch tests against trunk jar -->
-      <test-macro dataDir="${backwards.dir}/${backwards.branch}/src/test" 
-      			  tempDir="${build.dir}/${backwards.branch}"
-      			  junit.classpath="backwards.junit.classpath"
+      <!-- first compile branch classes -->
+      <compile
+        srcdir="${backwards.dir}/src/java"
+        destdir="${build.dir.backwards}/classes/java"
+        javac.source="${javac.source.backwards}" javac.target="${javac.target.backwards}"
+      >
+        <classpath refid="backwards.compile.classpath"/>
+      </compile>
+          
+      <!-- compile branch tests against branch classpath -->	
+      <compile-test-macro srcdir="${backwards.dir}/src/test" destdir="${build.dir.backwards}/classes/test"
+                  test.classpath="backwards.test.compile.classpath" javac.source="${javac.source.backwards}" javac.target="${javac.target.backwards}"/>
+      
+      <!-- run branch tests against trunk jar -->
+      <test-macro dataDir="${backwards.dir}/src/test" 
+              tempDir="${build.dir.backwards}/test"
+              junit.classpath="backwards.junit.classpath"
               junit.output.dir="${junit.output.dir.backwards}" />
-  	</sequential>
+    </sequential>
   </target>	
-
-	
-  <!-- remove this soon -->
-  <target name="clean-tags"
-    description="deprecated: removes the old 'tag' subdir">
-    <delete dir="${common.dir}/tags"/>
-  </target>
-
-  <target name="clean-backwards"
-    description="Removes contents of the '${backwards.dir}' directory">
-    <delete dir="${backwards.dir}"/>
-  </target>
 	
   <!-- ================================================================== -->
   <!-- J A R                                                              -->

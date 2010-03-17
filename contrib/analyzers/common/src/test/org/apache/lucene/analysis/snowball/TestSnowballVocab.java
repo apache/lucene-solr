@@ -44,7 +44,7 @@ public class TestSnowballVocab extends BaseTokenStreamTestCase {
       dataRoot = getDataFile("data");
     } catch (IOException ioe) {
       dataRoot = null;
-      System.err.println("WARN: This test was disabled, as the svn checkout of snowball test files is not supported on your system!");
+      System.err.println("WARN: This test was disabled, as the snowball test files are not available!");
     }
   }
   

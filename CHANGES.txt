@@ -238,9 +238,13 @@ Optimizations
 
 Build
 
- * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
-   into core, and moved the ICU-based collation support into contrib/icu.  
-   (Robert Muir)
+* LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
+  into core, and moved the ICU-based collation support into contrib/icu.  
+  (Robert Muir)
+
+* LUCENE-2326: Removed SVN checkouts for backwards tests. The backwards branch
+  is now included in the svn repository using "svn copy" after release.
+  (Uwe Schindler)
 
 Test Cases
 

@@ -1,0 +1,78 @@
+<?xml version="1.0"?>
+<document>
+	<header>
+        <title>
+	Apache Lucene - Building and Installing the Basic Demo
+		</title>
+	</header>
+<properties>
+<author email="acoliver@apache.org">Andrew C. Oliver</author>
+</properties>
+<body>
+
+<section id="About this Document"><title>About this Document</title>
+<p>
+This document is intended as a "getting started" guide to using and running the Lucene demos.
+It walks you through some basic installation and configuration.
+</p>
+</section>
+
+
+<section id="About the Demos"><title>About the Demos</title>
+<p>
+The Lucene command-line demo code consists of two applications that demonstrate various
+functionalities of Lucene and how one should go about adding Lucene to their applications.
+</p>
+</section>
+
+<section id="Setting your CLASSPATH"><title>Setting your CLASSPATH</title>
+<p>
+First, you should <a href="http://www.apache.org/dyn/closer.cgi/lucene/java/">download</a> the
+latest Lucene distribution and then extract it to a working directory.  Alternatively, you can <a
+href="http://wiki.apache.org/lucene-java/SourceRepository">check out the sources from
+Subversion</a>, and then run <code>ant war-demo</code> to generate the JARs and WARs.
+</p>
+<p>
+You should see the Lucene JAR file in the directory you created when you extracted the archive.  It
+should be named something like <code>lucene-core-{version}.jar</code>.  You should also see a file
+called <code>lucene-demos-{version}.jar</code>.  If you checked out the sources from Subversion then
+the JARs are located under the <code>build</code> subdirectory (after running <code>ant</code>
+successfully).  Put both of these files in your Java CLASSPATH.
+</p>
+</section>
+
+<section id="Indexing Files"><title>Indexing Files</title>
+<p>
+Once you've gotten this far you're probably itching to go.  Let's <b>build an index!</b> Assuming
+you've set your CLASSPATH correctly, just type:
+
+<pre>
+    java org.apache.lucene.demo.IndexFiles {full-path-to-lucene}/src
+</pre>
+
+This will produce a subdirectory called <code>index</code> which will contain an index of all of the
+Lucene source code.
+</p>
+<p>
+To <b>search the index</b> type:
+
+<pre>
+    java org.apache.lucene.demo.SearchFiles
+</pre>
+
+You'll be prompted for a query.  Type in a swear word and press the enter key.  You'll see that the
+Lucene developers are very well mannered and get no results. Now try entering the word "string".
+That should return a whole bunch of documents.  The results will page at every tenth result and ask
+you whether you want more results.
+</p>
+</section>
+
+<section id="About the code..."><title>About the code...</title>
+<p>
+<a href="demo2.html">read on&gt;&gt;&gt;</a>
+</p>
+</section>
+
+</body>
+</document>
+

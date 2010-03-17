@@ -1,0 +1,37 @@
+body {
+  font-family: Courier New, monospace;
+  font-size: 10pt;
+}
+
+h1 {
+  font-family: Courier New, monospace;
+  font-size: 10pt;
+}
+
+h2 {
+  font-family: Courier New, monospace;
+  font-size: 10pt; 
+}
+
+h3 {
+  font-family: Courier New, monospace;
+  font-size: 10pt; 
+}
+
+a:link {
+  color: blue;
+}
+
+a:visited {
+  color: purple; 
+}
+
+li.bulleted-list {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+li {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}

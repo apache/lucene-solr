@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<document>
+	<header>
+        <title>
+	Apache Lucene - Getting Started Guide
+		</title>
+	</header>
+<properties>
+<author email="acoliver@apache.org">Andrew C. Oliver</author>
+</properties>
+<body>
+
+<section id="Getting Started">
+    <title>Getting Started</title>
+<p>
+This document is intended as a "getting started" guide.  It has three audiences: first-time users
+looking to install Apache Lucene in their application or web server; developers looking to modify or base
+the applications they develop on Lucene; and developers looking to become involved in and contribute
+to the development of Lucene.  This document is written in tutorial and walk-through format.  The
+goal is to help you "get started".  It does not go into great depth on some of the conceptual or
+inner details of Lucene.
+</p>
+
+<p>
+Each section listed below builds on one another.  More advanced users
+may wish to skip sections.
+</p>
+
+<ul>
+	<li><a href="demo.html">About the command-line Lucene demo and its usage</a>.  This section
+	is intended for anyone who wants to use the command-line Lucene demo.</li> <p/>
+
+	<li><a href="demo2.html">About the sources and implementation for the command-line Lucene
+	demo</a>.  This section walks through the implementation details (sources) of the
+	command-line Lucene demo.  This section is intended for developers.</li> <p/>
+
+	<li><a href="demo3.html">About installing and configuring the demo template web
+	application</a>.  While this walk-through assumes Tomcat as your container of choice,
+	there is no reason you can't (provided you have the requisite knowledge) adapt the
+	instructions to your container.  This section is intended for those responsible for the
+	development or deployment of Lucene-based web applications.</li> <p/>
+
+	<li><a href="demo4.html">About the sources used to construct the demo template web
+	application</a>.  Please note the template application is designed to highlight features of
+	Lucene and is <b>not</b> an example of best practices.  (One would hopefully use MVC
+	architecture such as provided by Jakarta Struts and taglibs, but showing you how to do that
+	would be WAY beyond the scope of this guide.)  This section is intended for developers and
+	those wishing to customize the demo template web application to their needs.  </li>
+
+</ul>
+</section>
+
+</body>
+</document>
+
