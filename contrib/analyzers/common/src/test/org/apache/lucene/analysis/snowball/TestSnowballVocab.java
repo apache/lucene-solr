@@ -18,12 +18,11 @@ package org.apache.lucene.analysis.snowball;
  */
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
+import java.util.zip.ZipFile;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.KeywordTokenizer;
@@ -35,24 +34,25 @@ import org.apache.lucene.analysis.Tokenizer;
  */
 public class TestSnowballVocab extends BaseTokenStreamTestCase {
   private Tokenizer tokenizer = new KeywordTokenizer(new StringReader(""));
-  File dataRoot = null;
+  ZipFile zipFile = null;
   
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    try {
-      dataRoot = getDataFile("data");
-    } catch (IOException ioe) {
-      dataRoot = null;
-      System.err.println("WARN: This test was disabled, as the svn checkout of snowball test files is not supported on your system!");
-    }
+    this.zipFile = new ZipFile(getDataFile("TestSnowballVocabData.zip"));
   }
   
+  @Override
+  protected void tearDown() throws Exception {
+    this.zipFile.close();
+    this.zipFile = null;
+    super.tearDown();
+  }
+
   /**
    * Run all languages against their snowball vocabulary tests.
    */
   public void testStemmers() throws IOException {
-    if (dataRoot == null) return;
     assertCorrectOutput("Danish", "danish");
     assertCorrectOutput("Dutch", "dutch");
     assertCorrectOutput("English", "english");
@@ -86,14 +86,12 @@ public class TestSnowballVocab extends BaseTokenStreamTestCase {
       throws IOException {
     if (VERBOSE) System.out.println("checking snowball language: " + snowballLanguage);
     TokenStream filter = new SnowballFilter(tokenizer, snowballLanguage);
-    InputStream vocFile = new FileInputStream(new File(dataRoot, 
-        dataDirectory + "/voc.txt"));
-    InputStream outputFile = new FileInputStream(new File(dataRoot, 
-        dataDirectory + "/output.txt"));
+    InputStream voc = zipFile.getInputStream(zipFile.getEntry(dataDirectory + "/voc.txt"));
+    InputStream out = zipFile.getInputStream(zipFile.getEntry(dataDirectory + "/output.txt"));
     BufferedReader vocReader = new BufferedReader(new InputStreamReader(
-        vocFile, "UTF-8"));
+        voc, "UTF-8"));
     BufferedReader outputReader = new BufferedReader(new InputStreamReader(
-        outputFile, "UTF-8"));
+        out, "UTF-8"));
     String inputWord = null;
     while ((inputWord = vocReader.readLine()) != null) {
       String expectedWord = outputReader.readLine();

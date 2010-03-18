@@ -54,7 +54,7 @@
 
   <patternset id="src.dist.patterns"
               includes="src/,build.xml,*build*.xml,docs/,*.txt,contrib/,*pom.xml*,lib/"
-              excludes="contrib/db/*/lib/,contrib/*/ext-libs/,src/site/build/,contrib/benchmark/temp/,contrib/benchmark/work/,contrib/analyzers/common/src/test/org/apache/lucene/analysis/snowball/data/"
+              excludes="contrib/db/*/lib/,contrib/*/ext-libs/,src/site/build/,contrib/benchmark/temp/,contrib/benchmark/work/"
   />
   <patternset id="binary.build.dist.patterns"
               includes="${final.name}.jar,${demo.war.name}.war,${demo.name}.jar,docs/,contrib/*/*.jar,contrib/*/*.war, contrib/*/*/*.jar"
