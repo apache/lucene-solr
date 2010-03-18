@@ -23,6 +23,18 @@
 
   <import file="../../common-build.xml"/>
 
+  <path id="lucene.classpath">
+    <pathelement location="../../../lucene/build/classes/java" />
+    <pathelement location="../../../lucene/build/contrib/analyzers/common/classes/java" />
+    <pathelement location="../../../lucene/build/contrib/fast-vector-highlighter/classes/java" />
+    <pathelement location="../../../lucene/build/contrib/highlighter/classes/java" />
+    <pathelement location="../../../lucene/build/contrib/memory/classes/java" />
+    <pathelement location="../../../lucene/build/contrib/misc/classes/java" />
+    <pathelement location="../../../lucene/build/contrib/queries/classes/java" />
+    <pathelement location="../../../lucene/build/contrib/spatial/classes/java" />
+    <pathelement location="../../../lucene/build/contrib/spellchecker/classes/java" />
+  </path>    
+  
   <description>
     Solritas: Velocity Response Writer
   </description>
@@ -32,6 +44,7 @@
   	<pathelement location="${solr-path}/build/solr" />
     <fileset dir="src/main/solr/lib" includes="*.jar"/>
     <fileset dir="${solr-path}/lib" includes="*.jar"></fileset>
+    <path refid="lucene.classpath"/>
   </path>
 
   <path id="test.classpath">
@@ -61,7 +74,7 @@
 
   <target name="build" depends="compile">
     <solr-jar destfile="src/main/solr/lib/${fullnamever}.jar" basedir="target/classes"
-              manifest="${common.dir}/${dest}/META-INF/MANIFEST.MF">
+              manifest="../../${dest}/META-INF/MANIFEST.MF">
       <fileset dir="src/main/java" excludes="**/*.java"/>
     </solr-jar>
   </target>

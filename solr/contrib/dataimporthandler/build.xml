@@ -24,6 +24,18 @@
 
   <import file="../../common-build.xml"/>
 
+  <path id="lucene.classpath">
+    <pathelement location="../../../lucene/build/classes/java" />
+    <pathelement location="../../../lucene/build/contrib/analyzers/common/classes/java" />
+    <pathelement location="../../../lucene/build/contrib/fast-vector-highlighter/classes/java" />
+    <pathelement location="../../../lucene/build/contrib/highlighter/classes/java" />
+    <pathelement location="../../../lucene/build/contrib/memory/classes/java" />
+    <pathelement location="../../../lucene/build/contrib/misc/classes/java" />
+    <pathelement location="../../../lucene/build/contrib/queries/classes/java" />
+    <pathelement location="../../../lucene/build/contrib/spatial/classes/java" />
+    <pathelement location="../../../lucene/build/contrib/spellchecker/classes/java" />
+  </path>  
+  
   <description>
     Data Import Handler
   </description>
@@ -37,6 +49,7 @@
   	<pathelement location="${solr-path}/build/solr" />
   	<pathelement location="${solr-path}/build/solrj" />
   	<fileset dir="${solr-path}/lib" includes="*.jar"/>
+    <path refid="lucene.classpath"/>
   </path>
 
   <path id="extras.classpath">
@@ -103,9 +116,9 @@
 	
   <target name="build" depends="compile,compileExtras">
     <solr-jar destfile="target/${fullnamever}.jar" basedir="target/classes"
-              manifest="${common.dir}/${dest}/META-INF/MANIFEST.MF" />
+              manifest="../../${dest}/META-INF/MANIFEST.MF" />
     <solr-jar destfile="target/apache-${ant.project.name}-extras-${version}.jar" basedir="target/extras/classes"
-              manifest="${common.dir}/${dest}/META-INF/MANIFEST.MF" />
+              manifest="../../${dest}/META-INF/MANIFEST.MF" />
   </target>
 	
   <target name="compileTests" depends="compile">

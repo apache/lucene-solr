@@ -15,13 +15,13 @@
  limitations under the License.
 -->
 
-<project name="common" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
+<project name="common-solr" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
   <description>
     This file is designed for importing into a main build file, and not intended
     for standalone use.
   </description>
 
-  <dirname file="${ant.file.common}" property="common.dir"/>
+  <dirname file="${ant.file.common}" property="common-solr.dir"/>
   
   <!-- Initialize property values: allow easy customization via build.properties -->
   <property file="build.properties" />
@@ -42,7 +42,7 @@
   <property name="args" value="" />
 
   <!-- Example directory -->
-  <property name="example" value="${common.dir}/example" />
+  <property name="example" value="${common-solr.dir}/example" />
   <!-- 
     we attempt to exec svnversion to get details build information
     for jar manifests.  this property can be set at runtime to an
@@ -95,13 +95,13 @@
             value="http://lucene.apache.org/java/3_1_0/api/all/"/>
   <property name="javadoc.packages" value="org.apache.solr.*"/>
   <property name="build.docs" value="${dest}/docs"/>
-  <property name="build.javadoc" value="${common.dir}/${build.docs}/api"/>
+  <property name="build.javadoc" value="${common-solr.dir}/${build.docs}/api"/>
   <property name="build.javadoc.solrj" value="${build.docs}/api-solrj"/>
   
   <!-- JUnit properties -->
   <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
-  <property name="junit.output.dir" location="${common.dir}/${dest}/test-results"/>
-  <property name="junit.reports" location="${common.dir}/${dest}/test-results/reports"/>
+  <property name="junit.output.dir" location="${common-solr.dir}/${dest}/test-results"/>
+  <property name="junit.reports" location="${common-solr.dir}/${dest}/test-results/reports"/>
   <property name="junit.formatter" value="plain"/>
 
   <!-- Maven properties -->
@@ -131,7 +131,7 @@
   <available property="maven.ant.tasks.present" classname="org.apache.maven.artifact.ant.Pom" />
 
   <!-- End Maven Properties -->
-
+  
   <available property="clover.present"
             classname="com.cenqua.clover.tasks.CloverReportTask"
             />
@@ -168,7 +168,7 @@
     <attribute name="basedir" default="." />
     <attribute name="includes" default="org/apache/**" />
     <attribute name="excludes" default="" />
-    <attribute name="manifest" default="${common.dir}/${dest}/META-INF/MANIFEST.MF" />
+    <attribute name="manifest" default="${common-solr.dir}/${dest}/META-INF/MANIFEST.MF" />
     <element name="nested" optional="true" implicit="true" />
     <sequential>
       <jar destfile="@{destfile}"
@@ -177,7 +177,7 @@
            excludes="@{excludes}"
            filesetmanifest="skip"
            manifest="@{manifest}">
-        <metainf dir="${common.dir}" includes="LICENSE.txt,NOTICE.txt"/>
+        <metainf dir="${common-solr.dir}" includes="LICENSE.txt,NOTICE.txt"/>
         <nested />
       </jar>
     </sequential>

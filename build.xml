@@ -33,24 +33,6 @@
     </sequential>
   </target>
 
-  <target name="lucene-jars-to-solr">
-    <!-- temp hack - copy lucene jars to solr -->
-
-    <copy todir="solr/lib" preservelastmodified="true" flatten="true">
-      <resources>
-        <file file="lucene/build/lucene-core-${lucene.version}.jar" />
-        <file file="lucene/build/contrib/analyzers/common/lucene-analyzers-${lucene.version}.jar" />
-        <file file="lucene/build/contrib/fast-vector-highlighter/lucene-fast-vector-highlighter-${lucene.version}.jar" />
-        <file file="lucene/build/contrib/highlighter/lucene-highlighter-${lucene.version}.jar" />
-        <file file="lucene/build/contrib/memory/lucene-memory-${lucene.version}.jar" />
-        <file file="lucene/build/contrib/misc/lucene-misc-${lucene.version}.jar" />
-        <file file="lucene/build/contrib/queries/lucene-queries-${lucene.version}.jar" />
-        <file file="lucene/build/contrib/spatial/lucene-spatial-${lucene.version}.jar" />
-        <file file="lucene/build/contrib/spellchecker/lucene-spellchecker-${lucene.version}.jar" />
-      </resources>
-    </copy>
-  </target>
-
   <target name="clean">
     <sequential>
       <subant target="clean" inheritall="false" failonerror="true">
