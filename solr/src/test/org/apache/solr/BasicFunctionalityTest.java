@@ -115,11 +115,13 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
   }
 
   public void testSomeStuff() throws Exception {
-	// test merge factor picked up
-	SolrCore core = h.getCore();
-	SolrIndexWriter writer = new SolrIndexWriter("testWriter",core.getNewIndexDir(), core.getDirectoryFactory(), false, core.getSchema(), core.getSolrConfig().mainIndexConfig, core.getDeletionPolicy());
-	assertEquals("Mergefactor was not picked up", writer.getMergeFactor(), 8);
-	  
+    // test merge factor picked up
+    SolrCore core = h.getCore();
+
+    SolrIndexWriter writer = new SolrIndexWriter("testWriter",core.getNewIndexDir(), core.getDirectoryFactory(), false, core.getSchema(), core.getSolrConfig().mainIndexConfig, core.getDeletionPolicy());
+    assertEquals("Mergefactor was not picked up", writer.getMergeFactor(), 8);
+    writer.close();
+
     lrf.args.put("version","2.0");
     assertQ("test query on empty index",
             req("qlkciyopsbgzyvkylsjhchghjrdf")
