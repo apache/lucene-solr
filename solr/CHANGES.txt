@@ -113,6 +113,9 @@ New Features
 * SOLR-1677: Add support for choosing the Lucene Version for Lucene components within
   Solr. (Uwe Schindler, Mark Miller)
 
+* SOLR-1379: Add RAMDirectoryFactory for non-persistent in memory index storage.
+  (Alex Baranov via yonik)
+
 Optimizations
 ----------------------
 
