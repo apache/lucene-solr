@@ -59,6 +59,7 @@
   	<fileset dir="${solr-path}/lib" includes="*.jar"/>
   	<fileset dir="lib/" includes="*.jar"/>
   	<fileset dir="${tikalibs-path}" includes="*.jar"/>
+    <path refid="lucene.classpath"/>
   </path>
 	
   <path id="test.classpath">
