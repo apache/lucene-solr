@@ -25,8 +25,6 @@
         <fileset dir="lucene" includes="build.xml" />
       </subant>
 
-      <antcall target="lucene-jars-to-solr" />
-
       <subant target="test" inheritall="false" failonerror="true">
         <fileset dir="solr" includes="build.xml" />
       </subant>
