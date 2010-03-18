@@ -36,7 +36,7 @@
   <target name="lucene-jars-to-solr">
     <!-- temp hack - copy lucene jars to solr -->
 
-    <copy todir="solr/lib" preservelastmodified="true" flatten="true" overwrite="true">
+    <copy todir="solr/lib" preservelastmodified="true" flatten="true">
       <resources>
         <file file="lucene/build/lucene-core-${lucene.version}.jar" />
         <file file="lucene/build/contrib/analyzers/common/lucene-analyzers-${lucene.version}.jar" />
