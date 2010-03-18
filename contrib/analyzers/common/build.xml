@@ -35,4 +35,20 @@
     <path refid="junit-path"/>
     <pathelement location="${build.dir}/classes/java"/>
   </path>	
+
+  <target name="compile-test" depends="download-snowball-vocab-tests, common.compile-test" />
+  <property name="snowball.vocab.rev" value="500"/>
+  <property name="snowball.vocab.url" 
+            value="svn://svn.tartarus.org/snowball/trunk/data"/>
+  <property name="snowball.vocab.dir" value="src/test/org/apache/lucene/analysis/snowball"/>
+		
+  <target name="download-snowball-vocab-tests" depends="compile-core"
+	      description="Downloads Snowball vocabulary tests">
+	<sequential>
+	  <mkdir dir="${snowball.vocab.dir}"/>
+	    <exec dir="${snowball.vocab.dir}" executable="${svn.exe}" failifexecutionfails="false" failonerror="true">
+	      <arg line="checkout --trust-server-cert --non-interactive -r ${snowball.vocab.rev} ${snowball.vocab.url}"/>
+	    </exec>
+	</sequential>
+  </target>
 </project>
