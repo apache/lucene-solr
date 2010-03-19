@@ -29,18 +29,6 @@
 
   <property name="download.dir" value="lib/downloads"/>
   <property name="example.local" value="example"/>
-
-  <path id="lucene.classpath">
-    <pathelement location="../../../lucene/build/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/analyzers/common/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/fast-vector-highlighter/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/highlighter/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/memory/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/misc/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/queries/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/spatial/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/spellchecker/classes/java" />
-  </path>  
   
   <path id="common.classpath">
     <fileset dir="lib"/>

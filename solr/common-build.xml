@@ -21,7 +21,7 @@
     for standalone use.
   </description>
 
-  <dirname file="${ant.file.common}" property="common-solr.dir"/>
+  <dirname file="${ant.file.common-solr}" property="common-solr.dir"/>
   
   <!-- Initialize property values: allow easy customization via build.properties -->
   <property file="build.properties" />
@@ -141,6 +141,18 @@
            <isset property="clover.present"/>
        </and>
    </condition>
+   
+  <path id="lucene.classpath">
+    <pathelement location="${common-solr.dir}/../lucene/build/classes/java" />
+    <pathelement location="${common-solr.dir}/../lucene/build/contrib/analyzers/common/classes/java" />
+    <pathelement location="${common-solr.dir}/../lucene/build/contrib/fast-vector-highlighter/classes/java" />
+    <pathelement location="${common-solr.dir}/../lucene/build/contrib/highlighter/classes/java" />
+    <pathelement location="${common-solr.dir}/../lucene/build/contrib/memory/classes/java" />
+    <pathelement location="${common-solr.dir}/../lucene/build/contrib/misc/classes/java" />
+    <pathelement location="${common-solr.dir}/../lucene/build/contrib/queries/classes/java" />
+    <pathelement location="${common-solr.dir}/../lucene/build/contrib/spatial/classes/java" />
+    <pathelement location="${common-solr.dir}/../lucene/build/contrib/spellchecker/classes/java" />
+  </path>   
    
    
   <!-- Macro for compilation -->

@@ -23,18 +23,6 @@
   <property name="tikalibs-path" value="../extraction/lib" />
 
   <import file="../../common-build.xml"/>
-
-  <path id="lucene.classpath">
-    <pathelement location="../../../lucene/build/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/analyzers/common/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/fast-vector-highlighter/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/highlighter/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/memory/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/misc/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/queries/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/spatial/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/spellchecker/classes/java" />
-  </path>  
   
   <description>
     Data Import Handler

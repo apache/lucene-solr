@@ -24,18 +24,6 @@
   <property name="tika.lib" value="lib/tika-${tika.version}-standalone.jar"/>
 
   <import file="../../common-build.xml"/>
-
-  <path id="lucene.classpath">
-    <pathelement location="../../../lucene/build/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/analyzers/common/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/fast-vector-highlighter/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/highlighter/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/memory/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/misc/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/queries/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/spatial/classes/java" />
-    <pathelement location="../../../lucene/build/contrib/spellchecker/classes/java" />
-  </path>  
   
   <description>
     Solr Integration with Tika for extracting content from binary file formats such as Microsoft Word and Adobe PDF.
