@@ -27,7 +27,9 @@ import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.miscellaneous.SingleTokenTokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import static org.apache.solr.analysis.BaseTokenTestCase.*;
 
@@ -35,16 +37,17 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 
 /**
  * New WordDelimiterFilter tests... most of the tests are in ConvertedLegacyTest
  */
-public class TestWordDelimiterFilter extends AbstractSolrTestCase {
-  public String getSchemaFile() { return "solr/conf/schema.xml"; }
-  public String getSolrConfigFile() { return "solr/conf/solrconfig.xml"; }
+public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
+  }
 
   public void posTst(String v1, String v2, String s1, String s2) {
     assertU(adoc("id",  "42",
@@ -62,9 +65,10 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
             req("+id:42 +subword:\"" + s1 + ' ' + s2 + "\"~110")
             ,"//result[@numFound=1]"
     );
+    clearIndex();
   }
 
-
+  @Test
   public void testRetainPositionIncrement() {
     posTst("foo","bar","foo","bar");
     posTst("-foo-","-bar-","foo","bar");
@@ -79,10 +83,13 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
     posTst("zoo-foo-123","456-bar-baz","foo","bar");
   }
 
+  @Test
   public void testNoGenerationEdgeCase() {
     assertU(adoc("id", "222", "numberpartfail", "123.123.123.123"));
+    clearIndex();
   }
 
+  @Test
   public void testIgnoreCaseChange() {
 
     assertU(adoc("id",  "43",
@@ -98,9 +105,10 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
             req("subword:(good jon)")
             ,"//result[@numFound=1]"
     );
+    clearIndex();
   }
 
-
+  @Test
   public void testPreserveOrignalTrue() {
 
     assertU(adoc("id",  "144",
@@ -121,7 +129,7 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
         req("wdf_preserve:404-123*")
         ,"//result[@numFound=1]"
     );
-
+    clearIndex();
   }
 
   /***
@@ -142,7 +150,7 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
   }
   ***/
 
-
+  @Test
   public void testOffsets() throws IOException {
 
     // test that subwords and catenated subwords have
@@ -166,6 +174,7 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
         new int[] { 6, 6, 6 });
   }
   
+  @Test
   public void testOffsetChange() throws Exception
   {
     WordDelimiterFilter wdf = new WordDelimiterFilter(
@@ -179,6 +188,7 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
         new int[] { 15 });
   }
   
+  @Test
   public void testOffsetChange2() throws Exception
   {
     WordDelimiterFilter wdf = new WordDelimiterFilter(
@@ -192,6 +202,7 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
         new int[] { 17 });
   }
   
+  @Test
   public void testOffsetChange3() throws Exception
   {
     WordDelimiterFilter wdf = new WordDelimiterFilter(
@@ -205,6 +216,7 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
         new int[] { 16 });
   }
   
+  @Test
   public void testOffsetChange4() throws Exception
   {
     WordDelimiterFilter wdf = new WordDelimiterFilter(
@@ -218,6 +230,7 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
         new int[] { 11, 15, 15 });
   }
 
+  @Test
   public void testAlphaNumericWords(){
      assertU(adoc("id",  "68","numericsubword","Java/J2SE"));
      assertU(commit());
@@ -230,8 +243,10 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
             req("numericsubword:(J2 OR SE)")
             ,"//result[@numFound=0]"
     );
+    clearIndex();
   }
 
+  @Test
   public void testProtectedWords(){
     assertU(adoc("id", "70","protectedsubword","c# c++ .net Java/J2SE"));
     assertU(commit());
@@ -264,6 +279,7 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
             req("protectedsubword:net")
             ,"//result[@numFound=0]"
     );
+    clearIndex();
   }
 
 
@@ -274,6 +290,7 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
     assertTokenStreamContents(wdf, output);
   }
 
+  @Test
   public void testSplits() throws Exception {
     doSplit("basic-split","basic","split");
     doSplit("camelCase","camel","Case");
@@ -318,6 +335,7 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
   /*
    * Test option that allows disabling the special "'s" stemming, instead treating the single quote like other delimiters. 
    */
+  @Test
   public void testPossessives() throws Exception {
     doSplitPossessive(1, "ra's", "ra");
     doSplitPossessive(0, "ra's", "ra", "s");
@@ -348,6 +366,7 @@ public class TestWordDelimiterFilter extends AbstractSolrTestCase {
     }  
   }
   
+  @Test
   public void testPositionIncrements() throws Exception {
     final CharArraySet protWords = new CharArraySet(new HashSet<String>(Arrays.asList("NUTCH")), false);
     
