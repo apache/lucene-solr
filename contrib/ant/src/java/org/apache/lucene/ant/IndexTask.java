@@ -283,13 +283,14 @@ public class IndexTask extends Task {
 
       log("checkLastModified = " + checkLastModified, Project.MSG_VERBOSE);
 
-      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+      IndexWriterConfig conf = new IndexWriterConfig(
           Version.LUCENE_CURRENT, analyzer).setOpenMode(
-          create ? OpenMode.CREATE : OpenMode.APPEND));
-      LogMergePolicy lmp = (LogMergePolicy) writer.getMergePolicy();
+          create ? OpenMode.CREATE : OpenMode.APPEND);
+      LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundIndex);
       lmp.setUseCompoundDocStore(useCompoundIndex);
       lmp.setMergeFactor(mergeFactor);
+      IndexWriter writer = new IndexWriter(dir, conf);
       int totalFiles = 0;
       int totalIndexed = 0;
       int totalIgnored = 0;

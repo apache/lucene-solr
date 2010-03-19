@@ -18,6 +18,8 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.SetOnce;
+import org.apache.lucene.util.SetOnce.AlreadySetException;
 
 import java.io.IOException;
 import java.util.List;
@@ -52,12 +54,6 @@ import java.util.Set;
  * LogByteSizeMergePolicy}.</p>
  *
  * @lucene.experimental
- *
- * <p><b>NOTE</b>: This class typically requires access to
- * package-private APIs (e.g. <code>SegmentInfos</code>) to do its job;
- * if you implement your own MergePolicy, you'll need to put
- * it in package org.apache.lucene.index in order to use
- * these APIs.
  */
 
 public abstract class MergePolicy implements java.io.Closeable {
@@ -225,12 +221,28 @@ public abstract class MergePolicy implements java.io.Closeable {
     }
   }
 
-  final protected IndexWriter writer;
-  
-  public MergePolicy(IndexWriter writer) {
-    this.writer = writer;
+  protected final SetOnce<IndexWriter> writer;
+
+  /**
+   * Creates a new merge policy instance. Note that if you intend to use it
+   * without passing it to {@link IndexWriter}, you should call
+   * {@link #setIndexWriter(IndexWriter)}.
+   */
+  public MergePolicy() {
+    writer = new SetOnce<IndexWriter>();
   }
 
+  /**
+   * Sets the {@link IndexWriter} to use by this merge policy. This method is
+   * allowed to be called only once, and is usually set by IndexWriter. If it is
+   * called more than once, {@link AlreadySetException} is thrown.
+   * 
+   * @see SetOnce
+   */
+  public void setIndexWriter(IndexWriter writer) {
+    this.writer.set(writer);
+  }
+  
   /**
    * Determine what set of merge operations are now necessary on the index.
    * {@link IndexWriter} calls this whenever there is a change to the segments.

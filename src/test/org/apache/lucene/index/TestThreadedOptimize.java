@@ -62,7 +62,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
     for(int iter=0;iter<NUM_ITER;iter++) {
       final int iterFinal = iter;
 
-      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(1000);
+      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(1000);
 
       for(int i=0;i<200;i++) {
         Document d = new Document();
@@ -71,7 +71,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
         writer.addDocument(d);
       }
 
-      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(4);
+      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
       //writer.setInfoStream(System.out);
 
       Thread[] threads = new Thread[NUM_THREADS];

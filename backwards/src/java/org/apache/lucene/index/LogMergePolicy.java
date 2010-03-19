@@ -66,10 +66,6 @@ public abstract class LogMergePolicy extends MergePolicy {
   private boolean useCompoundFile = true;
   private boolean useCompoundDocStore = true;
 
-  public LogMergePolicy(IndexWriter writer) {
-    super(writer);
-  }
-  
   protected boolean verbose() {
     return writer != null && writer.verbose();
   }

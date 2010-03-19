@@ -58,7 +58,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     Directory merged = new MockRAMDirectory();
 
     IndexWriter writer = new IndexWriter(merged, new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(2);
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
 
     writer.addIndexesNoOptimize(new Directory[]{indexA, indexB});
     writer.optimize();
@@ -97,7 +97,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
         TEST_VERSION_CURRENT, 
         new StandardAnalyzer(TEST_VERSION_CURRENT))
         .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(2));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(2);
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
 
     for (int i = start; i < (start + numDocs); i++)
     {

@@ -491,8 +491,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
   
   public static void createIndex(Directory dir1, String indexName,
       boolean multiSegment) throws IOException {
-    IndexWriter w = new IndexWriter(dir1, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-    w.setMergePolicy(new LogDocMergePolicy(w));
+    IndexWriter w = new IndexWriter(dir1, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        .setMergePolicy(new LogDocMergePolicy()));
     for (int i = 0; i < 100; i++) {
       w.addDocument(createDocument(i, indexName, 4));
       if (multiSegment && (i % 10) == 0) {
@@ -538,7 +539,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     // get a reader to put writer into near real-time mode
     IndexReader r1 = writer.getReader();
     
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(2);
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
 
     for (int i = 0; i < 10; i++) {
       writer.addDocument(createDocument(i, "test", 4));
@@ -622,7 +623,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Directory dir1 = new MockRAMDirectory();
     final IndexWriter writer = new IndexWriter(dir1, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     writer.setInfoStream(infoStream);
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(2);
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
 
     // create the index
     createIndexNoClose(false, "test", writer);
@@ -699,7 +700,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Directory dir1 = new MockRAMDirectory();
     final IndexWriter writer = new IndexWriter(dir1, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     writer.setInfoStream(infoStream);
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(2);
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
 
     // create the index
     createIndexNoClose(false, "test", writer);

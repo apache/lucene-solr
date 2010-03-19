@@ -30,11 +30,11 @@ public class LogByteSizeMergePolicy extends LogMergePolicy {
    *  or larger will never be merged.  @see setMaxMergeMB */
   public static final double DEFAULT_MAX_MERGE_MB = Long.MAX_VALUE;
 
-  public LogByteSizeMergePolicy(IndexWriter writer) {
-    super(writer);
+  public LogByteSizeMergePolicy() {
     minMergeSize = (long) (DEFAULT_MIN_MERGE_MB*1024*1024);
     maxMergeSize = (long) (DEFAULT_MAX_MERGE_MB*1024*1024);
   }
+  
   @Override
   protected long size(SegmentInfo info) throws IOException {
     return sizeBytes(info);

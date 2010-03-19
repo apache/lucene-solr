@@ -572,7 +572,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       boolean multiSegment) throws IOException {
     IndexWriter w = new IndexWriter(dir1, new WhitespaceAnalyzer(),
         IndexWriter.MaxFieldLength.LIMITED);
-    w.setMergePolicy(new LogDocMergePolicy(w));
+    w.setMergePolicy(new LogDocMergePolicy());
     for (int i = 0; i < 100; i++) {
       w.addDocument(createDocument(i, indexName, 4));
       if (multiSegment && (i % 10) == 0) {

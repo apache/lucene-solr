@@ -472,9 +472,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dirName = fullDir(dirName);
 
     Directory dir = FSDirectory.open(new File(dirName));
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(10));
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(doCFS);
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundDocStore(doCFS);
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(10);
+    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(doCFS);
+    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundDocStore(doCFS);
+    IndexWriter writer = new IndexWriter(dir, conf);
     
     for(int i=0;i<35;i++) {
       addDoc(writer, i);
@@ -483,9 +484,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     writer.close();
 
     // open fresh writer so we get no prx file in the added segment
-    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(10));
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(doCFS);
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundDocStore(doCFS);
+    conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(10);
+    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(doCFS);
+    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundDocStore(doCFS);
+    writer = new IndexWriter(dir, conf);
     addNoProxDoc(writer);
     writer.close();
 

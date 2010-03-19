@@ -60,9 +60,10 @@ public class TestFieldsReader extends LuceneTestCase {
     fieldInfos = new FieldInfos();
     DocHelper.setupDoc(testDoc);
     fieldInfos.add(testDoc);
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(false);
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundDocStore(false);
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(false);
+    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundDocStore(false);
+    IndexWriter writer = new IndexWriter(dir, conf);
     writer.addDocument(testDoc);
     writer.close();
   }
@@ -216,8 +217,9 @@ public class TestFieldsReader extends LuceneTestCase {
     FSDirectory tmpDir = FSDirectory.open(file);
     assertTrue(tmpDir != null);
 
-    IndexWriter writer = new IndexWriter(tmpDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE));
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(false);
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE);
+    ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(false);
+    IndexWriter writer = new IndexWriter(tmpDir, conf);
     writer.addDocument(testDoc);
     writer.close();
 

@@ -30,19 +30,18 @@ import java.util.Set;
  * <p>This is based on code from zoie, described in more detail
  * at http://code.google.com/p/zoie/wiki/ZoieMergePolicy.</p>
  */
-public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy
-{
+public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
+  
   public static final int DEFAULT_NUM_LARGE_SEGMENTS = 10;
   
   private boolean _partialExpunge = false;
   private int _numLargeSegments = DEFAULT_NUM_LARGE_SEGMENTS;
   private int _maxSmallSegments = 2 * LogMergePolicy.DEFAULT_MERGE_FACTOR;
   private int _maxSegments = _numLargeSegments + _maxSmallSegments;
-  
-  public BalancedSegmentMergePolicy(IndexWriter writer) {
-    super(writer);
+
+  public BalancedSegmentMergePolicy() {
   }
-  
+
   public void setMergePolicyParams(MergePolicyParams params) {
     if (params!=null) {
       setPartialExpunge(params._doPartialExpunge);
@@ -122,6 +121,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy
   
   private boolean isOptimized(IndexWriter writer, SegmentInfo info)
     throws IOException {
+    assert writer != null;
     return !info.hasDeletions() &&
       !info.hasSeparateNorms() &&
       info.dir == writer.getDirectory() &&
@@ -135,7 +135,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy
 
     MergeSpecification spec = null;
 
-    if (!isOptimized(infos, writer, maxNumSegments, segmentsToOptimize)) {
+    if (!isOptimized(infos, writer.get(), maxNumSegments, segmentsToOptimize)) {
 
       // Find the newest (rightmost) segment that needs to
       // be optimized (other segments may have been flushed
@@ -158,7 +158,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy
           // Since we must optimize down to 1 segment, the
           // choice is simple:
           boolean useCompoundFile = getUseCompoundFile();
-          if (last > 1 || !isOptimized(writer, infos.info(0))) {
+          if (last > 1 || !isOptimized(writer.get(), infos.info(0))) {
 
             spec = new MergeSpecification();
             spec.add(new OneMerge(infos.range(0, last), useCompoundFile));

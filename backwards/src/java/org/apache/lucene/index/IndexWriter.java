@@ -279,7 +279,7 @@ public class IndexWriter implements Closeable {
   // merges
   private HashSet<SegmentInfo> mergingSegments = new HashSet<SegmentInfo>();
 
-  private MergePolicy mergePolicy = new LogByteSizeMergePolicy(this);
+  private MergePolicy mergePolicy = new LogByteSizeMergePolicy();
   private MergeScheduler mergeScheduler = new ConcurrentMergeScheduler();
   private LinkedList<MergePolicy.OneMerge> pendingMerges = new LinkedList<MergePolicy.OneMerge>();
   private Set<MergePolicy.OneMerge> runningMerges = new HashSet<MergePolicy.OneMerge>();

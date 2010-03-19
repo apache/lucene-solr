@@ -27,6 +27,15 @@ Changes in backwards compatibility policy
   This means that terms with a position increment gap of zero do not
   affect the norms calculation by default.  (Robert Muir)
 
+* LUCENE-2320: MergePolicy.writer is now of type SetOnce, which allows setting
+  the IndexWriter for a MergePolicy exactly once. You can change references to
+  'writer' from <code>writer.doXYZ()</code> to <code>writer.get().doXYZ()</code>
+  (it is also advisable to add an <code>assert writer != null;</code> before you
+  access the wrapped IndexWriter.
+  In addition, MergePolicy only exposes a default constructor, and the one that
+  took IndexWriter as argument has been removed from all MergePolicy extensions.
+  (Shai Erera via Mike McCandless)
+
 Changes in runtime behavior
 
 * LUCENE-1923: Made IndexReader.toString() produce something
@@ -94,6 +103,10 @@ API Changes
   Additionally, the setter/getter related to MergePolicy were deprecated as 
   well. One should interact with the MergePolicy directly.
   (Shai Erera via Mike McCandless)
+  
+* LUCENE-2320: IndexWriter's MergePolicy configuration was moved to 
+  IndexWriterConfig and the respective methods on IndexWriter were deprecated.
+  (Shai Erera via Mike McCandless) 
 
 Bug fixes
 
@@ -166,6 +179,9 @@ New features
 
 * LUCENE-2247: Added a CharArrayMap<V> for performance improvements
   in some stemmers and synonym filters. (Uwe Schindler)
+  
+* LUCENE-2320: Added SetOnce which wraps an object and allows it to be set 
+  exactly once. (Shai Erera via Mike McCandless)
 
 * LUCENE-2314: Added AttributeSource.copyTo(AttributeSource) that
   allows to use cloneAttributes() and this method as a replacement

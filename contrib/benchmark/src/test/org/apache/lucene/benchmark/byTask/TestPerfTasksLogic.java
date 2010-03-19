@@ -676,11 +676,11 @@ public class TestPerfTasksLogic extends LuceneTestCase {
 
   public static class MyMergePolicy extends LogDocMergePolicy {
     boolean called;
-    public MyMergePolicy(IndexWriter writer) {
-      super(writer);
+    public MyMergePolicy() {
       called = true;
     }
   }
+  
   /**
    * Test that we can set merge policy".
    */
@@ -710,7 +710,7 @@ public class TestPerfTasksLogic extends LuceneTestCase {
 
     // 2. execute the algorithm  (required in every "logic" test)
     Benchmark benchmark = execBenchmark(algLines);
-    assertTrue("did not use the specified MergeScheduler", ((MyMergePolicy) benchmark.getRunData().getIndexWriter().getMergePolicy()).called);
+    assertTrue("did not use the specified MergePolicy", ((MyMergePolicy) benchmark.getRunData().getIndexWriter().getConfig().getMergePolicy()).called);
     benchmark.getRunData().getIndexWriter().close();
     
     // 3. test number of docs in the index
@@ -754,8 +754,8 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     final IndexWriter writer = benchmark.getRunData().getIndexWriter();
     assertEquals(2, writer.getConfig().getMaxBufferedDocs());
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, (int) writer.getConfig().getRAMBufferSizeMB());
-    assertEquals(3, ((LogMergePolicy) writer.getMergePolicy()).getMergeFactor());
-    assertFalse(((LogMergePolicy) writer.getMergePolicy()).getUseCompoundFile());
+    assertEquals(3, ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor());
+    assertFalse(((LogMergePolicy) writer.getConfig().getMergePolicy()).getUseCompoundFile());
     writer.close();
     Directory dir = benchmark.getRunData().getDirectory();
     IndexReader reader = IndexReader.open(dir, true);

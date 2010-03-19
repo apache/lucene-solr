@@ -35,9 +35,9 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
   public void testNormalCase() throws IOException {
     Directory dir = new RAMDirectory();
 
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(10));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
-    writer.setMergePolicy(new LogDocMergePolicy(writer));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        .setMaxBufferedDocs(10).setMergePolicy(new LogDocMergePolicy()));
 
     for (int i = 0; i < 100; i++) {
       addDoc(writer);
@@ -51,9 +51,9 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
   public void testNoOverMerge() throws IOException {
     Directory dir = new RAMDirectory();
 
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(10));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
-    writer.setMergePolicy(new LogDocMergePolicy(writer));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        .setMaxBufferedDocs(10).setMergePolicy(new LogDocMergePolicy()));
 
     boolean noOverMerge = false;
     for (int i = 0; i < 100; i++) {
@@ -72,21 +72,23 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
   public void testForceFlush() throws IOException {
     Directory dir = new RAMDirectory();
 
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(10));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
-    LogDocMergePolicy mp = new LogDocMergePolicy(writer);
+    LogDocMergePolicy mp = new LogDocMergePolicy();
     mp.setMinMergeDocs(100);
-    writer.setMergePolicy(mp);
+    mp.setMergeFactor(10);
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        .setMaxBufferedDocs(10).setMergePolicy(mp));
 
     for (int i = 0; i < 100; i++) {
       addDoc(writer);
       writer.close();
 
-      writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
-          .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(10));
-      writer.setMergePolicy(mp);
+      mp = new LogDocMergePolicy();
+      mp.setMergeFactor(10);
+      writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT,
+          new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(
+          OpenMode.APPEND).setMaxBufferedDocs(10).setMergePolicy(mp));
       mp.setMinMergeDocs(100);
-      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
       checkInvariants(writer);
     }
 
@@ -97,16 +99,16 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
   public void testMergeFactorChange() throws IOException {
     Directory dir = new RAMDirectory();
 
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(10));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(100);
-    writer.setMergePolicy(new LogDocMergePolicy(writer));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        .setMaxBufferedDocs(10).setMergePolicy(new LogDocMergePolicy()));
 
     for (int i = 0; i < 250; i++) {
       addDoc(writer);
       checkInvariants(writer);
     }
 
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(5);
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(5);
 
     // merge policy only fixes segments on levels where merges
     // have been triggered, so check invariants after all adds
@@ -122,9 +124,9 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
   public void testMaxBufferedDocsChange() throws IOException {
     Directory dir = new RAMDirectory();
 
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(101));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(101);
-    writer.setMergePolicy(new LogDocMergePolicy(writer));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        .setMaxBufferedDocs(101).setMergePolicy(new LogDocMergePolicy()));
 
     // leftmost* segment has 1 doc
     // rightmost* segment has 100 docs
@@ -135,17 +137,18 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       }
       writer.close();
 
-      writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
-          .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(101));
-      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(101);
-      writer.setMergePolicy(new LogDocMergePolicy(writer));
+      writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT,
+          new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(
+          OpenMode.APPEND).setMaxBufferedDocs(101).setMergePolicy(
+          new LogDocMergePolicy()));
     }
 
     writer.close();
-    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
-        .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(10));
-    writer.setMergePolicy(new LogDocMergePolicy(writer));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
+    LogDocMergePolicy ldmp = new LogDocMergePolicy();
+    ldmp.setMergeFactor(10);
+    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT,
+        new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(
+        OpenMode.APPEND).setMaxBufferedDocs(10).setMergePolicy(ldmp));
 
     // merge policy only fixes segments on levels where merges
     // have been triggered, so check invariants after all adds
@@ -169,9 +172,11 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
   public void testMergeDocCount0() throws IOException {
     Directory dir = new RAMDirectory();
 
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(10));
-    writer.setMergePolicy(new LogDocMergePolicy(writer));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(100);
+    LogDocMergePolicy ldmp = new LogDocMergePolicy();
+    ldmp.setMergeFactor(100);
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        .setMaxBufferedDocs(10).setMergePolicy(ldmp));
 
     for (int i = 0; i < 250; i++) {
       addDoc(writer);
@@ -183,10 +188,11 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     reader.deleteDocuments(new Term("content", "aaa"));
     reader.close();
 
-    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
-        .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(10));
-    writer.setMergePolicy(new LogDocMergePolicy(writer));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(5);
+    ldmp = new LogDocMergePolicy();
+    ldmp.setMergeFactor(5);
+    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT,
+        new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(
+        OpenMode.APPEND).setMaxBufferedDocs(10).setMergePolicy(ldmp));
 
     // merge factor is changed, so check invariants after all adds
     for (int i = 0; i < 10; i++) {
@@ -210,8 +216,8 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
   private void checkInvariants(IndexWriter writer) throws IOException {
     _TestUtil.syncConcurrentMerges(writer);
     int maxBufferedDocs = writer.getConfig().getMaxBufferedDocs();
-    int mergeFactor = ((LogMergePolicy) writer.getMergePolicy()).getMergeFactor();
-    int maxMergeDocs = ((LogMergePolicy) writer.getMergePolicy()).getMaxMergeDocs();
+    int mergeFactor = ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor();
+    int maxMergeDocs = ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMaxMergeDocs();
 
     int ramSegmentCount = writer.getNumBufferedDocuments();
     assertTrue(ramSegmentCount < maxBufferedDocs);

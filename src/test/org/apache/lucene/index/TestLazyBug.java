@@ -73,7 +73,7 @@ public class TestLazyBug extends LuceneTestCase {
       Random r = newRandom();
       IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
           TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
-      LogMergePolicy lmp = (LogMergePolicy) writer.getMergePolicy();
+      LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
       lmp.setUseCompoundFile(false);
       lmp.setUseCompoundDocStore(false);
       

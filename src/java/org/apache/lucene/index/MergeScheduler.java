@@ -25,12 +25,6 @@ import java.io.IOException;
  *  MergeScheduler is {@link ConcurrentMergeScheduler}.</p>
  *
  * @lucene.experimental
- *
- * <p><b>NOTE</b>: This class typically requires access to
- * package-private APIs (eg, SegmentInfos) to do its job;
- * if you implement your own MergePolicy, you'll need to put
- * it in package org.apache.lucene.index in order to use
- * these APIs.
 */
 
 public abstract class MergeScheduler {
