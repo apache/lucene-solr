@@ -17,14 +17,20 @@
 
 package org.apache.solr.request;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-public class SimpleFacetsTest extends AbstractSolrTestCase {
 
-  public String getSchemaFile() { return "schema.xml"; }
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
-  public String getCoreName() { return "basic"; }
-  
+public class SimpleFacetsTest extends SolrTestCaseJ4 {
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
+  }
+
+  @Test
   public void testSimpleFacetCounts() {
     assertU(adoc("id", "42", "trait_s", "Tool", "trait_s", "Obnoxious",
                  "name", "Zapp Brannigan"));
@@ -210,7 +216,8 @@ public class SimpleFacetsTest extends AbstractSolrTestCase {
             );
 
   }
- 
+
+  @Test
   public void testDateFacets() {
     final String f = "bday";
     final String pre = "//lst[@name='facet_dates']/lst[@name='"+f+"']";
@@ -382,6 +389,7 @@ public class SimpleFacetsTest extends AbstractSolrTestCase {
     
   }
 
+  @Test
   public void testFacetMultiValued() {
     doFacetPrefix("t_s", "facet.method","enum");
     doFacetPrefix("t_s", "facet.method", "enum", "facet.enum.cache.minDf", "2");
@@ -389,6 +397,7 @@ public class SimpleFacetsTest extends AbstractSolrTestCase {
     doFacetPrefix("t_s", "facet.method", "fc");
   }
 
+  @Test
   public void testFacetSingleValued() {
     doFacets("t_s1");
   }
@@ -557,7 +566,7 @@ public class SimpleFacetsTest extends AbstractSolrTestCase {
   }
 
 
-
+  @Test
   public void testFacetPrefixMultiValued() {
     doFacetPrefix("t_s", "facet.method","enum");
     doFacetPrefix("t_s", "facet.method", "enum", "facet.enum.cache.minDf", "3");
@@ -565,6 +574,7 @@ public class SimpleFacetsTest extends AbstractSolrTestCase {
     doFacetPrefix("t_s", "facet.method", "fc");
   }
 
+  @Test
   public void testFacetPrefixSingleValued() {
     doFacetPrefix("t_s1");
   }

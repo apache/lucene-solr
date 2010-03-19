@@ -341,6 +341,7 @@
     <path refid="compile.classpath.solrj" />
     <pathelement location="${dest}/solr"/>
     <pathelement location="${dest}/solrj"/> <!-- include solrj -->
+    <pathelement location="${common-solr.dir}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
   </path>
 
   <path id="test.run.classpath">
