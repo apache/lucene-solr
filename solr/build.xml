@@ -639,53 +639,6 @@
 
   </target>
   
-  <target name="prep-lucene-jars">
-    <sequential>
-      <subant target="jar-core" inheritall="false" failonerror="true">
-        <fileset dir="../lucene/" includes="build.xml" />
-      </subant>
-      <subant target="jar" inheritall="false" failonerror="true">
-        <fileset dir="../lucene/contrib/analyzers/common" includes="build.xml" />
-        <fileset dir="../lucene/contrib/fast-vector-highlighter" includes="build.xml" />
-        <fileset dir="../lucene/contrib/highlighter" includes="build.xml" />
-        <fileset dir="../lucene/contrib/memory" includes="build.xml" />
-        <fileset dir="../lucene/contrib/misc" includes="build.xml" />
-        <fileset dir="../lucene/contrib/queries" includes="build.xml" />
-        <fileset dir="../lucene/contrib/spatial" includes="build.xml" />
-        <fileset dir="../lucene/contrib/spellchecker" includes="build.xml" />
-      </subant>
-    </sequential>
-  </target>
-      
-  <target name="lucene-jars-to-solr" depends="prep-lucene-jars">
-    <mkdir dir="lucene-libs"/>
-    <copy todir="lucene-libs" preservelastmodified="true" flatten="true" failonerror="true">
-      <resources>
-        <file file="../lucene/build/lucene-core-${lucene_version}.jar" />
-        <file file="../lucene/build/contrib/analyzers/common/lucene-analyzers-${lucene_version}.jar" />
-        <file file="../lucene/build/contrib/fast-vector-highlighter/lucene-fast-vector-highlighter-${lucene_version}.jar" />
-        <file file="../lucene/build/contrib/highlighter/lucene-highlighter-${lucene_version}.jar" />
-        <file file="../lucene/build/contrib/memory/lucene-memory-${lucene_version}.jar" />
-        <file file="../lucene/build/contrib/misc/lucene-misc-${lucene_version}.jar" />
-        <file file="../lucene/build/contrib/queries/lucene-queries-${lucene_version}.jar" />
-        <file file="../lucene/build/contrib/spatial/lucene-spatial-${lucene_version}.jar" />
-        <file file="../lucene/build/contrib/spellchecker/lucene-spellchecker-${lucene_version}.jar" />
-      </resources>
-      </copy>
-  </target>  
-  
-  <target name="compile-lucene">
-    <ant antfile="build.xml" target="compile" dir="../lucene"/>
-    <ant antfile="build.xml" target="compile" dir="../lucene/contrib/analyzers/common"/>
-    <ant antfile="build.xml" target="compile" dir="../lucene/contrib/fast-vector-highlighter"/>
-    <ant antfile="build.xml" target="compile" dir="../lucene/contrib/highlighter"/>
-    <ant antfile="build.xml" target="compile" dir="../lucene/contrib/memory"/>
-    <ant antfile="build.xml" target="compile" dir="../lucene/contrib/misc"/>
-    <ant antfile="build.xml" target="compile" dir="../lucene/contrib/queries"/>
-    <ant antfile="build.xml" target="compile" dir="../lucene/contrib/spatial"/>
-    <ant antfile="build.xml" target="compile" dir="../lucene/contrib/spellchecker"/>
-  </target>
-
   <!-- make a distribution -->
   <target name="package" depends="generate-maven-artifacts"/>
 
