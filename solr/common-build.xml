@@ -193,7 +193,6 @@
   
   <target name="compile-lucene" unless="lucene-compiled">
     <property name="lucene-compiled" value="true"/>
-    <ant antfile="build.xml" target="compile" dir="../lucene"/>
     <ant antfile="build.xml" target="compile" dir="../lucene/contrib/analyzers/common"/>
     <ant antfile="build.xml" target="compile" dir="../lucene/contrib/fast-vector-highlighter"/>
     <ant antfile="build.xml" target="compile" dir="../lucene/contrib/highlighter"/>
