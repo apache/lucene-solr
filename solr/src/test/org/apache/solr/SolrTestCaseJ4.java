@@ -428,4 +428,8 @@ public class SolrTestCaseJ4 extends LuceneTestCaseJ4 {
     }
     return f.delete();
   }
+  
+  public void clearIndex() {
+    assertU(delQ("*:*"));
+  }
 }

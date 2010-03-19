@@ -17,9 +17,22 @@
 
 package org.apache.solr;
 
-import org.apache.lucene.document.*;
-import org.apache.lucene.search.Query;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.HashMap;
+import java.util.Map;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.apache.lucene.document.Field;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.AppendedSolrParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.DefaultSolrParams;
@@ -27,45 +40,33 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.search.*;
-import org.apache.solr.handler.*;
-import org.apache.solr.request.*;
+import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.XMLWriter;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.DocIterator;
+import org.apache.solr.search.DocList;
+import org.apache.solr.search.QueryParsing;
 import org.apache.solr.update.SolrIndexWriter;
-import org.apache.solr.util.*;
-import org.apache.solr.schema.*;
-
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.DocumentBuilder;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.io.ByteArrayInputStream;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.List;
-import java.util.ArrayList;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * Tests some basic functionality of Solr while demonstrating good
  * Best Practices for using AbstractSolrTestCase
  */
-public class BasicFunctionalityTest extends AbstractSolrTestCase {
+public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
-  public String getSchemaFile() { return "schema.xml"; }
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
+
   public String getCoreName() { return "basic"; }
 
-  public void setUp() throws Exception {
-    // if you override setUp or tearDown, you better call
-    // the super classes version
-    super.setUp();
-  }
-  public void tearDown() throws Exception {
-    // if you override setUp or tearDown, you better call
-    // the super classes version
-    super.tearDown();
-
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
   }
 
   // tests the performance of dynamic field creation and
@@ -99,6 +100,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
   }
   ***/
   
+  @Test
   public void testIgnoredFields() throws Exception {
     lrf.args.put("version","2.0");
     assertU("adding doc with ignored field",
@@ -113,7 +115,8 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             ,"//int[@name='id'][.='42']"
             );
   }
-
+  
+  @Test
   public void testSomeStuff() throws Exception {
     // test merge factor picked up
     SolrCore core = h.getCore();
@@ -220,6 +223,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             );
   }
 
+  @Test
   public void testRequestHandlerBaseException() {
     final String tmp = "BOO!";
     SolrRequestHandler handler = new RequestHandlerBase() {
@@ -242,8 +246,9 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
                         
   }
 
+  @Test
   public void testMultipleUpdatesPerAdd() {
-
+    clearIndex();
     // big freaking kludge since the response is currently not well formed.
     String res = h.update("<add><doc><field name=\"id\">1</field></doc><doc><field name=\"id\">2</field></doc></add>");
     assertEquals("<result status=\"0\"></result>", res);
@@ -254,6 +259,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
 
   }
 
+  @Test
   public void testDocBoost() throws Exception {
     String res = h.update("<add>" + "<doc><field name=\"id\">1</field>"+
                                           "<field name=\"text\">hello</field></doc>" + 
@@ -272,6 +278,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     assertTrue( resp.indexOf("\"2\"") < resp.indexOf("\"1\"") );
   }
 
+  @Test
   public void testFieldBoost() throws Exception {
     String res = h.update("<add>" + "<doc><field name=\"id\">1</field>"+
                                       "<field name=\"text\">hello</field></doc>" + 
@@ -290,6 +297,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     assertTrue( resp.indexOf("\"2\"") < resp.indexOf("\"1\"") );
   }
 
+  @Test
   public void testXMLWriter() throws Exception {
 
     SolrQueryResponse rsp = new SolrQueryResponse();
@@ -303,6 +311,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
                   (writer.toString().getBytes("UTF-8")));
   }
 
+  @Test
   public void testLocalSolrQueryRequestParams() {
     HashMap args = new HashMap();
     args.put("string", "string value");
@@ -321,6 +330,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     assertEquals("value", arrayParams[1]);
   }
 
+  @Test
   public void testKeywordTokenizerFactory() {
 
     assertU(adoc("id", "42",
@@ -337,6 +347,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
   }
 
   /** @see org.apache.solr.analysis.TestRemoveDuplicatesTokenFilter */
+  @Test
   public void testRemoveDuplicatesTokenFilter() {
     Query q = QueryParsing.parseQuery("TV", "dedup",
                                       h.getCore().getSchema());
@@ -345,7 +356,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
                  2, ((BooleanQuery) q).clauses().size());
   }
 
-  
+  @Test
   public void testTermVectorFields() {
     
     IndexSchema ischema = new IndexSchema(solrConfig, getSchemaFile(), null);
@@ -379,7 +390,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
 
   }
 
-
+  @Test
   public void testSolrParams() throws Exception {
     NamedList nl = new NamedList();
     nl.add("i",555);
@@ -435,9 +446,10 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     
   }
 
-
+  @Test
   public void testDefaultFieldValues() {
-    
+    clearIndex();
+    lrf.args.put("version","2.1");
     assertU(adoc("id",  "4055",
                  "subject", "Hoss the Hoss man Hostetter"));
     assertU(adoc("id",  "4056",
@@ -476,7 +488,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     
   }
 
-
+  @Test
   public void testTokenizer() {
 
     assertU(adoc("id",  "4055",
@@ -495,6 +507,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     );
   }
 
+  @Test
   public void testConfigDefaults() {
     assertU(adoc("id", "42",
                  "name", "Zapp Brannigan"));
@@ -534,29 +547,8 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     }
     return new String(sb);
   }   
-  public void testCompressableFieldType() {
-    
-    IndexSchema ischema = new IndexSchema(solrConfig, getSchemaFile(), null);
-    SchemaField f; // Solr field type
-    Field luf; // Lucene field
 
-//    f = ischema.getField("test_hlt");
-//    luf = f.createField("test", 0f);
-//    assertFalse(luf.isCompressed());
-//    assertTrue(luf.isStored());
-//
-//    f = ischema.getField("test_hlt");
-//    luf = f.createField(mkstr(345), 0f);
-//    assertTrue(luf.isCompressed());
-//    assertTrue(luf.isStored());
-//
-//    f = ischema.getField("test_hlt_off");
-//    luf = f.createField(mkstr(400), 0f);
-//    assertFalse(luf.isCompressed());
-//    assertTrue(luf.isStored());
-//    
-  }
-
+  @Test
   public void testNotLazyField() throws IOException {
     for(int i = 0; i < 10; i++) {
       assertU(adoc("id", new Integer(i).toString(), 
@@ -577,6 +569,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     assertTrue( d.getFieldable("title") instanceof Field );
   }
 
+  @Test
   public void testLazyField() throws IOException {
     for(int i = 0; i < 10; i++) {
       assertU(adoc("id", new Integer(i).toString(), 
@@ -600,6 +593,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
             
 
   /** @see org.apache.solr.util.DateMathParserTest */
+  @Test
   public void testDateMath() {
 
     // testing everything from query level is hard because
@@ -648,6 +642,7 @@ public class BasicFunctionalityTest extends AbstractSolrTestCase {
     
   }
   
+  @Test
   public void testPatternReplaceFilter() {
 
     assertU(adoc("id", "1",
