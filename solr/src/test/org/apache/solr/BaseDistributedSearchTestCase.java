@@ -13,6 +13,8 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,7 +25,7 @@ import java.util.*;
  *
  * @since solr 1.5
  */
-public abstract class BaseDistributedSearchTestCase extends AbstractSolrTestCase {
+public abstract class BaseDistributedSearchTestCase extends TestCase {
   public static Random r = new Random(0);
 
   protected int shardCount = 4;
@@ -61,7 +63,8 @@ public abstract class BaseDistributedSearchTestCase extends AbstractSolrTestCase
   protected Map<String, Integer> handle = new HashMap<String, Integer>();
 
   protected String id = "id";
-
+  public static Logger log = LoggerFactory.getLogger(BaseDistributedSearchTestCase.class);
+  
   public static RandVal rint = new RandVal() {
     public Object val() {
       return r.nextInt();
@@ -95,16 +98,6 @@ public abstract class BaseDistributedSearchTestCase extends AbstractSolrTestCase
    */
   public abstract void doTest() throws Exception;
 
-  @Override
-  public String getSchemaFile() {
-    return null;
-  }
-
-  @Override
-  public String getSolrConfigFile() {
-    return null;
-  }
-
   public static String[] fieldNames = new String[]{"n_ti", "n_f", "n_tf", "n_d", "n_td", "n_l", "n_tl", "n_dt", "n_tdt"};
   public static RandVal[] randVals = new RandVal[]{rint, rfloat, rfloat, rdouble, rdouble, rlong, rlong, rdate, rdate};
 
@@ -125,12 +118,10 @@ public abstract class BaseDistributedSearchTestCase extends AbstractSolrTestCase
             + System.getProperty("file.separator")
             + getClass().getName() + "-" + System.currentTimeMillis());
     testDir.mkdirs();
-    postSetUp();
   }
 
   @Override
   public void tearDown() throws Exception {
-    preTearDown();
     destroyServers();
     AbstractSolrTestCase.recurseDelete(testDir);
     super.tearDown();
