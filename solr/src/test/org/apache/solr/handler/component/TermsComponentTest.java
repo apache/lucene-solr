@@ -16,7 +16,7 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.TermsParams;
@@ -25,54 +25,54 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
+import static org.junit.Assert.*;
 import java.util.regex.Pattern;
 
 /**
  *
  *
  **/
-public class TermsComponentTest extends AbstractSolrTestCase {
-  public String getSchemaFile() {
-    return "schema.xml";
-  }
+public class TermsComponentTest extends SolrTestCaseJ4 {
 
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
-  }
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
 
-  public void setUp() throws Exception {
-    super.setUp();
+    assertNull(h.validateUpdate(adoc("id", "0", "lowerfilt", "a", "standardfilt", "a", "foo_i","1")));
+    assertNull(h.validateUpdate(adoc("id", "1", "lowerfilt", "a", "standardfilt", "aa", "foo_i","1")));
+    assertNull(h.validateUpdate(adoc("id", "2", "lowerfilt", "aa", "standardfilt", "aaa", "foo_i","2")));
+    assertNull(h.validateUpdate(adoc("id", "3", "lowerfilt", "aaa", "standardfilt", "abbb")));
+    assertNull(h.validateUpdate(adoc("id", "4", "lowerfilt", "ab", "standardfilt", "b")));
+    assertNull(h.validateUpdate(adoc("id", "5", "lowerfilt", "abb", "standardfilt", "bb")));
+    assertNull(h.validateUpdate(adoc("id", "6", "lowerfilt", "abc", "standardfilt", "bbbb")));
+    assertNull(h.validateUpdate(adoc("id", "7", "lowerfilt", "b", "standardfilt", "c")));
+    assertNull(h.validateUpdate(adoc("id", "8", "lowerfilt", "baa", "standardfilt", "cccc")));
+    assertNull(h.validateUpdate(adoc("id", "9", "lowerfilt", "bbb", "standardfilt", "ccccc")));
 
-    assertU(adoc("id", "0", "lowerfilt", "a", "standardfilt", "a", "foo_i","1"));
-    assertU(adoc("id", "1", "lowerfilt", "a", "standardfilt", "aa", "foo_i","1"));
-    assertU(adoc("id", "2", "lowerfilt", "aa", "standardfilt", "aaa", "foo_i","2"));
-    assertU(adoc("id", "3", "lowerfilt", "aaa", "standardfilt", "abbb"));
-    assertU(adoc("id", "4", "lowerfilt", "ab", "standardfilt", "b"));
-    assertU(adoc("id", "5", "lowerfilt", "abb", "standardfilt", "bb"));
-    assertU(adoc("id", "6", "lowerfilt", "abc", "standardfilt", "bbbb"));
-    assertU(adoc("id", "7", "lowerfilt", "b", "standardfilt", "c"));
-    assertU(adoc("id", "8", "lowerfilt", "baa", "standardfilt", "cccc"));
-    assertU(adoc("id", "9", "lowerfilt", "bbb", "standardfilt", "ccccc"));
+    assertNull(h.validateUpdate(adoc("id", "10", "standardfilt", "ddddd")));
+    assertNull(h.validateUpdate(adoc("id", "11", "standardfilt", "ddddd")));
+    assertNull(h.validateUpdate(adoc("id", "12", "standardfilt", "ddddd")));
+    assertNull(h.validateUpdate(adoc("id", "13", "standardfilt", "ddddd")));
+    assertNull(h.validateUpdate(adoc("id", "14", "standardfilt", "d")));
+    assertNull(h.validateUpdate(adoc("id", "15", "standardfilt", "d")));
+    assertNull(h.validateUpdate(adoc("id", "16", "standardfilt", "d")));
 
-    assertU(adoc("id", "10", "standardfilt", "ddddd"));
-    assertU(adoc("id", "11", "standardfilt", "ddddd"));
-    assertU(adoc("id", "12", "standardfilt", "ddddd"));
-    assertU(adoc("id", "13", "standardfilt", "ddddd"));
-    assertU(adoc("id", "14", "standardfilt", "d"));
-    assertU(adoc("id", "15", "standardfilt", "d"));
-    assertU(adoc("id", "16", "standardfilt", "d"));
-
-    assertU(adoc("id", "17", "standardfilt", "snake"));
-    assertU(adoc("id", "18", "standardfilt", "spider"));
-    assertU(adoc("id", "19", "standardfilt", "shark"));
-    assertU(adoc("id", "20", "standardfilt", "snake"));
-    assertU(adoc("id", "21", "standardfilt", "snake"));
-    assertU(adoc("id", "22", "standardfilt", "shark"));
+    assertNull(h.validateUpdate(adoc("id", "17", "standardfilt", "snake")));
+    assertNull(h.validateUpdate(adoc("id", "18", "standardfilt", "spider")));
+    assertNull(h.validateUpdate(adoc("id", "19", "standardfilt", "shark")));
+    assertNull(h.validateUpdate(adoc("id", "20", "standardfilt", "snake")));
+    assertNull(h.validateUpdate(adoc("id", "21", "standardfilt", "snake")));
+    assertNull(h.validateUpdate(adoc("id", "22", "standardfilt", "shark")));
     
-    assertU("commit", commit());
+    assertNull(h.validateUpdate(commit()));
   }
 
+  @Test
   public void testEmptyLower() throws Exception {
     SolrCore core = h.getCore();
     TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
@@ -105,6 +105,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     assertTrue("abc is null and it shouldn't be", terms.get("abc") != null);
   }
 
+  @Test
   public void testNoField() throws Exception {
     SolrCore core = h.getCore();
     TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
@@ -127,7 +128,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     assertTrue("exception is null and it shouldn't be", exception != null);
   }
 
-
+  @Test
   public void testMultipleFields() throws Exception {
     SolrCore core = h.getCore();
     TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
@@ -157,6 +158,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     assertTrue("terms Size: " + terms.size() + " is not: " + 4, terms.size() == 4);
   }
 
+  @Test
   public void testUnlimitedRows() throws Exception {
     SolrCore core = h.getCore();
     TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
@@ -182,6 +184,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
 
   }
 
+  @Test
   public void testPrefix() throws Exception {
     SolrCore core = h.getCore();
     TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
@@ -211,6 +214,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     assertTrue("value is null and it shouldn't be", value != null);
   }
 
+  @Test
   public void testRegexp() throws Exception {
     SolrCore core = h.getCore();
     TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
@@ -239,6 +243,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     assertEquals("terms Size: " + terms.size() + " is not: 1", 1, terms.size());
   }
 
+  @Test
   public void testRegexpFlagParsing() {
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.add(TermsParams.TERMS_REGEXP_FLAG, "case_insensitive", "literal", "comments", "multiline", "unix_lines",
@@ -249,6 +254,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
       assertEquals(expected, flags);
   }
 
+  @Test
   public void testRegexpWithFlags() throws Exception {
     SolrCore core = h.getCore();
     TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
@@ -278,6 +284,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     assertEquals("terms Size: " + terms.size() + " is not: 1", 1, terms.size());
   }
 
+  @Test
   public void testSortCount() throws Exception {
     SolrCore core = h.getCore();
     TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
@@ -311,6 +318,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     assertTrue("Item 2 frequency is not '1'", (Integer) terms.getVal(2) == 1);    
   }
 
+  @Test
   public void testSortIndex() throws Exception {
     SolrCore core = h.getCore();
     TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
@@ -344,6 +352,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     assertTrue("Item 2 frequency is not '1'", (Integer) terms.getVal(2) == 1);    
   }
   
+  @Test
   public void testPastUpper() throws Exception {
     SolrCore core = h.getCore();
     TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
@@ -369,6 +378,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     assertTrue("terms Size: " + terms.size() + " is not: " + 0, terms.size() == 0);
   }
 
+  @Test
   public void testLowerExclusive() throws Exception {
     SolrCore core = h.getCore();
     TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
@@ -418,7 +428,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
     assertTrue("terms Size: " + terms.size() + " is not: " + 2, terms.size() == 2);
   }
 
-
+  @Test
   public void test() throws Exception {
     SolrCore core = h.getCore();
     TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
@@ -515,7 +525,7 @@ public class TermsComponentTest extends AbstractSolrTestCase {
 
   }
 
-  
+  @Test
   public void testMinMaxFreq() throws Exception {
     SolrCore core = h.getCore();
     TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
