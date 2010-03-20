@@ -17,63 +17,63 @@
 
 package org.apache.solr;
 
-import org.apache.solr.util.*;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.util.regex.Pattern;
+
+import static org.junit.Assert.*;
 
 /**
  * Tests some basic functionality of the DisMaxRequestHandler
  */
-public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
-
-  public String getSchemaFile() { return "schema.xml"; }
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
-  public void setUp() throws Exception {
-    super.setUp();
+public class DisMaxRequestHandlerTest extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
     lrf = h.getRequestFactory
       ("dismax", 0, 20,
        "version","2.0",
        "facet", "true",
        "facet.field","t_s"
        );
-  }
-  /** Add some documents to the index */
-  protected void populate() {    
-    assertU(adoc("id", "666",
+  /** Add some documents to the index */ 
+    assertNull(h.validateUpdate(adoc("id", "666",
                  "features_t", "cool and scary stuff",
                  "subject", "traveling in hell",
                  "t_s", "movie",
                  "title", "The Omen",
                  "weight", "87.9",
-                 "iind", "666"));
-    assertU(adoc("id", "42",
+                 "iind", "666")));
+    assertNull(h.validateUpdate(adoc("id", "42",
                  "features_t", "cool stuff",
                  "subject", "traveling the galaxy",
                  "t_s", "movie", "t_s", "book",
                  "title", "Hitch Hiker's Guide to the Galaxy",
                  "weight", "99.45",
-                 "iind", "42"));
-    assertU(adoc("id", "1",
+                 "iind", "42")));
+    assertNull(h.validateUpdate(adoc("id", "1",
                  "features_t", "nothing",
                  "subject", "garbage",
                  "t_s", "book",
                  "title", "Most Boring Guide Ever",
                  "weight", "77",
-                 "iind", "4"));
-    assertU(adoc("id", "8675309",
+                 "iind", "4")));
+    assertNull(h.validateUpdate(adoc("id", "8675309",
                  "features_t", "Wikedly memorable chorus and stuff",
                  "subject", "One Cool Hot Chick",
                  "t_s", "song",
                  "title", "Jenny",
                  "weight", "97.3",
-                 "iind", "8675309"));
-    assertU(commit());
+                 "iind", "8675309")));
+    assertNull(h.validateUpdate(commit()));
   }
 
+  @Test
   public void testSomeStuff() throws Exception {
     doTestSomeStuff("dismax");
   }
   public void doTestSomeStuff(final String qt) throws Exception {
-    populate();
 
     assertQ("basic match",
             req("guide")
@@ -168,8 +168,9 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
             );
   }
 
+  @Test
   public void testExtraBlankBQ() throws Exception {
-    populate();
+
     // if the boost queries are in their own boolean query, the clauses will be
     // surrounded by ()'s in the debug output
     Pattern p = Pattern.compile("subject:hell\\s*subject:cool");
@@ -195,6 +196,7 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
 
   }
 
+  @Test
   public void testOldStyleDefaults() throws Exception {
 
     lrf = h.getRequestFactory
@@ -206,8 +208,8 @@ public class DisMaxRequestHandlerTest extends AbstractSolrTestCase {
     doTestSomeStuff("dismaxOldStyleDefaults");
   }
 
+  @Test
   public void testSimplestParams() throws Exception {
-    populate();
 
     assertQ("match w/o only q param",
             req("qt", "dismaxNoDefaults",
