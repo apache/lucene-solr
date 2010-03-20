@@ -31,7 +31,7 @@ import static org.junit.Assert.*;
 public class DistanceFunctionTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrConfig-functionquery.xml", "schema11.xml");
+    initCore("solrconfig-functionquery.xml", "schema11.xml");
   }
 
   @Test
