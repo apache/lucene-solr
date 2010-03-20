@@ -20,8 +20,13 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.DateField;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieField;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.DateMathParser;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 import java.text.SimpleDateFormat;
 import java.util.Locale;
@@ -33,15 +38,19 @@ import java.util.TimeZone;
  * @version $Id$
  * @since solr 1.4
  */
-public class TestTrie extends AbstractSolrTestCase {
-  public String getSchemaFile() {
-    return "schema-trie.xml";
+public class TestTrie extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema-trie.xml");
+  }
+  
+  @After
+  public void tearDown() throws Exception {
+    clearIndex();
+    super.tearDown();
   }
 
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
-  }
-
+  @Test
   public void testTrieIntRangeSearch() throws Exception {
     for (int i = 0; i < 10; i++) {
       assertU(adoc("id", String.valueOf(i), "tint", String.valueOf(i)));
@@ -67,6 +76,7 @@ public class TestTrie extends AbstractSolrTestCase {
     assertQ("Function queries does not work correctly on tint fields", req("q", "_val_:\"sum(tint,1)\""), "//*[@numFound='20']", "//int[@name='tint'][.='9']");
   }
 
+  @Test
   public void testTrieTermQuery() throws Exception {
     for (int i = 0; i < 10; i++) {
       assertU(adoc("id", String.valueOf(i),
@@ -90,6 +100,7 @@ public class TestTrie extends AbstractSolrTestCase {
     assertQ("Term query on trie double field must match 1 document", req("q", "*:*", "fq", "tdouble:4.66"), "//*[@numFound='1']");
   }
 
+  @Test
   public void testTrieFloatRangeSearch() throws Exception {
     for (int i = 0; i < 10; i++) {
       assertU(adoc("id", String.valueOf(i), "tfloat", String.valueOf(i * i * 31.11f)));
@@ -108,6 +119,7 @@ public class TestTrie extends AbstractSolrTestCase {
     assertQ("Function queries does not work correctly on tfloat fields", req("q", "_val_:\"sum(tfloat,1.0)\""), "//*[@numFound='10']", "//float[@name='tfloat'][.='2519.9102']");
   }
 
+  @Test
   public void testTrieLongRangeSearch() throws Exception {
     for (long i = Integer.MAX_VALUE, c = 0; i < (long) Integer.MAX_VALUE + 10l; i++) {
       assertU(adoc("id", String.valueOf(c++), "tlong", String.valueOf(i)));
@@ -126,6 +138,7 @@ public class TestTrie extends AbstractSolrTestCase {
     assertQ("Function queries does not work correctly on tlong fields", req("q", "_val_:\"sum(tlong,1.0)\""), "//*[@numFound='10']", "//long[@name='tlong'][.='2147483656']");
   }
 
+  @Test
   public void testTrieDoubleRangeSearch() throws Exception {
     for (long i = Integer.MAX_VALUE, c = 0; i < (long) Integer.MAX_VALUE + 10l; i++) {
       assertU(adoc("id", String.valueOf(c++), "tdouble", String.valueOf(i * 2.33d)));
@@ -143,6 +156,7 @@ public class TestTrie extends AbstractSolrTestCase {
     assertQ("Function queries does not work correctly on tdouble fields", req("q", "_val_:\"sum(tdouble,1.0)\""), "//*[@numFound='10']", "//double[@name='tdouble'][.='5.0036369184800005E9']");
   }
 
+  @Test
   public void testTrieDateRangeSearch() throws Exception {
     for (int i = 0; i < 10; i++) {
       assertU(adoc("id", String.valueOf(i), "tdate", "1995-12-31T23:" + (i < 10 ? "0" + i : i) + ":59.999Z"));
@@ -188,6 +202,7 @@ public class TestTrie extends AbstractSolrTestCase {
     assertQ("Function queries does not work correctly on tdate fields", req("q", "_val_:\"sum(tdate,1.0)\""), "//*[@numFound='11']", "//date[@name='tdate'][.='" + largestDate + "']");
   }
 
+  @Test
   public void testTrieDoubleRangeSearch_CustomPrecisionStep() throws Exception {
     for (long i = Integer.MAX_VALUE, c = 0; i < (long) Integer.MAX_VALUE + 10l; i++) {
       assertU(adoc("id", String.valueOf(c++), "tdouble4", String.valueOf(i * 2.33d)));
@@ -197,6 +212,7 @@ public class TestTrie extends AbstractSolrTestCase {
     assertQ("Range filter must match only 5 documents", req("q", "*:*", "fq", fq), "//*[@numFound='6']");
   }
 
+  @Test
   public void testTrieFacet_PrecisionStep() throws Exception {
     // Future protect - assert 0<precisionStep<64
     checkPrecisionSteps("tint");
