@@ -21,10 +21,16 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.*;
 import org.apache.solr.common.params.HighlightParams;
+import org.junit.After;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -36,7 +42,7 @@ import java.util.List;
  * Tests some basic functionality of Solr while demonstrating good
  * Best Practices for using AbstractSolrTestCase
  */
-public class HighlighterTest extends AbstractSolrTestCase {
+public class HighlighterTest extends SolrTestCaseJ4 {
 
   private static String LONG_TEXT = "a long days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is " +
           "is is is is is isis is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is " +
@@ -44,23 +50,21 @@ public class HighlighterTest extends AbstractSolrTestCase {
           "is is is is is is is is is is is is is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated " +
           "at all--we want two disjoint long fragments.";
 
-  @Override public String getSchemaFile() { return "schema.xml"; }
-  @Override public String getSolrConfigFile() { return "solrconfig.xml"; }
-
-  @Override 
-  public void setUp() throws Exception {
-    // if you override setUp or tearDown, you better call
-    // the super classes version
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
   }
-  
+ 
+  @After
   @Override 
   public void tearDown() throws Exception {
     // if you override setUp or tearDown, you better call
     // the super classes version
+    clearIndex();
     super.tearDown();
   }
   
+  @Test
   public void testConfig()
   {
     SolrHighlighter highlighter = h.getCore().getHighlighter();
@@ -81,6 +85,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
     assertTrue( regex instanceof RegexFragmenter );
   }
 
+  @Test
   public void testMergeContiguous() throws Exception {
     HashMap<String,String> args = new HashMap<String,String>();
     args.put(HighlightParams.HIGHLIGHT, "true");
@@ -127,6 +132,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
             );
   }
 
+  @Test
   public void testTermVecHighlight() {
 
     // do summarization using term vectors
@@ -149,6 +155,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
             );
   }
   
+  @Test
   public void testTermOffsetsTokenStream() throws Exception {
     String[] multivalued = { "a b c d", "e f g", "h", "i j k l m n" };
     Analyzer a1 = new WhitespaceAnalyzer();
@@ -166,6 +173,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
     }
   }
 
+  @Test
   public void testTermVecMultiValuedHighlight() throws Exception {
 
     // do summarization using term vectors on multivalued field
@@ -192,6 +200,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
   // Variant of testTermVecMultiValuedHighlight to make sure that
   // more than just the first value of a multi-valued field is
   // considered for highlighting.
+  @Test
   public void testTermVecMultiValuedHighlight2() throws Exception {
 
     // do summarization using term vectors on multivalued field
@@ -216,6 +225,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
             );
   }
 
+  @Test
   public void testDisMaxHighlight() {
 
     // same test run through dismax handler
@@ -243,7 +253,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
         );
   }
 
-
+  @Test
   public void testMultiValueAnalysisHighlight() {
 
     // do summarization using re-analysis of the field
@@ -267,6 +277,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
 
   }
   
+  @Test
   public void testMultiValueBestFragmentHighlight() {
     HashMap<String,String> args = new HashMap<String,String>();
     args.put("hl", "true");
@@ -287,7 +298,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
     );
   }
 
-
+  @Test
   public void testDefaultFieldHighlight() {
 
     // do summarization using re-analysis of the field
@@ -310,7 +321,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
   }
 
 
-
+  @Test
   public void testHighlightDisabled() {
 
     // ensure highlighting can be explicitly disabled
@@ -328,7 +339,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
 
   }
 
-
+  @Test
   public void testTwoFieldHighlight() {
 
     // do summarization using re-analysis of the field
@@ -350,6 +361,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
             );
   }
   
+  @Test
   public void testFieldMatch()
   {
      assertU(adoc("t_text1", "random words for highlighting tests", "id", "1",
@@ -397,6 +409,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
            );
   }
 
+  @Test
   public void testCustomSimpleFormatterHighlight() {
 
     // do summarization using a custom formatter
@@ -430,6 +443,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
     
   }
 
+  @Test
   public void testLongFragment() {
 
     HashMap<String,String> args = new HashMap<String,String>();
@@ -451,6 +465,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
             );
   }
 
+  @Test
   public void testMaxChars() {
     HashMap<String,String> args = new HashMap<String,String>();
     args.put("fl", "id score");
@@ -484,6 +499,8 @@ public class HighlighterTest extends AbstractSolrTestCase {
         "//lst[@name='1']/arr[count(str)=1]"
     );
   }
+  
+  @Test
   public void testRegexFragmenter() {
     HashMap<String,String> args = new HashMap<String,String>();
     args.put("fl", "id score");
@@ -523,6 +540,8 @@ public class HighlighterTest extends AbstractSolrTestCase {
             "//arr/str[.='? I wonder how slashes/other punctuation fare in these <em>examples</em>?']"
             );
   }
+  
+  @Test
   public void testVariableFragsize() {
      assertU(adoc("tv_text", "a long days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is is is is is is isis is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated at all", 
            "id", "1"));
@@ -561,6 +580,8 @@ public class HighlighterTest extends AbstractSolrTestCase {
            "//lst[@name='1']/arr[@name='tv_text']/str[.='a <em>long</em> days night this should be a piece of text which is is is is is is is is is is is is is is is is is is is is is is is is isis is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is is sufficiently lengthly to produce multiple fragments which are not concatenated at all']"
            );
   }
+  
+  @Test
   public void testAlternateSummary() {
      //long document
      assertU(adoc("tv_text", "keyword is only here",
@@ -605,6 +626,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
             );
   }
   
+  @Test
   public void testPhraseHighlighter() {
     HashMap<String,String> args = new HashMap<String,String>();
     args.put("hl", "true");
@@ -661,6 +683,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
         );
   }
   
+  @Test
   public void testGetHighlightFields() {
     HashMap<String, String> args = new HashMap<String, String>();
     args.put("fl", "id score");
@@ -700,6 +723,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
         highlightFieldNames.get(0));
   }
 
+  @Test
   public void testDefaultFieldPrefixWildcardHighlight() {
 
     // do summarization using re-analysis of the field
@@ -723,6 +747,7 @@ public class HighlighterTest extends AbstractSolrTestCase {
 
   }
 
+  @Test
   public void testDefaultFieldNonPrefixWildcardHighlight() {
 
     // do summarization using re-analysis of the field
