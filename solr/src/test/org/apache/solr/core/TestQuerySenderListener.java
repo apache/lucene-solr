@@ -17,16 +17,22 @@
 
 package org.apache.solr.core;
 
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.common.params.EventParams;
 import org.apache.lucene.store.Directory;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import static org.junit.Assert.*;
 
-public class TestQuerySenderListener extends AbstractSolrTestCase {
+public class TestQuerySenderListener extends SolrTestCaseJ4 {
 
-  @Override public String getSchemaFile() { return "schema.xml"; }
-  @Override public String getSolrConfigFile() { return "solrconfig-querysender.xml"; }
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-querysender.xml","schema.xml");
+  }
 
+  @Test
   public void testRequestHandlerRegistry() {
     // property values defined in build.xml
     SolrCore core = h.getCore();
@@ -35,6 +41,7 @@ public class TestQuerySenderListener extends AbstractSolrTestCase {
     assertEquals( 1, core.newSearcherListeners.size() );
   }
 
+  @Test
   public void testSearcherEvents() throws Exception {
     SolrCore core = h.getCore();
     SolrEventListener newSearcherListener = core.newSearcherListeners.get(0);

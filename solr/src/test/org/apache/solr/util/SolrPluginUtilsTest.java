@@ -17,6 +17,7 @@
 
 package org.apache.solr.util;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.SolrPluginUtils.DisjunctionMaxQueryParser;
 import org.apache.solr.core.SolrCore;
@@ -37,6 +38,10 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 import java.util.List;
 import java.util.Map;
@@ -48,12 +53,14 @@ import java.util.HashSet;
 /**
  * Tests that the functions in SolrPluginUtils work as advertised.
  */
-public class SolrPluginUtilsTest extends AbstractSolrTestCase {
+public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
 
-  public String getSchemaFile() { return "schema.xml"; }
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
+  }
 
-
+  @Test
   public void testDocListConversion() throws Exception {
     assertU("", adoc("id", "3234", "val_t", "quick red fox"));
     assertU("", adoc("id", "3235", "val_t", "quick green fox"));
@@ -78,6 +85,7 @@ public class SolrPluginUtilsTest extends AbstractSolrTestCase {
 
   }
 
+  @Test
   public void testPartialEscape() {
 
     assertEquals("",pe(""));
@@ -91,6 +99,7 @@ public class SolrPluginUtilsTest extends AbstractSolrTestCase {
         
   }
 
+  @Test
   public void testStripUnbalancedQuotes() {
         
     assertEquals("",strip(""));
@@ -102,6 +111,7 @@ public class SolrPluginUtilsTest extends AbstractSolrTestCase {
         
   }
 
+  @Test
   public void testStripIllegalOperators() {
 
     assertEquals("",stripOp(""));
@@ -120,6 +130,7 @@ public class SolrPluginUtilsTest extends AbstractSolrTestCase {
 
   }
 
+  @Test
   public void testParseFieldBoosts() throws Exception {
 
     Map<String,Float> e1 = new HashMap<String,Float>();
@@ -145,7 +156,7 @@ public class SolrPluginUtilsTest extends AbstractSolrTestCase {
                  ("   \t   "));
   }
 
-    
+  @Test  
   public void testDisjunctionMaxQueryParser() throws Exception {
         
     Query out;
@@ -277,7 +288,8 @@ public class SolrPluginUtilsTest extends AbstractSolrTestCase {
     }
     return count;
   }
-                                    
+
+  @Test                                    
   public void testMinShouldMatchCalculator() {
 
     /* zero is zero is zero */

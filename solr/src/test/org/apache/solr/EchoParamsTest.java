@@ -17,17 +17,21 @@
 
 package org.apache.solr;
 
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /** Test SOLR-59, echo of query parameters */
 
-public class EchoParamsTest extends AbstractSolrTestCase {
+public class EchoParamsTest extends SolrTestCaseJ4 {
 
-  public String getSchemaFile() { return "solr/crazy-path-to-schema.xml"; }
-  public String getSolrConfigFile() { return "solr/crazy-path-to-config.xml"; }
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solr/crazy-path-to-config.xml","solr/crazy-path-to-schema.xml");
+  }
 
   private static final String HEADER_XPATH = "/response/lst[@name='responseHeader']";
 
+  @Test
   public void testDefaultEchoParams() {
     lrf.args.put("wt", "xml");
     lrf.args.put("version", "2.2");    
@@ -35,6 +39,7 @@ public class EchoParamsTest extends AbstractSolrTestCase {
     assertQ(req("foo"),"not(//lst[@name='params'])");
   }
 
+  @Test
   public void testDefaultEchoParamsDefaultVersion() {
     lrf.args.put("wt", "xml");
     lrf.args.remove("version");    
@@ -42,6 +47,7 @@ public class EchoParamsTest extends AbstractSolrTestCase {
     assertQ(req("foo"),"not(//lst[@name='params'])");
   }
 
+  @Test
   public void testExplicitEchoParams() {
     lrf.args.put("wt", "xml");
     lrf.args.put("version", "2.2");
@@ -51,6 +57,7 @@ public class EchoParamsTest extends AbstractSolrTestCase {
     assertQ(req("foo"),HEADER_XPATH + "/lst[@name='params']/str[@name='wt'][.='xml']");
   }
 
+  @Test
   public void testAllEchoParams() {
     lrf = h.getRequestFactory
       ("crazy_custom_qt", 0, 20,

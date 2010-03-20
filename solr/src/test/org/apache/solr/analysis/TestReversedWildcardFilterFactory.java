@@ -28,30 +28,32 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.SolrQueryParser;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import static org.apache.solr.analysis.BaseTokenTestCase.*;
 
-public class TestReversedWildcardFilterFactory extends AbstractSolrTestCase {
+public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
   Map<String,String> args = new HashMap<String, String>();
   ReversedWildcardFilterFactory factory = new ReversedWildcardFilterFactory();
   IndexSchema schema;
 
-  public String getSchemaFile() {
-    return "schema-reversed.xml";
-  }
-
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema-reversed.xml");
   }
   
+  @Before
   public void setUp() throws Exception {
     super.setUp();
     schema = new IndexSchema(solrConfig, getSchemaFile(), null);
   }
 
+  @Test
   public void testReversedTokens() throws IOException {
     String text = "simple text";
     args.put("withOriginal", "true");
@@ -70,6 +72,7 @@ public class TestReversedWildcardFilterFactory extends AbstractSolrTestCase {
         new int[] { 1, 1 });
   }
   
+  @Test
   public void testIndexingAnalysis() throws Exception {
     Analyzer a = schema.getAnalyzer();
     String text = "one two three si\uD834\uDD1Ex";
@@ -101,6 +104,7 @@ public class TestReversedWildcardFilterFactory extends AbstractSolrTestCase {
     );
   }
   
+  @Test
   public void testQueryParsing() throws IOException, ParseException {
 
     SolrQueryParser parserOne = new SolrQueryParser(schema, "one");

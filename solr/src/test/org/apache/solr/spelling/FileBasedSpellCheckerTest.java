@@ -17,11 +17,16 @@
 
 package org.apache.solr.spelling;
 
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.analysis.Token;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.util.Date;
@@ -32,29 +37,29 @@ import java.util.Collection;
  *
  * @since solr 1.3
  **/
-public class FileBasedSpellCheckerTest extends AbstractSolrTestCase{
+public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
 
-  public String getSchemaFile() { return "schema.xml"; }
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
+  private static SpellingQueryConverter queryConverter;
 
-  private SpellingQueryConverter queryConverter;
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
     //Index something with a title
-    assertU(adoc("id", "0", "teststop", "This is a title"));
-    assertU(adoc("id", "1", "teststop", "The quick reb fox jumped over the lazy brown dogs."));
-    assertU(adoc("id", "2", "teststop", "This is a Solr"));
-    assertU(adoc("id", "3", "teststop", "solr foo"));
-    assertU("commit",
-            commit());
-    String allq = "id:[0 TO 3]";
-    assertQ("docs not added", req(allq));
+    assertNull(h.validateUpdate(adoc("id", "0", "teststop", "This is a title")));
+    assertNull(h.validateUpdate(adoc("id", "1", "teststop", "The quick reb fox jumped over the lazy brown dogs.")));
+    assertNull(h.validateUpdate(adoc("id", "2", "teststop", "This is a Solr")));
+    assertNull(h.validateUpdate(adoc("id", "3", "teststop", "solr foo")));
+    assertNull(h.validateUpdate(commit()));
     queryConverter = new SimpleQueryConverter();
     queryConverter.init(new NamedList());
   }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    queryConverter = null;
+  }
 
+  @Test
   public void test() throws Exception {
     FileBasedSpellChecker checker = new FileBasedSpellChecker();
     NamedList spellchecker = new NamedList();
@@ -92,6 +97,7 @@ public class FileBasedSpellCheckerTest extends AbstractSolrTestCase{
 
   }
 
+  @Test
   public void testFieldType() throws Exception {
     FileBasedSpellChecker checker = new FileBasedSpellChecker();
     NamedList spellchecker = new NamedList();
@@ -135,6 +141,7 @@ public class FileBasedSpellCheckerTest extends AbstractSolrTestCase{
    * No indexDir location set
    * @throws Exception
    */
+  @Test
   public void testRAMDirectory() throws Exception {
     FileBasedSpellChecker checker = new FileBasedSpellChecker();
     NamedList spellchecker = new NamedList();

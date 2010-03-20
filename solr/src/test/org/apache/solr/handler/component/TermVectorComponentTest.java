@@ -1,5 +1,6 @@
 package org.apache.solr.handler.component;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -10,6 +11,10 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 import java.util.HashMap;
 import java.util.ArrayList;
@@ -36,36 +41,28 @@ import java.util.Arrays;
  *
  *
  **/
-public class TermVectorComponentTest extends AbstractSolrTestCase {
-  @Override
-  public String getSchemaFile() {
-    return "schema.xml";
-  }
+public class TermVectorComponentTest extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
 
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
-  }
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    assertU(adoc("id", "0", "test_posofftv", "This is a title and another title"));
-    assertU(adoc("id", "1", "test_posofftv",
-            "The quick reb fox jumped over the lazy brown dogs."));
-    assertU(adoc("id", "2", "test_posofftv", "This is a document"));
-    assertU(adoc("id", "3", "test_posofftv", "another document"));
+    assertNull(h.validateUpdate(adoc("id", "0", "test_posofftv", "This is a title and another title")));
+    assertNull(h.validateUpdate(adoc("id", "1", "test_posofftv",
+            "The quick reb fox jumped over the lazy brown dogs.")));
+    assertNull(h.validateUpdate(adoc("id", "2", "test_posofftv", "This is a document")));
+    assertNull(h.validateUpdate(adoc("id", "3", "test_posofftv", "another document")));
     //bunch of docs that are variants on blue
-    assertU(adoc("id", "4", "test_posofftv", "blue"));
-    assertU(adoc("id", "5", "test_posofftv", "blud"));
-    assertU(adoc("id", "6", "test_posofftv", "boue"));
-    assertU(adoc("id", "7", "test_posofftv", "glue"));
-    assertU(adoc("id", "8", "test_posofftv", "blee"));
-    assertU(adoc("id", "9", "test_posofftv", "blah"));
+    assertNull(h.validateUpdate(adoc("id", "4", "test_posofftv", "blue")));
+    assertNull(h.validateUpdate(adoc("id", "5", "test_posofftv", "blud")));
+    assertNull(h.validateUpdate(adoc("id", "6", "test_posofftv", "boue")));
+    assertNull(h.validateUpdate(adoc("id", "7", "test_posofftv", "glue")));
+    assertNull(h.validateUpdate(adoc("id", "8", "test_posofftv", "blee")));
+    assertNull(h.validateUpdate(adoc("id", "9", "test_posofftv", "blah")));
 
-    assertU("commit", commit());
+    assertNull(h.validateUpdate(commit()));
   }
 
+  @Test
   public void testBasics() throws Exception {
     SolrCore core = h.getCore();
     SearchComponent tvComp = core.getSearchComponent("tvComponent");
@@ -104,6 +101,7 @@ public class TermVectorComponentTest extends AbstractSolrTestCase {
 
   }
 
+  @Test
   public void testOptions() throws Exception {
     SolrCore core = h.getCore();
     SearchComponent tvComp = core.getSearchComponent("tvComponent");
@@ -150,7 +148,7 @@ public class TermVectorComponentTest extends AbstractSolrTestCase {
 
   }
 
-
+  @Test
   public void testNoFields() throws Exception {
     SolrCore core = h.getCore();
     SearchComponent tvComp = core.getSearchComponent("tvComponent");
@@ -175,6 +173,7 @@ public class TermVectorComponentTest extends AbstractSolrTestCase {
     assertTrue(doc.size() + " does not equal: " + 1, doc.size() == 1);
   }
 
+  @Test
   public void testDistributed() throws Exception {
     SolrCore core = h.getCore();
     TermVectorComponent tvComp = (TermVectorComponent) core.getSearchComponent("tvComponent");

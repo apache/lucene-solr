@@ -19,14 +19,22 @@ package org.apache.solr.highlight;
 
 import java.util.HashMap;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.TestHarness;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-public class FastVectorHighlighterTest extends AbstractSolrTestCase {
+import static org.junit.Assert.*;
 
-  @Override public String getSchemaFile() { return "schema.xml"; }
-  @Override public String getSolrConfigFile() { return "solrconfig.xml"; }
+public class FastVectorHighlighterTest extends SolrTestCaseJ4 {
+
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
+  }
   
+  @Test
   public void testConfig(){
     SolrHighlighter highlighter = h.getCore().getHighlighter();
 
@@ -49,6 +57,7 @@ public class FastVectorHighlighterTest extends AbstractSolrTestCase {
     assertTrue( solrFbSO instanceof ScoreOrderFragmentsBuilder );
   }
 
+  @Test
   public void test() {
     HashMap<String,String> args = new HashMap<String,String>();
     args.put("hl", "true");

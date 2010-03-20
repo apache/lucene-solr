@@ -20,37 +20,32 @@ package org.apache.solr.schema;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.lucene.search.Similarity;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 
-public class IndexSchemaTest extends AbstractSolrTestCase {
-
-  @Override public String getSchemaFile() { return "schema.xml"; }
-  @Override public String getSolrConfigFile() { return "solrconfig.xml"; }
-
-  @Override 
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-  
-  @Override 
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
+public class IndexSchemaTest extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
+  }    
 
   /**
    * This test assumes the schema includes:
    * <dynamicField name="dynamic_*" type="string" indexed="true" stored="true"/>
    * <dynamicField name="*_dynamic" type="string" indexed="true" stored="true"/>
    */
+  @Test
   public void testDynamicCopy() 
   {
     SolrCore core = h.getCore();
@@ -84,8 +79,10 @@ public class IndexSchemaTest extends AbstractSolrTestCase {
             ,"//*[@numFound='1']"
             ,"//result/doc[1]/int[@name='id'][.='10']"
             );
+    clearIndex();
   }
 
+  @Test
   public void testSimilarityFactory() {
     SolrCore core = h.getCore();
     Similarity similarity = core.getSchema().getSimilarity();
@@ -93,6 +90,7 @@ public class IndexSchemaTest extends AbstractSolrTestCase {
     assertEquals("is there an echo?", ((MockConfigurableSimilarity)similarity).getPassthrough());
   }
   
+  @Test
   public void testRuntimeFieldCreation()
   {
     // any field manipulation needs to happen when you know the core will not 
@@ -128,8 +126,10 @@ public class IndexSchemaTest extends AbstractSolrTestCase {
             ,"//*[@numFound='1']"
             ,"//result/doc[1]/int[@name='id'][.='10']"
             );
+    clearIndex();
   }
   
+  @Test
   public void testIsDynamicField() throws Exception {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getSchema();
@@ -138,6 +138,7 @@ public class IndexSchemaTest extends AbstractSolrTestCase {
     assertFalse( schema.isDynamicField( "no_such_field" ) );
   }
 
+  @Test
   public void testProperties() throws Exception{
     SolrCore core = h.getCore();
     IndexSchema schema = core.getSchema();

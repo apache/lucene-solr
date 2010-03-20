@@ -24,23 +24,28 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /** Tests the ability to configure multiple query output writers, and select those
  * at query time.
  *
  */
-public class OutputWriterTest extends AbstractSolrTestCase {
+public class OutputWriterTest extends SolrTestCaseJ4 {
     
     /** The XML string that's output for testing purposes. */
     public static final String USELESS_OUTPUT = "useless output";
     
-    public String getSchemaFile() { return "solr/crazy-path-to-schema.xml"; }
-    
-    public String getSolrConfigFile() { return "solr/crazy-path-to-config.xml"; }
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+      initCore("solr/crazy-path-to-config.xml","solr/crazy-path-to-schema.xml");
+    }
     
     
     /** responseHeader has changed in SOLR-59, check old and new variants */
+    @Test
     public void testSOLR59responseHeaderVersions() {
         // default version is 2.2, with "new" responseHeader
         lrf.args.remove("version");
@@ -64,12 +69,14 @@ public class OutputWriterTest extends AbstractSolrTestCase {
         assertQ(req("foo"), "/response/lst[@name='responseHeader']/int[@name='QTime']");
     }
     
+    @Test
     public void testUselessWriter() throws Exception {
         lrf.args.put("wt", "useless");
         String out = h.query(req("foo"));
         assertEquals(USELESS_OUTPUT, out);
     }
     
+    @Test
     public void testTrivialXsltWriter() throws Exception {
         lrf.args.put("wt", "xslt");
         lrf.args.put("tr", "dummy.xsl");

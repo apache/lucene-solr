@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.Writer;
 import java.io.StringWriter;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.response.PHPSerializedResponseWriter;
@@ -28,16 +29,21 @@ import org.apache.solr.response.PythonResponseWriter;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.RubyResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /** Test some aspects of JSON/python writer output (very incomplete)
  *
  */
-public class JSONWriterTest extends AbstractSolrTestCase {
-    
-  public String getSchemaFile() { return "schema.xml"; }
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
-    
+public class JSONWriterTest extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
+  }    
+  
+  @Test
   public void testNaNInf() throws IOException {
     SolrQueryRequest req = req("dummy");
     SolrQueryResponse rsp = new SolrQueryResponse();
@@ -57,6 +63,7 @@ public class JSONWriterTest extends AbstractSolrTestCase {
 
   }
 
+  @Test
   public void testPHPS() throws IOException {
     SolrQueryRequest req = req("dummy");
     SolrQueryResponse rsp = new SolrQueryResponse();
@@ -70,6 +77,7 @@ public class JSONWriterTest extends AbstractSolrTestCase {
     assertEquals(buf.toString(), "a:3:{s:5:\"data1\";s:5:\"hello\";s:5:\"data2\";i:42;s:5:\"data3\";b:1;}");
   }
 
+  @Test
   public void testJSON() throws IOException {
     SolrQueryRequest req = req("wt","json","json.nl","arrarr");
     SolrQueryResponse rsp = new SolrQueryResponse();

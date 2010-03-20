@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -34,14 +35,21 @@ import org.apache.solr.handler.component.QueryElevationComponent.ElevationObj;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 
 
-public class QueryElevationComponentTest extends AbstractSolrTestCase {
+public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
-  @Override public String getSchemaFile() { return "schema12.xml"; }
-  @Override public String getSolrConfigFile() { return "solrconfig-elevate.xml"; }
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-elevate.xml","schema12.xml");
+  }
   
+  @Test
   public void testInterface() throws Exception
   {
     SolrCore core = h.getCore();
@@ -86,6 +94,7 @@ public class QueryElevationComponentTest extends AbstractSolrTestCase {
     assertEquals( "xxxxyyyy", comp.getAnalyzedQuery( "XXXX YYYY" ) );
   }
 
+  @Test
   public void testEmptyQuery() throws Exception {
     SolrCore core = h.getCore();
 
@@ -101,7 +110,7 @@ public class QueryElevationComponentTest extends AbstractSolrTestCase {
 
   }
 
-
+  @Test
   public void testSorting() throws IOException
   {
     SolrCore core = h.getCore();
@@ -221,6 +230,7 @@ public class QueryElevationComponentTest extends AbstractSolrTestCase {
     log.info( "OUT:"+file.getAbsolutePath() );
   }
 
+  @Test
   public void testElevationReloading() throws Exception
   {
     SolrCore core = h.getCore();

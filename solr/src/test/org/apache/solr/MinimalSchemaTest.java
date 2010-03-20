@@ -17,52 +17,50 @@
 
 package org.apache.solr;
 
-import org.apache.solr.request.*;
-import org.apache.solr.util.*;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 import java.util.Set;
 
 /**
  * A test of basic features using the minial legal solr schema.
  */
-public class MinimalSchemaTest extends AbstractSolrTestCase {
-
-  public String getSchemaFile() { return "solr/conf/schema-minimal.xml"; } 
-
-
+public class MinimalSchemaTest extends SolrTestCaseJ4 {
   /**
-   * NOTE: we explicilty use the general 'solrconfig.xml' file here, in 
-   * an attempt to test as many braod features as possible.
+   * NOTE: we explicitly use the general 'solrconfig.xml' file here, in 
+   * an attempt to test as many broad features as possible.
    *
    * Do not change this to point at some other "simpler" solrconfig.xml 
    * just because you want to add a new test case using solrconfig.xml, 
    * but your new testcase adds a feature that breaks this test.
    */
-  public String getSolrConfigFile() { return "solr/conf/solrconfig.xml"; }
-    
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solr/conf/solrconfig.xml","solr/conf/schema-minimal.xml");
 
-    /* make sure some missguided soul doesn't inadvertantly give us 
-       a uniqueKey field and defeat the point of hte tests
+    /* make sure some misguided soul doesn't inadvertently give us 
+       a uniqueKey field and defeat the point of the tests
     */
     assertNull("UniqueKey Field isn't null", 
                h.getCore().getSchema().getUniqueKeyField());
 
     lrf.args.put("version","2.0");
 
-    assertU("Simple assertion that adding a document works",
+    assertNull("Simple assertion that adding a document works", h.validateUpdate(
             adoc("id",  "4055",
                  "subject", "Hoss",
-                 "project", "Solr"));
-    assertU(adoc("id",  "4056",
+                 "project", "Solr")));
+    assertNull(h.validateUpdate(adoc("id",  "4056",
                  "subject", "Yonik",
-                 "project", "Solr"));
-    assertU(commit());
-    assertU(optimize());
+                 "project", "Solr")));
+    assertNull(h.validateUpdate(commit()));
+    assertNull(h.validateUpdate(optimize()));
 
   }
 
+  @Test
   public void testSimpleQueries() {
 
     assertQ("couldn't find subject hoss",
@@ -79,6 +77,7 @@ public class MinimalSchemaTest extends AbstractSolrTestCase {
   }
 
   /** SOLR-1371 */
+  @Test
   public void testLuke() {
     
     assertQ("basic luke request failed",
@@ -104,6 +103,7 @@ public class MinimalSchemaTest extends AbstractSolrTestCase {
    * them with a request (using some simple params) to verify that they 
    * don't generate an error against the minimal schema
    */
+  @Test
   public void testAllConfiguredHandlers() {
     Set<String> handlerNames = h.getCore().getRequestHandlers().keySet();
     for (String handler : handlerNames) {

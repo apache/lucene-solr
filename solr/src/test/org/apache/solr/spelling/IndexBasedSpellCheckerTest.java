@@ -16,6 +16,8 @@
  */
 package org.apache.solr.spelling;
 
+import static org.junit.Assert.*;
+
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -26,11 +28,14 @@ import org.apache.lucene.search.spell.JaroWinklerDistance;
 import org.apache.lucene.search.spell.SpellChecker;
 import org.apache.lucene.search.spell.StringDistance;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.File;
 import java.util.Collection;
@@ -40,8 +45,8 @@ import java.util.Map;
 /**
  * @since solr 1.3
  */
-public class IndexBasedSpellCheckerTest extends AbstractSolrTestCase {
-  protected SpellingQueryConverter queryConverter;
+public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
+  protected static SpellingQueryConverter queryConverter;
 
   protected static String[] DOCS = new String[]{
           "This is a title",
@@ -54,28 +59,23 @@ public class IndexBasedSpellCheckerTest extends AbstractSolrTestCase {
   };
 
 
-  public String getSchemaFile() {
-    return "schema.xml";
-  }
-
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
-  }
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
     //Index something with a title
     for (int i = 0; i < DOCS.length; i++) {
-      assertU(adoc("id", String.valueOf(i), "title", DOCS[i]));
+      assertNull(h.validateUpdate(adoc("id", String.valueOf(i), "title", DOCS[i])));
     }
-    assertU("commit",
-            commit());
-    String allq = "id:[0 TO 3]";
-    assertQ("docs not added", req(allq));
+    assertNull(h.validateUpdate(commit()));
     queryConverter = new SimpleQueryConverter();
   }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    queryConverter = null;
+  }
 
+  @Test
   public void testSpelling() throws Exception {
     IndexBasedSpellChecker checker = new IndexBasedSpellChecker();
 
@@ -151,6 +151,7 @@ public class IndexBasedSpellCheckerTest extends AbstractSolrTestCase {
     }
   }
 
+  @Test
   public void testExtendedResults() throws Exception {
     IndexBasedSpellChecker checker = new IndexBasedSpellChecker();
     NamedList spellchecker = new NamedList();
@@ -206,6 +207,7 @@ public class IndexBasedSpellCheckerTest extends AbstractSolrTestCase {
     }
   }
 
+  @Test
   public void testAlternateDistance() throws Exception {
     TestSpellChecker checker = new TestSpellChecker();
     NamedList spellchecker = new NamedList();
@@ -236,6 +238,7 @@ public class IndexBasedSpellCheckerTest extends AbstractSolrTestCase {
     }
   }
 
+  @Test
   public void testAlternateLocation() throws Exception {
     String[] ALT_DOCS = new String[]{
             "jumpin jack flash",

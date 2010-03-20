@@ -18,31 +18,32 @@
 package org.apache.solr.core;
 
 import org.apache.lucene.index.IndexWriter;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.handler.admin.ShowFileRequestHandler;
 import org.apache.solr.search.SolrIndexReader;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.SolrIndexConfig;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.RefCounted;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+
+import static org.junit.Assert.*;
 
 import javax.xml.xpath.XPathConstants;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class TestConfig extends AbstractSolrTestCase {
+public class TestConfig extends SolrTestCaseJ4 {
 
-  public String getSchemaFile() {
-    return "schema.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-termindex.xml","schema-reversed.xml");
   }
 
-  //public String getSolrConfigFile() { return "solrconfig.xml"; }
-  public String getSolrConfigFile() {
-    return "solrconfig-termindex.xml";
-  }
-
+  @Test
   public void testLib() throws IOException {
     SolrResourceLoader loader = h.getCore().getResourceLoader();
     InputStream data = null;
@@ -68,6 +69,7 @@ public class TestConfig extends AbstractSolrTestCase {
     }
   }
 
+  @Test
   public void testJavaProperty() {
     // property values defined in build.xml
 
@@ -91,6 +93,7 @@ public class TestConfig extends AbstractSolrTestCase {
     assertEquals("prefix-proptwo-suffix", node.getTextContent());
   }
 
+  @Test
   public void testLucene23Upgrades() throws Exception {
     double bufferSize = solrConfig.getDouble("indexDefaults/ramBufferSizeMB");
     assertTrue(bufferSize + " does not equal: " + 32, bufferSize == 32);
@@ -103,6 +106,7 @@ public class TestConfig extends AbstractSolrTestCase {
   }
 
   // sometime if the config referes to old things, it must be replaced with new stuff
+  @Test
   public void testAutomaticDeprecationSupport() {
     // make sure the "admin/file" handler is registered
     ShowFileRequestHandler handler = (ShowFileRequestHandler) h.getCore().getRequestHandler("/admin/file");
@@ -114,6 +118,7 @@ public class TestConfig extends AbstractSolrTestCase {
     assertTrue(handler.getHiddenFiles().contains("PROTWORDS.TXT"));
   }
 
+  @Test
   public void testTermIndexInterval() throws Exception {
     class ExposeWriterHandler extends DirectUpdateHandler2 {
       public ExposeWriterHandler() throws IOException {
@@ -131,6 +136,7 @@ public class TestConfig extends AbstractSolrTestCase {
     assertEquals(256, interval);
   }
 
+  @Test
   public void testTermIndexDivisor() throws Exception {
     IndexReaderFactory irf = h.getCore().getIndexReaderFactory();
     StandardIndexReaderFactory sirf = (StandardIndexReaderFactory) irf;

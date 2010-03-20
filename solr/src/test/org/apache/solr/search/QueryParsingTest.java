@@ -18,25 +18,25 @@ package org.apache.solr.search;
 
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
+import static org.junit.Assert.*;
 
 /**
  *
  *
  **/
-public class QueryParsingTest extends AbstractSolrTestCase {
-  public String getSchemaFile() {
-    return "schema.xml";
+public class QueryParsingTest extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
   }
 
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
-  }
-
-
+  @Test
   public void testSort() throws Exception {
     Sort sort;
 
@@ -152,6 +152,7 @@ public class QueryParsingTest extends AbstractSolrTestCase {
 
   }
 
+  @Test
   public void testBad() throws Exception {
     Sort sort;
 

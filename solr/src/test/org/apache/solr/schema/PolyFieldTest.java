@@ -16,41 +16,34 @@ package org.apache.solr.schema;
  * limitations under the License.
  */
 
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.Document;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.spatial.tier.CartesianPolyFilterBuilder;
 import org.apache.lucene.spatial.tier.Shape;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.function.ValueSource;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-import java.util.Map;
-import java.util.Random;
+import static org.junit.Assert.*;
+
 import java.util.List;
 
 
 /**
  * Test a whole slew of things related to PolyFields
  */
-public class PolyFieldTest extends AbstractSolrTestCase {
-
-  @Override
-  public String getSchemaFile() {
-    return "schema.xml";
+public class PolyFieldTest extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
   }
 
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
-  }
-
+  @Test
   public void testSchemaBasics() throws Exception {
     IndexSchema schema = h.getCore().getSchema();
 
@@ -83,6 +76,7 @@ public class PolyFieldTest extends AbstractSolrTestCase {
     assertTrue(home.isPolyField());
   }
 
+  @Test
   public void testPointFieldType() throws Exception {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getSchema();
@@ -132,6 +126,7 @@ public class PolyFieldTest extends AbstractSolrTestCase {
     assertEquals(v1.hashCode(), v2.hashCode());
   }
 
+  @Test
   public void testSearching() throws Exception {
     for (int i = 0; i < 50; i++) {
       assertU(adoc("id", "" + i, "home", i + "," + (i * 100), "homed", (i * 1000) + "," + (i * 10000)));
@@ -162,9 +157,10 @@ public class PolyFieldTest extends AbstractSolrTestCase {
 
     assertQEx("Query should throw an exception due to incorrect dimensions", req("fl", "*,score", "q",
             "homed:[1 TO 2000]"), SolrException.ErrorCode.BAD_REQUEST);
+    clearIndex();
   }
 
-
+  @Test
   public void testSearchDetails() throws Exception {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getSchema();
@@ -184,10 +180,10 @@ public class PolyFieldTest extends AbstractSolrTestCase {
     BooleanQuery bq = (BooleanQuery) q;
     BooleanClause[] clauses = bq.getClauses();
     assertEquals(clauses.length, 2);
-
+    clearIndex();
   }
 
-
+  @Test
   public void testCartesian() throws Exception {
     for (int i = 40; i < 50; i++) {
       for (int j = -85; j < -79; j++) {
@@ -219,7 +215,7 @@ public class PolyFieldTest extends AbstractSolrTestCase {
 
     assertQ(req("fl", "*,score", "q", qry.toString()),
             "//*[@numFound='1']");
-
+    clearIndex();
   }
 
 }

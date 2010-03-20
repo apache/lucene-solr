@@ -20,13 +20,16 @@ package org.apache.solr.schema;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * This is a simple test to make sure the <code>CopyField</code> works.
@@ -34,27 +37,11 @@ import org.junit.Test;
  *
  * @since solr 1.4
  */
-public class CopyFieldTest extends AbstractSolrTestCase {
-
-  @Override
-  public String getSchemaFile() {
-    return "schema-copyfield-test.xml";
-  }
-
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
-  }
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
+public class CopyFieldTest extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema-copyfield-test.xml");
+  }    
 
   @Test
   public void testCopyFieldSchemaFieldSchemaField() {

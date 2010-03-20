@@ -19,29 +19,23 @@ package org.apache.solr.schema;
 
 import java.util.Collection;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
+import static org.junit.Assert.*;
 /**
  * 
  */
-public class RequiredFieldsTest extends AbstractSolrTestCase {
-
-  @Override public String getSchemaFile() { return "schema-required-fields.xml"; }
-  @Override public String getSolrConfigFile() { return "solrconfig.xml"; }
-
-  @Override 
-  public void setUp() throws Exception {
-    super.setUp();
+public class RequiredFieldsTest extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema-required-fields.xml");
   }
   
-  @Override 
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-
-  
+  @Test
   public void testRequiredFieldsConfig() {
     SolrCore core = h.getCore();
     IndexSchema schema = core.getSchema();
@@ -57,6 +51,7 @@ public class RequiredFieldsTest extends AbstractSolrTestCase {
     assertEquals( numDefaultFields+1+1, requiredFields.size()); // also the uniqueKey
   }
   
+  @Test
   public void testRequiredFieldsSingleAdd() {      
     SolrCore core = h.getCore();     
     // Add a single document
@@ -85,9 +80,11 @@ public class RequiredFieldsTest extends AbstractSolrTestCase {
     assertU(commit());
     
     // Check to make sure this submission did not succeed
-    assertQ("should not find any", req("id:531") ,"//result[@numFound=0]" );      
+    assertQ("should not find any", req("id:531") ,"//result[@numFound=0]" ); 
+    clearIndex();
   }
   
+  @Test
   public void testAddMultipleDocumentsWithErrors() {
     //Add three documents at once to make sure the baseline succeeds
     assertU("adding 3 documents",

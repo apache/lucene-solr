@@ -19,36 +19,34 @@ package org.apache.solr;
 
 import org.apache.solr.request.*;
 import org.apache.solr.util.*;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * This is an example of how to write a JUnit tests for Solr using the
- * AbstractSolrTestCase
+ * SolrTestCaseJ4
  */
-public class SampleTest extends AbstractSolrTestCase {
+public class SampleTest extends SolrTestCaseJ4 {
 
   /**
-   * All subclasses of AbstractSolrTestCase must define this method.
+   * All subclasses of SolrTestCaseJ4 should initialize the core.
    *
    * <p>
-   * Note that different tests can use different schemas by refering
+   * Note that different tests can use different schemas/configs by referring
    * to any crazy path they want (as long as it works).
    * </p>
    */
-  public String getSchemaFile() { return "solr/crazy-path-to-schema.xml"; } 
-  
-  /**
-   * All subclasses of AbstractSolrTestCase must define this method
-   *
-   * <p>
-   * Note that different tests can use different configs by refering
-   * to any crazy path they want (as long as it works).
-   * </p>
-   */
-  public String getSolrConfigFile() { return "solr/crazy-path-to-config.xml"; }
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solr/crazy-path-to-config.xml","solr/crazy-path-to-schema.xml");
+  }
     
   /**
    * Demonstration of some of the simple ways to use the base class
    */
+  @Test
   public void testSimple() {
     lrf.args.put("version","2.0");
     assertU("Simple assertion that adding a document works",
@@ -72,6 +70,7 @@ public class SampleTest extends AbstractSolrTestCase {
   /**
    * Demonstration of some of the more complex ways to use the base class
    */
+  @Test
   public void testAdvanced() throws Exception {
     lrf.args.put("version","2.0");        
     assertU("less common case, a complex addition with options",
