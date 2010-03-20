@@ -83,7 +83,7 @@ public class TermVectorComponentTest extends AbstractSolrTestCase {
     NamedList values = rsp.getValues();
     NamedList termVectors = (NamedList) values.get(TermVectorComponent.TERM_VECTORS);
     assertTrue("termVectors is null and it shouldn't be", termVectors != null);
-    System.out.println("TVs:" + termVectors);
+    // System.out.println("TVs:" + termVectors);
     NamedList doc = (NamedList) termVectors.getVal(0);
     assertTrue("doc is null and it shouldn't be", doc != null);
     assertTrue(doc.size() + " does not equal: " + 2, doc.size() == 2);
@@ -126,7 +126,7 @@ public class TermVectorComponentTest extends AbstractSolrTestCase {
     NamedList values = rsp.getValues();
     NamedList termVectors = (NamedList) values.get(TermVectorComponent.TERM_VECTORS);
     assertTrue("termVectors is null and it shouldn't be", termVectors != null);
-    System.out.println("TVs: " + termVectors);
+    // System.out.println("TVs: " + termVectors);
     NamedList doc = (NamedList) termVectors.getVal(0);
     assertTrue("doc is null and it shouldn't be", doc != null);
     assertTrue(doc.size() + " does not equal: " + 2, doc.size() == 2);
@@ -212,7 +212,7 @@ public class TermVectorComponentTest extends AbstractSolrTestCase {
     assertTrue("rb.outgoing Size: " + rb.outgoing.size() + " is not: " + rb.shards.length, rb.outgoing.size() == rb.shards.length);
     for (ShardRequest request : rb.outgoing) {
       ModifiableSolrParams solrParams = request.params;
-      System.out.println("Shard: " + Arrays.asList(request.shards) + " Params: " + solrParams);
+      log.info("Shard: " + Arrays.asList(request.shards) + " Params: " + solrParams);
     }
   }
 

@@ -68,7 +68,6 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml","schema.xml");
   }
-
   // tests the performance of dynamic field creation and
   // field property testing.
   /***

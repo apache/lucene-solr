@@ -176,7 +176,7 @@ public class TestSort extends AbstractSolrTestCase {
           int id = sdocs[j].doc;
           String s = (String)((FieldDoc)sdocs[j]).fields[sortIdx];
           if (id != collectedDocs.get(j).doc) {
-            System.out.println("Error at pos " + j);
+            log.error("Error at pos " + j);
           }
           assertEquals(id, collectedDocs.get(j).doc);
         }

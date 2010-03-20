@@ -59,7 +59,7 @@ public class TestJmxMonitoredMap {
         ServerSocket server = new ServerSocket(0);
         port = server.getLocalPort();
         server.close();
-        System.out.println("Using port: " + port);
+        // System.out.println("Using port: " + port);
         try {
           LocateRegistry.createRegistry(port);
         } catch (RemoteException e) {

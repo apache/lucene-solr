@@ -47,7 +47,7 @@ public class SolrExampleJettyTest extends SolrExampleTests {
     jetty = new JettySolrRunner( context, 0 );
     jetty.start();
     port = jetty.getLocalPort();
-    System.out.println("Assigned Port#" + port);
+    log.info("Assigned Port#" + port);
     server = this.createNewSolrServer();
   }
 

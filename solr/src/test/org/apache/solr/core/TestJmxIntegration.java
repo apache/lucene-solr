@@ -61,7 +61,7 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
   @Test
   public void testJmxRegistration() throws Exception {
     List<MBeanServer> servers = MBeanServerFactory.findMBeanServer(null);
-    System.out.println("Servers in testJmxRegistration: " + servers);
+    log.info("Servers in testJmxRegistration: " + servers);
     assertNotNull("MBeanServers were null", servers);
     assertFalse("No MBeanServer was found", servers.isEmpty());
 
@@ -83,8 +83,8 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
   @Test
   public void testJmxUpdate() throws Exception {
     List<MBeanServer> servers = MBeanServerFactory.findMBeanServer(null);
-    System.err.println("Servers in testJmxUpdate: " + servers);
-    System.err.println(h.getCore().getInfoRegistry());
+    log.info("Servers in testJmxUpdate: " + servers);
+    log.info(h.getCore().getInfoRegistry().toString());
 
     SolrInfoMBean bean = null;
     // wait until searcher is registered
@@ -97,7 +97,7 @@ public class TestJmxIntegration extends AbstractSolrTestCase {
     ObjectName searcher = getObjectName("searcher", bean);
 
     MBeanServer mbeanServer = servers.get(0);
-    System.err.println("Mbeans in server: " + mbeanServer.queryNames(null, null));
+    log.info("Mbeans in server: " + mbeanServer.queryNames(null, null));
 
     assertFalse("No mbean found for SolrIndexSearcher", mbeanServer.queryMBeans(searcher, null).isEmpty());
 

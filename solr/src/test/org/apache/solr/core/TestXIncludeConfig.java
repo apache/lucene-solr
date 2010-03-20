@@ -45,7 +45,7 @@ public class TestXIncludeConfig extends AbstractSolrTestCase {
       SolrRequestHandler solrRequestHandler = core.getRequestHandler("dismaxOldStyleDefaults");
       assertNotNull("Solr Req Handler is null", solrRequestHandler);
     } else {
-      System.out.println("Didn't run testXInclude, because this XML DocumentBuilderFactory doesn't support it");
+      log.info("Didn't run testXInclude, because this XML DocumentBuilderFactory doesn't support it");
     }
 
   }

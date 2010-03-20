@@ -49,9 +49,11 @@ public class QueryResponseTest {
     
     for (FacetField f : qr.getFacetDates()) {
       Assert.assertNotNull(f);
-      System.out.println(f.toString());
-      System.out.println("GAP: " + f.getGap());
-      System.out.println("END: " + f.getEnd());
+
+      // TODO - test values?
+      // System.out.println(f.toString());
+      // System.out.println("GAP: " + f.getGap());
+      // System.out.println("END: " + f.getEnd());
     }
   }
 }

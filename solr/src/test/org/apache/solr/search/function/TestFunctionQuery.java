@@ -274,7 +274,7 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
       }
 
       singleTest(field, "\0", answers);
-      System.out.println("Done test "+i);
+      // System.out.println("Done test "+i);
     }
   }
 

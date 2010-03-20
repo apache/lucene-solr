@@ -46,7 +46,7 @@ public abstract class LargeVolumeTestBase extends SolrExampleTestBase
       threads[i] = new DocThread( "T"+i+":" );
       threads[i].setName("DocThread-" + i);
       threads[i].start();
-      System.out.println("Started thread: " + i);
+      log.info("Started thread: " + i);
     }
     for (int i=0; i<threadCount; i++) {
       threads[i].join();
@@ -57,7 +57,7 @@ public abstract class LargeVolumeTestBase extends SolrExampleTestBase
     gserver.commit();
     
     query(threadCount * numdocs);
-    System.out.println("done");
+    log.info("done");
   }
 
   private void query(int count) throws SolrServerException, IOException {
@@ -90,7 +90,7 @@ public abstract class LargeVolumeTestBase extends SolrExampleTestBase
             docs = new ArrayList<SolrInputDocument>();
           }
           if (i > 0 && i % 5000 == 0) {
-            System.out.println(getName() + " - Committing " + i);
+            log.info(getName() + " - Committing " + i);
             resp = tserver.commit();
             assertEquals(0, resp.getStatus());
           }

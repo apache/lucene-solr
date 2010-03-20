@@ -74,15 +74,15 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     Assert.assertTrue(doc.getField("name").getValue() != null );
         
     UpdateResponse upres = server.add( doc ); 
-    System.out.println( "ADD:"+upres.getResponse() );
+    // System.out.println( "ADD:"+upres.getResponse() );
     Assert.assertEquals(0, upres.getStatus());
     
     upres = server.commit( true, true );
-    System.out.println( "COMMIT:"+upres.getResponse() );
+    // System.out.println( "COMMIT:"+upres.getResponse() );
     Assert.assertEquals(0, upres.getStatus());
     
     upres = server.optimize( true, true );
-    System.out.println( "OPTIMIZE:"+upres.getResponse() );
+    // System.out.println( "OPTIMIZE:"+upres.getResponse() );
     Assert.assertEquals(0, upres.getStatus());
     
     SolrQuery query = new SolrQuery();
@@ -119,15 +119,15 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     docs.add(doc5);
     
     upres = server.add( docs ); 
-    System.out.println( "ADD:"+upres.getResponse() );
+    // System.out.println( "ADD:"+upres.getResponse() );
     Assert.assertEquals(0, upres.getStatus());
     
     upres = server.commit( true, true );
-    System.out.println( "COMMIT:"+upres.getResponse() );
+    // System.out.println( "COMMIT:"+upres.getResponse() );
     Assert.assertEquals(0, upres.getStatus());
     
     upres = server.optimize( true, true );
-    System.out.println( "OPTIMIZE:"+upres.getResponse() );
+    // System.out.println( "OPTIMIZE:"+upres.getResponse() );
     Assert.assertEquals(0, upres.getStatus());
     
     query = new SolrQuery("*:*");
@@ -192,7 +192,7 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     QueryResponse rsp = server.query( query );
     
     assertEquals( 2, rsp.getResults().getNumFound() );
-    System.out.println( rsp.getResults() );
+    // System.out.println( rsp.getResults() );
     
     // Now do it again
     server.add( docs );
@@ -543,7 +543,7 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     assertEquals( 1, facets.size() );
     FacetField ff = facets.get( 0 );
     assertEquals( "features", ff.getName() );
-    System.out.println( "111: "+ff.getValues() );
+    // System.out.println( "111: "+ff.getValues() );
     // check all counts
     assertEquals( "[two (5), three (3), five (2), four (2)]", ff.getValues().toString() );
     
@@ -564,6 +564,6 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     rsp = server.query( query );
     ff = rsp.getFacetField( "features" );
     
-    System.out.println( rsp.getResults().getNumFound() + " :::: 444: "+ff.getValues() );
+    // System.out.println( rsp.getResults().getNumFound() + " :::: 444: "+ff.getValues() );
   }
 }

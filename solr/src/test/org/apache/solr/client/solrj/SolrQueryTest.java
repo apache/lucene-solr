@@ -89,7 +89,7 @@ public class SolrQueryTest extends TestCase {
     q.setTimeAllowed(null);
     Assert.assertEquals(null, q.getTimeAllowed() ); 
     
-    System.out.println(q);
+    // System.out.println(q);
   }
   
   public void testFacetSort() {

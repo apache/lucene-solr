@@ -74,7 +74,7 @@ public class OutputWriterTest extends AbstractSolrTestCase {
         lrf.args.put("wt", "xslt");
         lrf.args.put("tr", "dummy.xsl");
         String out = h.query(req("foo"));
-        System.out.println(out);
+        // System.out.println(out);
         assertTrue(out.contains("DUMMY"));
     }
     

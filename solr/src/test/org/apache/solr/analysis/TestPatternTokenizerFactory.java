@@ -59,8 +59,8 @@ public class TestPatternTokenizerFactory extends BaseTokenTestCase
       
       TokenStream stream = tokenizer.create( new StringReader( test[2] ) );
       String out = tsToString( stream );
-      System.out.println( test[2] + " ==> " + out );
-      
+      // System.out.println( test[2] + " ==> " + out );
+
       assertEquals("pattern: "+test[1]+" with input: "+test[2], test[3], out );
       
       // Make sure it is the same as if we called 'split'

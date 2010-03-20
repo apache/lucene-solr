@@ -218,7 +218,7 @@ public class QueryElevationComponentTest extends AbstractSolrTestCase {
     out.flush();
     out.close();
     
-    System.out.println( "OUT:"+file.getAbsolutePath() );
+    log.info( "OUT:"+file.getAbsolutePath() );
   }
 
   public void testElevationReloading() throws Exception

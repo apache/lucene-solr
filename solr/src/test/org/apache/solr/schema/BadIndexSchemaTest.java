@@ -59,7 +59,7 @@ public class BadIndexSchemaTest extends AbstractSolrTestCase {
     IndexSchema schema = core.getSchema();
 
     for( Throwable t : SolrConfig.severeErrors ) {
-      System.out.println( "ERROR:"+t.getMessage() );
+      log.error( "ERROR:"+t.getMessage() );
     }
     
     assertEquals( 3, SolrConfig.severeErrors.size() );

@@ -44,16 +44,14 @@ public class TestFastInputStream {
     char[] cbuf = new char[ss.length()];
     readChars(gzis, cbuf, 0, ss.length());
     assertEquals(new String(cbuf), ss);
-    System.out.println("passes w/o FastInputStream");
+    // System.out.println("passes w/o FastInputStream");
 
     ByteArrayInputStream bis = new ByteArrayInputStream(b.toByteArray(), 0, b.size());
     gzis = new GZIPInputStream(new FastInputStream(bis));
     cbuf = new char[ss.length()];
     readChars(gzis, cbuf, 0, ss.length());
     assertEquals(new String(cbuf), ss);
-    System.out.println("passes w FastInputStream");
-
-
+    // System.out.println("passes w FastInputStream");
   }
 
   //code copied from NamedListCodec#readChars
