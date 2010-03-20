@@ -38,20 +38,15 @@ import org.apache.solr.util.AbstractSolrTestCase;
 import java.io.*;
 import java.net.URL;
 
+import junit.framework.TestCase;
+
 /**
  * Test for ReplicationHandler
  *
  * @version $Id$
  * @since 1.4
  */
-public class TestReplicationHandler extends AbstractSolrTestCase {
-  public String getSchemaFile() {
-    return null;
-  }
-
-  public String getSolrConfigFile() {
-    return null;
-  }
+public class TestReplicationHandler extends TestCase {
 
 
   private static final String CONF_DIR = "." + File.separator + "solr" + File.separator + "conf" + File.separator;
@@ -79,7 +74,6 @@ public class TestReplicationHandler extends AbstractSolrTestCase {
 
   @Override
   public void tearDown() throws Exception {
-    super.preTearDown();
     masterJetty.stop();
     slaveJetty.stop();
     master.tearDown();
