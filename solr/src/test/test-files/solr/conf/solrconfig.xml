@@ -171,13 +171,13 @@
       class="solr.search.FastLRUCache"
       size="512"
       initialSize="512"
-      autowarmCount="256"/>
+      autowarmCount="2"/>
 
     <queryResultCache
       class="solr.search.LRUCache"
       size="512"
       initialSize="512"
-      autowarmCount="1024"/>
+      autowarmCount="2"/>
 
     <documentCache
       class="solr.search.LRUCache"
