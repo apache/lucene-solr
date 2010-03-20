@@ -28,7 +28,7 @@ public class RefCntRamDirectory extends RAMDirectory {
   public void decRef() {
     ensureOpen();
     if (refCount.getAndDecrement() == 1) {
-      close();
+      super.close();
     }
   }
   
