@@ -100,8 +100,13 @@ public abstract class AbstractSolrTestCase extends TestCase {
 
   public static Logger log = LoggerFactory.getLogger(AbstractSolrTestCase.class);
 
+  private String factoryProp;
   public void setUp() throws Exception {
     log.info("####SETUP_START " + getName());
+    factoryProp = System.getProperty("solr.directoryFactory");
+    if (factoryProp == null) {
+      // System.setProperty("solr.directoryFactory","solr.RAMDirectoryFactory");
+    }
     dataDir = new File(System.getProperty("java.io.tmpdir")
             + System.getProperty("file.separator")
             + getClass().getName() + "-" + System.currentTimeMillis());
@@ -144,6 +149,10 @@ public abstract class AbstractSolrTestCase extends TestCase {
    */
   public void tearDown() throws Exception {
     log.info("####TEARDOWN_START " + getName());
+    if (factoryProp == null) {
+      System.clearProperty("solr.directoryFactory");
+    }
+
     if (h != null) { h.close(); }
     String skip = System.getProperty("solr.test.leavedatadir");
     if (null != skip && 0 != skip.trim().length()) {
