@@ -18,21 +18,25 @@
 package org.apache.solr.request;
 
 import org.apache.lucene.index.Term;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.After;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import static org.junit.Assert.*;
 
 import java.util.Random;
 
 /**
  * @version $Id$
  */
-public class TestFaceting extends AbstractSolrTestCase {
-
-  public String getSchemaFile() { return "schema11.xml"; }
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
-
-  public void setUp() throws Exception {
-    super.setUp();
+public class TestFaceting extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema11.xml");
   }
+
+  @After
+  @Override
   public void tearDown() throws Exception {
     close();
     super.tearDown();
@@ -110,6 +114,7 @@ public class TestFaceting extends AbstractSolrTestCase {
     }
   }
 
+  @Test
   public void testTermEnum() throws Exception {
     doTermEnum(0);
     doTermEnum(1);
@@ -120,6 +125,7 @@ public class TestFaceting extends AbstractSolrTestCase {
     // doTermEnum(TermIndex.interval * 3 + 3);    
   }
 
+  @Test
   public void testFacets() throws Exception {
     StringBuilder sb = new StringBuilder();
 
@@ -187,6 +193,7 @@ public class TestFaceting extends AbstractSolrTestCase {
               );
   }
 
+  @Test
   public void testRegularBig() throws Exception {
     StringBuilder sb = new StringBuilder();
 

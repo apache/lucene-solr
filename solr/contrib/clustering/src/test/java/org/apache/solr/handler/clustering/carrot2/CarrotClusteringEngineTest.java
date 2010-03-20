@@ -32,19 +32,24 @@ import org.apache.solr.search.DocList;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.RefCounted;
 import org.carrot2.util.attribute.AttributeUtils;
+import org.junit.Test;
 
 import java.io.IOException;
 import java.util.List;
+
+import static org.junit.Assert.*;
 
 /**
  *
  */
 @SuppressWarnings("unchecked")
 public class CarrotClusteringEngineTest extends AbstractClusteringTest {
+  @Test
   public void testCarrotLingo() throws Exception {
     checkEngine(getClusteringEngine("default"), 10);
   }
 
+  @Test
   public void testProduceSummary() throws Exception {
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
@@ -52,21 +57,25 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTest {
     checkEngine(getClusteringEngine("default"), numberOfDocs -2 /*two don't have mining in the snippet*/, 15, new TermQuery(new Term("snippet", "mine")), solrParams);
   }
 
+  @Test
   public void testCarrotStc() throws Exception {
     checkEngine(getClusteringEngine("stc"), 1);
   }
 
+  @Test
   public void testWithoutSubclusters() throws Exception {
     checkClusters(checkEngine(getClusteringEngine("mock"), this.numberOfDocs),
             1, 1, 0);
   }
 
+  @Test
   public void testWithSubclusters() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CarrotParams.OUTPUT_SUB_CLUSTERS, true);
     checkClusters(checkEngine(getClusteringEngine("mock"), this.numberOfDocs), 1, 1, 2);
   }
 
+  @Test
   public void testNumDescriptions() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(AttributeUtils.getKey(MockClusteringAlgorithm.class, "labels"), 5);
@@ -75,6 +84,7 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTest {
             params), 1, 3, 0);
   }
 
+  @Test
   public void testCarrotAttributePassing() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(AttributeUtils.getKey(MockClusteringAlgorithm.class, "depth"), 1);

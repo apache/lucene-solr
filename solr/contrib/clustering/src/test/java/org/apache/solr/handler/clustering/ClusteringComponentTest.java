@@ -26,7 +26,9 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.request.SolrRequestHandler;
+import org.junit.Test;
 
+import static org.junit.Assert.*;
 
 /**
  *
@@ -34,6 +36,7 @@ import org.apache.solr.request.SolrRequestHandler;
  **/
 public class ClusteringComponentTest extends AbstractClusteringTest {
 
+  @Test
   public void testComponent() throws Exception {
     SolrCore core = h.getCore();
 

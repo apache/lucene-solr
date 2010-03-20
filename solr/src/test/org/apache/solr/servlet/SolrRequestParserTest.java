@@ -31,25 +31,34 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-public class SolrRequestParserTest extends AbstractSolrTestCase {
+import static org.junit.Assert.*;
 
-  public String getSchemaFile() { return "schema.xml"; } 
-  public String getSolrConfigFile() { return "solrconfig.xml"; } 
-  
-  SolrRequestParsers parser;
+public class SolrRequestParserTest extends SolrTestCaseJ4 {
 
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrConfig.xml", "schema.xml");
     parser = new SolrRequestParsers( h.getCore().getSolrConfig() );
   }
   
+  static SolrRequestParsers parser;
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    parser = null;
+  }
+  
+  @Test
   public void testStreamBody() throws Exception
   {
     String body1 = "AMANAPLANPANAMA";
@@ -95,7 +104,7 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
     }
   }
   
-
+  @Test
   public void testStreamURL() throws Exception
   {
     boolean ok = false;
@@ -122,6 +131,7 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
     assertEquals( txt, IOUtils.toString( streams.get(0).getStream() ) );
   }
   
+  @Test
   public void testUrlParamParsing()
   {
     String[][] teststr = new String[][] {
@@ -138,6 +148,7 @@ public class SolrRequestParserTest extends AbstractSolrTestCase {
     }
   }
   
+  @Test
   public void testStandardParseParamsAndFillStreams() throws Exception
   {
     ArrayList<ContentStream> streams = new ArrayList<ContentStream>();

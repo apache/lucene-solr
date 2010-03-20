@@ -16,36 +16,30 @@ package org.apache.solr.handler.clustering;
  * limitations under the License.
  */
 
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.BeforeClass;
+
+import static org.junit.Assert.*;
 
 
 /**
  *
  */
-public class AbstractClusteringTest extends AbstractSolrTestCase {
-  protected int numberOfDocs = 0;
+public class AbstractClusteringTest extends SolrTestCaseJ4 {
+  protected static int numberOfDocs = 0;
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrConfig.xml", "schema.xml");
     numberOfDocs = 0;
     for (String[] doc : DOCUMENTS) {
-      assertU("add failed", adoc("id", Integer.toString(numberOfDocs), "url", doc[0], "title", doc[1], "snippet", doc[2]));
+      assertNull(h.validateUpdate(adoc("id", Integer.toString(numberOfDocs), "url", doc[0], "title", doc[1], "snippet", doc[2])));
       numberOfDocs++;
     }
-    assertU("commit", commit());
+    assertNull(h.validateUpdate(commit()));
   }
 
-  public String getSchemaFile() {
-    return "schema.xml";
-  }
-
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
-  }
-
-  final String[][] DOCUMENTS = new String[][]{
+  final static String[][] DOCUMENTS = new String[][]{
           {"http://en.wikipedia.org/wiki/Data_mining",
                   "Data Mining - Wikipedia",
                   "Article about knowledge-discovery in databases (KDD), the practice of automatically searching large stores of data for patterns."},

@@ -17,29 +17,26 @@ package org.apache.solr.search.function.distance;
  */
 
 import org.apache.lucene.spatial.geohash.GeoHashUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
+import static org.junit.Assert.*;
 
 /**
  *
  *
  **/
-public class DistanceFunctionTest extends AbstractSolrTestCase {
-  public String getSchemaFile() {
-    return "schema11.xml";
+public class DistanceFunctionTest extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrConfig-functionquery.xml", "schema11.xml");
   }
 
-  public String getSolrConfigFile() {
-    return "solrconfig-functionquery.xml";
-  }
-
-  public String getCoreName() {
-    return "basic";
-  }
-
-
+  @Test
   public void testHaversine() throws Exception {
+    clearIndex();
     assertU(adoc("id", "1", "x_td", "0", "y_td", "0", "gh_s", GeoHashUtils.encode(32.7693246, -79.9289094)));
     assertU(adoc("id", "2", "x_td", "0", "y_td", String.valueOf(Math.PI / 2), "gh_s", GeoHashUtils.encode(32.7693246, -78.9289094)));
     assertU(adoc("id", "3", "x_td", String.valueOf(Math.PI / 2), "y_td", String.valueOf(Math.PI / 2), "gh_s", GeoHashUtils.encode(32.7693246, -80.9289094)));
@@ -71,7 +68,9 @@ public class DistanceFunctionTest extends AbstractSolrTestCase {
     assertQ(req("fl", "*,score", "q", "{!func}ghhsin(" + Constants.EARTH_RADIUS_KM + ", gh_s, geohash(32, -79))", "fq", "id:1"), "//float[@name='score']='122.309006'");
   }
 
+  @Test
   public void testVector() throws Exception {
+    clearIndex();
     assertU(adoc("id", "1", "x_td", "0", "y_td", "0", "z_td", "0", "w_td", "0"));
     assertU(adoc("id", "2", "x_td", "0", "y_td", "1", "z_td", "0", "w_td", "0"));
     assertU(adoc("id", "3", "x_td", "1", "y_td", "1", "z_td", "1", "w_td", "1"));
