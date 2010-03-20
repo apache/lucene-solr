@@ -35,7 +35,6 @@ public class RefCntRamDirectory extends RAMDirectory {
   public final synchronized void close() {
     if (isOpen) {
       decRef();
-      super.close();
     }
   }
   
