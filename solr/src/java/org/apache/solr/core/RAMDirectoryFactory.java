@@ -29,15 +29,17 @@ import java.util.HashMap;
  * Directory provider for using lucene RAMDirectory
  */
 public class RAMDirectoryFactory extends StandardDirectoryFactory {
-  private Map<String, Directory> directories = new HashMap<String, Directory>();
+  private Map<String, RefCntRamDirectory> directories = new HashMap<String, RefCntRamDirectory>();
 
   @Override
   public Directory open(String path) throws IOException {
     synchronized (this) {
-      Directory directory = directories.get(path);
-      if (directory == null) {
-        directory = openNew(path);
+      RefCntRamDirectory directory = directories.get(path);
+      if (directory == null || !directory.isOpen()) {
+        directory = (RefCntRamDirectory) openNew(path);
         directories.put(path, directory);
+      } else {
+        directory.incRef();
       }
 
       return directory;
@@ -53,9 +55,9 @@ public class RAMDirectoryFactory extends StandardDirectoryFactory {
     boolean indexExists = dirFile.canRead();
     if (indexExists) {
       Directory dir = super.open(path);
-      directory = new RAMDirectory(dir);
+      directory = new RefCntRamDirectory(dir);
     } else {
-      directory = new RAMDirectory();
+      directory = new RefCntRamDirectory();
     }
     return directory;
   }
