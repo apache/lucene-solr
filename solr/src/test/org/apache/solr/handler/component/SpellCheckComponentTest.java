@@ -20,6 +20,7 @@ package org.apache.solr.handler.component;
 import java.io.File;
 import java.util.*;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -33,38 +34,33 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.spelling.AbstractLuceneSpellChecker;
 import org.apache.solr.spelling.IndexBasedSpellChecker;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * @since solr 1.3
  */
-public class SpellCheckComponentTest extends AbstractSolrTestCase {
-  @Override
-  public String getSchemaFile() {
-    return "schema.xml";
-  }
-
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
-  }
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    assertU(adoc("id", "0", "lowerfilt", "This is a title"));
-    assertU(adoc("id", "1", "lowerfilt",
-            "The quick reb fox jumped over the lazy brown dogs."));
-    assertU(adoc("id", "2", "lowerfilt", "This is a document"));
-    assertU(adoc("id", "3", "lowerfilt", "another document"));
+public class SpellCheckComponentTest extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
+    assertNull(h.validateUpdate(adoc("id", "0", "lowerfilt", "This is a title")));
+    assertNull(h.validateUpdate(adoc("id", "1", "lowerfilt",
+            "The quick reb fox jumped over the lazy brown dogs.")));
+    assertNull(h.validateUpdate(adoc("id", "2", "lowerfilt", "This is a document")));
+    assertNull(h.validateUpdate(adoc("id", "3", "lowerfilt", "another document")));
     //bunch of docs that are variants on blue
-    assertU(adoc("id", "4", "lowerfilt", "blue"));
-    assertU(adoc("id", "5", "lowerfilt", "blud"));
-    assertU(adoc("id", "6", "lowerfilt", "boue"));
-    assertU(adoc("id", "7", "lowerfilt", "glue"));
-    assertU(adoc("id", "8", "lowerfilt", "blee"));
-    assertU("commit", commit());
+    assertNull(h.validateUpdate(adoc("id", "4", "lowerfilt", "blue")));
+    assertNull(h.validateUpdate(adoc("id", "5", "lowerfilt", "blud")));
+    assertNull(h.validateUpdate(adoc("id", "6", "lowerfilt", "boue")));
+    assertNull(h.validateUpdate(adoc("id", "7", "lowerfilt", "glue")));
+    assertNull(h.validateUpdate(adoc("id", "8", "lowerfilt", "blee")));
+    assertNull(h.validateUpdate(commit()));
   }
   
+  @Test
   public void testExtendedResultsCount() throws Exception {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
@@ -116,6 +112,7 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
     }
   }
 
+  @Test
   public void test() throws Exception {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
@@ -148,7 +145,7 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
     assertEquals("document", theSuggestion.iterator().next());
   }
 
-
+  @Test
   public void testCollate() throws Exception {
     SolrCore core = h.getCore();
     SearchComponent speller = core.getSearchComponent("spellcheck");
@@ -195,6 +192,7 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
     assertEquals("document brown",collation);
   }
 
+  @Test
   public void testCorrectSpelling() throws Exception {
     SolrCore core = h.getCore();
     Map<String, String> args = new HashMap<String, String>();
@@ -238,6 +236,7 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
         "//*[@numFound='1']", "//*/lst[@name='suggestions']", "//*/bool[@name='correctlySpelled'][.='true']");
   }
 
+  @Test
   public void testInit() throws Exception {
     SolrCore core = h.getCore();
     SpellCheckComponent scc = new SpellCheckComponent();
@@ -281,6 +280,7 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
   }
   
   @SuppressWarnings("unchecked")
+  @Test
   public void testRelativeIndexDirLocation() throws Exception {
     SolrCore core = h.getCore();
     Map<String, String> args = new HashMap<String, String>();
@@ -310,7 +310,8 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
         "spellcheckerIndexDir was not created inside the configured value for dataDir folder as configured in solrconfig.xml",
         indexDir.exists());
   }
-  
+
+  @Test
   public void testReloadOnStart() throws Exception {
     assertU(adoc("id", "0", "lowerfilt", "This is a title"));
     assertU(commit());
@@ -347,6 +348,7 @@ public class SpellCheckComponentTest extends AbstractSolrTestCase {
   }
   
     @SuppressWarnings("unchecked")
+    @Test
   public void testRebuildOnCommit() throws Exception {
     SolrQueryRequest req = req("q", "lowerfilt:lucenejavt", "qt", "spellCheckCompRH", "spellcheck", "true");
     String response = h.query(req);
