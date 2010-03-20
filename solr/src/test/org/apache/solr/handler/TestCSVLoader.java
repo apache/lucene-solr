@@ -17,29 +17,40 @@
 
 package org.apache.solr.handler;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.io.*;
 import java.util.List;
 import java.util.ArrayList;
 
-public class TestCSVLoader extends AbstractSolrTestCase {
+public class TestCSVLoader extends SolrTestCaseJ4 {
 
-  public String getSchemaFile() { return "schema12.xml"; }
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema12.xml");
+  }
 
   String filename = "solr_tmp.csv";
   String def_charset = "UTF-8";
   File file = new File(filename);
 
+  @Before
   public void setUp() throws Exception {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.setUp();
+    cleanup();
   }
+  
+  @After
   public void tearDown() throws Exception {
     // if you override setUp or tearDown, you better call
     // the super classes version
@@ -81,6 +92,7 @@ public class TestCSVLoader extends AbstractSolrTestCase {
     h.query("/update/csv",req);
   }
 
+  @Test
   public void testCSVLoad() throws Exception {
     makeFile("id\n100\n101\n102");
     loadLocal("stream.file",filename);
@@ -90,6 +102,7 @@ public class TestCSVLoader extends AbstractSolrTestCase {
     assertQ(req("id:[100 TO 110]"),"//*[@numFound='3']");
   }
 
+  @Test
   public void testCommitFalse() throws Exception {
     makeFile("id\n100\n101\n102");
     loadLocal("stream.file",filename,"commit","false");
@@ -98,12 +111,14 @@ public class TestCSVLoader extends AbstractSolrTestCase {
     assertQ(req("id:[100 TO 110]"),"//*[@numFound='3']");
   }
 
+  @Test
   public void testCommitTrue() throws Exception {
     makeFile("id\n100\n101\n102");
     loadLocal("stream.file",filename,"commit","true");
     assertQ(req("id:[100 TO 110]"),"//*[@numFound='3']");
   }
 
+  @Test
   public void testCSV() throws Exception {
     lrf.args.put("version","2.0");
     
