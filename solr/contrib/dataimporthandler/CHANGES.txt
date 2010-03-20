@@ -61,7 +61,9 @@ Bug Fixes
 
 * SOLR-1766: DIH with threads enabled doesn't respond to the abort command (Michael Henson via noble)
 
-* SOLR-1767: dataimporter.functions.escapeSql() does not escape backslash character (Sean Timm via noble) 
+* SOLR-1767: dataimporter.functions.escapeSql() does not escape backslash character (Sean Timm via noble)
+
+* SOLR-1811: formatDate should use the current NOW value always (Sean Timm via noble)
 
 Other Changes
 ----------------------

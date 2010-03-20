@@ -298,6 +298,11 @@ public class EvaluatorBag {
   static Pattern IN_SINGLE_QUOTES = Pattern.compile("^'(.*?)'$");
 
   static DateMathParser dateMathParser = new DateMathParser(TimeZone
-          .getDefault(), Locale.getDefault());
+          .getDefault(), Locale.getDefault()){
+    @Override
+    public Date getNow() {
+      return new Date();
+    }
+  };
 
 }

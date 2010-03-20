@@ -631,20 +631,25 @@ final public class XMLWriter {
     }
   }
 
-
-
-  //A map is currently represented as a named list
-  public void writeMap(String name, Map val) throws IOException {
-    Map map = val;
+  
+  /**
+   * writes a Map in the same format as a NamedList, using the
+   * stringification of the key Object when it's non-null.
+   *
+   * @param name
+   * @param map
+   * @throws IOException
+   * @see http://lucene.apache.org/solr/api/org/apache/solr/response/SolrQueryResponse.html#returnable_data
+   */
+  public void writeMap(String name, Map<Object,Object> map) throws IOException {
     int sz = map.size();
     startTag("lst", name, sz<=0);
     incLevel();
-    for (Map.Entry entry : (Set<Map.Entry>)map.entrySet()) {
-      // possible class-cast exception here...
-      String k = (String)entry.getKey();
+    for (Map.Entry<Object,Object> entry : map.entrySet()) {
+      Object k = entry.getKey();
       Object v = entry.getValue();
       // if (sz<indentThreshold) indent();
-      writeVal(k,v);
+      writeVal( null == k ? null : k.toString(), v);
     }
     decLevel();
     if (sz > 0) {

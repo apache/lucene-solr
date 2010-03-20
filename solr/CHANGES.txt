@@ -219,6 +219,9 @@ Bug Fixes
 * SOLR-1798: Small memory leak (~100 bytes) in fastLRUCache for every
   commit. (yonik)
 
+* SOLR-1823: Fixed XMLResponseWriter (via XMLWriter) so it no longer throws
+  a ClassCastException when a Map containing a non-String key is used.
+  (Frank Wesemann, hossman)
 
 Other Changes
 ----------------------
