@@ -71,8 +71,8 @@ public class SolrTestCaseJ4 extends LuceneTestCaseJ4 {
     super.tearDown();
   }
 
-  /** Call initCore in @BeforeClass to instantiate a solr core in your test class,
-   * then call deleteCore in @AfterClass */
+  /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
+   * deleteCore will be called for you via SolrTestCaseJ4 @AfterClass */
   public static void initCore(String config, String schema) throws Exception {
     configString = config;
     schemaString = schema;
