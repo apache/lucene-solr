@@ -66,17 +66,18 @@ public abstract class LogMergePolicy extends MergePolicy {
   private boolean useCompoundFile = true;
   private boolean useCompoundDocStore = true;
 
-  public LogMergePolicy(IndexWriter writer) {
-    super(writer);
+  public LogMergePolicy() {
+    super();
   }
-  
+
   protected boolean verbose() {
-    return writer != null && writer.verbose();
+    IndexWriter w = writer.get();
+    return w != null && w.verbose();
   }
   
   private void message(String message) {
     if (verbose())
-      writer.message("LMP: " + message);
+      writer.get().message("LMP: " + message);
   }
 
   /** <p>Returns the number of segments that are merged at
@@ -160,7 +161,7 @@ public abstract class LogMergePolicy extends MergePolicy {
 
   protected long sizeDocs(SegmentInfo info) throws IOException {
     if (calibrateSizeByDeletes) {
-      int delCount = writer.numDeletedDocs(info);
+      int delCount = writer.get().numDeletedDocs(info);
       return (info.docCount - (long)delCount);
     } else {
       return info.docCount;
@@ -170,7 +171,7 @@ public abstract class LogMergePolicy extends MergePolicy {
   protected long sizeBytes(SegmentInfo info) throws IOException {
     long byteSize = info.sizeInBytes();
     if (calibrateSizeByDeletes) {
-      int delCount = writer.numDeletedDocs(info);
+      int delCount = writer.get().numDeletedDocs(info);
       float delRatio = (info.docCount <= 0 ? 0.0f : ((float)delCount / (float)info.docCount));
       return (info.docCount <= 0 ?  byteSize : (long)(byteSize * (1.0f - delRatio)));
     } else {
@@ -199,10 +200,12 @@ public abstract class LogMergePolicy extends MergePolicy {
    *  writer, and matches the current compound file setting */
   private boolean isOptimized(SegmentInfo info)
     throws IOException {
-    boolean hasDeletions = writer.numDeletedDocs(info) > 0;
+    IndexWriter w = writer.get();
+    assert w != null;
+    boolean hasDeletions = w.numDeletedDocs(info) > 0;
     return !hasDeletions &&
       !info.hasSeparateNorms() &&
-      info.dir == writer.getDirectory() &&
+      info.dir == w.getDirectory() &&
       info.getUseCompoundFile() == useCompoundFile;
   }
 
@@ -309,9 +312,11 @@ public abstract class LogMergePolicy extends MergePolicy {
 
     MergeSpecification spec = new MergeSpecification();
     int firstSegmentWithDeletions = -1;
+    IndexWriter w = writer.get();
+    assert w != null;
     for(int i=0;i<numSegments;i++) {
       final SegmentInfo info = segmentInfos.info(i);
-      int delCount = writer.numDeletedDocs(info);
+      int delCount = w.numDeletedDocs(info);
       if (delCount > 0) {
         if (verbose())
           message("  segment " + info.name + " has deletions");

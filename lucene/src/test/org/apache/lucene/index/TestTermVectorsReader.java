@@ -93,8 +93,8 @@ public class TestTermVectorsReader extends LuceneTestCase {
     Arrays.sort(tokens);
 
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MyAnalyzer()));
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(false);
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundDocStore(false);
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false);
     Document doc = new Document();
     for(int i=0;i<testFields.length;i++) {
       final Field.TermVector tv;

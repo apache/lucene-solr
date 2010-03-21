@@ -109,15 +109,14 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
     RAMDirectory directory = new MockRAMDirectory();
 
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
-
-    LogDocMergePolicy mp = new LogDocMergePolicy(writer);
-    writer.setMergePolicy(mp);
-
+    LogDocMergePolicy mp = new LogDocMergePolicy();
     // Force degenerate merging so we can get a mix of
     // merging of segments with and without deletes at the
     // start:
     mp.setMinMergeDocs(1000);
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
+        .setMergePolicy(mp));
 
     Document doc = new Document();
     Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
@@ -183,7 +182,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     doc.add(idField);
 
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(2));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(100);
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);
 
     for(int iter=0;iter<10;iter++) {
 
@@ -200,7 +199,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
       // Force a bunch of merge threads to kick off so we
       // stress out aborting them on close:
-      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(3);
+      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(3);
       writer.addDocument(doc);
       writer.commit();
 
@@ -212,7 +211,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
       // Reopen
       writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
-      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(100);
+      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);
     }
     writer.close();
 

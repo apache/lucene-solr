@@ -397,7 +397,7 @@ public class SpellChecker implements java.io.Closeable {
       ensureOpen();
       final Directory dir = this.spellIndex;
       final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_CURRENT, new WhitespaceAnalyzer(Version.LUCENE_CURRENT)).setRAMBufferSizeMB(ramMB));
-      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(mergeFactor);
+      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(mergeFactor);
   
       Iterator<String> iter = dict.getWordsIterator();
       while (iter.hasNext()) {

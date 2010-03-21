@@ -116,7 +116,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     IndexWriter iw = new IndexWriter(dir3, new IndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
         .setMaxBufferedDocs(5));
-    ((LogMergePolicy) iw.getMergePolicy()).setMergeFactor(3);
+    ((LogMergePolicy) iw.getConfig().getMergePolicy()).setMergeFactor(3);
     iw.addIndexesNoOptimize(new Directory[] { dir1, dir2 });
     iw.optimize();
     iw.close();
@@ -134,7 +134,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     // now with optimize
     iw = new IndexWriter(dir3, new IndexWriterConfig(TEST_VERSION_CURRENT,
         anlzr).setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(5));
-    ((LogMergePolicy) iw.getMergePolicy()).setMergeFactor(3);
+    ((LogMergePolicy) iw.getConfig().getMergePolicy()).setMergeFactor(3);
     iw.optimize();
     iw.close();
     verifyIndex(dir3);
@@ -236,7 +236,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.CREATE)
         .setMaxBufferedDocs(5).setSimilarity(similarityOne));
-    LogMergePolicy lmp = (LogMergePolicy) iw.getMergePolicy();
+    LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(true);
     lmp.setUseCompoundDocStore(true);
@@ -286,13 +286,14 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
 
   private void addDocs(Directory dir, int ndocs, boolean compound)
       throws IOException {
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
-        .setMaxBufferedDocs(5).setSimilarity(similarityOne));
-    LogMergePolicy lmp = (LogMergePolicy) iw.getMergePolicy();
+    IndexWriterConfig conf = new IndexWriterConfig(
+            TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
+            .setMaxBufferedDocs(5).setSimilarity(similarityOne);
+    LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
     lmp.setMergeFactor(3);
     lmp.setUseCompoundFile(compound);
     lmp.setUseCompoundDocStore(compound);
+    IndexWriter iw = new IndexWriter(dir, conf);
     for (int i = 0; i < ndocs; i++) {
       iw.addDocument(newDoc());
     }

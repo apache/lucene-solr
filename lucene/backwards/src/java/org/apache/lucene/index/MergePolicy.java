@@ -200,8 +200,8 @@ public abstract class MergePolicy implements java.io.Closeable {
 
   final protected IndexWriter writer;
   
-  public MergePolicy(IndexWriter writer) {
-    this.writer = writer;
+  public MergePolicy() {
+    this.writer = null;
   }
 
   /**

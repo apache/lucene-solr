@@ -73,11 +73,11 @@ public class TestSearch extends LuceneTestCase {
     throws Exception {
       Directory directory = new RAMDirectory();
       Analyzer analyzer = new SimpleAnalyzer(TEST_VERSION_CURRENT);
-      IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer));
-      LogMergePolicy lmp = (LogMergePolicy) writer.getMergePolicy();
+      IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+      LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFile);
       lmp.setUseCompoundDocStore(useCompoundFile);
+      IndexWriter writer = new IndexWriter(directory, conf);
 
       String[] docs = {
         "a b c d e",

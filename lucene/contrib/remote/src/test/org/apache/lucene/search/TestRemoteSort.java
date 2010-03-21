@@ -114,7 +114,7 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
     IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
         .setMaxBufferedDocs(2));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(1000);
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(1000);
     for (int i=0; i<data.length; ++i) {
       if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
         Document doc = new Document();

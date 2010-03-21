@@ -139,7 +139,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     IndexWriter w = new MockIndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE).setRAMBufferSizeMB(
         0.1).setMaxBufferedDocs(maxBufferedDocs));
-    LogMergePolicy lmp = (LogMergePolicy) w.getMergePolicy();
+    LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
     lmp.setUseCompoundFile(false);
     lmp.setUseCompoundDocStore(false);
     lmp.setMergeFactor(mergeFactor);
@@ -190,7 +190,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       IndexWriter w = new MockIndexWriter(dir, new IndexWriterConfig(
           TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE)
                .setRAMBufferSizeMB(0.1).setMaxBufferedDocs(maxBufferedDocs).setMaxThreadStates(maxThreadStates));
-      LogMergePolicy lmp = (LogMergePolicy) w.getMergePolicy();
+      LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
       lmp.setUseCompoundFile(false);
       lmp.setUseCompoundDocStore(false);
       lmp.setMergeFactor(mergeFactor);

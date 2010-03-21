@@ -91,7 +91,7 @@ public class CreateIndexTask extends PerfTask {
     final String mergePolicy = config.get("merge.policy",
                                           "org.apache.lucene.index.LogByteSizeMergePolicy");
     try {
-      writer.setMergePolicy(Class.forName(mergePolicy).asSubclass(MergePolicy.class).getConstructor(IndexWriter.class).newInstance(writer));
+      writer.setMergePolicy(Class.forName(mergePolicy).asSubclass(MergePolicy.class).newInstance());
     } catch (Exception e) {
       throw new RuntimeException("unable to instantiate class '" + mergePolicy + "' as merge policy", e);
     }

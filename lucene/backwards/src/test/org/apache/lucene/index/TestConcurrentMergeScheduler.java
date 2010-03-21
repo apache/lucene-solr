@@ -120,7 +120,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     ConcurrentMergeScheduler cms = new ConcurrentMergeScheduler();
     writer.setMergeScheduler(cms);
 
-    LogDocMergePolicy mp = new LogDocMergePolicy(writer);
+    LogDocMergePolicy mp = new LogDocMergePolicy();
     writer.setMergePolicy(mp);
 
     // Force degenerate merging so we can get a mix of

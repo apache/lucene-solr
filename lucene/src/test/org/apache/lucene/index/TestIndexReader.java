@@ -175,7 +175,7 @@ public class TestIndexReader extends LuceneTestCase
         writer = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT,
             new StandardAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
         // want to get some more segments here
-        int mergeFactor = ((LogMergePolicy) writer.getMergePolicy()).getMergeFactor();
+        int mergeFactor = ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor();
         for (int i = 0; i < 5*mergeFactor; i++) {
             addDocumentWithFields(writer);
         }
@@ -255,7 +255,7 @@ public class TestIndexReader extends LuceneTestCase
         TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
     // want to get some more segments here
     // new termvector fields
-    int mergeFactor = ((LogMergePolicy) writer.getMergePolicy()).getMergeFactor();
+    int mergeFactor = ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor();
     for (int i = 0; i < 5 * mergeFactor; i++) {
       Document doc = new Document();
         doc.add(new Field("tvnot","one two two three three three", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));
@@ -559,8 +559,8 @@ public class TestIndexReader extends LuceneTestCase
 
         //  add 1 documents with term : aaa
         writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-        ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(false);
-        ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundDocStore(false);
+        ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
+        ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false);
         addDoc(writer, searchTerm.text());
         writer.close();
 

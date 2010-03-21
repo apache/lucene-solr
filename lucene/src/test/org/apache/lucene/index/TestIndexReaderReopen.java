@@ -949,9 +949,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   
   public static void createIndex(Directory dir, boolean multiSegment) throws IOException {
     IndexWriter.unlock(dir);
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-
-    w.setMergePolicy(new LogDocMergePolicy(w));
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        .setMergePolicy(new LogDocMergePolicy()));
     
     for (int i = 0; i < 100; i++) {
       w.addDocument(createDocument(i, 4));

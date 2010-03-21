@@ -116,6 +116,7 @@ public final class IndexWriterConfig implements Cloneable {
   private int maxBufferedDocs;
   private IndexingChain indexingChain;
   private IndexReaderWarmer mergedSegmentWarmer;
+  private MergePolicy mergePolicy;
   private int maxThreadStates;
   
   // required for clone
@@ -144,6 +145,7 @@ public final class IndexWriterConfig implements Cloneable {
     maxBufferedDocs = DEFAULT_MAX_BUFFERED_DOCS;
     indexingChain = DocumentsWriter.defaultIndexingChain;
     mergedSegmentWarmer = null;
+    mergePolicy = new LogByteSizeMergePolicy();
     maxThreadStates = DEFAULT_MAX_THREAD_STATES;
   }
   
@@ -491,10 +493,26 @@ public final class IndexWriterConfig implements Cloneable {
     return mergedSegmentWarmer;
   }
 
-  /** Sets the max number of simultaneous threads that may
-   *  be indexing documents at once in IndexWriter. */
+  /**
+   * Expert: {@link MergePolicy} is invoked whenever there are changes to the
+   * segments in the index. Its role is to select which merges to do, if any,
+   * and return a {@link MergePolicy.MergeSpecification} describing the merges.
+   * It also selects merges to do for optimize(). (The default is
+   * {@link LogByteSizeMergePolicy}.
+   */
+  public IndexWriterConfig setMergePolicy(MergePolicy mergePolicy) {
+    this.mergePolicy = mergePolicy == null ? new LogByteSizeMergePolicy() : mergePolicy;
+    return this;
+  }
+  
+  /**
+   * Sets the max number of simultaneous threads that may be indexing documents
+   * at once in IndexWriter. Values &lt; 1 are invalid and if passed
+   * <code>maxThreadStates</code> will be set to
+   * {@link #DEFAULT_MAX_THREAD_STATES}.
+   */
   public IndexWriterConfig setMaxThreadStates(int maxThreadStates) {
-    this.maxThreadStates = maxThreadStates;
+    this.maxThreadStates = maxThreadStates < 1 ? DEFAULT_MAX_THREAD_STATES : maxThreadStates;
     return this;
   }
 
@@ -502,6 +520,15 @@ public final class IndexWriterConfig implements Cloneable {
    *  may be indexing documents at once in IndexWriter. */
   public int getMaxThreadStates() {
     return maxThreadStates;
+  }
+
+  /**
+   * Returns the current MergePolicy in use by this writer.
+   * 
+   * @see #setMergePolicy(MergePolicy)
+   */
+  public MergePolicy getMergePolicy() {
+    return mergePolicy;
   }
 
   /** Expert: sets the {@link DocConsumer} chain to be used to process documents. */
@@ -533,6 +560,7 @@ public final class IndexWriterConfig implements Cloneable {
     sb.append("ramBufferSizeMB=").append(ramBufferSizeMB).append("\n");
     sb.append("maxBufferedDocs=").append(maxBufferedDocs).append("\n");
     sb.append("mergedSegmentWarmer=").append(mergedSegmentWarmer).append("\n");
+    sb.append("mergePolicy=").append(mergePolicy).append("\n");
     sb.append("maxThreadStates=").append(maxThreadStates).append("\n");
     return sb.toString();
   }

@@ -37,7 +37,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setMaxBufferedDocs(10);
     writer.setMergeFactor(10);
-    writer.setMergePolicy(new LogDocMergePolicy(writer));
+    writer.setMergePolicy(new LogDocMergePolicy());
 
     for (int i = 0; i < 100; i++) {
       addDoc(writer);
@@ -54,7 +54,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setMaxBufferedDocs(10);
     writer.setMergeFactor(10);
-    writer.setMergePolicy(new LogDocMergePolicy(writer));
+    writer.setMergePolicy(new LogDocMergePolicy());
 
     boolean noOverMerge = false;
     for (int i = 0; i < 100; i++) {
@@ -76,7 +76,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setMaxBufferedDocs(10);
     writer.setMergeFactor(10);
-    LogDocMergePolicy mp = new LogDocMergePolicy(writer);
+    LogDocMergePolicy mp = new LogDocMergePolicy();
     mp.setMinMergeDocs(100);
     writer.setMergePolicy(mp);
 
@@ -86,6 +86,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
       writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.LIMITED);
       writer.setMaxBufferedDocs(10);
+      mp = new LogDocMergePolicy();
       writer.setMergePolicy(mp);
       mp.setMinMergeDocs(100);
       writer.setMergeFactor(10);
@@ -102,7 +103,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
     writer.setMaxBufferedDocs(10);
     writer.setMergeFactor(100);
-    writer.setMergePolicy(new LogDocMergePolicy(writer));
+    writer.setMergePolicy(new LogDocMergePolicy());
 
     for (int i = 0; i < 250; i++) {
       addDoc(writer);
@@ -128,7 +129,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
     writer.setMaxBufferedDocs(101);
     writer.setMergeFactor(101);
-    writer.setMergePolicy(new LogDocMergePolicy(writer));
+    writer.setMergePolicy(new LogDocMergePolicy());
 
     // leftmost* segment has 1 doc
     // rightmost* segment has 100 docs
@@ -142,7 +143,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.UNLIMITED);
       writer.setMaxBufferedDocs(101);
       writer.setMergeFactor(101);
-      writer.setMergePolicy(new LogDocMergePolicy(writer));
+      writer.setMergePolicy(new LogDocMergePolicy());
     }
 
     writer.setMaxBufferedDocs(10);
@@ -171,7 +172,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     Directory dir = new RAMDirectory();
 
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
-    writer.setMergePolicy(new LogDocMergePolicy(writer));
+    writer.setMergePolicy(new LogDocMergePolicy());
     writer.setMaxBufferedDocs(10);
     writer.setMergeFactor(100);
 
@@ -186,7 +187,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     reader.close();
 
     writer = new IndexWriter(dir, new WhitespaceAnalyzer(), false, IndexWriter.MaxFieldLength.UNLIMITED);
-    writer.setMergePolicy(new LogDocMergePolicy(writer));
+    writer.setMergePolicy(new LogDocMergePolicy());
     writer.setMaxBufferedDocs(10);
     writer.setMergeFactor(5);
 

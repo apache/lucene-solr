@@ -93,13 +93,13 @@ public class TestTransactions extends LuceneTestCase {
     public void doWork() throws Throwable {
 
       IndexWriter writer1 = new IndexWriter(dir1, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(3));
-      ((LogMergePolicy) writer1.getMergePolicy()).setMergeFactor(2);
+      ((LogMergePolicy) writer1.getConfig().getMergePolicy()).setMergeFactor(2);
       ((ConcurrentMergeScheduler) writer1.getConfig().getMergeScheduler()).setSuppressExceptions();
 
       // Intentionally use different params so flush/merge
       // happen @ different times
       IndexWriter writer2 = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(2));
-      ((LogMergePolicy) writer2.getMergePolicy()).setMergeFactor(3);
+      ((LogMergePolicy) writer2.getConfig().getMergePolicy()).setMergeFactor(3);
       ((ConcurrentMergeScheduler) writer2.getConfig().getMergeScheduler()).setSuppressExceptions();
 
       update(writer1);

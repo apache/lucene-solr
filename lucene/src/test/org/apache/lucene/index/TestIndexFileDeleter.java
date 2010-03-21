@@ -41,13 +41,15 @@ public class TestIndexFileDeleter extends LuceneTestCase {
 
     Directory dir = new RAMDirectory();
 
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(10));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        .setMaxBufferedDocs(10));
     int i;
     for(i=0;i<35;i++) {
       addDoc(writer, i);
     }
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(false);
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundDocStore(false);
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false);
     for(;i<45;i++) {
       addDoc(writer, i);
     }

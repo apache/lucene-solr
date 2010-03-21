@@ -33,9 +33,9 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
   public void testIndexing() throws Exception {
     Directory mainDir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(mainDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(10));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(2);
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(false);
-    ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundDocStore(false);
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false);
     IndexReader reader = writer.getReader(); // start pooling readers
     reader.close();
     RunThread[] indexThreads = new RunThread[4];

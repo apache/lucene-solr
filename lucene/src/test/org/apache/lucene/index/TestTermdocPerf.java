@@ -74,7 +74,7 @@ public class TestTermdocPerf extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer)
         .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(100));
-    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(100);
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);
 
     for (int i=0; i<ndocs; i++) {
       writer.addDocument(doc);

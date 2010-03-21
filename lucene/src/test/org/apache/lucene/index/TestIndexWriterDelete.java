@@ -641,7 +641,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     MockRAMDirectory dir = new MockRAMDirectory();
     IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDeleteTerms(2));
-    LogMergePolicy lmp = (LogMergePolicy) modifier.getMergePolicy();
+    LogMergePolicy lmp = (LogMergePolicy) modifier.getConfig().getMergePolicy();
     lmp.setUseCompoundFile(true);
     lmp.setUseCompoundDocStore(true);
 

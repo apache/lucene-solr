@@ -202,10 +202,13 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
     Directory dir = new RAMDirectory();
     ExpirationTimeDeletionPolicy policy = new ExpirationTimeDeletionPolicy(dir, SECONDS);
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(policy));
-    LogMergePolicy lmp = (LogMergePolicy) writer.getMergePolicy();
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT,
+        new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        .setIndexDeletionPolicy(policy);
+    LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
     lmp.setUseCompoundFile(useCompoundFile);
     lmp.setUseCompoundDocStore(useCompoundFile);
+    IndexWriter writer = new IndexWriter(dir, conf);
     writer.close();
 
     long lastDeleteTime = 0;
@@ -213,11 +216,13 @@ public class TestDeletionPolicy extends LuceneTestCase {
       // Record last time when writer performed deletes of
       // past commits
       lastDeleteTime = System.currentTimeMillis();
-      writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
-          .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(policy));
-      lmp = (LogMergePolicy) writer.getMergePolicy();
+      conf = new IndexWriterConfig(TEST_VERSION_CURRENT,
+          new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(
+          OpenMode.APPEND).setIndexDeletionPolicy(policy);
+      lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFile);
       lmp.setUseCompoundDocStore(useCompoundFile);
+      writer = new IndexWriter(dir, conf);
       for(int j=0;j<17;j++) {
         addDoc(writer);
       }
@@ -277,24 +282,26 @@ public class TestDeletionPolicy extends LuceneTestCase {
       Directory dir = new RAMDirectory();
       policy.dir = dir;
 
-      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+      IndexWriterConfig conf = new IndexWriterConfig(
           TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
           .setIndexDeletionPolicy(policy).setMaxBufferedDocs(10)
-          .setMergeScheduler(new SerialMergeScheduler()));
-      LogMergePolicy lmp = (LogMergePolicy) writer.getMergePolicy();
+          .setMergeScheduler(new SerialMergeScheduler());
+      LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFile);
       lmp.setUseCompoundDocStore(useCompoundFile);
+      IndexWriter writer = new IndexWriter(dir, conf);
       for(int i=0;i<107;i++) {
         addDoc(writer);
       }
       writer.close();
 
-      writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT,
+      conf = new IndexWriterConfig(TEST_VERSION_CURRENT,
           new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(
-          OpenMode.APPEND).setIndexDeletionPolicy(policy));
-      lmp = (LogMergePolicy) writer.getMergePolicy();
+          OpenMode.APPEND).setIndexDeletionPolicy(policy);
+      lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFile);
       lmp.setUseCompoundDocStore(useCompoundFile);
+      writer = new IndexWriter(dir, conf);
       writer.optimize();
       writer.close();
 
@@ -462,23 +469,25 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       Directory dir = new RAMDirectory();
 
-      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+      IndexWriterConfig conf = new IndexWriterConfig(
           TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
           .setOpenMode(OpenMode.CREATE).setIndexDeletionPolicy(policy)
-          .setMaxBufferedDocs(10));
-      LogMergePolicy lmp = (LogMergePolicy) writer.getMergePolicy();
+          .setMaxBufferedDocs(10);
+      LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFile);
       lmp.setUseCompoundDocStore(useCompoundFile);
+      IndexWriter writer = new IndexWriter(dir, conf);
       for(int i=0;i<107;i++) {
         addDoc(writer);
       }
       writer.close();
 
-      writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
-          .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(policy));
-      lmp = (LogMergePolicy) writer.getMergePolicy();
+      conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+          .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(policy);
+      lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFile);
       lmp.setUseCompoundDocStore(useCompoundFile);
+      writer = new IndexWriter(dir, conf);
       writer.optimize();
       writer.close();
 
@@ -512,13 +521,14 @@ public class TestDeletionPolicy extends LuceneTestCase {
       KeepLastNDeletionPolicy policy = new KeepLastNDeletionPolicy(N);
 
       for(int j=0;j<N+1;j++) {
-        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        IndexWriterConfig conf = new IndexWriterConfig(
             TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
             .setOpenMode(OpenMode.CREATE).setIndexDeletionPolicy(policy)
-            .setMaxBufferedDocs(10));
-        LogMergePolicy lmp = (LogMergePolicy) writer.getMergePolicy();
+            .setMaxBufferedDocs(10);
+        LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
         lmp.setUseCompoundFile(useCompoundFile);
         lmp.setUseCompoundDocStore(useCompoundFile);
+        IndexWriter writer = new IndexWriter(dir, conf);
         for(int i=0;i<17;i++) {
           addDoc(writer);
         }
@@ -571,23 +581,25 @@ public class TestDeletionPolicy extends LuceneTestCase {
       KeepLastNDeletionPolicy policy = new KeepLastNDeletionPolicy(N);
 
       Directory dir = new RAMDirectory();
-      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+      IndexWriterConfig conf = new IndexWriterConfig(
           TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
-          .setOpenMode(OpenMode.CREATE).setIndexDeletionPolicy(policy));
-      LogMergePolicy lmp = (LogMergePolicy) writer.getMergePolicy();
+          .setOpenMode(OpenMode.CREATE).setIndexDeletionPolicy(policy);
+      LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFile);
       lmp.setUseCompoundDocStore(useCompoundFile);
+      IndexWriter writer = new IndexWriter(dir, conf);
       writer.close();
       Term searchTerm = new Term("content", "aaa");        
       Query query = new TermQuery(searchTerm);
 
       for(int i=0;i<N+1;i++) {
-        writer = new IndexWriter(dir, new IndexWriterConfig(
+        conf = new IndexWriterConfig(
             TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
-            .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(policy));
-        lmp = (LogMergePolicy) writer.getMergePolicy();
+            .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(policy);
+        lmp = (LogMergePolicy) conf.getMergePolicy();
         lmp.setUseCompoundFile(useCompoundFile);
         lmp.setUseCompoundDocStore(useCompoundFile);
+        writer = new IndexWriter(dir, conf);
         for(int j=0;j<17;j++) {
           addDoc(writer);
         }
@@ -603,11 +615,12 @@ public class TestDeletionPolicy extends LuceneTestCase {
         reader.close();
         searcher.close();
       }
-      writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
-          .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(policy));
-      lmp = (LogMergePolicy) writer.getMergePolicy();
+      conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+          .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(policy);
+      lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFile);
       lmp.setUseCompoundDocStore(useCompoundFile);
+      writer = new IndexWriter(dir, conf);
       writer.optimize();
       // this is a commit
       writer.close();
@@ -677,26 +690,28 @@ public class TestDeletionPolicy extends LuceneTestCase {
       KeepLastNDeletionPolicy policy = new KeepLastNDeletionPolicy(N);
 
       Directory dir = new RAMDirectory();
-      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+      IndexWriterConfig conf = new IndexWriterConfig(
           TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
           .setOpenMode(OpenMode.CREATE).setIndexDeletionPolicy(policy)
-          .setMaxBufferedDocs(10));
-      LogMergePolicy lmp = (LogMergePolicy) writer.getMergePolicy();
+          .setMaxBufferedDocs(10);
+      LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFile);
       lmp.setUseCompoundDocStore(useCompoundFile);
+      IndexWriter writer = new IndexWriter(dir, conf);
       writer.close();
       Term searchTerm = new Term("content", "aaa");        
       Query query = new TermQuery(searchTerm);
 
       for(int i=0;i<N+1;i++) {
 
-        writer = new IndexWriter(dir, new IndexWriterConfig(
+        conf = new IndexWriterConfig(
             TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
             .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(policy)
-            .setMaxBufferedDocs(10));
-        lmp = (LogMergePolicy) writer.getMergePolicy();
+            .setMaxBufferedDocs(10);
+        lmp = (LogMergePolicy) conf.getMergePolicy();
         lmp.setUseCompoundFile(useCompoundFile);
         lmp.setUseCompoundDocStore(useCompoundFile);
+        writer = new IndexWriter(dir, conf);
         for(int j=0;j<17;j++) {
           addDoc(writer);
         }

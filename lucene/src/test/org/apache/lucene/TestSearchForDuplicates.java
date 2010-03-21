@@ -78,11 +78,11 @@ public class TestSearchForDuplicates extends LuceneTestCase {
   private void doTest(PrintWriter out, boolean useCompoundFiles) throws Exception {
       Directory directory = new RAMDirectory();
       Analyzer analyzer = new SimpleAnalyzer(TEST_VERSION_CURRENT);
-      IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer));
-      LogMergePolicy lmp = (LogMergePolicy) writer.getMergePolicy();
+      IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+      LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFiles);
       lmp.setUseCompoundDocStore(useCompoundFiles);
+      IndexWriter writer = new IndexWriter(directory, conf);
 
       final int MAX_DOCS = 225;
 
