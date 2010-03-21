@@ -44,14 +44,15 @@ public class TestVariableResolver {
 
   @Test
   public void testDefaults(){
-    System.out.println(System.setProperty(TestVariableResolver.class.getName(),"hello"));
-    System.out.println("s.gP()"+ System.getProperty(TestVariableResolver.class.getName())); 
+    // System.out.println(System.setProperty(TestVariableResolver.class.getName(),"hello"));
+    System.setProperty(TestVariableResolver.class.getName(),"hello");
+    // System.out.println("s.gP()"+ System.getProperty(TestVariableResolver.class.getName())); 
 
     HashMap m = new HashMap();
     m.put("hello","world");
     VariableResolverImpl vri = new VariableResolverImpl(m);
     Object val = vri.resolve(TestVariableResolver.class.getName());
-    System.out.println("val = " + val);
+    // System.out.println("val = " + val);
     Assert.assertEquals("hello", val);
     Assert.assertEquals("world",vri.resolve("hello"));
 
