@@ -586,7 +586,7 @@ public final class SolrCore implements SolrInfoMBean {
 
       // Finally tell anyone who wants to know
       resourceLoader.inform( resourceLoader );
-      resourceLoader.inform( this );
+      resourceLoader.inform( this );  // last call before the latch is released.
       instance = this;   // set singleton for backwards compatibility
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);

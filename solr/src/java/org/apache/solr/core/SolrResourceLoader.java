@@ -69,12 +69,14 @@ public class SolrResourceLoader implements ResourceLoader
   private final String instanceDir;
   private String dataDir;
   
-  private final List<SolrCoreAware> waitingForCore = new ArrayList<SolrCoreAware>();
-  private final List<SolrInfoMBean> infoMBeans = new ArrayList<SolrInfoMBean>();
-  private final List<ResourceLoaderAware> waitingForResources = new ArrayList<ResourceLoaderAware>();
+  private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
+  private final List<SolrInfoMBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoMBean>());
+  private final List<ResourceLoaderAware> waitingForResources = Collections.synchronizedList(new ArrayList<ResourceLoaderAware>());
   private static final Charset UTF_8 = Charset.forName("UTF-8");
 
   private final Properties coreProperties;
+
+  private volatile boolean live;
 
   /**
    * <p>
@@ -399,18 +401,20 @@ public class SolrResourceLoader implements ResourceLoader
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
           "Error instantiating class: '" + clazz.getName()+"'", e, false );
     }
-    
-    if( obj instanceof SolrCoreAware ) {
-      assertAwareCompatibility( SolrCoreAware.class, obj );
-      waitingForCore.add( (SolrCoreAware)obj );
-    }
-    if( obj instanceof ResourceLoaderAware ) {
-      assertAwareCompatibility( ResourceLoaderAware.class, obj );
-      waitingForResources.add( (ResourceLoaderAware)obj );
-    }
-    if (obj instanceof SolrInfoMBean){
-      //TODO: Assert here?
-      infoMBeans.add((SolrInfoMBean) obj);
+
+    if (!live) {
+      if( obj instanceof SolrCoreAware ) {
+        assertAwareCompatibility( SolrCoreAware.class, obj );
+        waitingForCore.add( (SolrCoreAware)obj );
+      }
+      if( obj instanceof ResourceLoaderAware ) {
+        assertAwareCompatibility( ResourceLoaderAware.class, obj );
+        waitingForResources.add( (ResourceLoaderAware)obj );
+      }
+      if (obj instanceof SolrInfoMBean){
+        //TODO: Assert here?
+        infoMBeans.add((SolrInfoMBean) obj);
+      }
     }
     return obj;
   }
@@ -431,12 +435,16 @@ public class SolrResourceLoader implements ResourceLoader
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR,
           "Error instantiating class: '" + clazz.getName()+"'", e, false );
     }
-    //TODO: Does SolrCoreAware make sense here since in a multi-core context
-    // which core are we talking about ? 
-    if( obj instanceof ResourceLoaderAware ) {
-      assertAwareCompatibility( ResourceLoaderAware.class, obj );
-      waitingForResources.add( (ResourceLoaderAware)obj );
+
+    if (!live) {
+      //TODO: Does SolrCoreAware make sense here since in a multi-core context
+      // which core are we talking about ?
+      if( obj instanceof ResourceLoaderAware ) {
+        assertAwareCompatibility( ResourceLoaderAware.class, obj );
+        waitingForResources.add( (ResourceLoaderAware)obj );
+      }
     }
+
     return obj;
   }
 
@@ -460,18 +468,21 @@ public class SolrResourceLoader implements ResourceLoader
           "Error instantiating class: '" + clazz.getName()+"'", e, false );
     }
 
-    if( obj instanceof SolrCoreAware ) {
-      assertAwareCompatibility( SolrCoreAware.class, obj );
-      waitingForCore.add( (SolrCoreAware)obj );
+    if (!live) {
+      if( obj instanceof SolrCoreAware ) {
+        assertAwareCompatibility( SolrCoreAware.class, obj );
+        waitingForCore.add( (SolrCoreAware)obj );
+      }
+      if( obj instanceof ResourceLoaderAware ) {
+        assertAwareCompatibility( ResourceLoaderAware.class, obj );
+        waitingForResources.add( (ResourceLoaderAware)obj );
+      }
+      if (obj instanceof SolrInfoMBean){
+        //TODO: Assert here?
+        infoMBeans.add((SolrInfoMBean) obj);
+      }
     }
-    if( obj instanceof ResourceLoaderAware ) {
-      assertAwareCompatibility( ResourceLoaderAware.class, obj );
-      waitingForResources.add( (ResourceLoaderAware)obj );
-    }
-    if (obj instanceof SolrInfoMBean){
-      //TODO: Assert here?
-      infoMBeans.add((SolrInfoMBean) obj);
-    }
+
     return obj;
   }
 
@@ -482,10 +493,24 @@ public class SolrResourceLoader implements ResourceLoader
   public void inform(SolrCore core) 
   {
     this.dataDir = core.getDataDir();
-    for( SolrCoreAware aware : waitingForCore ) {
-      aware.inform( core );
+
+    // make a copy to avoid potential deadlock of a callback calling newInstance and trying to
+    // add something to waitingForCore.
+    SolrCoreAware[] arr;
+
+    while (waitingForCore.size() > 0) {
+      synchronized (waitingForCore) {
+        arr = waitingForCore.toArray(new SolrCoreAware[waitingForCore.size()]);
+        waitingForCore.clear();
+      }
+
+      for( SolrCoreAware aware : arr) {
+        aware.inform( core );
+      }
     }
-    waitingForCore.clear();
+
+    // this is the last method to be called in SolrCore before the latch is released.
+    live = true;
   }
   
   /**
@@ -493,10 +518,20 @@ public class SolrResourceLoader implements ResourceLoader
    */
   public void inform( ResourceLoader loader ) 
   {
-    for( ResourceLoaderAware aware : waitingForResources ) {
-      aware.inform( loader );
+
+     // make a copy to avoid potential deadlock of a callback adding to the list
+    ResourceLoaderAware[] arr;
+
+    while (waitingForResources.size() > 0) {
+      synchronized (waitingForResources) {
+        arr = waitingForResources.toArray(new ResourceLoaderAware[waitingForResources.size()]);
+        waitingForResources.clear();
+      }
+
+      for( ResourceLoaderAware aware : arr) {
+        aware.inform(loader);
+      }
     }
-    waitingForResources.clear();
   }
 
   /**
@@ -504,10 +539,21 @@ public class SolrResourceLoader implements ResourceLoader
    * @param infoRegistry The Info Registry
    */
   public void inform(Map<String, SolrInfoMBean> infoRegistry) {
-    for (SolrInfoMBean bean : infoMBeans) {
+    // this can currently happen concurrently with requests starting and lazy components
+    // loading.  Make sure infoMBeans doesn't change.
+
+    SolrInfoMBean[] arr;
+    synchronized (infoMBeans) {
+      arr = infoMBeans.toArray(new SolrInfoMBean[infoMBeans.size()]);
+      waitingForResources.clear();
+    }
+
+
+    for (SolrInfoMBean bean : arr) {
       infoRegistry.put(bean.getName(), bean);
     }
   }
+  
   /**
    * Determines the solrhome from the environment.
    * Tries JNDI (java:comp/env/solr/home) then system property (solr.solr.home);

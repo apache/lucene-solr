@@ -223,6 +223,9 @@ Bug Fixes
   a ClassCastException when a Map containing a non-String key is used.
   (Frank Wesemann, hossman)
 
+* SOLR-1797: fix ConcurrentModificationException and potential memory
+  leaks in ResourceLoader. (yonik)
+
 Other Changes
 ----------------------
 
