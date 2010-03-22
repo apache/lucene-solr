@@ -1,6 +1,7 @@
 package org.apache.solr.handler.component;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.util.AbstractSolrTestCase;
 
 /**
  * Test for SpellCheckComponent's distributed querying
@@ -10,6 +11,21 @@ import org.apache.solr.BaseDistributedSearchTestCase;
  * @see org.apache.solr.handler.component.SpellCheckComponent
  */
 public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTestCase {
+  
+  private String saveProp;
+  @Override
+  public void setUp() throws Exception {
+    // this test requires FSDir
+    saveProp = System.getProperty("solr.directoryFactory");
+    System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
+    super.setUp();
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    super.tearDown();
+    System.setProperty("solr.directoryFactory", saveProp);
+  }
   
   @Override
   public void doTest() throws Exception {

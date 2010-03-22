@@ -388,6 +388,10 @@
         </or>
       </not>
     </condition>
+    <condition property="dir.prop" value="-Dsolr.directoryFactory=solr.StandardDirectoryFactory">
+      <isset property="use.fsdir"/>
+    </condition>
+    <property name="dir.prop" value=""/>
     <junit printsummary="no"
            haltonfailure="no"
            errorProperty="tests.failed"
@@ -396,7 +400,9 @@
            >
       <sysproperty key="java.util.logging.config.file" value="${common-solr.dir}/testlogging.properties"/>
       <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
+      <jvmarg line="${dir.prop}"/>
       <jvmarg line="${args}"/>
+
       <formatter type="brief" usefile="false" if="junit.details"/>
       <classpath refid="test.run.classpath"/>
       <formatter type="${junit.formatter}"/>
@@ -865,9 +871,14 @@
   </target>
 
   <target name="nightly"
-          depends="test, create-package">
+          depends="set-fsdir, test, create-package">
      <!-- no description, don't advertise -->
   </target>
+  
+  <target name="set-fsdir">
+     <property name="use.fsdir" value="true"/>
+  </target>
+  
   <target name="-taskdef">
     <typedef resource="org/apache/rat/anttasks/antlib.xml" uri="antlib:rat.anttasks">
       <classpath>

@@ -105,7 +105,7 @@ public abstract class AbstractSolrTestCase extends TestCase {
     log.info("####SETUP_START " + getName());
     factoryProp = System.getProperty("solr.directoryFactory");
     if (factoryProp == null) {
-      // System.setProperty("solr.directoryFactory","solr.RAMDirectoryFactory");
+      System.setProperty("solr.directoryFactory","solr.RAMDirectoryFactory");
     }
     dataDir = new File(System.getProperty("java.io.tmpdir")
             + System.getProperty("file.separator")

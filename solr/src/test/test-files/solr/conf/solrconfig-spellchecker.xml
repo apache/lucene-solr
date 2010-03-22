@@ -17,6 +17,12 @@
 -->
 
 <config>
+  <!--  The DirectoryFactory to use for indexes.
+        solr.StandardDirectoryFactory, the default, is filesystem based.
+        solr.RAMDirectoryFactory is memory based and not persistent. -->
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+
+
   <indexDefaults>
     <useCompoundFile>false</useCompoundFile>
     <mergeFactor>10</mergeFactor>

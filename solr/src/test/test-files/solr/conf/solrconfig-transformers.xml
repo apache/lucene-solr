@@ -19,6 +19,12 @@
 
 <config>
 
+  <!--  The DirectoryFactory to use for indexes.
+        solr.StandardDirectoryFactory, the default, is filesystem based.
+        solr.RAMDirectoryFactory is memory based and not persistent. -->
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.RAMDirectoryFactory}"/>
+
+
 <updateRequestProcessorChain name="standard">
   <processor class="solr.LogUpdateProcessorFactory" >
    <int name="maxNumToLog">100</int>
