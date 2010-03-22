@@ -131,6 +131,7 @@
   	
   	<junit printsummary="on"
            haltonfailure="no"
+           maxmemory="512M"
            errorProperty="tests.failed"
            failureProperty="tests.failed"
            dir="src/test/resources/"
@@ -154,6 +155,7 @@
 
   	<junit printsummary="on"
            haltonfailure="no"
+           maxmemory="512M"
            errorProperty="tests.failed"
            failureProperty="tests.failed"
            dir="src/extras/test/resources/"

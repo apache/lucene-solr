@@ -79,6 +79,7 @@
 
   	<junit printsummary="true" showoutput="true"
            haltonfailure="no"
+           maxmemory="512M"
            errorProperty="tests.failed"
            failureProperty="tests.failed"
            dir="src/main"
