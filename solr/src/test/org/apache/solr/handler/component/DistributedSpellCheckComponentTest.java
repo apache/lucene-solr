@@ -24,7 +24,9 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
   @Override
   public void tearDown() throws Exception {
     super.tearDown();
-    System.setProperty("solr.directoryFactory", saveProp);
+    if(saveProp != null) {
+      System.setProperty("solr.directoryFactory", saveProp);
+    }
   }
   
   @Override
