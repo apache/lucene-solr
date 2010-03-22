@@ -26,14 +26,13 @@ import java.io.IOException;
  *
  * @lucene.experimental
 */
-
 public abstract class MergeScheduler {
 
   /** Run the merges provided by {@link IndexWriter#getNextMerge()}. */
-  abstract void merge(IndexWriter writer)
+  public abstract void merge(IndexWriter writer)
     throws CorruptIndexException, IOException;
 
   /** Close this MergeScheduler. */
-  abstract void close()
+  public abstract void close()
     throws CorruptIndexException, IOException;
 }

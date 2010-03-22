@@ -197,6 +197,12 @@ New features
   even when getReader (near-real-timer reader) is not in use, through
   IndexWriterConfig.enable/disableReaderPooling.  (Mike McCandless)
 
+* LUCENE-2331: Add NoMergePolicy which never returns any merges to execute. In
+  addition, add NoMergeScheduler which never executes any merges. These two are
+  convenient classes in case you want to disable segment merges by IndexWriter
+  without tweaking a particular MergePolicy parameters, such as mergeFactor.
+  MergeScheduler's methods are now public. (Shai Erera via Mike McCandless)
+  
 Optimizations
 
 * LUCENE-2075: Terms dict cache is now shared across threads instead
