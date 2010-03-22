@@ -365,15 +365,15 @@ public final class SolrCore implements SolrInfoMBean {
 
   void initIndex() {
     try {
-      File dirFile = new File(getNewIndexDir());
-      boolean indexExists = dirFile.canRead();
+
+      initDirectoryFactory();
+      boolean indexExists = getDirectoryFactory().exists(getNewIndexDir());
       boolean firstTime;
       synchronized (SolrCore.class) {
-        firstTime = dirs.add(dirFile.getCanonicalPath());
+        firstTime = dirs.add(new File(getNewIndexDir()).getCanonicalPath());
       }
       boolean removeLocks = solrConfig.unlockOnStartup;
 
-      initDirectoryFactory();
       initIndexReaderFactory();
 
       if (indexExists && firstTime && removeLocks) {
@@ -391,7 +391,7 @@ public final class SolrCore implements SolrInfoMBean {
 
       // Create the index if it doesn't exist.
       if(!indexExists) {
-        log.warn(logid+"Solr index directory '" + dirFile + "' doesn't exist."
+        log.warn(logid+"Solr index directory '" + new File(getNewIndexDir()) + "' doesn't exist."
                 + " Creating new index...");
 
         SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex", getIndexDir(), getDirectoryFactory(), true, schema, solrConfig.mainIndexConfig, solrDelPolicy);

@@ -17,13 +17,12 @@
 
 package org.apache.solr.core;
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
-
-import java.io.IOException;
 import java.io.File;
-import java.util.Map;
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.lucene.store.Directory;
 
 /**
  * Directory provider for using lucene RAMDirectory
@@ -43,6 +42,17 @@ public class RAMDirectoryFactory extends StandardDirectoryFactory {
       }
 
       return directory;
+    }
+  }
+  
+  public boolean exists(String path) {
+    synchronized (this) {
+      RefCntRamDirectory directory = directories.get(path);
+      if (directory == null || !directory.isOpen()) {
+        return false;
+      } else {
+        return true;
+      }
     }
   }
 

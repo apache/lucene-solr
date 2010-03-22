@@ -16,6 +16,7 @@ package org.apache.solr.core;
  * limitations under the License.
  */
 
+import java.io.File;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
@@ -34,6 +35,12 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin {
    * @throws IOException
    */
   public abstract Directory open(String path) throws IOException;
+  
+  public boolean exists(String path) {
+    // back compat behavior
+    File dirFile = new File(path);
+    return dirFile.canRead();
+  }
 
   
   public void init(NamedList args) {
