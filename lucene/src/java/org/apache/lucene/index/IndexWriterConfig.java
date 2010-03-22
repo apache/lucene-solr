@@ -84,6 +84,9 @@ public final class IndexWriterConfig implements Cloneable {
    *  others to finish. */
   public final static int DEFAULT_MAX_THREAD_STATES = 8;
 
+  /** Default setting for {@link #setIndexWriterPooling}. */
+  public final static boolean DEFAULT_READER_POOLING = false;
+
   /**
    * Sets the default (for any instance) maximum time to wait for a write lock
    * (in milliseconds).
@@ -118,6 +121,7 @@ public final class IndexWriterConfig implements Cloneable {
   private IndexReaderWarmer mergedSegmentWarmer;
   private MergePolicy mergePolicy;
   private int maxThreadStates;
+  private boolean readerPooling;
   
   // required for clone
   private Version matchVersion;
@@ -147,6 +151,7 @@ public final class IndexWriterConfig implements Cloneable {
     mergedSegmentWarmer = null;
     mergePolicy = new LogByteSizeMergePolicy();
     maxThreadStates = DEFAULT_MAX_THREAD_STATES;
+    readerPooling = DEFAULT_READER_POOLING;
   }
   
   @Override
@@ -506,6 +511,15 @@ public final class IndexWriterConfig implements Cloneable {
   }
   
   /**
+   * Returns the current MergePolicy in use by this writer.
+   * 
+   * @see #setMergePolicy(MergePolicy)
+   */
+  public MergePolicy getMergePolicy() {
+    return mergePolicy;
+  }
+
+  /**
    * Sets the max number of simultaneous threads that may be indexing documents
    * at once in IndexWriter. Values &lt; 1 are invalid and if passed
    * <code>maxThreadStates</code> will be set to
@@ -522,13 +536,23 @@ public final class IndexWriterConfig implements Cloneable {
     return maxThreadStates;
   }
 
-  /**
-   * Returns the current MergePolicy in use by this writer.
-   * 
-   * @see #setMergePolicy(MergePolicy)
-   */
-  public MergePolicy getMergePolicy() {
-    return mergePolicy;
+  /** By default, IndexWriter does not pool the
+   *  SegmentReaders it must open for deletions and
+   *  merging, unless a near-real-time reader has been
+   *  obtained by calling {@link IndexWriter#getReader}.
+   *  This method lets you enable pooling without getting a
+   *  near-real-time reader.  NOTE: if you set this to
+   *  false, IndexWriter will still pool readers once
+   *  {@link IndexWriter#getReader} is called. */
+  public IndexWriterConfig setReaderPooling(boolean readerPooling) {
+    this.readerPooling = readerPooling;
+    return this;
+  }
+
+  /** Returns true if IndexWriter should pool readers even
+   *  if {@link IndexWriter#getReader} has not been called. */
+  public boolean getReaderPooling() {
+    return readerPooling;
   }
 
   /** Expert: sets the {@link DocConsumer} chain to be used to process documents. */
@@ -562,6 +586,7 @@ public final class IndexWriterConfig implements Cloneable {
     sb.append("mergedSegmentWarmer=").append(mergedSegmentWarmer).append("\n");
     sb.append("mergePolicy=").append(mergePolicy).append("\n");
     sb.append("maxThreadStates=").append(maxThreadStates).append("\n");
+    sb.append("readerPooling=").append(readerPooling).append("\n");
     return sb.toString();
   }
 }

@@ -78,6 +78,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     assertEquals(IndexWriterConfig.DEFAULT_MAX_BUFFERED_DELETE_TERMS, conf.getMaxBufferedDeleteTerms());
     assertEquals(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB, conf.getRAMBufferSizeMB(), 0.0);
     assertEquals(IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS, conf.getMaxBufferedDocs());
+    assertEquals(IndexWriterConfig.DEFAULT_READER_POOLING, conf.getReaderPooling());
     assertTrue(DocumentsWriter.defaultIndexingChain == conf.getIndexingChain());
     assertNull(conf.getMergedSegmentWarmer());
     assertEquals(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES, conf.getMaxThreadStates());
@@ -102,6 +103,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     getters.add("getMergedSegmentWarmer");
     getters.add("getMergePolicy");
     getters.add("getMaxThreadStates");
+    getters.add("getReaderPooling");
     for (Method m : IndexWriterConfig.class.getDeclaredMethods()) {
       if (m.getDeclaringClass() == IndexWriterConfig.class && m.getName().startsWith("get")) {
         assertTrue("method " + m.getName() + " is not tested for defaults", getters.contains(m.getName()));
@@ -133,6 +135,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, IndexWriterConfig.DEFAULT_MAX_BUFFERED_DELETE_TERMS);
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS);
     assertEquals(16.0, IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB, 0.0);
+    assertEquals(false, IndexWriterConfig.DEFAULT_READER_POOLING);
     assertEquals(8, IndexWriterConfig.DEFAULT_MAX_THREAD_STATES);
   }
   

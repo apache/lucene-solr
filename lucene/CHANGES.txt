@@ -193,6 +193,10 @@ New features
   documents (previously this was hardwired to 5), using
   IndexWriterConfig.setMaxThreadStates.  (Mike McCandless)
 
+* LUCENE-2297: Enable turning on reader pooling inside IndexWriter
+  even when getReader (near-real-timer reader) is not in use, through
+  IndexWriterConfig.enable/disableReaderPooling.  (Mike McCandless)
+
 Optimizations
 
 * LUCENE-2075: Terms dict cache is now shared across threads instead

@@ -1081,7 +1081,8 @@ public class IndexWriter implements Closeable {
     mergePolicy.setIndexWriter(this);
     mergeScheduler = conf.getMergeScheduler();
     mergedSegmentWarmer = conf.getMergedSegmentWarmer();
-    
+    poolReaders = conf.getReaderPooling();
+
     OpenMode mode = conf.getOpenMode();
     boolean create;
     if (mode == OpenMode.CREATE) {
