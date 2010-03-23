@@ -123,7 +123,9 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
     assertTrue("handler is null and it shouldn't be", handler != null);
     rsp = new SolrQueryResponse();
     rsp.add("responseHeader", new SimpleOrderedMap());
+    ignoreException("No terms.fl parameter specified");
     handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
+    resetExceptionIgnores();
     Exception exception = rsp.getException();
     assertTrue("exception is null and it shouldn't be", exception != null);
   }
