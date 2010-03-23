@@ -489,7 +489,7 @@
           description="Instrument the Unit tests using Clover.  Requires a Clover license and clover.jar in the ANT classpath.  To use, specify -Drun.clover=true on the command line."/>
 
   <target name="clover.setup" if="clover.enabled">
-    <taskdef resource="clovertasks"/>
+    <taskdef resource="cloverlib.xml"/>
     <mkdir dir="${clover.db.dir}"/>
     <clover-setup initString="${clover.db.dir}/solr_coverage.db">
       <fileset dir="src/common"/>
