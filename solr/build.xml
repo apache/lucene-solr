@@ -559,7 +559,6 @@
          <exclude name="junit-*.jar" />
          <exclude name="*.txt" />
          <exclude name="*.template" />
-         <exclude name="apache-ant-*.jar" />
        </lib>
       
        <lib dir="lucene-libs"/>

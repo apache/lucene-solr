@@ -218,9 +218,12 @@ public class SolrJUnitResultFormatter implements JUnitResultFormatter {
     }
     
     sb.append(formatTest(test) + type);
+    sb.append(StringUtils.LINE_SEP);
     sb.append(error.getMessage());
+    sb.append(StringUtils.LINE_SEP);
     String strace = JUnitTestRunner.getFilteredTrace(error);
     sb.append(strace);
+    sb.append(StringUtils.LINE_SEP);
     sb.append(StringUtils.LINE_SEP);
   }
 }
