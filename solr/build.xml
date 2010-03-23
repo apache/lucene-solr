@@ -379,7 +379,7 @@
     <isset property="testcase"/>
   </condition>
 
-  <target name="junit" depends="compileTests,dist-contrib,junit-sequential,junit-parallel"/>
+  <target name="junit" depends="compileTests,dist-contrib,junit-mkdir,junit-sequential,junit-parallel"/>
 
   <target name="junit-sequential" if="runsequential">
     <junit-macro/>
@@ -416,12 +416,14 @@
    </parallel>
   </target>
 
+  <target name="junit-mkdir">
+    <mkdir dir="${junit.output.dir}"/>
+  </target>
 
   <macrodef name="junit-macro">
   <attribute name="pattern" default=""/>
     <sequential>
     <!-- no description so it doesn't show up in -projecthelp -->  
-    <mkdir dir="${junit.output.dir}"/>
     <condition property="runall">
       <not>
         <or>
