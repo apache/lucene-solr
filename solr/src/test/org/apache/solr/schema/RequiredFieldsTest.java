@@ -75,8 +75,10 @@ public class RequiredFieldsTest extends SolrTestCaseJ4 {
 
     // Add another document without a required name, which has no default
     assertNull(core.getSchema().getField("name").getDefaultValue());
+    ignoreException("missing required field");
     assertFailedU("adding doc without required field",
           adoc("id", "531", "subject", "no name document", "field_t", "what's inside?") );
+    resetExceptionIgnores();
     assertU(commit());
     
     // Check to make sure this submission did not succeed
@@ -109,24 +111,27 @@ public class RequiredFieldsTest extends SolrTestCaseJ4 {
     // All three should have made it into the index
     assertQ("should find three", req("name:nosubject") ,"//result[@numFound=3]" );
     
+
     // Add three documents at once, with the middle with a bad field definition,
     // to establish the baselinie behavior for errors in a multi-ad submission
     assertFailedU("adding 3 documents, with 2nd one with undefined field",
           "<add>" +doc("id", "801", "name", "baddef batch one", "field_t", "what's inside?", "subject", "info") +
-          doc("id", "802", "field_t", "name", "baddef batch two", "what's inside?", "subject", "info", "GaRbAgeFiElD", "garbage") +
+          doc("id", "802", "name", "baddef batch two", "missing_field_ignore_exception", "garbage") +
             doc("id", "803", "name", "baddef batch three", "field_t", "what's inside?", "subject", "info") +
             "</add>");
-    assertU(commit());
+    assertU(commit());    
 
     // Check that only docs before the error should be in the index
     assertQ("should find one", req("name:baddef") ,"//result[@numFound=1]" );
 
+    ignoreException("missing required field");
     // Add three documents at once, with the middle one missing a required field that has no default
     assertFailedU("adding 3 docs, with 2nd one missing required field",
       "<add>" +doc("id", "701", "name", "noname batch one", "field_t", "what's inside?", "subject", "info") +
       doc("id", "702", "field_t", "what's inside?", "subject", "info") +
         doc("id", "703", "name", "noname batch batch three", "field_t", "what's inside?", "subject", "info") +
         "</add>");
+    resetExceptionIgnores();
 
     assertU(commit());
 
