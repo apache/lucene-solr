@@ -103,6 +103,7 @@
   <property name="junit.output.dir" location="${common-solr.dir}/${dest}/test-results"/>
   <property name="junit.reports" location="${common-solr.dir}/${dest}/test-results/reports"/>
   <property name="junit.formatter" value="plain"/>
+  <property name="junit.details.formatter" value="org.apache.solr.SolrJUnitResultFormatter"/>
 
   <!-- Maven properties -->
   <property name="maven.build.dir" value="${basedir}/build/maven"/>
