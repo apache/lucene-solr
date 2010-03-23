@@ -124,8 +124,9 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     assert perThread.vectorFieldsInOrder(fieldInfo);
 
     perThread.doc.addField(termsHashPerField.fieldInfo.number);
+    TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
 
-    final RawPostingList[] postings = termsHashPerField.sortPostings();
+    final int[] termIDs = termsHashPerField.sortPostings();
 
     tvf.writeVInt(numPostings);
     byte bits = 0x0;
@@ -141,11 +142,11 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     final ByteSliceReader reader = perThread.vectorSliceReader;
     final char[][] charBuffers = perThread.termsHashPerThread.charPool.buffers;
     for(int j=0;j<numPostings;j++) {
-      final TermVectorsTermsWriter.PostingList posting = (TermVectorsTermsWriter.PostingList) postings[j];
-      final int freq = posting.freq;
+      final int termID = termIDs[j];
+      final int freq = postings.freqs[termID];
           
-      final char[] text2 = charBuffers[posting.textStart >> DocumentsWriter.CHAR_BLOCK_SHIFT];
-      final int start2 = posting.textStart & DocumentsWriter.CHAR_BLOCK_MASK;
+      final char[] text2 = charBuffers[postings.textStarts[termID] >> DocumentsWriter.CHAR_BLOCK_SHIFT];
+      final int start2 = postings.textStarts[termID] & DocumentsWriter.CHAR_BLOCK_MASK;
 
       // We swap between two encoders to save copying
       // last Term's byte array
@@ -178,12 +179,12 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
       tvf.writeVInt(freq);
 
       if (doVectorPositions) {
-        termsHashPerField.initReader(reader, posting, 0);
+        termsHashPerField.initReader(reader, termID, 0);
         reader.writeTo(tvf);
       }
 
       if (doVectorOffsets) {
-        termsHashPerField.initReader(reader, posting, 1);
+        termsHashPerField.initReader(reader, termID, 1);
         reader.writeTo(tvf);
       }
     }
@@ -207,13 +208,13 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
   }
 
   @Override
-  void newTerm(RawPostingList p0) {
+  void newTerm(final int termID) {
 
     assert docState.testPoint("TermVectorsTermsWriterPerField.newTerm start");
 
-    TermVectorsTermsWriter.PostingList p = (TermVectorsTermsWriter.PostingList) p0;
+    TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
 
-    p.freq = 1;
+    postings.freqs[termID] = 1;
 
     if (doVectorOffsets) {
       int startOffset = fieldState.offset + offsetAttribute.startOffset();
@@ -221,38 +222,76 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
       
       termsHashPerField.writeVInt(1, startOffset);
       termsHashPerField.writeVInt(1, endOffset - startOffset);
-      p.lastOffset = endOffset;
+      postings.lastOffsets[termID] = endOffset;
     }
 
     if (doVectorPositions) {
       termsHashPerField.writeVInt(0, fieldState.position);
-      p.lastPosition = fieldState.position;
+      postings.lastPositions[termID] = fieldState.position;
     }
   }
 
   @Override
-  void addTerm(RawPostingList p0) {
+  void addTerm(final int termID) {
 
     assert docState.testPoint("TermVectorsTermsWriterPerField.addTerm start");
 
-    TermVectorsTermsWriter.PostingList p = (TermVectorsTermsWriter.PostingList) p0;
-    p.freq++;
+    TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
+    
+    postings.freqs[termID]++;
 
     if (doVectorOffsets) {
       int startOffset = fieldState.offset + offsetAttribute.startOffset();
       int endOffset = fieldState.offset + offsetAttribute.endOffset();
       
-      termsHashPerField.writeVInt(1, startOffset - p.lastOffset);
+      termsHashPerField.writeVInt(1, startOffset - postings.lastOffsets[termID]);
       termsHashPerField.writeVInt(1, endOffset - startOffset);
-      p.lastOffset = endOffset;
+      postings.lastOffsets[termID] = endOffset;
     }
 
     if (doVectorPositions) {
-      termsHashPerField.writeVInt(0, fieldState.position - p.lastPosition);
-      p.lastPosition = fieldState.position;
+      termsHashPerField.writeVInt(0, fieldState.position - postings.lastPositions[termID]);
+      postings.lastPositions[termID] = fieldState.position;
     }
   }
 
   @Override
   void skippingLongTerm() {}
+
+  @Override
+  ParallelPostingsArray createPostingsArray(int size) {
+    return new TermVectorsPostingsArray(size);
+  }
+
+  static final class TermVectorsPostingsArray extends ParallelPostingsArray {
+    public TermVectorsPostingsArray(int size) {
+      super(size);
+      freqs = new int[size];
+      lastOffsets = new int[size];
+      lastPositions = new int[size];
+    }
+
+    int[] freqs;                                       // How many times this term occurred in the current doc
+    int[] lastOffsets;                                 // Last offset we saw
+    int[] lastPositions;                               // Last position where this term occurred
+    
+    @Override
+    ParallelPostingsArray resize(int newSize) {
+      TermVectorsPostingsArray newArray = new TermVectorsPostingsArray(newSize);
+      copy(this, newArray);
+      return newArray;
+    }
+    
+    void copy(TermVectorsPostingsArray fromArray, TermVectorsPostingsArray toArray) {
+      super.copy(fromArray, toArray);
+      System.arraycopy(fromArray.freqs, 0, toArray.freqs, 0, fromArray.freqs.length);
+      System.arraycopy(fromArray.lastOffsets, 0, toArray.lastOffsets, 0, fromArray.lastOffsets.length);
+      System.arraycopy(fromArray.lastPositions, 0, toArray.lastPositions, 0, fromArray.lastPositions.length);
+    }
+  }
+  
+  @Override
+  int bytesPerPosting() {
+    return ParallelPostingsArray.BYTES_PER_POSTING + 3 * DocumentsWriter.INT_NUM_BYTE;
+  }
 }

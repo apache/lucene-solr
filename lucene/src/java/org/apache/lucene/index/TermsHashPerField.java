@@ -27,6 +27,7 @@ import org.apache.lucene.util.UnicodeUtil;
 final class TermsHashPerField extends InvertedDocConsumerPerField {
 
   final TermsHashConsumerPerField consumer;
+
   final TermsHashPerField nextPerField;
   final TermsHashPerThread perThread;
   final DocumentsWriter.DocState docState;
@@ -48,8 +49,11 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   private int postingsHashSize = 4;
   private int postingsHashHalfSize = postingsHashSize/2;
   private int postingsHashMask = postingsHashSize-1;
-  private RawPostingList[] postingsHash = new RawPostingList[postingsHashSize];
-  private RawPostingList p;
+  private int[] postingsHash;
+ 
+  ParallelPostingsArray postingsArray;
+  
+  private final int bytesPerPosting;
   
   public TermsHashPerField(DocInverterPerField docInverterPerField, final TermsHashPerThread perThread, final TermsHashPerThread nextPerThread, final FieldInfo fieldInfo) {
     this.perThread = perThread;
@@ -57,6 +61,8 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     charPool = perThread.charPool;
     bytePool = perThread.bytePool;
     docState = perThread.docState;
+    postingsHash = new int[postingsHashSize];
+    Arrays.fill(postingsHash, -1);
     fieldState = docInverterPerField.fieldState;
     this.consumer = perThread.consumer.addField(this, fieldInfo);
     streamCount = consumer.getStreamCount();
@@ -66,6 +72,21 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       nextPerField = (TermsHashPerField) nextPerThread.addField(docInverterPerField, fieldInfo);
     else
       nextPerField = null;
+    
+    //   +3: Posting is referenced by hash, which
+    //       targets 25-50% fill factor; approximate this
+    //       as 3X # pointers
+    bytesPerPosting = consumer.bytesPerPosting() + 3*DocumentsWriter.INT_NUM_BYTE;
+  }
+  
+  void initPostingsArray() {
+    assert postingsArray == null;
+
+    postingsArray = consumer.createPostingsArray(postingsHashSize);
+    
+    if (perThread.termsHash.trackAllocations) {
+      perThread.termsHash.docWriter.bytesAllocated(bytesPerPosting * postingsHashSize);
+    }
   }
 
   void shrinkHash(int targetSize) {
@@ -79,7 +100,9 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     }
 
     if (newSize != postingsHash.length) {
-      postingsHash = new RawPostingList[newSize];
+      postingsHash = new int[newSize];
+      Arrays.fill(postingsHash, -1);
+      postingsArray = null;
       postingsHashSize = newSize;
       postingsHashHalfSize = newSize/2;
       postingsHashMask = newSize-1;
@@ -91,8 +114,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       compactPostings();
     assert numPostings <= postingsHash.length;
     if (numPostings > 0) {
-      perThread.termsHash.recyclePostings(postingsHash, numPostings);
-      Arrays.fill(postingsHash, 0, numPostings, null);
+      Arrays.fill(postingsHash, 0, numPostings, -1);
       numPostings = 0;
     }
     postingsCompacted = false;
@@ -106,23 +128,34 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     if (nextPerField != null)
       nextPerField.abort();
   }
+  
+  private void growParallelPostingsArray() {
+    int oldSize = postingsArray.byteStarts.length;
+    int newSize = (int) (oldSize * 1.5);
+    this.postingsArray = this.postingsArray.resize(newSize);
+    
+    if (perThread.termsHash.trackAllocations) {
+      perThread.termsHash.docWriter.bytesAllocated(bytesPerPosting * (newSize - oldSize));
+    }
+  }
 
-  public void initReader(ByteSliceReader reader, RawPostingList p, int stream) {
+  public void initReader(ByteSliceReader reader, int termID, int stream) {
     assert stream < streamCount;
-    final int[] ints = intPool.buffers[p.intStart >> DocumentsWriter.INT_BLOCK_SHIFT];
-    final int upto = p.intStart & DocumentsWriter.INT_BLOCK_MASK;
+    int intStart = postingsArray.intStarts[termID];
+    final int[] ints = intPool.buffers[intStart >> DocumentsWriter.INT_BLOCK_SHIFT];
+    final int upto = intStart & DocumentsWriter.INT_BLOCK_MASK;
     reader.init(bytePool,
-                p.byteStart+stream*ByteBlockPool.FIRST_LEVEL_SIZE,
+                postingsArray.byteStarts[termID]+stream*ByteBlockPool.FIRST_LEVEL_SIZE,
                 ints[upto+stream]);
   }
 
   private synchronized void compactPostings() {
     int upto = 0;
     for(int i=0;i<postingsHashSize;i++) {
-      if (postingsHash[i] != null) {
+      if (postingsHash[i] != -1) {
         if (upto < i) {
           postingsHash[upto] = postingsHash[i];
-          postingsHash[i] = null;
+          postingsHash[i] = -1;
         }
         upto++;
       }
@@ -133,41 +166,41 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   }
 
   /** Collapse the hash table & sort in-place. */
-  public RawPostingList[] sortPostings() {
+  public int[] sortPostings() {
     compactPostings();
     quickSort(postingsHash, 0, numPostings-1);
     return postingsHash;
   }
 
-  void quickSort(RawPostingList[] postings, int lo, int hi) {
+  void quickSort(int[] termIDs, int lo, int hi) {
     if (lo >= hi)
       return;
     else if (hi == 1+lo) {
-      if (comparePostings(postings[lo], postings[hi]) > 0) {
-        final RawPostingList tmp = postings[lo];
-        postings[lo] = postings[hi];
-        postings[hi] = tmp;
+      if (comparePostings(termIDs[lo], termIDs[hi]) > 0) {
+        final int tmp = termIDs[lo];
+        termIDs[lo] = termIDs[hi];
+        termIDs[hi] = tmp;
       }
       return;
     }
 
     int mid = (lo + hi) >>> 1;
 
-    if (comparePostings(postings[lo], postings[mid]) > 0) {
-      RawPostingList tmp = postings[lo];
-      postings[lo] = postings[mid];
-      postings[mid] = tmp;
+    if (comparePostings(termIDs[lo], termIDs[mid]) > 0) {
+      int tmp = termIDs[lo];
+      termIDs[lo] = termIDs[mid];
+      termIDs[mid] = tmp;
     }
 
-    if (comparePostings(postings[mid], postings[hi]) > 0) {
-      RawPostingList tmp = postings[mid];
-      postings[mid] = postings[hi];
-      postings[hi] = tmp;
+    if (comparePostings(termIDs[mid], termIDs[hi]) > 0) {
+      int tmp = termIDs[mid];
+      termIDs[mid] = termIDs[hi];
+      termIDs[hi] = tmp;
 
-      if (comparePostings(postings[lo], postings[mid]) > 0) {
-        RawPostingList tmp2 = postings[lo];
-        postings[lo] = postings[mid];
-        postings[mid] = tmp2;
+      if (comparePostings(termIDs[lo], termIDs[mid]) > 0) {
+        int tmp2 = termIDs[lo];
+        termIDs[lo] = termIDs[mid];
+        termIDs[mid] = tmp2;
       }
     }
 
@@ -177,40 +210,43 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     if (left >= right)
       return;
 
-    RawPostingList partition = postings[mid];
+    int partition = termIDs[mid];
 
     for (; ;) {
-      while (comparePostings(postings[right], partition) > 0)
+      while (comparePostings(termIDs[right], partition) > 0)
         --right;
 
-      while (left < right && comparePostings(postings[left], partition) <= 0)
+      while (left < right && comparePostings(termIDs[left], partition) <= 0)
         ++left;
 
       if (left < right) {
-        RawPostingList tmp = postings[left];
-        postings[left] = postings[right];
-        postings[right] = tmp;
+        int tmp = termIDs[left];
+        termIDs[left] = termIDs[right];
+        termIDs[right] = tmp;
         --right;
       } else {
         break;
       }
     }
 
-    quickSort(postings, lo, left);
-    quickSort(postings, left + 1, hi);
+    quickSort(termIDs, lo, left);
+    quickSort(termIDs, left + 1, hi);
   }
 
   /** Compares term text for two Posting instance and
    *  returns -1 if p1 < p2; 1 if p1 > p2; else 0. */
-  int comparePostings(RawPostingList p1, RawPostingList p2) {
+  int comparePostings(int term1, int term2) {
 
-    if (p1 == p2)
+    if (term1 == term2)
       return 0;
 
-    final char[] text1 = charPool.buffers[p1.textStart >> DocumentsWriter.CHAR_BLOCK_SHIFT];
-    int pos1 = p1.textStart & DocumentsWriter.CHAR_BLOCK_MASK;
-    final char[] text2 = charPool.buffers[p2.textStart >> DocumentsWriter.CHAR_BLOCK_SHIFT];
-    int pos2 = p2.textStart & DocumentsWriter.CHAR_BLOCK_MASK;
+    final int textStart1 = postingsArray.textStarts[term1];
+    final int textStart2 = postingsArray.textStarts[term2];
+    
+    final char[] text1 = charPool.buffers[textStart1 >> DocumentsWriter.CHAR_BLOCK_SHIFT];
+    int pos1 = textStart1 & DocumentsWriter.CHAR_BLOCK_MASK;
+    final char[] text2 = charPool.buffers[textStart2 >> DocumentsWriter.CHAR_BLOCK_SHIFT];
+    int pos2 = textStart2 & DocumentsWriter.CHAR_BLOCK_MASK;
 
     assert text1 != text2 || pos1 != pos2;
 
@@ -233,11 +269,12 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
 
   /** Test whether the text for current RawPostingList p equals
    *  current tokenText. */
-  private boolean postingEquals(final char[] tokenText, final int tokenTextLen) {
-
-    final char[] text = perThread.charPool.buffers[p.textStart >> DocumentsWriter.CHAR_BLOCK_SHIFT];
+  private boolean postingEquals(final int termID, final char[] tokenText, final int tokenTextLen) {
+    final int textStart = postingsArray.textStarts[termID];
+    
+    final char[] text = perThread.charPool.buffers[textStart >> DocumentsWriter.CHAR_BLOCK_SHIFT];
     assert text != null;
-    int pos = p.textStart & DocumentsWriter.CHAR_BLOCK_MASK;
+    int pos = textStart & DocumentsWriter.CHAR_BLOCK_MASK;
 
     int tokenPos = 0;
     for(;tokenPos<tokenTextLen;pos++,tokenPos++)
@@ -251,6 +288,9 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
 
   @Override
   void start(Fieldable f) {
+    if (postingsArray == null) {
+      initPostingsArray();
+    }
     termAtt = fieldState.attributeSource.addAttribute(TermAttribute.class);
     consumer.start(f);
     if (nextPerField != null) {
@@ -270,7 +310,6 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   // because token text has already been "interned" into
   // textStart, so we hash by textStart
   public void add(int textStart) throws IOException {
-
     int code = textStart;
 
     int hashPos = code & postingsHashMask;
@@ -278,37 +317,39 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     assert !postingsCompacted;
 
     // Locate RawPostingList in hash
-    p = postingsHash[hashPos];
+    int termID = postingsHash[hashPos];
 
-    if (p != null && p.textStart != textStart) {
+    if (termID != -1 && postingsArray.textStarts[termID] != textStart) {
       // Conflict: keep searching different locations in
       // the hash table.
       final int inc = ((code>>8)+code)|1;
       do {
         code += inc;
         hashPos = code & postingsHashMask;
-        p = postingsHash[hashPos];
-      } while (p != null && p.textStart != textStart);
+        termID = postingsHash[hashPos];
+      } while (termID != -1 && postingsArray.textStarts[termID] != textStart);
     }
 
-    if (p == null) {
+    if (termID == -1) {
 
       // First time we are seeing this token since we last
       // flushed the hash.
 
-      // Refill?
-      if (0 == perThread.freePostingsCount)
-        perThread.morePostings();
+      // New posting
+      termID = numPostings++;
+      if (termID >= postingsArray.textStarts.length) {
+        growParallelPostingsArray();
+      }
+      if (perThread.termsHash.trackAllocations) {
+        perThread.termsHash.docWriter.bytesUsed(bytesPerPosting);
+      }
 
-      // Pull next free RawPostingList from free list
-      p = perThread.freePostings[--perThread.freePostingsCount];
-      assert p != null;
+      assert termID >= 0;
 
-      p.textStart = textStart;
+      postingsArray.textStarts[termID] = textStart;
           
-      assert postingsHash[hashPos] == null;
-      postingsHash[hashPos] = p;
-      numPostings++;
+      assert postingsHash[hashPos] == -1;
+      postingsHash[hashPos] = termID;
 
       if (numPostings == postingsHashHalfSize)
         rehashPostings(2*postingsHashSize);
@@ -324,20 +365,21 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       intUptoStart = intPool.intUpto;
       intPool.intUpto += streamCount;
 
-      p.intStart = intUptoStart + intPool.intOffset;
+      postingsArray.intStarts[termID] = intUptoStart + intPool.intOffset;
 
       for(int i=0;i<streamCount;i++) {
         final int upto = bytePool.newSlice(ByteBlockPool.FIRST_LEVEL_SIZE);
         intUptos[intUptoStart+i] = upto + bytePool.byteOffset;
       }
-      p.byteStart = intUptos[intUptoStart];
+      postingsArray.byteStarts[termID] = intUptos[intUptoStart];
 
-      consumer.newTerm(p);
+      consumer.newTerm(termID);
 
     } else {
-      intUptos = intPool.buffers[p.intStart >> DocumentsWriter.INT_BLOCK_SHIFT];
-      intUptoStart = p.intStart & DocumentsWriter.INT_BLOCK_MASK;
-      consumer.addTerm(p);
+      int intStart = postingsArray.intStarts[termID];
+      intUptos = intPool.buffers[intStart >> DocumentsWriter.INT_BLOCK_SHIFT];
+      intUptoStart = intStart & DocumentsWriter.INT_BLOCK_MASK;
+      consumer.addTerm(termID);
     }
   }
 
@@ -389,20 +431,20 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     int hashPos = code & postingsHashMask;
 
     // Locate RawPostingList in hash
-    p = postingsHash[hashPos];
+    int termID = postingsHash[hashPos];
 
-    if (p != null && !postingEquals(tokenText, tokenTextLen)) {
+    if (termID != -1 && !postingEquals(termID, tokenText, tokenTextLen)) {
       // Conflict: keep searching different locations in
       // the hash table.
       final int inc = ((code>>8)+code)|1;
       do {
         code += inc;
         hashPos = code & postingsHashMask;
-        p = postingsHash[hashPos];
-      } while (p != null && !postingEquals(tokenText, tokenTextLen));
+        termID = postingsHash[hashPos];
+      } while (termID != -1 && !postingEquals(termID, tokenText, tokenTextLen));
     }
 
-    if (p == null) {
+    if (termID == -1) {
 
       // First time we are seeing this token since we last
       // flushed the hash.
@@ -424,24 +466,26 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
         charPool.nextBuffer();
       }
 
-      // Refill?
-      if (0 == perThread.freePostingsCount)
-        perThread.morePostings();
+      // New posting
+      termID = numPostings++;
+      if (termID >= postingsArray.textStarts.length) {
+        growParallelPostingsArray();
+      }
+      if (perThread.termsHash.trackAllocations) {
+        perThread.termsHash.docWriter.bytesUsed(bytesPerPosting);
+      }
 
-      // Pull next free RawPostingList from free list
-      p = perThread.freePostings[--perThread.freePostingsCount];
-      assert p != null;
+      assert termID != -1;
 
       final char[] text = charPool.buffer;
       final int textUpto = charPool.charUpto;
-      p.textStart = textUpto + charPool.charOffset;
+      postingsArray.textStarts[termID] = textUpto + charPool.charOffset;
       charPool.charUpto += textLen1;
       System.arraycopy(tokenText, 0, text, textUpto, tokenTextLen);
       text[textUpto+tokenTextLen] = 0xffff;
           
-      assert postingsHash[hashPos] == null;
-      postingsHash[hashPos] = p;
-      numPostings++;
+      assert postingsHash[hashPos] == -1;
+      postingsHash[hashPos] = termID;
 
       if (numPostings == postingsHashHalfSize)
         rehashPostings(2*postingsHashSize);
@@ -457,24 +501,25 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       intUptoStart = intPool.intUpto;
       intPool.intUpto += streamCount;
 
-      p.intStart = intUptoStart + intPool.intOffset;
+      postingsArray.intStarts[termID] = intUptoStart + intPool.intOffset;
 
       for(int i=0;i<streamCount;i++) {
         final int upto = bytePool.newSlice(ByteBlockPool.FIRST_LEVEL_SIZE);
         intUptos[intUptoStart+i] = upto + bytePool.byteOffset;
       }
-      p.byteStart = intUptos[intUptoStart];
+      postingsArray.byteStarts[termID] = intUptos[intUptoStart];
 
-      consumer.newTerm(p);
+      consumer.newTerm(termID);
 
     } else {
-      intUptos = intPool.buffers[p.intStart >> DocumentsWriter.INT_BLOCK_SHIFT];
-      intUptoStart = p.intStart & DocumentsWriter.INT_BLOCK_MASK;
-      consumer.addTerm(p);
+      final int intStart = postingsArray.intStarts[termID];
+      intUptos = intPool.buffers[intStart >> DocumentsWriter.INT_BLOCK_SHIFT];
+      intUptoStart = intStart & DocumentsWriter.INT_BLOCK_MASK;
+      consumer.addTerm(termID);
     }
 
     if (doNextCall)
-      nextPerField.add(p.textStart);
+      nextPerField.add(postingsArray.textStarts[termID]);
   }
 
   int[] intUptos;
@@ -524,14 +569,16 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
 
     final int newMask = newSize-1;
 
-    RawPostingList[] newHash = new RawPostingList[newSize];
+    int[] newHash = new int[newSize];
+    Arrays.fill(newHash, -1);
     for(int i=0;i<postingsHashSize;i++) {
-      RawPostingList p0 = postingsHash[i];
-      if (p0 != null) {
+      int termID = postingsHash[i];
+      if (termID != -1) {
         int code;
         if (perThread.primary) {
-          final int start = p0.textStart & DocumentsWriter.CHAR_BLOCK_MASK;
-          final char[] text = charPool.buffers[p0.textStart >> DocumentsWriter.CHAR_BLOCK_SHIFT];
+          final int textStart = postingsArray.textStarts[termID];
+          final int start = textStart & DocumentsWriter.CHAR_BLOCK_MASK;
+          final char[] text = charPool.buffers[textStart >> DocumentsWriter.CHAR_BLOCK_SHIFT];
           int pos = start;
           while(text[pos] != 0xffff)
             pos++;
@@ -539,18 +586,18 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
           while (pos > start)
             code = (code*31) + text[--pos];
         } else
-          code = p0.textStart;
+          code = postingsArray.textStarts[termID];
 
         int hashPos = code & newMask;
         assert hashPos >= 0;
-        if (newHash[hashPos] != null) {
+        if (newHash[hashPos] != -1) {
           final int inc = ((code>>8)+code)|1;
           do {
             code += inc;
             hashPos = code & newMask;
-          } while (newHash[hashPos] != null);
+          } while (newHash[hashPos] != -1);
         }
-        newHash[hashPos] = p0;
+        newHash[hashPos] = termID;
       }
     }
 

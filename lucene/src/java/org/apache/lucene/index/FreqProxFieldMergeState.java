@@ -19,6 +19,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.FreqProxTermsWriterPerField.FreqProxPostingsArray;
+
 // TODO FI: some of this is "generic" to TermsHash* so we
 // should factor it out so other consumers don't have to
 // duplicate this code
@@ -30,9 +32,10 @@ final class FreqProxFieldMergeState {
   final FreqProxTermsWriterPerField field;
   final int numPostings;
   final CharBlockPool charPool;
-  final RawPostingList[] postings;
-
-  private FreqProxTermsWriter.PostingList p;
+  final int[] termIDs;
+  final FreqProxPostingsArray postings;
+  int currentTermID;
+  
   char[] text;
   int textOffset;
 
@@ -48,7 +51,8 @@ final class FreqProxFieldMergeState {
     this.field = field;
     this.charPool = field.perThread.termsHashPerThread.charPool;
     this.numPostings = field.termsHashPerField.numPostings;
-    this.postings = field.termsHashPerField.sortPostings();
+    this.termIDs = field.termsHashPerField.sortPostings();
+    this.postings = (FreqProxPostingsArray) field.termsHashPerField.postingsArray;
   }
 
   boolean nextTerm() throws IOException {
@@ -56,15 +60,16 @@ final class FreqProxFieldMergeState {
     if (postingUpto == numPostings)
       return false;
 
-    p = (FreqProxTermsWriter.PostingList) postings[postingUpto];
+    currentTermID = termIDs[postingUpto];
     docID = 0;
 
-    text = charPool.buffers[p.textStart >> DocumentsWriter.CHAR_BLOCK_SHIFT];
-    textOffset = p.textStart & DocumentsWriter.CHAR_BLOCK_MASK;
+    final int textStart = postings.textStarts[currentTermID];
+    text = charPool.buffers[textStart >> DocumentsWriter.CHAR_BLOCK_SHIFT];
+    textOffset = textStart & DocumentsWriter.CHAR_BLOCK_MASK;
 
-    field.termsHashPerField.initReader(freq, p, 0);
+    field.termsHashPerField.initReader(freq, currentTermID, 0);
     if (!field.fieldInfo.omitTermFreqAndPositions)
-      field.termsHashPerField.initReader(prox, p, 1);
+      field.termsHashPerField.initReader(prox, currentTermID, 1);
 
     // Should always be true
     boolean result = nextDoc();
@@ -75,12 +80,12 @@ final class FreqProxFieldMergeState {
 
   public boolean nextDoc() throws IOException {
     if (freq.eof()) {
-      if (p.lastDocCode != -1) {
+      if (postings.lastDocCodes[currentTermID] != -1) {
         // Return last doc
-        docID = p.lastDocID;
+        docID = postings.lastDocIDs[currentTermID];
         if (!field.omitTermFreqAndPositions)
-          termFreq = p.docFreq;
-        p.lastDocCode = -1;
+          termFreq = postings.docFreqs[currentTermID];
+        postings.lastDocCodes[currentTermID] = -1;
         return true;
       } else
         // EOF
@@ -98,7 +103,7 @@ final class FreqProxFieldMergeState {
         termFreq = freq.readVInt();
     }
 
-    assert docID != p.lastDocID;
+    assert docID != postings.lastDocIDs[currentTermID];
 
     return true;
   }

@@ -48,13 +48,6 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
   }
 
   @Override
-  void createPostings(RawPostingList[] postings, int start, int count) {
-    final int end = start + count;
-    for(int i=start;i<end;i++)
-      postings[i] = new PostingList();
-  }
-
-  @Override
   synchronized void flush(Map<TermsHashConsumerPerThread,Collection<TermsHashConsumerPerField>> threadsAndFields, final SegmentWriteState state) throws IOException {
 
     if (tvx != null) {
@@ -289,16 +282,5 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     public void finish() throws IOException {
       finishDocument(this);
     }
-  }
-
-  static final class PostingList extends RawPostingList {
-    int freq;                                       // How many times this term occurred in the current doc
-    int lastOffset;                                 // Last offset we saw
-    int lastPosition;                               // Last position where this term occurred
-  }
-
-  @Override
-  int bytesPerPosting() {
-    return RawPostingList.BYTES_SIZE + 3 * DocumentsWriter.INT_NUM_BYTE;
   }
 }

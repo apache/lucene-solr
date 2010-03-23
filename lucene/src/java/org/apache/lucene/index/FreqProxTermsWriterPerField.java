@@ -18,8 +18,9 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import org.apache.lucene.document.Fieldable;
+
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.document.Fieldable;
 
 // TODO: break into separate freq and prox writers as
 // codecs; make separate container (tii/tis/skip/*) that can
@@ -87,7 +88,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     }
   }
 
-  final void writeProx(FreqProxTermsWriter.PostingList p, int proxCode) {
+  final void writeProx(final int termID, int proxCode) {
     final Payload payload;
     if (payloadAttribute == null) {
       payload = null;
@@ -102,66 +103,111 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       hasPayloads = true;      
     } else
       termsHashPerField.writeVInt(1, proxCode<<1);
-    p.lastPosition = fieldState.position;
+    
+    FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
+    postings.lastPositions[termID] = fieldState.position;
+    
   }
 
   @Override
-  final void newTerm(RawPostingList p0) {
+  final void newTerm(final int termID) {
     // First time we're seeing this term since the last
     // flush
     assert docState.testPoint("FreqProxTermsWriterPerField.newTerm start");
-    FreqProxTermsWriter.PostingList p = (FreqProxTermsWriter.PostingList) p0;
-    p.lastDocID = docState.docID;
+    
+    FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
+    postings.lastDocIDs[termID] = docState.docID;
     if (omitTermFreqAndPositions) {
-      p.lastDocCode = docState.docID;
+      postings.lastDocCodes[termID] = docState.docID;
     } else {
-      p.lastDocCode = docState.docID << 1;
-      p.docFreq = 1;
-      writeProx(p, fieldState.position);
+      postings.lastDocCodes[termID] = docState.docID << 1;
+      postings.docFreqs[termID] = 1;
+      writeProx(termID, fieldState.position);
     }
   }
 
   @Override
-  final void addTerm(RawPostingList p0) {
+  final void addTerm(final int termID) {
 
     assert docState.testPoint("FreqProxTermsWriterPerField.addTerm start");
-
-    FreqProxTermsWriter.PostingList p = (FreqProxTermsWriter.PostingList) p0;
-
-    assert omitTermFreqAndPositions || p.docFreq > 0;
+    
+    FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
+    
+    assert omitTermFreqAndPositions || postings.docFreqs[termID] > 0;
 
     if (omitTermFreqAndPositions) {
-      if (docState.docID != p.lastDocID) {
-        assert docState.docID > p.lastDocID;
-        termsHashPerField.writeVInt(0, p.lastDocCode);
-        p.lastDocCode = docState.docID - p.lastDocID;
-        p.lastDocID = docState.docID;
+      if (docState.docID != postings.lastDocIDs[termID]) {
+        assert docState.docID > postings.lastDocIDs[termID];
+        termsHashPerField.writeVInt(0, postings.lastDocCodes[termID]);
+        postings.lastDocCodes[termID] = docState.docID - postings.lastDocIDs[termID];
+        postings.lastDocIDs[termID] = docState.docID;
       }
     } else {
-      if (docState.docID != p.lastDocID) {
-        assert docState.docID > p.lastDocID;
+      if (docState.docID != postings.lastDocIDs[termID]) {
+        assert docState.docID > postings.lastDocIDs[termID];
         // Term not yet seen in the current doc but previously
         // seen in other doc(s) since the last flush
 
         // Now that we know doc freq for previous doc,
         // write it & lastDocCode
-        if (1 == p.docFreq)
-          termsHashPerField.writeVInt(0, p.lastDocCode|1);
+        if (1 == postings.docFreqs[termID])
+          termsHashPerField.writeVInt(0, postings.lastDocCodes[termID]|1);
         else {
-          termsHashPerField.writeVInt(0, p.lastDocCode);
-          termsHashPerField.writeVInt(0, p.docFreq);
+          termsHashPerField.writeVInt(0, postings.lastDocCodes[termID]);
+          termsHashPerField.writeVInt(0, postings.docFreqs[termID]);
         }
-        p.docFreq = 1;
-        p.lastDocCode = (docState.docID - p.lastDocID) << 1;
-        p.lastDocID = docState.docID;
-        writeProx(p, fieldState.position);
+        postings.docFreqs[termID] = 1;
+        postings.lastDocCodes[termID] = (docState.docID - postings.lastDocIDs[termID]) << 1;
+        postings.lastDocIDs[termID] = docState.docID;
+        writeProx(termID, fieldState.position);
       } else {
-        p.docFreq++;
-        writeProx(p, fieldState.position-p.lastPosition);
+        postings.docFreqs[termID]++;
+        writeProx(termID, fieldState.position-postings.lastPositions[termID]);
       }
     }
   }
+  
+  @Override
+  ParallelPostingsArray createPostingsArray(int size) {
+    return new FreqProxPostingsArray(size);
+  }
 
+  static final class FreqProxPostingsArray extends ParallelPostingsArray {
+    public FreqProxPostingsArray(int size) {
+      super(size);
+      docFreqs = new int[size];
+      lastDocIDs = new int[size];
+      lastDocCodes = new int[size];
+      lastPositions = new int[size];
+    }
+
+    int docFreqs[];                                    // # times this term occurs in the current doc
+    int lastDocIDs[];                                  // Last docID where this term occurred
+    int lastDocCodes[];                                // Code for prior doc
+    int lastPositions[];                               // Last position where this term occurred
+    
+    @Override
+    ParallelPostingsArray resize(int newSize) {
+      FreqProxPostingsArray newArray = new FreqProxPostingsArray(newSize);
+      copy(this, newArray);
+      return newArray;
+    }
+    
+    void copy(FreqProxPostingsArray fromArray, FreqProxPostingsArray toArray) {
+      super.copy(fromArray, toArray);
+      System.arraycopy(fromArray.docFreqs, 0, toArray.docFreqs, 0, fromArray.docFreqs.length);
+      System.arraycopy(fromArray.lastDocIDs, 0, toArray.lastDocIDs, 0, fromArray.lastDocIDs.length);
+      System.arraycopy(fromArray.lastDocCodes, 0, toArray.lastDocCodes, 0, fromArray.lastDocCodes.length);
+      System.arraycopy(fromArray.lastPositions, 0, toArray.lastPositions, 0, fromArray.lastPositions.length);
+    }
+    
+  }
+  
+  @Override
+  int bytesPerPosting() {
+    return ParallelPostingsArray.BYTES_PER_POSTING + 4 * DocumentsWriter.INT_NUM_BYTE;
+  }
+  
   public void abort() {}
 }
 

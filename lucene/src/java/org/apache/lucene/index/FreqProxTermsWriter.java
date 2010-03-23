@@ -33,13 +33,6 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
     return new FreqProxTermsWriterPerThread(perThread);
   }
 
-  @Override
-  void createPostings(RawPostingList[] postings, int start, int count) {
-    final int end = start + count;
-    for(int i=start;i<end;i++)
-      postings[i] = new PostingList();
-  }
-
   private static int compareText(final char[] text1, int pos1, final char[] text2, int pos2) {
     while(true) {
       final char c1 = text1[pos1++];
@@ -272,16 +265,4 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
   }
 
   final UnicodeUtil.UTF8Result termsUTF8 = new UnicodeUtil.UTF8Result();
-
-  static final class PostingList extends RawPostingList {
-    int docFreq;                                    // # times this term occurs in the current doc
-    int lastDocID;                                  // Last docID where this term occurred
-    int lastDocCode;                                // Code for prior doc
-    int lastPosition;                               // Last position where this term occurred
-  }
-
-  @Override
-  int bytesPerPosting() {
-    return RawPostingList.BYTES_SIZE + 4 * DocumentsWriter.INT_NUM_BYTE;
-  }
 }

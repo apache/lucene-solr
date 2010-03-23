@@ -276,6 +276,15 @@ Optimizations
   TermAttributeImpl, move DEFAULT_TYPE constant to TypeInterface, improve
   null-handling for TypeAttribute.  (Uwe Schindler)
 
+* LUCENE-2329: Switch TermsHash* from using a PostingList object per unique 
+  term to parallel arrays, indexed by termID. This reduces garbage collection
+  overhead significantly, which results in great indexing performance wins
+  when the available JVM heap space is low. This will become even more
+  important when the DocumentsWriter RAM buffer is searchable in the future,
+  because then it will make sense to make the RAM buffers as large as 
+  possible. (Mike McCandless, Michael Busch)
+
+
 Build
 
 * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
