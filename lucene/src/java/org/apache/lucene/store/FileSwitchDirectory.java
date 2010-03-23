@@ -19,6 +19,10 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -128,9 +132,25 @@ public class FileSwitchDirectory extends Directory {
     return getDirectory(name).createOutput(name);
   }
 
+  @Deprecated
   @Override
   public void sync(String name) throws IOException {
-    getDirectory(name).sync(name);
+    sync(Collections.singleton(name));
+  }
+
+  @Override
+  public void sync(Collection<String> names) throws IOException {
+    List<String> primaryNames = new ArrayList<String>();
+    List<String> secondaryNames = new ArrayList<String>();
+
+    for (String name : names)
+      if (primaryExtensions.contains(getExtension(name)))
+        primaryNames.add(name);
+      else
+        secondaryNames.add(name);
+
+    primaryDir.sync(primaryNames);
+    secondaryDir.sync(secondaryNames);
   }
 
   @Override

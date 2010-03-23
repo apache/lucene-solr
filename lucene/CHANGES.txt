@@ -36,6 +36,10 @@ Changes in backwards compatibility policy
   took IndexWriter as argument has been removed from all MergePolicy extensions.
   (Shai Erera via Mike McCandless)
 
+* LUCENE-2328: SimpleFSDirectory.SimpleFSIndexInput is moved to
+  FSDirectory.FSIndexInput. Anyone extending this class will have to
+  fix their code on upgrading. (Earwin Burrfoot via Mike McCandless)
+
 Changes in runtime behavior
 
 * LUCENE-1923: Made IndexReader.toString() produce something
@@ -106,7 +110,13 @@ API Changes
   
 * LUCENE-2320: IndexWriter's MergePolicy configuration was moved to 
   IndexWriterConfig and the respective methods on IndexWriter were deprecated.
-  (Shai Erera via Mike McCandless) 
+  (Shai Erera via Mike McCandless)
+
+* LUCENE-2328: Directory now keeps track itself of the files that are written
+  but not yet fsynced. The old Directory.sync(String file) method is deprecated
+  and replaced with Directory.sync(Collection<String> files). Take a look at
+  FSDirectory to see a sample of how such tracking might look like, if needed
+  in your custom Directories.  (Earwin Burrfoot via Mike McCandless)
 
 Bug fixes
 
@@ -143,6 +153,10 @@ Bug fixes
   has been obtained), and addIndexes* is run, do not pool the
   readers from the external directory.  This is harmless (NRT reader is
   correct), but a waste of resources.  (Mike McCandless)
+
+* LUCENE-2328: Index files fsync tracking moved from
+  IndexWriter/IndexReader to Directory, and it no longer leaks memory.
+  (Earwin Burrfoot via Mike McCandless)
   
 New features
 

@@ -1123,7 +1123,6 @@ public class IndexWriter implements Closeable {
           // Only commit if there is no segments file in
           // this dir already.
           segmentInfos.commit(directory);
-          synced.addAll(segmentInfos.files(directory, true));
         } else {
           // Record that we have a change (zero out all
           // segments) pending:
@@ -1148,10 +1147,6 @@ public class IndexWriter implements Closeable {
           if (infoStream != null)
             message("init: loaded commit \"" + commit.getSegmentsFileName() + "\"");
         }
-
-        // We assume that this segments_N was previously
-        // properly sync'd:
-        synced.addAll(segmentInfos.files(directory, true));
       }
 
       setRollbackSegmentInfos(segmentInfos);
@@ -4614,60 +4609,6 @@ public class IndexWriter implements Closeable {
     return buffer.toString();
   }
 
-  // Files that have been sync'd already
-  private HashSet<String> synced = new HashSet<String>();
-
-  // Files that are now being sync'd
-  private HashSet<String> syncing = new HashSet<String>();
-
-  private boolean startSync(String fileName, Collection<String> pending) {
-    synchronized(synced) {
-      if (!synced.contains(fileName)) {
-        if (!syncing.contains(fileName)) {
-          syncing.add(fileName);
-          return true;
-        } else {
-          pending.add(fileName);
-          return false;
-        }
-      } else
-        return false;
-    }
-  }
-
-  private void finishSync(String fileName, boolean success) {
-    synchronized(synced) {
-      assert syncing.contains(fileName);
-      syncing.remove(fileName);
-      if (success)
-        synced.add(fileName);
-      synced.notifyAll();
-    }
-  }
-
-  /** Blocks until all files in syncing are sync'd */
-  private boolean waitForAllSynced(Collection<String> syncing) throws IOException {
-    synchronized(synced) {
-      Iterator<String> it = syncing.iterator();
-      while(it.hasNext()) {
-        final String fileName = it.next();
-        while(!synced.contains(fileName)) {
-          if (!syncing.contains(fileName))
-            // There was an error because a file that was
-            // previously syncing failed to appear in synced
-            return false;
-          else
-            try {
-              synced.wait();
-            } catch (InterruptedException ie) {
-              throw new ThreadInterruptedException(ie);
-            }
-        }
-      }
-      return true;
-    }
-  }
-
   private synchronized void doWait() {
     // NOTE: the callers of this method should in theory
     // be able to do simply wait(), but, as a defense
@@ -4761,40 +4702,7 @@ public class IndexWriter implements Closeable {
       boolean setPending = false;
 
       try {
-
-        // Loop until all files toSync references are sync'd:
-        while(true) {
-
-          final Collection<String> pending = new ArrayList<String>();
-
-          Iterator<String> it = toSync.files(directory, false).iterator();
-          while(it.hasNext()) {
-            final String fileName = it.next();
-            if (startSync(fileName, pending)) {
-              boolean success = false;
-              try {
-                // Because we incRef'd this commit point, above,
-                // the file had better exist:
-                assert directory.fileExists(fileName): "file '" + fileName + "' does not exist dir=" + directory;
-                if (infoStream != null)
-                  message("now sync " + fileName);
-                directory.sync(fileName);
-                success = true;
-              } finally {
-                finishSync(fileName, success);
-              }
-            }
-          }
-
-          // All files that I require are either synced or being
-          // synced by other threads.  If they are being synced,
-          // we must at this point block until they are done.
-          // If this returns false, that means an error in
-          // another thread resulted in failing to actually
-          // sync one of our files, so we repeat:
-          if (waitForAllSynced(pending))
-            break;
-        }
+        directory.sync(toSync.files(directory, false));
 
         assert testPoint("midStartCommit2");
 

@@ -70,6 +70,8 @@ import org.apache.lucene.util.Constants;
  * can be enabled (with no guarantees).
  */
 public class MMapDirectory extends FSDirectory {
+  private boolean useUnmapHack = false;
+  private int maxBBuf = Constants.JRE_IS_64BIT ? Integer.MAX_VALUE : (256 * 1024 * 1024);
 
   /** Create a new MMapDirectory for the named location.
    *
@@ -91,9 +93,6 @@ public class MMapDirectory extends FSDirectory {
     super(path, null);
   }
 
-  private boolean useUnmapHack = false;
-  private int maxBBuf = Constants.JRE_IS_64BIT ? Integer.MAX_VALUE : (256*1024*1024);
-  
   /**
    * <code>true</code>, if this platform supports unmapping mmapped files.
    */
@@ -189,7 +188,22 @@ public class MMapDirectory extends FSDirectory {
    */
   public int getMaxChunkSize() {
     return maxBBuf;
-  } 
+  }
+
+  /** Creates an IndexInput for the file with the given name. */
+  @Override
+  public IndexInput openInput(String name, int bufferSize) throws IOException {
+    ensureOpen();
+    File f = new File(getDirectory(), name);
+    RandomAccessFile raf = new RandomAccessFile(f, "r");
+    try {
+      return (raf.length() <= maxBBuf)
+             ? (IndexInput) new MMapIndexInput(raf)
+             : (IndexInput) new MultiMMapIndexInput(raf, maxBBuf);
+    } finally {
+      raf.close();
+    }
+  }
 
   private class MMapIndexInput extends IndexInput {
 
@@ -395,27 +409,5 @@ public class MMapDirectory extends FSDirectory {
         buffers = null;
       }
     }
-  }
-  
-  /** Creates an IndexInput for the file with the given name. */
-  @Override
-  public IndexInput openInput(String name, int bufferSize) throws IOException {
-    ensureOpen();
-    File f =  new File(getDirectory(), name);
-    RandomAccessFile raf = new RandomAccessFile(f, "r");
-    try {
-      return (raf.length() <= maxBBuf)
-             ? (IndexInput) new MMapIndexInput(raf)
-             : (IndexInput) new MultiMMapIndexInput(raf, maxBBuf);
-    } finally {
-      raf.close();
-    }
-  }
-
-  /** Creates an IndexOutput for the file with the given name. */
-  @Override
-  public IndexOutput createOutput(String name) throws IOException {
-    initOutput(name);
-    return new SimpleFSDirectory.SimpleFSIndexOutput(new File(directory, name));
   }
 }

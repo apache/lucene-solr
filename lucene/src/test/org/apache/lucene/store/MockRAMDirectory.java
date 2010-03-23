@@ -19,6 +19,8 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.io.FileNotFoundException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Map;
@@ -76,13 +78,19 @@ public class MockRAMDirectory extends RAMDirectory {
     preventDoubleWrite = value;
   }
 
+  @Deprecated
   @Override
-  public synchronized void sync(String name) throws IOException {
-    maybeThrowDeterministicException();
+  public void sync(String name) throws IOException {
+    sync(Collections.singleton(name));
+  }
+
+  @Override
+  public synchronized void sync(Collection<String> names) throws IOException {
+    for (String name : names)
+      maybeThrowDeterministicException();
     if (crashed)
       throw new IOException("cannot sync after crash");
-    if (unSyncedFiles.contains(name))
-      unSyncedFiles.remove(name);
+    unSyncedFiles.removeAll(names);
   }
 
   /** Simulates a crash of OS or machine by overwriting

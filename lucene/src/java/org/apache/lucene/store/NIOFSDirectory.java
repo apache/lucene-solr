@@ -67,13 +67,6 @@ public class NIOFSDirectory extends FSDirectory {
     return new NIOFSIndexInput(new File(getDirectory(), name), bufferSize, getReadChunkSize());
   }
 
-  /** Creates an IndexOutput for the file with the given name. */
-  @Override
-  public IndexOutput createOutput(String name) throws IOException {
-    initOutput(name);
-    return new SimpleFSDirectory.SimpleFSIndexOutput(new File(directory, name));
-  }
-
   protected static class NIOFSIndexInput extends SimpleFSDirectory.SimpleFSIndexInput {
 
     private ByteBuffer byteBuf; // wraps the buffer for NIO

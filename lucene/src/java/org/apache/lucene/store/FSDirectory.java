@@ -24,6 +24,11 @@ import java.io.RandomAccessFile;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import java.util.Collection;
+import java.util.Collections;
+import static java.util.Collections.synchronizedSet;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.Constants;
 
@@ -94,8 +99,7 @@ import org.apache.lucene.util.Constants;
  * @see Directory
  */
 public abstract class FSDirectory extends Directory {
-
-  private static MessageDigest DIGESTER;
+  private final static MessageDigest DIGESTER;
 
   static {
     try {
@@ -105,36 +109,23 @@ public abstract class FSDirectory extends Directory {
     }
   }
 
+  /**
+   * Default read chunk size.  This is a conditional default: on 32bit JVMs, it defaults to 100 MB.  On 64bit JVMs, it's
+   * <code>Integer.MAX_VALUE</code>.
+   *
+   * @see #setReadChunkSize
+   */
+  public static final int DEFAULT_READ_CHUNK_SIZE = Constants.JRE_IS_64BIT ? Integer.MAX_VALUE : 100 * 1024 * 1024;
+
+  protected final File directory; // The underlying filesystem directory
+  protected final Set<String> staleFiles = synchronizedSet(new HashSet<String>()); // Files written, but not yet sync'ed
+  private int chunkSize = DEFAULT_READ_CHUNK_SIZE; // LUCENE-1566
+
   // returns the canonical version of the directory, creating it if it doesn't exist.
   private static File getCanonicalPath(File file) throws IOException {
     return new File(file.getCanonicalPath());
   }
 
-  private boolean checked;
-
-  final void createDir() throws IOException {
-    if (!checked) {
-      if (!directory.exists())
-        if (!directory.mkdirs())
-          throw new IOException("Cannot create directory: " + directory);
-
-      checked = true;
-    }
-  }
-
-  /** Initializes the directory to create a new file with the given name.
-   * This method should be used in {@link #createOutput}. */
-  protected final void initOutput(String name) throws IOException {
-    ensureOpen();
-    createDir();
-    File file = new File(directory, name);
-    if (file.exists() && !file.delete())          // delete existing, if any
-      throw new IOException("Cannot overwrite: " + file);
-  }
-
-  /** The underlying filesystem directory */
-  protected File directory = null;
-  
   /** Create a new FSDirectory for the named location (ctor for subclasses).
    * @param path the path of the directory
    * @param lockFactory the lock factory to use, or null for the default
@@ -142,12 +133,11 @@ public abstract class FSDirectory extends Directory {
    * @throws IOException
    */
   protected FSDirectory(File path, LockFactory lockFactory) throws IOException {
-    path = getCanonicalPath(path);
     // new ctors use always NativeFSLockFactory as default:
     if (lockFactory == null) {
       lockFactory = new NativeFSLockFactory();
     }
-    directory = path;
+    directory = getCanonicalPath(path);
 
     if (directory.exists() && !directory.isDirectory())
       throw new NoSuchDirectoryException("file '" + directory + "' exists but is not a directory");
@@ -161,9 +151,9 @@ public abstract class FSDirectory extends Directory {
       final File dir = lf.getLockDir();
       // if the lock factory has no lockDir set, use the this directory as lockDir
       if (dir == null) {
-        lf.setLockDir(this.directory);
+        lf.setLockDir(directory);
         lf.setLockPrefix(null);
-      } else if (dir.getCanonicalPath().equals(this.directory.getCanonicalPath())) {
+      } else if (dir.getCanonicalPath().equals(directory.getCanonicalPath())) {
         lf.setLockPrefix(null);
       }
     }
@@ -196,12 +186,6 @@ public abstract class FSDirectory extends Directory {
   /** Just like {@link #open(File)}, but allows you to
    *  also specify a custom {@link LockFactory}. */
   public static FSDirectory open(File path, LockFactory lockFactory) throws IOException {
-    /* For testing:
-    MMapDirectory dir=new MMapDirectory(path, lockFactory);
-    dir.setUseUnmap(true);
-    return dir;
-    */
-
     if (Constants.WINDOWS) {
       return new SimpleFSDirectory(path, lockFactory);
     } else {
@@ -290,41 +274,48 @@ public abstract class FSDirectory extends Directory {
     File file = new File(directory, name);
     if (!file.delete())
       throw new IOException("Cannot delete " + file);
+    staleFiles.remove(name);
+  }
+
+  /** Creates an IndexOutput for the file with the given name. */
+  @Override
+  public IndexOutput createOutput(String name) throws IOException {
+    ensureOpen();
+
+    ensureCanWrite(name);
+    return new FSIndexOutput(this, name);
+  }
+
+  protected void ensureCanWrite(String name) throws IOException {
+    if (!directory.exists())
+      if (!directory.mkdirs())
+        throw new IOException("Cannot create directory: " + directory);
+
+    File file = new File(directory, name);
+    if (file.exists() && !file.delete())          // delete existing, if any
+      throw new IOException("Cannot overwrite: " + file);
+  }
+
+  protected void onIndexOutputClosed(FSIndexOutput io) {
+    staleFiles.add(io.name);
+  }
+
+  @Deprecated
+  @Override
+  public void sync(String name) throws IOException {
+    sync(Collections.singleton(name));
   }
 
   @Override
-  public void sync(String name) throws IOException {
+  public void sync(Collection<String> names) throws IOException {
     ensureOpen();
-    File fullFile = new File(directory, name);
-    boolean success = false;
-    int retryCount = 0;
-    IOException exc = null;
-    while(!success && retryCount < 5) {
-      retryCount++;
-      RandomAccessFile file = null;
-      try {
-        try {
-          file = new RandomAccessFile(fullFile, "rw");
-          file.getFD().sync();
-          success = true;
-        } finally {
-          if (file != null)
-            file.close();
-        }
-      } catch (IOException ioe) {
-        if (exc == null)
-          exc = ioe;
-        try {
-          // Pause 5 msec
-          Thread.sleep(5);
-        } catch (InterruptedException ie) {
-          throw new ThreadInterruptedException(ie);
-        }
-      }
-    }
-    if (!success)
-      // Throw original exception
-      throw exc;
+    Set<String> toSync = new HashSet<String>(names);
+    toSync.retainAll(staleFiles);
+
+    for (String name : toSync)
+      fsync(name);
+
+    staleFiles.removeAll(toSync);
   }
 
   // Inherit javadoc
@@ -339,7 +330,6 @@ public abstract class FSDirectory extends Directory {
    */
   private static final char[] HEX_DIGITS =
   {'0','1','2','3','4','5','6','7','8','9','a','b','c','d','e','f'};
-
   
   @Override
   public String getLockID() {
@@ -391,17 +381,6 @@ public abstract class FSDirectory extends Directory {
   }
 
   /**
-   * Default read chunk size.  This is a conditional
-   * default: on 32bit JVMs, it defaults to 100 MB.  On
-   * 64bit JVMs, it's <code>Integer.MAX_VALUE</code>.
-   * @see #setReadChunkSize
-   */
-  public static final int DEFAULT_READ_CHUNK_SIZE = Constants.JRE_IS_64BIT ? Integer.MAX_VALUE: 100 * 1024 * 1024;
-
-  // LUCENE-1566
-  private int chunkSize = DEFAULT_READ_CHUNK_SIZE;
-
-  /**
    * Sets the maximum number of bytes read at once from the
    * underlying file during {@link IndexInput#readBytes}.
    * The default value is {@link #DEFAULT_READ_CHUNK_SIZE};
@@ -443,4 +422,96 @@ public abstract class FSDirectory extends Directory {
     return chunkSize;
   }
 
+  protected static class FSIndexOutput extends BufferedIndexOutput {
+    private final FSDirectory parent;
+    private final String name;
+    private final RandomAccessFile file;
+    private volatile boolean isOpen; // remember if the file is open, so that we don't try to close it more than once
+
+    public FSIndexOutput(FSDirectory parent, String name) throws IOException {
+      this.parent = parent;
+      this.name = name;
+      file = new RandomAccessFile(new File(parent.directory, name), "rw");
+      isOpen = true;
+    }
+
+    /** output methods: */
+    @Override
+    public void flushBuffer(byte[] b, int offset, int size) throws IOException {
+      file.write(b, offset, size);
+    }
+
+    @Override
+    public void close() throws IOException {
+      // only close the file if it has not been closed yet
+      if (isOpen) {
+        boolean success = false;
+        try {
+          super.close();
+          success = true;
+        } finally {
+          isOpen = false;
+          if (!success) {
+            try {
+              file.close();
+              parent.onIndexOutputClosed(this);
+            } catch (Throwable t) {
+              // Suppress so we don't mask original exception
+            }
+          } else
+            file.close();
+        }
+      }
+    }
+
+    /** Random-access methods */
+    @Override
+    public void seek(long pos) throws IOException {
+      super.seek(pos);
+      file.seek(pos);
+    }
+
+    @Override
+    public long length() throws IOException {
+      return file.length();
+    }
+
+    @Override
+    public void setLength(long length) throws IOException {
+      file.setLength(length);
+    }
+  }
+
+  protected void fsync(String name) throws IOException {
+    File fullFile = new File(directory, name);
+    boolean success = false;
+    int retryCount = 0;
+    IOException exc = null;
+    while (!success && retryCount < 5) {
+      retryCount++;
+      RandomAccessFile file = null;
+      try {
+        try {
+          file = new RandomAccessFile(fullFile, "rw");
+          file.getFD().sync();
+          success = true;
+        } finally {
+          if (file != null)
+            file.close();
+        }
+      } catch (IOException ioe) {
+        if (exc == null)
+          exc = ioe;
+        try {
+          // Pause 5 msec
+          Thread.sleep(5);
+        } catch (InterruptedException ie) {
+          throw new ThreadInterruptedException(ie);
+        }
+      }
+    }
+    if (!success)
+      // Throw original exception
+      throw exc;
+  }
 }

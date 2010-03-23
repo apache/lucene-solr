@@ -852,7 +852,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
                                                                   generation);
     success = false;
     try {
-      dir.sync(fileName);
+      dir.sync(Collections.singleton(fileName));
       success = true;
     } finally {
       if (!success) {

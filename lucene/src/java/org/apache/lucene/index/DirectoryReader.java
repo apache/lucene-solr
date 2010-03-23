@@ -47,7 +47,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
   IndexWriter writer;
 
   private IndexDeletionPolicy deletionPolicy;
-  private final HashSet<String> synced = new HashSet<String>();
   private Lock writeLock;
   private SegmentInfos segmentInfos;
   private SegmentInfos segmentInfosStart;
@@ -87,12 +86,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
     this.deletionPolicy = deletionPolicy;
     this.termInfosIndexDivisor = termInfosIndexDivisor;
 
-    if (!readOnly) {
-      // We assume that this segments_N was previously
-      // properly sync'd:
-      synced.addAll(sis.files(directory, true));
-    }
-
     // To reduce the chance of hitting FileNotFound
     // (and having to retry), we open segments in
     // reverse because IndexWriter merges & deletes
@@ -128,11 +121,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
     segmentInfos = infos;
     segmentInfosStart = (SegmentInfos) infos.clone();
     this.termInfosIndexDivisor = termInfosIndexDivisor;
-    if (!readOnly) {
-      // We assume that this segments_N was previously
-      // properly sync'd:
-      synced.addAll(infos.files(directory, true));
-    }
 
     // IndexWriter synchronizes externally before calling
     // us, which ensures infos will not change; so there's
@@ -183,11 +171,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
     this.readOnly = readOnly;
     this.segmentInfos = infos;
     this.termInfosIndexDivisor = termInfosIndexDivisor;
-    if (!readOnly) {
-      // We assume that this segments_N was previously
-      // properly sync'd:
-      synced.addAll(infos.files(directory, true));
-    }
 
     // we put the old SegmentReaders in a map, that allows us
     // to lookup a reader using its segment name
@@ -786,14 +769,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
           subReaders[i].commit();
 
         // Sync all files we just wrote
-        final Collection<String> files = segmentInfos.files(directory, false);
-        for (final String fileName : files) { 
-          if (!synced.contains(fileName)) {
-            assert directory.fileExists(fileName);
-            directory.sync(fileName);
-            synced.add(fileName);
-          }
-        }
+        directory.sync(segmentInfos.files(directory, false));
 
         segmentInfos.commit(directory);
         success = true;
