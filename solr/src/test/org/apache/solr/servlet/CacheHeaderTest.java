@@ -46,7 +46,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     m.setQueryString(new NameValuePair[] { new NameValuePair("stream.file",f.getCanonicalPath())});
     getClient().executeMethod(m);
     assertEquals(200, m.getStatusCode());
-    checkVetoHeaders(m);
+    checkVetoHeaders(m, true);
   }
   
   public void testCacheVetoException() throws Exception {
@@ -56,24 +56,27 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
         new NameValuePair("qt", "standard") });
     getClient().executeMethod(m);
     assertFalse(m.getStatusCode() == 200);
-    checkVetoHeaders(m);
+    checkVetoHeaders(m, false);
   }
 
-  protected void checkVetoHeaders(HttpMethodBase m) throws Exception {
+  protected void checkVetoHeaders(HttpMethodBase m, boolean checkExpires) throws Exception {
     Header head = m.getResponseHeader("Cache-Control");
     assertNotNull("We got no Cache-Control header", head);
-    assertEquals("no-cache, no-store", head.getValue());
+    assertTrue("We got no no-cache in the Cache-Control header", head.getValue().contains("no-cache"));
+    assertTrue("We got no no-store in the Cache-Control header", head.getValue().contains("no-store"));
 
     head = m.getResponseHeader("Pragma");
     assertNotNull("We got no Pragma header", head);
     assertEquals("no-cache", head.getValue());
 
-    head = m.getResponseHeader("Expires");
-    assertNotNull("We got no Expires header", head);
-    Date d = DateUtil.parseDate(head.getValue());
-    assertTrue("We got no Expires header far in the past", System
-        .currentTimeMillis()
-        - d.getTime() > 100000);
+    if (checkExpires) {
+      head = m.getResponseHeader("Expires");
+      assertNotNull("We got no Expires header:" + m.getResponseHeaders(), head);
+      Date d = DateUtil.parseDate(head.getValue());
+      assertTrue("We got no Expires header far in the past", System
+          .currentTimeMillis()
+          - d.getTime() > 100000);
+    }
   }
 
   protected void doLastModified(String method) throws Exception {
