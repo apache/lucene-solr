@@ -376,7 +376,10 @@
         depends="test-core, test-contrib" />
 
   <condition property="runsequential">
-    <isset property="testcase"/>
+    <or>
+      <isset property="testcase"/>
+      <isset property="sequential-tests"/>
+    </or>
   </condition>
 
   <target name="junit" depends="compileTests,dist-contrib,junit-mkdir,junit-sequential,junit-parallel"/>
