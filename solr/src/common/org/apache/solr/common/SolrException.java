@@ -18,15 +18,18 @@
 package org.apache.solr.common;
 
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import java.io.CharArrayWriter;
 import java.io.PrintWriter;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @version $Id$
  */
 public class SolrException extends RuntimeException {
-  
+
   /**
    * @since solr 1.2
    */
@@ -136,17 +139,30 @@ public class SolrException extends RuntimeException {
 
   public void log(Logger log) { log(log,this); }
   public static void log(Logger log, Throwable e) {
-    log.error(toStr(e));
     if (e instanceof SolrException) {
       ((SolrException)e).logged = true;
     }
+    String stackTrace = toStr(e);
+    String ignore = doIgnore(stackTrace);
+    if (ignore != null) {
+      log.info(ignore);
+      return;
+    }
+    log.error(stackTrace);
+
   }
 
   public static void log(Logger log, String msg, Throwable e) {
-    log.error(msg + ':' + toStr(e));
     if (e instanceof SolrException) {
       ((SolrException)e).logged = true;
     }
+    String stackTrace = msg + ':' + toStr(e);
+    String ignore = doIgnore(stackTrace);
+    if (ignore != null) {
+      log.info(ignore);
+      return;
+    }
+    log.error(stackTrace);
   }
 
   public static void logOnce(Logger log, String msg, Throwable e) {
@@ -178,5 +194,23 @@ public class SolrException extends RuntimeException {
     return sw.toString();
 **/
   }
+
+
+  /** For test code - do not log exceptions that match any of the regular expressions in ignorePatterns */
+  public static Set<String> ignorePatterns;
+
+  /** Returns null if this exception does not match any ignore patterns, or a message string to use if it does. */
+  public static String doIgnore(String m) {
+    if (ignorePatterns == null || m == null) return null;
+
+    for (String regex : ignorePatterns) {
+      Pattern pattern = Pattern.compile(regex);
+      Matcher matcher = pattern.matcher(m);
+      if (matcher.find()) return "Ignoring exception matching " + regex;
+    }
+
+    return null;
+  }
+
 
 }

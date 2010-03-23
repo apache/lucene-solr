@@ -19,6 +19,8 @@ package org.apache.solr;
 
 import org.apache.solr.request.*;
 import org.apache.solr.util.*;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.util.*;
 
@@ -29,11 +31,14 @@ import java.util.*;
  * it does not represent the best practices that should be used when
  * writing Solr JUnit tests
  */
-public class ConvertedLegacyTest extends AbstractSolrTestCase {
+public class ConvertedLegacyTest extends SolrTestCaseJ4 {
 
-  public String getSchemaFile() { return "schema.xml"; } 
-  public String getSolrConfigFile() { return "solrconfig.xml"; } 
+  @BeforeClass
+  public static void beforeTests() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
+  }
 
+  @Test
   public void testABunchOfConvertedStuff() {
     // these may be reused by things that need a special query
     SolrQueryRequest req = null;
@@ -780,7 +785,12 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
             ,"//doc[2]/int[.='1000']  "
             ,"//doc[3]/int[.='1001']"
             );
-    
+
+    ignoreException("shouldbeunindexed");
+    ignoreException("nullfirst");
+    ignoreException("abcde12345");
+    ignoreException("aaa");
+
     // Sort parsing exception tests.  (SOLR-6, SOLR-99)
     assertQEx( "can not sort unindexed fields",
         req( "id_i:1000; shouldbeunindexed asc" ), 400 );
@@ -792,7 +802,10 @@ public class ConvertedLegacyTest extends AbstractSolrTestCase {
         req( "id_i:1000; abcde12345 asc" ), 400 ); 
 
     assertQEx( "unknown sort order",
-        req( "id_i:1000; nullfirst aaa" ), 400 ); 
+        req( "id_i:1000; nullfirst aaa" ), 400 );
+
+    resetExceptionIgnores();
+
         
     // test prefix query
 

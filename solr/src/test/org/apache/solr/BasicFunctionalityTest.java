@@ -65,7 +65,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
   public String getCoreName() { return "basic"; }
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeTests() throws Exception {
     initCore("solrconfig.xml","schema.xml");
   }
   // tests the performance of dynamic field creation and
@@ -224,7 +224,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRequestHandlerBaseException() {
-    final String tmp = "BOO!";
+    final String tmp = "BOO! ignore_exception";
     SolrRequestHandler handler = new RequestHandlerBase() {
         public String getDescription() { return tmp; }
         public String getSourceId() { return tmp; }

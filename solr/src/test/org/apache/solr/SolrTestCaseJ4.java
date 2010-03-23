@@ -38,6 +38,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -51,12 +52,14 @@ import static org.junit.Assert.fail;
 public class SolrTestCaseJ4 extends LuceneTestCaseJ4 {
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void beforeClassSolrTestCase() throws Exception {
+    ignoreException("ignore_exception");
   }
 
   @AfterClass
-  public static void afterClass() throws Exception {
+  public static void afterClassSolrTestCase() throws Exception {
     deleteCore();
+    resetExceptionIgnores();
   }
 
   @Override
@@ -74,10 +77,24 @@ public class SolrTestCaseJ4 extends LuceneTestCaseJ4 {
   /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
    * deleteCore will be called for you via SolrTestCaseJ4 @AfterClass */
   public static void initCore(String config, String schema) throws Exception {
+    //ignoreException("ignore_exception");
     configString = config;
     schemaString = schema;
     initCore();
   }
+
+  /** Causes an exception matching the regex pattern to not be logged. */
+  public static void ignoreException(String pattern) {
+    if (SolrException.ignorePatterns == null)
+      SolrException.ignorePatterns = new HashSet<String>();
+    SolrException.ignorePatterns.add(pattern);
+  }
+
+  public static void resetExceptionIgnores() {
+    SolrException.ignorePatterns = null;
+    ignoreException("ignore_exception");  // always ignore "ignore_exception"    
+  }
+
 
 
   protected static String configString;
