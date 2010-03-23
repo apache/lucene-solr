@@ -256,6 +256,15 @@ public class  FacetComponent extends SearchComponent
 
       // step through each facet.field, adding results from this shard
       NamedList facet_fields = (NamedList)facet_counts.get("facet_fields");
+
+      // an error could cause facet_fields to come back null
+      if (facet_fields == null) {
+        String msg = (String)facet_counts.get("exception");
+        if (msg == null) msg = "faceting exception in sub-request - missing facet_fields";
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, msg);
+
+      }
+
       for (DistribFieldFacet dff : fi.facets.values()) {
         dff.add(shardNum, (NamedList)facet_fields.get(dff.getKey()), dff.initialLimit);
       }

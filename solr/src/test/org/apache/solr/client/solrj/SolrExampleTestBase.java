@@ -38,6 +38,7 @@ abstract public class SolrExampleTestBase extends AbstractSolrTestCase
   @Override
   public void setUp() throws Exception
   {
+    ignoreException("maxWarmingSearchers");
     super.setUp();
     
     // this sets the property for jetty starting SolrDispatchFilter
