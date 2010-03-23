@@ -24,10 +24,11 @@
     <Set name="ThreadPool">
       <!-- Default bounded blocking threadpool 
       -->
-      <New class="org.mortbay.thread.BoundedThreadPool">
+      <New class="org.mortbay.thread.QueuedThreadPool">
         <Set name="minThreads">10</Set>
-        <Set name="lowThreads">50</Set>
         <Set name="maxThreads">10000</Set>
+        <Set name="lowThreads">50</Set>
+        <Set name="SpawnOrShrinkAt">2</Set>
       </New>
 
       <!-- Optional Java 5 bounded threadpool with job queue 
