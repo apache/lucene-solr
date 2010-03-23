@@ -86,10 +86,12 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
 
     // You can't add it to core1
     try {
+      ignoreException("unknown field");
       up.process( getSolrCore1() );
       fail( "Can't add core0 field to core1!" );
     }
     catch( Exception ex ) {}
+    resetExceptionIgnores();
 
     // Add to core1
     doc.setField( "id", "BBB" );
@@ -100,10 +102,12 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
 
     // You can't add it to core1
     try {
+      ignoreException("unknown field");
       up.process( getSolrCore0() );
       fail( "Can't add core1 field to core0!" );
     }
     catch( Exception ex ) {}
+    resetExceptionIgnores();
     
     // now Make sure AAA is in 0 and BBB in 1
     SolrQuery q = new SolrQuery();

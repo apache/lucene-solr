@@ -33,6 +33,10 @@ public class BadIndexSchemaTest extends AbstractSolrTestCase {
 
   @Override 
   public void setUp() throws Exception {
+    ignoreException("_twice");
+    ignoreException("ftAgain");
+    ignoreException("fAgain");
+
     super.setUp();
   }
   
@@ -59,7 +63,7 @@ public class BadIndexSchemaTest extends AbstractSolrTestCase {
     IndexSchema schema = core.getSchema();
 
     for( Throwable t : SolrConfig.severeErrors ) {
-      log.error( "ERROR:"+t.getMessage() );
+      log.info( "got ex:"+t.getMessage() );
     }
     
     assertEquals( 3, SolrConfig.severeErrors.size() );
