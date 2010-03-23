@@ -17,8 +17,11 @@
 
 package org.apache.solr.core;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.util.TestHarness;
+import org.junit.BeforeClass;
+
 import java.io.File;
 
 public class TestBadConfig extends AbstractSolrTestCase {
@@ -33,6 +36,8 @@ public class TestBadConfig extends AbstractSolrTestCase {
                        + getClass().getName());
     dataDir.mkdirs();
     try {
+     SolrTestCaseJ4.ignoreException("unset.sys.property");
+
       solrConfig = new SolrConfig(getSolrConfigFile());
       h = new TestHarness( dataDir.getAbsolutePath(),
                            solrConfig,
@@ -40,6 +45,7 @@ public class TestBadConfig extends AbstractSolrTestCase {
       fail("Exception should have been thrown");
     } catch (Exception e) {
       assertTrue(e.getMessage().contains("unset.sys.property"));
+      SolrTestCaseJ4.resetExceptionIgnores();
     }
   }
     
