@@ -50,8 +50,8 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
   String tdate = "n_tdt";
   
   String oddField="oddField_s";
-  String missingField="missing_but_valid_field_t";
-  String invalidField="invalid_field_not_in_schema";
+  String missingField="ignore_exception__missing_but_valid_field_t";
+  String invalidField="ignore_exception__invalid_field_not_in_schema";
 
   @Override
   public void doTest() throws Exception {

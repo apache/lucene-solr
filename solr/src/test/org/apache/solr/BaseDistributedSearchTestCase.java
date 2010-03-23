@@ -111,6 +111,7 @@ public abstract class BaseDistributedSearchTestCase extends TestCase {
 
   @Override
   public void setUp() throws Exception {
+    SolrTestCaseJ4.resetExceptionIgnores();  // ignore anything with ignore_exception in it
     super.setUp();
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
