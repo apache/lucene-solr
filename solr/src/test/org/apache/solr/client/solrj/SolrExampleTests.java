@@ -490,7 +490,7 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     
     try {
       SolrPing ping = new SolrPing();
-      ping.getParams().set( "qt", "unknown handler!" );
+      ping.getParams().set( "qt", "unknown handler! ignore_exception" );
       ping.process( server );
       fail( "sent unknown query type!" );
     }

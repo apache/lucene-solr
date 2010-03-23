@@ -34,6 +34,7 @@ import junit.framework.TestCase;
 import javax.xml.xpath.XPathExpressionException;
 
 import java.io.*;
+import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
 
@@ -103,6 +104,7 @@ public abstract class AbstractSolrTestCase extends TestCase {
   private String factoryProp;
   public void setUp() throws Exception {
     log.info("####SETUP_START " + getName());
+    ignoreException("ignore_exception");
     factoryProp = System.getProperty("solr.directoryFactory");
     if (factoryProp == null) {
       System.setProperty("solr.directoryFactory","solr.RAMDirectoryFactory");
@@ -123,6 +125,18 @@ public abstract class AbstractSolrTestCase extends TestCase {
               ("standard",0,20,"version","2.2");
     }
     log.info("####SETUP_END " + getName());
+  }
+
+    /** Causes an exception matching the regex pattern to not be logged. */
+  public static void ignoreException(String pattern) {
+    if (SolrException.ignorePatterns == null)
+      SolrException.ignorePatterns = new HashSet<String>();
+    SolrException.ignorePatterns.add(pattern);
+  }
+
+  public static void resetExceptionIgnores() {
+    SolrException.ignorePatterns = null;
+    ignoreException("ignore_exception");  // always ignore "ignore_exception"
   }
 
   /** Subclasses that override setUp can optionally call this method
@@ -162,6 +176,8 @@ public abstract class AbstractSolrTestCase extends TestCase {
         System.err.println("!!!! WARNING: best effort to remove " + dataDir.getAbsolutePath() + " FAILED !!!!!");
       }
     }
+
+    resetExceptionIgnores();  
   }
 
   /** Validates an update XML String is successful
