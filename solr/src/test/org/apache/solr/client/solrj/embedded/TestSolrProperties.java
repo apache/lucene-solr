@@ -18,6 +18,8 @@
 package org.apache.solr.client.solrj.embedded;
 
 import static junit.framework.Assert.assertEquals;
+
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
@@ -116,6 +118,8 @@ public class TestSolrProperties {
     up.add(doc);
     up.process(getSolrCore0());
 
+    SolrTestCaseJ4.ignoreException("unknown field");
+
     // You can't add it to core1
     try {
       up.process(getSolrCore1());
@@ -133,11 +137,14 @@ public class TestSolrProperties {
 
     // You can't add it to core1
     try {
+      SolrTestCaseJ4.ignoreException("core0");
       up.process(getSolrCore0());
       fail("Can't add core1 field to core0!");
     }
     catch (Exception ex) {
     }
+    
+    SolrTestCaseJ4.resetExceptionIgnores();
 
     // now Make sure AAA is in 0 and BBB in 1
     SolrQuery q = new SolrQuery();
