@@ -52,7 +52,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
   public void testCacheVetoException() throws Exception {
     HttpMethodBase m = getSelectMethod("GET");
     // We force an exception from Solr. This should emit "no-cache" HTTP headers
-    m.setQueryString(new NameValuePair[] { new NameValuePair("q", "xyz:solr"),
+    m.setQueryString(new NameValuePair[] { new NameValuePair("q", "xyz_ignore_exception:solr"),
         new NameValuePair("qt", "standard") });
     getClient().executeMethod(m);
     assertFalse(m.getStatusCode() == 200);
