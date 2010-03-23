@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.embedded;
 
+import java.io.File;
 import java.net.URL;
 
 import junit.framework.TestCase;
@@ -42,7 +43,12 @@ public class JettyWebappTest extends TestCase
   public void setUp() throws Exception 
   {
     System.setProperty("solr.solr.home", "../../../example/solr");
-    System.setProperty("solr.data.dir", "./solr/data");
+    
+    File dataDir = new File(System.getProperty("java.io.tmpdir")
+        + System.getProperty("file.separator")
+        + getClass().getName() + "-" + System.currentTimeMillis());
+    dataDir.mkdirs();
+    System.setProperty("solr.data.dir", dataDir.getCanonicalPath());
     String path = "../../webapp/web";
 
     server = new Server(port);
