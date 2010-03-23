@@ -101,6 +101,7 @@ public class DistanceFunctionTest extends SolrTestCaseJ4 {
     assertQ(req("fl", "*,score", "q", "{!func}sqedist(x_td, y_td, z_td, w_td, 0, 0, 0, 0)", "fq", "id:5"), "//float[@name='score']='" + (float) (2.3 * 2.3 + 5.5 * 5.5 + 7.9 * 7.9 + 2.4 * 2.4) + "'");
     //Pass in imbalanced list, throw exception
     try {
+      ignoreException("Illegal number of sources");
       assertQ(req("fl", "*,score", "q", "{!func}sqedist(x_td, y_td, z_td, w_td, 0, 0, 0)", "fq", "id:1"), "//float[@name='score']='0.0'");
       assertTrue("should throw an exception", false);
     } catch (Exception e) {
@@ -108,6 +109,8 @@ public class DistanceFunctionTest extends SolrTestCaseJ4 {
       assertNotNull(cause);
       assertTrue(cause instanceof SolrException);
     }
+    resetExceptionIgnores();
+
     //do one test of Euclidean
     //two dimensions, notice how we only pass in 4 value sources
     assertQ(req("fl", "*,score", "q", "{!func}dist(2, x_td, y_td, 0, 0)", "fq", "id:1"), "//float[@name='score']='0.0'");
