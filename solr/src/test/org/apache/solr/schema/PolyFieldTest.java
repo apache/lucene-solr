@@ -155,8 +155,10 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
             "\"//*[@numFound='2']\"");
     //bad
 
+    ignoreException("dimension");
     assertQEx("Query should throw an exception due to incorrect dimensions", req("fl", "*,score", "q",
             "homed:[1 TO 2000]"), SolrException.ErrorCode.BAD_REQUEST);
+    resetExceptionIgnores();
     clearIndex();
   }
 
