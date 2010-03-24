@@ -2,7 +2,10 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
-2/21/2020
+3/24/2010
+  LUCENE-2343: Added support for benchmarking collectors. (Grant Ingersoll, Shai Erera)
+
+2/21/2010
   LUCENE-2254: Add support to the quality package for running
   experiments with any combination of Title, Description, and Narrative.
   (Robert Muir)

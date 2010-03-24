@@ -30,10 +30,12 @@ import org.apache.lucene.benchmark.byTask.feeds.QueryMaker;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.TopFieldCollector;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopScoreDocCollector;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -105,23 +107,29 @@ public abstract class ReadTask extends PerfTask {
       res++;
       Query q = queryMaker.makeQuery();
       Sort sort = getSort();
-      TopDocs hits;
+      TopDocs hits = null;
       final int numHits = numHits();
       if (numHits > 0) {
-        if (sort != null) {
-          Weight w = q.weight(searcher);
-          TopFieldCollector collector = TopFieldCollector.create(sort, numHits,
-                                                                 true, withScore(),
-                                                                 withMaxScore(),
-                                                                 !w.scoresDocsOutOfOrder());
-          searcher.search(w, null, collector);
-          hits = collector.topDocs();
+        if (withCollector() == false) {
+          if (sort != null) {
+            Weight w = q.weight(searcher);
+            TopFieldCollector collector = TopFieldCollector.create(sort, numHits,
+                                                                   true, withScore(),
+                                                                   withMaxScore(),
+                                                                   !w.scoresDocsOutOfOrder());
+            searcher.search(w, null, collector);
+            hits = collector.topDocs();
+          } else {
+            hits = searcher.search(q, numHits);
+          }
         } else {
-          hits = searcher.search(q, numHits);
+          Collector collector = createCollector();
+          searcher.search(q, null, collector);
+          //hits = collector.topDocs();
         }
 
         final String printHitsField = getRunData().getConfig().get("print.hits.field", null);
-        if (printHitsField != null && printHitsField.length() > 0) {
+        if (hits != null && printHitsField != null && printHitsField.length() > 0) {
           if (q instanceof MultiTermQuery) {
             System.out.println("MultiTermQuery term count = " + ((MultiTermQuery) q).getTotalNumberOfTerms());
           }
@@ -177,6 +185,9 @@ public abstract class ReadTask extends PerfTask {
     return res;
   }
 
+  protected Collector createCollector() throws Exception {
+    return TopScoreDocCollector.create(numHits(), true);
+  }
 
 
   protected Document retrieveDoc(IndexReader ir, int id) throws IOException {
@@ -192,6 +203,10 @@ public abstract class ReadTask extends PerfTask {
    * Return true if search should be performed.
    */
   public abstract boolean withSearch();
+
+  public boolean withCollector(){
+    return false;
+  }
   
 
   /**
