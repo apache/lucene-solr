@@ -94,6 +94,8 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Unable to write index.properties", e);
+    } finally {
+      if (os != null) os.close();
     }
 
     //add a doc in the new index dir
