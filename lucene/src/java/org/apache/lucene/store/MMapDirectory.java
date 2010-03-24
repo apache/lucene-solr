@@ -34,7 +34,7 @@ import org.apache.lucene.util.Constants;
 
 /** File-based {@link Directory} implementation that uses
  *  mmap for reading, and {@link
- *  SimpleFSDirectory.SimpleFSIndexOutput} for writing.
+ *  FSDirectory.FSIndexOutput} for writing.
  *
  * <p><b>NOTE</b>: memory mapping uses up a portion of the
  * virtual memory address space in your process equal to the

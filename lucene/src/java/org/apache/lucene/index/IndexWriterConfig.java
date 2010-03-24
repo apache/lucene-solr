@@ -84,7 +84,7 @@ public final class IndexWriterConfig implements Cloneable {
    *  others to finish. */
   public final static int DEFAULT_MAX_THREAD_STATES = 8;
 
-  /** Default setting for {@link #setIndexWriterPooling}. */
+  /** Default setting for {@link #setReaderPooling}. */
   public final static boolean DEFAULT_READER_POOLING = false;
 
   /**
