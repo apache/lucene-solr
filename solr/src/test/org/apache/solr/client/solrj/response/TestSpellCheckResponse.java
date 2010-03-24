@@ -36,6 +36,8 @@ import java.util.List;
  * @since solr 1.3
  */
 public class TestSpellCheckResponse extends SolrExampleTestBase {
+  @Override public String getSchemaFile()     { return null; }
+  @Override public String getSolrConfigFile() { return null; }
 
   SolrServer server;
   JettySolrRunner jetty;
@@ -45,6 +47,7 @@ public class TestSpellCheckResponse extends SolrExampleTestBase {
 
   static String field = "name";
 
+  @Override
   public void setUp() throws Exception {
     super.setUp();
 
@@ -53,6 +56,12 @@ public class TestSpellCheckResponse extends SolrExampleTestBase {
     port = jetty.getLocalPort();
     log.info("Assigned Port: " + port);
     server = this.createNewSolrServer();
+  }
+
+  @Override
+  public void tearDown() throws Exception {
+    jetty.stop();
+    super.tearDown();
   }
 
   public void testSpellCheckResponse() throws Exception {
