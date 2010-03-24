@@ -30,28 +30,36 @@ public class TestPropInject extends AbstractSolrTestCase {
       return writer;
     }
   }
-  
+
   public void testMergePolicy() throws Exception {
-    IndexWriter writer = new ExposeWriterHandler().getWriter();
+    ExposeWriterHandler uh = new ExposeWriterHandler();
+    IndexWriter writer = uh.getWriter();
     LogByteSizeMergePolicy mp = (LogByteSizeMergePolicy)writer.getMergePolicy();
     assertEquals(64.0, mp.getMaxMergeMB());
+    uh.close();
   }
 
   public void testMergePolicyDefaults() throws Exception {
-    IndexWriter writer = new ExposeWriterHandler().getWriter();
+    ExposeWriterHandler uh = new ExposeWriterHandler();
+    IndexWriter writer = uh.getWriter();
     LogByteSizeMergePolicy mp = (LogByteSizeMergePolicy)writer.getMergePolicy();
     assertEquals(32.0, mp.getMaxMergeMB());
+    uh.close();
   }
   
   public void testProps() throws Exception {
-    IndexWriter writer = new ExposeWriterHandler().getWriter();
+    ExposeWriterHandler uh = new ExposeWriterHandler();
+    IndexWriter writer = uh.getWriter();
     ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler)writer.getMergeScheduler();
     assertEquals(2, cms.getMaxThreadCount());
+    uh.close();
   }
 
   public void testPropsDefaults() throws Exception {
-    IndexWriter writer = new ExposeWriterHandler().getWriter();
+    ExposeWriterHandler uh = new ExposeWriterHandler();
+    IndexWriter writer = uh.getWriter();
     ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler)writer.getMergeScheduler();
     assertEquals(4, cms.getMaxThreadCount());
+    uh.close();
   }
 }
