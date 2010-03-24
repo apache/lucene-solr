@@ -74,175 +74,62 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
 
   @Test
   public void testEmptyLower() throws Exception {
-    SolrCore core = h.getCore();
-    TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
-    assertTrue("tc is null and it shouldn't be", tc != null);
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(TermsParams.TERMS, "true");
-    params.add(TermsParams.TERMS_FIELD, "lowerfilt");
-    //no lower bound
-    params.add(TermsParams.TERMS_UPPER, "b");
-    params.add(TermsParams.TERMS_LIMIT, String.valueOf(50));
-    SolrRequestHandler handler;
-    SolrQueryResponse rsp;
-    NamedList values;
-    NamedList terms;
-    handler = core.getRequestHandler("/terms");
-    assertTrue("handler is null and it shouldn't be", handler != null);
-    rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    values = rsp.getValues();
-    terms = (NamedList) ((NamedList) values.get("terms")).get("lowerfilt");
-
-    assertTrue("terms Size: " + terms.size() + " is not: " + 6, terms.size() == 6);
-    assertTrue("a is null and it shouldn't be", terms.get("a") != null);
-    assertTrue("aa is null and it shouldn't be", terms.get("aa") != null);
-    assertTrue("aaa is null and it shouldn't be", terms.get("aaa") != null);
-    assertTrue("ab is null and it shouldn't be", terms.get("ab") != null);
-    assertTrue("abb is null and it shouldn't be", terms.get("abb") != null);
-    assertTrue("abc is null and it shouldn't be", terms.get("abc") != null);
+    assertQ(req("indent","true", "qt","/terms",  "terms","true", "terms.fl","lowerfilt", "terms.upper","b")
+        ,"count(//lst[@name='lowerfilt']/*)=6"
+        ,"//int[@name='a'] "
+        ,"//int[@name='aa'] "
+        ,"//int[@name='aaa'] "
+        ,"//int[@name='ab'] "
+        ,"//int[@name='abb'] "
+        ,"//int[@name='abc'] "
+    );
   }
 
-  @Test
-  public void testNoField() throws Exception {
-    SolrCore core = h.getCore();
-    TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
-    assertTrue("tc is null and it shouldn't be", tc != null);
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(TermsParams.TERMS, "true");
-    //no lower bound
-    params.add(TermsParams.TERMS_LOWER, "d");
-    params.add(TermsParams.TERMS_LIMIT, String.valueOf(50));
-    SolrRequestHandler handler;
-    SolrQueryResponse rsp;
-
-    handler = core.getRequestHandler("/terms");
-    assertTrue("handler is null and it shouldn't be", handler != null);
-    rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
-    ignoreException("No terms.fl parameter specified");
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    resetExceptionIgnores();
-    Exception exception = rsp.getException();
-    assertTrue("exception is null and it shouldn't be", exception != null);
-  }
 
   @Test
   public void testMultipleFields() throws Exception {
-    SolrCore core = h.getCore();
-    TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
-    assertTrue("tc is null and it shouldn't be", tc != null);
+    assertQ(req("indent","true", "qt","/terms",  "terms","true",
+        "terms.fl","lowerfilt", "terms.upper","b",
+        "terms.fl","standardfilt")
+        ,"count(//lst[@name='lowerfilt']/*)=6"
+        ,"count(//lst[@name='standardfilt']/*)=4"
+    );
 
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(TermsParams.TERMS, "true");
-    params.add(TermsParams.TERMS_FIELD, "lowerfilt", "standardfilt");
-    //no lower bound
-    params.add(TermsParams.TERMS_UPPER, "b");
-    params.add(TermsParams.TERMS_LIMIT, String.valueOf(50));
-    SolrRequestHandler handler;
-    SolrQueryResponse rsp;
-    NamedList values;
-    NamedList terms;
-    handler = core.getRequestHandler("/terms");
-    assertTrue("handler is null and it shouldn't be", handler != null);
-    rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    values = rsp.getValues();
-    NamedList tmp = (NamedList) values.get("terms");
-    assertTrue("tmp Size: " + tmp.size() + " is not: " + 2, tmp.size() == 2);
-    terms = (NamedList) tmp.get("lowerfilt");
-    assertTrue("terms Size: " + terms.size() + " is not: " + 6, terms.size() == 6);
-    terms = (NamedList) tmp.get("standardfilt");
-    assertTrue("terms Size: " + terms.size() + " is not: " + 4, terms.size() == 4);
   }
 
   @Test
   public void testUnlimitedRows() throws Exception {
-    SolrCore core = h.getCore();
-    TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
-    assertTrue("tc is null and it shouldn't be", tc != null);
+    assertQ(req("indent","true", "qt","/terms",  "terms","true",
+        "terms.fl","lowerfilt",
+        "terms.fl","standardfilt",
+        "terms.rows","-1")
+        ,"count(//lst[@name='lowerfilt']/*)=9"
+        ,"count(//lst[@name='standardfilt']/*)=10"
+    );
 
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(TermsParams.TERMS, "true");
-    params.add(TermsParams.TERMS_FIELD, "lowerfilt", "standardfilt");
-    //no lower bound, upper bound or rows
-    params.add(TermsParams.TERMS_LIMIT, String.valueOf(-1));
-    SolrRequestHandler handler;
-    SolrQueryResponse rsp;
-    NamedList values;
-    NamedList terms;
-    handler = core.getRequestHandler("/terms");
-    assertTrue("handler is null and it shouldn't be", handler != null);
-    rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    values = rsp.getValues();
-    terms = (NamedList) ((NamedList) values.get("terms")).get("lowerfilt");
-    assertTrue("terms Size: " + terms.size() + " is not: " + 9, terms.size() == 9);
 
   }
 
   @Test
   public void testPrefix() throws Exception {
-    SolrCore core = h.getCore();
-    TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
-    assertTrue("tc is null and it shouldn't be", tc != null);
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(TermsParams.TERMS, "true");
-    params.add(TermsParams.TERMS_FIELD, "lowerfilt", "standardfilt");
-    params.add(TermsParams.TERMS_LOWER,  "aa");
-    params.add(TermsParams.TERMS_LOWER_INCLUSIVE, "false");
-    params.add(TermsParams.TERMS_PREFIX_STR, "aa");
-    params.add(TermsParams.TERMS_UPPER, "b");
-    params.add(TermsParams.TERMS_LIMIT, String.valueOf(50));
-    SolrRequestHandler handler;
-    SolrQueryResponse rsp;
-    NamedList values;
-    NamedList terms;
-    handler = core.getRequestHandler("/terms");
-    assertTrue("handler is null and it shouldn't be", handler != null);
-    rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    values = rsp.getValues();
-    terms = (NamedList) ((NamedList) values.get("terms")).get("lowerfilt");
-    assertTrue("terms Size: " + terms.size() + " is not: " + 1, terms.size() == 1);
-    Object value = terms.get("aaa");
-    assertTrue("value is null and it shouldn't be", value != null);
+    assertQ(req("indent","true", "qt","/terms",  "terms","true",
+        "terms.fl","lowerfilt", "terms.upper","b",
+        "terms.fl","standardfilt",
+        "terms.lower","aa", "terms.lower.incl","false", "terms.prefix","aa", "terms.upper","b", "terms.limit","50")
+        ,"count(//lst[@name='lowerfilt']/*)=1"
+        ,"count(//lst[@name='standardfilt']/*)=1"
+    );
   }
 
   @Test
   public void testRegexp() throws Exception {
-    SolrCore core = h.getCore();
-    TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
-    assertTrue("tc is null and it shouldn't be", tc != null);
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(TermsParams.TERMS, "true");
-    params.add(TermsParams.TERMS_FIELD, "standardfilt");
-    params.add(TermsParams.TERMS_LOWER,  "bb");
-    params.add(TermsParams.TERMS_LOWER_INCLUSIVE, "false");
-    params.add(TermsParams.TERMS_REGEXP_STR, "b.*");
-    params.add(TermsParams.TERMS_UPPER, "bbbb");
-    params.add(TermsParams.TERMS_UPPER_INCLUSIVE, "true");
-    params.add(TermsParams.TERMS_LIMIT, String.valueOf(50));
-    SolrRequestHandler handler;
-    SolrQueryResponse rsp;
-    NamedList values;
-    NamedList terms;
-    handler = core.getRequestHandler("/terms");
-    assertTrue("handler is null and it shouldn't be", handler != null);
-    rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    values = rsp.getValues();
-    terms = (NamedList) ((NamedList) values.get("terms")).get("standardfilt");
-    assertEquals("terms Size: " + terms.size() + " is not: 1", 1, terms.size());
+    assertQ(req("indent","true", "qt","/terms",  "terms","true",
+        "terms.fl","standardfilt",
+        "terms.lower","a", "terms.lower.incl","false",
+        "terms.upper","c", "terms.upper.incl","true",
+        "terms.regex","b.*")
+        ,"count(//lst[@name='standardfilt']/*)=3"        
+    );
   }
 
   @Test
@@ -258,100 +145,44 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
 
   @Test
   public void testRegexpWithFlags() throws Exception {
-    SolrCore core = h.getCore();
-    TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
-    assertTrue("tc is null and it shouldn't be", tc != null);
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(TermsParams.TERMS, "true");
-    params.add(TermsParams.TERMS_FIELD, "standardfilt");
-    params.add(TermsParams.TERMS_LOWER,  "bb");
-    params.add(TermsParams.TERMS_LOWER_INCLUSIVE, "false");
-    params.add(TermsParams.TERMS_REGEXP_STR, "B.*");
-    params.add(TermsParams.TERMS_REGEXP_FLAG, "case_insensitive");
-    params.add(TermsParams.TERMS_UPPER, "bbbb");
-    params.add(TermsParams.TERMS_UPPER_INCLUSIVE, "true");
-    params.add(TermsParams.TERMS_LIMIT, String.valueOf(50));
-    SolrRequestHandler handler;
-    SolrQueryResponse rsp;
-    NamedList values;
-    NamedList terms;
-    handler = core.getRequestHandler("/terms");
-    assertTrue("handler is null and it shouldn't be", handler != null);
-    rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    values = rsp.getValues();
-    terms = (NamedList) ((NamedList) values.get("terms")).get("standardfilt");
-    assertEquals("terms Size: " + terms.size() + " is not: 1", 1, terms.size());
+    // TODO: there are no uppercase or mixed-case terms in the index!
+    assertQ(req("indent","true", "qt","/terms",  "terms","true",
+        "terms.fl","standardfilt",
+        "terms.lower","a", "terms.lower.incl","false",
+        "terms.upper","c", "terms.upper.incl","true",
+        "terms.regex","B.*",
+        "terms.regex.flag","case_insensitive")
+        ,"count(//lst[@name='standardfilt']/*)=3"               
+    );
   }
 
   @Test
   public void testSortCount() throws Exception {
-    SolrCore core = h.getCore();
-    TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
-    assertTrue("tc is null and it shouldn't be", tc != null);
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(TermsParams.TERMS, "true");
-    params.add(TermsParams.TERMS_FIELD, "standardfilt");
-    params.add(TermsParams.TERMS_LOWER,  "s");
-    params.add(TermsParams.TERMS_LOWER_INCLUSIVE, "false");
-    params.add(TermsParams.TERMS_PREFIX_STR, "s");
-    params.add(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_COUNT);
-    
-    SolrRequestHandler handler;
-    SolrQueryResponse rsp;
-    NamedList values;
-    NamedList terms;
-    handler = core.getRequestHandler("/terms");
-    assertTrue("handler is null and it shouldn't be", handler != null);
-    rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    values = rsp.getValues();
-    terms = (NamedList) ((NamedList) values.get("terms")).get("standardfilt");
-    assertTrue("terms Size: " + terms.size() + " is not: " + 3, terms.size() == 3);
-    assertTrue("Item 0 name is not 'snake'", terms.getName(0).equals("snake"));
-    assertTrue("Item 0 frequency is not '3'", (Integer) terms.getVal(0) == 3);
-    assertTrue("Item 1 name is not 'shark'", terms.getName(1).equals("shark"));
-    assertTrue("Item 1 frequency is not '2'", (Integer) terms.getVal(1) == 2);
-    assertTrue("Item 2 name is not 'spider'", terms.getName(2).equals("spider"));
-    assertTrue("Item 2 frequency is not '1'", (Integer) terms.getVal(2) == 1);    
+    assertQ(req("indent","true", "qt","/terms",  "terms","true",
+        "terms.fl","standardfilt",
+        "terms.lower","s", "terms.lower.incl","false",
+        "terms.prefix","s",
+        "terms.sort","count")
+        ,"count(//lst[@name='standardfilt']/*)=3"
+        ,"//lst[@name='standardfilt']/int[1][@name='snake'][.='3']"
+        ,"//lst[@name='standardfilt']/int[2][@name='shark'][.='2']"
+        ,"//lst[@name='standardfilt']/int[3][@name='spider'][.='1']"
+    );
+  
   }
 
   @Test
   public void testSortIndex() throws Exception {
-    SolrCore core = h.getCore();
-    TermsComponent tc = (TermsComponent) core.getSearchComponent("termsComp");
-    assertTrue("tc is null and it shouldn't be", tc != null);
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(TermsParams.TERMS, "true");
-    params.add(TermsParams.TERMS_FIELD, "standardfilt");
-    params.add(TermsParams.TERMS_LOWER,  "s");
-    params.add(TermsParams.TERMS_LOWER_INCLUSIVE, "false");
-    params.add(TermsParams.TERMS_PREFIX_STR, "s");
-    params.add(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_INDEX);
-    
-    SolrRequestHandler handler;
-    SolrQueryResponse rsp;
-    NamedList values;
-    NamedList terms;
-    handler = core.getRequestHandler("/terms");
-    assertTrue("handler is null and it shouldn't be", handler != null);
-    rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    values = rsp.getValues();
-    terms = (NamedList) ((NamedList) values.get("terms")).get("standardfilt");
-    assertTrue("terms Size: " + terms.size() + " is not: " + 3, terms.size() == 3);
-    assertTrue("Item 0 name is not 'shark' it is " + terms.getName(0), terms.getName(0).equals("shark"));
-    assertTrue("Item 0 frequency is not '2'", (Integer) terms.getVal(0) == 2);
-    assertTrue("Item 1 name is not 'snake', it is " + terms.getName(1), terms.getName(1).equals("snake"));
-    assertTrue("Item 1 frequency is not '3'", (Integer) terms.getVal(1) == 3);
-    assertTrue("Item 2 name is not 'spider', it is " + terms.getName(2), terms.getName(2).equals("spider"));
-    assertTrue("Item 2 frequency is not '1'", (Integer) terms.getVal(2) == 1);    
+    assertQ(req("indent","true", "qt","/terms",  "terms","true",
+        "terms.fl","standardfilt",
+        "terms.lower","s", "terms.lower.incl","false",
+        "terms.prefix","s",
+        "terms.sort","index")
+        ,"count(//lst[@name='standardfilt']/*)=3"
+        ,"//lst[@name='standardfilt']/int[1][@name='shark'][.='2']"
+        ,"//lst[@name='standardfilt']/int[2][@name='snake'][.='3']"
+        ,"//lst[@name='standardfilt']/int[3][@name='spider'][.='1']"
+    );
   }
   
   @Test
