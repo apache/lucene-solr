@@ -21,6 +21,13 @@
  It is *not* a good example to work from. 
 -->
 <config>
+
+  <!--  The DirectoryFactory to use for indexes.
+        solr.StandardDirectoryFactory, the default, is filesystem based.
+        solr.RAMDirectoryFactory is memory based, not persistent, and doesn't work with replication. -->
+  <directoryFactory name="DirectoryFactory" class="${solr.directoryFactory:solr.StandardDirectoryFactory}"/>
+
+
   <updateHandler class="solr.DirectUpdateHandler2" />
 
   <requestDispatcher handleSelect="true" >

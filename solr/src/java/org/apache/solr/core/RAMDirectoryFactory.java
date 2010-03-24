@@ -28,11 +28,11 @@ import org.apache.lucene.store.Directory;
  * Directory provider for using lucene RAMDirectory
  */
 public class RAMDirectoryFactory extends StandardDirectoryFactory {
-  private Map<String, RefCntRamDirectory> directories = new HashMap<String, RefCntRamDirectory>();
+  private static Map<String, RefCntRamDirectory> directories = new HashMap<String, RefCntRamDirectory>();
 
   @Override
   public Directory open(String path) throws IOException {
-    synchronized (this) {
+    synchronized (RAMDirectoryFactory.class) {
       RefCntRamDirectory directory = directories.get(path);
       if (directory == null || !directory.isOpen()) {
         directory = (RefCntRamDirectory) openNew(path);
@@ -46,7 +46,7 @@ public class RAMDirectoryFactory extends StandardDirectoryFactory {
   }
   
   public boolean exists(String path) {
-    synchronized (this) {
+    synchronized (RAMDirectoryFactory.class) {
       RefCntRamDirectory directory = directories.get(path);
       if (directory == null || !directory.isOpen()) {
         return false;

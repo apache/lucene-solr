@@ -130,6 +130,9 @@ public abstract class MultiCoreExampleTestBase extends SolrExampleTestBase
     long before = mcr.getStartTime( name ).getTime();
     CoreAdminRequest.reloadCore( name, coreadmin );
     
+    // core should still have docs
+    assertEquals( 1, getSolrCore0().query( new SolrQuery( "id:AAA" ) ).getResults().size() );
+    
     mcr = CoreAdminRequest.getStatus( name, coreadmin );
     long after = mcr.getStartTime( name ).getTime();
     assertTrue( "should have more recent time: "+after+","+before, after > before );
