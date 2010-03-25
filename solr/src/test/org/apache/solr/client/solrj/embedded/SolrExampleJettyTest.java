@@ -23,6 +23,8 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import org.junit.Assert;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * TODO? perhaps use:
@@ -34,36 +36,11 @@ import org.junit.Assert;
  */
 public class SolrExampleJettyTest extends SolrExampleTests {
 
-  SolrServer server;
-  JettySolrRunner jetty;
-
-  int port = 0;
-  static final String context = "/example";
-  
-  @Override public void setUp() throws Exception 
-  {
-    super.setUp();
-    
-    jetty = new JettySolrRunner( context, 0 );
-    jetty.start();
-    port = jetty.getLocalPort();
-    log.info("Assigned Port#" + port);
-    server = this.createNewSolrServer();
-  }
-
-  @Override public void tearDown() throws Exception 
-  {
-    super.tearDown();
-    jetty.stop();  // stop the server
+  @BeforeClass
+  public static void beforeTest() throws Exception {
+    createJetty(EXAMPLE_HOME, null, null);
   }
   
-  
-  @Override
-  protected SolrServer getSolrServer()
-  {
-    return server;
-  }
-
   @Override
   protected SolrServer createNewSolrServer()
   {
@@ -80,7 +57,8 @@ public class SolrExampleJettyTest extends SolrExampleTests {
       throw new RuntimeException( ex );
     }
   }
-  
+
+  @Test
   public void testBadSetup()
   {
     try {

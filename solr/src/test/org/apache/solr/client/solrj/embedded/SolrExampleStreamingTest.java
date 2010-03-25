@@ -21,6 +21,7 @@ import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.impl.StreamingUpdateSolrServer;
+import org.junit.BeforeClass;
 
 
 /**
@@ -29,35 +30,9 @@ import org.apache.solr.client.solrj.impl.StreamingUpdateSolrServer;
  * @since solr 1.3
  */
 public class SolrExampleStreamingTest extends SolrExampleTests {
-
-  SolrServer server;
-  JettySolrRunner jetty;
-
-  int port = 0;
-  static final String context = "/example";
-  
-  @Override public void setUp() throws Exception 
-  {
-    super.setUp();
-    
-    jetty = new JettySolrRunner( context, 0 );
-    jetty.start();
-    port = jetty.getLocalPort();
-    log.info("Assigned Port#" + port);
-    server = this.createNewSolrServer();
-  }
-
-  @Override public void tearDown() throws Exception 
-  {
-    super.tearDown();
-    jetty.stop();  // stop the server
-  }
-  
-  
-  @Override
-  protected SolrServer getSolrServer()
-  {
-    return server;
+  @BeforeClass
+  public static void beforeTest() throws Exception {
+    createJetty(EXAMPLE_HOME, null, null);
   }
 
   @Override

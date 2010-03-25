@@ -53,7 +53,8 @@ public class JettySolrRunner
   public JettySolrRunner( String context, int port, String solrConfigFilename )
   {
     this.init( context, port );
-    dispatchFilter.setInitParameter("solrconfig-filename", solrConfigFilename);
+    if (solrConfigFilename != null)
+      dispatchFilter.setInitParameter("solrconfig-filename", solrConfigFilename);
   }
   
 //  public JettySolrRunner( String context, String home, String dataDir, int port, boolean log )

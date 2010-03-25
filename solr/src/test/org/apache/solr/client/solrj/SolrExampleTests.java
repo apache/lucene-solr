@@ -43,6 +43,9 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.params.FacetParams;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * This should include tests against the example solr config
@@ -52,11 +55,12 @@ import org.apache.solr.common.params.FacetParams;
  * @version $Id$
  * @since solr 1.3
  */
-abstract public class SolrExampleTests extends SolrExampleTestBase
+abstract public class SolrExampleTests extends SolrJettyTestBase
 {
   /**
    * query the example
    */
+  @Test
   public void testExampleConfig() throws Exception
   {    
     SolrServer server = getSolrServer();
@@ -160,7 +164,8 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
   /**
    * query the example
    */
-  public void testAddRetrieve() throws Exception
+ @Test
+ public void testAddRetrieve() throws Exception
   {    
     SolrServer server = getSolrServer();
     
@@ -212,7 +217,8 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
   /**
    * query the example
    */
-  public void testCommitWithin() throws Exception
+ @Test
+ public void testCommitWithin() throws Exception
   {    
     // make sure it is empty...
     SolrServer server = getSolrServer();
@@ -250,7 +256,8 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
   }
 
 
-  public void testContentStreamRequest() throws Exception {
+ @Test
+ public void testContentStreamRequest() throws Exception {
     SolrServer server = getSolrServer();
     server.deleteByQuery( "*:*" );// delete everything!
     server.commit();
@@ -283,7 +290,7 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
   }
 
 
-  protected void assertNumFound( String query, int num ) throws SolrServerException, IOException
+ protected void assertNumFound( String query, int num ) throws SolrServerException, IOException
   {
     QueryResponse rsp = getSolrServer().query( new SolrQuery( query ) );
     if( num != rsp.getResults().getNumFound() ) {
@@ -291,7 +298,8 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     }
   }
 
-  public void testAddDelete() throws Exception
+ @Test
+ public void testAddDelete() throws Exception
   {    
     SolrServer server = getSolrServer();
     
@@ -344,7 +352,8 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     assertNumFound( "*:*", 0 ); // make sure it got out
   }
   
-  public void testLukeHandler() throws Exception
+ @Test
+ public void testLukeHandler() throws Exception
   {    
     SolrServer server = getSolrServer();
     
@@ -370,7 +379,8 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     assertNotNull( rsp.getFieldTypeInfo() ); 
   }
 
-  public void testStatistics() throws Exception
+ @Test
+ public void testStatistics() throws Exception
   {    
     SolrServer server = getSolrServer();
     
@@ -401,8 +411,8 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     FieldStatsInfo stats = rsp.getFieldStatsInfo().get( f );
     assertNotNull( stats );
     
-    assertEquals( 23.0, stats.getMin() );
-    assertEquals( 94.0, stats.getMax() );
+    assertEquals( 23.0, stats.getMin().doubleValue(), 0 );
+    assertEquals( 94.0, stats.getMax().doubleValue(), 0 );
     assertEquals( new Long(nums.length), stats.getCount() );
     assertEquals( new Long(0), stats.getMissing() );
     assertEquals( "26.4", stats.getStddev().toString().substring(0,4) );
@@ -427,8 +437,8 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     stats = rsp.getFieldStatsInfo().get( f );
     assertNotNull( stats );
     
-    assertEquals( 5.0, stats.getMin() );
-    assertEquals( 20.0, stats.getMax() );
+    assertEquals( 5.0, stats.getMin().doubleValue(), 0 );
+    assertEquals( 20.0, stats.getMax().doubleValue(), 0 );
     assertEquals( new Long(nums.length), stats.getCount() );
     assertEquals( new Long(0), stats.getMissing() );
     
@@ -476,7 +486,8 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     assertEquals( "they have the same distribution", inStockF.getStddev(), inStockT.getStddev() );
   }
 
-  public void testPingHandler() throws Exception
+ @Test
+ public void testPingHandler() throws Exception
   {    
     SolrServer server = getSolrServer();
     
@@ -499,7 +510,8 @@ abstract public class SolrExampleTests extends SolrExampleTestBase
     }
   }
   
-  public void testFaceting() throws Exception
+ @Test
+ public void testFaceting() throws Exception
   {    
     SolrServer server = getSolrServer();
     

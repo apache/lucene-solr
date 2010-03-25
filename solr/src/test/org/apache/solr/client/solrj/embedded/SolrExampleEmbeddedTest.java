@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.embedded;
 
 import org.apache.solr.client.solrj.SolrExampleTests;
 import org.apache.solr.client.solrj.SolrServer;
+import org.junit.BeforeClass;
 
 /**
  * This runs SolrServer test using 
@@ -28,20 +29,9 @@ import org.apache.solr.client.solrj.SolrServer;
  */
 public class SolrExampleEmbeddedTest extends SolrExampleTests {
 
-  SolrServer server;
-  
-  @Override public void setUp() throws Exception 
-  {
-    super.setUp();
-    
-    // setup the server...
-    server = createNewSolrServer();
-  }
-
-  @Override
-  protected SolrServer getSolrServer()
-  {
-    return server;
+  @BeforeClass
+  public static void beforeTest() throws Exception {
+    initCore(EXAMPLE_CONFIG, EXAMPLE_SCHEMA);
   }
 
   @Override
