@@ -31,7 +31,7 @@ public class SolrExampleEmbeddedTest extends SolrExampleTests {
 
   @BeforeClass
   public static void beforeTest() throws Exception {
-    initCore(EXAMPLE_CONFIG, EXAMPLE_SCHEMA);
+    initCore(EXAMPLE_CONFIG, EXAMPLE_SCHEMA, EXAMPLE_HOME);
   }
 
   @Override

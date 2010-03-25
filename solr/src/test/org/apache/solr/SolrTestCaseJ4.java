@@ -77,9 +77,17 @@ public class SolrTestCaseJ4 extends LuceneTestCaseJ4 {
   /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
    * deleteCore will be called for you via SolrTestCaseJ4 @AfterClass */
   public static void initCore(String config, String schema) throws Exception {
-    //ignoreException("ignore_exception");
+    initCore(config, schema, null);
+  }
+
+  /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
+   * deleteCore will be called for you via SolrTestCaseJ4 @AfterClass */
+  public static void initCore(String config, String schema, String solrHome) throws Exception {
     configString = config;
     schemaString = schema;
+    if (solrHome != null) {
+      System.setProperty("solr.solr.home", solrHome);
+    }
     initCore();
   }
 
