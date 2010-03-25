@@ -154,13 +154,25 @@ public class SolrTestCaseJ4 extends LuceneTestCaseJ4 {
 
   public static Logger log = LoggerFactory.getLogger(SolrTestCaseJ4.class);
 
+  private static String factoryProp;
+
   public static void initCore() throws Exception {
     log.info("####initCore");
+    ignoreException("ignore_exception");
+    factoryProp = System.getProperty("solr.directoryFactory");
+    if (factoryProp == null) {
+      System.setProperty("solr.directoryFactory","solr.RAMDirectoryFactory");
+    }
+
     dataDir = new File(System.getProperty("java.io.tmpdir")
             + System.getProperty("file.separator")
     //        + getClass().getName() + "-" + System.currentTimeMillis());
             + System.currentTimeMillis());
     dataDir.mkdirs();
+
+    // other  methods like starting a jetty instance need these too
+    System.setProperty("solr.test.sys.prop1", "propone");
+    System.setProperty("solr.test.sys.prop2", "proptwo");
 
     String configFile = getSolrConfigFile();
     if (configFile != null) {
@@ -211,6 +223,10 @@ public class SolrTestCaseJ4 extends LuceneTestCaseJ4 {
       }
     }
 
+    if (factoryProp == null) {
+      System.clearProperty("solr.directoryFactory");
+    }
+    
     dataDir = null;
     solrConfig = null;
     h = null;
