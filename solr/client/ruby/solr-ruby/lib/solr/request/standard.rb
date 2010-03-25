@@ -307,6 +307,8 @@ class Solr::Request::Standard < Solr::Request::Select
 
       hash["hl.usePhraseHighlighter"] = @params[:highlighting][:use_phrase_highlighter]
 
+      hash["hl.useFastVectorHighlighter"] = @params[:highlighting][:use_fast_vector_highlighter]
+
       regex = @params[:highlighting][:regex]
       if regex
         if regex[:slop]
