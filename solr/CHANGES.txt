@@ -22,6 +22,13 @@ See the tutorial at http://lucene.apache.org/solr/tutorial.html
 $Id$
 
 ==================  3.1.0-dev ==================
+Versions of Major Components
+---------------------
+Apache Lucene trunk
+Apache Tika 0.6
+Carrot2 3.1.0
+
+
 Upgrading from Solr 1.4
 ----------------------
 
@@ -35,7 +42,8 @@ Upgrading from Solr 1.4
 
 * Using solr.xml is recommended for single cores also (SOLR-1621)
 
-* Old syntax of <highlighting> is deprecated (SOLR-1696)
+* Old syntax of <highlighting> configuration in solrconfig.xml
+  is deprecated (SOLR-1696)
 
 * The deprecated HTMLStripReader, HTMLStripWhitespaceTokenizerFactory and
   HTMLStripStandardTokenizerFactory were removed. To strip HTML tags, 
@@ -47,11 +55,11 @@ Upgrading from Solr 1.4
   shorter fields, this may actually be an improvement, as the compression
   used was not very good for short text. Some indexes may get larger though.
 
-Versions of Major Components
----------------------
-Apache Lucene trunk
-Apache Tika 0.6
-Carrot2 3.1.0
+* SOLR-1845: The TermsComponent response format was changed so that the
+  "terms" container is a map instead of a named list.  This affects
+   response formats like JSON, but not XML. (yonik)
+  
+
 
 Detailed Change List
 ----------------------
@@ -115,6 +123,7 @@ New Features
 
 * SOLR-1379: Add RAMDirectoryFactory for non-persistent in memory index storage.
   (Alex Baranov via yonik)
+
 
 Optimizations
 ----------------------
@@ -292,6 +301,9 @@ Other Changes
 
 * SOLR-1821: Fix TimeZone-dependent test failure in TestEvaluatorBag.
   (Chris Male via rmuir)
+
+
+  
   
 Build
 ----------------------

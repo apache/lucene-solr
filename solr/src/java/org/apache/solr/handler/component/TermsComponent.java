@@ -72,7 +72,7 @@ public class TermsComponent extends SearchComponent {
       String lowerStr = params.get(TermsParams.TERMS_LOWER, null);
       String[] fields = params.getParams(TermsParams.TERMS_FIELD);
       if (fields != null && fields.length > 0) {
-        NamedList terms = new NamedList();
+        NamedList terms = new SimpleOrderedMap();
         rb.rsp.add("terms", terms);
         int limit = params.getInt(TermsParams.TERMS_LIMIT, 10);
         if (limit < 0) {
