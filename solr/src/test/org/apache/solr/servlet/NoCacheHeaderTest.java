@@ -21,24 +21,35 @@ import java.util.Date;
 import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethodBase;
 import org.apache.commons.httpclient.util.DateUtil;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static junit.framework.Assert.*;
+
 
 /**
  * A test case for the several HTTP cache headers emitted by Solr
  */
 public class NoCacheHeaderTest extends CacheHeaderTestBase {
-  @Override public String getSolrConfigFilename() { return "solrconfig-nocache.xml";  }
+  @BeforeClass
+  public static void beforeTest() throws Exception {
+    createJetty("solr/", "solr/conf/solrconfig-nocache.xml", null);
+  }
 
   // The tests
+  @Test
   public void testLastModified() throws Exception {
     doLastModified("GET");
     doLastModified("HEAD");
   }
 
+  @Test
   public void testEtag() throws Exception {
     doETag("GET");
     doETag("HEAD");
   }
 
+  @Test
   public void testCacheControl() throws Exception {
     doCacheControl("GET");
     doCacheControl("HEAD");

@@ -23,47 +23,16 @@ import org.apache.commons.httpclient.methods.GetMethod;
 import org.apache.commons.httpclient.methods.HeadMethod;
 import org.apache.commons.httpclient.methods.PostMethod;
 import org.apache.solr.client.solrj.SolrExampleTestBase;
+import org.apache.solr.client.solrj.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.junit.Test;
 
-public abstract class CacheHeaderTestBase extends SolrExampleTestBase {
-  @Override public String getSolrHome() {  return "solr/"; }
-  
-  abstract public String getSolrConfigFilename();
-  
-  public String getSolrConfigFile() { return getSolrHome()+"conf/"+getSolrConfigFilename(); }
-  
-  CommonsHttpSolrServer server;
+import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-  JettySolrRunner jetty;
-
-  int port = 0;
-
-  static final String context = "/example";
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    
-    jetty = new JettySolrRunner(context, 0, getSolrConfigFilename());
-    jetty.start();
-    port = jetty.getLocalPort();
-
-    server = this.createNewSolrServer();
-  }
-
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-    jetty.stop(); // stop the server
-  }
-  
-  @Override
-  protected SolrServer getSolrServer() {
-    return server;
-  }
-
+public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
   @Override
   protected CommonsHttpSolrServer createNewSolrServer() {
     try {
@@ -80,13 +49,14 @@ public abstract class CacheHeaderTestBase extends SolrExampleTestBase {
   }
 
   protected HttpMethodBase getSelectMethod(String method) {
+    CommonsHttpSolrServer httpserver = (CommonsHttpSolrServer)getSolrServer();
     HttpMethodBase m = null;
     if ("GET".equals(method)) {
-      m = new GetMethod(server.getBaseURL() + "/select");
+      m = new GetMethod(httpserver.getBaseURL() + "/select");
     } else if ("HEAD".equals(method)) {
-      m = new HeadMethod(server.getBaseURL() + "/select");
+      m = new HeadMethod(httpserver.getBaseURL() + "/select");
     } else if ("POST".equals(method)) {
-      m = new PostMethod(server.getBaseURL() + "/select");
+      m = new PostMethod(httpserver.getBaseURL() + "/select");
     }
     m.setQueryString(new NameValuePair[] { new NameValuePair("q", "solr"),
           new NameValuePair("qt", "standard") });
@@ -94,21 +64,23 @@ public abstract class CacheHeaderTestBase extends SolrExampleTestBase {
   }
 
   protected HttpMethodBase getUpdateMethod(String method) {
+    CommonsHttpSolrServer httpserver = (CommonsHttpSolrServer)getSolrServer();
     HttpMethodBase m = null;
     
     if ("GET".equals(method)) {
-      m=new GetMethod(server.getBaseURL()+"/update/csv");
+      m=new GetMethod(httpserver.getBaseURL()+"/update/csv");
     } else if ("POST".equals(method)) {
-      m=new PostMethod(server.getBaseURL()+"/update/csv");      
+      m=new PostMethod(httpserver.getBaseURL()+"/update/csv");
     } else if ("HEAD".equals(method)) {
-      m=new HeadMethod(server.getBaseURL()+"/update/csv");      
+      m=new HeadMethod(httpserver.getBaseURL()+"/update/csv");
     }
     
     return m;
   }
   
   protected HttpClient getClient() {
-    return server.getHttpClient();
+    CommonsHttpSolrServer httpserver = (CommonsHttpSolrServer)getSolrServer();
+    return httpserver.getHttpClient();
   }
 
   protected void checkResponseBody(String method, HttpMethodBase resp)
@@ -140,16 +112,19 @@ public abstract class CacheHeaderTestBase extends SolrExampleTestBase {
   }
 
   // The tests
+  @Test
   public void testLastModified() throws Exception {
     doLastModified("GET");
     doLastModified("HEAD");
   }
 
+  @Test
   public void testEtag() throws Exception {
     doETag("GET");
     doETag("HEAD");
   }
 
+  @Test
   public void testCacheControl() throws Exception {
     doCacheControl("GET");
     doCacheControl("HEAD");

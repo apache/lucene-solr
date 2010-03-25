@@ -26,20 +26,26 @@ import org.apache.commons.httpclient.Header;
 import org.apache.commons.httpclient.HttpMethodBase;
 import org.apache.commons.httpclient.NameValuePair;
 import org.apache.commons.httpclient.util.DateUtil;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static junit.framework.Assert.*;
 
 /**
  * A test case for the several HTTP cache headers emitted by Solr
  */
 public class CacheHeaderTest extends CacheHeaderTestBase {
-  @Override
-  public String getSolrConfigFilename() {
-    return "solrconfig.xml";
+
+  @BeforeClass
+  public static void beforeTest() throws Exception {
+    createJetty("solr/", null, null);
   }
 
   protected static final String CHARSET = "UTF-8";
 
   protected static final String CONTENTS = "id\n100\n101\n102";
 
+  @Test
   public void testCacheVetoHandler() throws Exception {
     File f=makeFile(CONTENTS);
     HttpMethodBase m=getUpdateMethod("GET");
@@ -49,6 +55,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     checkVetoHeaders(m, true);
   }
   
+  @Test
   public void testCacheVetoException() throws Exception {
     HttpMethodBase m = getSelectMethod("GET");
     // We force an exception from Solr. This should emit "no-cache" HTTP headers
@@ -58,6 +65,7 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
     assertFalse(m.getStatusCode() == 200);
     checkVetoHeaders(m, false);
   }
+
 
   protected void checkVetoHeaders(HttpMethodBase m, boolean checkExpires) throws Exception {
     Header head = m.getResponseHeader("Cache-Control");
