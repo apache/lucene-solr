@@ -103,7 +103,22 @@ public class SolrTestCaseJ4 extends LuceneTestCaseJ4 {
     ignoreException("ignore_exception");  // always ignore "ignore_exception"    
   }
 
+  protected static String getClassName() {
+    StackTraceElement[] stack = new RuntimeException("WhoAmI").fillInStackTrace().getStackTrace();
+    for (int i = stack.length-1; i>=0; i--) {
+      StackTraceElement ste = stack[i];
+      String cname = ste.getClassName();
+      if (cname.indexOf(".lucene.")>=0 || cname.indexOf(".solr.")>=0) {
+        return cname;
+      }
+    }
+    return SolrTestCaseJ4.class.getName();
+  }
 
+  protected static String getSimpleClassName() {
+    String cname = getClassName();
+    return cname.substring(cname.lastIndexOf('.')+1);
+  }
 
   protected static String configString;
   protected static String schemaString;
@@ -164,19 +179,24 @@ public class SolrTestCaseJ4 extends LuceneTestCaseJ4 {
 
   private static String factoryProp;
 
+  public static void createTempDir() {
+    String cname = getSimpleClassName();
+    dataDir = new File(System.getProperty("java.io.tmpdir")
+            + System.getProperty("file.separator")
+            +"solrtest-" + cname + "-" + System.currentTimeMillis());
+    dataDir.mkdirs();
+  }
+
   public static void initCore() throws Exception {
     log.info("####initCore");
+
     ignoreException("ignore_exception");
     factoryProp = System.getProperty("solr.directoryFactory");
     if (factoryProp == null) {
       System.setProperty("solr.directoryFactory","solr.RAMDirectoryFactory");
     }
 
-    dataDir = new File(System.getProperty("java.io.tmpdir")
-            + System.getProperty("file.separator")
-    //        + getClass().getName() + "-" + System.currentTimeMillis());
-            + System.currentTimeMillis());
-    dataDir.mkdirs();
+    createTempDir();
 
     // other  methods like starting a jetty instance need these too
     System.setProperty("solr.test.sys.prop1", "propone");
