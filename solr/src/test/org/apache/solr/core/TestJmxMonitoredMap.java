@@ -54,15 +54,20 @@ public class TestJmxMonitoredMap {
 
   @Before
   public void setUp() throws Exception {
-    for (int i = 0; i < 5; i++) {
+    int retries = 5;
+    for (int i = 0; i < retries; i++) {
       try {
         ServerSocket server = new ServerSocket(0);
-        port = server.getLocalPort();
-        server.close();
+        try {
+          port = server.getLocalPort();
+        } finally {
+          server.close();
+        }
         // System.out.println("Using port: " + port);
         try {
           LocateRegistry.createRegistry(port);
         } catch (RemoteException e) {
+          throw e;
         }
         String url = "service:jmx:rmi:///jndi/rmi://:" + port + "/solrjmx";
         JmxConfiguration config = new JmxConfiguration(true, null, url);
@@ -72,7 +77,9 @@ public class TestJmxMonitoredMap {
         mbeanServer = connector.getMBeanServerConnection();
         break;
       } catch (Exception e) {
-
+        if(retries == (i + 1)) {
+          throw e;
+        }
       }
     }
   }
