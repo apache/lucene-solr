@@ -112,6 +112,10 @@ Build
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
    into core, and moved the ICU-based collation support into contrib/icu.  
    (Steven Rowe, Robert Muir)
+
+ * LUCENE-2323: Moved contrib/regex into contrib/queries. Moved the
+   queryparsers under contrib/misc into contrib/queryparser. Moved
+   contrib/fast-vector-highlighter into contrib/highlighter.  (Robert Muir)
    
 Optimizations
 

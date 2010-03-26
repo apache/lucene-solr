@@ -28,25 +28,25 @@
   <property name="memory.jar" location="${common.dir}/build/contrib/memory/lucene-memory-${version}.jar"/>
   <available property="memory.jar.present" type="file" file="${memory.jar}"/>
   
-  <property name="regex.jar" location="${common.dir}/build/contrib/regex/lucene-regex-${version}.jar"/>
-  <available property="regex.jar.present" type="file" file="${regex.jar}"/>
+  <property name="queries.jar" location="${common.dir}/build/contrib/queries/lucene-queries-${version}.jar"/>
+  <available property="queries.jar.present" type="file" file="${queries.jar}"/>
 
   <path id="classpath">
     <pathelement path="${lucene.jar}"/>
     <pathelement path="${memory.jar}"/>
-    <pathelement path="${regex.jar}"/>
+    <pathelement path="${queries.jar}"/>
     <pathelement path="${project.classpath}"/>
   </path>
 
-  <target name="compile-core" depends="build-memory, build-regex, common.compile-core" />
+  <target name="compile-core" depends="build-memory, build-queries, common.compile-core" />
 
   <target name="build-memory" unless="memory.jar.present">
     <echo>Highlighter building dependency ${memory.jar}</echo>
     <ant antfile="../memory/build.xml" target="default" inheritall="false" dir="../memory" />
   </target>
   
-  <target name="build-regex" unless="regex.jar.present">
-    <echo>Highlighter building dependency ${regex.jar}</echo>
-    <ant antfile="../regex/build.xml" target="default" inheritall="false" dir="../regex" />
+  <target name="build-queries" unless="queries.jar.present">
+    <echo>Highlighter building dependency ${queries.jar}</echo>
+    <ant antfile="../queries/build.xml" target="default" inheritall="false" dir="../queries" />
   </target>
 </project>

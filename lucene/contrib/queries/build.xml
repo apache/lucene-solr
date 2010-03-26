@@ -23,5 +23,14 @@
     Queries - various query object exotica not in core
   </description>
 
+  <path id="additional.dependencies">
+    <fileset dir="lib" includes="*-oro-*.jar,*-regexp-*.jar"/>
+  </path>
+
+  <pathconvert property="project.classpath"
+               targetos="unix"
+               refid="additional.dependencies"
+  />
+
   <import file="../contrib-build.xml"/>
 </project>

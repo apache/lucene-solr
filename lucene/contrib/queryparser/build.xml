@@ -28,7 +28,9 @@
   <!--
     NOTE: see the README.javacc for details on how to fully regenerate the parser
   -->
-  <target name="javacc" depends="init,javacc-check" if="javacc.present">
+  <target name="javacc" depends="javacc-flexible,javacc-precedence"/>
+
+  <target name="javacc-flexible" depends="init,javacc-check" if="javacc.present">
     <invoke-javacc target="src/java/org/apache/lucene/queryParser/standard/parser/StandardSyntaxParser.jj"
                    outputDir="src/java/org/apache/lucene/queryParser/standard/parser"
     />
@@ -86,5 +88,17 @@
   	                         flags="g"
   	                         byline="false"/>
   </target>
+  
+  <property name="javacc.precedence.path" location="src/java/org/apache/lucene/queryParser/precedence"/>
 
+  <target name="javacc-precedence" depends="javacc-check" description="generate precedence query parser from jj (requires javacc 3.2)">
+    <delete>
+      <fileset dir="${javacc.precedence.path}" includes="*.java">
+        <containsregexp expression="Generated.*By.*JavaCC"/>
+      </fileset>
+    </delete>
+    <invoke-javacc target="${javacc.precedence.path}/PrecedenceQueryParser.jj"
+                   outputDir="${javacc.precedence.path}"
+    />
+  </target>
 </project>

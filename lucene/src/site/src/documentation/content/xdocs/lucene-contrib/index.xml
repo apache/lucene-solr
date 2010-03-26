@@ -74,12 +74,6 @@
                 <p>A set of classes for highlighting matching terms in search results.</p>
                 <p>See <a href="../api/contrib-highlighter/index.html">highlighter javadoc</a></p>
             </section>
-            
-            <section id="fast-vector-highlighter"><title>fast-vector-highlighter</title>
-                <p>An alternative set of classes for highlighting matching terms in search results that relies on stored term vectors.
-                This highlighter can be much faster than the standard highlighter, especially on large fields.</p>
-                <p>See <a href="../api/contrib-fast-vector-highlighter/index.html">fast-vector-highlighter javadoc</a></p>
-            </section>
 
             <section id="icu"><title>icu</title>
                 <p>Provides integration with ICU (International Components for Unicode) for
@@ -112,9 +106,9 @@
                 <p>See <a href="../api/contrib-queryparser/index.html">queryparser javadoc</a></p>
             </section>                          
  
-            <section id="regex"><title>regex</title>
-                <p>Queries with additional regex matching capabilities.</p>
-                <p>See <a href="../api/contrib-regex/index.html">regex javadoc</a></p>
+            <section id="queries"><title>queries</title>
+                <p>Additional queries for Lucene.</p>
+                <p>See <a href="../api/contrib-queries/index.html">queries javadoc</a></p>
             </section> 
             
             <section id="remote"><title>remote</title>

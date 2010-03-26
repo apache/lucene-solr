@@ -17,6 +17,7 @@ but reduces the overall score of docs containing these terms.
 a sequence. An example might be a collection of primary keys from a database query result or perhaps 
 a choice of "category" labels picked by the end user.
 
+==== RegexQuery - Implements the regular expression term search query. 
 
 Mark Harwood
 25/02/2006

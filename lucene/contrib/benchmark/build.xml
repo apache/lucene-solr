@@ -130,7 +130,6 @@
         <pathelement path="${common.dir}/build/classes/demo"/>
         <pathelement path="${common.dir}/build/contrib/highlighter/classes/java"/>
         <pathelement path="${common.dir}/build/contrib/memory/classes/java"/>
-        <pathelement path="${common.dir}/build/contrib/fast-vector-highlighter/classes/java"/>
         <pathelement path="${common.dir}/build/contrib/analyzers/common/classes/java"/>
     	<fileset dir="lib">
     		<include name="**/*.jar"/>
@@ -244,12 +243,7 @@
          <fileset dir="${common.dir}/contrib/memory" includes="build.xml"/>
       </subant>
     </target>
-    <target name="compile-vector-highlighter">
-      <subant target="compile">
-         <fileset dir="${common.dir}/contrib/fast-vector-highlighter" includes="build.xml"/>
-      </subant>
-    </target>
 
-    <target name="init" depends="common.init,compile-demo,compile-memory,compile-highlighter,compile-vector-highlighter"/>
+    <target name="init" depends="common.init,compile-demo,compile-memory,compile-highlighter"/>
     
 </project>
