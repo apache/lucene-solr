@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.response;
 import java.util.List;
 import junit.framework.Assert;
 
+import org.apache.solr.client.solrj.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.common.SolrInputDocument;
@@ -26,30 +27,20 @@ import org.apache.solr.client.solrj.SolrExampleTestBase;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.response.TermsResponse.Term;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * Test for TermComponent's response in Solrj
  */
-public class TermsResponseTest extends SolrExampleTestBase {
+public class TermsResponseTest extends SolrJettyTestBase {
 
-  SolrServer server;
-
-  @Override 
-  public void setUp() throws Exception {
-    super.setUp();
-    server = createNewSolrServer();
+  @BeforeClass
+  public static void beforeTest() throws Exception {
+    initCore(EXAMPLE_CONFIG, EXAMPLE_SCHEMA, EXAMPLE_HOME);
   }
 
-  @Override
-  protected SolrServer getSolrServer() {
-    return server;
-  }
-
-  @Override
-  protected SolrServer createNewSolrServer() {
-    return new EmbeddedSolrServer(h.getCoreContainer(), "");
-  }
-
+  @Test
   public void testTermsResponse() throws Exception {
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", 1);
