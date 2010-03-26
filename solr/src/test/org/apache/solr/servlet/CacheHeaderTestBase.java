@@ -33,20 +33,6 @@ import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public abstract class CacheHeaderTestBase extends SolrJettyTestBase {
-  @Override
-  protected CommonsHttpSolrServer createNewSolrServer() {
-    try {
-      // setup the server...
-      String url = "http://localhost:" + port + context;
-      CommonsHttpSolrServer s = new CommonsHttpSolrServer(url);
-      s.setConnectionTimeout(100); // 1/10th sec
-      s.setDefaultMaxConnectionsPerHost(100);
-      s.setMaxTotalConnections(100);
-      return s;
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
-  }
 
   protected HttpMethodBase getSelectMethod(String method) {
     CommonsHttpSolrServer httpserver = (CommonsHttpSolrServer)getSolrServer();

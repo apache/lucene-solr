@@ -23,31 +23,12 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.junit.BeforeClass;
 
 /**
- * @version $Id$
  * @see org.apache.solr.client.solrj.impl.BinaryRequestWriter
  * @see org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec
- * @since solr 1.4
  */
 public class LargeVolumeBinaryJettyTest extends LargeVolumeTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
     createJetty(EXAMPLE_HOME, null, null);
-  }
-
-  @Override
-  protected SolrServer createNewSolrServer() {
-    try {
-      // setup the server...
-      String url = "http://localhost:" + port + context;
-      CommonsHttpSolrServer s = new CommonsHttpSolrServer(url);
-      s.setRequestWriter(new BinaryRequestWriter());
-      s.setConnectionTimeout(100); // 1/10th sec
-      s.setDefaultMaxConnectionsPerHost(100);
-      s.setMaxTotalConnections(100);
-      return s;
-    }
-    catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
   }
 }

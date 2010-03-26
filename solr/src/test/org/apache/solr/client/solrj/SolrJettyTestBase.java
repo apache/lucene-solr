@@ -1,6 +1,7 @@
 package org.apache.solr.client.solrj;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.junit.AfterClass;
@@ -34,7 +35,7 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
 
     context = context==null ? "/solr" : context;
     SolrJettyTestBase.context = context;
-    JettySolrRunner jetty = new JettySolrRunner( context, 0, configFile );
+    jetty = new JettySolrRunner( context, 0, configFile );
 
     jetty.start();
     port = jetty.getLocalPort();
@@ -62,7 +63,27 @@ abstract public class SolrJettyTestBase extends SolrTestCaseJ4
   }
 
   /**
-   * Create a new solr server
+   * Create a new solr server.
+   * If createJetty was called, an http implementation will be created,
+   * otherwise an embedded implementation will be created.
+   * Subclasses should override for other options.
    */
-  protected abstract SolrServer createNewSolrServer();
+  public SolrServer createNewSolrServer() {
+    if (jetty != null) {
+      try {
+        // setup the server...
+        String url = "http://localhost:"+port+context;
+        CommonsHttpSolrServer s = new CommonsHttpSolrServer( url );
+        s.setConnectionTimeout(100); // 1/10th sec
+        s.setDefaultMaxConnectionsPerHost(100);
+        s.setMaxTotalConnections(100);
+        return s;
+      }
+      catch( Exception ex ) {
+        throw new RuntimeException( ex );
+      }
+    } else {
+      return new EmbeddedSolrServer( h.getCoreContainer(), "" );
+    }
+  }
 }

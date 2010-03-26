@@ -21,19 +21,9 @@ import org.apache.solr.client.solrj.LargeVolumeTestBase;
 import org.apache.solr.client.solrj.SolrServer;
 import org.junit.BeforeClass;
 
-/**
- * @version $Id$
- * @since solr 1.3
- */
 public class LargeVolumeEmbeddedTest extends LargeVolumeTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
     initCore(EXAMPLE_CONFIG, EXAMPLE_SCHEMA, EXAMPLE_HOME);
-  }
-
-  @Override
-  protected SolrServer createNewSolrServer()
-  {
-    return new EmbeddedSolrServer( h.getCoreContainer(), "" );
   }
 }

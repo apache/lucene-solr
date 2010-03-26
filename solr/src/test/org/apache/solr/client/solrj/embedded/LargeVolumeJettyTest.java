@@ -22,30 +22,9 @@ import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.junit.BeforeClass;
 
-/**
- * @version $Id$
- * @since solr 1.3
- */
 public class LargeVolumeJettyTest extends LargeVolumeTestBase {
   @BeforeClass
   public static void beforeTest() throws Exception {
     createJetty(EXAMPLE_HOME, null, null);
-  }
-
-  @Override
-  protected SolrServer createNewSolrServer()
-  {
-    try {
-      // setup the server...
-      String url = "http://localhost:"+port+context;
-      CommonsHttpSolrServer s = new CommonsHttpSolrServer( url );
-      s.setConnectionTimeout(100); // 1/10th sec
-      s.setDefaultMaxConnectionsPerHost(100);
-      s.setMaxTotalConnections(100);
-      return s;
-    }
-    catch( Exception ex ) {
-      throw new RuntimeException( ex );
-    }
   }
 }

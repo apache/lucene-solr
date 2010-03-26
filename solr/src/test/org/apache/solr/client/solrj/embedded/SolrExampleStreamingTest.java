@@ -36,7 +36,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
   }
 
   @Override
-  protected SolrServer createNewSolrServer()
+  public SolrServer createNewSolrServer()
   {
     try {
       // setup the server...

@@ -33,10 +33,4 @@ public class SolrExampleEmbeddedTest extends SolrExampleTests {
   public static void beforeTest() throws Exception {
     initCore(EXAMPLE_CONFIG, EXAMPLE_SCHEMA, EXAMPLE_HOME);
   }
-
-  @Override
-  protected SolrServer createNewSolrServer()
-  {
-    return new EmbeddedSolrServer( h.getCoreContainer(), "" );
-  }
 }
