@@ -384,9 +384,9 @@ public class TestFieldsReader extends LuceneTestCase {
 
   // LUCENE-1262
   public void testExceptions() throws Throwable {
-    String tempDir = System.getProperty("java.io.tmpdir");
+    String tempDir = System.getProperty("tempDir", System.getProperty("java.io.tmpdir"));
     if (tempDir == null)
-      throw new IOException("java.io.tmpdir undefined, cannot run test");
+      throw new IOException("System property tempDir undefined, cannot run test");
     File indexDir = new File(tempDir, "testfieldswriterexceptions");
 
     try {

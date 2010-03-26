@@ -39,8 +39,10 @@ public class TestIndexWriterLockRelease extends LuceneTestCase {
     public void setUp() throws Exception {
         super.setUp();
         if (this.__test_dir == null) {
-            String tmp_dir = System.getProperty("java.io.tmpdir", "tmp");
-            this.__test_dir = new File(tmp_dir, "testIndexWriter");
+            String tempDir = System.getProperty("tempDir", System.getProperty("java.io.tmpdir"));
+            if (tempDir == null)
+              throw new IOException("System property tempDir undefined, cannot run test");
+            this.__test_dir = new File(tempDir, "testIndexWriter");
 
             if (this.__test_dir.exists()) {
                 throw new IOException("test directory \"" + this.__test_dir.getPath() + "\" already exists (please remove by hand)");

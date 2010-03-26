@@ -81,10 +81,9 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
    */
   public void testNorms() throws IOException {
     // tmp dir
-    String tempDir = System.getProperty("java.io.tmpdir");
-    if (tempDir == null) {
-      throw new IOException("java.io.tmpdir undefined, cannot run test");
-    }
+    String tempDir = System.getProperty("tempDir", System.getProperty("java.io.tmpdir"));
+    if (tempDir == null)
+      throw new IOException("System property tempDir undefined, cannot run test");
 
     // test with a single index: index1
     File indexDir1 = new File(tempDir, "lucenetestindex1");

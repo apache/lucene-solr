@@ -33,9 +33,9 @@ public class _TestUtil {
   /** Returns temp dir, containing String arg in its name;
    *  does not create the directory. */
   public static File getTempDir(String desc) {
-    String tempDir = System.getProperty("java.io.tmpdir");
+    String tempDir = System.getProperty("tempDir", System.getProperty("java.io.tmpdir"));
     if (tempDir == null)
-      throw new RuntimeException("java.io.tmpdir undefined, cannot run test");
+      throw new RuntimeException("System property tempDir undefined, cannot run test");
     return new File(tempDir, desc + "." + new Random().nextLong());
   }
 
