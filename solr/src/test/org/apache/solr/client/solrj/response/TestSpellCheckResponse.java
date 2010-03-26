@@ -17,17 +17,19 @@ package org.apache.solr.client.solrj.response;
  */
 
 import junit.framework.Assert;
-import org.apache.solr.client.solrj.SolrExampleTestBase;
+import org.apache.solr.client.solrj.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SpellingParams;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Test for SpellCheckComponent's response in Solrj
@@ -35,36 +37,19 @@ import java.util.List;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestSpellCheckResponse extends SolrExampleTestBase {
-  @Override public String getSchemaFile()     { return null; }
-  @Override public String getSolrConfigFile() { return null; }
-
-  SolrServer server;
-  JettySolrRunner jetty;
-
-  int port = 0;
-  static final String context = "/example";
-
+public class TestSpellCheckResponse extends SolrJettyTestBase {
+  @BeforeClass
+  public static void beforeTest() throws Exception {
+    // createJetty(EXAMPLE_HOME, null, null);
+    initCore(EXAMPLE_CONFIG, EXAMPLE_SCHEMA, EXAMPLE_HOME);
+    // initCore("solrconfig.xml", "schema.xml", null);
+  }
+  
   static String field = "name";
 
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-
-    jetty = new JettySolrRunner(context, 0);
-    jetty.start();
-    port = jetty.getLocalPort();
-    log.info("Assigned Port: " + port);
-    server = this.createNewSolrServer();
-  }
-
-  @Override
-  public void tearDown() throws Exception {
-    jetty.stop();
-    super.tearDown();
-  }
-
+  @Test
   public void testSpellCheckResponse() throws Exception {
+    getSolrServer();
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "111");
     doc.setField(field, "Samsung");
@@ -81,7 +66,9 @@ public class TestSpellCheckResponse extends SolrExampleTestBase {
     Assert.assertEquals("samsung", response.getFirstSuggestion("samsang"));
   }
 
+  @Test
   public void testSpellCheckResponse_Extended() throws Exception {
+    getSolrServer();
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "111");
     doc.setField(field, "Samsung");
@@ -115,24 +102,5 @@ public class TestSpellCheckResponse extends SolrExampleTestBase {
 
     // Hmmm... the API for SpellCheckResponse could be nicer:
     response.getSuggestions().get(0).getAlternatives().get(0);
-  }
-
-  protected SolrServer getSolrServer() {
-    return server;
-  }
-
-  protected SolrServer createNewSolrServer() {
-    try {
-      // setup the server...
-      String url = "http://localhost:" + port + context;
-      CommonsHttpSolrServer s = new CommonsHttpSolrServer(url);
-      s.setConnectionTimeout(100); // 1/10th sec
-      s.setDefaultMaxConnectionsPerHost(100);
-      s.setMaxTotalConnections(100);
-      return s;
-    }
-    catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
   }
 }
