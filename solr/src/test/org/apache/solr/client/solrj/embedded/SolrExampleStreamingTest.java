@@ -44,7 +44,7 @@ public class SolrExampleStreamingTest extends SolrExampleTests {
       CommonsHttpSolrServer s = new StreamingUpdateSolrServer( url, 2, 5 ) {
         @Override
         public void handleError(Throwable ex) {
-          // do somethign...
+          // do something...    TODO?
         }
       };
       s.setConnectionTimeout(100); // 1/10th sec

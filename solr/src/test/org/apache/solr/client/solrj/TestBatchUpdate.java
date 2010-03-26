@@ -16,16 +16,19 @@
  */
 package org.apache.solr.client.solrj;
 
-import org.apache.solr.client.solrj.embedded.JettySolrRunner;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.beans.Field;
+import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
+import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.request.RequestWriter;
+import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-import java.util.Iterator;
 import java.io.IOException;
+import java.util.Iterator;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * Test for SOLR-1038
@@ -33,15 +36,17 @@ import java.io.IOException;
  * @since solr 1.4
  * @version $Id$
  */
-public class TestBatchUpdate extends SolrExampleTestBase {
-  static final int numdocs = 1000;
+public class TestBatchUpdate extends SolrJettyTestBase {
 
-  SolrServer server;
-  JettySolrRunner jetty;
+  @BeforeClass
+  public static void beforeTest() throws Exception {
+    createJetty(EXAMPLE_HOME, null, null);
+  }
 
-  int port = 0;
-  static final String context = "/example";
+  static final int numdocs = 1000;  
 
+
+  @Test
   public void testWithXml() throws Exception {
     CommonsHttpSolrServer commonsHttpSolrServer = (CommonsHttpSolrServer) getSolrServer();
     commonsHttpSolrServer.setRequestWriter(new RequestWriter());
@@ -49,6 +54,7 @@ public class TestBatchUpdate extends SolrExampleTestBase {
     doIt(commonsHttpSolrServer);
   }
 
+  @Test
   public void testWithBinary()throws Exception{
     CommonsHttpSolrServer commonsHttpSolrServer = (CommonsHttpSolrServer) getSolrServer();
     commonsHttpSolrServer.setRequestWriter(new BinaryRequestWriter());
@@ -56,6 +62,7 @@ public class TestBatchUpdate extends SolrExampleTestBase {
     doIt(commonsHttpSolrServer);
   }
 
+  @Test
   public void testWithBinaryBean()throws Exception{
     CommonsHttpSolrServer commonsHttpSolrServer = (CommonsHttpSolrServer) getSolrServer();
     commonsHttpSolrServer.setRequestWriter(new BinaryRequestWriter());
@@ -119,45 +126,5 @@ public class TestBatchUpdate extends SolrExampleTestBase {
     QueryResponse response = commonsHttpSolrServer.query(query);
     assertEquals(0, response.getStatus());
     assertEquals(numdocs, response.getResults().getNumFound());
-  }
-
-  @Override public void setUp() throws Exception
-  {
-    super.setUp();
-
-    jetty = new JettySolrRunner( context, 0 );
-    jetty.start();
-    port = jetty.getLocalPort();
-
-    server = this.createNewSolrServer();
-  }
-
-  @Override public void tearDown() throws Exception
-  {
-    super.tearDown();
-    jetty.stop();  // stop the server
-  }
-
-  @Override
-  protected SolrServer getSolrServer()
-  {
-    return server;
-  }
-
-  @Override
-  protected SolrServer createNewSolrServer()
-  {
-    try {
-      // setup the server...
-      String url = "http://localhost:"+port+context;
-      CommonsHttpSolrServer s = new CommonsHttpSolrServer( url );
-      s.setConnectionTimeout(100); // 1/10th sec
-      s.setDefaultMaxConnectionsPerHost(100);
-      s.setMaxTotalConnections(100);
-      return s;
-    }
-    catch( Exception ex ) {
-      throw new RuntimeException( ex );
-    }
   }
 }
