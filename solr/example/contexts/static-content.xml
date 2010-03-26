@@ -1,8 +1,0 @@
-<Configure class="org.mortbay.jetty.servlet.Context">
-  <Set name="contextPath">/solr/example</Set>
-  <Set name="resourceBase"><SystemProperty name="jetty.home" default="."/>/static/</Set>
-  <Call name="addServlet">
-    <Arg>org.mortbay.jetty.servlet.DefaultServlet</Arg>
-    <Arg>/</Arg>
-  </Call>
-</Configure>

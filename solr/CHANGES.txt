@@ -319,8 +319,6 @@ Documentation
 * SOLR-1792: Documented peculiar behavior of TestHarness.LocalRequestFactory
   (hossman)
 
-* SOLR-1848: Added in http://localhost:8983/solr/example/queries.html to demonstrate Queries in the Example.
-
 ================== Release 1.4.0 ==================
 Release Date:  See http://lucene.apache.org/solr for the official release date.
 
