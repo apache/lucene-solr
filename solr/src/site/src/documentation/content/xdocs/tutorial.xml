@@ -289,6 +289,7 @@ in subsequent searches.
     Solr provides a <a href="http://localhost:8983/solr/admin/form.jsp">query form</a> within the web admin interface
     that allows setting the various request parameters and is useful when trying out or debugging queries.
   </p>
+<p>See the example <a href="http://localhost:8983/solr/example/queries.html">queries</a> page for more sample Solr interactions.</p>
 
   <section>
     <title>Sorting</title>
