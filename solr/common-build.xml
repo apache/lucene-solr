@@ -148,7 +148,6 @@
   <path id="lucene.classpath">
     <pathelement location="${common-solr.dir}/../lucene/build/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/analyzers/common/classes/java" />
-    <pathelement location="${common-solr.dir}/../lucene/build/contrib/fast-vector-highlighter/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/highlighter/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/memory/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/misc/classes/java" />
@@ -164,7 +163,6 @@
       </subant>
       <subant target="jar" inheritall="false" failonerror="true">
         <fileset dir="../lucene/contrib/analyzers/common" includes="build.xml" />
-        <fileset dir="../lucene/contrib/fast-vector-highlighter" includes="build.xml" />
         <fileset dir="../lucene/contrib/highlighter" includes="build.xml" />
         <fileset dir="../lucene/contrib/memory" includes="build.xml" />
         <fileset dir="../lucene/contrib/misc" includes="build.xml" />
@@ -181,7 +179,6 @@
       <resources>
         <file file="../lucene/build/lucene-core-${lucene_version}.jar" />
         <file file="../lucene/build/contrib/analyzers/common/lucene-analyzers-${lucene_version}.jar" />
-        <file file="../lucene/build/contrib/fast-vector-highlighter/lucene-fast-vector-highlighter-${lucene_version}.jar" />
         <file file="../lucene/build/contrib/highlighter/lucene-highlighter-${lucene_version}.jar" />
         <file file="../lucene/build/contrib/memory/lucene-memory-${lucene_version}.jar" />
         <file file="../lucene/build/contrib/misc/lucene-misc-${lucene_version}.jar" />
@@ -195,7 +192,6 @@
   <target name="compile-lucene" unless="lucene-compiled">
     <property name="lucene-compiled" value="true"/>
     <ant antfile="build.xml" target="compile" dir="../lucene/contrib/analyzers/common"/>
-    <ant antfile="build.xml" target="compile" dir="../lucene/contrib/fast-vector-highlighter"/>
     <ant antfile="build.xml" target="compile" dir="../lucene/contrib/highlighter"/>
     <ant antfile="build.xml" target="compile" dir="../lucene/contrib/memory"/>
     <ant antfile="build.xml" target="compile" dir="../lucene/contrib/misc"/>
