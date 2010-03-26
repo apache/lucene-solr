@@ -27,20 +27,20 @@
   	
   <import file="../common-build.xml"/>
 
-  <property name="lucene.jar" location="${common.dir}/build/lucene-core-${version}.jar"/>
-  <available property="lucene.jar.present" type="file" file="${lucene.jar}"/>
-  <available property="lucene.tests.present" type="dir"
-             file="${common.dir}/build/classes/test" />
   <available property="contrib.has.tests" type="dir" file="src/test" />
   
-  <path id="classpath">
-   <pathelement path="${lucene.jar}"/>
+  <!-- if you extend the classpath refid in one contrib's build.xml (add JARs), use this as basis: -->
+  <path id="base.classpath">
+   <pathelement location="${common.dir}/build/classes/java"/>
    <pathelement path="${project.classpath}"/>
   </path>
-
+  
+  <!-- default classpath refid, can be overridden by contrib's build.xml (use the above base.classpath as basis): -->
+  <path id="classpath" refid="base.classpath"/>
+  
   <path id="test.classpath">
     <path refid="classpath"/>
-    <pathelement location="../../build/classes/test/"/>
+    <pathelement location="${common.dir}/build/classes/test"/>
     <path refid="junit-path"/>
     <pathelement location="${build.dir}/classes/java"/>
   </path>
@@ -52,16 +52,13 @@
     <pathelement path="${java.class.path}"/>
   </path>
 
-  <target name="build-lucene" unless="lucene.jar.present">
-    <ant dir="${common.dir}" target="jar-core" inheritAll="false"/>
-  </target>
-
-  <target name="build-lucene-tests" unless="lucene.tests.present">
+  <target name="build-lucene" unless="core.compiled">
     <ant dir="${common.dir}" target="compile-test" inheritAll="false"/>
+    <!-- set the property for this ant execution to speed up later tasks depending on this -->
+    <property name="core.compiled" value="true"/>
   </target>
-
   
-  <target name="init" depends="common.init,build-lucene,build-lucene-tests"/>
+  <target name="init" depends="common.init,build-lucene"/>
   <target name="compile-test" depends="init" if="contrib.has.tests">
     <antcall target="common.compile-test" inheritRefs="true" />
   </target>
@@ -111,4 +108,18 @@
 ]]></echo>
   </target>
   
+  <macrodef name="contrib-uptodate">
+    <attribute name="name"/>
+    <attribute name="property" default="@{name}.uptodate"/>
+    <attribute name="classpath.property" default="@{name}.jar"/>
+    <!-- set jarfile only, if the target jar file has no generic name, applies to analyzers with its common and smartcn subdir -->
+    <attribute name="jarfile" default="${common.dir}/build/contrib/@{name}/lucene-@{name}-${version}.jar"/>
+    <sequential>
+      <!--<echo message="Checking '@{jarfile}' against source folder '${common.dir}/contrib/@{name}/src/java'"/>-->
+      <property name="@{classpath.property}" location="@{jarfile}"/>
+      <uptodate property="@{property}" targetfile="@{jarfile}">
+        <srcfiles dir="${common.dir}/contrib/@{name}/src/java" includes="**/*.java"/>
+      </uptodate>
+    </sequential>
+  </macrodef>
 </project>

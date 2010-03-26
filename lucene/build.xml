@@ -670,6 +670,7 @@ The source distribution does not contain sources of the previous Lucene Java ver
     <attribute name="failonerror" default="true"/>
     <sequential>
       <subant target="@{target}" failonerror="@{failonerror}">
+        <property name="core.compiled" value="true"/>
         <fileset dir="."
                  includes="contrib/*/build.xml"
         />
@@ -677,7 +678,7 @@ The source distribution does not contain sources of the previous Lucene Java ver
     </sequential>
   </macrodef>
 
-  <target name="build-contrib"
+  <target name="build-contrib" depends="compile-test"
           description="Builds all contrib modules and their tests">
     <contrib-crawl target="build-artifacts-and-tests"/>
   </target>

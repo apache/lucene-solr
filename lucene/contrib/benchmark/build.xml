@@ -8,6 +8,12 @@
     <import file="../contrib-build.xml"/>
     <property name="working.dir" location="work"/>
 
+    <contrib-uptodate name="highlighter" property="highlighter.uptodate" classpath.property="highlighter.jar"/>
+    <contrib-uptodate name="icu" property="icu.uptodate" classpath.property="icu.jar"/>
+    <!-- analyzers common needs a hack for the jar file: -->
+    <contrib-uptodate name="analyzers/common" jarfile="${common.dir}/build/contrib/analyzers/common/lucene-analyzers-${version}.jar"
+      property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
+    <contrib-uptodate name="memory" property="memory.uptodate" classpath.property="memory.jar"/>
 
     <target name="check-files">
         <available file="temp/news20.tar.gz" property="news20.exists"/>
@@ -126,11 +132,11 @@
     </target>
 
     <path id="classpath">
-        <pathelement path="${common.dir}/build/classes/java"/>
-        <pathelement path="${common.dir}/build/classes/demo"/>
-        <pathelement path="${common.dir}/build/contrib/highlighter/classes/java"/>
-        <pathelement path="${common.dir}/build/contrib/memory/classes/java"/>
-        <pathelement path="${common.dir}/build/contrib/analyzers/common/classes/java"/>
+      <pathelement path="${memory.jar}"/>
+      <pathelement path="${highlighter.jar}"/>
+      <pathelement path="${analyzers-common.jar}"/>
+      <path refid="base.classpath"/>
+      <pathelement path="${common.dir}/build/classes/demo"/>
     	<fileset dir="lib">
     		<include name="**/*.jar"/>
     	</fileset>
@@ -172,8 +178,8 @@
 	
 	<path id="collation.runtime.classpath">
 	  <path refid="run.classpath"/>
-	  <pathelement path="${common.dir}/build/contrib/icu/classes/java"/>
-      <fileset dir="${common.dir}/contrib/icu/lib" includes="icu4j*.jar"/>
+    <pathelement path="${icu.jar}"/>
+    <fileset dir="${common.dir}/contrib/icu/lib" includes="icu4j*.jar"/>
 	</path>
 	
 	<target name="collation" depends="compile,compile-icu,top-100k-wiki-word-files">
@@ -202,7 +208,7 @@
       <path refid="run.classpath"/>
     </path>
 	
-    <target name="shingle" depends="compile,compile-analyzers-common,get-files">
+    <target name="shingle" depends="compile,get-files">
       <echo>Running contrib/benchmark with alg file: ${shingle.alg.file}</echo>
       <java fork="true" classname="org.apache.lucene.benchmark.byTask.Benchmark" 
             maxmemory="${task.mem}" output="${shingle.output.file}">
@@ -223,27 +229,27 @@
          <fileset dir="${common.dir}" includes="build.xml"/>
       </subant>
     </target>
-    <target name="compile-highlighter">
-      <subant target="compile">
+    <target name="compile-highlighter" unless="highlighter.uptodate">
+      <subant target="default">
          <fileset dir="${common.dir}/contrib/highlighter" includes="build.xml"/>
       </subant>
     </target>
-    <target name="compile-icu">
-      <subant target="compile">
+    <target name="compile-icu" unless="icu.uptodate">
+      <subant target="default">
          <fileset dir="${common.dir}/contrib/icu" includes="build.xml"/>
       </subant>
     </target>
-    <target name="compile-analyzers-common">
-      <subant target="compile">
+    <target name="compile-analyzers-common" unless="analyzers-common.uptodate">
+      <subant target="default">
         <fileset dir="${common.dir}/contrib/analyzers/common" includes="build.xml"/>
       </subant>
     </target>
-    <target name="compile-memory">
-      <subant target="compile">
+    <target name="compile-memory" unless="memory.uptodate">
+      <subant target="default">
          <fileset dir="${common.dir}/contrib/memory" includes="build.xml"/>
       </subant>
     </target>
 
-    <target name="init" depends="common.init,compile-demo,compile-memory,compile-highlighter"/>
+    <target name="init" depends="common.init,compile-demo,compile-memory,compile-highlighter,compile-analyzers-common"/>
     
 </project>

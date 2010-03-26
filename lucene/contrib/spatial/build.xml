@@ -25,18 +25,16 @@
 
   <import file="../contrib-build.xml"/>
 
-  <property name="misc.jar" location="${common.dir}/build/contrib/misc/lucene-misc-${version}.jar"/>
-  <available property="misc.jar.present" type="file" file="${misc.jar}"/>
+  <contrib-uptodate name="misc" property="misc.uptodate" classpath.property="misc.jar"/>
 
   <path id="classpath">
-    <pathelement path="${lucene.jar}"/>
     <pathelement path="${misc.jar}"/>
-    <pathelement path="${project.classpath}"/>
+    <path refid="base.classpath"/>
   </path>
 
   <target name="compile-core" depends="build-misc, common.compile-core" />
 
-  <target name="build-misc" unless="misc.jar.present">
+  <target name="build-misc" unless="misc.uptodate">
     <echo>Misc building dependency ${misc.jar}</echo>
     <ant antfile="../misc/build.xml" target="default" inheritall="false" dir="../misc" />
   </target>

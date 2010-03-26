@@ -117,6 +117,11 @@ Build
    queryparsers under contrib/misc into contrib/queryparser. Moved
    contrib/fast-vector-highlighter into contrib/highlighter.  (Robert Muir)
    
+ * LUCENE-2333: Fix failures during contrib builds, when classes in
+   core were changed without ant clean. This fix also optimizes the
+   dependency management between contribs by a new ANT macro.
+   (Uwe Schindler, Shai Erera)
+   
 Optimizations
 
  * LUCENE-2157: DelimitedPayloadTokenFilter no longer copies the buffer
