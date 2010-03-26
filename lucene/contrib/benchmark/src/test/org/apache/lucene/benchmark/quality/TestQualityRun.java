@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 
+import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.TestPerfTasksLogic;
 import org.apache.lucene.benchmark.quality.Judge;
 import org.apache.lucene.benchmark.quality.QualityQuery;
@@ -44,44 +45,30 @@ import org.apache.lucene.util.LuceneTestCase;
  * this test will not work correctly, as it does not dynamically
  * generate its test trec topics/qrels!
  */
-public class TestQualityRun extends LuceneTestCase {
+public class TestQualityRun extends BenchmarkTestCase {
   
-  public TestQualityRun(String name) {
-    super(name);
-  }
-
   public void testTrecQuality() throws Exception {
     // first create the partial reuters index
     createReutersIndex();
     
-    File workDir = new File(System.getProperty("benchmark.work.dir","work"));
-    assertTrue("Bad workDir: "+workDir, workDir.exists()&& workDir.isDirectory());
-
     int maxResults = 1000;
     String docNameField = "doctitle"; // orig docID is in the linedoc format title 
     
     PrintWriter logger = VERBOSE ? new PrintWriter(System.out,true) : null;
-
-    // <tests src dir> for topics/qrels files - src/test/org/apache/lucene/benchmark/quality
-    File srcTestDir = new File(new File(new File(new File(new File(
-      new File(new File(workDir.getAbsoluteFile().getParentFile(),
-        "src"),"test"),"org"),"apache"),"lucene"),"benchmark"),"quality");
-    
+   
     // prepare topics
-    File topicsFile = new File(srcTestDir, "trecTopics.txt");
-    assertTrue("Bad topicsFile: "+topicsFile, topicsFile.exists()&& topicsFile.isFile());
+    InputStream topics = getClass().getResourceAsStream("trecTopics.txt");
     TrecTopicsReader qReader = new TrecTopicsReader();
-    QualityQuery qqs[] = qReader.readQueries(new BufferedReader(new FileReader(topicsFile)));
+    QualityQuery qqs[] = qReader.readQueries(new BufferedReader(new InputStreamReader(topics, "UTF-8")));
     
     // prepare judge
-    File qrelsFile = new File(srcTestDir, "trecQRels.txt");
-    assertTrue("Bad qrelsFile: "+qrelsFile, qrelsFile.exists()&& qrelsFile.isFile());
-    Judge judge = new TrecJudge(new BufferedReader(new FileReader(qrelsFile)));
+    InputStream qrels = getClass().getResourceAsStream("trecQRels.txt");
+    Judge judge = new TrecJudge(new BufferedReader(new InputStreamReader(qrels, "UTF-8")));
     
     // validate topics & judgments match each other
     judge.validateData(qqs, logger);
     
-    IndexSearcher searcher = new IndexSearcher(FSDirectory.open(new File(workDir,"index")), true);
+    IndexSearcher searcher = new IndexSearcher(FSDirectory.open(new File(getWorkDir(),"index")), true);
 
     QualityQueryParser qqParser = new SimpleQQParser("title","body");
     QualityBenchmark qrun = new QualityBenchmark(qqs, qqParser, searcher, docNameField);

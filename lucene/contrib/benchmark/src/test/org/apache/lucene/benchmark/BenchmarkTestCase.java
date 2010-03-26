@@ -19,10 +19,10 @@ package org.apache.lucene.benchmark;
 
 import java.io.File;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 /** Base class for all Benchmark unit tests. */
-public class BenchmarkTestCase extends TestCase {
+public class BenchmarkTestCase extends LuceneTestCase {
 
   private static final File workDir;
 

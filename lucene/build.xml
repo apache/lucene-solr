@@ -102,7 +102,7 @@
 The source distribution does not contain sources of the previous Lucene Java version.</echo>
   </target>
 
-  <target name="test-backwards" depends="compile-core, jar-core, test-backwards-message"
+  <target name="compile-backwards" depends="compile-core, jar-core, test-backwards-message"
   	description="Runs tests of a previous Lucene version." if="backwards.available">
     <sequential>
       <mkdir dir="${build.dir.backwards}"/>	  
@@ -120,14 +120,64 @@ The source distribution does not contain sources of the previous Lucene Java ver
       <compile-test-macro srcdir="${backwards.dir}/src/test" destdir="${build.dir.backwards}/classes/test"
                   test.classpath="backwards.test.compile.classpath" javac.source="${javac.source.backwards}" javac.target="${javac.target.backwards}"/>
       
-      <!-- run branch tests against trunk jar -->
-      <test-macro dataDir="${backwards.dir}/src/test" 
-              tempDir="${build.dir.backwards}/test"
-              junit.classpath="backwards.junit.classpath"
-              junit.output.dir="${junit.output.dir.backwards}" />
+
     </sequential>
   </target>	
-	
+
+  <target name="test-backwards" depends="compile-backwards, junit-backwards-mkdir, junit-backwards-sequential, junit-backwards-parallel"/>
+
+  <target name="junit-backwards-mkdir">
+	<mkdir dir="${build.dir.backwards}/test"/>
+  </target>
+
+  <macrodef name="backwards-test-macro">
+  	<attribute name="pattern" default=""/>
+  	<sequential>
+  	  <!-- run branch tests against trunk jar -->
+      <test-macro 
+    	dataDir="${backwards.dir}/src/test" 
+    	tempDir="${build.dir.backwards}/test" 
+    	junit.classpath="backwards.junit.classpath" 
+    	junit.output.dir="${junit.output.dir.backwards}" 
+        pattern="@{pattern}" />
+  	</sequential>
+  </macrodef>
+
+  <target name="junit-backwards-sequential" if="runsequential">
+    <backwards-test-macro/>
+  </target>
+
+  <target name="junit-backwards-parallel" unless="runsequential">
+    <parallel threadsPerProcessor="2">
+     <backwards-test-macro pattern="A"/>
+     <backwards-test-macro pattern="B"/>
+     <backwards-test-macro pattern="C"/>
+     <backwards-test-macro pattern="D"/>
+     <backwards-test-macro pattern="E"/>
+     <backwards-test-macro pattern="F"/>
+     <backwards-test-macro pattern="G"/>
+     <backwards-test-macro pattern="H"/>
+     <backwards-test-macro pattern="I"/>
+     <backwards-test-macro pattern="J"/>
+     <backwards-test-macro pattern="K"/>
+     <backwards-test-macro pattern="L"/>
+     <backwards-test-macro pattern="M"/>
+     <backwards-test-macro pattern="N"/>
+     <backwards-test-macro pattern="O"/>
+     <backwards-test-macro pattern="P"/>
+     <backwards-test-macro pattern="Q"/>
+     <backwards-test-macro pattern="R"/>
+     <backwards-test-macro pattern="S"/>
+     <backwards-test-macro pattern="T"/>
+     <backwards-test-macro pattern="U"/>
+     <backwards-test-macro pattern="V"/>
+     <backwards-test-macro pattern="W"/>
+     <backwards-test-macro pattern="X"/>
+     <backwards-test-macro pattern="Y"/>
+     <backwards-test-macro pattern="Z"/>
+    </parallel>
+  </target>
+
   <!-- ================================================================== -->
   <!-- J A R                                                              -->
   <!-- ================================================================== -->
@@ -684,24 +734,7 @@ The source distribution does not contain sources of the previous Lucene Java ver
   </target>
 
   <target name="test-contrib" depends="build-contrib">
-    <!-- Don't fail on error, instead check for flag file so we run
-         all the tests possible and can "ant generate-test-reports"
-         for all of them.
-
-         Because of this, we depend on "build-contrib" even though the
-         Individual contrib "test" targets probably have the
-         neccessary dependencies.  If they fail to compile, we won't
-         know about it.
-     -->
-    <contrib-crawl target="test" failonerror="false"/>
-    <available property="contribs.failed" file="junitfailed.flag">
-      <filepath>
-        <dirset dir="${build.dir}/contrib/">
-          <include name="**/test/" />
-        </dirset>
-      </filepath>
-    </available>
-    <fail if="contribs.failed">Contrib tests failed!</fail>
+    <contrib-crawl target="test" failonerror="true"/>
   </target>
 
   <!-- Macro for building checksum files -->

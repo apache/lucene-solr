@@ -99,8 +99,14 @@
   <property name="junit.output.dir.backwards" location="${build.dir.backwards}/test"/>
   <property name="junit.reports" location="${build.dir}/test/reports"/>
   <property name="junit.reports.backwards" location="${build.dir.backwards}/test/reports"/>
-  <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
   <property name="junit.excludes" value=""/>
+  <property name="junit.details.formatter" value="org.apache.lucene.util.LuceneJUnitResultFormatter"/>
+  <condition property="runsequential">
+    <or>
+      <isset property="testcase"/>
+      <isset property="sequential-tests"/>
+    </or>
+  </condition>
 
   <property name="manifest.file" location="${common.dir}/build/MANIFEST.MF"/>
 
@@ -387,9 +393,9 @@
   <macrodef name="test-macro" description="Executes junit tests.">
   	<attribute name="junit.output.dir" default="${junit.output.dir}"/>
   	<attribute name="junit.classpath" default="junit.classpath"/>
-  	<attribute name="dataDir"/>
-  	<attribute name="tempDir"/>
-  	<element name="contrib-settings" optional="yes"/>
+  	<attribute name="dataDir" default="src/test"/>
+  	<attribute name="tempDir" default="${build.dir}/test"/>
+  	<attribute name="pattern" default=""/>
 
     <sequential>
 	    <condition property="runall">
@@ -399,7 +405,10 @@
 	      	<isset property="testpackageroot" />
 	      </or></not>
 	    </condition>
-	  	<mkdir dir="@{junit.output.dir}"/>
+	    <!-- <mkdir dir="@{tempDir}/@{pattern}"/> 
+	    This is very loud and obnoxious. abuse touch instead for a "quiet" mkdir
+	    -->
+    	<touch file="@{tempDir}/@{pattern}/quiet.ant" verbose="false" mkdirs="true"/>
 	    <junit printsummary="off" haltonfailure="no" maxmemory="512M"
 	      errorProperty="tests.failed" failureProperty="tests.failed" forkmode="perBatch" dir=".">
 	      <classpath refid="@{junit.classpath}"/>
@@ -413,55 +422,84 @@
 	      <sysproperty key="tests.verbose" value="${tests.verbose}"/>
 	
 	      <!-- TODO: create propertyset for test properties, so each project can have its own set -->
-	      <sysproperty key="tempDir" file="@{tempDir}"/>
-	      <sysproperty key="java.io.tmpdir" file="@{tempDir}"/>
+	      <sysproperty key="tempDir" file="@{tempDir}/@{pattern}"/>
+
 	      <sysproperty key="lucene.version" value="${dev.version}"/>
 	
-		  <contrib-settings />
+          <!-- set as a system property so contrib tests can have a fixed root
+               to reference file paths from, and "ant test" can work from
+               anywhere.
+          -->
+          <sysproperty key="lucene.common.dir" file="${common.dir}" />
+
+          <!-- contrib/ant IndexTaskTest needs these two system properties -->
+          <sysproperty key="docs.dir" file="src/test"/>
+          <sysproperty key="index.dir" file="${build.dir}/test/index"/>
+	    		
+          <!-- contrib/benchmark uses this system property to locate docs data and defined tasks -->
+          <sysproperty key="tasks.dir" file="${build.dir}/classes/java/org/apache/lucene/benchmark/byTask/tasks"/>
+          <sysproperty key="benchmark.work.dir" file="@{tempDir}/@{pattern}"/>
 	    	
 	      <formatter type="xml"/>
-	      <formatter type="brief" usefile="false"/>
+	      <formatter classname="${junit.details.formatter}" usefile="false"/>
 	      <batchtest fork="yes" todir="@{junit.output.dir}" if="runall">
-	        <fileset dir="@{dataDir}" includes="${junit.includes}" excludes="${junit.excludes}"/>
+	        <fileset dir="@{dataDir}" includes="**/Test@{pattern}*.java,**/@{pattern}*Test.java" excludes="${junit.excludes}"/>
 	      </batchtest>
 	      <batchtest fork="yes" todir="@{junit.output.dir}" if="testpackage">
-	        <fileset dir="@{dataDir}" includes="**/${testpackage}/**/Test*.java,**/${testpackage}/**/*Test.java" excludes="${junit.excludes}"/>
+	        <fileset dir="@{dataDir}" includes="**/${testpackage}/**/Test@{pattern}*.java,**/${testpackage}/**/@{pattern}*Test.java" excludes="${junit.excludes}"/>
 	      </batchtest>
 	      <batchtest fork="yes" todir="@{junit.output.dir}" if="testpackageroot">
-	        <fileset dir="@{dataDir}" includes="**/${testpackageroot}/Test*.java,**/${testpackageroot}/*Test.java" excludes="${junit.excludes}"/>
+	        <fileset dir="@{dataDir}" includes="**/${testpackageroot}/Test@{pattern}*.java,**/${testpackageroot}/@{pattern}*Test.java" excludes="${junit.excludes}"/>
 	      </batchtest>
 	      <batchtest fork="yes" todir="@{junit.output.dir}" if="testcase">
 	        <fileset dir="@{dataDir}" includes="**/${testcase}.java"/>
 	      </batchtest>
 	    </junit>
-	    <!-- create this file, then if we don't fail, delete it -->
-	    <!-- this meme makes it easy to tell if contribs have failed later -->
-	    <echo file="@{junit.output.dir}/junitfailed.flag">MAYBE</echo>
 	    <fail if="tests.failed">Tests failed!</fail>
-	    <!-- life would be easier if echo had an 'if' attribute like fail -->
-	    <delete file="@{junit.output.dir}/junitfailed.flag" />
   	</sequential>
   </macrodef>
 	
-  <target name="test" depends="compile-test" description="Runs unit tests">
-    <test-macro dataDir="src/test" tempDir="${build.dir}/test">
-    	<contrib-settings>
-	      <!-- set as a system property so contrib tests can have a fixed root
-	           to reference file paths from, and "ant test" can work from
-	           anywhere.
-	       -->
-	      <sysproperty key="lucene.common.dir" file="${common.dir}" />
-	      
-	      <!-- contrib/ant IndexTaskTest needs these two system properties -->
-	      <sysproperty key="docs.dir" file="src/test"/>
-	      <sysproperty key="index.dir" file="${build.dir}/test/index"/>
-	
-	      <!-- contrib/benchmark uses this system property to locate docs data and defined tasks -->
-	      <sysproperty key="tasks.dir" file="${build.dir}/classes/java/org/apache/lucene/benchmark/byTask/tasks"/>
-	      <sysproperty key="benchmark.work.dir" file="${common.dir}/contrib/benchmark/work"/>
-	  </contrib-settings>
-    </test-macro>
+  <target name="test" depends="compile-test,junit-mkdir,junit-sequential,junit-parallel" description="Runs unit tests"/>
+
+  <target name="junit-mkdir">
+  	<mkdir dir="${junit.output.dir}"/>
   </target>
+
+  <target name="junit-sequential" if="runsequential">
+    <test-macro/>
+  </target>
+
+  <target name="junit-parallel" unless="runsequential">
+    <parallel threadsPerProcessor="2">
+     <test-macro pattern="A"/>
+     <test-macro pattern="B"/>
+     <test-macro pattern="C"/>
+     <test-macro pattern="D"/>
+     <test-macro pattern="E"/>
+     <test-macro pattern="F"/>
+     <test-macro pattern="G"/>
+     <test-macro pattern="H"/>
+     <test-macro pattern="I"/>
+     <test-macro pattern="J"/>
+     <test-macro pattern="K"/>
+     <test-macro pattern="L"/>
+     <test-macro pattern="M"/>
+     <test-macro pattern="N"/>
+     <test-macro pattern="O"/>
+     <test-macro pattern="P"/>
+     <test-macro pattern="Q"/>
+     <test-macro pattern="R"/>
+     <test-macro pattern="S"/>
+     <test-macro pattern="T"/>
+     <test-macro pattern="U"/>
+     <test-macro pattern="V"/>
+     <test-macro pattern="W"/>
+     <test-macro pattern="X"/>
+     <test-macro pattern="Y"/>
+     <test-macro pattern="Z"/>
+    </parallel>
+  </target>
+
 
     <!--
      If you want clover test code coverage, run this before the tests.  You need clover.jar and the license in your ANT classspath and you need to specify -Drun.clover=true on the command line.

@@ -16,8 +16,9 @@
  *
  */
 
-package org.apache.solr;
+package org.apache.lucene.util;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.NumberFormat;
@@ -25,6 +26,8 @@ import java.text.NumberFormat;
 import junit.framework.AssertionFailedError;
 import junit.framework.Test;
 
+import org.apache.lucene.store.LockReleaseFailedException;
+import org.apache.lucene.store.NativeFSLockFactory;
 import org.apache.tools.ant.taskdefs.optional.junit.JUnitResultFormatter;
 import org.apache.tools.ant.taskdefs.optional.junit.JUnitTest;
 import org.apache.tools.ant.taskdefs.optional.junit.JUnitTestRunner;
@@ -37,8 +40,10 @@ import org.apache.tools.ant.util.StringUtils;
  * At this point, the output is written at once in synchronized fashion.
  * This way tests can run in parallel without interleaving output.
  */
-public class SolrJUnitResultFormatter implements JUnitResultFormatter {
+public class LuceneJUnitResultFormatter implements JUnitResultFormatter {
   private static final double ONE_SECOND = 1000.0;
+  
+  private NativeFSLockFactory lockFactory;
   
   /** Where to write the log to. */
   private OutputStream out;
@@ -55,8 +60,21 @@ public class SolrJUnitResultFormatter implements JUnitResultFormatter {
   /** Buffer output until the end of the test */
   private StringBuilder sb;
 
+  private org.apache.lucene.store.Lock lock;
+
   /** Constructor for SolrJUnitResultFormatter. */
-  public SolrJUnitResultFormatter() {
+  public LuceneJUnitResultFormatter() {
+    File lockDir = new File(System.getProperty("java.io.tmpdir"), "lucene_junit_lock");
+    lockDir.mkdirs();
+    if(!lockDir.exists()) {
+      throw new RuntimeException("Could not make Lock directory:" + lockDir);
+    }
+    try {
+      lockFactory = new NativeFSLockFactory(lockDir);
+      lock = lockFactory.makeLock("junit_lock");
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
     sb = new StringBuilder();
   }
   
@@ -135,8 +153,17 @@ public class SolrJUnitResultFormatter implements JUnitResultFormatter {
     
     if (out != null) {
       try {
-        out.write(sb.toString().getBytes());
-        out.flush();
+        lock.obtain(5000);
+        try {
+          out.write(sb.toString().getBytes());
+          out.flush();
+        } finally {
+          try {
+            lock.release();
+          } catch(LockReleaseFailedException e) {
+            // well lets pretend its released anyway
+          }
+        }
       } catch (IOException e) {
         throw new RuntimeException("unable to write results", e);
       } finally {
@@ -227,3 +254,4 @@ public class SolrJUnitResultFormatter implements JUnitResultFormatter {
     sb.append(StringUtils.LINE_SEP);
   }
 }
+

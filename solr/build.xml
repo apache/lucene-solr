@@ -349,6 +349,7 @@
     <pathelement location="${dest}/tests"/>
     <!-- include the solrj classpath and jetty files included in example -->
     <path refid="compile.classpath.solrj" />
+    <pathelement location="${common-solr.dir}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
     <pathelement path="${java.class.path}"/>
   </path>
 
