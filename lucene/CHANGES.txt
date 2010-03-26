@@ -216,6 +216,11 @@ New features
   convenient classes in case you want to disable segment merges by IndexWriter
   without tweaking a particular MergePolicy parameters, such as mergeFactor.
   MergeScheduler's methods are now public. (Shai Erera via Mike McCandless)
+
+* LUCENE-2339: Deprecate static method Directory.copy in favor of
+  Directory.copyTo, and use nio's FileChannel.transferTo when copying
+  files between FSDirectory instances.  (Earwin Burrfoot via Mike
+  McCandless).
   
 Optimizations
 

@@ -18,9 +18,12 @@ package org.apache.lucene.store;
  */
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.channels.FileChannel;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -29,6 +32,7 @@ import java.util.Collections;
 import static java.util.Collections.synchronizedSet;
 import java.util.HashSet;
 import java.util.Set;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.Constants;
 
@@ -420,6 +424,30 @@ public abstract class FSDirectory extends Directory {
   public final int getReadChunkSize() {
     // LUCENE-1566
     return chunkSize;
+  }
+
+  @Override
+  public void copyTo(Directory to, Collection<String> filenames) throws IOException {
+    if (to instanceof FSDirectory) {
+      FSDirectory target = (FSDirectory) to;
+
+      for (String filename : filenames) {
+        target.ensureCanWrite(filename);
+        FileChannel input = null;
+        FileChannel output = null;
+        IOException priorException = null;
+        try {
+          input = new FileInputStream(new File(directory, filename)).getChannel();
+          output = new FileOutputStream(new File(target.directory, filename)).getChannel();
+          output.transferFrom(input, 0, input.size());
+        } catch (IOException ioe) {
+          priorException = ioe;
+        } finally {
+          IOUtils.closeSafely(priorException, input, output);
+        }
+      }
+    } else
+      super.copyTo(to, filenames);
   }
 
   protected static class FSIndexOutput extends BufferedIndexOutput {

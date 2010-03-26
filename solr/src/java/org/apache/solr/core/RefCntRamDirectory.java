@@ -17,7 +17,7 @@ public class RefCntRamDirectory extends RAMDirectory {
 
   public RefCntRamDirectory(Directory dir) throws IOException {
     this();
-    Directory.copy(dir, this, false);
+    dir.copyTo(this);
   }
 
   public void incRef() {

@@ -22,7 +22,13 @@ import java.io.Closeable;
 import java.util.Collection;
 import java.util.Collections;
 
+import java.util.ArrayList;
+import static java.util.Arrays.asList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 import org.apache.lucene.index.IndexFileNameFilter;
+import org.apache.lucene.util.IOUtils;
 
 /** A Directory is a flat list of files.  Files may be written once, when they
  * are created.  Once a file is created it may only be opened for read, or
@@ -183,64 +189,83 @@ public abstract class Directory implements Closeable {
       return this.toString();
   }
 
-  /**
-   * Copy contents of a directory src to a directory dest.
-   * If a file in src already exists in dest then the
-   * one in dest will be blindly overwritten.
-   *
-   * <p><b>NOTE:</b> the source directory cannot change
-   * while this method is running.  Otherwise the results
-   * are undefined and you could easily hit a
-   * FileNotFoundException.
-   *
-   * <p><b>NOTE:</b> this method only copies files that look
-   * like index files (ie, have extensions matching the
-   * known extensions of index files).
-   *
-   * @param src source directory
-   * @param dest destination directory
-   * @param closeDirSrc if <code>true</code>, call {@link #close()} method on source directory
-   * @throws IOException
-   */
-  public static void copy(Directory src, Directory dest, boolean closeDirSrc) throws IOException {
-    final String[] files = src.listAll();
 
+  /**
+   * <p>Copy all files of this directory to destination directory. All conflicting files at destination are overwritten</p>
+   * <p><b>NOTE:</b> this method only copies files that look like index files (ie, have extensions matching the known
+   * extensions of index files).
+   * <p><b>NOTE:</b> the source directory should not change while this method is running.  Otherwise the results are
+   * undefined and you could easily hit a FileNotFoundException. </p>
+   *
+   * @param to        destination directory
+   */
+  public final void copyTo(Directory to) throws IOException {
+    List<String> filenames = new ArrayList<String>();
     IndexFileNameFilter filter = IndexFileNameFilter.getFilter();
 
+    for (String name : listAll())
+      if (filter.accept(null, name))
+        filenames.add(name);
+
+    copyTo(to, filenames);
+  }
+
+  /**
+   * <p>Copy given files of this directory to destination directory. All conflicting files at destination are overwritten</p>
+   * <p><b>NOTE:</b> the source directory should not change while this method is running.  Otherwise the results are
+   * undefined and you could easily hit a FileNotFoundException. </p>
+   * <p><b>NOTE:</b> implementations can check if destination directory is of the same type as 'this' and perform optimized copy</p>
+   *
+   * @param to        destination directory
+   * @param filenames file names to be copied
+   */
+  public void copyTo(Directory to, Collection<String> filenames) throws IOException {
     byte[] buf = new byte[BufferedIndexOutput.BUFFER_SIZE];
-    for (int i = 0; i < files.length; i++) {
-
-      if (!filter.accept(null, files[i]))
-        continue;
-
+    for (String filename : filenames) {
       IndexOutput os = null;
       IndexInput is = null;
+      IOException priorException = null;
       try {
         // create file in dest directory
-        os = dest.createOutput(files[i]);
+        os = to.createOutput(filename);
         // read current file
-        is = src.openInput(files[i]);
+        is = openInput(filename);
         // and copy to dest directory
         long len = is.length();
         long readCount = 0;
         while (readCount < len) {
-          int toRead = readCount + BufferedIndexOutput.BUFFER_SIZE > len ? (int)(len - readCount) : BufferedIndexOutput.BUFFER_SIZE;
+          int toRead = readCount + BufferedIndexOutput.BUFFER_SIZE > len ? (int) (len - readCount) : BufferedIndexOutput.BUFFER_SIZE;
           is.readBytes(buf, 0, toRead);
           os.writeBytes(buf, toRead);
           readCount += toRead;
         }
+      } catch (IOException ioe) {
+        priorException = ioe;
       } finally {
-        // graceful cleanup
-        try {
-          if (os != null)
-            os.close();
-        } finally {
-          if (is != null)
-            is.close();
-        }
+        IOUtils.closeSafely(priorException, os, is);
       }
     }
-    if(closeDirSrc)
+  }
+
+  /**
+   * Copy contents of a directory src to a directory dest. If a file in src already exists in dest then the one in dest
+   * will be blindly overwritten.
+   * <p/>
+   * <p><b>NOTE:</b> the source directory cannot change while this method is running.  Otherwise the results are
+   * undefined and you could easily hit a FileNotFoundException.
+   * <p/>
+   * <p><b>NOTE:</b> this method only copies files that look like index files (ie, have extensions matching the known
+   * extensions of index files).
+   *
+   * @param src         source directory
+   * @param dest        destination directory
+   * @param closeDirSrc if <code>true</code>, call {@link #close()} method on source directory
+   * @deprecated should be replaced with src.copyTo(dest); [src.close();]
+   */
+  @Deprecated
+  public static void copy(Directory src, Directory dest, boolean closeDirSrc) throws IOException {
+    src.copyTo(dest);
+    if (closeDirSrc)
       src.close();
   }
 
