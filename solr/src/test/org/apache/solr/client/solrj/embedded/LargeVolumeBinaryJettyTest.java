@@ -20,6 +20,7 @@ import org.apache.solr.client.solrj.LargeVolumeTestBase;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.junit.BeforeClass;
 
 /**
  * @version $Id$
@@ -28,34 +29,9 @@ import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
  * @since solr 1.4
  */
 public class LargeVolumeBinaryJettyTest extends LargeVolumeTestBase {
-  SolrServer server;
-  JettySolrRunner jetty;
-
-  int port = 0;
-  static final String context = "/example";
-
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-
-    jetty = new JettySolrRunner(context, 0);
-    jetty.start();
-    port = jetty.getLocalPort();
-
-    server = this.createNewSolrServer();
-  }
-
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-    jetty.stop();  // stop the server
-  }
-
-
-  @Override
-  protected SolrServer getSolrServer() {
-    return server;
+  @BeforeClass
+  public static void beforeTest() throws Exception {
+    createJetty(EXAMPLE_HOME, null, null);
   }
 
   @Override

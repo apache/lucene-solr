@@ -24,21 +24,24 @@ import java.util.List;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * @version $Id$
  * @since solr 1.3
  */
-public abstract class LargeVolumeTestBase extends SolrExampleTestBase 
+public abstract class LargeVolumeTestBase extends SolrJettyTestBase 
 {
-  SolrServer gserver = null;
-  
+
   // for real load testing, make these numbers bigger
   static final int numdocs = 100; //1000 * 1000;
   static final int threadCount = 5;
-  
+
+  @Test
   public void testMultiThreaded() throws Exception {
-    gserver = this.getSolrServer();
+    SolrServer gserver = this.getSolrServer();
     gserver.deleteByQuery( "*:*" ); // delete everything!
     
     DocThread[] threads = new DocThread[threadCount];
@@ -61,6 +64,7 @@ public abstract class LargeVolumeTestBase extends SolrExampleTestBase
   }
 
   private void query(int count) throws SolrServerException, IOException {
+    SolrServer gserver = this.getSolrServer();
     SolrQuery query = new SolrQuery("*:*");
     QueryResponse response = gserver.query(query);
     assertEquals(0, response.getStatus());

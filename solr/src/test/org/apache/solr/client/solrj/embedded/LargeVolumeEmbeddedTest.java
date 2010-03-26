@@ -19,27 +19,16 @@ package org.apache.solr.client.solrj.embedded;
 
 import org.apache.solr.client.solrj.LargeVolumeTestBase;
 import org.apache.solr.client.solrj.SolrServer;
+import org.junit.BeforeClass;
 
 /**
  * @version $Id$
  * @since solr 1.3
  */
 public class LargeVolumeEmbeddedTest extends LargeVolumeTestBase {
-
-  SolrServer server;
-  
-  @Override public void setUp() throws Exception 
-  {
-    super.setUp();
-    
-    // setup the server...
-    server = createNewSolrServer();
-  }
-
-  @Override
-  protected SolrServer getSolrServer()
-  {
-    return server;
+  @BeforeClass
+  public static void beforeTest() throws Exception {
+    initCore(EXAMPLE_CONFIG, EXAMPLE_SCHEMA, EXAMPLE_HOME);
   }
 
   @Override
