@@ -238,6 +238,9 @@ Bug Fixes
 * SOLR-1850: change KeepWordFilter so a new word set is not created for
   each instance (John Wang via yonik)
 
+* SOLR-1706: fixed WordDelimiterFilter for certain combinations of options
+  where it would output incorrect tokens. (Robert Muir, Chris Male)
+
 Other Changes
 ----------------------
 
