@@ -235,6 +235,9 @@ Bug Fixes
 * SOLR-1797: fix ConcurrentModificationException and potential memory
   leaks in ResourceLoader. (yonik)
 
+* SOLR-1850: change KeepWordFilter so a new word set is not created for
+  each instance (John Wang via yonik)
+
 Other Changes
 ----------------------
 

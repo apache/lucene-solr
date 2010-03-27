@@ -39,8 +39,14 @@ public final class KeepWordFilter extends TokenFilter {
   private final TermAttribute termAtt;
 
   public KeepWordFilter(TokenStream in, Set<String> words, boolean ignoreCase ) {
+    this(in, new CharArraySet(words, ignoreCase));
+  }
+
+  /** The words set passed to this constructor will be directly used by this filter
+   * and should not be modified, */
+  public KeepWordFilter(TokenStream in, CharArraySet words) {
     super(in);
-    this.words = new CharArraySet(words, ignoreCase);
+    this.words = words;
     this.termAtt = (TermAttribute)addAttribute(TermAttribute.class);
   }
 

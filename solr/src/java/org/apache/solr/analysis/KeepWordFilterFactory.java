@@ -72,10 +72,13 @@ public class KeepWordFilterFactory extends BaseTokenFilterFactory implements Res
 
   public void setIgnoreCase(boolean ignoreCase) {
     this.ignoreCase = ignoreCase;
+    if (words != null) {
+      words = new CharArraySet(words, ignoreCase);
+    }
   }
 
   public KeepWordFilter create(TokenStream input) {
-    return new KeepWordFilter(input, (Set)words, ignoreCase);
+    return new KeepWordFilter(input, words);
   }
 
   public CharArraySet getWords() {

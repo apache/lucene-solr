@@ -66,10 +66,12 @@ public class TestKeepWordFilter extends BaseTokenTestCase {
     assertTokenStreamContents(stream, new String[] { "aaa", "BBB" });
     
     // Now force case
+    factory = new KeepWordFilterFactory();
     args = new HashMap<String, String>();
     args.put( "ignoreCase", "false" );
     factory.init( args );
     factory.inform( loader );
+    factory.setWords( words );    
     assertFalse(factory.isIgnoreCase());
     stream = factory.create(new WhitespaceTokenizer(new StringReader(input)));
     assertTokenStreamContents(stream, new String[] { "aaa" });
