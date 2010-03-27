@@ -70,13 +70,14 @@ public class CoreParser implements QueryBuilder
 		this.parser=parser;
 		filterFactory = new FilterBuilderFactory();
 		filterFactory.addBuilder("RangeFilter",new RangeFilterBuilder());
-		
+		filterFactory.addBuilder("NumericRangeFilter",new NumericRangeFilterBuilder());
 		
 		queryFactory = new QueryBuilderFactory();
 		queryFactory.addBuilder("TermQuery",new TermQueryBuilder());
 		queryFactory.addBuilder("TermsQuery",new TermsQueryBuilder(analyzer));
 		queryFactory.addBuilder("MatchAllDocsQuery",new MatchAllDocsQueryBuilder());
 		queryFactory.addBuilder("BooleanQuery",new BooleanQueryBuilder(queryFactory));
+		queryFactory.addBuilder("NumericRangeQuery",new NumericRangeQueryBuilder());
 		if(parser!=null)
 		{
 			queryFactory.addBuilder("UserQuery",new UserInputQueryBuilder(parser));

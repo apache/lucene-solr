@@ -41,13 +41,13 @@
 <tr>
 <td>coreSpanQueries</td>
 <td>
-SpanOr|SpanNear|SpanOrTerms|SpanFirst|SpanNot|SpanTerm
+SpanOr|SpanNear|SpanOrTerms|SpanFirst|SpanNot|SpanTerm|BoostingTermQuery
 </td>
 </tr>
 <tr>
 <td>coreFilters</td>
 <td>
-RangeFilter|CachedFilter
+RangeFilter|NumericRangeFilter|CachedFilter
 </td>
 </tr>
 <tr>
@@ -59,7 +59,7 @@ RangeFilter|CachedFilter
 <tr>
 <td>coreQueries</td>
 <td>
-BooleanQuery|UserQuery|FilteredQuery|TermQuery|TermsQuery|MatchAllDocsQuery|ConstantScoreQuery
+BooleanQuery|UserQuery|FilteredQuery|TermQuery|TermsQuery|MatchAllDocsQuery|ConstantScoreQuery|BoostingTermQuery|NumericRangeQuery
 </td>
 </tr>
 </tbody>

@@ -8,6 +8,7 @@ import java.io.InputStreamReader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -70,6 +71,9 @@ public class TestParser extends LuceneTestCase {
 				org.apache.lucene.document.Document doc =new org.apache.lucene.document.Document();
 				doc.add(new Field("date",date,Field.Store.YES,Field.Index.ANALYZED));
 				doc.add(new Field("contents",content,Field.Store.YES,Field.Index.ANALYZED));
+				NumericField numericField = new NumericField("date2");
+				numericField.setIntValue(Integer.valueOf(date));
+				doc.add(numericField);
 				writer.addDocument(doc);
 				line=d.readLine();
 			}			
@@ -189,6 +193,18 @@ public class TestParser extends LuceneTestCase {
 			Query q=parse("DuplicateFilterQuery.xml");
 			int h = searcher.search(q, null, 1000).totalHits;
 			assertEquals("DuplicateFilterQuery should produce 1 result ", 1,h);
+	}
+	
+	public void testNumericRangeFilterQueryXML() throws ParserException, IOException
+	{
+			Query q=parse("NumericRangeFilterQuery.xml");
+			dumpResults("NumericRangeFilter", q, 5);
+	}
+	
+	public void testNumericRangeQueryQueryXML() throws ParserException, IOException
+	{
+			Query q=parse("NumericRangeQueryQuery.xml");
+			dumpResults("NumericRangeQuery", q, 5);
 	}
 	
 

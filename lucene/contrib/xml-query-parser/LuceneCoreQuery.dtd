@@ -54,8 +54,8 @@
 
 <!-- @hidden Define core types of XML elements -->
 <!ENTITY % coreSpanQueries "SpanOr|SpanNear|SpanOrTerms|SpanFirst|SpanNot|SpanTerm|BoostingTermQuery" >
-<!ENTITY % coreQueries "BooleanQuery|UserQuery|FilteredQuery|TermQuery|TermsQuery|MatchAllDocsQuery|ConstantScoreQuery|BoostingTermQuery" >
-<!ENTITY % coreFilters "RangeFilter|CachedFilter" >
+<!ENTITY % coreQueries "BooleanQuery|UserQuery|FilteredQuery|TermQuery|TermsQuery|MatchAllDocsQuery|ConstantScoreQuery|BoostingTermQuery|NumericRangeQuery" >
+<!ENTITY % coreFilters "RangeFilter|NumericRangeFilter|CachedFilter" >
 
 <!-- @hidden Allow for extensions -->
 <!ENTITY % extendedSpanQueries1 " " >
@@ -283,7 +283,60 @@ Passes content directly through to the standard LuceneQuery parser see "Lucene Q
 <!-- Controls if the upperTerm in the range is part of the allowed set of values -->
 <!ATTLIST RangeFilter includeUpper (true | false) "true">
 
+<!--
+	A Query that matches numeric values within a specified range.
+	@example 
+	        <em>Search for documents about people who are aged 20-25</em>
+	        %	          
+            <NumericRangeQuery fieldName="age" lowerTerm="20" upperTerm="25" />
+	         %
+	-->
+<!ELEMENT NumericRangeQuery EMPTY>
+<!-- fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute -->	
+<!ATTLIST NumericRangeQuery fieldName CDATA #IMPLIED>
+<!-- The lower-most term value for this field (must be <= upperTerm and a valid native java numeric type) -->
+<!ATTLIST NumericRangeQuery lowerTerm CDATA #REQUIRED>
+<!-- The upper-most term value for this field (must be >= lowerTerm and a valid native java numeric type) -->
+<!ATTLIST NumericRangeQuery upperTerm CDATA #REQUIRED>
+<!-- The numeric type of this field -->
+<!ATTLIST NumericRangeQuery type (int | long | float | double) "int">
+<!-- Controls if the lowerTerm in the range is part of the allowed set of values -->
+<!ATTLIST NumericRangeQuery includeLower (true | false) "true">
+<!-- Controls if the upperTerm in the range is part of the allowed set of values -->
+<!ATTLIST NumericRangeQuery includeUpper (true | false) "true">
+<!-- Lower step values mean more precisions and so more terms in index (and index gets larger). This value must be an integer -->
+<!ATTLIST NumericRangeQuery precisionStep CDATA "4">
 
+<!--
+	A Filter that only accepts numeric values within a specified range
+	@example 
+	        <em>Search for documents about people who are aged 20-25</em>
+	        %	          
+            <FilteredQuery>
+               <Query>
+                  <UserQuery>person</UserQuery>
+               </Query>	
+               <Filter>
+                     <NumericRangeFilter fieldName="age" lowerTerm="20" upperTerm="25"/>
+               </Filter>	
+            </FilteredQuery>
+	         %
+	-->
+<!ELEMENT NumericRangeFilter EMPTY>
+<!-- fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute -->	
+<!ATTLIST NumericRangeFilter fieldName CDATA #IMPLIED>
+<!-- The lower-most term value for this field (must be <= upperTerm and a valid native java numeric type) -->
+<!ATTLIST NumericRangeFilter lowerTerm CDATA #REQUIRED>
+<!-- The upper-most term value for this field (must be >= lowerTerm and a valid native java numeric type) -->
+<!ATTLIST NumericRangeFilter upperTerm CDATA #REQUIRED>
+<!-- The numeric type of this field -->
+<!ATTLIST NumericRangeFilter type (int | long | float | double) "int">
+<!-- Controls if the lowerTerm in the range is part of the allowed set of values -->
+<!ATTLIST NumericRangeFilter includeLower (true | false) "true">
+<!-- Controls if the upperTerm in the range is part of the allowed set of values -->
+<!ATTLIST NumericRangeFilter includeUpper (true | false) "true">
+<!-- Lower step values mean more precisions and so more terms in index (and index gets larger). This value must be an integer -->
+<!ATTLIST NumericRangeFilter precisionStep CDATA "4">
 
 <!-- A single term used in a SpanQuery. These clauses are the building blocks for more complex "span" queries which test word proximity
 	@example <em>Find documents using terms close to each other about mining and accidents</em>

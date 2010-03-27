@@ -74,6 +74,8 @@ API Changes
    (Robert Muir, Uwe Schindler, Simon Willnauer)
    
 New features
+ * LUCENE-2306: Add NumericRangeFilter and NumericRangeQuery support to XMLQueryParser.
+   (Jingkei Ly, via Mark Harwood)
 
  * LUCENE-2102: Add a Turkish LowerCase Filter. TurkishLowerCaseFilter handles
    Turkish and Azeri unique casing behavior correctly.

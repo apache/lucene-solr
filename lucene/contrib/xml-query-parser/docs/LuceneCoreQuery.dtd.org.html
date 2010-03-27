@@ -59,9 +59,9 @@
 <span class="dtd_comment">--&gt;</span>
 
 <span class="dtd_comment">&lt;!-- </span><span class="dtd_dtddoc_tag">@hidden</span><span class="dtd_comment"> Define core types of XML elements --&gt;</span>
-<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ENTITY</span><span class="dtd_plain"> % </span><span class="dtd_attribute_name">coreSpanQueries</span><span class="dtd_plain"> </span><span class="dtd_attribute_value">&quot;SpanOr|SpanNear|SpanOrTerms|SpanFirst|SpanNot|SpanTerm&quot;</span><span class="dtd_plain"> </span><span class="dtd_tag_symbols">&gt;</span>
-<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ENTITY</span><span class="dtd_plain"> % </span><span class="dtd_attribute_name">coreQueries</span><span class="dtd_plain"> </span><span class="dtd_attribute_value">&quot;BooleanQuery|UserQuery|FilteredQuery|TermQuery|TermsQuery|MatchAllDocsQuery|ConstantScoreQuery&quot;</span><span class="dtd_plain"> </span><span class="dtd_tag_symbols">&gt;</span>
-<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ENTITY</span><span class="dtd_plain"> % </span><span class="dtd_attribute_name">coreFilters</span><span class="dtd_plain"> </span><span class="dtd_attribute_value">&quot;RangeFilter|CachedFilter&quot;</span><span class="dtd_plain"> </span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ENTITY</span><span class="dtd_plain"> % </span><span class="dtd_attribute_name">coreSpanQueries</span><span class="dtd_plain"> </span><span class="dtd_attribute_value">&quot;SpanOr|SpanNear|SpanOrTerms|SpanFirst|SpanNot|SpanTerm|BoostingTermQuery&quot;</span><span class="dtd_plain"> </span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ENTITY</span><span class="dtd_plain"> % </span><span class="dtd_attribute_name">coreQueries</span><span class="dtd_plain"> </span><span class="dtd_attribute_value">&quot;BooleanQuery|UserQuery|FilteredQuery|TermQuery|TermsQuery|MatchAllDocsQuery|ConstantScoreQuery|BoostingTermQuery|NumericRangeQuery&quot;</span><span class="dtd_plain"> </span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ENTITY</span><span class="dtd_plain"> % </span><span class="dtd_attribute_name">coreFilters</span><span class="dtd_plain"> </span><span class="dtd_attribute_value">&quot;RangeFilter|NumericRangeFilter|CachedFilter&quot;</span><span class="dtd_plain"> </span><span class="dtd_tag_symbols">&gt;</span>
 
 <span class="dtd_comment">&lt;!-- </span><span class="dtd_dtddoc_tag">@hidden</span><span class="dtd_comment"> Allow for extensions --&gt;</span>
 <span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ENTITY</span><span class="dtd_plain"> % </span><span class="dtd_attribute_name">extendedSpanQueries1</span><span class="dtd_plain"> </span><span class="dtd_attribute_value">&quot; &quot;</span><span class="dtd_plain"> </span><span class="dtd_tag_symbols">&gt;</span>
@@ -192,6 +192,29 @@
 <span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">TermQuery</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">fieldName</span><span class="dtd_plain"> </span><span class="dtd_keyword">CDATA</span><span class="dtd_plain"> </span><span class="dtd_keyword">#IMPLIED</span><span class="dtd_tag_symbols">&gt;</span>
 
 
+<span class="dtd_comment">&lt;!--</span>
+<span class="dtd_comment">  A boosted term query - no analysis is done of the child text. Also a span member.</span>
+
+<span class="dtd_comment">  (Text below is copied from the javadocs of BoostingTermQuery)</span>
+<span class="dtd_comment">   </span>
+<span class="dtd_comment">  The BoostingTermQuery is very similar to the {@link org.apache.lucene.search.spans.SpanTermQuery} except</span>
+<span class="dtd_comment">  that it factors in the value of the payload located at each of the positions where the</span>
+<span class="dtd_comment">  {@link org.apache.lucene.index.Term} occurs.</span>
+
+<span class="dtd_comment">  In order to take advantage of this, you must override {@link org.apache.lucene.search.Similarity#scorePayload(String, byte[],int,int)}</span>
+<span class="dtd_comment">  which returns 1 by default.</span>
+
+<span class="dtd_comment">  Payload scores are averaged across term occurrences in the document.</span>
+
+<span class="dtd_comment">  @see org.apache.lucene.search.Similarity#scorePayload(String, byte[], int, int)</span>
+<span class="dtd_comment">--&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ELEMENT</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">BoostingTermQuery</span><span class="dtd_plain"> (</span><span class="dtd_keyword">#PCDATA</span><span class="dtd_plain">)</span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_comment">&lt;!-- Optional boost for matches on this query. Values &gt; 1 --&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">TermQuery</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">boost</span><span class="dtd_plain"> </span><span class="dtd_keyword">CDATA</span><span class="dtd_plain"> </span><span class="dtd_attribute_value">&quot;1.0&quot;</span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_comment">&lt;!-- fieldName must be defined here or is taken from the most immediate parent XML element that defines a &quot;fieldName&quot; attribute --&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">TermQuery</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">fieldName</span><span class="dtd_plain"> </span><span class="dtd_keyword">CDATA</span><span class="dtd_plain"> </span><span class="dtd_keyword">#IMPLIED</span><span class="dtd_tag_symbols">&gt;</span>
+
+
 
 <span class="dtd_comment">&lt;!-- </span>
 <span class="dtd_comment">    The equivalent of a BooleanQuery with multiple optional TermQuery clauses.</span>
@@ -266,7 +289,60 @@
 <span class="dtd_comment">&lt;!-- Controls if the upperTerm in the range is part of the allowed set of values --&gt;</span>
 <span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">RangeFilter</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">includeUpper</span><span class="dtd_plain"> (</span><span class="dtd_attribute_name">true</span><span class="dtd_plain"> | </span><span class="dtd_attribute_name">false</span><span class="dtd_plain">) </span><span class="dtd_attribute_value">&quot;true&quot;</span><span class="dtd_tag_symbols">&gt;</span>
 
+<span class="dtd_comment">&lt;!--</span>
+<span class="dtd_comment">    A Query that matches numeric values within a specified range.</span>
+<span class="dtd_comment">    </span><span class="dtd_dtddoc_tag">@example</span><span class="dtd_comment"> </span>
+<span class="dtd_comment">            &lt;em&gt;Search for documents about people who are aged 20-25&lt;/em&gt;</span>
+<span class="dtd_comment">            %             </span>
+<span class="dtd_comment">            &lt;NumericRangeQuery fieldName=&quot;age&quot; lowerTerm=&quot;20&quot; upperTerm=&quot;25&quot; /&gt;</span>
+<span class="dtd_comment">             %</span>
+<span class="dtd_comment">    --&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ELEMENT</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">NumericRangeQuery</span><span class="dtd_plain"> </span><span class="dtd_keyword">EMPTY</span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_comment">&lt;!-- fieldName must be defined here or is taken from the most immediate parent XML element that defines a &quot;fieldName&quot; attribute --&gt;</span><span class="dtd_plain"> </span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">NumericRangeQuery</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">fieldName</span><span class="dtd_plain"> </span><span class="dtd_keyword">CDATA</span><span class="dtd_plain"> </span><span class="dtd_keyword">#IMPLIED</span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_comment">&lt;!-- The lower-most term value for this field (must be &lt;= upperTerm and a valid native java numeric type) --&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">NumericRangeQuery</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">lowerTerm</span><span class="dtd_plain"> </span><span class="dtd_keyword">CDATA</span><span class="dtd_plain"> </span><span class="dtd_keyword">#REQUIRED</span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_comment">&lt;!-- The upper-most term value for this field (must be &gt;= lowerTerm and a valid native java numeric type) --&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">NumericRangeQuery</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">upperTerm</span><span class="dtd_plain"> </span><span class="dtd_keyword">CDATA</span><span class="dtd_plain"> </span><span class="dtd_keyword">#REQUIRED</span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_comment">&lt;!-- The numeric type of this field --&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">NumericRangeQuery</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">type</span><span class="dtd_plain"> (</span><span class="dtd_attribute_name">int</span><span class="dtd_plain"> | </span><span class="dtd_attribute_name">long</span><span class="dtd_plain"> | </span><span class="dtd_attribute_name">float</span><span class="dtd_plain"> | </span><span class="dtd_attribute_name">double</span><span class="dtd_plain">) </span><span class="dtd_attribute_value">&quot;int&quot;</span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_comment">&lt;!-- Controls if the lowerTerm in the range is part of the allowed set of values --&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">NumericRangeQuery</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">includeLower</span><span class="dtd_plain"> (</span><span class="dtd_attribute_name">true</span><span class="dtd_plain"> | </span><span class="dtd_attribute_name">false</span><span class="dtd_plain">) </span><span class="dtd_attribute_value">&quot;true&quot;</span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_comment">&lt;!-- Controls if the upperTerm in the range is part of the allowed set of values --&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">NumericRangeQuery</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">includeUpper</span><span class="dtd_plain"> (</span><span class="dtd_attribute_name">true</span><span class="dtd_plain"> | </span><span class="dtd_attribute_name">false</span><span class="dtd_plain">) </span><span class="dtd_attribute_value">&quot;true&quot;</span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_comment">&lt;!-- Lower step values mean more precisions and so more terms in index (and index gets larger). This value must be an integer --&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">NumericRangeQuery</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">precisionStep</span><span class="dtd_plain"> </span><span class="dtd_keyword">CDATA</span><span class="dtd_plain"> </span><span class="dtd_attribute_value">&quot;4&quot;</span><span class="dtd_tag_symbols">&gt;</span>
 
+<span class="dtd_comment">&lt;!--</span>
+<span class="dtd_comment">    A Filter that only accepts numeric values within a specified range</span>
+<span class="dtd_comment">    </span><span class="dtd_dtddoc_tag">@example</span><span class="dtd_comment"> </span>
+<span class="dtd_comment">            &lt;em&gt;Search for documents about people who are aged 20-25&lt;/em&gt;</span>
+<span class="dtd_comment">            %             </span>
+<span class="dtd_comment">            &lt;FilteredQuery&gt;</span>
+<span class="dtd_comment">               &lt;Query&gt;</span>
+<span class="dtd_comment">                  &lt;UserQuery&gt;person&lt;/UserQuery&gt;</span>
+<span class="dtd_comment">               &lt;/Query&gt; </span>
+<span class="dtd_comment">               &lt;Filter&gt;</span>
+<span class="dtd_comment">                     &lt;NumericRangeFilter fieldName=&quot;age&quot; lowerTerm=&quot;20&quot; upperTerm=&quot;25&quot;/&gt;</span>
+<span class="dtd_comment">               &lt;/Filter&gt;    </span>
+<span class="dtd_comment">            &lt;/FilteredQuery&gt;</span>
+<span class="dtd_comment">             %</span>
+<span class="dtd_comment">    --&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ELEMENT</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">NumericRangeFilter</span><span class="dtd_plain"> </span><span class="dtd_keyword">EMPTY</span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_comment">&lt;!-- fieldName must be defined here or is taken from the most immediate parent XML element that defines a &quot;fieldName&quot; attribute --&gt;</span><span class="dtd_plain"> </span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">NumericRangeFilter</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">fieldName</span><span class="dtd_plain"> </span><span class="dtd_keyword">CDATA</span><span class="dtd_plain"> </span><span class="dtd_keyword">#IMPLIED</span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_comment">&lt;!-- The lower-most term value for this field (must be &lt;= upperTerm and a valid native java numeric type) --&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">NumericRangeFilter</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">lowerTerm</span><span class="dtd_plain"> </span><span class="dtd_keyword">CDATA</span><span class="dtd_plain"> </span><span class="dtd_keyword">#REQUIRED</span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_comment">&lt;!-- The upper-most term value for this field (must be &gt;= lowerTerm and a valid native java numeric type) --&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">NumericRangeFilter</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">upperTerm</span><span class="dtd_plain"> </span><span class="dtd_keyword">CDATA</span><span class="dtd_plain"> </span><span class="dtd_keyword">#REQUIRED</span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_comment">&lt;!-- The numeric type of this field --&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">NumericRangeFilter</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">type</span><span class="dtd_plain"> (</span><span class="dtd_attribute_name">int</span><span class="dtd_plain"> | </span><span class="dtd_attribute_name">long</span><span class="dtd_plain"> | </span><span class="dtd_attribute_name">float</span><span class="dtd_plain"> | </span><span class="dtd_attribute_name">double</span><span class="dtd_plain">) </span><span class="dtd_attribute_value">&quot;int&quot;</span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_comment">&lt;!-- Controls if the lowerTerm in the range is part of the allowed set of values --&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">NumericRangeFilter</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">includeLower</span><span class="dtd_plain"> (</span><span class="dtd_attribute_name">true</span><span class="dtd_plain"> | </span><span class="dtd_attribute_name">false</span><span class="dtd_plain">) </span><span class="dtd_attribute_value">&quot;true&quot;</span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_comment">&lt;!-- Controls if the upperTerm in the range is part of the allowed set of values --&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">NumericRangeFilter</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">includeUpper</span><span class="dtd_plain"> (</span><span class="dtd_attribute_name">true</span><span class="dtd_plain"> | </span><span class="dtd_attribute_name">false</span><span class="dtd_plain">) </span><span class="dtd_attribute_value">&quot;true&quot;</span><span class="dtd_tag_symbols">&gt;</span>
+<span class="dtd_comment">&lt;!-- Lower step values mean more precisions and so more terms in index (and index gets larger). This value must be an integer --&gt;</span>
+<span class="dtd_tag_symbols">&lt;!</span><span class="dtd_tag_name">ATTLIST</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">NumericRangeFilter</span><span class="dtd_plain"> </span><span class="dtd_attribute_name">precisionStep</span><span class="dtd_plain"> </span><span class="dtd_keyword">CDATA</span><span class="dtd_plain"> </span><span class="dtd_attribute_value">&quot;4&quot;</span><span class="dtd_tag_symbols">&gt;</span>
 
 <span class="dtd_comment">&lt;!-- A single term used in a SpanQuery. These clauses are the building blocks for more complex &quot;span&quot; queries which test word proximity</span>
 <span class="dtd_comment">    </span><span class="dtd_dtddoc_tag">@example</span><span class="dtd_comment"> &lt;em&gt;Find documents using terms close to each other about mining and accidents&lt;/em&gt;</span>
