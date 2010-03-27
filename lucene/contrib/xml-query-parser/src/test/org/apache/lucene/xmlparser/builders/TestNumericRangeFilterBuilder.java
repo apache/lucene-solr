@@ -1,4 +1,4 @@
-package com.apache.lucene.xmlparser.builders;
+package org.apache.lucene.xmlparser.builders;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,51 +25,85 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
-import org.apache.lucene.search.NumericRangeQuery;
-import org.apache.lucene.search.Query;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriter.MaxFieldLength;
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.NumericRangeFilter;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.xmlparser.ParserException;
-import org.apache.lucene.xmlparser.builders.NumericRangeQueryBuilder;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
-public class NumericRangeQueryBuilderTestCase extends TestCase {
+public class TestNumericRangeFilterBuilder extends LuceneTestCase {
 
 	public void testGetFilterHandleNumericParseErrorStrict() throws Exception {
-		NumericRangeQueryBuilder filterBuilder = new NumericRangeQueryBuilder();
+		NumericRangeFilterBuilder filterBuilder = new NumericRangeFilterBuilder();
+		filterBuilder.setStrictMode(true);
 
-		String xml = "<NumericRangeQuery fieldName='AGE' type='int' lowerTerm='-1' upperTerm='NaN'/>";
+		String xml = "<NumericRangeFilter fieldName='AGE' type='int' lowerTerm='-1' upperTerm='NaN'/>";
 		Document doc = getDocumentFromString(xml);
 		try {
-			filterBuilder.getQuery(doc.getDocumentElement());
+			filterBuilder.getFilter(doc.getDocumentElement());
 		} catch (ParserException e) {
 			return;
 		}
 		fail("Expected to throw " + ParserException.class);
 	}
 
-	public void testGetFilterInt() throws Exception {
-		NumericRangeQueryBuilder filterBuilder = new NumericRangeQueryBuilder();
+	public void testGetFilterHandleNumericParseError() throws Exception {
+		NumericRangeFilterBuilder filterBuilder = new NumericRangeFilterBuilder();
+		filterBuilder.setStrictMode(false);
 
-		String xml = "<NumericRangeQuery fieldName='AGE' type='int' lowerTerm='-1' upperTerm='10'/>";
+		String xml = "<NumericRangeFilter fieldName='AGE' type='int' lowerTerm='-1' upperTerm='NaN'/>";
 		Document doc = getDocumentFromString(xml);
-		Query filter = filterBuilder.getQuery(doc.getDocumentElement());
-		assertTrue(filter instanceof NumericRangeQuery<?>);
+		Filter filter = filterBuilder.getFilter(doc.getDocumentElement());
+
+		RAMDirectory ramDir = new RAMDirectory();
+		IndexWriter writer = new IndexWriter(ramDir, null, MaxFieldLength.UNLIMITED);
+		try
+		{
+			IndexReader reader = IndexReader.open(ramDir, true);
+			try
+			{
+				assertNull(filter.getDocIdSet(reader));
+			}
+			finally
+			{
+				reader.close();
+			}
+		}
+		finally
+		{
+			writer.commit();
+			writer.close();
+		}
+	}
+
+	public void testGetFilterInt() throws Exception {
+		NumericRangeFilterBuilder filterBuilder = new NumericRangeFilterBuilder();
+		filterBuilder.setStrictMode(true);
+
+		String xml = "<NumericRangeFilter fieldName='AGE' type='int' lowerTerm='-1' upperTerm='10'/>";
+		Document doc = getDocumentFromString(xml);
+		Filter filter = filterBuilder.getFilter(doc.getDocumentElement());
+		assertTrue(filter instanceof NumericRangeFilter<?>);
 		@SuppressWarnings("unchecked")
-		NumericRangeQuery<Integer> numRangeFilter = (NumericRangeQuery<Integer>) filter;
+		NumericRangeFilter<Integer> numRangeFilter = (NumericRangeFilter<Integer>) filter;
 		assertEquals(Integer.valueOf(-1), numRangeFilter.getMin());
 		assertEquals(Integer.valueOf(10), numRangeFilter.getMax());
 		assertEquals("AGE", numRangeFilter.getField());
 		assertTrue(numRangeFilter.includesMin());
 		assertTrue(numRangeFilter.includesMax());
 
-		String xml2 = "<NumericRangeQuery fieldName='AGE' type='int' lowerTerm='-1' upperTerm='10' includeUpper='false'/>";
+		String xml2 = "<NumericRangeFilter fieldName='AGE' type='int' lowerTerm='-1' upperTerm='10' includeUpper='false'/>";
 		Document doc2 = getDocumentFromString(xml2);
-		Query filter2 = filterBuilder.getQuery(doc2.getDocumentElement());
-		assertTrue(filter2 instanceof NumericRangeQuery<?>);
+		Filter filter2 = filterBuilder.getFilter(doc2.getDocumentElement());
+		assertTrue(filter2 instanceof NumericRangeFilter<?>);
 		@SuppressWarnings("unchecked")
-		NumericRangeQuery<Integer> numRangeFilter2 = (NumericRangeQuery) filter2;
+		NumericRangeFilter<Integer> numRangeFilter2 = (NumericRangeFilter) filter2;
 		assertEquals(Integer.valueOf(-1), numRangeFilter2.getMin());
 		assertEquals(Integer.valueOf(10), numRangeFilter2.getMax());
 		assertEquals("AGE", numRangeFilter2.getField());
@@ -78,26 +112,27 @@ public class NumericRangeQueryBuilderTestCase extends TestCase {
 	}
 
 	public void testGetFilterLong() throws Exception {
-		NumericRangeQueryBuilder filterBuilder = new NumericRangeQueryBuilder();
+		NumericRangeFilterBuilder filterBuilder = new NumericRangeFilterBuilder();
+		filterBuilder.setStrictMode(true);
 
-		String xml = "<NumericRangeQuery fieldName='AGE' type='LoNg' lowerTerm='-2321' upperTerm='60000000'/>";
+		String xml = "<NumericRangeFilter fieldName='AGE' type='LoNg' lowerTerm='-2321' upperTerm='60000000'/>";
 		Document doc = getDocumentFromString(xml);
-		Query filter = filterBuilder.getQuery(doc.getDocumentElement());
-		assertTrue(filter instanceof NumericRangeQuery<?>);
+		Filter filter = filterBuilder.getFilter(doc.getDocumentElement());
+		assertTrue(filter instanceof NumericRangeFilter<?>);
 		@SuppressWarnings("unchecked")
-		NumericRangeQuery<Long> numRangeFilter = (NumericRangeQuery) filter;
+		NumericRangeFilter<Long> numRangeFilter = (NumericRangeFilter) filter;
 		assertEquals(Long.valueOf(-2321L), numRangeFilter.getMin());
 		assertEquals(Long.valueOf(60000000L), numRangeFilter.getMax());
 		assertEquals("AGE", numRangeFilter.getField());
 		assertTrue(numRangeFilter.includesMin());
 		assertTrue(numRangeFilter.includesMax());
 
-		String xml2 = "<NumericRangeQuery fieldName='AGE' type='LoNg' lowerTerm='-2321' upperTerm='60000000' includeUpper='false'/>";
+		String xml2 = "<NumericRangeFilter fieldName='AGE' type='LoNg' lowerTerm='-2321' upperTerm='60000000' includeUpper='false'/>";
 		Document doc2 = getDocumentFromString(xml2);
-		Query filter2 = filterBuilder.getQuery(doc2.getDocumentElement());
-		assertTrue(filter2 instanceof NumericRangeQuery<?>);
+		Filter filter2 = filterBuilder.getFilter(doc2.getDocumentElement());
+		assertTrue(filter2 instanceof NumericRangeFilter<?>);
 		@SuppressWarnings("unchecked")
-		NumericRangeQuery<Long> numRangeFilter2 = (NumericRangeQuery) filter2;
+		NumericRangeFilter<Long> numRangeFilter2 = (NumericRangeFilter) filter2;
 		assertEquals(Long.valueOf(-2321L), numRangeFilter2.getMin());
 		assertEquals(Long.valueOf(60000000L), numRangeFilter2.getMax());
 		assertEquals("AGE", numRangeFilter2.getField());
@@ -106,27 +141,28 @@ public class NumericRangeQueryBuilderTestCase extends TestCase {
 	}
 
 	public void testGetFilterDouble() throws Exception {
-		NumericRangeQueryBuilder filterBuilder = new NumericRangeQueryBuilder();
+		NumericRangeFilterBuilder filterBuilder = new NumericRangeFilterBuilder();
+		filterBuilder.setStrictMode(true);
 
-		String xml = "<NumericRangeQuery fieldName='AGE' type='doubLe' lowerTerm='-23.21' upperTerm='60000.00023'/>";
+		String xml = "<NumericRangeFilter fieldName='AGE' type='doubLe' lowerTerm='-23.21' upperTerm='60000.00023'/>";
 		Document doc = getDocumentFromString(xml);
 
-		Query filter = filterBuilder.getQuery(doc.getDocumentElement());
-		assertTrue(filter instanceof NumericRangeQuery<?>);
+		Filter filter = filterBuilder.getFilter(doc.getDocumentElement());
+		assertTrue(filter instanceof NumericRangeFilter<?>);
 		@SuppressWarnings("unchecked")
-		NumericRangeQuery<Double> numRangeFilter = (NumericRangeQuery) filter;
+		NumericRangeFilter<Double> numRangeFilter = (NumericRangeFilter) filter;
 		assertEquals(Double.valueOf(-23.21d), numRangeFilter.getMin());
 		assertEquals(Double.valueOf(60000.00023d), numRangeFilter.getMax());
 		assertEquals("AGE", numRangeFilter.getField());
 		assertTrue(numRangeFilter.includesMin());
 		assertTrue(numRangeFilter.includesMax());
 
-		String xml2 = "<NumericRangeQuery fieldName='AGE' type='doubLe' lowerTerm='-23.21' upperTerm='60000.00023' includeUpper='false'/>";
+		String xml2 = "<NumericRangeFilter fieldName='AGE' type='doubLe' lowerTerm='-23.21' upperTerm='60000.00023' includeUpper='false'/>";
 		Document doc2 = getDocumentFromString(xml2);
-		Query filter2 = filterBuilder.getQuery(doc2.getDocumentElement());
-		assertTrue(filter2 instanceof NumericRangeQuery<?>);
+		Filter filter2 = filterBuilder.getFilter(doc2.getDocumentElement());
+		assertTrue(filter2 instanceof NumericRangeFilter<?>);
 		@SuppressWarnings("unchecked")
-		NumericRangeQuery<Double> numRangeFilter2 = (NumericRangeQuery) filter2;
+		NumericRangeFilter<Double> numRangeFilter2 = (NumericRangeFilter) filter2;
 		assertEquals(Double.valueOf(-23.21d), numRangeFilter2.getMin());
 		assertEquals(Double.valueOf(60000.00023d), numRangeFilter2.getMax());
 		assertEquals("AGE", numRangeFilter2.getField());
@@ -135,28 +171,29 @@ public class NumericRangeQueryBuilderTestCase extends TestCase {
 	}
 
 	public void testGetFilterFloat() throws Exception {
-		NumericRangeQueryBuilder filterBuilder = new NumericRangeQueryBuilder();
+		NumericRangeFilterBuilder filterBuilder = new NumericRangeFilterBuilder();
+		filterBuilder.setStrictMode(true);
 
-		String xml = "<NumericRangeQuery fieldName='AGE' type='FLOAT' lowerTerm='-2.321432' upperTerm='32432.23'/>";
+		String xml = "<NumericRangeFilter fieldName='AGE' type='FLOAT' lowerTerm='-2.321432' upperTerm='32432.23'/>";
 		Document doc = getDocumentFromString(xml);
 
-		Query filter = filterBuilder.getQuery(doc.getDocumentElement());
-		assertTrue(filter instanceof NumericRangeQuery<?>);
+		Filter filter = filterBuilder.getFilter(doc.getDocumentElement());
+		assertTrue(filter instanceof NumericRangeFilter<?>);
 		@SuppressWarnings("unchecked")
-		NumericRangeQuery<Float> numRangeFilter = (NumericRangeQuery) filter;
+		NumericRangeFilter<Float> numRangeFilter = (NumericRangeFilter) filter;
 		assertEquals(Float.valueOf(-2.321432f), numRangeFilter.getMin());
 		assertEquals(Float.valueOf(32432.23f), numRangeFilter.getMax());
 		assertEquals("AGE", numRangeFilter.getField());
 		assertTrue(numRangeFilter.includesMin());
 		assertTrue(numRangeFilter.includesMax());
 
-		String xml2 = "<NumericRangeQuery fieldName='AGE' type='FLOAT' lowerTerm='-2.321432' upperTerm='32432.23' includeUpper='false' precisionStep='2' />";
+		String xml2 = "<NumericRangeFilter fieldName='AGE' type='FLOAT' lowerTerm='-2.321432' upperTerm='32432.23' includeUpper='false' precisionStep='2' />";
 		Document doc2 = getDocumentFromString(xml2);
 
-		Query filter2 = filterBuilder.getQuery(doc2.getDocumentElement());
-		assertTrue(filter2 instanceof NumericRangeQuery<?>);
+		Filter filter2 = filterBuilder.getFilter(doc2.getDocumentElement());
+		assertTrue(filter2 instanceof NumericRangeFilter<?>);
 		@SuppressWarnings("unchecked")
-		NumericRangeQuery<Float> numRangeFilter2 = (NumericRangeQuery) filter2;
+		NumericRangeFilter<Float> numRangeFilter2 = (NumericRangeFilter) filter2;
 		assertEquals(Float.valueOf(-2.321432f), numRangeFilter2.getMin());
 		assertEquals(Float.valueOf(32432.23f), numRangeFilter2.getMax());
 		assertEquals("AGE", numRangeFilter2.getField());

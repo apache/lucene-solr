@@ -93,7 +93,7 @@ public class TestParser extends LuceneTestCase {
 		reader.close();
 		searcher.close();
 //		dir.close();
-		
+		super.tearDown();
 	}
 	public void testSimpleXML() throws ParserException, IOException
 	{
