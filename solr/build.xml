@@ -960,14 +960,12 @@
   <!-- ========================================================================= -->
   <!-- ===================== Runtime: luke         ============================= -->
   <!-- ========================================================================= -->
-
-  <available file="luke/luke-0.9.9.jar" property="luke.jar.exists" />
+  <property  name="luke.version" value="1.0.0"/>
+  <available file="luke/luke-${luke.version}.jar" property="luke.jar.exists" />
   <target name="luke-download" unless="luke.jar.exists" depends="proxy.setup">
     <mkdir dir="luke"/>
-    <get src="http://www.getopt.org/luke/luke-0.9.9/luke-0.9.9.jar" 
-        dest="luke/luke-0.9.9.jar"/>
-    <get src="http://people.apache.org/repo/m2-ibiblio-rsync-repository/org/apache/lucene/lucene-misc/2.9.1/lucene-misc-2.9.1.jar" 
-        dest="luke/lucene-misc-2.9.0.jar" />
+    <get src="http://luke.googlecode.com/files/luke-${luke.version}.jar"
+        dest="luke/luke-${luke.version}.jar"/>
   </target>
   
   <target name="luke" depends="luke-download">
@@ -976,13 +974,11 @@
           logError="true"
           failonerror="true">
       <classpath>
-        <fileset dir="${lib}">
-          <include name="*.jar" />
-        </fileset>
         <fileset dir="luke">
-          <include name="luke-0.9.9.jar"/>
-          <include name="lucene-misc-2.9.0.jar"/>
+          <include name="luke-${luke.version}.jar"/>
         </fileset>
+        <path refid="lucene.classpath"/>
+        <path refid="test.run.classpath"/>
        </classpath>
     </java>
   </target>
