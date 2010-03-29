@@ -44,18 +44,24 @@ public class DistanceQueryBuilder {
    * a boundary box wrapper around a more precise
    * DistanceFilter.
    * 
-   * @param lat
-   * @param lng
-   * @param miles
+   * @param lat The latitude to search around
+   * @param lng the Longitude to search around
+   * @param miles The radius to search within
+   * @param latField The name of the field containing the latitude
+   * @param lngField The name of the field containing the longitude
+   * @param tierFieldPrefix The prefix of the tier
+   * @param needPrecise if true, then distance is calculated in addition to tier info
+   * @param minTierIndexed The minimum tier level indexed
+   * @param maxTierIndexed The maximum tier level indexed
    */
   public DistanceQueryBuilder (double lat, double lng, double miles, 
-      String latField, String lngField, String tierFieldPrefix, boolean needPrecise) {
+      String latField, String lngField, String tierFieldPrefix, boolean needPrecise, int minTierIndexed, int maxTierIndexed) {
 
     this.lat = lat;
     this.lng = lng;
     this.miles = miles;
     
-    CartesianPolyFilterBuilder cpf = new CartesianPolyFilterBuilder(tierFieldPrefix);
+    CartesianPolyFilterBuilder cpf = new CartesianPolyFilterBuilder(tierFieldPrefix, minTierIndexed, maxTierIndexed);
     Filter cartesianFilter = cpf.getBoundingArea(lat, lng, miles);
 
     /* create precise distance filter */
@@ -77,13 +83,13 @@ public class DistanceQueryBuilder {
    * @param miles
    */
   public DistanceQueryBuilder (double lat, double lng, double miles, 
-      String geoHashFieldPrefix, String tierFieldPrefix, boolean needPrecise){
+      String geoHashFieldPrefix, String tierFieldPrefix, boolean needPrecise,  int minTierIndexed, int maxTierIndexed){
 
     this.lat = lat;
     this.lng = lng;
     this.miles = miles;
     
-    CartesianPolyFilterBuilder cpf = new CartesianPolyFilterBuilder(tierFieldPrefix);
+    CartesianPolyFilterBuilder cpf = new CartesianPolyFilterBuilder(tierFieldPrefix, minTierIndexed, maxTierIndexed);
     Filter cartesianFilter = cpf.getBoundingArea(lat, lng, miles);
 
     /* create precise distance filter */

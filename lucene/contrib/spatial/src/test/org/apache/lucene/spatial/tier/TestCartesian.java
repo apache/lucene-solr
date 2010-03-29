@@ -175,7 +175,7 @@ public class TestCartesian extends LuceneTestCase {
     if (VERBOSE) System.out.println("testAntiM");
     // create a distance query
     final DistanceQueryBuilder dq = new DistanceQueryBuilder(lat, lng, miles,
-        latField, lngField, CartesianTierPlotter.DEFALT_FIELD_PREFIX, true);
+        latField, lngField, CartesianTierPlotter.DEFALT_FIELD_PREFIX, true, 2, 15);
 
     if (VERBOSE) System.out.println(dq);
     //create a term query to search against all documents
@@ -270,7 +270,7 @@ public class TestCartesian extends LuceneTestCase {
 
     // create a distance query
     final DistanceQueryBuilder dq = new DistanceQueryBuilder(lat, lng, miles,
-        latField, lngField, CartesianTierPlotter.DEFALT_FIELD_PREFIX, true);
+        latField, lngField, CartesianTierPlotter.DEFALT_FIELD_PREFIX, true, 2, 15);
 
     if (VERBOSE) System.out.println(dq);
     //create a term query to search against all documents
@@ -367,7 +367,7 @@ public class TestCartesian extends LuceneTestCase {
     
       // create a distance query
       final DistanceQueryBuilder dq = new DistanceQueryBuilder(lat, lng, miles, 
-                                                               latField, lngField, CartesianTierPlotter.DEFALT_FIELD_PREFIX, true);
+                                                               latField, lngField, CartesianTierPlotter.DEFALT_FIELD_PREFIX, true, 2, 15);
      
       if (VERBOSE) System.out.println(dq);
       //create a term query to search against all documents
@@ -462,7 +462,7 @@ public class TestCartesian extends LuceneTestCase {
 	    
       // create a distance query
       final DistanceQueryBuilder dq = new DistanceQueryBuilder(lat, lng, miles, 
-                                                               geoHashPrefix, CartesianTierPlotter.DEFALT_FIELD_PREFIX, true);
+                                                               geoHashPrefix, CartesianTierPlotter.DEFALT_FIELD_PREFIX, true, 2, 15);
 	     
       if (VERBOSE) System.out.println(dq);
       //create a term query to search against all documents

@@ -57,6 +57,9 @@ Bug fixes
 
  * LUCENE-2277: QueryNodeImpl threw ConcurrentModificationException on 
    add(List<QueryNode>). (Frank Wesemann via Robert Muir)
+
+ * LUCENE-2184: Fixed bug with handling best fit value when the proper best fit value is
+		not an indexed field.  Note, this change affects the APIs. (Grant Ingersoll)
    
 API Changes
 

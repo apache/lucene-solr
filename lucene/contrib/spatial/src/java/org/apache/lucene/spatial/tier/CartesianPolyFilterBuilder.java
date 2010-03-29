@@ -44,9 +44,18 @@ public class CartesianPolyFilterBuilder {
 
   private IProjector projector = new SinusoidalProjector();
   private final String tierPrefix;
-  
-  public CartesianPolyFilterBuilder( String tierPrefix ) {
+	private int minTier;
+	private int maxTier;
+  /**
+   * 
+   * @param tierPrefix The prefix for the name of the fields containing the tier info
+   * @param minTierIndexed The minimum tier level indexed
+   * @param maxTierIndexed The maximum tier level indexed
+   */
+  public CartesianPolyFilterBuilder( String tierPrefix, int minTierIndexed, int maxTierIndexed ) {
     this.tierPrefix = tierPrefix;
+	this.minTier = minTierIndexed;
+	this.maxTier = maxTierIndexed;
   }
   
   public Shape getBoxShape(double latitude, double longitude, double miles)
@@ -77,6 +86,11 @@ public class CartesianPolyFilterBuilder {
     //System.err.println("getBoxShape:"+latX+"," + longX);
     CartesianTierPlotter ctp = new CartesianTierPlotter(2, projector,tierPrefix);
     int bestFit = ctp.bestFit(miles);
+	if (bestFit < minTier){
+		bestFit = minTier;
+	} else if (bestFit > maxTier){
+		bestFit = maxTier;
+	}
     
     ctp = new CartesianTierPlotter(bestFit, projector,tierPrefix);
     Shape shape = new Shape(ctp.getTierFieldName());
