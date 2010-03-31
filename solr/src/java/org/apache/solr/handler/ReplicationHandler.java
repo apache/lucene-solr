@@ -920,7 +920,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         if (getCommit) {
           IndexCommit oldCommitPoint = indexCommitPoint;
           indexCommitPoint = core.getDeletionPolicy().getLatestCommit();
-          core.getDeletionPolicy().saveCommitPoint(indexCommitPoint.getVersion());
+          if (indexCommitPoint != null) {
+            core.getDeletionPolicy().saveCommitPoint(indexCommitPoint.getVersion());
+          }
           if(oldCommitPoint != null){
             core.getDeletionPolicy().releaseCommitPoint(oldCommitPoint.getVersion());
           }

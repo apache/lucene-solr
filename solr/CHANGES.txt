@@ -124,6 +124,8 @@ New Features
 * SOLR-1379: Add RAMDirectoryFactory for non-persistent in memory index storage.
   (Alex Baranov via yonik)
 
+* SOLR-1769: Solr 1.4 Replication - Repeater throwing NullPointerException (Jörgen Rydenius via noble)  
+
 
 Optimizations
 ----------------------
