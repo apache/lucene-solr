@@ -139,6 +139,10 @@ public class Config {
     }
     if (sval.indexOf(":") < 0) {
       return sval;
+    } else if (sval.indexOf(":\\") >= 0 || sval.indexOf(":/") >= 0) {
+      // this previously messed up absolute path names on Windows. Assuming
+      // there is no real value that starts with \ or /
+      return sval;
     }
     // first time this prop is extracted by round
     int k = sval.indexOf(":");
