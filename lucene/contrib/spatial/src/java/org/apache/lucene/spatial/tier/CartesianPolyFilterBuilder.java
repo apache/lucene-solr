@@ -72,11 +72,12 @@ public class CartesianPolyFilterBuilder {
     double longY = ur.getLng();
     double longX = ll.getLng();
     double longX2 = 0.0;
-
+	//Are we crossing the 180 deg. longitude, if so, we need to do some special things
     if (ur.getLng() < 0.0 && ll.getLng() > 0.0) {
 	longX2 = ll.getLng();
  	longX = -180.0;	
     }
+	//are we crossing the prime meridian (0 degrees)?  If so, we need to account for it and boxes on both sides
     if (ur.getLng() > 0.0 && ll.getLng() < 0.0) {
 	longX2 = ll.getLng();
  	longX = 0.0;	
@@ -101,18 +102,19 @@ public class CartesianPolyFilterBuilder {
     //      shape.add(currentLat.currentLong);
 
     shape = getShapeLoop(shape,ctp,latX,longX,latY,longY);
-    if (longX2 != 0.0) {
+
 	if (longX2 != 0.0) {
+		//We are around the prime meridian
 		if (longX == 0.0) {
 			longX = longX2;
 			longY = 0.0;
-        		shape = getShapeLoop(shape,ctp,latX,longX,latY,longY);
-		} else {
+        	shape = getShapeLoop(shape,ctp,latX,longX,latY,longY);
+		} else {//we are around the 180th longitude
 			longX = longX2;
 			longY = -180.0;
-        		shape = getShapeLoop(shape,ctp,latY,longY,latX,longX);
-		}
+			shape = getShapeLoop(shape,ctp,latY,longY,latX,longX);
 	}
+
         //System.err.println("getBoxShape2:"+latY+"," + longY);
         //System.err.println("getBoxShape2:"+latX+"," + longX);
     }
