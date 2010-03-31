@@ -207,8 +207,7 @@ final class DocumentsWriter {
         // Recycle the blocks
         final int blockCount = buffers.size();
         
-        final byte[][] blocks = buffers.toArray( new byte[blockCount][] );
-        perDocAllocator.recycleByteBlocks(blocks, 0, blockCount);
+        perDocAllocator.recycleByteBlocks(buffers);
         buffers.clear();
         sizeInBytes = 0;
         
@@ -1283,6 +1282,15 @@ final class DocumentsWriter {
       synchronized(DocumentsWriter.this) {
         for(int i=start;i<end;i++)
           freeByteBlocks.add(blocks[i]);
+      }
+    }
+
+    @Override
+    void recycleByteBlocks(List<byte[]> blocks) {
+      synchronized(DocumentsWriter.this) {
+        final int size = blocks.size();
+        for(int i=0;i<size;i++)
+          freeByteBlocks.add(blocks.get(i));
       }
     }
   }

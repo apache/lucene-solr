@@ -34,6 +34,7 @@ package org.apache.lucene.index;
  * hit a non-zero byte. */
 
 import java.util.Arrays;
+import java.util.List;
 import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
 import org.apache.lucene.util.ArrayUtil;
 
@@ -42,6 +43,7 @@ final class ByteBlockPool {
 
   abstract static class Allocator {
     abstract void recycleByteBlocks(byte[][] blocks, int start, int end);
+    abstract void recycleByteBlocks(List<byte[]> blocks);
     abstract byte[] getByteBlock(boolean trackAllocations);
   }
 
