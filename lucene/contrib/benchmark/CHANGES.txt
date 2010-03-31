@@ -4,7 +4,7 @@ The Benchmark contrib package contains code for benchmarking Lucene in a variety
 
 3/28/2010
   LUCENE-2353: Fixed bug in Config where Windows absolute path property values 
-  were incorrectly handled (Shai Erera via ?)
+  were incorrectly handled (Shai Erera)
   
 3/24/2010
   LUCENE-2343: Added support for benchmarking collectors. (Grant Ingersoll, Shai Erera)
