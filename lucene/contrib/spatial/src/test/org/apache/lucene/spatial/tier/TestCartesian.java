@@ -169,6 +169,7 @@ public class TestCartesian extends LuceneTestCase {
     final double miles = 2800.0;
         // Hawaii
         // 2300 miles to Marshall Island Airfield
+    //Hawaii to Midway is 911 miles
     lat = 21.6032207;
     lng = -158.0;
 
