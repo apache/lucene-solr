@@ -72,6 +72,9 @@ public class CartesianPolyFilterBuilder {
     double longY = ur.getLng();
     double longX = ll.getLng();
     double longX2 = 0.0;
+	//These two if checks setup us up to deal with issues around the prime meridian and the 180th meridian
+	//In these two cases, we need to get tiles (tiers) from the lower left up to the meridian and then 
+	//from the meridan to the upper right
 	//Are we crossing the 180 deg. longitude, if so, we need to do some special things
     if (ur.getLng() < 0.0 && ll.getLng() > 0.0) {
 	longX2 = ll.getLng();
