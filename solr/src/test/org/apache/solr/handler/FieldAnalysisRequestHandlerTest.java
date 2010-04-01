@@ -173,8 +173,8 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertToken(tokenList.get(5), new TokenInfo("lazy", null, "<ALPHANUM>", 34, 38, 6, null, false));
     assertToken(tokenList.get(6), new TokenInfo("brown", null, "<ALPHANUM>", 39, 44, 7, null, true));
     assertToken(tokenList.get(7), new TokenInfo("dogs", null, "<ALPHANUM>", 45, 49, 8, null, false));
-    tokenList = indexPart.get("org.apache.lucene.analysis.snowball.SnowballFilter");
-    assertNotNull("Expcting SnowballFilter analysis breakdown", tokenList);
+    tokenList = indexPart.get("org.apache.lucene.analysis.PorterStemFilter");
+    assertNotNull("Expcting PorterStemFilter analysis breakdown", tokenList);
     assertEquals(tokenList.size(), 8);
     assertToken(tokenList.get(0), new TokenInfo("quick", null, "<ALPHANUM>", 4, 9, 1, null, false));
     assertToken(tokenList.get(1), new TokenInfo("red", null, "<ALPHANUM>", 10, 13, 2, null, false));
@@ -208,8 +208,8 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertEquals(2, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("fox", null, "<ALPHANUM>", 0, 3, 1, null, false));
     assertToken(tokenList.get(1), new TokenInfo("brown", null, "<ALPHANUM>", 4, 9, 2, null, false));
-    tokenList = queryPart.get("org.apache.lucene.analysis.snowball.SnowballFilter");
-    assertNotNull("Expcting SnowballFilter analysis breakdown", tokenList);
+    tokenList = queryPart.get("org.apache.lucene.analysis.PorterStemFilter");
+    assertNotNull("Expcting PorterStemFilter analysis breakdown", tokenList);
     assertEquals(2, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("fox", null, "<ALPHANUM>", 0, 3, 1, null, false));
     assertToken(tokenList.get(1), new TokenInfo("brown", null, "<ALPHANUM>", 4, 9, 2, null, false));
