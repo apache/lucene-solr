@@ -33,7 +33,7 @@ public class TestTurkishLowerCaseFilterFactory extends BaseTokenTestCase {
    */
   public void testCasing() throws Exception {
     Reader reader = new StringReader("AĞACI");
-    Tokenizer tokenizer = new WhitespaceTokenizer(reader);
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
     TurkishLowerCaseFilterFactory factory = new TurkishLowerCaseFilterFactory();
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "ağacı" });

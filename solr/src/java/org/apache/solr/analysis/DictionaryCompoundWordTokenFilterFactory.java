@@ -18,20 +18,18 @@
 
 
 package org.apache.solr.analysis;
-import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.compound.*;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import java.util.List;
-import java.util.Set;
 import java.util.Map;
 import java.io.IOException;
 
+/** Factory for {@link DictionaryCompoundWordTokenFilter} */
 public class DictionaryCompoundWordTokenFilterFactory extends BaseTokenFilterFactory  implements ResourceLoaderAware {
-  private Set dictionary;
+  private CharArraySet dictionary;
   private String dictFile;
   private int minWordSize;
   private int minSubwordSize;
@@ -39,6 +37,7 @@ public class DictionaryCompoundWordTokenFilterFactory extends BaseTokenFilterFac
   private boolean onlyLongestMatch;
   public void init(Map<String, String> args) {
     super.init(args);
+    assureMatchVersion();
     dictFile = args.get("dictionary");
     if (null == dictFile) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
@@ -52,14 +51,13 @@ public class DictionaryCompoundWordTokenFilterFactory extends BaseTokenFilterFac
   }
   public void inform(ResourceLoader loader) {
     try {
-      List<String> wlist = loader.getLines(dictFile);
-      dictionary = StopFilter.makeStopSet((String[])wlist.toArray(new String[0]), false);
+      dictionary = super.getWordSet(loader, dictFile, false);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }
   public DictionaryCompoundWordTokenFilter create(TokenStream input) {
-    return new DictionaryCompoundWordTokenFilter(input,dictionary,minWordSize,minSubwordSize,maxSubwordSize,onlyLongestMatch);
+    return new DictionaryCompoundWordTokenFilter(luceneMatchVersion,input,dictionary,minWordSize,minSubwordSize,maxSubwordSize,onlyLongestMatch);
   }
 }
 

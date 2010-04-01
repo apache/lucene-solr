@@ -33,7 +33,7 @@ public class TestThaiWordFilterFactory extends BaseTokenTestCase {
    */
   public void testWordBreak() throws Exception {
     Reader reader = new StringReader("การที่ได้ต้องแสดงว่างานดี");
-    Tokenizer tokenizer = new WhitespaceTokenizer(reader);
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
     ThaiWordFilterFactory factory = new ThaiWordFilterFactory();
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] {"การ", "ที่", "ได้",

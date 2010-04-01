@@ -33,7 +33,7 @@ public class TestGreekLowerCaseFilterFactory extends BaseTokenTestCase {
    */
   public void testStemming() throws Exception {
     Reader reader = new StringReader("Μάϊος ΜΆΪΟΣ");
-    Tokenizer tokenizer = new WhitespaceTokenizer(reader);
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
     GreekLowerCaseFilterFactory factory = new GreekLowerCaseFilterFactory();
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "μαιοσ", "μαιοσ" });

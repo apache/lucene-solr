@@ -33,7 +33,7 @@ public class TestDutchStemFilterFactory extends BaseTokenTestCase {
    */
   public void testStemming() throws Exception {
     Reader reader = new StringReader("lichamelijkheden");
-    Tokenizer tokenizer = new WhitespaceTokenizer(reader);
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
     DutchStemFilterFactory factory = new DutchStemFilterFactory();
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "licham" });

@@ -20,7 +20,6 @@ package org.apache.solr.analysis;
 import org.apache.commons.codec.Encoder;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
@@ -47,8 +46,8 @@ public class PhoneticFilter extends TokenFilter
     this.encoder = encoder;
     this.name = name;
     this.inject = inject;
-    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    this.posAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);    
+    this.termAtt = addAttribute(TermAttribute.class);
+    this.posAtt = addAttribute(PositionIncrementAttribute.class);    
   }
 
   @Override

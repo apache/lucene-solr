@@ -29,7 +29,7 @@ public class DoubleMetaphoneFilterFactoryTest extends BaseTokenTestCase {
   public void testDefaults() throws Exception {
     DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory();
     factory.init(new HashMap<String, String>());
-    TokenStream inputStream = new WhitespaceTokenizer(new StringReader("international"));
+    TokenStream inputStream = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("international"));
 
     TokenStream filteredStream = factory.create(inputStream);
     assertEquals(DoubleMetaphoneFilter.class, filteredStream.getClass());
@@ -43,7 +43,7 @@ public class DoubleMetaphoneFilterFactoryTest extends BaseTokenTestCase {
     parameters.put("maxCodeLength", "8");
     factory.init(parameters);
 
-    TokenStream inputStream = new WhitespaceTokenizer(new StringReader("international"));
+    TokenStream inputStream = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("international"));
 
     TokenStream filteredStream = factory.create(inputStream);
     assertEquals(DoubleMetaphoneFilter.class, filteredStream.getClass());
@@ -56,10 +56,10 @@ public class DoubleMetaphoneFilterFactoryTest extends BaseTokenTestCase {
   public void testReset() throws Exception {
     DoubleMetaphoneFilterFactory factory = new DoubleMetaphoneFilterFactory();
     factory.init(new HashMap<String, String>());
-    TokenStream inputStream = new WhitespaceTokenizer(new StringReader("international"));
+    TokenStream inputStream = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("international"));
 
     TokenStream filteredStream = factory.create(inputStream);
-    TermAttribute termAtt = (TermAttribute) filteredStream.addAttribute(TermAttribute.class);
+    TermAttribute termAtt = filteredStream.addAttribute(TermAttribute.class);
     assertEquals(DoubleMetaphoneFilter.class, filteredStream.getClass());
     
     assertTrue(filteredStream.incrementToken());

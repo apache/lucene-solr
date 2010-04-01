@@ -48,12 +48,12 @@ public class SnowballPorterFilterFactoryTest extends BaseTokenTestCase {
     }
 
     SnowballPorterFilterFactory factory = new SnowballPorterFilterFactory();
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
     args.put("language", "English");
 
     factory.init(args);
     factory.inform(new LinesMockSolrResourceLoader(new ArrayList<String>()));
-    Tokenizer tokenizer = new WhitespaceTokenizer(
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION,
         new StringReader(StrUtils.join(Arrays.asList(test), ' ')));
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, gold);
@@ -78,13 +78,13 @@ public class SnowballPorterFilterFactoryTest extends BaseTokenTestCase {
     }
 
     EnglishPorterFilterFactory factory = new EnglishPorterFilterFactory();
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
     args.put(SnowballPorterFilterFactory.PROTECTED_TOKENS, "who-cares.txt");
     factory.init(args);
     List<String> lines = new ArrayList<String>();
     Collections.addAll(lines, "banks", "fledgling");
     factory.inform(new LinesMockSolrResourceLoader(lines));
-    Tokenizer tokenizer = new WhitespaceTokenizer(
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION,
         new StringReader(StrUtils.join(Arrays.asList(test), ' ')));
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, gold);
@@ -116,13 +116,13 @@ public class SnowballPorterFilterFactoryTest extends BaseTokenTestCase {
   public void testProtected() throws Exception {
     SnowballPorterFilterFactory factory = new SnowballPorterFilterFactory();
     ResourceLoader loader = new SolrResourceLoader(null, null);
-    Map<String,String> args = new HashMap<String,String>();
+    Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
     args.put("protected", "protwords.txt");
     args.put("language", "English");
     factory.init(args);
     factory.inform(loader);
     Reader reader = new StringReader("ridding of some stemming");
-    Tokenizer tokenizer = new WhitespaceTokenizer(reader);
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "ridding", "of", "some", "stem" });
   }

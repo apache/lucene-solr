@@ -350,8 +350,8 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
     
     protected LargePosIncTokenFilter(TokenStream input) {
       super(input);
-      termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-      posIncAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+      termAtt = addAttribute(TermAttribute.class);
+      posIncAtt = addAttribute(PositionIncrementAttribute.class);
     }
 
     @Override
@@ -368,13 +368,13 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
   
   @Test
   public void testPositionIncrements() throws Exception {
-    final CharArraySet protWords = new CharArraySet(new HashSet<String>(Arrays.asList("NUTCH")), false);
+    final CharArraySet protWords = new CharArraySet(DEFAULT_VERSION, new HashSet<String>(Arrays.asList("NUTCH")), false);
     
     /* analyzer that uses whitespace + wdf */
     Analyzer a = new Analyzer() {
       public TokenStream tokenStream(String field, Reader reader) {
         return new WordDelimiterFilter(
-            new WhitespaceTokenizer(reader),
+            new WhitespaceTokenizer(DEFAULT_VERSION, reader),
             1, 1, 0, 0, 1, 1, 0, 1, 1, protWords);
       }
     };
@@ -401,7 +401,7 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
       public TokenStream tokenStream(String field, Reader reader) {
         return new WordDelimiterFilter(
             new LargePosIncTokenFilter(
-            new WhitespaceTokenizer(reader)),
+            new WhitespaceTokenizer(DEFAULT_VERSION, reader)),
             1, 1, 0, 0, 1, 1, 0, 1, 1, protWords);
       }
     };

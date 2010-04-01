@@ -29,7 +29,7 @@ public class TestHyphenatedWordsFilter extends BaseTokenTestCase {
 	public void testHyphenatedWords() throws Exception {
 		String input = "ecologi-\r\ncal devel-\r\n\r\nop compre-\u0009hensive-hands-on and ecologi-\ncal";
 		// first test
-		TokenStream ts = new WhitespaceTokenizer(new StringReader(input));
+		TokenStream ts = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input));
 		HyphenatedWordsFilterFactory factory = new HyphenatedWordsFilterFactory();
 		ts = factory.create(ts);
 		assertTokenStreamContents(ts, 
@@ -42,7 +42,7 @@ public class TestHyphenatedWordsFilter extends BaseTokenTestCase {
 	public void testHyphenAtEnd() throws Exception {
 	    String input = "ecologi-\r\ncal devel-\r\n\r\nop compre-\u0009hensive-hands-on and ecology-";
 	    // first test
-	    TokenStream ts = new WhitespaceTokenizer(new StringReader(input));
+	    TokenStream ts = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input));
 	    HyphenatedWordsFilterFactory factory = new HyphenatedWordsFilterFactory();
 	    ts = factory.create(ts);
 	    assertTokenStreamContents(ts, 

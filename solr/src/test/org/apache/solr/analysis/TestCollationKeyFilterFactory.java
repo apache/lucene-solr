@@ -177,9 +177,9 @@ public class TestCollationKeyFilterFactory extends BaseTokenTestCase {
   
   private void assertCollatesToSame(TokenStream stream1, TokenStream stream2)
       throws IOException {
-    TermAttribute term1 = (TermAttribute) stream1
+    TermAttribute term1 = stream1
         .addAttribute(TermAttribute.class);
-    TermAttribute term2 = (TermAttribute) stream2
+    TermAttribute term2 = stream2
         .addAttribute(TermAttribute.class);
     assertTrue(stream1.incrementToken());
     assertTrue(stream2.incrementToken());

@@ -18,17 +18,11 @@
 package org.apache.solr.analysis;
 
 import org.apache.solr.common.ResourceLoader;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
-import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.CharArraySet;
 
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.io.File;
-import java.io.File;
 import java.io.IOException;
 
 /**
@@ -40,23 +34,13 @@ public class KeepWordFilterFactory extends BaseTokenFilterFactory implements Res
   private CharArraySet words;
   private boolean ignoreCase;
 
-  @SuppressWarnings("unchecked")
   public void inform(ResourceLoader loader) {
     String wordFiles = args.get("words");
     ignoreCase = getBoolean("ignoreCase", false);
-    if (wordFiles != null) {
+    if (wordFiles != null) {   
       try {
-        List<String> files = StrUtils.splitFileNames(wordFiles);
-        if (words == null && files.size() > 0){
-          words = new CharArraySet(files.size() * 10, ignoreCase);
-        }
-        for (String file : files) {
-          List<String> wlist = loader.getLines(file.trim());
-          //TODO: once StopFilter.makeStopSet(List) method is available, switch to using that so we can avoid a toArray() call
-          words.addAll(StopFilter.makeStopSet((String[]) wlist.toArray(new String[0]), ignoreCase));
-        }
-      }
-      catch (IOException e) {
+        words = getWordSet(loader, wordFiles, ignoreCase);
+      } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
@@ -67,14 +51,14 @@ public class KeepWordFilterFactory extends BaseTokenFilterFactory implements Res
    * NOTE: if ignoreCase==true, the words are expected to be lowercase
    */
   public void setWords(Set<String> words) {
-    this.words = new CharArraySet(words, ignoreCase);
+    this.words = new CharArraySet(luceneMatchVersion, words, ignoreCase);
   }
 
-  public void setIgnoreCase(boolean ignoreCase) {
-    this.ignoreCase = ignoreCase;
-    if (words != null) {
-      words = new CharArraySet(words, ignoreCase);
+  public void setIgnoreCase(boolean ignoreCase) {    
+    if (words != null && this.ignoreCase != ignoreCase) {
+      words = new CharArraySet(luceneMatchVersion, words, ignoreCase);
     }
+    this.ignoreCase = ignoreCase;
   }
 
   public KeepWordFilter create(TokenStream input) {

@@ -126,6 +126,14 @@ New Features
 
 * SOLR-1769: Solr 1.4 Replication - Repeater throwing NullPointerException (Jörgen Rydenius via noble)  
 
+* SOLR-1857: Synced Solr analysis with Lucene 3.1. Added KeywordMarkerFilterFactory 
+  and StemmerOverrideFilterFactory, which can be used to tune stemming algorithms. 
+  Added factories for Bulgarian, Czech, Hindi, and Turkish analysis. Improved the
+  performance of SnowballPorterFilterFactory.  (rmuir)
+
+* SOLR-1657: Converted remaining TokenStreams to the Attributes-based API. All Solr 
+  TokenFilters now support custom Attributes, and some have improved performance: 
+  especially WordDelimiterFilter and CommonGramsFilter.  (rmuir, cmale, uschindler)
 
 Optimizations
 ----------------------

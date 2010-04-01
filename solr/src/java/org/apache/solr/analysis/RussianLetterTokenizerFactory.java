@@ -24,6 +24,10 @@ import org.apache.lucene.analysis.ru.RussianLetterTokenizer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
+/** @deprecated Use {@link StandardTokenizerFactory} instead.
+ *  This tokenizer has no Russian-specific functionality.
+ */
+@Deprecated
 public class RussianLetterTokenizerFactory extends BaseTokenizerFactory {
 
   @Override

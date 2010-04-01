@@ -33,7 +33,7 @@ public class TestBulgarianStemFilterFactory extends BaseTokenTestCase {
    */
   public void testStemming() throws Exception {
     Reader reader = new StringReader("компютри");
-    Tokenizer tokenizer = new WhitespaceTokenizer(reader);
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
     BulgarianStemFilterFactory factory = new BulgarianStemFilterFactory();
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "компютр" });

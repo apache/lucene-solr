@@ -20,11 +20,9 @@ import java.io.IOException;
 import java.util.LinkedList;
 
 import org.apache.commons.codec.language.DoubleMetaphone;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 public class DoubleMetaphoneFilter extends TokenFilter {
@@ -41,8 +39,8 @@ public class DoubleMetaphoneFilter extends TokenFilter {
     super(input);
     this.encoder.setMaxCodeLen(maxCodeLength);
     this.inject = inject;
-    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    this.posAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+    this.termAtt = addAttribute(TermAttribute.class);
+    this.posAtt = addAttribute(PositionIncrementAttribute.class);
   }
 
   @Override

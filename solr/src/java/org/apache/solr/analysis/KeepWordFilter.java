@@ -19,10 +19,8 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.tartarus.snowball.SnowballProgram;
 
 import java.io.IOException;
 import java.util.Set;
@@ -38,6 +36,8 @@ public final class KeepWordFilter extends TokenFilter {
   private final CharArraySet words;
   private final TermAttribute termAtt;
 
+  /** @deprecated Use {@link #KeepWordFilter(TokenStream, Set, boolean)} instead */
+  @Deprecated
   public KeepWordFilter(TokenStream in, Set<String> words, boolean ignoreCase ) {
     this(in, new CharArraySet(words, ignoreCase));
   }
@@ -47,7 +47,7 @@ public final class KeepWordFilter extends TokenFilter {
   public KeepWordFilter(TokenStream in, CharArraySet words) {
     super(in);
     this.words = words;
-    this.termAtt = (TermAttribute)addAttribute(TermAttribute.class);
+    this.termAtt = addAttribute(TermAttribute.class);
   }
 
   @Override

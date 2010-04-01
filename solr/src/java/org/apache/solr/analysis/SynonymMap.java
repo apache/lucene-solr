@@ -17,8 +17,9 @@
 
 package org.apache.solr.analysis;
 
+import org.apache.lucene.analysis.CharArrayMap;
 import org.apache.lucene.analysis.Token;
-import org.apache.solr.util.CharArrayMap;
+import org.apache.lucene.util.Version;
 
 import java.util.*;
 
@@ -52,7 +53,9 @@ public class SynonymMap {
     SynonymMap currMap = this;
     for (String str : singleMatch) {
       if (currMap.submap==null) {
-        currMap.submap = new CharArrayMap<SynonymMap>(1, ignoreCase());
+        // for now hardcode at 2.9, as its what the old code did.
+        // would be nice to fix, but shouldn't store a version in each submap!!!
+        currMap.submap = new CharArrayMap<SynonymMap>(Version.LUCENE_29, 1, ignoreCase());
       }
 
       SynonymMap map = currMap.submap.get(str);
@@ -68,7 +71,7 @@ public class SynonymMap {
     if (currMap.synonyms != null && !mergeExisting) {
       throw new RuntimeException("SynonymFilter: there is already a mapping for " + singleMatch);
     }
-    List superset = currMap.synonyms==null ? replacement :
+    List<Token> superset = currMap.synonyms==null ? replacement :
           mergeTokens(Arrays.asList(currMap.synonyms), replacement);
     currMap.synonyms = (Token[])superset.toArray(new Token[superset.size()]);
     if (includeOrig) currMap.flags |= INCLUDE_ORIG;

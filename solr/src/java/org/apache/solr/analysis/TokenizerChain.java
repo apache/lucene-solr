@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.Tokenizer;
 
 import java.io.Reader;
-import java.io.IOException;
 
 /**
  * @version $Id$

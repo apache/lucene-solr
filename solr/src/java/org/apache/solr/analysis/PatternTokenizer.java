@@ -56,8 +56,8 @@ import org.apache.commons.io.IOUtils;
  */
 public final class PatternTokenizer extends Tokenizer {
 
-  private final TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-  private final OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+  private final TermAttribute termAtt = addAttribute(TermAttribute.class);
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
   private String str;
   private int index;

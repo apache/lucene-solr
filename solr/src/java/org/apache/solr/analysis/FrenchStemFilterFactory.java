@@ -18,18 +18,19 @@
 
 
 package org.apache.solr.analysis;
-import org.apache.lucene.analysis.fr.*;
-import org.apache.lucene.analysis.Token;
+
+import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import java.io.IOException;
-import java.util.Hashtable;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Map;
+
+/** 
+ * @deprecated Use {@link SnowballPorterFilterFactory} with "French" instead,
+ * which has the same functionality.
+ */
+@Deprecated
 public class FrenchStemFilterFactory extends BaseTokenFilterFactory {
-  public FrenchStemFilter create(TokenStream in) {
-    return new FrenchStemFilter(in);
+  public TokenFilter create(TokenStream in) {
+    return new SnowballFilter(in, new org.tartarus.snowball.ext.FrenchStemmer());
   }
 }
 

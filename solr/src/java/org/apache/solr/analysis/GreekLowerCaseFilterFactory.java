@@ -26,6 +26,7 @@ import org.apache.lucene.analysis.el.GreekLowerCaseFilter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
+/** Factory for {@link GreekLowerCaseFilter} */
 public class GreekLowerCaseFilterFactory extends BaseTokenFilterFactory 
 {
  

@@ -21,7 +21,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.analysis.BaseTokenFilterFactory;
 
 /**
- * Factory for HyphenatedWordsFilter
+ * Factory for {@link HyphenatedWordsFilter}
  */
 public class HyphenatedWordsFilterFactory extends BaseTokenFilterFactory {
 	public HyphenatedWordsFilter create(TokenStream input) {

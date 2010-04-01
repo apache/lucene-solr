@@ -83,7 +83,7 @@ public class TestPhoneticFilter extends BaseTokenTestCase {
   
   static void assertAlgorithm(String algName, String inject, String input,
       String[] expected) throws Exception {
-    Tokenizer tokenizer = new WhitespaceTokenizer(
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION,
         new StringReader(input));
     Map<String,String> args = new HashMap<String,String>();
     args.put("encoder", algName);

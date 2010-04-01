@@ -73,12 +73,12 @@ public abstract class BufferedTokenStream extends TokenFilter {
   private final LinkedList<Token> inQueue = new LinkedList<Token>();
   private final LinkedList<Token> outQueue = new LinkedList<Token>();
 
-  private final TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-  private final OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-  private final TypeAttribute typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
-  private final FlagsAttribute flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
-  private final PayloadAttribute payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
-  private final PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+  private final TermAttribute termAtt = addAttribute(TermAttribute.class);
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+  private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
+  private final FlagsAttribute flagsAtt = addAttribute(FlagsAttribute.class);
+  private final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
+  private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
   
   public BufferedTokenStream(TokenStream input) {
     super(input);

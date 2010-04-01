@@ -17,13 +17,17 @@
 
 package org.apache.solr.analysis;
 
+import org.apache.solr.common.ResourceLoader;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.Config;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.schema.IndexSchema;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.util.Version;
 
 
@@ -94,4 +98,22 @@ abstract class BaseTokenStreamFactory {
     return Boolean.parseBoolean(s);
   }
 
+  protected CharArraySet getWordSet(ResourceLoader loader,
+      String wordFiles, boolean ignoreCase) throws IOException {
+    assureMatchVersion();
+    List<String> files = StrUtils.splitFileNames(wordFiles);
+    CharArraySet words = null;
+    if (files.size() > 0) {
+      // default stopwords list has 35 or so words, but maybe don't make it that
+      // big to start
+      words = new CharArraySet(luceneMatchVersion, 
+          files.size() * 10, ignoreCase);
+      for (String file : files) {
+        List<String> wlist = loader.getLines(file.trim());
+        words.addAll(StopFilter.makeStopSet(luceneMatchVersion, wlist,
+            ignoreCase));
+      }
+    }
+    return words;
+  }
 }

@@ -120,10 +120,10 @@ final class WordDelimiterFilter extends TokenFilter {
    */
   final CharArraySet protWords;
     
-  private final TermAttribute termAttribute = (TermAttribute) addAttribute(TermAttribute.class);
-  private final OffsetAttribute offsetAttribute = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-  private final PositionIncrementAttribute posIncAttribute = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-  private final TypeAttribute typeAttribute = (TypeAttribute) addAttribute(TypeAttribute.class);
+  private final TermAttribute termAttribute = addAttribute(TermAttribute.class);
+  private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
+  private final PositionIncrementAttribute posIncAttribute = addAttribute(PositionIncrementAttribute.class);
+  private final TypeAttribute typeAttribute = addAttribute(TypeAttribute.class);
 
   // used for iterating word delimiter breaks
   private final WordDelimiterIterator iterator;

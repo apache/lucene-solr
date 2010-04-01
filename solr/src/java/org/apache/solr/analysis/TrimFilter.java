@@ -17,7 +17,6 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
@@ -41,8 +40,8 @@ public final class TrimFilter extends TokenFilter {
     super(in);
     this.updateOffsets = updateOffsets;
 
-    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    this.offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    this.termAtt = addAttribute(TermAttribute.class);
+    this.offsetAtt = addAttribute(OffsetAttribute.class);
   }
 
   @Override

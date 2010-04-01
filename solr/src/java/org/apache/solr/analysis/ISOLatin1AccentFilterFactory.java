@@ -21,8 +21,10 @@ import org.apache.lucene.analysis.ISOLatin1AccentFilter;
 import org.apache.lucene.analysis.TokenStream;
 
 /** Factory for ISOLatin1AccentFilter
+ * @deprecated Use {@link ASCIIFoldingFilterFactory} instead.
  *  $Id$ 
  */
+@Deprecated
 public class ISOLatin1AccentFilterFactory extends BaseTokenFilterFactory {
   public ISOLatin1AccentFilter create(TokenStream input) {
     return new ISOLatin1AccentFilter(input);

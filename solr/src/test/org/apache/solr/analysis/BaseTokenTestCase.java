@@ -21,13 +21,18 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.util.Version;
+import org.apache.solr.core.Config;
 
 /**
  * General token testing helper functions
  */
 public abstract class BaseTokenTestCase extends BaseTokenStreamTestCase
 {
+  /** a map containing the default test version param for easy testing */
   protected static final Map<String,String> DEFAULT_VERSION_PARAM = 
     Collections.singletonMap("luceneMatchVersion", System.getProperty("tests.luceneMatchVersion", "LUCENE_CURRENT"));
 
+  /** The default test version for easy testing */
+  public static final Version DEFAULT_VERSION = Config.parseLuceneVersionString(DEFAULT_VERSION_PARAM.get("luceneMatchVersion"));
 }

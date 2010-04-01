@@ -33,7 +33,7 @@ public class TestFrenchStemFilterFactory extends BaseTokenTestCase {
    */
   public void testStemming() throws Exception {
     Reader reader = new StringReader("habitable");
-    Tokenizer tokenizer = new WhitespaceTokenizer(reader);
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
     FrenchStemFilterFactory factory = new FrenchStemFilterFactory();
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "habit" });

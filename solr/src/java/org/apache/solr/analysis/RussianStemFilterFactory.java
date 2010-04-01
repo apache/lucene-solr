@@ -19,16 +19,19 @@
 
 package org.apache.solr.analysis;
 
-import java.util.Map;
-
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ru.RussianStemFilter;
+import org.apache.lucene.analysis.snowball.SnowballFilter;
 
+/**
+ * @deprecated Use {@link SnowballPorterFilterFactory} with "Russian" instead,
+ * which has the same functionality.
+ */
+@Deprecated
 public class RussianStemFilterFactory extends BaseTokenFilterFactory {
 
-
-  public RussianStemFilter create(TokenStream in) {
-    return new RussianStemFilter(in);
+  public TokenFilter create(TokenStream in) {
+    return new SnowballFilter(in, new org.tartarus.snowball.ext.RussianStemmer());
   }
 }
 

@@ -47,8 +47,8 @@ import static org.apache.solr.analysis.CommonGramsFilter.GRAM_TYPE;
  */
 public final class CommonGramsQueryFilter extends TokenFilter {
 
-  private final TypeAttribute typeAttribute = (TypeAttribute) addAttribute(TypeAttribute.class);
-  private final PositionIncrementAttribute posIncAttribute = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+  private final TypeAttribute typeAttribute = addAttribute(TypeAttribute.class);
+  private final PositionIncrementAttribute posIncAttribute = addAttribute(PositionIncrementAttribute.class);
   
   private State previous;
   private String previousType;

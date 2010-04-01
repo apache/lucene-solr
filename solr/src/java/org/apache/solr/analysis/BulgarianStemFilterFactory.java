@@ -20,7 +20,7 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.bg.BulgarianStemFilter;
 
-/** Factory for BulgarianStemFilter */
+/** Factory for {@link BulgarianStemFilter} */
 public class BulgarianStemFilterFactory extends BaseTokenFilterFactory {
   public TokenStream create(TokenStream input) {
     return new BulgarianStemFilter(input);

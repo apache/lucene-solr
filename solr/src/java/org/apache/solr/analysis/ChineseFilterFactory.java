@@ -18,10 +18,14 @@
 
 
 package org.apache.solr.analysis;
-import org.apache.lucene.analysis.cn.*;
-import java.util.Hashtable;
-import org.apache.lucene.analysis.*;
-import java.util.Map;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.cn.ChineseFilter;
+
+/**
+ * Factory for {@link ChineseFilter}
+ * @deprecated Use {@link StopFilterFactory} instead.
+ */
+@Deprecated
 public class ChineseFilterFactory extends BaseTokenFilterFactory {
   public ChineseFilter create(TokenStream in) {
     return new ChineseFilter(in);

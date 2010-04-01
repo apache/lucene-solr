@@ -17,17 +17,22 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.LowerCaseTokenizer;
 
 import java.io.Reader;
+import java.util.Map;
 
 /**
  * @version $Id$
  */
 public class LowerCaseTokenizerFactory extends BaseTokenizerFactory {
-  public LowerCaseTokenizer create(Reader input) {
+  @Override
+  public void init(Map<String,String> args) {
+    super.init(args);
     assureMatchVersion();
+  }
+
+  public LowerCaseTokenizer create(Reader input) {
     return new LowerCaseTokenizer(luceneMatchVersion,input);
   }
 }

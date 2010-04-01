@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
 
 import java.io.IOException;
@@ -50,7 +49,7 @@ public class SynonymFilter extends TokenFilter {
   public SynonymFilter(TokenStream in, SynonymMap map) {
     super(in);
     this.map = map;
-    // just ensuring these exist attributes exist...
+    // just ensuring these attributes exist...
     addAttribute(TermAttribute.class);
     addAttribute(PositionIncrementAttribute.class);
     addAttribute(OffsetAttribute.class);
@@ -88,7 +87,7 @@ public class SynonymFilter extends TokenFilter {
       // common case fast-path of first token not matching anything
       AttributeSource firstTok = nextTok();
       if (firstTok == null) return false;
-      TermAttribute termAtt = (TermAttribute) firstTok.addAttribute(TermAttribute.class);
+      TermAttribute termAtt = firstTok.addAttribute(TermAttribute.class);
       SynonymMap result = map.submap!=null ? map.submap.get(termAtt.termBuffer(), 0, termAtt.termLength()) : null;
       if (result == null) {
         copy(this, firstTok);
@@ -121,7 +120,7 @@ public class SynonymFilter extends TokenFilter {
       boolean includeOrig = result.includeOrig();
 
       AttributeSource origTok = includeOrig ? firstTok : null;
-      PositionIncrementAttribute firstPosIncAtt = (PositionIncrementAttribute) firstTok.addAttribute(PositionIncrementAttribute.class);
+      PositionIncrementAttribute firstPosIncAtt = firstTok.addAttribute(PositionIncrementAttribute.class);
       int origPos = firstPosIncAtt.getPositionIncrement();  // position of origTok in the original stream
       int repPos=0; // curr position in replacement token stream
       int pos=0;  // current position in merged token stream
@@ -129,12 +128,11 @@ public class SynonymFilter extends TokenFilter {
       for (int i=0; i<result.synonyms.length; i++) {
         Token repTok = result.synonyms[i];
         AttributeSource newTok = firstTok.cloneAttributes();
-        TermAttribute newTermAtt = (TermAttribute) newTok.addAttribute(TermAttribute.class);
-        OffsetAttribute newOffsetAtt = (OffsetAttribute) newTok.addAttribute(OffsetAttribute.class);
-        TypeAttribute newTypeAtt = (TypeAttribute) newTok.addAttribute(TypeAttribute.class);
-        PositionIncrementAttribute newPosIncAtt = (PositionIncrementAttribute) newTok.addAttribute(PositionIncrementAttribute.class);
+        TermAttribute newTermAtt = newTok.addAttribute(TermAttribute.class);
+        OffsetAttribute newOffsetAtt = newTok.addAttribute(OffsetAttribute.class);
+        PositionIncrementAttribute newPosIncAtt = newTok.addAttribute(PositionIncrementAttribute.class);
 
-        OffsetAttribute lastOffsetAtt = (OffsetAttribute) lastTok.addAttribute(OffsetAttribute.class);
+        OffsetAttribute lastOffsetAtt = lastTok.addAttribute(OffsetAttribute.class);
 
         newOffsetAtt.setOffset(newOffsetAtt.startOffset(), lastOffsetAtt.endOffset());
         newTermAtt.setTermBuffer(repTok.termBuffer(), 0, repTok.termLength());
@@ -143,13 +141,13 @@ public class SynonymFilter extends TokenFilter {
 
         // if necessary, insert original tokens and adjust position increment
         while (origTok != null && origPos <= repPos) {
-          PositionIncrementAttribute origPosInc = (PositionIncrementAttribute) origTok.addAttribute(PositionIncrementAttribute.class);
+          PositionIncrementAttribute origPosInc = origTok.addAttribute(PositionIncrementAttribute.class);
           origPosInc.setPositionIncrement(origPos-pos);
           generated.add(origTok);
           pos += origPosInc.getPositionIncrement();
           origTok = matched.isEmpty() ? null : matched.removeFirst();
           if (origTok != null) {
-            origPosInc = (PositionIncrementAttribute) origTok.addAttribute(PositionIncrementAttribute.class);
+            origPosInc = origTok.addAttribute(PositionIncrementAttribute.class);
             origPos += origPosInc.getPositionIncrement();
           }
         }
@@ -161,13 +159,13 @@ public class SynonymFilter extends TokenFilter {
 
       // finish up any leftover original tokens
       while (origTok!=null) {
-        PositionIncrementAttribute origPosInc = (PositionIncrementAttribute) origTok.addAttribute(PositionIncrementAttribute.class);
+        PositionIncrementAttribute origPosInc = origTok.addAttribute(PositionIncrementAttribute.class);
         origPosInc.setPositionIncrement(origPos-pos);
         generated.add(origTok);
         pos += origPosInc.getPositionIncrement();
         origTok = matched.isEmpty() ? null : matched.removeFirst();
         if (origTok != null) {
-          origPosInc = (PositionIncrementAttribute) origTok.addAttribute(PositionIncrementAttribute.class);
+          origPosInc = origTok.addAttribute(PositionIncrementAttribute.class);
           origPos += origPosInc.getPositionIncrement();
         }
       }
@@ -217,7 +215,7 @@ public class SynonymFilter extends TokenFilter {
         if (tok == this)
           tok = cloneAttributes();
         // check for positionIncrement!=1?  if>1, should not match, if==0, check multiple at this level?
-        TermAttribute termAtt = (TermAttribute) tok.getAttribute(TermAttribute.class);
+        TermAttribute termAtt = tok.getAttribute(TermAttribute.class);
         SynonymMap subMap = map.submap.get(termAtt.termBuffer(), 0, termAtt.termLength());
 
         if (subMap != null) {
@@ -243,12 +241,8 @@ public class SynonymFilter extends TokenFilter {
   }
 
   private void copy(AttributeSource target, AttributeSource source) {
-    if (target == source)
-      return;
-    for (Iterator<AttributeImpl> sourceIt = source.getAttributeImplsIterator(), targetIt=target.getAttributeImplsIterator(); 
-         sourceIt.hasNext();) { 
-           sourceIt.next().copyTo(targetIt.next()); 
-    } 
+    if (target != source)
+      source.copyTo(target);
   }
 
   @Override

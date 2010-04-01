@@ -54,8 +54,8 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  */
 public final class HyphenatedWordsFilter extends TokenFilter {
 
-  private final TermAttribute termAttribute = (TermAttribute) addAttribute(TermAttribute.class);
-  private final OffsetAttribute offsetAttribute = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+  private final TermAttribute termAttribute = addAttribute(TermAttribute.class);
+  private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
   
   private final StringBuilder hyphenated = new StringBuilder();
   private State savedState;

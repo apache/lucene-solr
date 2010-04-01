@@ -17,14 +17,13 @@
 package org.apache.solr.analysis;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.common.ResourceLoader;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
 /**
@@ -36,25 +35,19 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
 public class CommonGramsQueryFilterFactory extends BaseTokenFilterFactory
     implements ResourceLoaderAware {
 
+  @Override
+  public void init(Map<String,String> args) {
+    super.init(args);
+    assureMatchVersion();
+  }
+
   public void inform(ResourceLoader loader) {
     String commonWordFiles = args.get("words");
     ignoreCase = getBoolean("ignoreCase", false);
 
     if (commonWordFiles != null) {
       try {
-        List<String> files = StrUtils.splitFileNames(commonWordFiles);
-        if (commonWords == null && files.size() > 0) {
-          // default stopwords list has 35 or so words, but maybe don't make it
-          // that big to start
-          commonWords = new CharArraySet(files.size() * 10, ignoreCase);
-        }
-        for (String file : files) {
-          List<String> wlist = loader.getLines(file.trim());
-          // TODO: once StopFilter.makeStopSet(List) method is available, switch
-          // to using that so we can avoid a toArray() call
-          commonWords.addAll(CommonGramsFilter.makeCommonSet((String[]) wlist
-              .toArray(new String[0]), ignoreCase));
-        }
+        commonWords = getWordSet(loader, commonWordFiles, ignoreCase);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -73,7 +66,7 @@ public class CommonGramsQueryFilterFactory extends BaseTokenFilterFactory
     return ignoreCase;
   }
 
-  public Set getCommonWords() {
+  public Set<?> getCommonWords() {
     return commonWords;
   }
 
@@ -81,7 +74,7 @@ public class CommonGramsQueryFilterFactory extends BaseTokenFilterFactory
    * Create a CommonGramsFilter and wrap it with a CommonGramsQueryFilter
    */
   public CommonGramsQueryFilter create(TokenStream input) {
-    CommonGramsFilter commonGrams = new CommonGramsFilter(input, commonWords,
+    CommonGramsFilter commonGrams = new CommonGramsFilter(luceneMatchVersion, input, commonWords,
         ignoreCase);
     CommonGramsQueryFilter commonGramsQuery = new CommonGramsQueryFilter(
         commonGrams);

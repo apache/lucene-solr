@@ -75,6 +75,7 @@ public class CapitalizationFilterFactory extends BaseTokenFilterFactory {
   @Override
   public void init(Map<String, String> args) {
     super.init(args);
+    assureMatchVersion();
 
     String k = args.get(KEEP);
     if (k != null) {
@@ -84,7 +85,7 @@ public class CapitalizationFilterFactory extends BaseTokenFilterFactory {
       if ("true".equalsIgnoreCase(ignoreStr)) {
         ignoreCase = true;
       }
-      keep = new CharArraySet(10, ignoreCase);
+      keep = new CharArraySet(luceneMatchVersion, 10, ignoreCase);
       while (st.hasMoreTokens()) {
         k = st.nextToken().trim();
         keep.add(k.toCharArray());
@@ -194,7 +195,7 @@ class CapitalizationFilter extends TokenFilter {
   public CapitalizationFilter(TokenStream in, final CapitalizationFilterFactory factory) {
     super(in);
     this.factory = factory;
-    this.termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+    this.termAtt = addAttribute(TermAttribute.class);
   }
 
   @Override

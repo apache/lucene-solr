@@ -108,7 +108,7 @@ public class TestStandardFactories extends BaseTokenTestCase {
    */
   public void testASCIIFolding() throws Exception {
     Reader reader = new StringReader("Česká");
-    Tokenizer tokenizer = new WhitespaceTokenizer(reader);
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
     ASCIIFoldingFilterFactory factory = new ASCIIFoldingFilterFactory();
     factory.init(DEFAULT_VERSION_PARAM);
     TokenStream stream = factory.create(tokenizer);
@@ -121,7 +121,7 @@ public class TestStandardFactories extends BaseTokenTestCase {
    */
   public void testISOLatin1Folding() throws Exception {
     Reader reader = new StringReader("Česká");
-    Tokenizer tokenizer = new WhitespaceTokenizer(reader);
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
     ISOLatin1AccentFilterFactory factory = new ISOLatin1AccentFilterFactory();
     factory.init(DEFAULT_VERSION_PARAM);
     TokenStream stream = factory.create(tokenizer);

@@ -47,14 +47,14 @@ public class TestSynonymFilter extends BaseTokenTestCase {
 
   static void assertTokenizesTo(SynonymMap dict, String input,
       String expected[]) throws IOException {
-    Tokenizer tokenizer = new WhitespaceTokenizer(new StringReader(input));
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input));
     SynonymFilter stream = new SynonymFilter(tokenizer, dict);
     assertTokenStreamContents(stream, expected);
   }
   
   static void assertTokenizesTo(SynonymMap dict, String input,
       String expected[], int posIncs[]) throws IOException {
-    Tokenizer tokenizer = new WhitespaceTokenizer(new StringReader(input));
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input));
     SynonymFilter stream = new SynonymFilter(tokenizer, dict);
     assertTokenStreamContents(stream, expected, posIncs);
   }
@@ -381,12 +381,12 @@ public class TestSynonymFilter extends BaseTokenTestCase {
   private static class IterTokenStream extends TokenStream {
     final Token tokens[];
     int index = 0;
-    TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
-    FlagsAttribute flagsAtt = (FlagsAttribute) addAttribute(FlagsAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) addAttribute(TypeAttribute.class);
-    PayloadAttribute payloadAtt = (PayloadAttribute) addAttribute(PayloadAttribute.class);
+    TermAttribute termAtt = addAttribute(TermAttribute.class);
+    OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+    PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+    FlagsAttribute flagsAtt = addAttribute(FlagsAttribute.class);
+    TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
+    PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
     
     public IterTokenStream(Token... tokens) {
       super();

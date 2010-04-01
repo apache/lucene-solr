@@ -39,12 +39,12 @@ public class CommonGramsFilterFactoryTest extends BaseTokenTestCase {
     ResourceLoader loader = new SolrResourceLoader(null, null);
     assertTrue("loader is null and it shouldn't be", loader != null);
     CommonGramsFilterFactory factory = new CommonGramsFilterFactory();
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
     args.put("words", "stop-1.txt");
     args.put("ignoreCase", "true");
     factory.init(args);
     factory.inform(loader);
-    Set words = factory.getCommonWords();
+    Set<?> words = factory.getCommonWords();
     assertTrue("words is null and it shouldn't be", words != null);
     assertTrue("words Size: " + words.size() + " is not: " + 2,
         words.size() == 2);
@@ -71,13 +71,13 @@ public class CommonGramsFilterFactoryTest extends BaseTokenTestCase {
     ResourceLoader loader = new SolrResourceLoader(null, null);
     assertTrue("loader is null and it shouldn't be", loader != null);
     CommonGramsFilterFactory factory = new CommonGramsFilterFactory();
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
     factory.init(args);
     factory.inform(loader);
-    Set words = factory.getCommonWords();
+    Set<?> words = factory.getCommonWords();
     assertTrue("words is null and it shouldn't be", words != null);
     assertTrue(words.contains("the"));
-    Tokenizer tokenizer = new WhitespaceTokenizer(new StringReader("testing the factory"));
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("testing the factory"));
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, 
         new String[] { "testing", "testing_the", "the", "the_factory", "factory" });

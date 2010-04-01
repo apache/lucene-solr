@@ -17,7 +17,6 @@
 
 package org.apache.solr.analysis;
 
-import junit.framework.TestCase;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
@@ -45,9 +44,9 @@ public class TestRemoveDuplicatesTokenFilter extends BaseTokenTestCase {
     RemoveDuplicatesTokenFilterFactory factory = new RemoveDuplicatesTokenFilterFactory();
     final TokenStream ts = factory.create
       (new TokenStream() {
-          TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-          OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
-          PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+          TermAttribute termAtt = addAttribute(TermAttribute.class);
+          OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+          PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
           public boolean incrementToken() {
             if (toks.hasNext()) {
               clearAttributes();

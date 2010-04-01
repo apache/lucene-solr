@@ -19,13 +19,10 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
-import java.util.Set;
 import java.io.IOException;
 import java.nio.CharBuffer;
 
@@ -66,7 +63,7 @@ public final class PatternReplaceFilter extends TokenFilter {
     this.p=p;
     this.replacement = (null == replacement) ? "" : replacement;
     this.all=all;
-    this.termAtt = (TermAttribute)addAttribute(TermAttribute.class);
+    this.termAtt = addAttribute(TermAttribute.class);
   }
 
   @Override

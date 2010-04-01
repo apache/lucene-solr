@@ -16,15 +16,13 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.ar.ArabicLetterTokenizer;
 
 import java.io.Reader;
 
 
 /**
- *
- *
+ * Factory for {@link ArabicLetterTokenizer}
  **/
 public class ArabicLetterTokenizerFactory extends BaseTokenizerFactory{
 

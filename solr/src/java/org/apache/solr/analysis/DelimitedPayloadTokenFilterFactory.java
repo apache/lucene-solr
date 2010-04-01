@@ -31,7 +31,7 @@ import java.util.Map;
 
 /**
  *
- *
+ * Factory for {@link DelimitedPayloadTokenFilter}
  **/
 public class DelimitedPayloadTokenFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
   public static final String ENCODER_ATTR = "encoder";

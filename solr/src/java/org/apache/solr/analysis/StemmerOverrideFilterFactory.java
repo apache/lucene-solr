@@ -1,3 +1,5 @@
+package org.apache.solr.analysis;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,59 +16,53 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.analysis;
 
 import java.io.IOException;
-import java.util.Set;
+import java.util.List;
 
-import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.StopAnalyzer;
+import org.apache.lucene.analysis.CharArrayMap;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter;
 import org.apache.solr.common.ResourceLoader;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 
 /**
- * Constructs a CommonGramsFilter
+ * Factory for {@link StemmerOverrideFilter}
  */
-
-/*
- * This is pretty close to a straight copy from StopFilterFactory
- */
-public class CommonGramsFilterFactory extends BaseTokenFilterFactory implements
-    ResourceLoaderAware {
+public class StemmerOverrideFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+  private CharArrayMap<String> dictionary = null;
+  private boolean ignoreCase;
 
   public void inform(ResourceLoader loader) {
-    String commonWordFiles = args.get("words");
+    String dictionaryFiles = args.get("dictionary");
     ignoreCase = getBoolean("ignoreCase", false);
-
-    if (commonWordFiles != null) {
+    if (dictionaryFiles != null) {
+      assureMatchVersion();
+      List<String> files = StrUtils.splitFileNames(dictionaryFiles);
       try {
-        commonWords = getWordSet(loader, commonWordFiles, ignoreCase);
+        if (files.size() > 0) {
+          dictionary = new CharArrayMap<String>(luceneMatchVersion, 
+              files.size() * 10, ignoreCase);
+          for (String file : files) {
+            List<String> list = loader.getLines(file.trim());
+            for (String line : list) {
+              String[] mapping = line.split("\t", 2);
+              dictionary.put(mapping[0], mapping[1]);
+            }
+          }
+        }
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
-    } else {
-      commonWords = (CharArraySet) StopAnalyzer.ENGLISH_STOP_WORDS_SET;
     }
   }
-      
-    //Force the use of a char array set, as it is the most performant, although this may break things if Lucene ever goes away from it.  See SOLR-1095
-    private CharArraySet commonWords;
-    private boolean ignoreCase;
 
   public boolean isIgnoreCase() {
     return ignoreCase;
   }
 
-  public Set<?> getCommonWords() {
-    return commonWords;
-  }
-
-  public CommonGramsFilter create(TokenStream input) {
-    CommonGramsFilter commonGrams = new CommonGramsFilter(luceneMatchVersion, input, commonWords, ignoreCase);
-    return commonGrams;
+  public TokenStream create(TokenStream input) {
+    return dictionary == null ? input : new StemmerOverrideFilter(luceneMatchVersion, input, dictionary);
   }
 }
- 
-  
-  

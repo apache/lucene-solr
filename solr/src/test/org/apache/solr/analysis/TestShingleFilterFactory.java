@@ -37,7 +37,7 @@ public class TestShingleFilterFactory extends BaseTokenTestCase {
     Map<String,String> args = new HashMap<String,String>();
     ShingleFilterFactory factory = new ShingleFilterFactory();
     factory.init(args);
-    TokenStream stream = factory.create(new WhitespaceTokenizer(reader));
+    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, reader));
     assertTokenStreamContents(stream, new String[] {"this", "this is", "is",
         "is a", "a", "a test", "test"});
   }
@@ -51,7 +51,7 @@ public class TestShingleFilterFactory extends BaseTokenTestCase {
     args.put("outputUnigrams", "false");
     ShingleFilterFactory factory = new ShingleFilterFactory();
     factory.init(args);
-    TokenStream stream = factory.create(new WhitespaceTokenizer(reader));
+    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, reader));
     assertTokenStreamContents(stream,
         new String[] {"this is", "is a", "a test"});
   }
@@ -65,7 +65,7 @@ public class TestShingleFilterFactory extends BaseTokenTestCase {
     args.put("maxShingleSize", "3");
     ShingleFilterFactory factory = new ShingleFilterFactory();
     factory.init(args);
-    TokenStream stream = factory.create(new WhitespaceTokenizer(reader));
+    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, reader));
     assertTokenStreamContents(stream, 
         new String[] {"this", "this is", "this is a", "is",
         "is a", "is a test", "a", "a test", "test"});

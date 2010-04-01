@@ -190,8 +190,8 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     assertNotNull("Expecting the 'StopFilter' to be applied on the query for the 'text' field", tokenList);
     assertEquals("Query has only one token", 1, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("jumping", null, "<ALPHANUM>", 0, 7, 1, null, false));
-    tokenList = (List<NamedList>) queryResult.get("org.apache.solr.analysis.EnglishPorterFilter");
-    assertNotNull("Expecting the 'EnglishPorterFilter' to be applied on the query for the 'text' field", tokenList);
+    tokenList = (List<NamedList>) queryResult.get("org.apache.lucene.analysis.snowball.SnowballFilter");
+    assertNotNull("Expecting the 'SnowballFilter' to be applied on the query for the 'text' field", tokenList);
     assertEquals("Query has only one token", 1, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("jump", null, "<ALPHANUM>", 0, 7, 1, null, false));
     indexResult = textResult.get("index");
@@ -231,8 +231,8 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
     assertToken(tokenList.get(1), new TokenInfo("jumped", null, "<ALPHANUM>", 8, 14, 2, null, false));
     assertToken(tokenList.get(2), new TokenInfo("over", null, "<ALPHANUM>", 15, 19, 3, null, false));
     assertToken(tokenList.get(3), new TokenInfo("dogs", null, "<ALPHANUM>", 24, 28, 4, null, false));
-    tokenList = valueResult.get("org.apache.solr.analysis.EnglishPorterFilter");
-    assertNotNull("Expecting the 'EnglishPorterFilter' to be applied on the index for the 'text' field", tokenList);
+    tokenList = valueResult.get("org.apache.lucene.analysis.snowball.SnowballFilter");
+    assertNotNull("Expecting the 'SnowballFilter' to be applied on the index for the 'text' field", tokenList);
     assertEquals("Expecting 4 tokens", 4, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("fox", null, "<ALPHANUM>", 4, 7, 1, null, false));
     assertToken(tokenList.get(1), new TokenInfo("jump", null, "<ALPHANUM>", 8, 14, 2, null, true));

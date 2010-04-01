@@ -24,25 +24,22 @@ import java.util.Set;
 import java.util.Map;
 import java.util.HashMap;
 
-import junit.framework.TestCase;
-
-
 /**
  *
  *
  **/
-public class TestStopFilterFactory extends TestCase {
+public class TestStopFilterFactory extends BaseTokenTestCase {
 
   public void testInform() throws Exception {
     ResourceLoader loader = new SolrResourceLoader(null, null);
     assertTrue("loader is null and it shouldn't be", loader != null);
     StopFilterFactory factory = new StopFilterFactory();
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
     args.put("words", "stop-1.txt");
     args.put("ignoreCase", "true");
     factory.init(args);
     factory.inform(loader);
-    Set words = factory.getStopWords();
+    Set<?> words = factory.getStopWords();
     assertTrue("words is null and it shouldn't be", words != null);
     assertTrue("words Size: " + words.size() + " is not: " + 2, words.size() == 2);
     assertTrue(factory.isIgnoreCase() + " does not equal: " + true, factory.isIgnoreCase() == true);

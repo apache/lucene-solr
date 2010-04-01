@@ -46,11 +46,11 @@ public class EnglishPorterFilterFactoryTest extends BaseTokenTestCase {
     }
 
     EnglishPorterFilterFactory factory = new EnglishPorterFilterFactory();
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
 
     factory.init(args);
     factory.inform(new LinesMockSolrResourceLoader(new ArrayList<String>()));
-    Tokenizer tokenizer = new WhitespaceTokenizer(
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION,
         new StringReader(StrUtils.join(Arrays.asList(test), ' ')));
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, gold);
@@ -71,13 +71,13 @@ public class EnglishPorterFilterFactoryTest extends BaseTokenTestCase {
     }
 
     EnglishPorterFilterFactory factory = new EnglishPorterFilterFactory();
-    Map<String, String> args = new HashMap<String, String>();
+    Map<String, String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
     args.put(EnglishPorterFilterFactory.PROTECTED_TOKENS, "who-cares.txt");
     factory.init(args);
     List<String> lines = new ArrayList<String>();
     Collections.addAll(lines, "banks", "fledgling");
     factory.inform(new LinesMockSolrResourceLoader(lines));
-    Tokenizer tokenizer = new WhitespaceTokenizer(
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION,
         new StringReader(StrUtils.join(Arrays.asList(test), ' ')));
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, gold);

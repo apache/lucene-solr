@@ -17,11 +17,12 @@
 
 package org.apache.solr.analysis;
 
+import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.solr.util.CharArrayMap;
+import org.apache.lucene.util.Version;
 
 import java.io.IOException;
 
@@ -30,12 +31,11 @@ import java.io.IOException;
  */
 public final class RemoveDuplicatesTokenFilter extends TokenFilter {
 
-  private final TermAttribute termAttribute = (TermAttribute) addAttribute(TermAttribute.class);
-  private final PositionIncrementAttribute posIncAttribute =  (PositionIncrementAttribute) addAttribute(PositionIncrementAttribute.class);
+  private final TermAttribute termAttribute = addAttribute(TermAttribute.class);
+  private final PositionIncrementAttribute posIncAttribute =  addAttribute(PositionIncrementAttribute.class);
   
-  // keep a seen 'set' after each term with posInc > 0
-  // for now use CharArrayMap vs CharArraySet, as it has clear()
-  private final CharArrayMap<Boolean> previous = new CharArrayMap<Boolean>(8, false);
+  // use a fixed version, as we don't care about case sensitivity.
+  private final CharArraySet previous = new CharArraySet(Version.LUCENE_31, 8, false);
 
   /**
    * Creates a new RemoveDuplicatesTokenFilter
@@ -60,12 +60,12 @@ public final class RemoveDuplicatesTokenFilter extends TokenFilter {
         previous.clear();
       }
       
-      boolean duplicate = (posIncrement == 0 && previous.get(term, 0, length) != null);
+      boolean duplicate = (posIncrement == 0 && previous.contains(term, 0, length));
       
       // clone the term, and add to the set of seen terms.
       char saved[] = new char[length];
       System.arraycopy(term, 0, saved, 0, length);
-      previous.put(saved, Boolean.TRUE);
+      previous.add(saved);
       
       if (!duplicate) {
         return true;

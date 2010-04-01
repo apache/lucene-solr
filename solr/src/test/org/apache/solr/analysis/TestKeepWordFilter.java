@@ -41,7 +41,7 @@ public class TestKeepWordFilter extends BaseTokenTestCase {
     words.add( "bbb" );
     
     String input = "aaa BBB ccc ddd EEE";
-    Map<String,String> args = new HashMap<String, String>();
+    Map<String,String> args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
     ResourceLoader loader = new SolrResourceLoader(null, null);
     
     // Test Stopwords
@@ -51,29 +51,29 @@ public class TestKeepWordFilter extends BaseTokenTestCase {
     factory.inform( loader );
     factory.setWords( words );
     assertTrue(factory.isIgnoreCase());
-    TokenStream stream = factory.create(new WhitespaceTokenizer(new StringReader(input)));
+    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input)));
     assertTokenStreamContents(stream, new String[] { "aaa", "BBB" });
     
     // Test Stopwords (ignoreCase via the setter instead)
     factory = new KeepWordFilterFactory();
-    args = new HashMap<String, String>();
+    args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
     factory.init( args );
     factory.inform( loader );
     factory.setIgnoreCase(true);
     factory.setWords( words );
     assertTrue(factory.isIgnoreCase());
-    stream = factory.create(new WhitespaceTokenizer(new StringReader(input)));
+    stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input)));
     assertTokenStreamContents(stream, new String[] { "aaa", "BBB" });
     
     // Now force case
     factory = new KeepWordFilterFactory();
-    args = new HashMap<String, String>();
+    args = new HashMap<String, String>(DEFAULT_VERSION_PARAM);
     args.put( "ignoreCase", "false" );
     factory.init( args );
     factory.inform( loader );
     factory.setWords( words );    
     assertFalse(factory.isIgnoreCase());
-    stream = factory.create(new WhitespaceTokenizer(new StringReader(input)));
+    stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input)));
     assertTokenStreamContents(stream, new String[] { "aaa" });
   }
 }

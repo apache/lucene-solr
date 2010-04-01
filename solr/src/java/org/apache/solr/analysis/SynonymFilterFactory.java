@@ -17,7 +17,6 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.solr.common.ResourceLoader;
@@ -136,7 +135,7 @@ public class SynonymFilterFactory extends BaseTokenFilterFactory implements Reso
     TokenStream ts = loadTokenizer(tokFactory, reader);
     List<String> tokList = new ArrayList<String>();
     try {
-      TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
+      TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
       while (ts.incrementToken()){
         String text = new String(termAtt.termBuffer(), 0, termAtt.termLength());
         if( text.length() > 0 )

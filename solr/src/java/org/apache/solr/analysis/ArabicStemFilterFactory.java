@@ -21,8 +21,7 @@ import org.apache.lucene.analysis.ar.ArabicStemFilter;
 
 
 /**
- *
- *
+ * Factory for {@link ArabicStemFilter}
  **/
 public class ArabicStemFilterFactory extends BaseTokenFilterFactory{
 

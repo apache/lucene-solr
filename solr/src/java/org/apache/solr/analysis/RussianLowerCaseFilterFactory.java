@@ -19,11 +19,17 @@ package org.apache.solr.analysis;
 
 import java.util.Map;
 
+import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ru.RussianLowerCaseFilter;
+import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 
+/** @deprecated Use {@link LowerCaseFilterFactory} instead which has the
+ *  same functionality.
+ */
+@Deprecated
 public class RussianLowerCaseFilterFactory extends BaseTokenFilterFactory {
 
   @Override
@@ -35,8 +41,9 @@ public class RussianLowerCaseFilterFactory extends BaseTokenFilterFactory {
           + "Please process your documents as Unicode instead.");
   }
 
-  public RussianLowerCaseFilter create(TokenStream in) {
-    return new RussianLowerCaseFilter(in);
+  public TokenFilter create(TokenStream in) {
+    // hardcode the version to give exactly the old behavior
+    return new LowerCaseFilter(Version.LUCENE_29, in);
   }
 }
 

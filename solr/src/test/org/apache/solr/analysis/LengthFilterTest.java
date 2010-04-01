@@ -33,7 +33,7 @@ public class LengthFilterTest extends BaseTokenTestCase {
     args.put(LengthFilterFactory.MAX_KEY, String.valueOf(10));
     factory.init(args);
     String test = "foo foobar super-duper-trooper";
-    TokenStream stream = factory.create(new WhitespaceTokenizer(new StringReader(test)));
+    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(test)));
     assertTokenStreamContents(stream, new String[] { "foobar" });
   }
 }

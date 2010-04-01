@@ -21,8 +21,7 @@ import org.apache.lucene.analysis.ar.ArabicNormalizationFilter;
 
 
 /**
- *
- *
+ * Factory for {@link ArabicNormalizationFilter}
  **/
 public class ArabicNormalizationFilterFactory extends BaseTokenFilterFactory{
 

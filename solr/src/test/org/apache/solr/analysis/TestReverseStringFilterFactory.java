@@ -33,7 +33,7 @@ public class TestReverseStringFilterFactory extends BaseTokenTestCase {
    */
   public void testReversing() throws Exception {
     Reader reader = new StringReader("simple test");
-    Tokenizer tokenizer = new WhitespaceTokenizer(reader);
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
     ReverseStringFilterFactory factory = new ReverseStringFilterFactory();
     factory.init(DEFAULT_VERSION_PARAM);
     TokenStream stream = factory.create(tokenizer);

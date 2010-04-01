@@ -20,7 +20,7 @@ public class TestMultiWordSynonyms extends BaseTokenTestCase {
     SynonymMap synMap = new SynonymMap(true);
     SynonymFilterFactory.parseRules(rules, synMap, "=>", ",", true, null);
 
-    SynonymFilter ts = new SynonymFilter(new WhitespaceTokenizer(new StringReader("a e")), synMap);
+    SynonymFilter ts = new SynonymFilter(new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("a e")), synMap);
     // This fails because ["e","e"] is the value of the token stream
     assertTokenStreamContents(ts, new String[] { "a", "e" });
   }

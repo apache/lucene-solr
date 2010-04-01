@@ -33,7 +33,7 @@ public class TestPersianNormalizationFilterFactory extends BaseTokenTestCase {
    */
   public void testNormalization() throws Exception {
     Reader reader = new StringReader("های");
-    Tokenizer tokenizer = new WhitespaceTokenizer(reader);
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
     PersianNormalizationFilterFactory factory = new PersianNormalizationFilterFactory();
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "هاي" });

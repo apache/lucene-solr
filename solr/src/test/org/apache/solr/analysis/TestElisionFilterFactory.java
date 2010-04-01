@@ -37,7 +37,7 @@ public class TestElisionFilterFactory extends BaseTokenTestCase {
    */
   public void testElision() throws Exception {
     Reader reader = new StringReader("l'avion");
-    Tokenizer tokenizer = new WhitespaceTokenizer(reader);
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
     ElisionFilterFactory factory = new ElisionFilterFactory();
     factory.init(DEFAULT_VERSION_PARAM);
     ResourceLoader loader = new SolrResourceLoader(null, null);

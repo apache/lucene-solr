@@ -17,11 +17,13 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
+import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.PorterStemFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
@@ -29,24 +31,36 @@ import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.core.SolrResourceLoader;
 
 /**
- * Simple tests to ensure the Dictionary compound filter factory is working.
+ * Simple tests to ensure the stemmer override filter factory is working.
  */
-public class TestDictionaryCompoundWordTokenFilterFactory extends BaseTokenTestCase {
-  /**
-   * Ensure the filter actually decompounds text.
-   */
-  public void testDecompounding() throws Exception {
-    Reader reader = new StringReader("I like to play softball");
+public class TestStemmerOverrideFilterFactory extends BaseTokenTestCase {
+  public void testKeywords() throws IOException {
+    // our stemdict stems dogs to 'cat'
+    Reader reader = new StringReader("testing dogs");
     Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
-    DictionaryCompoundWordTokenFilterFactory factory = new DictionaryCompoundWordTokenFilterFactory();
-    ResourceLoader loader = new SolrResourceLoader(null, null);
+    StemmerOverrideFilterFactory factory = new StemmerOverrideFilterFactory();
     Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
-    args.put("dictionary", "compoundDictionary.txt");
+    ResourceLoader loader = new SolrResourceLoader(null, null);
+    args.put("dictionary", "stemdict.txt");
     factory.init(args);
     factory.inform(loader);
-    TokenStream stream = factory.create(tokenizer);
-    assertTokenStreamContents(stream, 
-        new String[] { "I", "like", "to", "play", "softball", "soft", "ball" });
+    
+    TokenStream ts = new PorterStemFilter(factory.create(tokenizer));
+    assertTokenStreamContents(ts, new String[] { "test", "cat" });
   }
   
+  public void testKeywordsCaseInsensitive() throws IOException {
+    Reader reader = new StringReader("testing DoGs");
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    StemmerOverrideFilterFactory factory = new StemmerOverrideFilterFactory();
+    Map<String,String> args = new HashMap<String,String>(DEFAULT_VERSION_PARAM);
+    ResourceLoader loader = new SolrResourceLoader(null, null);
+    args.put("dictionary", "stemdict.txt");
+    args.put("ignoreCase", "true");
+    factory.init(args);
+    factory.inform(loader);
+    
+    TokenStream ts = new PorterStemFilter(factory.create(tokenizer));
+    assertTokenStreamContents(ts, new String[] { "test", "cat" });
+  }
 }

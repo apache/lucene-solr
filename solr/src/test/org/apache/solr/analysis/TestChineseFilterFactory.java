@@ -33,7 +33,7 @@ public class TestChineseFilterFactory extends BaseTokenTestCase {
    */
   public void testFiltering() throws Exception {
     Reader reader = new StringReader("this 1234 Is such a silly filter");
-    Tokenizer tokenizer = new WhitespaceTokenizer(reader);
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
     ChineseFilterFactory factory = new ChineseFilterFactory();
     TokenStream stream = factory.create(tokenizer);
     assertTokenStreamContents(stream, new String[] { "Is", "silly", "filter" });

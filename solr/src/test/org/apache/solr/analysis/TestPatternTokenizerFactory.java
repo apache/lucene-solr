@@ -117,7 +117,7 @@ public class TestPatternTokenizerFactory extends BaseTokenTestCase
    */
   private static String tsToString(TokenStream in) throws IOException {
     StringBuilder out = new StringBuilder();
-    TermAttribute termAtt = (TermAttribute) in.addAttribute(TermAttribute.class);
+    TermAttribute termAtt = in.addAttribute(TermAttribute.class);
     // extra safety to enforce, that the state is not preserved and also
     // assign bogus values
     in.clearAttributes();

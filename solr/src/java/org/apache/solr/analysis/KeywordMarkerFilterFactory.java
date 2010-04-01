@@ -1,3 +1,13 @@
+package org.apache.solr.analysis;
+
+import java.io.IOException;
+
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.solr.common.ResourceLoader;
+import org.apache.solr.util.plugin.ResourceLoaderAware;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,43 +25,31 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
-
-import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
-import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.snowball.SnowballFilter;
-import org.apache.solr.common.ResourceLoader;
-import org.apache.solr.util.plugin.ResourceLoaderAware;
-
-import java.io.IOException;
-
 /**
- * @version $Id$
- *
- * @deprecated Use SnowballPorterFilterFactory with language="English" instead
+ * Factory for {@link KeywordMarkerTokenFilter}
  */
-public class EnglishPorterFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
+public class KeywordMarkerFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";
-
+  private CharArraySet protectedWords;
+  private boolean ignoreCase;
+  
   public void inform(ResourceLoader loader) {
     String wordFiles = args.get(PROTECTED_TOKENS);
-    if (wordFiles != null) {
+    ignoreCase = getBoolean("ignoreCase", false);
+    if (wordFiles != null) {  
       try {
-        protectedWords = getWordSet(loader, wordFiles, false);
+        protectedWords = getWordSet(loader, wordFiles, ignoreCase);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
   }
-
-  private CharArraySet protectedWords = null;
-
-  public TokenFilter create(TokenStream input) {
-    if (protectedWords != null)
-      input = new KeywordMarkerTokenFilter(input, protectedWords);
-    return new SnowballFilter(input, new org.tartarus.snowball.ext.EnglishStemmer());
+  
+  public boolean isIgnoreCase() {
+    return ignoreCase;
   }
 
+  public TokenStream create(TokenStream input) {
+    return protectedWords == null ? input : new KeywordMarkerTokenFilter(input, protectedWords);
+  }
 }

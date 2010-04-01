@@ -59,7 +59,7 @@ public class TestBufferedTokenStream extends BaseTokenTestCase {
     final String input = "How now A B brown A cow B like A B thing?";
     final String expected = "How now Q B brown A cow B like Q B thing?";
     TokenStream ts = new AB_Q_Stream
-      (new WhitespaceTokenizer(new StringReader(input)));
+      (new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input)));
     assertTokenStreamContents(ts, expected.split("\\s"));
   }
   
@@ -67,15 +67,15 @@ public class TestBufferedTokenStream extends BaseTokenTestCase {
     final String input = "How now A B brown A cow B like A B thing?";
     final String expected = "How now A A B brown A cow B like A A B thing?";
     TokenStream ts = new AB_AAB_Stream
-      (new WhitespaceTokenizer(new StringReader(input)));
+      (new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input)));
     assertTokenStreamContents(ts, expected.split("\\s"));
   }
   
   public void testReset() throws Exception {
     final String input = "How now A B brown A cow B like A B thing?";
-    Tokenizer tokenizer = new WhitespaceTokenizer(new StringReader(input));
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input));
     TokenStream ts = new AB_AAB_Stream(tokenizer);
-    TermAttribute term = (TermAttribute) ts.addAttribute(TermAttribute.class);
+    TermAttribute term = ts.addAttribute(TermAttribute.class);
     assertTrue(ts.incrementToken());
     assertEquals("How", term.term());
     assertTrue(ts.incrementToken());

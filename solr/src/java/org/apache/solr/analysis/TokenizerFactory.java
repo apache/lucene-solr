@@ -19,7 +19,6 @@ package org.apache.solr.analysis;
 
 import java.io.*;
 import java.util.Map;
-import org.apache.solr.core.SolrConfig;
 import org.apache.lucene.analysis.*;
 
 
