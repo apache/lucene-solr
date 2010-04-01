@@ -103,24 +103,26 @@ public class CartesianPolyFilterBuilder {
     // iterate from startX->endX
     //     iterate from startY -> endY
     //      shape.add(currentLat.currentLong);
-
+	//for the edge cases (prime meridian and the 180th meridian), this call handles all tiles East of the meridian
+    //for all other cases, it handles the whole set of tiles
     shape = getShapeLoop(shape,ctp,latX,longX,latY,longY);
-
 	if (longX2 != 0.0) {
-		//We are around the prime meridian
-		if (longX == 0.0) {
-			longX = longX2;
-			longY = 0.0;
-        	shape = getShapeLoop(shape,ctp,latX,longX,latY,longY);
-		} else {//we are around the 180th longitude
-			longX = longX2;
-			longY = -180.0;
-			shape = getShapeLoop(shape,ctp,latY,longY,latX,longX);
-	}
+	      if (longX == 0.0) {
+	        longX = longX2;
+	        longY = 0.0;
+	        //handles the lower left longitude to the prime meridian
+	        //shape = getShapeLoop(shape, ctp, latX, longX, latY, longY);
+	      } else {
+	        //this clause handles the lower left longitude up to the 180 meridian
+	        longX = longX2;
+	        longY = 180.0;
+	      }
+	      shape = getShapeLoop(shape, ctp, latX, longX, latY, longY);
 
-        //System.err.println("getBoxShape2:"+latY+"," + longY);
-        //System.err.println("getBoxShape2:"+latX+"," + longX);
-    }
+	      //System.err.println("getBoxShape2:"+latY+"," + longY);
+	        //System.err.println("getBoxShape2:"+latX+"," + longX);
+	    }
+	
  
     return shape; 
   } 
@@ -132,7 +134,11 @@ public class CartesianPolyFilterBuilder {
     //System.err.println("getShapeLoop:"+latX+"," + longX);
     double beginAt = ctp.getTierBoxId(latX, longX);
     double endAt = ctp.getTierBoxId(latY, longY);
-    
+    if (beginAt > endAt){
+	      double tmp = beginAt;
+	      beginAt = endAt;
+	      endAt = tmp;
+	}
     double tierVert = ctp.getTierVerticalPosDivider();
     //System.err.println(" | "+ beginAt+" | "+ endAt);
     

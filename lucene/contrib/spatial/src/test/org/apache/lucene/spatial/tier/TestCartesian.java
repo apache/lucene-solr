@@ -139,6 +139,7 @@ public class TestCartesian extends LuceneTestCase {
     addPoint(writer,"Hilton Washington Embassy Row",38.9103000,-77.0451000);
     addPoint(writer,"HorseFeathers, Bar & Grill", 39.01220000000001, -77.3942);
     addPoint(writer,"Marshall Island Airfield",7.06, 171.2);
+    addPoint(writer, "Wonga Wongue Reserve, Gabon", -0.546562,9.459229);
     addPoint(writer,"Midway Island",25.7, -171.7);
     addPoint(writer,"North Pole Way",55.0, 4.0);
    
@@ -162,6 +163,34 @@ public class TestCartesian extends LuceneTestCase {
     if (VERBOSE) System.out.println("miles:" + miles);
     assertEquals(3474.331719997617, miles); 
   }
+
+  /*public void testCartesianPolyFilterBuilder() throws Exception {
+    CartesianPolyFilterBuilder cpfb = new CartesianPolyFilterBuilder(CartesianTierPlotter.DEFALT_FIELD_PREFIX, 2, 15);
+    //try out some shapes
+    final double miles = 20.0;
+        // Hawaii
+        // 2300 miles to Marshall Island Airfield
+    //Hawaii to Midway is 911 miles
+    lat = 0;
+    lng = -179.9;
+    Shape shape;
+    shape = cpfb.getBoxShape(lat, lng, miles);
+    System.out.println("Tier: " + shape.getTierLevel());
+    System.out.println("area: " + shape.getArea().size());
+    lat = 30;
+    lng = -100;
+    shape = cpfb.getBoxShape(lat, lng, miles);
+    System.out.println("Tier: " + shape.getTierLevel());
+    System.out.println("area: " + shape.getArea().size());
+
+    lat = 30;
+    lng = 100;
+    shape = cpfb.getBoxShape(lat, lng, miles);
+    System.out.println("Tier: " + shape.getTierLevel());
+    System.out.println("area: " + shape.getArea().size());
+  }
+*/
+
 
   public void testAntiM() throws IOException, InvalidGeoException {
     searcher = new IndexSearcher(directory, true);

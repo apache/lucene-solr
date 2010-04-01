@@ -60,6 +60,9 @@ Bug fixes
 
  * LUCENE-2184: Fixed bug with handling best fit value when the proper best fit value is
 		not an indexed field.  Note, this change affects the APIs. (Grant Ingersoll)
+		
+ * LUCENE-2359: Fix bug in CartesianPolyFilterBuilder related to handling of behavior around
+		the 180th meridian (Grant Ingersoll)
    
 API Changes
 
