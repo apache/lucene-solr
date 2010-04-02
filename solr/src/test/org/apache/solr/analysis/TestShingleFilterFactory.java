@@ -70,4 +70,150 @@ public class TestShingleFilterFactory extends BaseTokenTestCase {
         new String[] {"this", "this is", "this is a", "is",
         "is a", "is a test", "a", "a test", "test"});
   }
+
+  /**
+   * Test with higher min (and max) shingle size
+   */
+  public void testMinShingleSize() throws Exception {
+    Reader reader = new StringReader("this is a test");
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("minShingleSize", "3");
+    args.put("maxShingleSize", "4");
+    ShingleFilterFactory factory = new ShingleFilterFactory();
+    factory.init(args);
+    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, reader));
+    assertTokenStreamContents(stream, 
+        new String[] { "this", "this is a", "this is a test",
+        "is", "is a test", "a", "test" });
+  }
+
+  /**
+   * Test with higher min (and max) shingle size and with unigrams disabled
+   */
+  public void testMinShingleSizeNoUnigrams() throws Exception {
+    Reader reader = new StringReader("this is a test");
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("minShingleSize", "3");
+    args.put("maxShingleSize", "4");
+    args.put("outputUnigrams", "false");
+    ShingleFilterFactory factory = new ShingleFilterFactory();
+    factory.init(args);
+    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, reader));
+    assertTokenStreamContents(stream, 
+        new String[] { "this is a", "this is a test", "is a test" });
+  }
+
+  /**
+   * Test with higher same min and max shingle size
+   */
+  public void testEqualMinAndMaxShingleSize() throws Exception {
+    Reader reader = new StringReader("this is a test");
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("minShingleSize", "3");
+    args.put("maxShingleSize", "3");
+    ShingleFilterFactory factory = new ShingleFilterFactory();
+    factory.init(args);
+    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, reader));
+    assertTokenStreamContents(stream, 
+         new String[] { "this", "this is a", "is", "is a test", "a", "test" });
+  }
+
+  /**
+   * Test with higher same min and max shingle size and with unigrams disabled
+   */
+  public void testEqualMinAndMaxShingleSizeNoUnigrams() throws Exception {
+    Reader reader = new StringReader("this is a test");
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("minShingleSize", "3");
+    args.put("maxShingleSize", "3");
+    args.put("outputUnigrams", "false");
+    ShingleFilterFactory factory = new ShingleFilterFactory();
+    factory.init(args);
+    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, reader));
+    assertTokenStreamContents(stream,
+        new String[] { "this is a", "is a test" });
+  }
+    
+  /**
+   * Test with a non-default token separator
+   */
+  public void testTokenSeparator() throws Exception {
+    Reader reader = new StringReader("this is a test");
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("tokenSeparator", "=BLAH=");
+    ShingleFilterFactory factory = new ShingleFilterFactory();
+    factory.init(args);
+    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, reader));
+    assertTokenStreamContents(stream, 
+        new String[] { "this", "this=BLAH=is", "is", "is=BLAH=a", 
+        "a", "a=BLAH=test", "test" });
+  }
+
+  /**
+   * Test with a non-default token separator and with unigrams disabled
+   */
+  public void testTokenSeparatorNoUnigrams() throws Exception {
+    Reader reader = new StringReader("this is a test");
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("tokenSeparator", "=BLAH=");
+    args.put("outputUnigrams", "false");
+    ShingleFilterFactory factory = new ShingleFilterFactory();
+    factory.init(args);
+    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, reader));
+    assertTokenStreamContents(stream, 
+        new String[] { "this=BLAH=is", "is=BLAH=a", "a=BLAH=test" });
+  }
+
+  /**
+   * Test with an empty token separator
+   */
+  public void testEmptyTokenSeparator() throws Exception {
+    Reader reader = new StringReader("this is a test");
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("tokenSeparator", "");
+    ShingleFilterFactory factory = new ShingleFilterFactory();
+    factory.init(args);
+    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, reader));
+    assertTokenStreamContents(stream, 
+        new String[] { "this", "thisis", "is", "isa", "a", "atest", "test" });
+  }
+    
+  /**
+   * Test with higher min (and max) shingle size 
+   * and with a non-default token separator
+   */
+  public void testMinShingleSizeAndTokenSeparator() throws Exception {
+    Reader reader = new StringReader("this is a test");
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("minShingleSize", "3");
+    args.put("maxShingleSize", "4");
+    args.put("tokenSeparator", "=BLAH=");
+    ShingleFilterFactory factory = new ShingleFilterFactory();
+    factory.init(args);
+    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, reader));
+    assertTokenStreamContents(stream, 
+        new String[] { "this", "this=BLAH=is=BLAH=a", 
+        "this=BLAH=is=BLAH=a=BLAH=test", "is", 
+        "is=BLAH=a=BLAH=test", "a", "test" });
+  }
+
+  /**
+   * Test with higher min (and max) shingle size 
+   * and with a non-default token separator
+   * and with unigrams disabled
+   */
+  public void testMinShingleSizeAndTokenSeparatorNoUnigrams() throws Exception {
+    Reader reader = new StringReader("this is a test");
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("minShingleSize", "3");
+    args.put("maxShingleSize", "4");
+    args.put("tokenSeparator", "=BLAH=");
+    args.put("outputUnigrams", "false");
+    ShingleFilterFactory factory = new ShingleFilterFactory();
+    factory.init(args);
+    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, reader));
+    assertTokenStreamContents(stream, 
+        new String[] { "this=BLAH=is=BLAH=a", "this=BLAH=is=BLAH=a=BLAH=test", 
+        "is=BLAH=a=BLAH=test", });
+  }
 }

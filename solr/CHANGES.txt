@@ -135,6 +135,10 @@ New Features
   TokenFilters now support custom Attributes, and some have improved performance: 
   especially WordDelimiterFilter and CommonGramsFilter.  (rmuir, cmale, uschindler)
 
+* SOLR-1740: ShingleFilterFactory supports the "minShingleSize" and "tokenSeparator"
+  parameters for controlling the minimum shingle size produced by the filter, and
+  the separator string that it uses, respectively.  (Steven Rowe via rmuir)
+   
 Optimizations
 ----------------------
 
