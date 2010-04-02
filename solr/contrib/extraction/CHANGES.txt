@@ -31,6 +31,8 @@ $Id:$
 
 * SOLR-18913: Add ICU4j to libs and add tests for Arabic extraction (Robert Muir via gsingers)
 
+* SOLR-1819: Upgraded to Tika 0.7 (gsingers)
+
 ================== Release 1.4.0 ==================
 
 1. SOLR-284:  Added in support for extraction. (Eric Pugh, Chris Harris, gsingers)
