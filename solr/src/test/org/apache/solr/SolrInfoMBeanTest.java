@@ -89,7 +89,7 @@ public class SolrInfoMBeanTest extends TestCase
     String path = pckgname.replace('.', '/');
     Enumeration<URL> resources = cld.getResources(path);
     while (resources.hasMoreElements()) {
-      directories.add(new File(resources.nextElement().getPath()));
+      directories.add(new File(resources.nextElement().toURI()));
     }
       
     ArrayList<Class> classes = new ArrayList<Class>();
