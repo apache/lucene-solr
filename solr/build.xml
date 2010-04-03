@@ -960,7 +960,7 @@
   <!-- ========================================================================= -->
   <!-- ===================== Runtime: luke         ============================= -->
   <!-- ========================================================================= -->
-  <property  name="luke.version" value="1.0.0"/>
+  <property  name="luke.version" value="1.0.1"/>
   <available file="luke/luke-${luke.version}.jar" property="luke.jar.exists" />
   <target name="luke-download" unless="luke.jar.exists" depends="proxy.setup">
     <mkdir dir="luke"/>
