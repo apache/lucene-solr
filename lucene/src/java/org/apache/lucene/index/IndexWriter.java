@@ -4587,7 +4587,7 @@ public class IndexWriter implements Closeable {
 
   // utility routines for tests
   SegmentInfo newestSegment() {
-    return segmentInfos.info(segmentInfos.size()-1);
+    return segmentInfos.size() > 0 ? segmentInfos.info(segmentInfos.size()-1) : null;
   }
 
   public synchronized String segString() {

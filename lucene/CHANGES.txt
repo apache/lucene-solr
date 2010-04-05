@@ -157,6 +157,10 @@ Bug fixes
 * LUCENE-2328: Index files fsync tracking moved from
   IndexWriter/IndexReader to Directory, and it no longer leaks memory.
   (Earwin Burrfoot via Mike McCandless)
+
+* LUCENE-2365: IndexWriter.newestSegment (used normally for testing)
+  is fixed to return null if there are no segments.  (Karthick
+  Sankarachary via Mike McCandless)
   
 New features
 
