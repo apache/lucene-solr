@@ -175,7 +175,7 @@ public class VelocityResponseWriter implements QueryResponseWriter {
   }
 
   public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
-    return request.getParams().get("v.contentType", "text/html");
+    return request.getParams().get("v.contentType", "text/html;charset=UTF-8");
   }
 
   private String getJSONWrap(String xmlResult) {  // TODO: maybe noggit or Solr's JSON utilities can make this cleaner?
