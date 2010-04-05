@@ -55,6 +55,7 @@
        classpath, this is useful for including all jars in a directory.
     -->
   <lib dir="../../contrib/extraction/lib" />
+  <lib dir="../../contrib/velocity/src/main/solr/lib" />
   <!-- When a regex is specified in addition to a directory, only the files in that
        directory which completely match the regex (anchored on both ends)
        will be included.
@@ -1032,6 +1033,8 @@
     
     <queryResponseWriter name="custom" class="com.example.MyResponseWriter"/>
   -->
+
+  <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter"/>
 
   <!-- XSLT response writer transforms the XML output by any xslt file found
        in Solr's conf/xslt directory.  Changes to xslt files are checked for

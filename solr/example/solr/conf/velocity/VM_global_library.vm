@@ -1,0 +1,11 @@
+#macro(nl2ul $named_list)
+  <ul>
+  #foreach($kv in $named_list)
+    <li>$kv.key ($kv.value)
+      #nl2ul($kv.value)
+    </li>
+  #end
+  </ul>
+#end
+
+#macro(param $key)$request.params.get($key)#end
