@@ -21,7 +21,6 @@ package org.apache.lucene.index;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -42,6 +41,7 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.SetBasedFieldSelector;
 import org.apache.lucene.index.IndexReader.FieldOption;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
@@ -881,15 +881,18 @@ public class TestIndexReader extends LuceneTestCase
         d.add(new Field("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
         d.add(new Field("content", "aaa " + i, Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(d);
+        if (0==i%10)
+          writer.commit();
       }
       writer.close();
 
-      long diskUsage = startDir.sizeInBytes();
-      long diskFree = diskUsage+100;      
+      long diskUsage = ((MockRAMDirectory) startDir).getRecomputedActualSizeInBytes();
+      long diskFree = diskUsage+100;
 
       IOException err = null;
 
       boolean done = false;
+      boolean gotExc = false;
 
       // Iterate w/ ever increasing free disk space:
       while(!done) {
@@ -946,7 +949,7 @@ public class TestIndexReader extends LuceneTestCase
               int docId = 12;
               for(int i=0;i<13;i++) {
                 reader.deleteDocument(docId);
-                reader.setNorm(docId, "contents", (float) 2.0);
+                reader.setNorm(docId, "content", (float) 2.0);
                 docId += 12;
               }
             }
@@ -961,6 +964,7 @@ public class TestIndexReader extends LuceneTestCase
               e.printStackTrace(System.out);
             }
             err = e;
+            gotExc = true;
             if (1 == x) {
               e.printStackTrace();
               fail(testName + " hit IOException after disk space was freed up");
@@ -973,29 +977,7 @@ public class TestIndexReader extends LuceneTestCase
           // new IndexFileDeleter, have it delete
           // unreferenced files, then verify that in fact
           // no files were deleted:
-          String[] startFiles = dir.listAll();
-          SegmentInfos infos = new SegmentInfos();
-          infos.read(dir);
-          new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
-          String[] endFiles = dir.listAll();
-
-          Arrays.sort(startFiles);
-          Arrays.sort(endFiles);
-
-          //for(int i=0;i<startFiles.length;i++) {
-          //  System.out.println("  startFiles: " + i + ": " + startFiles[i]);
-          //}
-
-          if (!Arrays.equals(startFiles, endFiles)) {
-            String successStr;
-            if (success) {
-              successStr = "success";
-            } else {
-              successStr = "IOException";
-              err.printStackTrace();
-            }
-            fail("reader.close() failed to delete unreferenced files after " + successStr + " (" + diskFree + " bytes): before delete:\n    " + arrayToString(startFiles) + "\n  after delete:\n    " + arrayToString(endFiles));
-          }
+          TestIndexWriter.assertNoUnreferencedFiles(dir, "reader.close() failed to delete unreferenced files");
 
           // Finally, verify index is not corrupt, and, if
           // we succeeded, we see all docs changed, and if
@@ -1050,6 +1032,8 @@ public class TestIndexReader extends LuceneTestCase
           newReader.close();
 
           if (result2 == END_COUNT) {
+            if (!gotExc)
+              fail("never hit disk full");
             break;
           }
         }
@@ -1133,17 +1117,6 @@ public class TestIndexReader extends LuceneTestCase
         fail("write lock is still held after close");
       }
       dir.close();
-    }
-
-    private String arrayToString(String[] l) {
-      String s = "";
-      for(int i=0;i<l.length;i++) {
-        if (i > 0) {
-          s += "\n    ";
-        }
-        s += l[i];
-      }
-      return s;
     }
 
     public void testOpenReaderAfterDelete() throws IOException {
@@ -1410,7 +1383,7 @@ public class TestIndexReader extends LuceneTestCase
       writer.close();
 
       SegmentInfos sis = new SegmentInfos();
-      sis.read(d);
+      sis.read(d, CodecProvider.getDefault());
       IndexReader r = IndexReader.open(d, false);
       IndexCommit c = r.getIndexCommit();
 
@@ -1597,6 +1570,7 @@ public class TestIndexReader extends LuceneTestCase
   // LUCENE-1579: Ensure that on a cloned reader, segments
   // reuse the doc values arrays in FieldCache
   public void testFieldCacheReuseAfterClone() throws Exception {
+    //Codec.DEBUG = true;
     Directory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
@@ -1750,7 +1724,6 @@ public class TestIndexReader extends LuceneTestCase
     } catch (IllegalStateException ise) {
       // expected
     }
-    assertFalse(((SegmentReader) r.getSequentialSubReaders()[0]).termsIndexLoaded());
 
     assertEquals(-1, ((SegmentReader) r.getSequentialSubReaders()[0]).getTermInfosIndexDivisor());
     writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
@@ -1763,10 +1736,13 @@ public class TestIndexReader extends LuceneTestCase
     IndexReader[] subReaders = r2.getSequentialSubReaders();
     assertEquals(2, subReaders.length);
     for(int i=0;i<2;i++) {
-      assertFalse(((SegmentReader) subReaders[i]).termsIndexLoaded());
+      try {
+        subReaders[i].docFreq(new Term("field", "f"));
+        fail("did not hit expected exception");
+      } catch (IllegalStateException ise) {
+        // expected
+      }
     }
-    r2.close();
-    dir.close();
   }
 
   // LUCENE-2046

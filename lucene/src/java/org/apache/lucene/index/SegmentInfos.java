@@ -23,6 +23,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.ChecksumIndexOutput;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.NoSuchDirectoryException;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 import java.io.FileNotFoundException;
@@ -88,9 +89,13 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
   /** This format adds optional per-segment String
    *  diagnostics storage, and switches userData to Map */
   public static final int FORMAT_DIAGNOSTICS = -9;
+  
+  /** Each segment records whether its postings are written
+   *  in the new flex format */
+  public static final int FORMAT_FLEX_POSTINGS = -10;
 
   /* This must always point to the most recent file format. */
-  static final int CURRENT_FORMAT = FORMAT_DIAGNOSTICS;
+  static final int CURRENT_FORMAT = FORMAT_FLEX_POSTINGS;
   
   public int counter = 0;    // used to name new segments
   /**
@@ -228,7 +233,8 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public final void read(Directory directory, String segmentFileName) throws CorruptIndexException, IOException {
+  public final void read(Directory directory, String segmentFileName, 
+                         CodecProvider codecs) throws CorruptIndexException, IOException {
     boolean success = false;
 
     // Clear any previous segments:
@@ -254,7 +260,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
       }
       
       for (int i = input.readInt(); i > 0; i--) { // read segmentInfos
-        add(new SegmentInfo(directory, format, input));
+        add(new SegmentInfo(directory, format, input, codecs));
       }
       
       if(format >= 0){    // in old format the version number may be at the end of the file
@@ -301,14 +307,17 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    * @throws IOException if there is a low-level IO error
    */
   public final void read(Directory directory) throws CorruptIndexException, IOException {
-
+    read(directory, CodecProvider.getDefault());
+  }
+  
+  public final void read(Directory directory, final CodecProvider codecs) throws CorruptIndexException, IOException {
     generation = lastGeneration = -1;
 
     new FindSegmentsFile(directory) {
 
       @Override
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
-        read(directory, segmentFileName);
+        read(directory, segmentFileName, codecs);
         return null;
       }
     }.run();
@@ -375,9 +384,11 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
   public Object clone() {
     SegmentInfos sis = (SegmentInfos) super.clone();
     for(int i=0;i<sis.size();i++) {
-      sis.set(i, (SegmentInfo) sis.info(i).clone());
+      final SegmentInfo info = sis.info(i);
+      assert info.getCodec() != null;
+      sis.set(i, (SegmentInfo) info.clone());
     }
-    sis.userData = new HashMap<String, String>(userData);
+    sis.userData = new HashMap<String,String>(userData);
     return sis;
   }
 
@@ -399,7 +410,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static long readCurrentVersion(Directory directory)
+  public static long readCurrentVersion(Directory directory, final CodecProvider codecs)
     throws CorruptIndexException, IOException {
 
     // Fully read the segments file: this ensures that it's
@@ -417,10 +428,10 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public static Map<String,String> readCurrentUserData(Directory directory)
+  public static Map<String,String> readCurrentUserData(Directory directory, CodecProvider codecs)
     throws CorruptIndexException, IOException {
     SegmentInfos sis = new SegmentInfos();
-    sis.read(directory);
+    sis.read(directory, codecs);
     return sis.getUserData();
   }
 

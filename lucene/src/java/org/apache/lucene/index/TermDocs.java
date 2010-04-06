@@ -27,8 +27,10 @@ import java.io.Closeable;
  ordered by document number.
 
  @see IndexReader#termDocs()
- */
+ @deprecated Use {@link DocsEnum} instead
+*/
 
+@Deprecated
 public interface TermDocs extends Closeable {
   /** Sets this to the data for a term.
    * The enumeration is reset to the start of the data for this term.

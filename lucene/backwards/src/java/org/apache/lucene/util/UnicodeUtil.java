@@ -106,6 +106,10 @@ final public class UnicodeUtil {
     }
   }
 
+  // stubs for tests only
+  public static void UTF16toUTF8(char[] source, int offset, int length, BytesRef result) {}
+  public static void UTF16toUTF8(CharSequence s, int offset, int length, BytesRef result) {}
+
   /** Encode characters from a char[] source, starting at
    *  offset and stopping when the character 0xffff is seen.
    *  Returns the number of bytes written to bytesOut. */
@@ -223,7 +227,7 @@ final public class UnicodeUtil {
   /** Encode characters from this String, starting at offset
    *  for length characters.  Returns the number of bytes
    *  written to bytesOut. */
-  public static void UTF16toUTF8(final String s, final int offset, final int length, UTF8Result result) {
+  public static void UTF16toUTF8(final CharSequence s, final int offset, final int length, UTF8Result result) {
     final int end = offset + length;
 
     byte[] out = result.result;

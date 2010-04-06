@@ -31,8 +31,9 @@ import java.io.IOException;
  * Class for accessing a compound stream.
  * This class implements a directory, but is limited to only read operations.
  * Directory methods that would normally modify data throw an exception.
+ * @lucene.experimental
  */
-class CompoundFileReader extends Directory {
+public class CompoundFileReader extends Directory {
 
     private int readBufferSize;
 

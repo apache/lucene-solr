@@ -56,13 +56,13 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     SegmentReader reader = SegmentReader.get(true, info, indexDivisor);
     assertTrue(reader != null);
     assertEquals(indexDivisor, reader.getTermInfosIndexDivisor());
-    SegmentTermDocs segTermDocs = new SegmentTermDocs(reader);
-    segTermDocs.seek(new Term(DocHelper.TEXT_FIELD_2_KEY, "field"));
-    if (segTermDocs.next() == true)
-    {
-      int docId = segTermDocs.doc();
+    TermDocs termDocs = reader.termDocs();
+    assertTrue(termDocs != null);
+    termDocs.seek(new Term(DocHelper.TEXT_FIELD_2_KEY, "field"));
+    if (termDocs.next() == true)    {
+      int docId = termDocs.doc();
       assertTrue(docId == 0);
-      int freq = segTermDocs.freq();
+      int freq = termDocs.freq();
       assertTrue(freq == 3);  
     }
     reader.close();
@@ -77,18 +77,20 @@ public class TestSegmentTermDocs extends LuceneTestCase {
       //After adding the document, we should be able to read it back in
       SegmentReader reader = SegmentReader.get(true, info, indexDivisor);
       assertTrue(reader != null);
-      SegmentTermDocs segTermDocs = new SegmentTermDocs(reader);
-      segTermDocs.seek(new Term("textField2", "bad"));
-      assertTrue(segTermDocs.next() == false);
+      TermDocs termDocs = reader.termDocs();
+      assertTrue(termDocs != null);
+      termDocs.seek(new Term("textField2", "bad"));
+      assertTrue(termDocs.next() == false);
       reader.close();
     }
     {
       //After adding the document, we should be able to read it back in
       SegmentReader reader = SegmentReader.get(true, info, indexDivisor);
       assertTrue(reader != null);
-      SegmentTermDocs segTermDocs = new SegmentTermDocs(reader);
-      segTermDocs.seek(new Term("junk", "bad"));
-      assertTrue(segTermDocs.next() == false);
+      TermDocs termDocs = reader.termDocs();
+      assertTrue(termDocs != null);
+      termDocs.seek(new Term("junk", "bad"));
+      assertTrue(termDocs.next() == false);
       reader.close();
     }
   }

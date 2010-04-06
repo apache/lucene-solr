@@ -205,8 +205,10 @@ public class MockRAMDirectory extends RAMDirectory {
     if (crashed)
       throw new IOException("cannot createOutput after crash");
     init();
-    if (preventDoubleWrite && createdFiles.contains(name) && !name.equals("segments.gen"))
-      throw new IOException("file \"" + name + "\" was already written to");
+    synchronized(this) {
+      if (preventDoubleWrite && createdFiles.contains(name) && !name.equals("segments.gen"))
+        throw new IOException("file \"" + name + "\" was already written to");
+    }
     if (noDeleteOpenFile && openFiles.containsKey(name))
       throw new IOException("MockRAMDirectory: file \"" + name + "\" is still open: cannot overwrite");
     RAMFile file = new RAMFile(this);

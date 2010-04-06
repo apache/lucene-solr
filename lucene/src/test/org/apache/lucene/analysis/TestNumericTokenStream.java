@@ -17,8 +17,9 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 public class TestNumericTokenStream extends BaseTokenStreamTestCase {
@@ -29,27 +30,47 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
   public void testLongStream() throws Exception {
     final NumericTokenStream stream=new NumericTokenStream().setLongValue(lvalue);
     // use getAttribute to test if attributes really exist, if not an IAE will be throwed
-    final TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
+    final TermToBytesRefAttribute bytesAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     final TypeAttribute typeAtt = stream.getAttribute(TypeAttribute.class);
+    final NumericTokenStream.NumericTermAttribute numericAtt = stream.getAttribute(NumericTokenStream.NumericTermAttribute.class);
+    final BytesRef bytes = new BytesRef();
+    stream.reset();
+    assertEquals(64, numericAtt.getValueSize());
+    assertEquals(lvalue, numericAtt.getRawValue());
     for (int shift=0; shift<64; shift+=NumericUtils.PRECISION_STEP_DEFAULT) {
       assertTrue("New token is available", stream.incrementToken());
-      assertEquals("Term is correctly encoded", NumericUtils.longToPrefixCoded(lvalue, shift), termAtt.term());
-      assertEquals("Type correct", (shift == 0) ? NumericTokenStream.TOKEN_TYPE_FULL_PREC : NumericTokenStream.TOKEN_TYPE_LOWER_PREC, typeAtt.type());
+      assertEquals("Shift value wrong", shift, numericAtt.getShift());
+      final int hash = bytesAtt.toBytesRef(bytes);
+      assertEquals("Hash incorrect", bytes.hashCode(), hash);
+      assertEquals("Term is incorrectly encoded", lvalue & ~((1L << shift) - 1L), NumericUtils.prefixCodedToLong(bytes));
+      assertEquals("Type incorrect", (shift == 0) ? NumericTokenStream.TOKEN_TYPE_FULL_PREC : NumericTokenStream.TOKEN_TYPE_LOWER_PREC, typeAtt.type());
     }
-    assertFalse("No more tokens available", stream.incrementToken());
+    assertFalse("More tokens available", stream.incrementToken());
+    stream.end();
+    stream.close();
   }
 
   public void testIntStream() throws Exception {
     final NumericTokenStream stream=new NumericTokenStream().setIntValue(ivalue);
     // use getAttribute to test if attributes really exist, if not an IAE will be throwed
-    final TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
+    final TermToBytesRefAttribute bytesAtt = stream.getAttribute(TermToBytesRefAttribute.class);
     final TypeAttribute typeAtt = stream.getAttribute(TypeAttribute.class);
+    final NumericTokenStream.NumericTermAttribute numericAtt = stream.getAttribute(NumericTokenStream.NumericTermAttribute.class);
+    final BytesRef bytes = new BytesRef();
+    stream.reset();
+    assertEquals(32, numericAtt.getValueSize());
+    assertEquals(ivalue, numericAtt.getRawValue());
     for (int shift=0; shift<32; shift+=NumericUtils.PRECISION_STEP_DEFAULT) {
       assertTrue("New token is available", stream.incrementToken());
-      assertEquals("Term is correctly encoded", NumericUtils.intToPrefixCoded(ivalue, shift), termAtt.term());
-      assertEquals("Type correct", (shift == 0) ? NumericTokenStream.TOKEN_TYPE_FULL_PREC : NumericTokenStream.TOKEN_TYPE_LOWER_PREC, typeAtt.type());
+      assertEquals("Shift value wrong", shift, numericAtt.getShift());
+      final int hash = bytesAtt.toBytesRef(bytes);
+      assertEquals("Hash incorrect", bytes.hashCode(), hash);
+      assertEquals("Term is incorrectly encoded", ivalue & ~((1 << shift) - 1), NumericUtils.prefixCodedToInt(bytes));
+      assertEquals("Type incorrect", (shift == 0) ? NumericTokenStream.TOKEN_TYPE_FULL_PREC : NumericTokenStream.TOKEN_TYPE_LOWER_PREC, typeAtt.type());
     }
-    assertFalse("No more tokens available", stream.incrementToken());
+    assertFalse("More tokens available", stream.incrementToken());
+    stream.end();
+    stream.close();
   }
   
   public void testNotInitialized() throws Exception {

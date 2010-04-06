@@ -23,6 +23,7 @@ import java.util.*;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
@@ -80,12 +81,12 @@ public class PHPSerializedResponseWriter implements QueryResponseWriter {
 
 class PHPSerializedWriter extends JSONWriter {
   final private boolean CESU8;
-  final UnicodeUtil.UTF8Result utf8;
+  final BytesRef utf8;
 
   public PHPSerializedWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp, boolean CESU8) {
     super(writer, req, rsp);
     this.CESU8 = CESU8;
-    this.utf8 = CESU8 ? null : new UnicodeUtil.UTF8Result();
+    this.utf8 = CESU8 ? null : new BytesRef(10);
     // never indent serialized PHP data
     doIndent = false;
   }

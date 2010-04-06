@@ -1,5 +1,79 @@
 Lucene Change Log
 
+======================= Flexible Indexing Branch =======================
+
+Changes in backwards compatibility policy
+
+* LUCENE-1458, LUCENE-2111, LUCENE-2354: Changes from flexible indexing:
+
+  - MultiReader ctor now throws IOException
+
+  - Directory.copy/Directory.copyTo now copies all files (not just
+    index files), since what is and isn't and index file is now
+    dependent on the codecs used. (Mike McCandless)
+
+  - UnicodeUtil now uses BytesRef for UTF-8 output, and some method
+    signatures have changed to CharSequence.  These are internal APIs
+    and subject to change suddenly.  (Robert Muir, Mike McCandless)
+
+  - Positional queries (PhraseQuery, *SpanQuery) will now throw an
+    exception if use them on a field that omits positions during
+    indexing (previously they silently returned no results).
+
+  - FieldCache.(Byte,Short,Int,Long,Float,Double}Parser's API has
+    changed -- each parse method now takes a BytesRef instead of a
+    String.  If you have an existing Parser, a simple way to fix it is
+    invoke BytesRef.utf8ToString, and pass that String to your
+    existing parser.  This will work, but performance would be better
+    if you could fix your parser to instead operate directly on the
+    byte[] in the BytesRef.
+
+  - The internal (experimental) API of NumericUtils changed completely
+    from String to BytesRef. Client code should never use this class,
+    so the change would normally not affect you. If you used some of
+    the methods to inspect terms or create TermQueries out of
+    prefix encoded terms, change to use BytesRef. Please note:
+    Do not use TermQueries to search for single numeric terms.
+    The recommended way is to create a corresponding NumericRangeQuery
+    with upper and lower bound equal and included. TermQueries do not
+    score correct, so the constant score mode of NRQ is the only
+    correct way to handle single value queries.
+  
+  - NumericTokenStream now works directly on byte[] terms. If you
+    plug a TokenFilter on top of this stream, you will likely get
+    an IllegalArgumentException, because the NTS does not support
+    TermAttribute/CharTermAttribute. If you want to further filter
+    or attach Payloads to NTS, use the new NumericTermAttribute.
+
+Bug Fixes
+
+* LUCENE-2222: FixedIntBlockIndexInput incorrectly read one block of
+  0s before the actual data.  (Renaud Delbru via Mike McCandless)
+
+* LUCENE-2344: PostingsConsumer.merge was failing to call finishDoc,
+  which caused corruption for sep codec.  Also fixed several tests to
+  test all 4 core codecs.  (Renaud Delbru via Mike McCandless)
+  
+New features
+
+* LUCENE-1606, LUCENE-2089: Adds AutomatonQuery, a MultiTermQuery that 
+  matches terms against a finite-state machine. Implement WildcardQuery
+  and FuzzyQuery with finite-state methods. Adds RegexpQuery.
+  (Robert Muir, Mike McCandless, Uwe Schindler, Mark Miller)
+
+* LUCENE-1990: Adds internal packed ints implementation, to be used
+  for more efficient storage of int arrays when the values are
+  bounded, for example for storing the terms dict index Toke Toke
+  Eskildsen via Mike McCandless)
+
+* LUCENE-2321: Cutover to a more RAM efficient packed-ints based
+  representation for the in-memory terms dict index.  (Mike
+  McCandless)
+
+* LUCENE-2126: Add new classes for data (de)serialization: DataInput
+  and DataOutput.  IndexInput and IndexOutput extend these new classes.
+  (Michael Busch)
+
 ======================= Trunk (not yet released) =======================
 
 Changes in backwards compatibility policy
@@ -297,8 +371,8 @@ Optimizations
 Build
 
 * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
-  into core, and moved the ICU-based collation support into contrib/icu.  
-  (Robert Muir)
+   into core, and moved the ICU-based collation support into contrib/icu.  
+   (Robert Muir)
 
 * LUCENE-2326: Removed SVN checkouts for backwards tests. The backwards branch
   is now included in the svn repository using "svn copy" after release.

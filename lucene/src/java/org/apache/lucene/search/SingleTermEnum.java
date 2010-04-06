@@ -29,6 +29,7 @@ import org.apache.lucene.index.Term;
  * but want to preserve MultiTermQuery semantics such as
  * {@link MultiTermQuery#rewriteMethod}.
  */
+@Deprecated
 public class SingleTermEnum extends FilteredTermEnum {
   private Term singleTerm;
   private boolean endEnum = false;

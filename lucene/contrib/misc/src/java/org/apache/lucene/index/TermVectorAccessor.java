@@ -1,10 +1,5 @@
 package org.apache.lucene.index;
 
-import org.apache.lucene.util.StringHelper;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 /*
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,6 +14,14 @@ import java.util.List;
  *  limitations under the License.
  *
  */
+
+import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 
 /**
@@ -97,40 +100,53 @@ public class TermVectorAccessor {
       positions.clear();
     }
 
-    TermEnum termEnum = indexReader.terms(new Term(field, ""));
-    if (termEnum.term() != null) {
-      while (termEnum.term().field() == field) {
-        TermPositions termPositions = indexReader.termPositions(termEnum.term());
-        if (termPositions.skipTo(documentNumber)) {
-  
-          frequencies.add(Integer.valueOf(termPositions.freq()));
-          tokens.add(termEnum.term().text());
-  
-  
+    final Bits delDocs = MultiFields.getDeletedDocs(indexReader);
+
+    Terms terms = MultiFields.getTerms(indexReader, field);
+    boolean anyTerms = false;
+    if (terms != null) {
+      TermsEnum termsEnum = terms.iterator();
+      DocsEnum docs = null;
+      DocsAndPositionsEnum postings = null;
+      while(true) {
+        BytesRef text = termsEnum.next();
+        if (text != null) {
+          anyTerms = true;
           if (!mapper.isIgnoringPositions()) {
-            int[] positions = new int[termPositions.freq()];
-            for (int i = 0; i < positions.length; i++) {
-              positions[i] = termPositions.nextPosition();
-            }
-            this.positions.add(positions);
+            docs = postings = termsEnum.docsAndPositions(delDocs, postings);
           } else {
-            positions.add(null);
+            docs = termsEnum.docs(delDocs, docs);
           }
-        }
-        termPositions.close();
-        if (!termEnum.next()) {
+
+          int docID = docs.advance(documentNumber);
+          if (docID == documentNumber) {
+
+            frequencies.add(Integer.valueOf(docs.freq()));
+            tokens.add(text.utf8ToString());
+
+            if (!mapper.isIgnoringPositions()) {
+              int[] positions = new int[docs.freq()];
+              for (int i = 0; i < positions.length; i++) {
+                positions[i] = postings.nextPosition();
+              }
+              this.positions.add(positions);
+            } else {
+              positions.add(null);
+            }
+          }
+        } else {
           break;
         }
       }
-      mapper.setDocumentNumber(documentNumber);
-      mapper.setExpectations(field, tokens.size(), false, !mapper.isIgnoringPositions());
-      for (int i = 0; i < tokens.size(); i++) {
-        mapper.map(tokens.get(i), frequencies.get(i).intValue(), (TermVectorOffsetInfo[]) null, positions.get(i));
+
+      if (anyTerms) {
+        mapper.setDocumentNumber(documentNumber);
+        mapper.setExpectations(field, tokens.size(), false, !mapper.isIgnoringPositions());
+        for (int i = 0; i < tokens.size(); i++) {
+          mapper.map(tokens.get(i), frequencies.get(i).intValue(), (TermVectorOffsetInfo[]) null, positions.get(i));
+        }
       }
     }
-    termEnum.close();
-
-
   }
 
 

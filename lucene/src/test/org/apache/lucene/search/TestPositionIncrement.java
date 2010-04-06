@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopFilter;
@@ -60,6 +61,8 @@ import org.apache.lucene.util.LuceneTestCase;
  * @version $Revision$
  */
 public class TestPositionIncrement extends LuceneTestCase {
+
+  final static boolean VERBOSE = false;
 
   public void testSetPosition() throws Exception {
     Analyzer analyzer = new Analyzer() {
@@ -242,8 +245,8 @@ public class TestPositionIncrement extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
     Document doc = new Document();
-    doc.add(new Field("content",
-                      new StringReader("a a b c d e a f g h i j a b k k")));
+    doc.add(new Field("content", new StringReader(
+        "a a b c d e a f g h i j a b k k")));
     writer.addDocument(doc);
 
     IndexReader r = writer.getReader();
@@ -271,30 +274,43 @@ public class TestPositionIncrement extends LuceneTestCase {
 
     count = 0;
     boolean sawZero = false;
-    //System.out.println("\ngetPayloadSpans test");
+    if (VERBOSE) {
+      System.out.println("\ngetPayloadSpans test");
+    }
     Spans pspans = snq.getSpans(is.getIndexReader());
     while (pspans.next()) {
-      //System.out.println(pspans.doc() + " - " + pspans.start() + " - "+ pspans.end());
+      if (VERBOSE) {
+        System.out.println("doc " + pspans.doc() + ": span " + pspans.start()
+            + " to " + pspans.end());
+      }
       Collection<byte[]> payloads = pspans.getPayload();
       sawZero |= pspans.start() == 0;
-      count += payloads.size();
+      for (@SuppressWarnings("unused") byte[] bytes : payloads) {
+        count++;
+        if (!VERBOSE) {
+          // do nothing
+        } else {
+          System.out.println("  payload: " + new String((byte[]) bytes));
+        }
+      }
     }
     assertEquals(5, count);
     assertTrue(sawZero);
 
-    //System.out.println("\ngetSpans test");
+    // System.out.println("\ngetSpans test");
     Spans spans = snq.getSpans(is.getIndexReader());
     count = 0;
     sawZero = false;
     while (spans.next()) {
       count++;
       sawZero |= spans.start() == 0;
-      //System.out.println(spans.doc() + " - " + spans.start() + " - " + spans.end());
+      // System.out.println(spans.doc() + " - " + spans.start() + " - " +
+      // spans.end());
     }
     assertEquals(4, count);
     assertTrue(sawZero);
-  
-    //System.out.println("\nPayloadSpanUtil test");
+
+    // System.out.println("\nPayloadSpanUtil test");
 
     sawZero = false;
     PayloadSpanUtil psu = new PayloadSpanUtil(is.getIndexReader());
@@ -355,7 +371,9 @@ class PayloadFilter extends TokenFilter {
       }
       posIncrAttr.setPositionIncrement(posIncr);
       pos += posIncr;
-      // System.out.println("term=" + termAttr.term() + " pos=" + pos);
+      if (TestPositionIncrement.VERBOSE) {
+        System.out.println("term=" + termAttr.term() + " pos=" + pos);
+      }
       i++;
       return true;
     } else {

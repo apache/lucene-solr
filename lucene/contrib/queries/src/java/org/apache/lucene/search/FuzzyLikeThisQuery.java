@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -172,8 +172,8 @@ public class FuzzyLikeThisQuery extends Query
      * Adds user input for "fuzzification" 
      * @param queryString The string which will be parsed by the analyzer and for which fuzzy variants will be parsed
      * @param fieldName
-     * @param minSimilarity The minimum similarity of the term variants (see FuzzyTermEnum)
-     * @param prefixLength Length of required common prefix on variant terms (see FuzzyTermEnum)
+     * @param minSimilarity The minimum similarity of the term variants (see FuzzyTermsEnum)
+     * @param prefixLength Length of required common prefix on variant terms (see FuzzyTermsEnum)
      */
     public void addTerms(String queryString, String fieldName,float minSimilarity, int prefixLength) 
     {
@@ -195,48 +195,44 @@ public class FuzzyLikeThisQuery extends Query
                 String term = termAtt.term();
         	if(!processedTerms.contains(term))
         	{
-        		processedTerms.add(term);
-                ScoreTermQueue variantsQ=new ScoreTermQueue(MAX_VARIANTS_PER_TERM); //maxNum variants considered for any one term
-                float minScore=0;
-                Term startTerm=internSavingTemplateTerm.createTerm(term);
-                FuzzyTermEnum fe=new FuzzyTermEnum(reader,startTerm,f.minSimilarity,f.prefixLength);
-                TermEnum origEnum = reader.terms(startTerm);
-                int df=0;
-                if(startTerm.equals(origEnum.term()))
-                {
-                    df=origEnum.docFreq(); //store the df so all variants use same idf
-                }
-                int numVariants=0;
-                int totalVariantDocFreqs=0;
-                do
-                {
-                    Term possibleMatch=fe.term();
-                    if(possibleMatch!=null)
-                    {
-    	                numVariants++;
-    	                totalVariantDocFreqs+=fe.docFreq();
-    	                float score=fe.difference();
-    	                if(variantsQ.size() < MAX_VARIANTS_PER_TERM || score > minScore){
-    	                    ScoreTerm st=new ScoreTerm(possibleMatch,score,startTerm);                    
-    	                    variantsQ.insertWithOverflow(st);
-    	                    minScore = variantsQ.top().score; // maintain minScore
-    	                }
+                  processedTerms.add(term);
+                  ScoreTermQueue variantsQ=new ScoreTermQueue(MAX_VARIANTS_PER_TERM); //maxNum variants considered for any one term
+                  float minScore=0;
+                  Term startTerm=internSavingTemplateTerm.createTerm(term);
+                  FuzzyTermsEnum fe = new FuzzyTermsEnum(reader, startTerm, f.minSimilarity, f.prefixLength);
+                  //store the df so all variants use same idf
+                  int df = reader.docFreq(startTerm);
+                  int numVariants=0;
+                  int totalVariantDocFreqs=0;
+                  BytesRef possibleMatch;
+                  MultiTermQuery.BoostAttribute boostAtt =
+                    fe.attributes().addAttribute(MultiTermQuery.BoostAttribute.class);
+                  while ((possibleMatch = fe.next()) != null) {
+                      if (possibleMatch!=null) {
+                        numVariants++;
+                        totalVariantDocFreqs+=fe.docFreq();
+                        float score=boostAtt.getBoost();
+                        if (variantsQ.size() < MAX_VARIANTS_PER_TERM || score > minScore){
+                          ScoreTerm st=new ScoreTerm(new Term(startTerm.field(), possibleMatch.utf8ToString()),score,startTerm);                    
+                          variantsQ.insertWithOverflow(st);
+                          minScore = variantsQ.top().score; // maintain minScore
+                        }
+                      }
                     }
-                }
-                while(fe.next());
-                if(numVariants>0)
-                {
-	                int avgDf=totalVariantDocFreqs/numVariants;
-	                if(df==0)//no direct match we can use as df for all variants 
+
+                  if(numVariants>0)
+                    {
+                      int avgDf=totalVariantDocFreqs/numVariants;
+                      if(df==0)//no direct match we can use as df for all variants 
 	                {
 	                    df=avgDf; //use avg df of all variants
 	                }
 	                
-	                // take the top variants (scored by edit distance) and reset the score
-	                // to include an IDF factor then add to the global queue for ranking 
-	                // overall top query terms
-	                int size = variantsQ.size();
-	                for(int i = 0; i < size; i++)
+                    // take the top variants (scored by edit distance) and reset the score
+                    // to include an IDF factor then add to the global queue for ranking 
+                    // overall top query terms
+                    int size = variantsQ.size();
+                    for(int i = 0; i < size; i++)
 	                {
 	                  ScoreTerm st = variantsQ.pop();
 	                  st.score=(st.score*st.score)*sim.idf(df,corpusNumDocs);

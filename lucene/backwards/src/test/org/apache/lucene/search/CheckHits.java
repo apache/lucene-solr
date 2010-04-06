@@ -33,7 +33,7 @@ public class CheckHits {
    * different  order of operations from the actual scoring method ...
    * this allows for a small amount of variation
    */
-  public static float EXPLAIN_SCORE_TOLERANCE_DELTA = 0.00005f;
+  public static float EXPLAIN_SCORE_TOLERANCE_DELTA = 0.0002f;
     
   /**
    * Tests that all documents up to maxDoc which are *not* in the

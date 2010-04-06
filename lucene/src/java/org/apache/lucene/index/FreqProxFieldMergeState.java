@@ -18,6 +18,8 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Comparator;
+import org.apache.lucene.util.BytesRef;
 
 import org.apache.lucene.index.FreqProxTermsWriterPerField.FreqProxPostingsArray;
 
@@ -31,13 +33,12 @@ final class FreqProxFieldMergeState {
 
   final FreqProxTermsWriterPerField field;
   final int numPostings;
-  final CharBlockPool charPool;
+  private final ByteBlockPool bytePool;
   final int[] termIDs;
   final FreqProxPostingsArray postings;
   int currentTermID;
   
-  char[] text;
-  int textOffset;
+  final BytesRef text = new BytesRef();
 
   private int postingUpto = -1;
 
@@ -47,29 +48,31 @@ final class FreqProxFieldMergeState {
   int docID;
   int termFreq;
 
-  public FreqProxFieldMergeState(FreqProxTermsWriterPerField field) {
+  public FreqProxFieldMergeState(FreqProxTermsWriterPerField field, Comparator<BytesRef> termComp) {
     this.field = field;
-    this.charPool = field.perThread.termsHashPerThread.charPool;
     this.numPostings = field.termsHashPerField.numPostings;
-    this.termIDs = field.termsHashPerField.sortPostings();
+    this.bytePool = field.perThread.termsHashPerThread.bytePool;
+    this.termIDs = field.termsHashPerField.sortPostings(termComp);
     this.postings = (FreqProxPostingsArray) field.termsHashPerField.postingsArray;
   }
 
   boolean nextTerm() throws IOException {
     postingUpto++;
-    if (postingUpto == numPostings)
+    if (postingUpto == numPostings) {
       return false;
+    }
 
     currentTermID = termIDs[postingUpto];
     docID = 0;
 
+    // Get BytesRef
     final int textStart = postings.textStarts[currentTermID];
-    text = charPool.buffers[textStart >> DocumentsWriter.CHAR_BLOCK_SHIFT];
-    textOffset = textStart & DocumentsWriter.CHAR_BLOCK_MASK;
+    bytePool.setBytesRef(text, textStart);
 
     field.termsHashPerField.initReader(freq, currentTermID, 0);
-    if (!field.fieldInfo.omitTermFreqAndPositions)
+    if (!field.fieldInfo.omitTermFreqAndPositions) {
       field.termsHashPerField.initReader(prox, currentTermID, 1);
+    }
 
     // Should always be true
     boolean result = nextDoc();

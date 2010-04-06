@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.index.DocumentsWriter.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
@@ -81,6 +82,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     assertEquals(IndexWriterConfig.DEFAULT_READER_POOLING, conf.getReaderPooling());
     assertTrue(DocumentsWriter.defaultIndexingChain == conf.getIndexingChain());
     assertNull(conf.getMergedSegmentWarmer());
+    assertEquals(IndexWriterConfig.DEFAULT_CODEC_PROVIDER, CodecProvider.getDefault());
     assertEquals(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES, conf.getMaxThreadStates());
     assertEquals(LogByteSizeMergePolicy.class, conf.getMergePolicy().getClass());
     
@@ -101,6 +103,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     getters.add("getMaxBufferedDocs");
     getters.add("getIndexingChain");
     getters.add("getMergedSegmentWarmer");
+    getters.add("getCodecProvider");
     getters.add("getMergePolicy");
     getters.add("getMaxThreadStates");
     getters.add("getReaderPooling");

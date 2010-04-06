@@ -64,14 +64,14 @@ import org.apache.lucene.util.AttributeImpl;
   implementing the {@link TokenStream#incrementToken()} API.
   Failing that, to create a new Token you should first use
   one of the constructors that starts with null text.  To load
-  the token from a char[] use {@link #setTermBuffer(char[], int, int)}.
-  To load from a String use {@link #setTermBuffer(String)} or {@link #setTermBuffer(String, int, int)}.
-  Alternatively you can get the Token's termBuffer by calling either {@link #termBuffer()},
+  the token from a char[] use {@link #copyBuffer(char[], int, int)}.
+  To load from a String use {@link #setEmpty} followed by {@link #append(CharSequence)} or {@link #append(CharSequence, int, int)}.
+  Alternatively you can get the Token's termBuffer by calling either {@link #buffer()},
   if you know that your text is shorter than the capacity of the termBuffer
-  or {@link #resizeTermBuffer(int)}, if there is any possibility
+  or {@link #resizeBuffer(int)}, if there is any possibility
   that you may need to grow the buffer. Fill in the characters of your term into this
   buffer, with {@link String#getChars(int, int, char[], int)} if loading from a string,
-  or with {@link System#arraycopy(Object, int, Object, int, int)}, and finally call {@link #setTermLength(int)} to
+  or with {@link System#arraycopy(Object, int, Object, int, int)}, and finally call {@link #setLength(int)} to
   set the length of the term text.  See <a target="_top"
   href="https://issues.apache.org/jira/browse/LUCENE-969">LUCENE-969</a>
   for details.</p>
@@ -100,7 +100,7 @@ import org.apache.lucene.util.AttributeImpl;
   </li>
   <li> Copying from one one Token to another (type is reset to {@link #DEFAULT_TYPE} if not specified):<br/>
   <pre>
-    return reusableToken.reinit(source.termBuffer(), 0, source.termLength(), source.startOffset(), source.endOffset()[, source.type()]);
+    return reusableToken.reinit(source.buffer(), 0, source.length(), source.startOffset(), source.endOffset()[, source.type()]);
   </pre>
   </li>
   </ul>
@@ -115,6 +115,7 @@ import org.apache.lucene.util.AttributeImpl;
 
   @see org.apache.lucene.index.Payload
 */
+// TODO: change superclass to CharTermAttribute in 4.0!
 public class Token extends TermAttributeImpl 
                    implements TypeAttribute, PositionIncrementAttribute,
                               FlagsAttribute, OffsetAttribute, PayloadAttribute {
@@ -172,7 +173,7 @@ public class Token extends TermAttributeImpl
    *  @param end end offset
    */
   public Token(String text, int start, int end) {
-    setTermBuffer(text);
+    append(text);
     startOffset = start;
     endOffset = end;
   }
@@ -187,7 +188,7 @@ public class Token extends TermAttributeImpl
    *  @param typ token type
    */
   public Token(String text, int start, int end, String typ) {
-    setTermBuffer(text);
+    append(text);
     startOffset = start;
     endOffset = end;
     type = typ;
@@ -204,7 +205,7 @@ public class Token extends TermAttributeImpl
    * @param flags token type bits
    */
   public Token(String text, int start, int end, int flags) {
-    setTermBuffer(text);
+    append(text);
     startOffset = start;
     endOffset = end;
     this.flags = flags;
@@ -221,7 +222,7 @@ public class Token extends TermAttributeImpl
    * @param end
    */
   public Token(char[] startTermBuffer, int termBufferOffset, int termBufferLength, int start, int end) {
-    setTermBuffer(startTermBuffer, termBufferOffset, termBufferLength);
+    copyBuffer(startTermBuffer, termBufferOffset, termBufferLength);
     startOffset = start;
     endOffset = end;
   }
@@ -270,7 +271,7 @@ public class Token extends TermAttributeImpl
     corresponding to this token in the source text.
 
     Note that the difference between endOffset() and startOffset() may not be
-    equal to {@link #termLength}, as the term text may have been altered by a
+    equal to {@link #length}, as the term text may have been altered by a
     stemmer or some other filter. */
   public final int startOffset() {
     return startOffset;
@@ -351,7 +352,7 @@ public class Token extends TermAttributeImpl
   @Override
   public String toString() {
     final StringBuilder sb = new StringBuilder();
-    sb.append('(').append(term()).append(',')
+    sb.append('(').append(super.toString()).append(',')
       .append(startOffset).append(',').append(endOffset);
     if (!"word".equals(type))
       sb.append(",type=").append(type);
@@ -387,7 +388,7 @@ public class Token extends TermAttributeImpl
   /** Makes a clone, but replaces the term buffer &
    * start/end offset in the process.  This is more
    * efficient than doing a full clone (and then calling
-   * setTermBuffer) because it saves a wasted copy of the old
+   * {@link #copyBuffer}) because it saves a wasted copy of the old
    * termBuffer. */
   public Token clone(char[] newTermBuffer, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset) {
     final Token t = new Token(newTermBuffer, newTermOffset, newTermLength, newStartOffset, newEndOffset);
@@ -442,16 +443,16 @@ public class Token extends TermAttributeImpl
   }
 
   /** Shorthand for calling {@link #clear},
-   *  {@link #setTermBuffer(char[], int, int)},
+   *  {@link #copyBuffer(char[], int, int)},
    *  {@link #setStartOffset},
    *  {@link #setEndOffset},
    *  {@link #setType}
    *  @return this Token instance */
   public Token reinit(char[] newTermBuffer, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset, String newType) {
     clearNoTermBuffer();
+    copyBuffer(newTermBuffer, newTermOffset, newTermLength);
     payload = null;
     positionIncrement = 1;
-    setTermBuffer(newTermBuffer, newTermOffset, newTermLength);
     startOffset = newStartOffset;
     endOffset = newEndOffset;
     type = newType;
@@ -459,14 +460,14 @@ public class Token extends TermAttributeImpl
   }
 
   /** Shorthand for calling {@link #clear},
-   *  {@link #setTermBuffer(char[], int, int)},
+   *  {@link #copyBuffer(char[], int, int)},
    *  {@link #setStartOffset},
    *  {@link #setEndOffset}
    *  {@link #setType} on Token.DEFAULT_TYPE
    *  @return this Token instance */
   public Token reinit(char[] newTermBuffer, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset) {
     clearNoTermBuffer();
-    setTermBuffer(newTermBuffer, newTermOffset, newTermLength);
+    copyBuffer(newTermBuffer, newTermOffset, newTermLength);
     startOffset = newStartOffset;
     endOffset = newEndOffset;
     type = DEFAULT_TYPE;
@@ -474,14 +475,14 @@ public class Token extends TermAttributeImpl
   }
 
   /** Shorthand for calling {@link #clear},
-   *  {@link #setTermBuffer(String)},
+   *  {@link #append(CharSequence)},
    *  {@link #setStartOffset},
    *  {@link #setEndOffset}
    *  {@link #setType}
    *  @return this Token instance */
   public Token reinit(String newTerm, int newStartOffset, int newEndOffset, String newType) {
-    clearNoTermBuffer();
-    setTermBuffer(newTerm);
+    clear();
+    append(newTerm);
     startOffset = newStartOffset;
     endOffset = newEndOffset;
     type = newType;
@@ -489,14 +490,14 @@ public class Token extends TermAttributeImpl
   }
 
   /** Shorthand for calling {@link #clear},
-   *  {@link #setTermBuffer(String, int, int)},
+   *  {@link #append(CharSequence, int, int)},
    *  {@link #setStartOffset},
    *  {@link #setEndOffset}
    *  {@link #setType}
    *  @return this Token instance */
   public Token reinit(String newTerm, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset, String newType) {
-    clearNoTermBuffer();
-    setTermBuffer(newTerm, newTermOffset, newTermLength);
+    clear();
+    append(newTerm, newTermOffset, newTermOffset + newTermLength);
     startOffset = newStartOffset;
     endOffset = newEndOffset;
     type = newType;
@@ -504,14 +505,14 @@ public class Token extends TermAttributeImpl
   }
 
   /** Shorthand for calling {@link #clear},
-   *  {@link #setTermBuffer(String)},
+   *  {@link #append(CharSequence)},
    *  {@link #setStartOffset},
    *  {@link #setEndOffset}
    *  {@link #setType} on Token.DEFAULT_TYPE
    *  @return this Token instance */
   public Token reinit(String newTerm, int newStartOffset, int newEndOffset) {
-    clearNoTermBuffer();
-    setTermBuffer(newTerm);
+    clear();
+    append(newTerm);
     startOffset = newStartOffset;
     endOffset = newEndOffset;
     type = DEFAULT_TYPE;
@@ -519,14 +520,14 @@ public class Token extends TermAttributeImpl
   }
 
   /** Shorthand for calling {@link #clear},
-   *  {@link #setTermBuffer(String, int, int)},
+   *  {@link #append(CharSequence, int, int)},
    *  {@link #setStartOffset},
    *  {@link #setEndOffset}
    *  {@link #setType} on Token.DEFAULT_TYPE
    *  @return this Token instance */
   public Token reinit(String newTerm, int newTermOffset, int newTermLength, int newStartOffset, int newEndOffset) {
-    clearNoTermBuffer();
-    setTermBuffer(newTerm, newTermOffset, newTermLength);
+    clear();
+    append(newTerm, newTermOffset, newTermOffset + newTermLength);
     startOffset = newStartOffset;
     endOffset = newEndOffset;
     type = DEFAULT_TYPE;
@@ -538,7 +539,7 @@ public class Token extends TermAttributeImpl
    * @param prototype
    */
   public void reinit(Token prototype) {
-    setTermBuffer(prototype.termBuffer(), 0, prototype.termLength());
+    copyBuffer(prototype.buffer(), 0, prototype.length());
     positionIncrement = prototype.positionIncrement;
     flags = prototype.flags;
     startOffset = prototype.startOffset;
@@ -553,7 +554,7 @@ public class Token extends TermAttributeImpl
    * @param newTerm
    */
   public void reinit(Token prototype, String newTerm) {
-    setTermBuffer(newTerm);
+    setEmpty().append(newTerm);
     positionIncrement = prototype.positionIncrement;
     flags = prototype.flags;
     startOffset = prototype.startOffset;
@@ -570,7 +571,7 @@ public class Token extends TermAttributeImpl
    * @param length
    */
   public void reinit(Token prototype, char[] newTermBuffer, int offset, int length) {
-    setTermBuffer(newTermBuffer, offset, length);
+    copyBuffer(newTermBuffer, offset, length);
     positionIncrement = prototype.positionIncrement;
     flags = prototype.flags;
     startOffset = prototype.startOffset;

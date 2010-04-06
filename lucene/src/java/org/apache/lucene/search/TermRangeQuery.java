@@ -21,6 +21,9 @@ import java.io.IOException;
 import java.text.Collator;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
@@ -41,7 +44,6 @@ public class TermRangeQuery extends MultiTermQuery {
   private String lowerTerm;
   private String upperTerm;
   private Collator collator;
-  private String field;
   private boolean includeLower;
   private boolean includeUpper;
 
@@ -104,7 +106,7 @@ public class TermRangeQuery extends MultiTermQuery {
    */
   public TermRangeQuery(String field, String lowerTerm, String upperTerm, boolean includeLower, boolean includeUpper,
                     Collator collator) {
-    this.field = field;
+    super(field);
     this.lowerTerm = lowerTerm;
     this.upperTerm = upperTerm;
     this.includeLower = includeLower;
@@ -112,9 +114,6 @@ public class TermRangeQuery extends MultiTermQuery {
     this.collator = collator;
   }
 
-  /** Returns the field name for this query */
-  public String getField() { return field; }
-  
   /** Returns the lower value of this range query */
   public String getLowerTerm() { return lowerTerm; }
 
@@ -130,10 +129,31 @@ public class TermRangeQuery extends MultiTermQuery {
   /** Returns the collator used to determine range inclusion, if any. */
   public Collator getCollator() { return collator; }
   
-  @Override
+  @Override @Deprecated
   protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
     return new TermRangeTermEnum(reader, field, lowerTerm,
         upperTerm, includeLower, includeUpper, collator);
+  }
+
+  @Override
+  protected TermsEnum getTermsEnum(IndexReader reader) throws IOException {
+    if (collator == null && lowerTerm != null && upperTerm != null && lowerTerm.compareTo(upperTerm) > 0) {
+      return TermsEnum.EMPTY;
+    }
+    if ((lowerTerm == null || (collator == null && includeLower && "".equals(lowerTerm))) && upperTerm == null) {
+      // NOTE: debateably, the caller should never pass in a
+      // multi reader...
+      final Terms terms = MultiFields.getTerms(reader, field);
+      return (terms != null) ? terms.iterator() : null;
+    }
+    return new TermRangeTermsEnum(reader, field,
+        lowerTerm, upperTerm, includeLower, includeUpper, collator);
+  }
+
+  /** @deprecated */
+  @Deprecated
+  public String field() {
+    return getField();
   }
 
   /** Prints a user-readable version of this query. */
@@ -158,7 +178,6 @@ public class TermRangeQuery extends MultiTermQuery {
     final int prime = 31;
     int result = super.hashCode();
     result = prime * result + ((collator == null) ? 0 : collator.hashCode());
-    result = prime * result + ((field == null) ? 0 : field.hashCode());
     result = prime * result + (includeLower ? 1231 : 1237);
     result = prime * result + (includeUpper ? 1231 : 1237);
     result = prime * result + ((lowerTerm == null) ? 0 : lowerTerm.hashCode());
@@ -179,11 +198,6 @@ public class TermRangeQuery extends MultiTermQuery {
       if (other.collator != null)
         return false;
     } else if (!collator.equals(other.collator))
-      return false;
-    if (field == null) {
-      if (other.field != null)
-        return false;
-    } else if (!field.equals(other.field))
       return false;
     if (includeLower != other.includeLower)
       return false;

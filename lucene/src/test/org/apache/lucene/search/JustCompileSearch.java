@@ -24,7 +24,8 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermPositions;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -202,7 +203,7 @@ final class JustCompileSearch {
   
   static final class JustCompileExtendedFieldCacheLongParser implements FieldCache.LongParser {
 
-    public long parseLong(String string) {
+    public long parseLong(BytesRef string) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
@@ -210,7 +211,7 @@ final class JustCompileSearch {
   
   static final class JustCompileExtendedFieldCacheDoubleParser implements FieldCache.DoubleParser {
     
-    public double parseDouble(String string) {
+    public double parseDouble(BytesRef term) {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
     
@@ -318,9 +319,9 @@ final class JustCompileSearch {
 
   static final class JustCompilePhraseScorer extends PhraseScorer {
 
-    JustCompilePhraseScorer(Weight weight, TermPositions[] tps, int[] offsets,
+    JustCompilePhraseScorer(Weight weight, DocsAndPositionsEnum[] docs, int[] offsets,
         Similarity similarity, byte[] norms) {
-      super(weight, tps, offsets, similarity, norms);
+      super(weight, docs, offsets, similarity, norms);
     }
 
     @Override

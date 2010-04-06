@@ -27,7 +27,10 @@ import org.apache.lucene.index.Term;
  *
  * <p>Term enumerations are always ordered by Term.compareTo().  Each term in
  * the enumeration is greater than all that precede it.
+ *
+ * @deprecated Please use {@link FuzzyTermsEnum} instead.
  */
+@Deprecated
 public final class FuzzyTermEnum extends FilteredTermEnum {
 
   /* Allows us save time required to create a new array
@@ -136,7 +139,8 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
     return false;
   }
   
-  /** {@inheritDoc} */
+  /** @deprecated Use {@link MultiTermQuery.BoostAttribute} together with {@link FuzzyTermsEnum} */
+  @Deprecated
   @Override
   public final float difference() {
     return (similarity - minimumSimilarity) * scale_factor;

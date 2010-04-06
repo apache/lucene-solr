@@ -32,8 +32,9 @@ import java.util.*;
  *  of this class are thread-safe for multiple readers, but only one thread can
  *  be adding documents at a time, with no other reader or writer threads
  *  accessing this object.
+ *  @lucene.experimental
  */
-final class FieldInfos {
+public final class FieldInfos {
 
   // Used internally (ie not written to *.fnm files) for pre-2.9 files
   public static final int FORMAT_PRE = -1;
@@ -120,7 +121,7 @@ final class FieldInfos {
   }
 
   /** Returns true if any fields do not omitTermFreqAndPositions */
-  boolean hasProx() {
+  public boolean hasProx() {
     final int numFields = byNumber.size();
     for(int i=0;i<numFields;i++) {
       final FieldInfo fi = fieldInfo(i);

@@ -28,8 +28,10 @@ import org.apache.lucene.util.ArrayUtil;
 /**
  * Allows you to iterate over the {@link TermPositions} for multiple {@link Term}s as
  * a single {@link TermPositions}.
- *
+ * @deprecated This class is being replaced by the package
+ * private MultiDocsEnum on org.apache.lucene.search.
  */
+@Deprecated
 public class MultipleTermPositions implements TermPositions {
 
   private static final class TermPositionsQueue extends PriorityQueue<TermPositions> {

@@ -31,7 +31,9 @@ import org.apache.lucene.util.StringHelper;
  * Term enumerations are always ordered by Term.compareTo().  Each term in
  * the enumeration is greater than all that precede it.
  * @since 2.9
+ * @deprecated Please switch to {@link TermRangeTermsEnum}
  */
+@Deprecated
 public class TermRangeTermEnum extends FilteredTermEnum {
 
   private Collator collator = null;

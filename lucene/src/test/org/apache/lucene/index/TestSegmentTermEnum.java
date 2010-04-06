@@ -67,14 +67,16 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     addDoc(writer, "aaa bbb");
     writer.close();
     SegmentReader reader = SegmentReader.getOnlySegmentReader(dir);
-    SegmentTermEnum termEnum = (SegmentTermEnum) reader.terms();
-    assertTrue(termEnum.next());
-    assertEquals("aaa", termEnum.term().text());
-    assertTrue(termEnum.next());
-    assertEquals("aaa", termEnum.prev().text());
-    assertEquals("bbb", termEnum.term().text());
-    assertFalse(termEnum.next());
-    assertEquals("bbb", termEnum.prev().text());
+    TermsEnum terms = reader.fields().terms("content").iterator();
+    assertNotNull(terms.next());
+    assertEquals("aaa", terms.term().utf8ToString());
+    assertNotNull(terms.next());
+    long ordB = terms.ord();
+    assertEquals("bbb", terms.term().utf8ToString());
+    assertNull(terms.next());
+
+    assertEquals(TermsEnum.SeekStatus.FOUND, terms.seek(ordB));
+    assertEquals("bbb", terms.term().utf8ToString());
   }
 
   private void verifyDocFreq()

@@ -37,11 +37,12 @@ import org.apache.lucene.benchmark.byTask.stats.TaskStats;
 import org.apache.lucene.collation.CollationKeyAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.FieldsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.TermFreqVector;
@@ -474,16 +475,20 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     IndexReader reader = IndexReader.open(benchmark.getRunData().getDirectory(), true);
     assertEquals(NUM_DOCS, reader.numDocs());
 
-    TermEnum terms = reader.terms();
-    TermDocs termDocs = reader.termDocs();
     int totalTokenCount2 = 0;
-    while(terms.next()) {
-      Term term = terms.term();
-      /* not-tokenized, but indexed field */
-      if (term != null && term.field() != DocMaker.ID_FIELD) { 
-        termDocs.seek(terms.term());
-        while (termDocs.next())
-          totalTokenCount2 += termDocs.freq();
+
+    FieldsEnum fields = MultiFields.getFields(reader).iterator();
+    String fieldName = null;
+    while((fieldName = fields.next()) != null) {
+      if (fieldName == DocMaker.ID_FIELD)
+        continue;
+      TermsEnum terms = fields.terms();
+      DocsEnum docs = null;
+      while(terms.next() != null) {
+        docs = terms.docs(MultiFields.getDeletedDocs(reader), docs);
+        while(docs.nextDoc() != docs.NO_MORE_DOCS) {
+          totalTokenCount2 += docs.freq();
+        }
       }
     }
     reader.close();

@@ -36,6 +36,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.index.codecs.CodecProvider;
 
 
 /** JUnit adaptation of an older test case DocTest. */
@@ -185,20 +186,24 @@ public class TestDoc extends LuceneTestCase {
       SegmentReader r1 = SegmentReader.get(true, si1, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
       SegmentReader r2 = SegmentReader.get(true, si2, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
 
-      SegmentMerger merger = new SegmentMerger(si1.dir, merged);
+      SegmentMerger merger = new SegmentMerger(si1.dir, IndexWriter.DEFAULT_TERM_INDEX_INTERVAL, merged, null, CodecProvider.getDefault());
 
       merger.add(r1);
       merger.add(r2);
       merger.merge();
       merger.closeReaders();
       
+      final SegmentInfo info = new SegmentInfo(merged, si1.docCount + si2.docCount, si1.dir,
+                                               useCompoundFile, true, -1, null, false, merger.hasProx(),
+                                               merger.getCodec());
+      
       if (useCompoundFile) {
-        List<String> filesToDelete = merger.createCompoundFile(merged + ".cfs");
+        List<String> filesToDelete = merger.createCompoundFile(merged + ".cfs", info);
         for (final String fileToDelete : filesToDelete) 
           si1.dir.deleteFile(fileToDelete);
       }
 
-      return new SegmentInfo(merged, si1.docCount + si2.docCount, si1.dir, useCompoundFile, true);
+      return info;
    }
 
 

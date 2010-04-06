@@ -21,6 +21,8 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 import java.util.zip.DataFormatException;
 import java.io.ByteArrayOutputStream;
+
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 
 /** Simple utility class providing static methods to
@@ -84,9 +86,9 @@ public class CompressionTools {
    *  compressionLevel (constants are defined in
    *  java.util.zip.Deflater). */
   public static byte[] compressString(String value, int compressionLevel) {
-    UnicodeUtil.UTF8Result result = new UnicodeUtil.UTF8Result();
+    BytesRef result = new BytesRef(10);
     UnicodeUtil.UTF16toUTF8(value, 0, value.length(), result);
-    return compress(result.result, 0, result.length, compressionLevel);
+    return compress(result.bytes, 0, result.length, compressionLevel);
   }
 
   /** Decompress the byte array previously returned by

@@ -857,6 +857,7 @@ public abstract class Similarity implements Serializable {
    * @return An implementation dependent float to be used as a scoring factor
    *
    */
+  // TODO: maybe switch this API to BytesRef?
   public float scorePayload(int docId, String fieldName, int start, int end, byte [] payload, int offset, int length)
   {
     return 1;

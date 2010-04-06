@@ -19,12 +19,15 @@ package org.apache.lucene.spatial.tier;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.DocIdSet;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.OpenBitSet;
 
 /**
@@ -44,22 +47,41 @@ public class CartesianShapeFilter extends Filter {
   
   @Override
   public DocIdSet getDocIdSet(final IndexReader reader) throws IOException {
-    final OpenBitSet bits = new OpenBitSet(reader.maxDoc());
-    final TermDocs termDocs = reader.termDocs();
+    final Bits delDocs = MultiFields.getDeletedDocs(reader);
     final List<Double> area = shape.getArea();
-    int sz = area.size();
+    final int sz = area.size();
     
-    final Term term = new Term(fieldName);
     // iterate through each boxid
-    for (int i =0; i< sz; i++) {
-      double boxId = area.get(i).doubleValue();
-      termDocs.seek(term.createTerm(NumericUtils.doubleToPrefixCoded(boxId)));
-      // iterate through all documents
-      // which have this boxId
-      while (termDocs.next()) {
-        bits.fastSet(termDocs.doc());
+    final BytesRef bytesRef = new BytesRef(NumericUtils.BUF_SIZE_LONG);
+    if (sz == 1) {
+      double boxId = area.get(0).doubleValue();
+      NumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(boxId), 0, bytesRef);
+      return new DocIdSet() {
+        @Override
+        public DocIdSetIterator iterator() throws IOException {
+          return MultiFields.getTermDocsEnum(reader, delDocs, fieldName, bytesRef);
+        }
+        
+        @Override
+        public boolean isCacheable() {
+          return false;
+        }
+      };
+    } else {
+      final OpenBitSet bits = new OpenBitSet(reader.maxDoc());
+      for (int i =0; i< sz; i++) {
+        double boxId = area.get(i).doubleValue();
+        NumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(boxId), 0, bytesRef);
+        final DocsEnum docsEnum = MultiFields.getTermDocsEnum(reader, delDocs, fieldName, bytesRef);
+        if (docsEnum == null) continue;
+        // iterate through all documents
+        // which have this boxId
+        int doc;
+        while ((doc = docsEnum.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+          bits.fastSet(doc);
+        }
       }
+      return bits;
     }
-    return bits;
   }
 }

@@ -26,6 +26,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Version;
 
 /**
@@ -172,6 +173,8 @@ public class MultiPassIndexSplitter {
    * list of deletions.
    */
   public static class FakeDeleteIndexReader extends FilterIndexReader {
+    // TODO: switch to flex api, here
+
     OpenBitSet dels;
     OpenBitSet oldDels = null;
 
@@ -202,6 +205,7 @@ public class MultiPassIndexSplitter {
       if (oldDels != null) {
         dels.or(oldDels);
       }
+      storeDelDocs(null);
     }
 
     @Override
@@ -212,6 +216,16 @@ public class MultiPassIndexSplitter {
     @Override
     public boolean hasDeletions() {
       return !dels.isEmpty();
+    }
+
+    @Override
+    public IndexReader[] getSequentialSubReaders() {
+      return null;
+    }
+
+    @Override
+    public Bits getDeletedDocs() {
+      return dels;
     }
 
     @Override
@@ -234,6 +248,30 @@ public class MultiPassIndexSplitter {
           return res;
         }        
       };
+    }
+
+    @Override
+    public TermDocs termDocs() throws IOException {
+      return new FilterTermDocs(in.termDocs()) {
+
+        @Override
+        public boolean next() throws IOException {
+          boolean res;
+          while ((res = super.next())) {
+            if (!dels.get(doc())) {
+              break;
+            }
+          }
+          return res;
+        }        
+      };
+    }
+
+    @Override
+    public TermDocs termDocs(Term term) throws IOException {
+      TermDocs termDocs = termDocs();
+      termDocs.seek(term);
+      return termDocs;
     }
   }
 }

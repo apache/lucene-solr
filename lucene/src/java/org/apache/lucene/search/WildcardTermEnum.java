@@ -28,7 +28,9 @@ import org.apache.lucene.index.Term;
  * <p>
  * Term enumerations are always ordered by Term.compareTo().  Each term in
  * the enumeration is greater than all that precede it.
+ * @deprecated Please use {@link AutomatonTermsEnum} instead.
  */
+@Deprecated
 public class WildcardTermEnum extends FilteredTermEnum {
   final Term searchTerm;
   final String field;
@@ -91,8 +93,8 @@ public class WildcardTermEnum extends FilteredTermEnum {
    * String equality with support for wildcards
    ********************************************/
 
-  public static final char WILDCARD_STRING = '*';
-  public static final char WILDCARD_CHAR = '?';
+  public static final char WILDCARD_STRING = WildcardQuery.WILDCARD_STRING;
+  public static final char WILDCARD_CHAR = WildcardQuery.WILDCARD_CHAR;
 
   /**
    * Determines if a word matches a wildcard pattern.

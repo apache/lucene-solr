@@ -23,11 +23,13 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,6 +51,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
@@ -72,6 +75,7 @@ import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
+import org.apache.lucene.util.BytesRef;
 
 public class TestIndexWriter extends LuceneTestCase {
     public TestIndexWriter(String name) {
@@ -525,7 +529,7 @@ public class TestIndexWriter extends LuceneTestCase {
       String[] startFiles = dir.listAll();
       SegmentInfos infos = new SegmentInfos();
       infos.read(dir);
-      new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
+      new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null, CodecProvider.getDefault());
       String[] endFiles = dir.listAll();
 
       Arrays.sort(startFiles);
@@ -544,13 +548,12 @@ public class TestIndexWriter extends LuceneTestCase {
       IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
 
-      char[] chars = new char[DocumentsWriter.CHAR_BLOCK_SIZE-1];
+      char[] chars = new char[DocumentsWriter.MAX_TERM_LENGTH_UTF8];
       Arrays.fill(chars, 'x');
       Document doc = new Document();
       final String bigTerm = new String(chars);
 
-      // Max length term is 16383, so this contents produces
-      // a too-long term:
+      // This produces a too-long term:
       String contents = "abc xyz x" + bigTerm + " another term";
       doc.add(new Field("content", contents, Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
@@ -3306,7 +3309,7 @@ public class TestIndexWriter extends LuceneTestCase {
   // LUCENE-510
   public void testAllUnicodeChars() throws Throwable {
 
-    UnicodeUtil.UTF8Result utf8 = new UnicodeUtil.UTF8Result();
+    BytesRef utf8 = new BytesRef(10);
     UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
     char[] chars = new char[2];
     for(int ch=0;ch<0x0010FFFF;ch++) {
@@ -3326,16 +3329,16 @@ public class TestIndexWriter extends LuceneTestCase {
       UnicodeUtil.UTF16toUTF8(chars, 0, len, utf8);
       
       String s1 = new String(chars, 0, len);
-      String s2 = new String(utf8.result, 0, utf8.length, "UTF-8");
+      String s2 = new String(utf8.bytes, 0, utf8.length, "UTF-8");
       assertEquals("codepoint " + ch, s1, s2);
 
-      UnicodeUtil.UTF8toUTF16(utf8.result, 0, utf8.length, utf16);
+      UnicodeUtil.UTF8toUTF16(utf8.bytes, 0, utf8.length, utf16);
       assertEquals("codepoint " + ch, s1, new String(utf16.result, 0, utf16.length));
 
       byte[] b = s1.getBytes("UTF-8");
       assertEquals(utf8.length, b.length);
       for(int j=0;j<utf8.length;j++)
-        assertEquals(utf8.result[j], b[j]);
+        assertEquals(utf8.bytes[j], b[j]);
     }
   }
 
@@ -3400,7 +3403,7 @@ public class TestIndexWriter extends LuceneTestCase {
     char[] buffer = new char[20];
     char[] expected = new char[20];
 
-    UnicodeUtil.UTF8Result utf8 = new UnicodeUtil.UTF8Result();
+    BytesRef utf8 = new BytesRef(20);
     UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
 
     for(int iter=0;iter<100000;iter++) {
@@ -3411,10 +3414,10 @@ public class TestIndexWriter extends LuceneTestCase {
         byte[] b = new String(buffer, 0, 20).getBytes("UTF-8");
         assertEquals(b.length, utf8.length);
         for(int i=0;i<b.length;i++)
-          assertEquals(b[i], utf8.result[i]);
+          assertEquals(b[i], utf8.bytes[i]);
       }
 
-      UnicodeUtil.UTF8toUTF16(utf8.result, 0, utf8.length, utf16);
+      UnicodeUtil.UTF8toUTF16(utf8.bytes, 0, utf8.length, utf16);
       assertEquals(utf16.length, 20);
       for(int i=0;i<20;i++)
         assertEquals(expected[i], utf16.result[i]);
@@ -3427,7 +3430,7 @@ public class TestIndexWriter extends LuceneTestCase {
     char[] buffer = new char[20];
     char[] expected = new char[20];
 
-    UnicodeUtil.UTF8Result utf8 = new UnicodeUtil.UTF8Result();
+    BytesRef utf8 = new BytesRef(new byte[20]);
     UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
     UnicodeUtil.UTF16Result utf16a = new UnicodeUtil.UTF16Result();
 
@@ -3450,7 +3453,7 @@ public class TestIndexWriter extends LuceneTestCase {
         byte[] b = new String(buffer, 0, 20).getBytes("UTF-8");
         assertEquals(b.length, utf8.length);
         for(int i=0;i<b.length;i++)
-          assertEquals(b[i], utf8.result[i]);
+          assertEquals(b[i], utf8.bytes[i]);
       }
 
       int bytePrefix = 20;
@@ -3458,18 +3461,18 @@ public class TestIndexWriter extends LuceneTestCase {
         bytePrefix = 0;
       else
         for(int i=0;i<20;i++)
-          if (last[i] != utf8.result[i]) {
+          if (last[i] != utf8.bytes[i]) {
             bytePrefix = i;
             break;
           }
-      System.arraycopy(utf8.result, 0, last, 0, utf8.length);
+      System.arraycopy(utf8.bytes, 0, last, 0, utf8.length);
 
-      UnicodeUtil.UTF8toUTF16(utf8.result, bytePrefix, utf8.length-bytePrefix, utf16);
+      UnicodeUtil.UTF8toUTF16(utf8.bytes, bytePrefix, utf8.length-bytePrefix, utf16);
       assertEquals(20, utf16.length);
       for(int i=0;i<20;i++)
         assertEquals(expected[i], utf16.result[i]);
 
-      UnicodeUtil.UTF8toUTF16(utf8.result, 0, utf8.length, utf16a);
+      UnicodeUtil.UTF8toUTF16(utf8.bytes, 0, utf8.length, utf16a);
       assertEquals(20, utf16a.length);
       for(int i=0;i<20;i++)
         assertEquals(expected[i], utf16a.result[i]);
@@ -4335,11 +4338,6 @@ public class TestIndexWriter extends LuceneTestCase {
       new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))).close();
 
       assertTrue(dir.fileExists("myrandomfile"));
-
-      // Make sure this does not copy myrandomfile:
-      Directory dir2 = new RAMDirectory(dir);
-      assertTrue(!dir2.fileExists("myrandomfile"));
-
     } finally {
       dir.close();
       _TestUtil.rmDir(indexDir);
@@ -4609,8 +4607,10 @@ public class TestIndexWriter extends LuceneTestCase {
     doc = new Document();
     doc.add(new Field("field", "a", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);
+    IndexReader r = w.getReader();
+    assertEquals(1, r.docFreq(new Term("field", "a\uffffb")));
+    r.close();
     w.close();
-
     _TestUtil.checkIndex(d);
     d.close();
   }
@@ -4630,8 +4630,8 @@ public class TestIndexWriter extends LuceneTestCase {
     _TestUtil.checkIndex(dir);
     dir.close();
   }
-
-  // LUCENE-2095: make sure with multiple threads commit
+  
+    // LUCENE-2095: make sure with multiple threads commit
   // doesn't return until all changes are in fact in the
   // index
   public void testCommitThreadSafety() throws Throwable {
@@ -4684,6 +4684,172 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
     dir.close();
     assertFalse(failed.get());
+  }
+
+  // both start & end are inclusive
+  private final int getInt(Random r, int start, int end) {
+    return start + r.nextInt(1+end-start);
+  }
+
+  private void checkTermsOrder(IndexReader r, Set<String> allTerms, boolean isTop) throws IOException {
+    TermsEnum terms = MultiFields.getFields(r).terms("f").iterator();
+
+    char[] last = new char[2];
+    int lastLength = 0;
+
+    Set<String> seenTerms = new HashSet<String>();
+
+    UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
+    while(true) {
+      final BytesRef term = terms.next();
+      if (term == null) {
+        break;
+      }
+      UnicodeUtil.UTF8toUTF16(term.bytes, term.offset, term.length, utf16);
+      assertTrue(utf16.length <= 2);
+
+      // Make sure last term comes before current one, in
+      // UTF16 sort order
+      int i = 0;
+      for(i=0;i<lastLength && i<utf16.length;i++) {
+        assertTrue("UTF16 code unit " + termDesc(new String(utf16.result, 0, utf16.length)) + " incorrectly sorted after code unit " + termDesc(new String(last, 0, lastLength)), last[i] <= utf16.result[i]);
+        if (last[i] < utf16.result[i]) {
+          break;
+        }
+      }
+      // Terms should not have been identical
+      assertTrue(lastLength != utf16.length || i < lastLength);
+
+      final String s = new String(utf16.result, 0, utf16.length);
+      assertTrue("term " + termDesc(s) + " was not added to index (count=" + allTerms.size() + ")", allTerms.contains(s));
+      seenTerms.add(s);
+
+      System.arraycopy(utf16.result, 0, last, 0, utf16.length);
+      lastLength = utf16.length;
+    }
+
+    if (isTop) {
+      assertTrue(allTerms.equals(seenTerms));
+    }
+
+    // Test seeking:
+    Iterator<String> it = seenTerms.iterator();
+    while(it.hasNext()) {
+      BytesRef tr = new BytesRef(it.next());
+      assertEquals("seek failed for term=" + termDesc(tr.utf8ToString()),
+                   TermsEnum.SeekStatus.FOUND,
+                   terms.seek(tr));
+    }
+  }
+
+  private final String asUnicodeChar(char c) {
+    return "U+" + Integer.toHexString(c);
+  }
+
+  private final String termDesc(String s) {
+    final String s0;
+    assertTrue(s.length() <= 2);
+    if (s.length() == 1) {
+      s0 = asUnicodeChar(s.charAt(0));
+    } else {
+      s0 = asUnicodeChar(s.charAt(0)) + "," + asUnicodeChar(s.charAt(1));
+    }
+    return s0;
+  }
+
+  // Make sure terms, including ones with surrogate pairs,
+  // sort in UTF16 sort order by default
+  public void testTermUTF16SortOrder() throws Throwable {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new SimpleAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    Document d = new Document();
+    // Single segment
+    Field f = new Field("f", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+    d.add(f);
+    char[] chars = new char[2];
+    Random rnd = newRandom();
+    final Set<String> allTerms = new HashSet<String>();
+
+    for(int i=0;i<200;i++) {
+
+      final String s;
+      if (rnd.nextBoolean()) {
+        // Single char
+        if (rnd.nextBoolean()) {
+          // Above surrogates
+          chars[0] = (char) getInt(rnd, 1+UnicodeUtil.UNI_SUR_LOW_END, 0xffff);
+        } else {
+          // Below surrogates
+          chars[0] = (char) getInt(rnd, 0, UnicodeUtil.UNI_SUR_HIGH_START-1);
+        }
+        s = new String(chars, 0, 1);
+      } else {
+        // Surrogate pair
+        chars[0] = (char) getInt(rnd, UnicodeUtil.UNI_SUR_HIGH_START, UnicodeUtil.UNI_SUR_HIGH_END);
+        assertTrue(((int) chars[0]) >= UnicodeUtil.UNI_SUR_HIGH_START && ((int) chars[0]) <= UnicodeUtil.UNI_SUR_HIGH_END);
+        chars[1] = (char) getInt(rnd, UnicodeUtil.UNI_SUR_LOW_START, UnicodeUtil.UNI_SUR_LOW_END);
+        s = new String(chars, 0, 2);
+      }
+      allTerms.add(s);
+      f.setValue(s);
+
+      //System.out.println("add " + termDesc(s));
+      writer.addDocument(d);
+
+      if ((1+i) % 42 == 0) {
+        writer.commit();
+      }
+    }
+    
+    IndexReader r = writer.getReader();
+
+    // Test each sub-segment
+    final IndexReader[] subs = r.getSequentialSubReaders();
+    assertEquals(5, subs.length);
+    for(int i=0;i<subs.length;i++) {
+      checkTermsOrder(subs[i], allTerms, false);
+    }
+    checkTermsOrder(r, allTerms, true);
+
+    // Test multi segment
+    r.close();
+
+    writer.optimize();
+
+    // Test optimized single segment
+    r = writer.getReader();
+    checkTermsOrder(r, allTerms, true);
+    r.close();
+
+    writer.close();
+    dir.close();
+  }
+
+  public void testIndexDivisor() throws Exception {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    StringBuilder s = new StringBuilder();
+    // must be > 256
+    for(int i=0;i<300;i++) {
+      s.append(' ').append(""+i);
+    }
+    Document d = new Document();
+    Field f = new Field("field", s.toString(), Field.Store.NO, Field.Index.ANALYZED);
+    d.add(f);
+    w.addDocument(d);
+    IndexReader r = w.getReader(2).getSequentialSubReaders()[0];
+    TermsEnum t = r.fields().terms("field").iterator();
+    int count = 0;
+    while(t.next() != null) {
+      final DocsEnum docs = t.docs(null, null);
+      assertEquals(0, docs.nextDoc());
+      assertEquals(DocsEnum.NO_MORE_DOCS, docs.nextDoc());
+      count++;
+    }
+    assertEquals(300, count);
+    r.close();
+    w.close();
+    dir.close();
   }
 
   public void testDeleteUnusedFiles() throws Exception {

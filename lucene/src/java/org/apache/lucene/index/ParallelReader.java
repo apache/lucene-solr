@@ -21,7 +21,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.*;
@@ -55,6 +57,8 @@ public class ParallelReader extends IndexReader {
   private int maxDoc;
   private int numDocs;
   private boolean hasDeletions;
+
+  private ParallelFields fields = new ParallelFields();
 
  /** Construct a ParallelReader. 
   * <p>Note that all subreaders are closed if this ParallelReader is closed.</p>
@@ -122,9 +126,11 @@ public class ParallelReader extends IndexReader {
 
     Collection<String> fields = reader.getFieldNames(IndexReader.FieldOption.ALL);
     readerToFields.put(reader, fields);
-    for (final String field : fields) {                         // update fieldToReader map
-      if (fieldToReader.get(field) == null)
+    for (final String field : fields) {               // update fieldToReader map
+      if (fieldToReader.get(field) == null) {
         fieldToReader.put(field, reader);
+      }
+      this.fields.addField(field, reader);
     }
 
     if (!ignoreStoredFields)
@@ -135,6 +141,67 @@ public class ParallelReader extends IndexReader {
       reader.incRef();
     }
     decrefOnClose.add(Boolean.valueOf(incRefReaders));
+  }
+
+  private class ParallelFieldsEnum extends FieldsEnum {
+    String currentField;
+    IndexReader currentReader;
+    Iterator<String> keys;
+
+    ParallelFieldsEnum() {
+      keys = fieldToReader.keySet().iterator();
+    }
+
+    @Override
+    public String next() throws IOException {
+      if (keys.hasNext()) {
+        currentField = (String) keys.next();
+        currentReader = (IndexReader) fieldToReader.get(currentField);
+      } else {
+        currentField = null;
+        currentReader = null;
+      }
+      return currentField;
+    }
+
+    @Override
+    public TermsEnum terms() throws IOException {
+      assert currentReader != null;
+      Terms terms = MultiFields.getTerms(currentReader, currentField);
+      if (terms != null) {
+        return terms.iterator();
+      } else {
+        return TermsEnum.EMPTY;
+      }
+    }
+  }
+
+  // Single instance of this, per ParallelReader instance
+  private class ParallelFields extends Fields {
+    final HashMap<String,Terms> fields = new HashMap<String,Terms>();
+
+    public void addField(String field, IndexReader r) throws IOException {
+      fields.put(field, MultiFields.getFields(r).terms(field));
+    }
+
+    @Override
+    public FieldsEnum iterator() throws IOException {
+      return new ParallelFieldsEnum();
+    }
+    @Override
+    public Terms terms(String field) throws IOException {
+      return fields.get(field);
+    }
+  }
+
+  @Override
+  public Bits getDeletedDocs() throws IOException {
+    return MultiFields.getDeletedDocs(readers.get(0));
+  }
+
+  @Override
+  public Fields fields() {
+    return fields;
   }
   
   @Override
@@ -404,6 +471,13 @@ public class ParallelReader extends IndexReader {
   }
 
   @Override
+  public int docFreq(String field, BytesRef term) throws IOException {
+    ensureOpen();
+    IndexReader reader = ((IndexReader)fieldToReader.get(field));
+    return reader == null? 0 : reader.docFreq(field, term);
+  }
+
+  @Override
   public TermDocs termDocs(Term term) throws IOException {
     ensureOpen();
     return new ParallelTermDocs(term);
@@ -501,6 +575,7 @@ public class ParallelReader extends IndexReader {
     return fieldSet;
   }
 
+  @Deprecated
   private class ParallelTermEnum extends TermEnum {
     private String field;
     private Iterator<String> fieldIterator;

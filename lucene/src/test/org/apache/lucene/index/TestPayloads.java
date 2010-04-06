@@ -39,7 +39,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
@@ -99,7 +100,7 @@ public class TestPayloads extends LuceneTestCase {
     // payload bit in the FieldInfo
     public void testPayloadFieldBit() throws Exception {
         rnd = newRandom();
-        Directory ram = new RAMDirectory();
+        Directory ram = new MockRAMDirectory();
         PayloadAnalyzer analyzer = new PayloadAnalyzer();
         IndexWriter writer = new IndexWriter(ram, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
         Document d = new Document();
@@ -139,6 +140,9 @@ public class TestPayloads extends LuceneTestCase {
         analyzer.setPayloadData("f2", "somedata".getBytes(), 0, 1);
         analyzer.setPayloadData("f3", "somedata".getBytes(), 0, 3);
         writer.addDocument(d);
+
+        FlexTestUtil.verifyFlexVsPreFlex(rnd, writer);
+
         // force merge
         writer.optimize();
         // flush
@@ -149,14 +153,15 @@ public class TestPayloads extends LuceneTestCase {
         assertFalse("Payload field bit should not be set.", fi.fieldInfo("f1").storePayloads);
         assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").storePayloads);
         assertTrue("Payload field bit should be set.", fi.fieldInfo("f3").storePayloads);
-        reader.close();        
+        reader.close();
+        FlexTestUtil.verifyFlexVsPreFlex(rnd, ram);
     }
 
     // Tests if payloads are correctly stored and loaded using both RamDirectory and FSDirectory
     public void testPayloadsEncoding() throws Exception {
         rnd = newRandom();
         // first perform the test using a RAMDirectory
-        Directory dir = new RAMDirectory();
+        Directory dir = new MockRAMDirectory();
         performTest(dir);
         
         // now use a FSDirectory and repeat same test
@@ -215,7 +220,9 @@ public class TestPayloads extends LuceneTestCase {
             writer.addDocument(d);
         }
         
+        FlexTestUtil.verifyFlexVsPreFlex(rnd, writer);
         writer.optimize();
+        FlexTestUtil.verifyFlexVsPreFlex(rnd, writer);
         // flush
         writer.close();
         
@@ -260,11 +267,17 @@ public class TestPayloads extends LuceneTestCase {
         TermPositions tp = reader.termPositions(terms[0]);
         tp.next();
         tp.nextPosition();
+        // NOTE: prior rev of this test was failing to first
+        // call next here:
+        tp.next();
         // now we don't read this payload
         tp.nextPosition();
         assertEquals("Wrong payload length.", 1, tp.getPayloadLength());
         byte[] payload = tp.getPayload(null, 0);
         assertEquals(payload[0], payloadData[numTerms]);
+        // NOTE: prior rev of this test was failing to first
+        // call next here:
+        tp.next();
         tp.nextPosition();
         
         // we don't read this payload and skip to a different document
@@ -321,7 +334,9 @@ public class TestPayloads extends LuceneTestCase {
         writer.addDocument(d);
 
         
+        FlexTestUtil.verifyFlexVsPreFlex(rnd, writer);
         writer.optimize();
+        FlexTestUtil.verifyFlexVsPreFlex(rnd, writer);
         // flush
         writer.close();
         
@@ -469,7 +484,7 @@ public class TestPayloads extends LuceneTestCase {
         final int numDocs = 50;
         final ByteArrayPool pool = new ByteArrayPool(numThreads, 5);
         
-        Directory dir = new RAMDirectory();
+        Directory dir = new MockRAMDirectory();
         final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
             TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
         final String field = "test";
@@ -563,13 +578,13 @@ public class TestPayloads extends LuceneTestCase {
             }
         }
         
-        private UnicodeUtil.UTF8Result utf8Result = new UnicodeUtil.UTF8Result();
+        private BytesRef utf8Result = new BytesRef(10);
 
         synchronized String bytesToString(byte[] bytes) {
             String s = new String(bytes);
             UnicodeUtil.UTF16toUTF8(s, 0, s.length(), utf8Result);
             try {
-                return new String(utf8Result.result, 0, utf8Result.length, "UTF-8");
+                return new String(utf8Result.bytes, 0, utf8Result.length, "UTF-8");
             } catch (UnsupportedEncodingException uee) {
                 return null;
             }

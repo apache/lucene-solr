@@ -1,7 +1,5 @@
 package org.apache.lucene.index;
 
-import org.apache.lucene.util.StringHelper;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,6 +17,8 @@ import org.apache.lucene.util.StringHelper;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.StringHelper;
+
 /**
   A Term represents a word from text.  This is the unit of search.  It is
   composed of two elements, the text of the word, as a string, and the name of
@@ -35,7 +35,7 @@ public final class Term implements Comparable<Term>, java.io.Serializable {
    * <p>Note that a null field or null text value results in undefined
    * behavior for most Lucene APIs that accept a Term parameter. */
   public Term(String fld, String txt) {
-    field = StringHelper.intern(fld);
+    field = fld == null ? null : StringHelper.intern(fld);
     text = txt;
   }
 
@@ -49,7 +49,8 @@ public final class Term implements Comparable<Term>, java.io.Serializable {
     this(fld, "", true);
   }
 
-  Term(String fld, String txt, boolean intern) {
+  /** @lucene.experimental */
+  public Term(String fld, String txt, boolean intern) {
     field = intern ? StringHelper.intern(fld) : fld;	  // field names are interned
     text = txt;					          // unless already known to be
   }

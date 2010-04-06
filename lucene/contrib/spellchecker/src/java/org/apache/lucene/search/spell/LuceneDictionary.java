@@ -21,8 +21,10 @@ import org.apache.lucene.index.IndexReader;
 
 import java.util.Iterator;
 
-import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.StringHelper;
 
 import java.io.*;
@@ -52,55 +54,39 @@ public class LuceneDictionary implements Dictionary {
 
 
   final class LuceneIterator implements Iterator<String> {
-    private TermEnum termEnum;
-    private Term actualTerm;
-    private boolean hasNextCalled;
+    private TermsEnum termsEnum;
+    private BytesRef pendingTerm;
 
     LuceneIterator() {
       try {
-        termEnum = reader.terms(new Term(field));
+        final Terms terms = MultiFields.getTerms(reader, field);
+        if (terms != null) {
+          termsEnum = terms.iterator();
+          pendingTerm = termsEnum.next();
+        }
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
 
     public String next() {
-      if (!hasNextCalled) {
-        hasNext();
+      if (pendingTerm == null) {
+        return null;
       }
-      hasNextCalled = false;
+
+      String result = pendingTerm.utf8ToString();
 
       try {
-        termEnum.next();
+        pendingTerm = termsEnum.next();
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
 
-      return (actualTerm != null) ? actualTerm.text() : null;
+      return result;
     }
 
     public boolean hasNext() {
-      if (hasNextCalled) {
-        return actualTerm != null;
-      }
-      hasNextCalled = true;
-
-      actualTerm = termEnum.term();
-
-      // if there are no words return false
-      if (actualTerm == null) {
-        return false;
-      }
-
-      String currentField = actualTerm.field();
-
-      // if the next word doesn't have the same field return false
-      if (currentField != field) {
-        actualTerm = null;
-        return false;
-      }
-
-      return true;
+      return pendingTerm != null;
     }
 
     public void remove() {

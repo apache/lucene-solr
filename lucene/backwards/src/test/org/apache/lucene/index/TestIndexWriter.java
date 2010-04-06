@@ -61,8 +61,10 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.Version;
@@ -524,10 +526,15 @@ public class TestIndexWriter extends LuceneTestCase {
     }                                               
 
     public static void assertNoUnreferencedFiles(Directory dir, String message) throws IOException {
-      String[] startFiles = dir.listAll();
-      SegmentInfos infos = new SegmentInfos();
-      infos.read(dir);
-      new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
+      final LockFactory lf = dir.getLockFactory();
+      String[] startFiles;
+      try {
+        dir.setLockFactory(new NoLockFactory());
+        startFiles = dir.listAll();
+        new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED).close();
+      } finally {
+        dir.setLockFactory(lf);
+      }
       String[] endFiles = dir.listAll();
 
       Arrays.sort(startFiles);
@@ -3309,7 +3316,7 @@ public class TestIndexWriter extends LuceneTestCase {
   // LUCENE-510
   public void testAllUnicodeChars() throws Throwable {
 
-    UnicodeUtil.UTF8Result utf8 = new UnicodeUtil.UTF8Result();
+    BytesRef utf8 = new BytesRef(10);
     UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
     char[] chars = new char[2];
     for(int ch=0;ch<0x0010FFFF;ch++) {
@@ -3329,16 +3336,16 @@ public class TestIndexWriter extends LuceneTestCase {
       UnicodeUtil.UTF16toUTF8(chars, 0, len, utf8);
       
       String s1 = new String(chars, 0, len);
-      String s2 = new String(utf8.result, 0, utf8.length, "UTF-8");
+      String s2 = new String(utf8.bytes, 0, utf8.length, "UTF-8");
       assertEquals("codepoint " + ch, s1, s2);
 
-      UnicodeUtil.UTF8toUTF16(utf8.result, 0, utf8.length, utf16);
+      UnicodeUtil.UTF8toUTF16(utf8.bytes, 0, utf8.length, utf16);
       assertEquals("codepoint " + ch, s1, new String(utf16.result, 0, utf16.length));
 
       byte[] b = s1.getBytes("UTF-8");
       assertEquals(utf8.length, b.length);
       for(int j=0;j<utf8.length;j++)
-        assertEquals(utf8.result[j], b[j]);
+        assertEquals(utf8.bytes[j], b[j]);
     }
   }
 
@@ -3403,7 +3410,7 @@ public class TestIndexWriter extends LuceneTestCase {
     char[] buffer = new char[20];
     char[] expected = new char[20];
 
-    UnicodeUtil.UTF8Result utf8 = new UnicodeUtil.UTF8Result();
+    BytesRef utf8 = new BytesRef(20);
     UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
 
     for(int iter=0;iter<100000;iter++) {
@@ -3414,10 +3421,10 @@ public class TestIndexWriter extends LuceneTestCase {
         byte[] b = new String(buffer, 0, 20).getBytes("UTF-8");
         assertEquals(b.length, utf8.length);
         for(int i=0;i<b.length;i++)
-          assertEquals(b[i], utf8.result[i]);
+          assertEquals(b[i], utf8.bytes[i]);
       }
 
-      UnicodeUtil.UTF8toUTF16(utf8.result, 0, utf8.length, utf16);
+      UnicodeUtil.UTF8toUTF16(utf8.bytes, 0, utf8.length, utf16);
       assertEquals(utf16.length, 20);
       for(int i=0;i<20;i++)
         assertEquals(expected[i], utf16.result[i]);
@@ -3430,7 +3437,7 @@ public class TestIndexWriter extends LuceneTestCase {
     char[] buffer = new char[20];
     char[] expected = new char[20];
 
-    UnicodeUtil.UTF8Result utf8 = new UnicodeUtil.UTF8Result();
+    BytesRef utf8 = new BytesRef(20);
     UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
     UnicodeUtil.UTF16Result utf16a = new UnicodeUtil.UTF16Result();
 
@@ -3453,7 +3460,7 @@ public class TestIndexWriter extends LuceneTestCase {
         byte[] b = new String(buffer, 0, 20).getBytes("UTF-8");
         assertEquals(b.length, utf8.length);
         for(int i=0;i<b.length;i++)
-          assertEquals(b[i], utf8.result[i]);
+          assertEquals(b[i], utf8.bytes[i]);
       }
 
       int bytePrefix = 20;
@@ -3461,18 +3468,18 @@ public class TestIndexWriter extends LuceneTestCase {
         bytePrefix = 0;
       else
         for(int i=0;i<20;i++)
-          if (last[i] != utf8.result[i]) {
+          if (last[i] != utf8.bytes[i]) {
             bytePrefix = i;
             break;
           }
-      System.arraycopy(utf8.result, 0, last, 0, utf8.length);
+      System.arraycopy(utf8.bytes, 0, last, 0, utf8.length);
 
-      UnicodeUtil.UTF8toUTF16(utf8.result, bytePrefix, utf8.length-bytePrefix, utf16);
+      UnicodeUtil.UTF8toUTF16(utf8.bytes, bytePrefix, utf8.length-bytePrefix, utf16);
       assertEquals(20, utf16.length);
       for(int i=0;i<20;i++)
         assertEquals(expected[i], utf16.result[i]);
 
-      UnicodeUtil.UTF8toUTF16(utf8.result, 0, utf8.length, utf16a);
+      UnicodeUtil.UTF8toUTF16(utf8.bytes, 0, utf8.length, utf16a);
       assertEquals(20, utf16a.length);
       for(int i=0;i<20;i++)
         assertEquals(expected[i], utf16a.result[i]);
@@ -4330,10 +4337,6 @@ public class TestIndexWriter extends LuceneTestCase {
       new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED).close();
 
       assertTrue(dir.fileExists("myrandomfile"));
-
-      // Make sure this does not copy myrandomfile:
-      Directory dir2 = new RAMDirectory(dir);
-      assertTrue(!dir2.fileExists("myrandomfile"));
 
     } finally {
       dir.close();

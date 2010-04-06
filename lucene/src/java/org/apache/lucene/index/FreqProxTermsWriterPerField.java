@@ -185,27 +185,28 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
     int lastDocIDs[];                                  // Last docID where this term occurred
     int lastDocCodes[];                                // Code for prior doc
     int lastPositions[];                               // Last position where this term occurred
-    
+
     @Override
-    ParallelPostingsArray resize(int newSize) {
-      FreqProxPostingsArray newArray = new FreqProxPostingsArray(newSize);
-      copy(this, newArray);
-      return newArray;
+    ParallelPostingsArray newInstance(int size) {
+      return new FreqProxPostingsArray(size);
     }
-    
-    void copy(FreqProxPostingsArray fromArray, FreqProxPostingsArray toArray) {
-      super.copy(fromArray, toArray);
-      System.arraycopy(fromArray.docFreqs, 0, toArray.docFreqs, 0, fromArray.docFreqs.length);
-      System.arraycopy(fromArray.lastDocIDs, 0, toArray.lastDocIDs, 0, fromArray.lastDocIDs.length);
-      System.arraycopy(fromArray.lastDocCodes, 0, toArray.lastDocCodes, 0, fromArray.lastDocCodes.length);
-      System.arraycopy(fromArray.lastPositions, 0, toArray.lastPositions, 0, fromArray.lastPositions.length);
+
+    void copyTo(ParallelPostingsArray toArray, int numToCopy) {
+      assert toArray instanceof FreqProxPostingsArray;
+      FreqProxPostingsArray to = (FreqProxPostingsArray) toArray;
+
+      super.copyTo(toArray, numToCopy);
+
+      System.arraycopy(docFreqs, 0, to.docFreqs, 0, numToCopy);
+      System.arraycopy(lastDocIDs, 0, to.lastDocIDs, 0, numToCopy);
+      System.arraycopy(lastDocCodes, 0, to.lastDocCodes, 0, numToCopy);
+      System.arraycopy(lastPositions, 0, to.lastPositions, 0, numToCopy);
     }
-    
-  }
-  
-  @Override
-  int bytesPerPosting() {
-    return ParallelPostingsArray.BYTES_PER_POSTING + 4 * DocumentsWriter.INT_NUM_BYTE;
+
+    @Override
+    int bytesPerPosting() {
+      return ParallelPostingsArray.BYTES_PER_POSTING + 4 * DocumentsWriter.INT_NUM_BYTE;
+    }
   }
   
   public void abort() {}

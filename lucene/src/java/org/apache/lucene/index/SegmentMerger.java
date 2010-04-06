@@ -20,15 +20,23 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-
+import java.util.Set;
+import java.util.HashSet;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.MergeState;
+import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.MultiBits;
 
 /**
  * The SegmentMerger class combines two or more Segments, represented by an IndexReader ({@link #add},
@@ -66,25 +74,14 @@ final class SegmentMerger {
   /** Maximum number of contiguous documents to bulk-copy
       when merging stored fields */
   private final static int MAX_RAW_MERGE_DOCS = 4192;
+  
+  private final CodecProvider codecs;
+  private Codec codec;
+  private SegmentWriteState segmentWriteState;
 
-  /** This ctor used only by test code.
-   * 
-   * @param dir The Directory to merge the other segments into
-   * @param name The name of the new segment
-   */
-  SegmentMerger(Directory dir, String name) {
+  SegmentMerger(Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, CodecProvider codecs) {
     directory = dir;
-    segment = name;
-    checkAbort = new CheckAbort(null, null) {
-      @Override
-      public void work(double units) throws MergeAbortedException {
-        // do nothing
-      }
-    };
-  }
-
-  SegmentMerger(IndexWriter writer, String name, MergePolicy.OneMerge merge) {
-    directory = writer.getDirectory();
+    this.codecs = codecs;
     segment = name;
     if (merge != null) {
       checkAbort = new CheckAbort(merge, directory);
@@ -96,7 +93,7 @@ final class SegmentMerger {
         }
       };
     }
-    termIndexInterval = writer.getConfig().getTermIndexInterval();
+    this.termIndexInterval = termIndexInterval;
   }
   
   boolean hasProx() {
@@ -171,30 +168,27 @@ final class SegmentMerger {
     }
   }
 
-  final List<String> createCompoundFile(String fileName)
+  final List<String> createCompoundFile(String fileName, final SegmentInfo info)
           throws IOException {
-    CompoundFileWriter cfsWriter =
-      new CompoundFileWriter(directory, fileName, checkAbort);
+    CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, fileName, checkAbort);
 
-    List<String> files =
-      new ArrayList<String>(IndexFileNames.COMPOUND_EXTENSIONS.length + 1);    
-    
+    Set<String> fileSet = new HashSet<String>();
+
     // Basic files
-    for (String ext : IndexFileNames.COMPOUND_EXTENSIONS) {
-      if (ext.equals(IndexFileNames.PROX_EXTENSION) && !hasProx())
-        continue;
-
+    for (String ext : IndexFileNames.COMPOUND_EXTENSIONS_NOT_CODEC) {
       if (mergeDocStores || (!ext.equals(IndexFileNames.FIELDS_EXTENSION) &&
-                            !ext.equals(IndexFileNames.FIELDS_INDEX_EXTENSION)))
-        files.add(IndexFileNames.segmentFileName(segment, ext));
+                             !ext.equals(IndexFileNames.FIELDS_INDEX_EXTENSION)))
+        fileSet.add(IndexFileNames.segmentFileName(segment, ext));
     }
 
+    codec.files(directory, info, fileSet);
+    
     // Fieldable norm files
     int numFIs = fieldInfos.size();
     for (int i = 0; i < numFIs; i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
       if (fi.isIndexed && !fi.omitNorms) {
-        files.add(IndexFileNames.segmentFileName(segment, IndexFileNames.NORMS_EXTENSION));
+        fileSet.add(IndexFileNames.segmentFileName(segment, IndexFileNames.NORMS_EXTENSION));
         break;
       }
     }
@@ -202,19 +196,19 @@ final class SegmentMerger {
     // Vector files
     if (fieldInfos.hasVectors() && mergeDocStores) {
       for (String ext : IndexFileNames.VECTOR_EXTENSIONS) {
-        files.add(IndexFileNames.segmentFileName(segment, ext));
+        fileSet.add(IndexFileNames.segmentFileName(segment, ext));
       }
     }
 
     // Now merge all added files
-    for (String file : files) {
+    for (String file : fileSet) {
       cfsWriter.addFile(file);
     }
     
     // Perform the merge
     cfsWriter.close();
    
-    return files;
+    return new ArrayList<String>(fileSet);
   }
 
   private void addIndexed(IndexReader reader, FieldInfos fInfos,
@@ -351,13 +345,16 @@ final class SegmentMerger {
         // details.
         throw new RuntimeException("mergeFields produced an invalid result: docCount is " + docCount + " but fdx file size is " + fdxFileLength + " file=" + fileName + " file exists?=" + directory.fileExists(fileName) + "; now aborting this merge to prevent index corruption");
 
-    } else
+    } else {
       // If we are skipping the doc stores, that means there
       // are no deletions in any of these segments, so we
       // just sum numDocs() of each segment to get total docCount
       for (final IndexReader reader : readers) {
         docCount += reader.numDocs();
       }
+    }
+
+    segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, null, docCount, 0, termIndexInterval, codecs);
 
     return docCount;
   }
@@ -552,156 +549,116 @@ final class SegmentMerger {
     }
   }
 
-  private SegmentMergeQueue queue = null;
+  Codec getCodec() {
+    return codec;
+  }
 
   private final void mergeTerms() throws CorruptIndexException, IOException {
 
-    SegmentWriteState state = new SegmentWriteState(null, directory, segment, null, mergedDocs, 0, termIndexInterval);
+    // Let CodecProvider decide which codec will be used to write
+    // the new segment:
+    codec = codecs.getWriter(segmentWriteState);
+    
+    int docBase = 0;
 
-    final FormatPostingsFieldsConsumer consumer = new FormatPostingsFieldsWriter(state, fieldInfos);
+    final List<Fields> fields = new ArrayList<Fields>();
+    final List<IndexReader> subReaders = new ArrayList<IndexReader>();
+    final List<ReaderUtil.Slice> slices = new ArrayList<ReaderUtil.Slice>();
+    final List<Bits> bits = new ArrayList<Bits>();
+    final List<Integer> bitsStarts = new ArrayList<Integer>();
 
-    try {
-      queue = new SegmentMergeQueue(readers.size());
-
-      mergeTermInfos(consumer);
-
-    } finally {
-      consumer.finish();
-      if (queue != null) queue.close();
-    }
-  }
-
-  boolean omitTermFreqAndPositions;
-
-  private final void mergeTermInfos(final FormatPostingsFieldsConsumer consumer) throws CorruptIndexException, IOException {
-    int base = 0;
-    final int readerCount = readers.size();
-    for (int i = 0; i < readerCount; i++) {
-      IndexReader reader = readers.get(i);
-      TermEnum termEnum = reader.terms();
-      SegmentMergeInfo smi = new SegmentMergeInfo(base, termEnum, reader);
-      int[] docMap  = smi.getDocMap();
-      if (docMap != null) {
-        if (docMaps == null) {
-          docMaps = new int[readerCount][];
-          delCounts = new int[readerCount];
-        }
-        docMaps[i] = docMap;
-        delCounts[i] = smi.reader.maxDoc() - smi.reader.numDocs();
-      }
-      
-      base += reader.numDocs();
-
-      assert reader.numDocs() == reader.maxDoc() - smi.delCount;
-
-      if (smi.next())
-        queue.add(smi);				  // initialize queue
-      else
-        smi.close();
-    }
-
-    SegmentMergeInfo[] match = new SegmentMergeInfo[readers.size()];
-
-    String currentField = null;
-    FormatPostingsTermsConsumer termsConsumer = null;
-
-    while (queue.size() > 0) {
-      int matchSize = 0;			  // pop matching terms
-      match[matchSize++] = queue.pop();
-      Term term = match[0].term;
-      SegmentMergeInfo top = queue.top();
-
-      while (top != null && term.compareTo(top.term) == 0) {
-        match[matchSize++] =  queue.pop();
-        top =  queue.top();
-      }
-
-      if (currentField != term.field) {
-        currentField = term.field;
-        if (termsConsumer != null)
-          termsConsumer.finish();
-        final FieldInfo fieldInfo = fieldInfos.fieldInfo(currentField);
-        termsConsumer = consumer.addField(fieldInfo);
-        omitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
-      }
-
-      int df = appendPostings(termsConsumer, match, matchSize);		  // add new TermInfo
-
-      checkAbort.work(df/3.0);
-
-      while (matchSize > 0) {
-        SegmentMergeInfo smi = match[--matchSize];
-        if (smi.next())
-          queue.add(smi);			  // restore queue
-        else
-          smi.close();				  // done with a segment
-      }
-    }
-  }
-
-  private byte[] payloadBuffer;
-  private int[][] docMaps;
-  int[][] getDocMaps() {
-    return docMaps;
-  }
-  private int[] delCounts;
-  int[] getDelCounts() {
-    return delCounts;
-  }
-
-  /** Process postings from multiple segments all positioned on the
-   *  same term. Writes out merged entries into freqOutput and
-   *  the proxOutput streams.
-   *
-   * @param smis array of segments
-   * @param n number of cells in the array actually occupied
-   * @return number of documents across all segments where this term was found
-   * @throws CorruptIndexException if the index is corrupt
-   * @throws IOException if there is a low-level IO error
-   */
-  private final int appendPostings(final FormatPostingsTermsConsumer termsConsumer, SegmentMergeInfo[] smis, int n)
-        throws CorruptIndexException, IOException {
-
-    final FormatPostingsDocsConsumer docConsumer = termsConsumer.addTerm(smis[0].term.text);
-    int df = 0;
-    for (int i = 0; i < n; i++) {
-      SegmentMergeInfo smi = smis[i];
-      TermPositions postings = smi.getPositions();
-      assert postings != null;
-      int base = smi.base;
-      int[] docMap = smi.getDocMap();
-      postings.seek(smi.termEnum);
-
-      while (postings.next()) {
-        df++;
-        int doc = postings.doc();
-        if (docMap != null)
-          doc = docMap[doc];                      // map around deletions
-        doc += base;                              // convert to merged space
-
-        final int freq = postings.freq();
-        final FormatPostingsPositionsConsumer posConsumer = docConsumer.addDoc(doc, freq);
-
-        if (!omitTermFreqAndPositions) {
-          for (int j = 0; j < freq; j++) {
-            final int position = postings.nextPosition();
-            final int payloadLength = postings.getPayloadLength();
-            if (payloadLength > 0) {
-              if (payloadBuffer == null || payloadBuffer.length < payloadLength)
-                payloadBuffer = new byte[payloadLength];
-              postings.getPayload(payloadBuffer, 0);
-            }
-            posConsumer.addPosition(position, payloadBuffer, 0, payloadLength);
+    final int numReaders = readers.size();
+    for(int i=0;i<numReaders;i++) {
+      docBase = new ReaderUtil.Gather(readers.get(i)) {
+          @Override
+          protected void add(int base, IndexReader r) throws IOException {
+            subReaders.add(r);
+            fields.add(r.fields());
+            slices.add(new ReaderUtil.Slice(base, r.maxDoc(), fields.size()-1));
+            bits.add(r.getDeletedDocs());
+            bitsStarts.add(base);
           }
-          posConsumer.finish();
+        }.run(docBase);
+    }
+
+    bitsStarts.add(docBase);
+
+    // we may gather more readers than mergeState.readerCount
+    mergeState = new MergeState();
+    mergeState.readers = subReaders;
+    mergeState.readerCount = subReaders.size();
+    mergeState.fieldInfos = fieldInfos;
+    mergeState.mergedDocCount = mergedDocs;
+    
+    // Remap docIDs
+    mergeState.delCounts = new int[mergeState.readerCount];
+    mergeState.docMaps = new int[mergeState.readerCount][];
+    mergeState.docBase = new int[mergeState.readerCount];
+
+    docBase = 0;
+    int inputDocBase = 0;
+
+    final int[] starts = new int[mergeState.readerCount+1];
+
+    for(int i=0;i<mergeState.readerCount;i++) {
+
+      final IndexReader reader = subReaders.get(i);
+
+      starts[i] = inputDocBase;
+
+      mergeState.delCounts[i] = reader.numDeletedDocs();
+      mergeState.docBase[i] = docBase;
+      docBase += reader.numDocs();
+      inputDocBase += reader.maxDoc();
+      if (mergeState.delCounts[i] != 0) {
+        int delCount = 0;
+        Bits deletedDocs = reader.getDeletedDocs();
+        final int maxDoc = reader.maxDoc();
+        final int[] docMap = mergeState.docMaps[i] = new int[maxDoc];
+        int newDocID = 0;
+        for(int j=0;j<maxDoc;j++) {
+          if (deletedDocs.get(j)) {
+            docMap[j] = -1;
+            delCount++;  // only for assert
+          } else {
+            docMap[j] = newDocID++;
+          }
         }
+        assert delCount == mergeState.delCounts[i]: "reader delCount=" + mergeState.delCounts[i] + " vs recomputed delCount=" + delCount;
       }
     }
-    docConsumer.finish();
+    starts[mergeState.readerCount] = inputDocBase;
 
-    return df;
+    final FieldsConsumer consumer = codec.fieldsConsumer(segmentWriteState);
+
+    // NOTE: this is silly, yet, necessary -- we create a
+    // MultiBits as our skip docs only to have it broken
+    // apart when we step through the docs enums in
+    // MultidDcsEnum.... this only matters when we are
+    // interacting with a non-core IR subclass, because
+    // LegacyFieldsEnum.LegacyDocs[AndPositions]Enum checks
+    // that the skipDocs matches the delDocs for the reader
+    mergeState.multiDeletedDocs = new MultiBits(bits, bitsStarts);
+    
+    try {
+      consumer.merge(mergeState,
+                     new MultiFields(fields.toArray(Fields.EMPTY_ARRAY),
+                                     slices.toArray(ReaderUtil.Slice.EMPTY_ARRAY)));
+    } finally {
+      consumer.close();
+    }
   }
 
+  private MergeState mergeState;
+
+  int[][] getDocMaps() {
+    return mergeState.docMaps;
+  }
+
+  int[] getDelCounts() {
+    return mergeState.delCounts;
+  }
+  
   private void mergeNorms() throws IOException {
     byte[] normBuffer = null;
     IndexOutput output = null;

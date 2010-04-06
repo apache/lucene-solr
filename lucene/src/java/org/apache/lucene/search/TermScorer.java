@@ -19,25 +19,26 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.DocsEnum;
 
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
 final class TermScorer extends Scorer {
-  
   private Weight weight;
-  private TermDocs termDocs;
+  private DocsEnum docsEnum;
   private byte[] norms;
   private float weightValue;
   private int doc = -1;
+  private int freq;
 
-  private final int[] docs = new int[32];         // buffered doc numbers
-  private final int[] freqs = new int[32];        // buffered term freqs
   private int pointer;
   private int pointerMax;
 
   private static final int SCORE_CACHE_SIZE = 32;
   private float[] scoreCache = new float[SCORE_CACHE_SIZE];
+  private int[] docs;
+  private int[] freqs;
+  private final DocsEnum.BulkReadResult bulkResult;
 
   /**
    * Construct a <code>TermScorer</code>.
@@ -52,13 +53,14 @@ final class TermScorer extends Scorer {
    * @param norms
    *          The field norms of the document fields for the <code>Term</code>.
    */
-  TermScorer(Weight weight, TermDocs td, Similarity similarity, byte[] norms) {
+  TermScorer(Weight weight, DocsEnum td, Similarity similarity, byte[] norms) {
     super(similarity);
     
     this.weight = weight;
-    this.termDocs = td;
+    this.docsEnum = td;
     this.norms = norms;
     this.weightValue = weight.getValue();
+    bulkResult = td.getBulkResult();
 
     for (int i = 0; i < SCORE_CACHE_SIZE; i++)
       scoreCache[i] = getSimilarity().tf(i) * weightValue;
@@ -69,62 +71,69 @@ final class TermScorer extends Scorer {
     score(c, Integer.MAX_VALUE, nextDoc());
   }
 
+  private final void refillBuffer() throws IOException {
+    pointerMax = docsEnum.read();  // refill
+    docs = bulkResult.docs.ints;
+    freqs = bulkResult.freqs.ints;
+  }
+
   // firstDocID is ignored since nextDoc() sets 'doc'
   @Override
   protected boolean score(Collector c, int end, int firstDocID) throws IOException {
     c.setScorer(this);
     while (doc < end) {                           // for docs in window
       c.collect(doc);                      // collect score
-        
       if (++pointer >= pointerMax) {
-        pointerMax = termDocs.read(docs, freqs);  // refill buffers
+        refillBuffer();
         if (pointerMax != 0) {
           pointer = 0;
         } else {
-          termDocs.close();                       // close stream
-          doc = Integer.MAX_VALUE;                // set to sentinel value
+          doc = NO_MORE_DOCS;                // set to sentinel value
           return false;
         }
       } 
       doc = docs[pointer];
+      freq = freqs[pointer];
     }
     return true;
   }
 
   @Override
-  public int docID() { return doc; }
+  public int docID() {
+    return doc;
+  }
 
   /**
    * Advances to the next document matching the query. <br>
    * The iterator over the matching documents is buffered using
    * {@link TermDocs#read(int[],int[])}.
    * 
-   * @return the document matching the query or -1 if there are no more documents.
+   * @return the document matching the query or NO_MORE_DOCS if there are no more documents.
    */
   @Override
   public int nextDoc() throws IOException {
     pointer++;
     if (pointer >= pointerMax) {
-      pointerMax = termDocs.read(docs, freqs);    // refill buffer
+      refillBuffer();
       if (pointerMax != 0) {
         pointer = 0;
       } else {
-        termDocs.close();                         // close stream
         return doc = NO_MORE_DOCS;
       }
     } 
     doc = docs[pointer];
+    freq = freqs[pointer];
+    assert doc != NO_MORE_DOCS;
     return doc;
   }
   
   @Override
   public float score() {
-    assert doc != -1;
-    int f = freqs[pointer];
+    assert doc != NO_MORE_DOCS;
     float raw =                                   // compute tf(f)*weight
-      f < SCORE_CACHE_SIZE                        // check cache
-      ? scoreCache[f]                             // cache hit
-      : getSimilarity().tf(f)*weightValue;        // cache miss
+      freq < SCORE_CACHE_SIZE                        // check cache
+      ? scoreCache[freq]                             // cache hit
+      : getSimilarity().tf(freq)*weightValue;        // cache miss
 
     return norms == null ? raw : raw * getSimilarity().decodeNormValue(norms[doc]); // normalize for field
   }
@@ -132,34 +141,34 @@ final class TermScorer extends Scorer {
   /**
    * Advances to the first match beyond the current whose document number is
    * greater than or equal to a given target. <br>
-   * The implementation uses {@link TermDocs#skipTo(int)}.
+   * The implementation uses {@link DocsEnum#advance(int)}.
    * 
    * @param target
    *          The target document number.
-   * @return the matching document or -1 if none exist.
+   * @return the matching document or NO_MORE_DOCS if none exist.
    */
   @Override
   public int advance(int target) throws IOException {
     // first scan in cache
     for (pointer++; pointer < pointerMax; pointer++) {
       if (docs[pointer] >= target) {
+        freq = freqs[pointer];
         return doc = docs[pointer];
       }
     }
 
-    // not found in cache, seek underlying stream
-    boolean result = termDocs.skipTo(target);
-    if (result) {
-      pointerMax = 1;
-      pointer = 0;
-      docs[pointer] = doc = termDocs.doc();
-      freqs[pointer] = termDocs.freq();
+    // not found in readahead cache, seek underlying stream
+    int newDoc = docsEnum.advance(target);
+    //System.out.println("ts.advance docsEnum=" + docsEnum);
+    if (newDoc != DocsEnum.NO_MORE_DOCS) {
+      doc = newDoc;
+      freq = docsEnum.freq();
     } else {
       doc = NO_MORE_DOCS;
     }
     return doc;
   }
-  
+
   /** Returns a string representation of this <code>TermScorer</code>. */
   @Override
   public String toString() { return "scorer(" + weight + ")"; }

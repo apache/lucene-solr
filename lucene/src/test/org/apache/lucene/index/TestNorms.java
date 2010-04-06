@@ -186,6 +186,7 @@ public class TestNorms extends LuceneTestCase {
         assertEquals("stored norm value of "+field+" for doc "+j+" is "+norm+" - a mismatch!", norm, norm1, 0.000001);
       }
     }
+    ir.close();
   }
 
   private void addDocs(Directory dir, int ndocs, boolean compound) throws IOException {

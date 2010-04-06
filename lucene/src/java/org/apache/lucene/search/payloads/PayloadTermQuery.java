@@ -18,8 +18,8 @@ package org.apache.lucene.search.payloads;
  */
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -30,6 +30,7 @@ import org.apache.lucene.search.spans.TermSpans;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.SpanWeight;
 import org.apache.lucene.search.spans.SpanScorer;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 
@@ -80,16 +81,15 @@ public class PayloadTermQuery extends SpanTermQuery {
     }
 
     protected class PayloadTermSpanScorer extends SpanScorer {
-      // TODO: is this the best way to allocate this?
-      protected byte[] payload = new byte[256];
-      protected TermPositions positions;
+      protected BytesRef payload;
       protected float payloadScore;
       protected int payloadsSeen;
+      private final TermSpans termSpans;
 
       public PayloadTermSpanScorer(TermSpans spans, Weight weight,
           Similarity similarity, byte[] norms) throws IOException {
         super(spans, weight, similarity, norms);
-        positions = spans.getPositions();
+        termSpans = spans;
       }
 
       @Override
@@ -115,12 +115,24 @@ public class PayloadTermQuery extends SpanTermQuery {
       }
 
       protected void processPayload(Similarity similarity) throws IOException {
-        if (positions.isPayloadAvailable()) {
-          payload = positions.getPayload(payload, 0);
-          payloadScore = function.currentScore(doc, term.field(),
-              spans.start(), spans.end(), payloadsSeen, payloadScore,
-              similarity.scorePayload(doc, term.field(), spans.start(), spans
-                  .end(), payload, 0, positions.getPayloadLength()));
+        final DocsAndPositionsEnum postings = termSpans.getPostings();
+        if (postings.hasPayload()) {
+          payload = postings.getPayload();
+          if (payload != null) {
+            payloadScore = function.currentScore(doc, term.field(),
+                                                 spans.start(), spans.end(), payloadsSeen, payloadScore,
+                                                 similarity.scorePayload(doc, term.field(), spans.start(),
+                                                                         spans.end(), payload.bytes,
+                                                                         payload.offset,
+                                                                         payload.length));
+          } else {
+            payloadScore = function.currentScore(doc, term.field(),
+                                                 spans.start(), spans.end(), payloadsSeen, payloadScore,
+                                                 similarity.scorePayload(doc, term.field(), spans.start(),
+                                                                         spans.end(), null,
+                                                                         0,
+                                                                         0));
+          }
           payloadsSeen++;
 
         } else {

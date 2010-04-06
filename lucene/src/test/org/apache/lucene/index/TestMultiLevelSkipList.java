@@ -29,8 +29,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -42,8 +43,18 @@ import org.apache.lucene.util.LuceneTestCase;
  * 
  */
 public class TestMultiLevelSkipList extends LuceneTestCase {
+  
+  class CountingRAMDirectory extends MockRAMDirectory {
+    public IndexInput openInput(String fileName) throws IOException {
+      IndexInput in = super.openInput(fileName);
+      if (fileName.endsWith(".frq"))
+        in = new CountingStream(in);
+      return in;
+    }
+  }
+
   public void testSimpleSkip() throws IOException {
-    RAMDirectory dir = new RAMDirectory();
+    Directory dir = new CountingRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()));
     Term term = new Term("test", "a");
     for (int i = 0; i < 5000; i++) {
@@ -56,9 +67,8 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     writer.close();
 
     IndexReader reader = SegmentReader.getOnlySegmentReader(dir);
-    SegmentTermPositions tp = (SegmentTermPositions) reader.termPositions();
-    tp.freqStream = new CountingStream(tp.freqStream);
-
+    TermPositions tp = reader.termPositions();
+    
     for (int i = 0; i < 2; i++) {
       counter = 0;
       tp.seek(term);

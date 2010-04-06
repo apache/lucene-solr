@@ -83,5 +83,4 @@ public abstract class Spans {
    * @return true if there is a payload available at this position that can be loaded
    */
   public abstract boolean isPayloadAvailable();
-
 }

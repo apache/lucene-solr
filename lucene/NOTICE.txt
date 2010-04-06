@@ -46,3 +46,12 @@ provided by Xiaoping Gao and copyright 2009 by www.imdict.net.
 ICU4J, (under contrib/icu) is licensed under an MIT styles license
 (contrib/icu/lib/ICU-LICENSE.txt) and Copyright (c) 1995-2008 
 International Business Machines Corporation and others
+
+Brics Automaton (under src/java/org/apache/lucene/util/automaton) is 
+BSD-licensed, created by Anders Møller. See http://www.brics.dk/automaton/
+
+The levenshtein automata tables (under src/java/org/apache/lucene/util/automaton) were
+automatically generated with the moman/finenight FSA library, created by
+Jean-Philippe Barrette-LaPierre. This library is available under an MIT license,
+see http://sites.google.com/site/rrettesite/moman and 
+http://bitbucket.org/jpbarrette/moman/overview/

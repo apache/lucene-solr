@@ -26,6 +26,7 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
+import java.util.Random;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.ArrayList;
@@ -39,14 +40,18 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.document.NumericField;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.BytesRef;
 
 /*
   Verify we can read the pre-2.1 file format, do searches
@@ -134,6 +139,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                              "24.nocfs",
                              "29.cfs",
                              "29.nocfs",
+                             "30.cfs",
+                             "30.nocfs",
   };
   
   private void assertCompressedFields29(Directory dir, boolean shouldStillBeCompressed) throws IOException {
@@ -201,13 +208,18 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
-  public void testOptimizeOldIndex() throws IOException {
+  public void testOptimizeOldIndex() throws Exception {
     int hasTested29 = 0;
+
+    Random rand = newRandom();
     
     for(int i=0;i<oldNames.length;i++) {
       unzip(getDataFile("index." + oldNames[i] + ".zip"), oldNames[i]);
+
       String fullPath = fullDir(oldNames[i]);
       Directory dir = FSDirectory.open(new File(fullPath));
+
+      FlexTestUtil.verifyFlexVsPreFlex(rand, dir);
 
       if (oldNames[i].startsWith("29.")) {
         assertCompressedFields29(dir, true);
@@ -217,6 +229,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
           TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
       w.optimize();
+      FlexTestUtil.verifyFlexVsPreFlex(rand, w);
       w.close();
 
       _TestUtil.checkIndex(dir);
@@ -257,7 +270,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
   }
 
-  private void testHits(ScoreDoc[] hits, int expectedCount, IndexReader reader) throws IOException {
+  private void doTestHits(ScoreDoc[] hits, int expectedCount, IndexReader reader) throws IOException {
     final int hitCount = hits.length;
     assertEquals("wrong number of hits", expectedCount, hitCount);
     for(int i=0;i<hitCount;i++) {
@@ -267,7 +280,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void searchIndex(String dirName, String oldName) throws IOException {
-    //QueryParser parser = new QueryParser("contents", new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    //QueryParser parser = new QueryParser("contents", new WhitespaceAnalyzer());
     //Query query = parser.parse("handle:1");
 
     dirName = fullDir(dirName);
@@ -318,7 +331,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Document d = searcher.doc(hits[0].doc);
     assertEquals("didn't get the right document first", "21", d.get("id"));
 
-    testHits(hits, 34, searcher.getIndexReader());
+    doTestHits(hits, 34, searcher.getIndexReader());
 
     if (!oldName.startsWith("19.") &&
         !oldName.startsWith("20.") &&
@@ -374,7 +387,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     Document d = searcher.doc(hits[0].doc);
     assertEquals("wrong first document", "21", d.get("id"));
-    testHits(hits, 44, searcher.getIndexReader());
+    doTestHits(hits, 44, searcher.getIndexReader());
     searcher.close();
 
     // make sure we can do delete & setNorm against this
@@ -392,7 +405,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     assertEquals("wrong number of hits", 43, hits.length);
     d = searcher.doc(hits[0].doc);
     assertEquals("wrong first document", "22", d.get("id"));
-    testHits(hits, 43, searcher.getIndexReader());
+    doTestHits(hits, 43, searcher.getIndexReader());
     searcher.close();
 
     // optimize
@@ -404,7 +417,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     hits = searcher.search(new TermQuery(new Term("content", "aaa")), null, 1000).scoreDocs;
     assertEquals("wrong number of hits", 43, hits.length);
     d = searcher.doc(hits[0].doc);
-    testHits(hits, 43, searcher.getIndexReader());
+    doTestHits(hits, 43, searcher.getIndexReader());
     assertEquals("wrong first document", "22", d.get("id"));
     searcher.close();
 
@@ -442,7 +455,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     assertEquals("wrong number of hits", 33, hits.length);
     d = searcher.doc(hits[0].doc);
     assertEquals("wrong first document", "22", d.get("id"));
-    testHits(hits, 33, searcher.getIndexReader());
+    doTestHits(hits, 33, searcher.getIndexReader());
     searcher.close();
 
     // optimize
@@ -455,7 +468,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     assertEquals("wrong number of hits", 33, hits.length);
     d = searcher.doc(hits[0].doc);
     assertEquals("wrong first document", "22", d.get("id"));
-    testHits(hits, 33, searcher.getIndexReader());
+    doTestHits(hits, 33, searcher.getIndexReader());
     searcher.close();
 
     dir.close();
@@ -593,6 +606,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       doc.add(new Field("compressedSize", Integer.toString(BINARY_COMPRESSED_LENGTH), Field.Store.YES, Field.Index.NOT_ANALYZED));
     }
     */
+    // add numeric fields, to test if flex preserves encoding
+    doc.add(new NumericField("trieInt", 4).setIntValue(id));
+    doc.add(new NumericField("trieLong", 4).setLongValue(id));
     writer.addDocument(doc);
   }
 
@@ -641,4 +657,105 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   /* This was used in 2.9 to generate an index with compressed field:
   static final int BINARY_COMPRESSED_LENGTH = CompressionTools.compress(BINARY_TO_COMPRESS).length;
   */
+
+  private int countDocs(DocsEnum docs) throws IOException {
+    int count = 0;
+    while((docs.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+      count ++;
+    }
+    return count;
+  }
+
+  // flex: test basics of TermsEnum api on non-flex index
+  public void testNextIntoWrongField() throws Exception {
+    for(int i=0;i<oldNames.length;i++) {
+      unzip(getDataFile("index." + oldNames[i] + ".zip"), oldNames[i]);
+      String fullPath = fullDir(oldNames[i]);
+      Directory dir = FSDirectory.open(new File(fullPath));
+      IndexReader r = IndexReader.open(dir);
+      TermsEnum terms = MultiFields.getFields(r).terms("content").iterator();
+      BytesRef t = terms.next();
+      assertNotNull(t);
+
+      // content field only has term aaa:
+      assertEquals("aaa", t.utf8ToString());
+      assertNull(terms.next());
+
+      BytesRef aaaTerm = new BytesRef("aaa");
+
+      // should be found exactly
+      assertEquals(TermsEnum.SeekStatus.FOUND,
+                   terms.seek(aaaTerm));
+      assertEquals(35, countDocs(terms.docs(null, null)));
+      assertNull(terms.next());
+
+      // should hit end of field
+      assertEquals(TermsEnum.SeekStatus.END,
+                   terms.seek(new BytesRef("bbb")));
+      assertNull(terms.next());
+
+      // should seek to aaa
+      assertEquals(TermsEnum.SeekStatus.NOT_FOUND,
+                   terms.seek(new BytesRef("a")));
+      assertTrue(terms.term().bytesEquals(aaaTerm));
+      assertEquals(35, countDocs(terms.docs(null, null)));
+      assertNull(terms.next());
+
+      assertEquals(TermsEnum.SeekStatus.FOUND,
+                   terms.seek(aaaTerm));
+      assertEquals(35, countDocs(terms.docs(null, null)));
+      assertNull(terms.next());
+
+      r.close();
+      dir.close();
+      rmDir(oldNames[i]);
+    }
+  }
+  
+  public void testNumericFields() throws Exception {
+    for(int i=0;i<oldNames.length;i++) {
+      // only test indexes >= 3.0
+      if (oldNames[i].compareTo("30.") < 0) continue;
+      
+      unzip(getDataFile("index." + oldNames[i] + ".zip"), oldNames[i]);
+      String fullPath = fullDir(oldNames[i]);
+      Directory dir = FSDirectory.open(new File(fullPath));
+      IndexSearcher searcher = new IndexSearcher(dir, true);
+      
+      for (int id=10; id<15; id++) {
+        ScoreDoc[] hits = searcher.search(NumericRangeQuery.newIntRange("trieInt", 4, Integer.valueOf(id), Integer.valueOf(id), true, true), 100).scoreDocs;
+        assertEquals("wrong number of hits", 1, hits.length);
+        Document d = searcher.doc(hits[0].doc);
+        assertEquals(String.valueOf(id), d.get("id"));
+        
+        hits = searcher.search(NumericRangeQuery.newLongRange("trieLong", 4, Long.valueOf(id), Long.valueOf(id), true, true), 100).scoreDocs;
+        assertEquals("wrong number of hits", 1, hits.length);
+        d = searcher.doc(hits[0].doc);
+        assertEquals(String.valueOf(id), d.get("id"));
+      }
+      
+      // check that also lower-precision fields are ok
+      ScoreDoc[] hits = searcher.search(NumericRangeQuery.newIntRange("trieInt", 4, Integer.MIN_VALUE, Integer.MAX_VALUE, false, false), 100).scoreDocs;
+      assertEquals("wrong number of hits", 34, hits.length);
+      
+      hits = searcher.search(NumericRangeQuery.newLongRange("trieLong", 4, Long.MIN_VALUE, Long.MAX_VALUE, false, false), 100).scoreDocs;
+      assertEquals("wrong number of hits", 34, hits.length);
+      
+      // check decoding into field cache
+      int[] fci = FieldCache.DEFAULT.getInts(searcher.getIndexReader(), "trieInt");
+      for (int val : fci) {
+        assertTrue("value in id bounds", val >= 0 && val < 35);
+      }
+      
+      long[] fcl = FieldCache.DEFAULT.getLongs(searcher.getIndexReader(), "trieLong");
+      for (long val : fcl) {
+        assertTrue("value in id bounds", val >= 0L && val < 35L);
+      }
+      
+      searcher.close();
+      dir.close();
+      rmDir(oldNames[i]);
+    }
+  }
+
 }

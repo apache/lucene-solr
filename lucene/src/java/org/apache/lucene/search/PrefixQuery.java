@@ -20,7 +20,10 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents containing terms with a specified prefix. A PrefixQuery
@@ -34,23 +37,34 @@ public class PrefixQuery extends MultiTermQuery {
 
   /** Constructs a query for terms starting with <code>prefix</code>. */
   public PrefixQuery(Term prefix) {
+    super(prefix.field());
     this.prefix = prefix;
   }
 
   /** Returns the prefix of this query. */
   public Term getPrefix() { return prefix; }
   
-  @Override
+  @Override @Deprecated
   protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
     return new PrefixTermEnum(reader, prefix);
+  }
+  
+  @Override  
+  protected TermsEnum getTermsEnum(IndexReader reader) throws IOException {
+    if (prefix.text().length() == 0) {
+      // no prefix -- match all terms for this field:
+      final Terms terms = MultiFields.getTerms(reader, getField());
+      return (terms != null) ? terms.iterator() : TermsEnum.EMPTY;
+    }
+    return new PrefixTermsEnum(reader, prefix);
   }
 
   /** Prints a user-readable version of this query. */
   @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
-    if (!prefix.field().equals(field)) {
-      buffer.append(prefix.field());
+    if (!getField().equals(field)) {
+      buffer.append(getField());
       buffer.append(":");
     }
     buffer.append(prefix.text());

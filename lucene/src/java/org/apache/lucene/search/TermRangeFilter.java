@@ -87,9 +87,6 @@ public class TermRangeFilter extends MultiTermQueryWrapperFilter<TermRangeQuery>
   public static TermRangeFilter More(String fieldName, String lowerTerm) {
       return new TermRangeFilter(fieldName, lowerTerm, null, true, false);
   }
-
-  /** Returns the field name for this filter */
-  public String getField() { return query.getField(); }
   
   /** Returns the lower value of this range filter */
   public String getLowerTerm() { return query.getLowerTerm(); }

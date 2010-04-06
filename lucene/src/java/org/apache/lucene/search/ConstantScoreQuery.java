@@ -161,8 +161,8 @@ public class ConstantScoreQuery extends Query {
   /** Prints a user-readable version of this query. */
   @Override
   public String toString(String field) {
-    return "ConstantScore(" + filter.toString()
-      + (getBoost()==1.0 ? ")" : "^" + getBoost());
+    return "ConstantScore(" + filter.toString() + ")"
+      + (getBoost()==1.0 ? "" : "^" + getBoost());
   }
 
   /** Returns true if <code>o</code> is equal to this. */

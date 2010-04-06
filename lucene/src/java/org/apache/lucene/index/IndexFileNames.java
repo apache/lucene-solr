@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.codecs.Codec;  // for javadocs
+
 /**
  * This class contains useful constants representing filenames and extensions
  * used by lucene, as well as convenience methods for querying whether a file
@@ -25,16 +27,24 @@ package org.apache.lucene.index;
  * generation and extension (
  * {@link #fileNameFromGeneration(String, String, long) fileNameFromGeneration},
  * {@link #segmentFileName(String, String) segmentFileName}).
- * 
+ *
+ * <p><b>NOTE</b>: extensions used by codecs are not
+ * listed here.  You must interact with the {@link Codec}
+ * directly.
+ *
  * @lucene.internal
  */
+
 public final class IndexFileNames {
 
   /** Name of the index segment file */
   public static final String SEGMENTS = "segments";
 
+  /** Extension of gen file */
+  public static final String GEN_EXTENSION = "gen";
+  
   /** Name of the generation reference file name */
-  public static final String SEGMENTS_GEN = "segments.gen";
+  public static final String SEGMENTS_GEN = "segments." +  GEN_EXTENSION;
   
   /** Name of the index deletable file (only used in
    * pre-lockless indices) */
@@ -42,18 +52,6 @@ public final class IndexFileNames {
    
   /** Extension of norms file */
   public static final String NORMS_EXTENSION = "nrm";
-
-  /** Extension of freq postings file */
-  public static final String FREQ_EXTENSION = "frq";
-
-  /** Extension of prox postings file */
-  public static final String PROX_EXTENSION = "prx";
-
-  /** Extension of terms file */
-  public static final String TERMS_EXTENSION = "tis";
-
-  /** Extension of terms index file */
-  public static final String TERMS_INDEX_EXTENSION = "tii";
 
   /** Extension of stored fields index file */
   public static final String FIELDS_INDEX_EXTENSION = "fdx";
@@ -88,9 +86,6 @@ public final class IndexFileNames {
   /** Extension of separate norms */
   public static final String SEPARATE_NORMS_EXTENSION = "s";
 
-  /** Extension of gen file */
-  public static final String GEN_EXTENSION = "gen";
-
   /**
    * This array contains all filename extensions used by
    * Lucene's index files, with two exceptions, namely the
@@ -104,10 +99,6 @@ public final class IndexFileNames {
     FIELD_INFOS_EXTENSION,
     FIELDS_INDEX_EXTENSION,
     FIELDS_EXTENSION,
-    TERMS_INDEX_EXTENSION,
-    TERMS_EXTENSION,
-    FREQ_EXTENSION,
-    PROX_EXTENSION,
     DELETES_EXTENSION,
     VECTORS_INDEX_EXTENSION,
     VECTORS_DOCUMENTS_EXTENSION,
@@ -115,22 +106,6 @@ public final class IndexFileNames {
     GEN_EXTENSION,
     NORMS_EXTENSION,
     COMPOUND_FILE_STORE_EXTENSION,
-  };
-
-  /** File extensions that are added to a compound file
-   * (same as above, minus "del", "gen", "cfs"). */
-  public static final String[] INDEX_EXTENSIONS_IN_COMPOUND_FILE = new String[] {
-    FIELD_INFOS_EXTENSION,
-    FIELDS_INDEX_EXTENSION,
-    FIELDS_EXTENSION,
-    TERMS_INDEX_EXTENSION,
-    TERMS_EXTENSION,
-    FREQ_EXTENSION,
-    PROX_EXTENSION,
-    VECTORS_INDEX_EXTENSION,
-    VECTORS_DOCUMENTS_EXTENSION,
-    VECTORS_FIELDS_EXTENSION,
-    NORMS_EXTENSION
   };
 
   public static final String[] STORE_INDEX_EXTENSIONS = new String[] {
@@ -143,22 +118,13 @@ public final class IndexFileNames {
 
   public static final String[] NON_STORE_INDEX_EXTENSIONS = new String[] {
     FIELD_INFOS_EXTENSION,
-    FREQ_EXTENSION,
-    PROX_EXTENSION,
-    TERMS_EXTENSION,
-    TERMS_INDEX_EXTENSION,
     NORMS_EXTENSION
   };
   
-  /** File extensions of old-style index files */
-  public static final String COMPOUND_EXTENSIONS[] = new String[] {
+  static final String COMPOUND_EXTENSIONS_NOT_CODEC[] = new String[] {
     FIELD_INFOS_EXTENSION,
-    FREQ_EXTENSION,
-    PROX_EXTENSION,
     FIELDS_INDEX_EXTENSION,
     FIELDS_EXTENSION,
-    TERMS_INDEX_EXTENSION,
-    TERMS_EXTENSION
   };
   
   /** File extensions for term vector support */
@@ -222,6 +188,7 @@ public final class IndexFileNames {
    */
   public static final String segmentFileName(String segmentName, String ext) {
     if (ext.length() > 0) {
+      assert !ext.startsWith(".");
       return new StringBuilder(segmentName.length() + 1 + ext.length()).append(
           segmentName).append('.').append(ext).toString();
     } else {

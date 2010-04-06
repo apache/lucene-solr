@@ -1,5 +1,7 @@
 package org.apache.lucene.index;
 
+import org.apache.lucene.store.DataOutput;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -24,7 +26,7 @@ package org.apache.lucene.index;
  * posting list for many terms in RAM.
  */
 
-final class ByteSliceWriter {
+final class ByteSliceWriter extends DataOutput {
 
   private byte[] slice;
   private int upto;
@@ -38,7 +40,7 @@ final class ByteSliceWriter {
 
   /**
    * Set up the writer to write at address.
-   */ 
+   */
   public void init(int address) {
     slice = pool.buffers[address >> DocumentsWriter.BYTE_BLOCK_SHIFT];
     assert slice != null;
@@ -48,6 +50,7 @@ final class ByteSliceWriter {
   }
 
   /** Write byte into byte slice stream */
+  @Override
   public void writeByte(byte b) {
     assert slice != null;
     if (slice[upto] != 0) {
@@ -60,6 +63,7 @@ final class ByteSliceWriter {
     assert upto != slice.length;
   }
 
+  @Override
   public void writeBytes(final byte[] b, int offset, final int len) {
     final int offsetEnd = offset + len;
     while(offset < offsetEnd) {
@@ -77,13 +81,5 @@ final class ByteSliceWriter {
 
   public int getAddress() {
     return upto + (offset0 & DocumentsWriter.BYTE_BLOCK_NOT_MASK);
-  }
-
-  public void writeVInt(int i) {
-    while ((i & ~0x7F) != 0) {
-      writeByte((byte)((i & 0x7f) | 0x80));
-      i >>>= 7;
-    }
-    writeByte((byte) i);
   }
 }

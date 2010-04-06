@@ -23,8 +23,10 @@ import java.io.Closeable;
 /** Abstract class for enumerating terms.
 
   <p>Term enumerations are always ordered by Term.compareTo().  Each term in
-  the enumeration is greater than all that precede it.  */
+  the enumeration is greater than all that precede it.
+* @deprecated Use TermsEnum instead */
 
+@Deprecated
 public abstract class TermEnum implements Closeable {
   /** Increments the enumeration to the next element.  True if one exists.*/
   public abstract boolean next() throws IOException;

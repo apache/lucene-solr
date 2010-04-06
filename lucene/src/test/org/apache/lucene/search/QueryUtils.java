@@ -391,7 +391,6 @@ public class QueryUtils {
       }
       @Override
       public void collect(int doc) throws IOException {
-        //System.out.println("doc="+doc);
         float score = scorer.score();
         try {
           

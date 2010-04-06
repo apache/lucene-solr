@@ -113,8 +113,9 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
           else
             lastPerField.next = perField.next;
 
-          if (state.docWriter.infoStream != null)
-            state.docWriter.infoStream.println("  purge field=" + perField.fieldInfo.name);
+          if (state.infoStream != null) {
+            state.infoStream.println("  purge field=" + perField.fieldInfo.name);
+          }
 
           totalFieldCount--;
 
@@ -247,7 +248,7 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
       fields[i].consumer.processFields(fields[i].fields, fields[i].fieldCount);
 
     if (docState.maxTermPrefix != null && docState.infoStream != null) {
-      docState.infoStream.println("WARNING: document contains at least one immense term (longer than the max length " + DocumentsWriter.MAX_TERM_LENGTH + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + docState.maxTermPrefix + "...'");
+      docState.infoStream.println("WARNING: document contains at least one immense term (whose UTF8 encoding is longer than the max length " + DocumentsWriter.MAX_TERM_LENGTH_UTF8 + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + docState.maxTermPrefix + "...'"); 
       docState.maxTermPrefix = null;
     }
 

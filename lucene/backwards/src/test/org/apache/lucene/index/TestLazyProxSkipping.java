@@ -48,7 +48,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
       @Override
       public IndexInput openInput(String name) throws IOException {
         IndexInput ii = super.openInput(name);
-        if (name.endsWith(".prx")) {
+        if (name.endsWith(".prx") || name.endsWith(".pos")) {
           // we decorate the proxStream with a wrapper class that allows to count the number of calls of seek()
           ii = new SeeksCountingStream(ii);
         }

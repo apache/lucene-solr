@@ -22,10 +22,13 @@ import java.util.Set;
 import java.util.ArrayList;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermPositions;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.Bits;
 
 /** A Query that matches documents containing a particular sequence of terms.
  * A PhraseQuery is built by QueryParser for input like <code>"new york"</code>.
@@ -150,20 +153,35 @@ public class PhraseQuery extends Query {
       if (terms.size() == 0)			  // optimize zero-term case
         return null;
 
-      TermPositions[] tps = new TermPositions[terms.size()];
+      DocsAndPositionsEnum[] postings = new DocsAndPositionsEnum[terms.size()];
+      final Bits delDocs = MultiFields.getDeletedDocs(reader);
       for (int i = 0; i < terms.size(); i++) {
-        TermPositions p = reader.termPositions(terms.get(i));
-        if (p == null)
-          return null;
-        tps[i] = p;
+        final Term t = terms.get(i);
+        final BytesRef text = new BytesRef(t.text());
+        DocsAndPositionsEnum postingsEnum = MultiFields.getTermPositionsEnum(reader,
+                                                                             delDocs,
+                                                                             t.field(),
+                                                                             text);
+        // PhraseQuery on a field that did not index
+        // positions.
+        if (postingsEnum == null) {
+          if (MultiFields.getTermDocsEnum(reader, delDocs, t.field(), text) != null) {
+            // term does exist, but has no positions
+            throw new IllegalStateException("field \"" + t.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + t.text() + ")");
+          } else {
+            // term does not exist
+            return null;
+          }
+        }
+        postings[i] = postingsEnum;
       }
 
       if (slop == 0)				  // optimize exact case
-        return new ExactPhraseScorer(this, tps, getPositions(), similarity,
+        return new ExactPhraseScorer(this, postings, getPositions(), similarity,
                                      reader.norms(field));
       else
         return
-          new SloppyPhraseScorer(this, tps, getPositions(), similarity, slop,
+          new SloppyPhraseScorer(this, postings, getPositions(), similarity, slop,
                                  reader.norms(field));
 
     }

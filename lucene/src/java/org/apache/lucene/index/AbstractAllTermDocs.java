@@ -26,6 +26,7 @@ import java.io.IOException;
  * packages.  This means the API is freely subject to
  * change, and, the class could be removed entirely, in any
  * Lucene release.  Use directly at your own risk! */
+@Deprecated
 public abstract class AbstractAllTermDocs implements TermDocs {
 
   protected int maxDoc;

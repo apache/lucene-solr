@@ -26,6 +26,7 @@ import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.apache.lucene.util.NumericUtils;
 
@@ -350,9 +351,15 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
       if (lower>upper) {
         long a=lower; lower=upper; upper=a;
       }
+      final BytesRef lowerBytes = new BytesRef(NumericUtils.BUF_SIZE_LONG), upperBytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
+      NumericUtils.longToPrefixCoded(lower, 0, lowerBytes);
+      NumericUtils.longToPrefixCoded(upper, 0, upperBytes);
+      // TODO: when new TermRange ctors with BytesRef available, use them and do not convert to string!
+      final String lowerString = lowerBytes.utf8ToString(), upperString = upperBytes.utf8ToString();
+      
       // test inclusive range
       NumericRangeQuery<Long> tq=NumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, true);
-      TermRangeQuery cq=new TermRangeQuery(field, NumericUtils.longToPrefixCoded(lower), NumericUtils.longToPrefixCoded(upper), true, true);
+      TermRangeQuery cq=new TermRangeQuery(field, lowerString, upperString, true, true);
       TopDocs tTopDocs = searcher.search(tq, 1);
       TopDocs cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
@@ -360,7 +367,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
       termCountC += cq.getTotalNumberOfTerms();
       // test exclusive range
       tq=NumericRangeQuery.newLongRange(field, precisionStep, lower, upper, false, false);
-      cq=new TermRangeQuery(field, NumericUtils.longToPrefixCoded(lower), NumericUtils.longToPrefixCoded(upper), false, false);
+      cq=new TermRangeQuery(field, lowerString, upperString, false, false);
       tTopDocs = searcher.search(tq, 1);
       cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
@@ -368,7 +375,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
       termCountC += cq.getTotalNumberOfTerms();
       // test left exclusive range
       tq=NumericRangeQuery.newLongRange(field, precisionStep, lower, upper, false, true);
-      cq=new TermRangeQuery(field, NumericUtils.longToPrefixCoded(lower), NumericUtils.longToPrefixCoded(upper), false, true);
+      cq=new TermRangeQuery(field, lowerString, upperString, false, true);
       tTopDocs = searcher.search(tq, 1);
       cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
@@ -376,7 +383,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
       termCountC += cq.getTotalNumberOfTerms();
       // test right exclusive range
       tq=NumericRangeQuery.newLongRange(field, precisionStep, lower, upper, true, false);
-      cq=new TermRangeQuery(field, NumericUtils.longToPrefixCoded(lower), NumericUtils.longToPrefixCoded(upper), true, false);
+      cq=new TermRangeQuery(field, lowerString, upperString, true, false);
       tTopDocs = searcher.search(tq, 1);
       cTopDocs = searcher.search(cq, 1);
       assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", cTopDocs.totalHits, tTopDocs.totalHits );
@@ -581,6 +588,11 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
       NumericRangeQuery.newFloatRange("test13", 4, 10f, 20f, true, true)
     );
      // difference to int range is tested in TestNumericRangeQuery32
+  }
+  
+  @Test @Deprecated
+  public void testBackwardsLayer() {
+    assertTrue(NumericRangeQuery.newLongRange("dummy", null, null, true, true).hasNewAPI);
   }
   
 }

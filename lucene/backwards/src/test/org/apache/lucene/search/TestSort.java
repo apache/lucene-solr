@@ -35,6 +35,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.LockObtainFailedException;
@@ -332,20 +333,28 @@ public class TestSort extends LuceneTestCase implements Serializable {
     FieldCache fc = FieldCache.DEFAULT;
 
 
-    sort.setSort (new SortField ("parser", new FieldCache.IntParser(){
-      public final int parseInt(final String val) {
-        return (val.charAt(0)-'A') * 123456;
+    sort.setSort ( new SortField ("parser", new FieldCache.IntParser(){
+      public final int parseInt(final String term) {
+        // dummy
+        return 0;
       }
-    }), SortField.FIELD_DOC );
+      public final int parseInt(final BytesRef term) {
+        return (term.bytes[term.offset]-'A') * 123456;
+      }
+    }), SortField.FIELD_DOC);
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
     assertSaneFieldCaches(getName() + " IntParser");
     fc.purgeAllCaches();
 
-    sort.setSort (new SortField ("parser", new FieldCache.FloatParser(){
-      public final float parseFloat(final String val) {
-        return (float) Math.sqrt( val.charAt(0) );
+    sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.FloatParser(){
+      public final float parseFloat(final String term) {
+        // dummy
+        return 0;
       }
-    }), SortField.FIELD_DOC );
+      public final float parseFloat(final BytesRef term) {
+        return (float) Math.sqrt( term.bytes[term.offset] );
+      }
+    }), SortField.FIELD_DOC });
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
     assertSaneFieldCaches(getName() + " FloatParser");
     fc.purgeAllCaches();
@@ -354,34 +363,49 @@ public class TestSort extends LuceneTestCase implements Serializable {
       public final long parseLong(final String val) {
         return (val.charAt(0)-'A') * 1234567890L;
       }
-    }), SortField.FIELD_DOC );
+      public final long parseLong(final BytesRef term) {
+        return (term.bytes[term.offset]-'A') * 1234567890L;
+      }
+    }), SortField.FIELD_DOC);
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
     assertSaneFieldCaches(getName() + " LongParser");
     fc.purgeAllCaches();
 
-    sort.setSort (new SortField ("parser", new FieldCache.DoubleParser(){
-      public final double parseDouble(final String val) {
-        return Math.pow( val.charAt(0), (val.charAt(0)-'A') );
+    sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.DoubleParser(){
+      public final double parseDouble(final String term) {
+        // dummy
+        return 0;
       }
-    }), SortField.FIELD_DOC );
+      public final double parseDouble(final BytesRef term) {
+        return Math.pow( term.bytes[term.offset], (term.bytes[term.offset]-'A') );
+      }
+    }), SortField.FIELD_DOC });
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
     assertSaneFieldCaches(getName() + " DoubleParser");
     fc.purgeAllCaches();
 
-    sort.setSort (new SortField ("parser", new FieldCache.ByteParser(){
-      public final byte parseByte(final String val) {
-        return (byte) (val.charAt(0)-'A');
+    sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.ByteParser(){
+      public final byte parseByte(final String term) {
+        // dummy
+        return 0;
       }
-    }), SortField.FIELD_DOC );
+      public final byte parseByte(final BytesRef term) {
+        return (byte) (term.bytes[term.offset]-'A');
+      }
+    }), SortField.FIELD_DOC });
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
     assertSaneFieldCaches(getName() + " ByteParser");
     fc.purgeAllCaches();
 
-    sort.setSort (new SortField ("parser", new FieldCache.ShortParser(){
-      public final short parseShort(final String val) {
-        return (short) (val.charAt(0)-'A');
+    sort.setSort (new SortField[] { new SortField ("parser", new FieldCache.ShortParser(){
+      public final short parseShort(final String term) {
+        // dummy
+        return 0;
       }
-    }), SortField.FIELD_DOC );
+      public final short parseShort(final BytesRef term) {
+        return (short) (term.bytes[term.offset]-'A');
+      }
+    }), SortField.FIELD_DOC });
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
     assertSaneFieldCaches(getName() + " ShortParser");
     fc.purgeAllCaches();
@@ -439,8 +463,12 @@ public class TestSort extends LuceneTestCase implements Serializable {
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       docValues = FieldCache.DEFAULT.getInts(reader, "parser", new FieldCache.IntParser() {
-          public final int parseInt(final String val) {
-            return (val.charAt(0)-'A') * 123456;
+          public final int parseInt(final String term) {
+            // dummy
+            return 0;
+          }
+          public final int parseInt(final BytesRef term) {
+            return (term.bytes[term.offset]-'A') * 123456;
           }
         });
     }

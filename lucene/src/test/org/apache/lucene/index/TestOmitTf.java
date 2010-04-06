@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -26,13 +27,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Collector;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.search.Searcher;
-import org.apache.lucene.search.Similarity;
-import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
@@ -85,19 +80,25 @@ public class TestOmitTf extends LuceneTestCase {
     // keep things constant
     d = new Document();
         
-    // Reverese
+    // Reverse
     f1.setOmitTermFreqAndPositions(true);
     d.add(f1);
         
     f2.setOmitTermFreqAndPositions(false);        
     d.add(f2);
         
+    Random rnd = newRandom();
+
     writer.addDocument(d);
+    FlexTestUtil.verifyFlexVsPreFlex(rnd, writer);
+
     // force merge
     writer.optimize();
     // flush
     writer.close();
     _TestUtil.checkIndex(ram);
+
+    FlexTestUtil.verifyFlexVsPreFlex(rnd, ram);
 
     SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
     FieldInfos fi = reader.fieldInfos();
@@ -144,8 +145,12 @@ public class TestOmitTf extends LuceneTestCase {
     for(int i=0;i<30;i++)
       writer.addDocument(d);
         
+    Random rnd = newRandom();
+    FlexTestUtil.verifyFlexVsPreFlex(rnd, writer);
+
     // force merge
     writer.optimize();
+    FlexTestUtil.verifyFlexVsPreFlex(rnd, writer);
     // flush
     writer.close();
 
@@ -289,6 +294,15 @@ public class TestOmitTf extends LuceneTestCase {
     TermQuery q3 = new TermQuery(c);
     TermQuery q4 = new TermQuery(d);
 
+    PhraseQuery pq = new PhraseQuery();
+    pq.add(a);
+    pq.add(c);
+    try {
+      searcher.search(pq, 10);
+      fail("did not hit expected exception");
+    } catch (IllegalStateException ise) {
+      // expected
+    }
         
     searcher.search(q1,
                     new CountingHitCollector() {
@@ -380,7 +394,7 @@ public class TestOmitTf extends LuceneTestCase {
                         super.collect(doc);
                       }
                     });
-    assertTrue(15 == CountingHitCollector.getCount());
+    assertEquals(15, CountingHitCollector.getCount());
         
     searcher.close();     
     dir.close();

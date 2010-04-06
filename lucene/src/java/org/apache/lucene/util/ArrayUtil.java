@@ -232,6 +232,29 @@ public final class ArrayUtil {
       return currentSize;
   }
 
+  public static short[] grow(short[] array, int minSize) {
+    if (array.length < minSize) {
+      short[] newArray = new short[oversize(minSize, RamUsageEstimator.NUM_BYTES_SHORT)];
+      System.arraycopy(array, 0, newArray, 0, array.length);
+      return newArray;
+    } else
+      return array;
+  }
+
+  public static short[] grow(short[] array) {
+    return grow(array, 1 + array.length);
+  }
+
+  public static short[] shrink(short[] array, int targetSize) {
+    final int newSize = getShrinkSize(array.length, targetSize, RamUsageEstimator.NUM_BYTES_SHORT);
+    if (newSize != array.length) {
+      short[] newArray = new short[newSize];
+      System.arraycopy(array, 0, newArray, 0, newSize);
+      return newArray;
+    } else
+      return array;
+  }
+
   public static int[] grow(int[] array, int minSize) {
     if (array.length < minSize) {
       int[] newArray = new int[oversize(minSize, RamUsageEstimator.NUM_BYTES_INT)];

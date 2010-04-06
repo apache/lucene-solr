@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -28,8 +29,7 @@ final class TermVectorsWriter {
   
   private IndexOutput tvx = null, tvd = null, tvf = null;
   private FieldInfos fieldInfos;
-  final UnicodeUtil.UTF8Result[] utf8Results = new UnicodeUtil.UTF8Result[] {new UnicodeUtil.UTF8Result(),
-                                                                             new UnicodeUtil.UTF8Result()};
+  final BytesRef[] utf8Results = new BytesRef[] {new BytesRef(10), new BytesRef(10)};
 
   public TermVectorsWriter(Directory directory, String segment,
                            FieldInfos fieldInfos)
@@ -107,14 +107,14 @@ final class TermVectorsWriter {
 
           UnicodeUtil.UTF16toUTF8(terms[j], 0, terms[j].length(), utf8Results[utf8Upto]);
           
-          int start = StringHelper.bytesDifference(utf8Results[1-utf8Upto].result,
+          int start = StringHelper.bytesDifference(utf8Results[1-utf8Upto].bytes,
                                                    utf8Results[1-utf8Upto].length,
-                                                   utf8Results[utf8Upto].result,
+                                                   utf8Results[utf8Upto].bytes,
                                                    utf8Results[utf8Upto].length);
           int length = utf8Results[utf8Upto].length - start;
           tvf.writeVInt(start);       // write shared prefix length
           tvf.writeVInt(length);        // write delta length
-          tvf.writeBytes(utf8Results[utf8Upto].result, start, length);  // write delta bytes
+          tvf.writeBytes(utf8Results[utf8Upto].bytes, start, length);  // write delta bytes
           utf8Upto = 1-utf8Upto;
 
           final int termFreq = freqs[j];

@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.BytesRef;
 
 final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
@@ -106,6 +106,8 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
     final int numPostings = termsHashPerField.numPostings;
 
+    final BytesRef flushTerm = perThread.flushTerm;
+
     assert numPostings >= 0;
 
     if (!doVectors || numPostings == 0)
@@ -126,7 +128,9 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     perThread.doc.addField(termsHashPerField.fieldInfo.number);
     TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
 
-    final int[] termIDs = termsHashPerField.sortPostings();
+    // TODO: we may want to make this sort in same order
+    // as Codec's terms dict?
+    final int[] termIDs = termsHashPerField.sortPostings(BytesRef.getUTF8SortedAsUTF16Comparator());
 
     tvf.writeVInt(numPostings);
     byte bits = 0x0;
@@ -136,46 +140,40 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
       bits |= TermVectorsReader.STORE_OFFSET_WITH_TERMVECTOR;
     tvf.writeByte(bits);
 
-    int encoderUpto = 0;
-    int lastTermBytesCount = 0;
-
+    int lastLen = 0;
+    byte[] lastBytes = null;
+    int lastStart = 0;
+      
     final ByteSliceReader reader = perThread.vectorSliceReader;
-    final char[][] charBuffers = perThread.termsHashPerThread.charPool.buffers;
+    final ByteBlockPool termBytePool = perThread.termsHashPerThread.termBytePool;
+
     for(int j=0;j<numPostings;j++) {
       final int termID = termIDs[j];
       final int freq = postings.freqs[termID];
           
-      final char[] text2 = charBuffers[postings.textStarts[termID] >> DocumentsWriter.CHAR_BLOCK_SHIFT];
-      final int start2 = postings.textStarts[termID] & DocumentsWriter.CHAR_BLOCK_MASK;
+      // Get BytesRef
+      termBytePool.setBytesRef(flushTerm, postings.textStarts[termID]);
 
-      // We swap between two encoders to save copying
-      // last Term's byte array
-      final UnicodeUtil.UTF8Result utf8Result = perThread.utf8Results[encoderUpto];
-
-      // TODO: we could do this incrementally
-      UnicodeUtil.UTF16toUTF8(text2, start2, utf8Result);
-      final int termBytesCount = utf8Result.length;
-
-      // TODO: UTF16toUTF8 could tell us this prefix
-      // Compute common prefix between last term and
+      // Compute common byte prefix between last term and
       // this term
       int prefix = 0;
       if (j > 0) {
-        final byte[] lastTermBytes = perThread.utf8Results[1-encoderUpto].result;
-        final byte[] termBytes = perThread.utf8Results[encoderUpto].result;
-        while(prefix < lastTermBytesCount && prefix < termBytesCount) {
-          if (lastTermBytes[prefix] != termBytes[prefix])
+        while(prefix < lastLen && prefix < flushTerm.length) {
+          if (lastBytes[lastStart+prefix] != flushTerm.bytes[flushTerm.offset+prefix]) {
             break;
+          }
           prefix++;
         }
       }
-      encoderUpto = 1-encoderUpto;
-      lastTermBytesCount = termBytesCount;
 
-      final int suffix = termBytesCount - prefix;
+      lastLen = flushTerm.length;
+      lastBytes = flushTerm.bytes;
+      lastStart = flushTerm.offset;
+
+      final int suffix = flushTerm.length - prefix;
       tvf.writeVInt(prefix);
       tvf.writeVInt(suffix);
-      tvf.writeBytes(utf8Result.result, prefix, suffix);
+      tvf.writeBytes(flushTerm.bytes, lastStart+prefix, suffix);
       tvf.writeVInt(freq);
 
       if (doVectorPositions) {
@@ -209,9 +207,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
   @Override
   void newTerm(final int termID) {
-
     assert docState.testPoint("TermVectorsTermsWriterPerField.newTerm start");
-
     TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
 
     postings.freqs[termID] = 1;
@@ -275,23 +271,25 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     int[] lastOffsets;                                 // Last offset we saw
     int[] lastPositions;                               // Last position where this term occurred
     
+    ParallelPostingsArray newInstance(int size) {
+      return new TermVectorsPostingsArray(size);
+    }
+
     @Override
-    ParallelPostingsArray resize(int newSize) {
-      TermVectorsPostingsArray newArray = new TermVectorsPostingsArray(newSize);
-      copy(this, newArray);
-      return newArray;
+    void copyTo(ParallelPostingsArray toArray, int numToCopy) {
+      assert toArray instanceof TermVectorsPostingsArray;
+      TermVectorsPostingsArray to = (TermVectorsPostingsArray) toArray;
+
+      super.copyTo(toArray, numToCopy);
+
+      System.arraycopy(freqs, 0, to.freqs, 0, size);
+      System.arraycopy(lastOffsets, 0, to.lastOffsets, 0, size);
+      System.arraycopy(lastPositions, 0, to.lastPositions, 0, size);
     }
-    
-    void copy(TermVectorsPostingsArray fromArray, TermVectorsPostingsArray toArray) {
-      super.copy(fromArray, toArray);
-      System.arraycopy(fromArray.freqs, 0, toArray.freqs, 0, fromArray.freqs.length);
-      System.arraycopy(fromArray.lastOffsets, 0, toArray.lastOffsets, 0, fromArray.lastOffsets.length);
-      System.arraycopy(fromArray.lastPositions, 0, toArray.lastPositions, 0, fromArray.lastPositions.length);
+
+    @Override
+    int bytesPerPosting() {
+      return super.bytesPerPosting() + 3 * DocumentsWriter.INT_NUM_BYTE;
     }
-  }
-  
-  @Override
-  int bytesPerPosting() {
-    return ParallelPostingsArray.BYTES_PER_POSTING + 3 * DocumentsWriter.INT_NUM_BYTE;
   }
 }

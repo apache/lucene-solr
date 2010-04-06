@@ -19,8 +19,9 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.Bits;
 
 import java.util.Set;
 import java.io.IOException;
@@ -45,16 +46,18 @@ public class MatchAllDocsQuery extends Query {
   }
 
   private class MatchAllScorer extends Scorer {
-    final TermDocs termDocs;
     final float score;
     final byte[] norms;
     private int doc = -1;
+    private final int maxDoc;
+    private final Bits delDocs;
     
     MatchAllScorer(IndexReader reader, Similarity similarity, Weight w,
         byte[] norms) throws IOException {
       super(similarity);
-      this.termDocs = reader.termDocs(null);
+      delDocs = MultiFields.getDeletedDocs(reader);
       score = w.getValue();
+      maxDoc = reader.maxDoc();
       this.norms = norms;
     }
 
@@ -65,7 +68,14 @@ public class MatchAllDocsQuery extends Query {
 
     @Override
     public int nextDoc() throws IOException {
-      return doc = termDocs.next() ? termDocs.doc() : NO_MORE_DOCS;
+      doc++;
+      while(delDocs != null && doc < maxDoc && delDocs.get(doc)) {
+        doc++;
+      }
+      if (doc == maxDoc) {
+        doc = NO_MORE_DOCS;
+      }
+      return doc;
     }
     
     @Override
@@ -75,7 +85,8 @@ public class MatchAllDocsQuery extends Query {
 
     @Override
     public int advance(int target) throws IOException {
-      return doc = termDocs.skipTo(target) ? termDocs.doc() : NO_MORE_DOCS;
+      doc = target-1;
+      return nextDoc();
     }
   }
 

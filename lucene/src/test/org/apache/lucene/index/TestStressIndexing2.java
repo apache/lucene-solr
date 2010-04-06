@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import org.apache.lucene.util.*;
 
 import junit.framework.Assert;
 
@@ -35,11 +36,8 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util._TestUtil;
 
-public class TestStressIndexing2 extends LuceneTestCase {
+public class TestStressIndexing2 extends MultiCodecTestCase {
   static int maxFields=4;
   static int bigFieldSize=10;
   static boolean sameFieldOrder=false;
@@ -73,6 +71,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
     IndexReader r = dw.writer.getReader();
     dw.writer.commit();
     verifyEquals(r, dir, "id");
+    FlexTestUtil.verifyFlexVsPreFlex(this.r, r);
+    FlexTestUtil.verifyFlexVsPreFlex(this.r, dir);
     r.close();
     dw.writer.close();
     dir.close();
@@ -94,11 +94,15 @@ public class TestStressIndexing2 extends LuceneTestCase {
     // verifyEquals(dir2, dir2, "id");
 
     verifyEquals(dir1, dir2, "id");
+    FlexTestUtil.verifyFlexVsPreFlex(r, dir1);
+    FlexTestUtil.verifyFlexVsPreFlex(r, dir2);
   }
 
   public void testMultiConfig() throws Throwable {
     // test lots of smaller different params together
+
     r = newRandom();
+
     for (int i=0; i<20; i++) {  // increase iterations for better testing
       sameFieldOrder=r.nextBoolean();
       mergeFactor=r.nextInt(3)+2;
@@ -113,8 +117,13 @@ public class TestStressIndexing2 extends LuceneTestCase {
       Directory dir1 = new MockRAMDirectory();
       Directory dir2 = new MockRAMDirectory();
       Map<String,Document> docs = indexRandom(nThreads, iter, range, dir1, maxThreadStates, doReaderPooling);
+      //System.out.println("TEST: index serial");
       indexSerial(docs, dir2);
+      //System.out.println("TEST: verify");
       verifyEquals(dir1, dir2, "id");
+
+      FlexTestUtil.verifyFlexVsPreFlex(r, dir1);
+      FlexTestUtil.verifyFlexVsPreFlex(r, dir2);
     }
   }
 
@@ -216,7 +225,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
         threads[i].join();
       }
 
-      // w.optimize();
+      //w.optimize();
       w.close();    
 
       for (int i=0; i<threads.length; i++) {
@@ -227,6 +236,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
       }
     }
 
+    //System.out.println("TEST: checkindex");
     _TestUtil.checkIndex(dir);
 
     return docs;
@@ -278,31 +288,65 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
     int[] r2r1 = new int[r2.maxDoc()];   // r2 id to r1 id mapping
 
-    TermDocs termDocs1 = r1.termDocs();
-    TermDocs termDocs2 = r2.termDocs();
-
     // create mapping from id2 space to id2 based on idField
     idField = StringHelper.intern(idField);
-    TermEnum termEnum = r1.terms (new Term (idField, ""));
-    do {
-      Term term = termEnum.term();
-      if (term==null || term.field() != idField) break;
+    final Fields f1 = MultiFields.getFields(r1);
+    if (f1 == null) {
+      // make sure r2 is empty
+      assertNull(MultiFields.getFields(r2));
+      return;
+    }
+    final Terms terms1 = f1.terms(idField);
+    if (terms1 == null) {
+      assertTrue(MultiFields.getFields(r2) == null ||
+                 MultiFields.getFields(r2).terms(idField) == null);
+      return;
+    }
+    final TermsEnum termsEnum = terms1.iterator();
 
-      termDocs1.seek (termEnum);
-      if (!termDocs1.next()) {
+    final Bits delDocs1 = MultiFields.getDeletedDocs(r1);
+    final Bits delDocs2 = MultiFields.getDeletedDocs(r2);
+    
+    Fields fields = MultiFields.getFields(r2);
+    if (fields == null) {
+      // make sure r1 is in fact empty (eg has only all
+      // deleted docs):
+      DocsEnum docs = null;
+      while(termsEnum.next() != null) {
+        docs = termsEnum.docs(delDocs1, docs);
+        while(docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+          fail("r1 is not empty but r2 is");
+        }
+      }
+      return;
+    }
+    Terms terms2 = fields.terms(idField);
+
+    DocsEnum termDocs1 = null;
+    DocsEnum termDocs2 = null;
+
+    while(true) {
+      BytesRef term = termsEnum.next();
+      //System.out.println("TEST: match id term=" + term);
+      if (term == null) {
+        break;
+      }
+
+      termDocs1 = termsEnum.docs(delDocs1, termDocs1);
+      termDocs2 = terms2.docs(delDocs2, term, termDocs2);
+
+      if (termDocs1.nextDoc() == DocsEnum.NO_MORE_DOCS) {
         // This doc is deleted and wasn't replaced
-        termDocs2.seek(termEnum);
-        assertFalse(termDocs2.next());
+        assertTrue(termDocs2 == null || termDocs2.nextDoc() == DocsEnum.NO_MORE_DOCS);
         continue;
       }
 
-      int id1 = termDocs1.doc();
-      assertFalse(termDocs1.next());
+      int id1 = termDocs1.docID();
+      assertEquals(DocsEnum.NO_MORE_DOCS, termDocs1.nextDoc());
 
-      termDocs2.seek(termEnum);
-      assertTrue(termDocs2.next());
-      int id2 = termDocs2.doc();
-      assertFalse(termDocs2.next());
+      assertTrue(termDocs2.nextDoc() != DocsEnum.NO_MORE_DOCS);
+      int id2 = termDocs2.docID();
+      assertEquals(DocsEnum.NO_MORE_DOCS, termDocs2.nextDoc());
 
       r2r1[id2] = id1;
 
@@ -336,73 +380,108 @@ public class TestStressIndexing2 extends LuceneTestCase {
         throw e;
       }
 
-    } while (termEnum.next());
+    }
 
-    termEnum.close();
+    //System.out.println("TEST: done match id");
 
     // Verify postings
-    TermEnum termEnum1 = r1.terms (new Term ("", ""));
-    TermEnum termEnum2 = r2.terms (new Term ("", ""));
+    //System.out.println("TEST: create te1");
+    final FieldsEnum fields1 = MultiFields.getFields(r1).iterator();
+    final FieldsEnum fields2 = MultiFields.getFields(r2).iterator();
+
+    String field1=null, field2=null;
+    TermsEnum termsEnum1 = null;
+    TermsEnum termsEnum2 = null;
+    DocsEnum docs1=null, docs2=null;
 
     // pack both doc and freq into single element for easy sorting
     long[] info1 = new long[r1.numDocs()];
     long[] info2 = new long[r2.numDocs()];
 
     for(;;) {
-      Term term1,term2;
+      BytesRef term1=null, term2=null;
 
       // iterate until we get some docs
       int len1;
       for(;;) {
         len1=0;
-        term1 = termEnum1.term();
-        if (term1==null) break;
-        termDocs1.seek(termEnum1);
-        while (termDocs1.next()) {
-          int d1 = termDocs1.doc();
-          int f1 = termDocs1.freq();
-          info1[len1] = (((long)d1)<<32) | f1;
+        if (termsEnum1 == null) {
+          field1 = fields1.next();
+          if (field1 == null) {
+            break;
+          } else {
+            termsEnum1 = fields1.terms();
+          }
+        }
+        term1 = termsEnum1.next();
+        if (term1 == null) {
+          // no more terms in this field
+          termsEnum1 = null;
+          continue;
+        }
+        
+        //System.out.println("TEST: term1=" + term1);
+        docs1 = termsEnum1.docs(delDocs1, docs1);
+        while (docs1.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+          int d = docs1.docID();
+          int f = docs1.freq();
+          info1[len1] = (((long)d)<<32) | f;
           len1++;
         }
         if (len1>0) break;
-        if (!termEnum1.next()) break;
       }
 
-       // iterate until we get some docs
+      // iterate until we get some docs
       int len2;
       for(;;) {
         len2=0;
-        term2 = termEnum2.term();
-        if (term2==null) break;
-        termDocs2.seek(termEnum2);
-        while (termDocs2.next()) {
-          int d2 = termDocs2.doc();
-          int f2 = termDocs2.freq();
-          info2[len2] = (((long)r2r1[d2])<<32) | f2;
+        if (termsEnum2 == null) {
+          field2 = fields2.next();
+          if (field2 == null) {
+            break;
+          } else {
+            termsEnum2 = fields2.terms();
+          }
+        }
+        term2 = termsEnum2.next();
+        if (term2 == null) {
+          // no more terms in this field
+          termsEnum2 = null;
+          continue;
+        }
+        
+        //System.out.println("TEST: term1=" + term1);
+        docs2 = termsEnum2.docs(delDocs2, docs2);
+        while (docs2.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+          int d = r2r1[docs2.docID()];
+          int f = docs2.freq();
+          info2[len2] = (((long)d)<<32) | f;
           len2++;
         }
         if (len2>0) break;
-        if (!termEnum2.next()) break;
       }
-
-      if (!hasDeletes)
-        assertEquals(termEnum1.docFreq(), termEnum2.docFreq());
 
       assertEquals(len1, len2);
       if (len1==0) break;  // no more terms
 
-      assertEquals(term1, term2);
+      assertEquals(field1, field2);
+      assertTrue(term1.bytesEquals(term2));
+
+      if (!hasDeletes)
+        assertEquals(termsEnum1.docFreq(), termsEnum2.docFreq());
+
+      assertEquals("len1=" + len1 + " len2=" + len2 + " deletes?=" + hasDeletes, term1, term2);
 
       // sort info2 to get it into ascending docid
       Arrays.sort(info2, 0, len2);
 
       // now compare
       for (int i=0; i<len1; i++) {
-        assertEquals(info1[i], info2[i]);
+        assertEquals("i=" + i + " len=" + len1 + " d1=" + (info1[i]>>>32) + " f1=" + (info1[i]&Integer.MAX_VALUE) + " d2=" + (info2[i]>>>32) + " f2=" + (info2[i]&Integer.MAX_VALUE) +
+                     " field=" + field1 + " term=" + term1.utf8ToString(),
+                     info1[i],
+                     info2[i]);
       }
-
-      termEnum1.next();
-      termEnum2.next();
     }
   }
 
@@ -424,9 +503,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
         String s1 = f1.stringValue();
         String s2 = f2.stringValue();
         assertEquals(ff1 + " : " + ff2, s1,s2);
+        }
       }
     }
-  }
 
   public static void verifyEquals(TermFreqVector[] d1, TermFreqVector[] d2) {
     if (d1 == null) {
@@ -657,5 +736,4 @@ public class TestStressIndexing2 extends LuceneTestCase {
       }
     }
   }
-
 }

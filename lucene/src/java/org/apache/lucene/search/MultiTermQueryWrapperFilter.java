@@ -21,9 +21,15 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.Bits;
 
 /**
  * A wrapper for {@link MultiTermQuery}, that exposes its
@@ -70,6 +76,9 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
   public final int hashCode() {
     return query.hashCode();
   }
+
+  /** Returns the field name for this query */
+  public final String getField() { return query.getField(); }
   
   /**
    * Expert: Return the number of unique terms visited during execution of the filter.
@@ -95,49 +104,101 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
   }
   
   /**
-   * Returns a DocIdSet with documents that should be
-   * permitted in search results.
+   * Returns a DocIdSet with documents that should be permitted in search
+   * results.
    */
   @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-    final TermEnum enumerator = query.getEnum(reader);
-    try {
-      // if current term in enum is null, the enum is empty -> shortcut
-      if (enumerator.term() == null)
+    if (query.hasNewAPI) {
+      if (query.field == null) {
+        throw new NullPointerException("If you implement getTermsEnum(), you must specify a non-null field in the constructor of MultiTermQuery.");
+      }
+
+      final Fields fields = MultiFields.getFields(reader);
+      if (fields == null) {
+        // reader has no fields
         return DocIdSet.EMPTY_DOCIDSET;
-      // else fill into a OpenBitSet
-      final OpenBitSet bitSet = new OpenBitSet(reader.maxDoc());
-      final int[] docs = new int[32];
-      final int[] freqs = new int[32];
-      TermDocs termDocs = reader.termDocs();
-      try {
+      }
+
+      final Terms terms = fields.terms(query.field);
+      if (terms == null) {
+        // field does not exist
+        return DocIdSet.EMPTY_DOCIDSET;
+      }
+
+      final TermsEnum termsEnum = query.getTermsEnum(reader);
+      assert termsEnum != null;
+      if (termsEnum.next() != null) {
+        // fill into a OpenBitSet
+        final OpenBitSet bitSet = new OpenBitSet(reader.maxDoc());
         int termCount = 0;
+        final Bits delDocs = MultiFields.getDeletedDocs(reader);
+        DocsEnum docsEnum = null;
         do {
-          Term term = enumerator.term();
-          if (term == null)
-            break;
           termCount++;
-          termDocs.seek(term);
+          // System.out.println("  iter termCount=" + termCount + " term=" +
+          // enumerator.term().toBytesString());
+          docsEnum = termsEnum.docs(delDocs, docsEnum);
+          final DocsEnum.BulkReadResult result = docsEnum.getBulkResult();
           while (true) {
-            final int count = termDocs.read(docs, freqs);
+            final int count = docsEnum.read();
             if (count != 0) {
-              for(int i=0;i<count;i++) {
+              final int[] docs = result.docs.ints;
+              for (int i = 0; i < count; i++) {
                 bitSet.set(docs[i]);
               }
             } else {
               break;
             }
           }
-        } while (enumerator.next());
+        } while (termsEnum.next() != null);
+        // System.out.println("  done termCount=" + termCount);
 
         query.incTotalNumberOfTerms(termCount);
-
-      } finally {
-        termDocs.close();
+        return bitSet;
+      } else {
+        return DocIdSet.EMPTY_DOCIDSET;
       }
-      return bitSet;
-    } finally {
-      enumerator.close();
+    } else {
+      final TermEnum enumerator = query.getEnum(reader);
+      try {
+        // if current term in enum is null, the enum is empty -> shortcut
+        if (enumerator.term() == null)
+          return DocIdSet.EMPTY_DOCIDSET;
+        // else fill into a OpenBitSet
+        final OpenBitSet bitSet = new OpenBitSet(reader.maxDoc());
+        final int[] docs = new int[32];
+        final int[] freqs = new int[32];
+        TermDocs termDocs = reader.termDocs();
+        try {
+          int termCount = 0;
+          do {
+            Term term = enumerator.term();
+            if (term == null)
+              break;
+            termCount++;
+            termDocs.seek(term);
+            while (true) {
+              final int count = termDocs.read(docs, freqs);
+              if (count != 0) {
+                for (int i = 0; i < count; i++) {
+                  bitSet.set(docs[i]);
+                }
+              } else {
+                break;
+              }
+            }
+          } while (enumerator.next());
+
+          query.incTotalNumberOfTerms(termCount);
+
+        } finally {
+          termDocs.close();
+        }
+        return bitSet;
+      } finally {
+        enumerator.close();
+      }
     }
   }
 

@@ -92,6 +92,25 @@ public class TestTermRangeQuery extends LuceneTestCase {
     assertEquals("C added - A, B, C in range", 3, hits.length);
     searcher.close();
   }
+  
+  public void testAllDocs() throws Exception {
+    initializeIndex(new String[]{"A", "B", "C", "D"});
+    IndexSearcher searcher = new IndexSearcher(dir, true);
+    TermRangeQuery query = new TermRangeQuery("content", null, null, true, true);
+    assertFalse(query.getTermsEnum(searcher.getIndexReader()) instanceof TermRangeTermsEnum);
+    assertEquals(4, searcher.search(query, null, 1000).scoreDocs.length);
+    query = new TermRangeQuery("content", null, null, false, false);
+    assertFalse(query.getTermsEnum(searcher.getIndexReader()) instanceof TermRangeTermsEnum);
+    assertEquals(4, searcher.search(query, null, 1000).scoreDocs.length);
+    query = new TermRangeQuery("content", "", null, true, false);
+    assertFalse(query.getTermsEnum(searcher.getIndexReader()) instanceof TermRangeTermsEnum);
+    assertEquals(4, searcher.search(query, null, 1000).scoreDocs.length);
+    // and now anothe one
+    query = new TermRangeQuery("content", "B", null, true, false);
+    assertTrue(query.getTermsEnum(searcher.getIndexReader()) instanceof TermRangeTermsEnum);
+    assertEquals(3, searcher.search(query, null, 1000).scoreDocs.length);
+    searcher.close();
+  }
 
   /** This test should not be here, but it tests the fuzzy query rewrite mode (TOP_TERMS_SCORING_BOOLEAN_REWRITE)
    * with constant score and checks, that only the lower end of terms is put into the range */
@@ -401,5 +420,10 @@ public class TestTermRangeQuery extends LuceneTestCase {
     // until Lucene-38 is fixed, use this assert
     //assertEquals("C added => A,B,<empty string>,C in range", 3, hits.length());
      searcher.close();
+  }
+  
+  @Deprecated
+  public void testBackwardsLayer() {
+    assertTrue(new TermRangeQuery("dummy", null, null, true, true).hasNewAPI);
   }
 }

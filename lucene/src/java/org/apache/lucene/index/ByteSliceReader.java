@@ -17,16 +17,17 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.IndexOutput;
 import java.io.IOException;
+
+import org.apache.lucene.store.DataInput;
+import org.apache.lucene.store.DataOutput;
 
 /* IndexInput that knows how to read the byte slices written
  * by Posting and PostingVector.  We read the bytes in
  * each slice until we hit the end of that slice at which
  * point we read the forwarding address of the next slice
  * and then jump to it.*/
-final class ByteSliceReader extends IndexInput {
+final class ByteSliceReader extends DataInput {
   ByteBlockPool pool;
   int bufferUpto;
   byte[] buffer;
@@ -75,7 +76,7 @@ final class ByteSliceReader extends IndexInput {
     return buffer[upto++];
   }
 
-  public long writeTo(IndexOutput out) throws IOException {
+  public long writeTo(DataOutput out) throws IOException {
     long size = 0;
     while(true) {
       if (limit + bufferOffset == endIndex) {
@@ -136,14 +137,4 @@ final class ByteSliceReader extends IndexInput {
       }
     }
   }
-
-  @Override
-  public long getFilePointer() {throw new RuntimeException("not implemented");}
-  @Override
-  public long length() {throw new RuntimeException("not implemented");}
-  @Override
-  public void seek(long pos) {throw new RuntimeException("not implemented");}
-  @Override
-  public void close() {throw new RuntimeException("not implemented");}
 }
-

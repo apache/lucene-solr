@@ -18,7 +18,10 @@ package org.apache.lucene.misc;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.FieldsEnum;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -50,20 +53,40 @@ public class HighFreqTerms {
     }
 
     TermInfoQueue tiq = new TermInfoQueue(numTerms);
-    TermEnum terms = reader.terms();
 
     if (field != null) { 
-      while (terms.next()) {
-        if (terms.term().field().equals(field)) {
-          tiq.insertWithOverflow(new TermInfo(terms.term(), terms.docFreq()));
+      Terms terms = reader.fields().terms(field);
+      if (terms != null) {
+        TermsEnum termsEnum = terms.iterator();
+        while(true) {
+          BytesRef term = termsEnum.next();
+          if (term != null) {
+            tiq.insertWithOverflow(new TermInfo(new Term(field, term.utf8ToString()), termsEnum.docFreq()));
+          } else {
+            break;
+          }    
+        }
+      }
+    } else {
+      FieldsEnum fields = reader.fields().iterator();
+      while(true) {
+        field = fields.next();
+        if (field != null) {
+          TermsEnum terms = fields.terms();
+          while(true) {
+            BytesRef term = terms.next();
+            if (term != null) {
+              tiq.insertWithOverflow(new TermInfo(new Term(field, term.toString()), terms.docFreq()));
+            } else {
+              break;
+            }
+          }
+        } else {
+          break;
         }
       }
     }
-    else {
-      while (terms.next()) {
-        tiq.insertWithOverflow(new TermInfo(terms.term(), terms.docFreq()));
-      }
-    }
+    
     while (tiq.size() != 0) {
       TermInfo termInfo = tiq.pop();
       System.out.println(termInfo.term + " " + termInfo.docFreq);

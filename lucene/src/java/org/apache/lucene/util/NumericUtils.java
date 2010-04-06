@@ -22,6 +22,8 @@ import org.apache.lucene.document.NumericField; // for javadocs
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 import org.apache.lucene.search.NumericRangeFilter; // for javadocs
 
+// TODO: Remove the commented out methods before release!
+
 /**
  * This is a helper class to generate prefix-encoded representations for numerical values
  * and supplies converters to represent float/double values as sortable integers/longs.
@@ -32,10 +34,10 @@ import org.apache.lucene.search.NumericRangeFilter; // for javadocs
  * more exactly. This reduces the number of terms dramatically.
  *
  * <p>This class generates terms to achieve this: First the numerical integer values need to
- * be converted to strings. For that integer values (32 bit or 64 bit) are made unsigned
- * and the bits are converted to ASCII chars with each 7 bit. The resulting string is
- * sortable like the original integer value. Each value is also prefixed
- * (in the first char) by the <code>shift</code> value (number of bits removed) used
+ * be converted to bytes. For that integer values (32 bit or 64 bit) are made unsigned
+ * and the bits are converted to ASCII chars with each 7 bit. The resulting byte[] is
+ * sortable like the original integer value (even using UTF-8 sort order). Each value is also
+ * prefixed (in the first char) by the <code>shift</code> value (number of bits removed) used
  * during encoding.
  *
  * <p>To also index floating point numbers, this class supplies two methods to convert them
@@ -51,13 +53,12 @@ import org.apache.lucene.search.NumericRangeFilter; // for javadocs
  * {@link NumericRangeQuery} and {@link NumericRangeFilter} implement the query part
  * for the same data types.
  *
- * <p>This class can also be used, to generate lexicographically sortable (according
- * {@link String#compareTo(String)}) representations of numeric data types for other
- * usages (e.g. sorting).
+ * <p>This class can also be used, to generate lexicographically sortable (according to
+ * {@link BytesRef#getUTF8SortedAsUTF16Comparator()}) representations of numeric data
+ * types for other usages (e.g. sorting).
  *
- * @lucene.experimental
- *
- * @since 2.9
+ * @lucene.internal
+ * @since 2.9, API changed non backwards-compliant in 3.1
  */
 public final class NumericUtils {
 
@@ -70,126 +71,150 @@ public final class NumericUtils {
   public static final int PRECISION_STEP_DEFAULT = 4;
   
   /**
-   * Expert: Longs are stored at lower precision by shifting off lower bits. The shift count is
-   * stored as <code>SHIFT_START_LONG+shift</code> in the first character
+   * Longs are stored at lower precision by shifting off lower bits. The shift count is
+   * stored as <code>SHIFT_START_LONG+shift</code> in the first byte
    */
-  public static final char SHIFT_START_LONG = (char)0x20;
+  public static final byte SHIFT_START_LONG = 0x20;
 
   /**
-   * Expert: The maximum term length (used for <code>char[]</code> buffer size)
+   * The maximum term length (used for <code>byte[]</code> buffer size)
    * for encoding <code>long</code> values.
-   * @see #longToPrefixCoded(long,int,char[])
+   * @see #longToPrefixCoded(long,int,BytesRef)
    */
   public static final int BUF_SIZE_LONG = 63/7 + 2;
 
   /**
-   * Expert: Integers are stored at lower precision by shifting off lower bits. The shift count is
-   * stored as <code>SHIFT_START_INT+shift</code> in the first character
+   * Integers are stored at lower precision by shifting off lower bits. The shift count is
+   * stored as <code>SHIFT_START_INT+shift</code> in the first byte
    */
-  public static final char SHIFT_START_INT  = (char)0x60;
+  public static final byte SHIFT_START_INT  = 0x60;
 
   /**
-   * Expert: The maximum term length (used for <code>char[]</code> buffer size)
+   * The maximum term length (used for <code>byte[]</code> buffer size)
    * for encoding <code>int</code> values.
-   * @see #intToPrefixCoded(int,int,char[])
+   * @see #intToPrefixCoded(int,int,BytesRef)
    */
   public static final int BUF_SIZE_INT = 31/7 + 2;
 
   /**
-   * Expert: Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
+   * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
    * This is method is used by {@link NumericTokenStream}.
    * @param val the numeric value
    * @param shift how many bits to strip from the right
-   * @param buffer that will contain the encoded chars, must be at least of {@link #BUF_SIZE_LONG}
-   * length
-   * @return number of chars written to buffer
+   * @param bytes will contain the encoded value
+   * @return the hash code for indexing (TermsHash)
    */
-  public static int longToPrefixCoded(final long val, final int shift, final char[] buffer) {
+  public static int longToPrefixCoded(final long val, final int shift, final BytesRef bytes) {
     if (shift>63 || shift<0)
       throw new IllegalArgumentException("Illegal shift value, must be 0..63");
-    int nChars = (63-shift)/7 + 1, len = nChars+1;
-    buffer[0] = (char)(SHIFT_START_LONG + shift);
+    if (bytes.bytes == null) {
+      bytes.bytes = new byte[NumericUtils.BUF_SIZE_LONG];
+    } else if (bytes.bytes.length < NumericUtils.BUF_SIZE_LONG) {
+      bytes.grow(NumericUtils.BUF_SIZE_LONG);
+    }
+    int hash, nChars = (63-shift)/7 + 1;
+    bytes.length = nChars+1;
+    bytes.bytes[0] = (byte) (hash = (SHIFT_START_LONG + shift));
     long sortableBits = val ^ 0x8000000000000000L;
     sortableBits >>>= shift;
-    while (nChars>=1) {
-      // Store 7 bits per character for good efficiency when UTF-8 encoding.
-      // The whole number is right-justified so that lucene can prefix-encode
-      // the terms more efficiently.
-      buffer[nChars--] = (char)(sortableBits & 0x7f);
+    while (nChars > 0) {
+      // Store 7 bits per byte for compatibility
+      // with UTF-8 encoding of terms
+      bytes.bytes[nChars--] = (byte)(sortableBits & 0x7f);
       sortableBits >>>= 7;
     }
-    return len;
+    // calculate hash
+    for (int i = 1; i < bytes.length; i++) {
+      hash = 31*hash + bytes.bytes[i];
+    }
+    return hash;
   }
 
   /**
-   * Expert: Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
+   * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
    * This is method is used by {@link LongRangeBuilder}.
    * @param val the numeric value
    * @param shift how many bits to strip from the right
-   */
+   * @deprecated This method is no longer needed!
+   *
+  @Deprecated
   public static String longToPrefixCoded(final long val, final int shift) {
-    final char[] buffer = new char[BUF_SIZE_LONG];
-    final int len = longToPrefixCoded(val, shift, buffer);
-    return new String(buffer, 0, len);
-  }
+    final BytesRef buffer = new BytesRef(BUF_SIZE_LONG);
+    longToPrefixCoded(val, shift, buffer);
+    return buffer.utf8ToString();
+  }*/
 
   /**
    * This is a convenience method, that returns prefix coded bits of a long without
    * reducing the precision. It can be used to store the full precision value as a
    * stored field in index.
    * <p>To decode, use {@link #prefixCodedToLong}.
-   */
+   * @deprecated This method is no longer needed!
+   *
+  @Deprecated
   public static String longToPrefixCoded(final long val) {
     return longToPrefixCoded(val, 0);
-  }
+  }*/
   
   /**
-   * Expert: Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
+   * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
    * This is method is used by {@link NumericTokenStream}.
    * @param val the numeric value
    * @param shift how many bits to strip from the right
-   * @param buffer that will contain the encoded chars, must be at least of {@link #BUF_SIZE_INT}
-   * length
-   * @return number of chars written to buffer
+   * @param bytes will contain the encoded value
+   * @return the hash code for indexing (TermsHash)
    */
-  public static int intToPrefixCoded(final int val, final int shift, final char[] buffer) {
+  public static int intToPrefixCoded(final int val, final int shift, final BytesRef bytes) {
     if (shift>31 || shift<0)
       throw new IllegalArgumentException("Illegal shift value, must be 0..31");
-    int nChars = (31-shift)/7 + 1, len = nChars+1;
-    buffer[0] = (char)(SHIFT_START_INT + shift);
+    if (bytes.bytes == null) {
+      bytes.bytes = new byte[NumericUtils.BUF_SIZE_INT];
+    } else if (bytes.bytes.length < NumericUtils.BUF_SIZE_INT) {
+      bytes.grow(NumericUtils.BUF_SIZE_INT);
+    }
+    int hash, nChars = (31-shift)/7 + 1;
+    bytes.length = nChars+1;
+    bytes.bytes[0] = (byte) (hash = (SHIFT_START_INT + shift));
     int sortableBits = val ^ 0x80000000;
     sortableBits >>>= shift;
-    while (nChars>=1) {
-      // Store 7 bits per character for good efficiency when UTF-8 encoding.
-      // The whole number is right-justified so that lucene can prefix-encode
-      // the terms more efficiently.
-      buffer[nChars--] = (char)(sortableBits & 0x7f);
+    while (nChars > 0) {
+      // Store 7 bits per byte for compatibility
+      // with UTF-8 encoding of terms
+      bytes.bytes[nChars--] = (byte)(sortableBits & 0x7f);
       sortableBits >>>= 7;
     }
-    return len;
+    // calculate hash
+    for (int i = 1; i < bytes.length; i++) {
+      hash = 31*hash + bytes.bytes[i];
+    }
+    return hash;
   }
 
   /**
-   * Expert: Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
+   * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
    * This is method is used by {@link IntRangeBuilder}.
    * @param val the numeric value
    * @param shift how many bits to strip from the right
-   */
+   * @deprecated This method is no longer needed!
+   *
+  @Deprecated
   public static String intToPrefixCoded(final int val, final int shift) {
-    final char[] buffer = new char[BUF_SIZE_INT];
-    final int len = intToPrefixCoded(val, shift, buffer);
-    return new String(buffer, 0, len);
-  }
+    final BytesRef buffer = new BytesRef(BUF_SIZE_INT);
+    intToPrefixCoded(val, shift, buffer);
+    return buffer.utf8ToString();
+  }*/
 
   /**
    * This is a convenience method, that returns prefix coded bits of an int without
    * reducing the precision. It can be used to store the full precision value as a
    * stored field in index.
    * <p>To decode, use {@link #prefixCodedToInt}.
-   */
+   * @deprecated This method is no longer needed!
+   *
+  @Deprecated
   public static String intToPrefixCoded(final int val) {
     return intToPrefixCoded(val, 0);
-  }
+  }*/
 
   /**
    * Returns a long from prefixCoded characters.
@@ -198,51 +223,97 @@ public final class NumericUtils {
    * @throws NumberFormatException if the supplied string is
    * not correctly prefix encoded.
    * @see #longToPrefixCoded(long)
-   */
+   * @deprecated This method is no longer needed!
+   *
+  @Deprecated
   public static long prefixCodedToLong(final String prefixCoded) {
-    final int shift = prefixCoded.charAt(0)-SHIFT_START_LONG;
-    if (shift>63 || shift<0)
-      throw new NumberFormatException("Invalid shift value in prefixCoded string (is encoded value really a LONG?)");
+    return prefixCodedToLong(new BytesRef(prefixCoded));
+  }*/
+
+  /**
+   * Returns the shift value from a prefix encoded {@code long}.
+   * @throws NumberFormatException if the supplied {@link BytesRef} is
+   * not correctly prefix encoded.
+   */
+  public static int getPrefixCodedLongShift(final BytesRef val) {
+    final int shift = val.bytes[val.offset] - SHIFT_START_LONG;
+    if (shift > 63 || shift < 0)
+      throw new NumberFormatException("Invalid shift value in prefixCoded bytes (is encoded value really an INT?)");
+    return shift;
+  }
+
+  /**
+   * Returns the shift value from a prefix encoded {@code int}.
+   * @throws NumberFormatException if the supplied {@link BytesRef} is
+   * not correctly prefix encoded.
+   */
+  public static int getPrefixCodedIntShift(final BytesRef val) {
+    final int shift = val.bytes[val.offset] - SHIFT_START_INT;
+    if (shift > 31 || shift < 0)
+      throw new NumberFormatException("Invalid shift value in prefixCoded bytes (is encoded value really an INT?)");
+    return shift;
+  }
+
+  /**
+   * Returns a long from prefixCoded bytes.
+   * Rightmost bits will be zero for lower precision codes.
+   * This method can be used to decode a term's value.
+   * @throws NumberFormatException if the supplied {@link BytesRef} is
+   * not correctly prefix encoded.
+   * @see #longToPrefixCoded(long,int,BytesRef)
+   */
+  public static long prefixCodedToLong(final BytesRef val) {
     long sortableBits = 0L;
-    for (int i=1, len=prefixCoded.length(); i<len; i++) {
+    for (int i=val.offset+1, limit=val.offset+val.length; i<limit; i++) {
       sortableBits <<= 7;
-      final char ch = prefixCoded.charAt(i);
-      if (ch>0x7f) {
+      final byte b = val.bytes[i];
+      if (b < 0) {
         throw new NumberFormatException(
-          "Invalid prefixCoded numerical value representation (char "+
-          Integer.toHexString(ch)+" at position "+i+" is invalid)"
+          "Invalid prefixCoded numerical value representation (byte "+
+          Integer.toHexString(b&0xff)+" at position "+(i-val.offset)+" is invalid)"
         );
       }
-      sortableBits |= ch;
+      sortableBits |= b;
     }
-    return (sortableBits << shift) ^ 0x8000000000000000L;
+    return (sortableBits << getPrefixCodedLongShift(val)) ^ 0x8000000000000000L;
   }
 
   /**
    * Returns an int from prefixCoded characters.
    * Rightmost bits will be zero for lower precision codes.
-   * This method can be used to decode e.g. a stored field.
+   * This method can be used to decode a term's value.
    * @throws NumberFormatException if the supplied string is
    * not correctly prefix encoded.
    * @see #intToPrefixCoded(int)
-   */
+   * @deprecated This method is no longer needed!
+   *
+  @Deprecated
   public static int prefixCodedToInt(final String prefixCoded) {
-    final int shift = prefixCoded.charAt(0)-SHIFT_START_INT;
-    if (shift>31 || shift<0)
-      throw new NumberFormatException("Invalid shift value in prefixCoded string (is encoded value really an INT?)");
+    return prefixCodedToInt(new BytesRef(prefixCoded));
+  }*/
+
+  /**
+   * Returns an int from prefixCoded bytes.
+   * Rightmost bits will be zero for lower precision codes.
+   * This method can be used to decode a term's value.
+   * @throws NumberFormatException if the supplied {@link BytesRef} is
+   * not correctly prefix encoded.
+   * @see #intToPrefixCoded(int,int,BytesRef)
+   */
+  public static int prefixCodedToInt(final BytesRef val) {
     int sortableBits = 0;
-    for (int i=1, len=prefixCoded.length(); i<len; i++) {
+    for (int i=val.offset+1, limit=val.offset+val.length; i<limit; i++) {
       sortableBits <<= 7;
-      final char ch = prefixCoded.charAt(i);
-      if (ch>0x7f) {
+      final byte b = val.bytes[i];
+      if (b < 0) {
         throw new NumberFormatException(
-          "Invalid prefixCoded numerical value representation (char "+
-          Integer.toHexString(ch)+" at position "+i+" is invalid)"
+          "Invalid prefixCoded numerical value representation (byte "+
+          Integer.toHexString(b&0xff)+" at position "+(i-val.offset)+" is invalid)"
         );
       }
-      sortableBits |= ch;
+      sortableBits |= b;
     }
-    return (sortableBits << shift) ^ 0x80000000;
+    return (sortableBits << getPrefixCodedIntShift(val)) ^ 0x80000000;
   }
 
   /**
@@ -261,10 +332,12 @@ public final class NumericUtils {
   /**
    * Convenience method: this just returns:
    *   longToPrefixCoded(doubleToSortableLong(val))
-   */
+   * @deprecated This method is no longer needed!
+   *
+  @Deprecated
   public static String doubleToPrefixCoded(double val) {
     return longToPrefixCoded(doubleToSortableLong(val));
-  }
+  }*/
 
   /**
    * Converts a sortable <code>long</code> back to a <code>double</code>.
@@ -278,10 +351,12 @@ public final class NumericUtils {
   /**
    * Convenience method: this just returns:
    *    sortableLongToDouble(prefixCodedToLong(val))
-   */
+   * @deprecated This method is no longer needed!
+   *
+  @Deprecated
   public static double prefixCodedToDouble(String val) {
     return sortableLongToDouble(prefixCodedToLong(val));
-  }
+  }*/
 
   /**
    * Converts a <code>float</code> value to a sortable signed <code>int</code>.
@@ -299,10 +374,12 @@ public final class NumericUtils {
   /**
    * Convenience method: this just returns:
    *   intToPrefixCoded(floatToSortableInt(val))
-   */
+   * @deprecated This method is no longer needed!
+   *
+  @Deprecated
   public static String floatToPrefixCoded(float val) {
     return intToPrefixCoded(floatToSortableInt(val));
-  }
+  }*/
 
   /**
    * Converts a sortable <code>int</code> back to a <code>float</code>.
@@ -316,16 +393,18 @@ public final class NumericUtils {
   /**
    * Convenience method: this just returns:
    *    sortableIntToFloat(prefixCodedToInt(val))
-   */
+   * @deprecated This method is no longer needed!
+   *
+  @Deprecated
   public static float prefixCodedToFloat(String val) {
     return sortableIntToFloat(prefixCodedToInt(val));
-  }
+  }*/
 
   /**
-   * Expert: Splits a long range recursively.
+   * Splits a long range recursively.
    * You may implement a builder that adds clauses to a
    * {@link org.apache.lucene.search.BooleanQuery} for each call to its
-   * {@link LongRangeBuilder#addRange(String,String)}
+   * {@link LongRangeBuilder#addRange(BytesRef,BytesRef)}
    * method.
    * <p>This method is used by {@link NumericRangeQuery}.
    */
@@ -336,10 +415,10 @@ public final class NumericUtils {
   }
   
   /**
-   * Expert: Splits an int range recursively.
+   * Splits an int range recursively.
    * You may implement a builder that adds clauses to a
    * {@link org.apache.lucene.search.BooleanQuery} for each call to its
-   * {@link IntRangeBuilder#addRange(String,String)}
+   * {@link IntRangeBuilder#addRange(BytesRef,BytesRef)}
    * method.
    * <p>This method is used by {@link NumericRangeQuery}.
    */
@@ -412,10 +491,10 @@ public final class NumericUtils {
   }
 
   /**
-   * Expert: Callback for {@link #splitLongRange}.
+   * Callback for {@link #splitLongRange}.
    * You need to overwrite only one of the methods.
-   * <p><font color="red"><b>NOTE:</b> This is a very low-level interface,
-   * the method signatures may change in later versions.</font>
+   * @lucene.internal
+   * @since 2.9, API changed non backwards-compliant in 3.1
    */
   public static abstract class LongRangeBuilder {
     
@@ -423,7 +502,7 @@ public final class NumericUtils {
      * Overwrite this method, if you like to receive the already prefix encoded range bounds.
      * You can directly build classical (inclusive) range queries from them.
      */
-    public void addRange(String minPrefixCoded, String maxPrefixCoded) {
+    public void addRange(BytesRef minPrefixCoded, BytesRef maxPrefixCoded) {
       throw new UnsupportedOperationException();
     }
     
@@ -432,16 +511,19 @@ public final class NumericUtils {
      * You can use this for e.g. debugging purposes (print out range bounds).
      */
     public void addRange(final long min, final long max, final int shift) {
-      addRange(longToPrefixCoded(min, shift), longToPrefixCoded(max, shift));
+      final BytesRef minBytes = new BytesRef(BUF_SIZE_LONG), maxBytes = new BytesRef(BUF_SIZE_LONG);
+      longToPrefixCoded(min, shift, minBytes);
+      longToPrefixCoded(max, shift, maxBytes);
+      addRange(minBytes, maxBytes);
     }
   
   }
   
   /**
-   * Expert: Callback for {@link #splitIntRange}.
+   * Callback for {@link #splitIntRange}.
    * You need to overwrite only one of the methods.
-   * <p><font color="red"><b>NOTE:</b> This is a very low-level interface,
-   * the method signatures may change in later versions.</font>
+   * @lucene.internal
+   * @since 2.9, API changed non backwards-compliant in 3.1
    */
   public static abstract class IntRangeBuilder {
     
@@ -449,7 +531,7 @@ public final class NumericUtils {
      * Overwrite this method, if you like to receive the already prefix encoded range bounds.
      * You can directly build classical range (inclusive) queries from them.
      */
-    public void addRange(String minPrefixCoded, String maxPrefixCoded) {
+    public void addRange(BytesRef minPrefixCoded, BytesRef maxPrefixCoded) {
       throw new UnsupportedOperationException();
     }
     
@@ -458,7 +540,10 @@ public final class NumericUtils {
      * You can use this for e.g. debugging purposes (print out range bounds).
      */
     public void addRange(final int min, final int max, final int shift) {
-      addRange(intToPrefixCoded(min, shift), intToPrefixCoded(max, shift));
+      final BytesRef minBytes = new BytesRef(BUF_SIZE_INT), maxBytes = new BytesRef(BUF_SIZE_INT);
+      intToPrefixCoded(min, shift, minBytes);
+      intToPrefixCoded(max, shift, maxBytes);
+      addRange(minBytes, maxBytes);
     }
   
   }

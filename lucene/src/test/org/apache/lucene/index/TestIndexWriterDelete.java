@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -770,30 +769,22 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       }
     }
 
-    String[] startFiles = dir.listAll();
-    SegmentInfos infos = new SegmentInfos();
-    infos.read(dir);
-    new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
-    String[] endFiles = dir.listAll();
-
-    if (!Arrays.equals(startFiles, endFiles)) {
-      fail("docswriter abort() failed to delete unreferenced files:\n  before delete:\n    "
-           + arrayToString(startFiles) + "\n  after delete:\n    "
-           + arrayToString(endFiles));
-    }
-
+    TestIndexWriter.assertNoUnreferencedFiles(dir, "docsWriter.abort() failed to delete unreferenced files");
     modifier.close();
-
   }
 
-  private String arrayToString(String[] l) {
-    String s = "";
-    for (int i = 0; i < l.length; i++) {
-      if (i > 0) {
-        s += "\n    ";
-      }
-      s += l[i];
+  public void testDeleteNullQuery() throws IOException {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter modifier = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+
+    for (int i = 0; i < 5; i++) {
+      addDoc(modifier, i, 2*i);
     }
-    return s;
+
+    modifier.deleteDocuments(new TermQuery(new Term("nada", "nada")));
+    modifier.commit();
+    assertEquals(5, modifier.numDocs());
+    modifier.close();
+    dir.close();
   }
 }

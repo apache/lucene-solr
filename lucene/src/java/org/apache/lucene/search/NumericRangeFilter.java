@@ -168,9 +168,6 @@ public final class NumericRangeFilter<T extends Number> extends MultiTermQueryWr
       NumericRangeQuery.newFloatRange(field, min, max, minInclusive, maxInclusive)
     );
   }
-  
-  /** Returns the field name for this filter */
-  public String getField() { return query.getField(); }
 
   /** Returns <code>true</code> if the lower endpoint is inclusive */
   public boolean includesMin() { return query.includesMin(); }

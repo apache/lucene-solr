@@ -355,7 +355,7 @@ public class TestDocSet extends TestCase {
     return r;
   }
 
-  public IndexReader dummyMultiReader(int nSeg, int maxDoc) {
+  public IndexReader dummyMultiReader(int nSeg, int maxDoc) throws IOException {
     if (nSeg==1 && rand.nextBoolean()) return dummyIndexReader(rand.nextInt(maxDoc));
 
     IndexReader[] subs = new IndexReader[rand.nextInt(nSeg)+1];

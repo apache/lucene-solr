@@ -17,6 +17,11 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
+
 import java.io.IOException;
 
 final class TermsHashPerThread extends InvertedDocConsumerPerThread {
@@ -25,11 +30,35 @@ final class TermsHashPerThread extends InvertedDocConsumerPerThread {
   final TermsHashConsumerPerThread consumer;
   final TermsHashPerThread nextPerThread;
 
-  final CharBlockPool charPool;
   final IntBlockPool intPool;
   final ByteBlockPool bytePool;
+  final ByteBlockPool termBytePool;
   final boolean primary;
   final DocumentsWriter.DocState docState;
+
+  // Used when comparing postings via termRefComp, in TermsHashPerField
+  final BytesRef tr1 = new BytesRef();
+  final BytesRef tr2 = new BytesRef();
+
+  // Used by perField:
+  final BytesRef utf8 = new BytesRef(10);
+  
+  final LegacyTermAttributeWrapper legacyTermAttributeWrapper = new LegacyTermAttributeWrapper();
+  
+  /** This class is used to wrap a legacy TermAttribute without support for {@link TermToBytesRefAttribute}. */
+  @Deprecated
+  static class LegacyTermAttributeWrapper implements TermToBytesRefAttribute {
+    private TermAttribute termAtt = null;
+  
+    void setTermAttribute(TermAttribute termAtt) {
+      this.termAtt = termAtt;
+    }
+  
+    public int toBytesRef(BytesRef target) {
+      assert target.bytes != null : "target byteref must be != null, because utf8 is used here";
+      return UnicodeUtil.UTF16toUTF8WithHash(termAtt.termBuffer(), 0, termAtt.termLength(), target);
+    }
+  }
 
   public TermsHashPerThread(DocInverterPerThread docInverterPerThread, final TermsHash termsHash, final TermsHash nextTermsHash, final TermsHashPerThread primaryPerThread) {
     docState = docInverterPerThread.docState;
@@ -37,17 +66,17 @@ final class TermsHashPerThread extends InvertedDocConsumerPerThread {
     this.termsHash = termsHash;
     this.consumer = termsHash.consumer.addThread(this);
 
-    if (nextTermsHash != null) {
-      // We are primary
-      charPool = new CharBlockPool(termsHash.docWriter);
-      primary = true;
-    } else {
-      charPool = primaryPerThread.charPool;
-      primary = false;
-    }
-
     intPool = new IntBlockPool(termsHash.docWriter, termsHash.trackAllocations);
     bytePool = new ByteBlockPool(termsHash.docWriter.byteBlockAllocator, termsHash.trackAllocations);
+
+    if (nextTermsHash != null) {
+      // We are primary
+      primary = true;
+      termBytePool = bytePool;
+    } else {
+      primary = false;
+      termBytePool = primaryPerThread.bytePool;
+    }
 
     if (nextTermsHash != null)
       nextPerThread = nextTermsHash.addThread(docInverterPerThread, this);
@@ -97,7 +126,8 @@ final class TermsHashPerThread extends InvertedDocConsumerPerThread {
     intPool.reset();
     bytePool.reset();
 
-    if (primary)
-      charPool.reset();
+    if (primary) {
+      bytePool.reset();
+    }
   }
 }

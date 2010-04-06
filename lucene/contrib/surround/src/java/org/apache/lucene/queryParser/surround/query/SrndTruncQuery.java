@@ -17,8 +17,11 @@ package org.apache.lucene.queryParser.surround.query;
  */
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
 
 import java.io.IOException;
 
@@ -40,6 +43,7 @@ public class SrndTruncQuery extends SimpleTerm {
   private final char mask;
   
   private String prefix;
+  private BytesRef prefixRef;
   private Pattern pattern;
   
   
@@ -68,6 +72,7 @@ public class SrndTruncQuery extends SimpleTerm {
       i++;
     }
     prefix = truncated.substring(0, i);
+    prefixRef = new BytesRef(prefix);
     
     StringBuilder re = new StringBuilder();
     while (i < truncated.length()) {
@@ -84,26 +89,37 @@ public class SrndTruncQuery extends SimpleTerm {
     MatchingTermVisitor mtv) throws IOException
   {
     int prefixLength = prefix.length();
-    TermEnum enumerator = reader.terms(new Term(fieldName, prefix));
-    Matcher matcher = pattern.matcher("");
-    try {
-      do {
-        Term term = enumerator.term();
-        if (term != null) {
-          String text = term.text();
-          if ((! text.startsWith(prefix)) || (! term.field().equals(fieldName))) {
-            break;
-          } else {
-            matcher.reset( text.substring(prefixLength));
-            if (matcher.matches()) {
-              mtv.visitMatchingTerm(term);
-            }
-          }
+    Terms terms = MultiFields.getTerms(reader, fieldName);
+    if (terms != null) {
+      Matcher matcher = pattern.matcher("");
+      try {
+        TermsEnum termsEnum = terms.iterator();
+
+        TermsEnum.SeekStatus status = termsEnum.seek(prefixRef);
+        BytesRef text;
+        if (status == TermsEnum.SeekStatus.FOUND) {
+          text = prefixRef;
+        } else if (status == TermsEnum.SeekStatus.NOT_FOUND) {
+          text = termsEnum.term();
+        } else {
+          text = null;
         }
-      } while (enumerator.next());
-    } finally {
-      enumerator.close();
-      matcher.reset();
+
+        while(text != null) {
+          if (text != null && text.startsWith(prefixRef)) {
+            String textString = text.utf8ToString();
+            matcher.reset(textString.substring(prefixLength));
+            if (matcher.matches()) {
+              mtv.visitMatchingTerm(new Term(fieldName, textString));
+            }
+          } else {
+            break;
+          }
+          text = termsEnum.next();
+        }
+      } finally {
+        matcher.reset();
+      }
     }
   }
 }

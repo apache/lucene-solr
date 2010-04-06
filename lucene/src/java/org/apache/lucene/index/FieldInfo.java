@@ -17,20 +17,21 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-final class FieldInfo {
-  String name;
-  boolean isIndexed;
-  int number;
+/** @lucene.experimental */
+public final class FieldInfo {
+  public String name;
+  public boolean isIndexed;
+  public int number;
 
   // true if term vector for this field should be stored
   boolean storeTermVector;
   boolean storeOffsetWithTermVector;
   boolean storePositionWithTermVector;
 
-  boolean omitNorms; // omit norms associated with indexed fields  
-  boolean omitTermFreqAndPositions;
-  
-  boolean storePayloads; // whether this field stores payloads together with term positions
+  public boolean omitNorms; // omit norms associated with indexed fields  
+  public boolean omitTermFreqAndPositions;
+
+  public boolean storePayloads; // whether this field stores payloads together with term positions
 
   FieldInfo(String na, boolean tk, int nu, boolean storeTermVector, 
             boolean storePositionWithTermVector,  boolean storeOffsetWithTermVector, 

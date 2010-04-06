@@ -18,10 +18,11 @@ package org.apache.lucene.search.function;
  */
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.search.*;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.util.Set;
@@ -56,7 +57,7 @@ public class ValueSourceQuery extends Query {
     return this;
   }
 
-  /*(non-Javadoc) @see org.apache.lucene.search.Query#extractTerms(java.util.Set) */
+  /*(non-Javadoc) @see org.apache.lucene.search.Query#extractTerms(Set) */
   @Override
   public void extractTerms(Set<Term> terms) {
     // no terms involved here
@@ -127,7 +128,8 @@ public class ValueSourceQuery extends Query {
   private class ValueSourceScorer extends Scorer {
     private final float qWeight;
     private final DocValues vals;
-    private final TermDocs termDocs;
+    private final Bits delDocs;
+    private final int maxDoc;
     private int doc = -1;
 
     // constructor
@@ -136,28 +138,37 @@ public class ValueSourceQuery extends Query {
       qWeight = w.getValue();
       // this is when/where the values are first created.
       vals = valSrc.getValues(reader);
-      termDocs = reader.termDocs(null);
+      delDocs = MultiFields.getDeletedDocs(reader);
+      maxDoc = reader.maxDoc();
     }
 
     @Override
     public int nextDoc() throws IOException {
-      return doc = termDocs.next() ? termDocs.doc() : NO_MORE_DOCS;
+      doc++;
+      while (delDocs != null && doc < maxDoc && delDocs.get(doc)) {
+        doc++;
+      }
+      if (doc == maxDoc) {
+        doc = NO_MORE_DOCS;
+      }
+      return doc;
     }
-    
+
     @Override
     public int docID() {
       return doc;
     }
-    
+
     @Override
     public int advance(int target) throws IOException {
-      return doc = termDocs.skipTo(target) ? termDocs.doc() : NO_MORE_DOCS;
+      doc = target - 1;
+      return nextDoc();
     }
     
     /*(non-Javadoc) @see org.apache.lucene.search.Scorer#score() */
     @Override
     public float score() throws IOException {
-      return qWeight * vals.floatVal(termDocs.doc());
+      return qWeight * vals.floatVal(doc);
     }
   }
 

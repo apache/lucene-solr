@@ -22,9 +22,9 @@ import org.apache.lucene.index.*;
 
 final class ExactPhraseScorer extends PhraseScorer {
 
-  ExactPhraseScorer(Weight weight, TermPositions[] tps, int[] offsets,
+  ExactPhraseScorer(Weight weight, DocsAndPositionsEnum[] postings, int[] offsets,
       Similarity similarity, byte[] norms) {
-    super(weight, tps, offsets, similarity, norms);
+    super(weight, postings, offsets, similarity, norms);
   }
 
   @Override
@@ -42,11 +42,11 @@ final class ExactPhraseScorer extends PhraseScorer {
     int freq = 0;
     do {					  // find position w/ all terms
       while (first.position < last.position) {	  // scan forward in first
-	    do {
-	      if (!first.nextPosition())
-	        return freq;
-	    } while (first.position < last.position);
-	      firstToLast();
+        do {
+          if (!first.nextPosition())
+            return freq;
+        } while (first.position < last.position);
+        firstToLast();
       }
       freq++;					  // all equal: a match
     } while (last.nextPosition());

@@ -986,29 +986,7 @@ public class TestIndexReader extends LuceneTestCase
           // new IndexFileDeleter, have it delete
           // unreferenced files, then verify that in fact
           // no files were deleted:
-          String[] startFiles = dir.listAll();
-          SegmentInfos infos = new SegmentInfos();
-          infos.read(dir);
-          new IndexFileDeleter(dir, new KeepOnlyLastCommitDeletionPolicy(), infos, null, null);
-          String[] endFiles = dir.listAll();
-
-          Arrays.sort(startFiles);
-          Arrays.sort(endFiles);
-
-          //for(int i=0;i<startFiles.length;i++) {
-          //  System.out.println("  startFiles: " + i + ": " + startFiles[i]);
-          //}
-
-          if (!Arrays.equals(startFiles, endFiles)) {
-            String successStr;
-            if (success) {
-              successStr = "success";
-            } else {
-              successStr = "IOException";
-              err.printStackTrace();
-            }
-            fail("reader.close() failed to delete unreferenced files after " + successStr + " (" + diskFree + " bytes): before delete:\n    " + arrayToString(startFiles) + "\n  after delete:\n    " + arrayToString(endFiles));
-          }
+          TestIndexWriter.assertNoUnreferencedFiles(dir, "reader.close() failed to delete unreferenced files");
 
           // Finally, verify index is not corrupt, and, if
           // we succeeded, we see all docs changed, and if
@@ -1760,7 +1738,6 @@ public class TestIndexReader extends LuceneTestCase
     } catch (IllegalStateException ise) {
       // expected
     }
-    assertFalse(((SegmentReader) r.getSequentialSubReaders()[0]).termsIndexLoaded());
 
     assertEquals(-1, ((SegmentReader) r.getSequentialSubReaders()[0]).getTermInfosIndexDivisor());
     writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
@@ -1773,7 +1750,12 @@ public class TestIndexReader extends LuceneTestCase
     IndexReader[] subReaders = r2.getSequentialSubReaders();
     assertEquals(2, subReaders.length);
     for(int i=0;i<2;i++) {
-      assertFalse(((SegmentReader) subReaders[i]).termsIndexLoaded());
+      try {
+        subReaders[i].docFreq(new Term("field", "f"));
+        fail("did not hit expected exception");
+      } catch (IllegalStateException ise) {
+        // expected
+      }
     }
     r2.close();
     dir.close();

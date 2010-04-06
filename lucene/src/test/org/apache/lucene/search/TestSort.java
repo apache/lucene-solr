@@ -37,6 +37,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
@@ -277,7 +278,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     sort.setSort(
         new SortField("string", SortField.STRING),
         new SortField("string2", SortField.STRING, true),
-        SortField.FIELD_DOC );
+        SortField.FIELD_DOC);
 
     result = searcher.search(new MatchAllDocsQuery(), null, 500, sort).scoreDocs;
 
@@ -337,8 +338,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
 
 
     sort.setSort (new SortField ("parser", new FieldCache.IntParser(){
-      public final int parseInt(final String val) {
-        return (val.charAt(0)-'A') * 123456;
+      public final int parseInt(final BytesRef term) {
+        return (term.bytes[term.offset]-'A') * 123456;
       }
     }), SortField.FIELD_DOC );
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
@@ -346,8 +347,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
     fc.purgeAllCaches();
 
     sort.setSort (new SortField ("parser", new FieldCache.FloatParser(){
-      public final float parseFloat(final String val) {
-        return (float) Math.sqrt( val.charAt(0) );
+      public final float parseFloat(final BytesRef term) {
+        return (float) Math.sqrt( term.bytes[term.offset] );
       }
     }), SortField.FIELD_DOC );
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
@@ -355,8 +356,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
     fc.purgeAllCaches();
 
     sort.setSort (new SortField ("parser", new FieldCache.LongParser(){
-      public final long parseLong(final String val) {
-        return (val.charAt(0)-'A') * 1234567890L;
+      public final long parseLong(final BytesRef term) {
+        return (term.bytes[term.offset]-'A') * 1234567890L;
       }
     }), SortField.FIELD_DOC );
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
@@ -364,8 +365,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
     fc.purgeAllCaches();
 
     sort.setSort (new SortField ("parser", new FieldCache.DoubleParser(){
-      public final double parseDouble(final String val) {
-        return Math.pow( val.charAt(0), (val.charAt(0)-'A') );
+      public final double parseDouble(final BytesRef term) {
+        return Math.pow( term.bytes[term.offset], (term.bytes[term.offset]-'A') );
       }
     }), SortField.FIELD_DOC );
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
@@ -373,8 +374,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
     fc.purgeAllCaches();
 
     sort.setSort (new SortField ("parser", new FieldCache.ByteParser(){
-      public final byte parseByte(final String val) {
-        return (byte) (val.charAt(0)-'A');
+      public final byte parseByte(final BytesRef term) {
+        return (byte) (term.bytes[term.offset]-'A');
       }
     }), SortField.FIELD_DOC );
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
@@ -382,8 +383,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
     fc.purgeAllCaches();
 
     sort.setSort (new SortField ("parser", new FieldCache.ShortParser(){
-      public final short parseShort(final String val) {
-        return (short) (val.charAt(0)-'A');
+      public final short parseShort(final BytesRef term) {
+        return (short) (term.bytes[term.offset]-'A');
       }
     }), SortField.FIELD_DOC );
     assertMatches (full, queryA, sort, "JIHGFEDCBA");
@@ -443,8 +444,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       docValues = FieldCache.DEFAULT.getInts(reader, "parser", new FieldCache.IntParser() {
-          public final int parseInt(final String val) {
-            return (val.charAt(0)-'A') * 123456;
+          public final int parseInt(final BytesRef term) {
+            return (term.bytes[term.offset]-'A') * 123456;
           }
         });
     }

@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriter.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.util.Version;
 
@@ -78,6 +79,9 @@ public final class IndexWriterConfig implements Cloneable {
    */
   public static long WRITE_LOCK_TIMEOUT = 1000;
 
+  /** Default {@link CodecProvider}. */
+  public final static CodecProvider DEFAULT_CODEC_PROVIDER = CodecProvider.getDefault();
+
   /** The maximum number of simultaneous threads that may be
    *  indexing documents at once in IndexWriter; if more
    *  than this many threads arrive they will wait for
@@ -119,6 +123,7 @@ public final class IndexWriterConfig implements Cloneable {
   private int maxBufferedDocs;
   private IndexingChain indexingChain;
   private IndexReaderWarmer mergedSegmentWarmer;
+  private CodecProvider codecProvider;
   private MergePolicy mergePolicy;
   private int maxThreadStates;
   private boolean readerPooling;
@@ -149,6 +154,7 @@ public final class IndexWriterConfig implements Cloneable {
     maxBufferedDocs = DEFAULT_MAX_BUFFERED_DOCS;
     indexingChain = DocumentsWriter.defaultIndexingChain;
     mergedSegmentWarmer = null;
+    codecProvider = DEFAULT_CODEC_PROVIDER;
     mergePolicy = new LogByteSizeMergePolicy();
     maxThreadStates = DEFAULT_MAX_THREAD_STATES;
     readerPooling = DEFAULT_READER_POOLING;
@@ -509,6 +515,18 @@ public final class IndexWriterConfig implements Cloneable {
     this.mergePolicy = mergePolicy == null ? new LogByteSizeMergePolicy() : mergePolicy;
     return this;
   }
+
+  /** Set the CodecProvider. See {@link CodecProvider}. */
+  public IndexWriterConfig setCodecProvider(CodecProvider codecProvider) {
+    this.codecProvider = codecProvider;
+    return this;
+  }
+
+  /** Returns the current merged segment warmer. See {@link IndexReaderWarmer}. */
+  public CodecProvider getCodecProvider() {
+    return codecProvider;
+  }
+
   
   /**
    * Returns the current MergePolicy in use by this writer.
@@ -584,6 +602,7 @@ public final class IndexWriterConfig implements Cloneable {
     sb.append("ramBufferSizeMB=").append(ramBufferSizeMB).append("\n");
     sb.append("maxBufferedDocs=").append(maxBufferedDocs).append("\n");
     sb.append("mergedSegmentWarmer=").append(mergedSegmentWarmer).append("\n");
+    sb.append("codecProvider=").append(codecProvider).append("\n");
     sb.append("mergePolicy=").append(mergePolicy).append("\n");
     sb.append("maxThreadStates=").append(maxThreadStates).append("\n");
     sb.append("readerPooling=").append(readerPooling).append("\n");

@@ -61,23 +61,6 @@ public class TestSegmentTermEnum extends LuceneTestCase
     verifyDocFreq();
   }
 
-  public void testPrevTermAtEnd() throws IOException
-  {
-    Directory dir = new MockRAMDirectory();
-    IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
-    addDoc(writer, "aaa bbb");
-    writer.close();
-    SegmentReader reader = SegmentReader.getOnlySegmentReader(dir);
-    SegmentTermEnum termEnum = (SegmentTermEnum) reader.terms();
-    assertTrue(termEnum.next());
-    assertEquals("aaa", termEnum.term().text());
-    assertTrue(termEnum.next());
-    assertEquals("aaa", termEnum.prev().text());
-    assertEquals("bbb", termEnum.term().text());
-    assertFalse(termEnum.next());
-    assertEquals("bbb", termEnum.prev().text());
-  }
-
   private void verifyDocFreq()
       throws IOException
   {

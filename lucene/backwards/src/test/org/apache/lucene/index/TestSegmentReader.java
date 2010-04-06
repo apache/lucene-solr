@@ -137,6 +137,7 @@ public class TestSegmentReader extends LuceneTestCase {
     TermPositions positions = reader.termPositions();
     positions.seek(new Term(DocHelper.TEXT_FIELD_1_KEY, "field"));
     assertTrue(positions != null);
+    assertTrue(positions.next());
     assertTrue(positions.doc() == 0);
     assertTrue(positions.nextPosition() >= 0);
   }    

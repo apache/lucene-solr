@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.*;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.NumericTokenStream;
@@ -322,20 +323,28 @@ public class TrieField extends FieldType {
 
   @Override
   public String readableToIndexed(String val) {
+    // TODO: Numeric should never be handled as String, that may break in future lucene versions! Change to use BytesRef for term texts!
+    BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
     switch (type) {
       case INTEGER:
-        return NumericUtils.intToPrefixCoded(Integer.parseInt(val));
+        NumericUtils.intToPrefixCoded(Integer.parseInt(val), 0, bytes);
+        break;
       case FLOAT:
-        return NumericUtils.intToPrefixCoded(NumericUtils.floatToSortableInt(Float.parseFloat(val)));
+        NumericUtils.intToPrefixCoded(NumericUtils.floatToSortableInt(Float.parseFloat(val)), 0, bytes);
+        break;
       case LONG:
-        return NumericUtils.longToPrefixCoded(Long.parseLong(val));
+        NumericUtils.longToPrefixCoded(Long.parseLong(val), 0, bytes);
+        break;
       case DOUBLE:
-        return NumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(Double.parseDouble(val)));
+        NumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(Double.parseDouble(val)), 0, bytes);
+        break;
       case DATE:
-        return NumericUtils.longToPrefixCoded(dateField.parseMath(null, val).getTime());
+        NumericUtils.longToPrefixCoded(dateField.parseMath(null, val).getTime(), 0, bytes);
+        break;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
     }
+    return bytes.utf8ToString();
   }
 
 
@@ -371,7 +380,8 @@ public class TrieField extends FieldType {
   }
 
   @Override
-  public String indexedToReadable(String indexedForm) {
+  public String indexedToReadable(String _indexedForm) {
+    final BytesRef indexedForm = new BytesRef(_indexedForm);
     switch (type) {
       case INTEGER:
         return Integer.toString( NumericUtils.prefixCodedToInt(indexedForm) );

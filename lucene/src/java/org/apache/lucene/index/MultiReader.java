@@ -25,17 +25,21 @@ import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.index.DirectoryReader.MultiTermDocs;
-import org.apache.lucene.index.DirectoryReader.MultiTermEnum;
-import org.apache.lucene.index.DirectoryReader.MultiTermPositions;
+import org.apache.lucene.index.DirectoryReader.MultiTermDocs;       // deprecated
+import org.apache.lucene.index.DirectoryReader.MultiTermEnum;       // deprecated
+import org.apache.lucene.index.DirectoryReader.MultiTermPositions;  // deprecated
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.ReaderUtil;
 
 /** An IndexReader which reads multiple indexes, appending
- * their content. */
+ *  their content. */
 public class MultiReader extends IndexReader implements Cloneable {
   protected IndexReader[] subReaders;
   private int[] starts;                           // 1st docno for each segment
+  private final Map<IndexReader,ReaderUtil.Slice> subReaderToSlice = new HashMap<IndexReader,ReaderUtil.Slice>();
   private boolean[] decrefOnClose;                // remember which subreaders to decRef on close
   private Map<String,byte[]> normsCache = new HashMap<String,byte[]>();
   private int maxDoc = 0;
@@ -49,7 +53,7 @@ public class MultiReader extends IndexReader implements Cloneable {
   * <p>Note that all subreaders are closed if this Multireader is closed.</p>
   * @param subReaders set of (sub)readers
   */
-  public MultiReader(IndexReader... subReaders) {
+  public MultiReader(IndexReader... subReaders) throws IOException {
     initialize(subReaders, true);
   }
 
@@ -61,14 +65,15 @@ public class MultiReader extends IndexReader implements Cloneable {
    * when this MultiReader is closed
    * @param subReaders set of (sub)readers
    */
-  public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) {
+  public MultiReader(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
     initialize(subReaders, closeSubReaders);
   }
   
-  private void initialize(IndexReader[] subReaders, boolean closeSubReaders) {
+  private void initialize(IndexReader[] subReaders, boolean closeSubReaders) throws IOException {
     this.subReaders =  subReaders.clone();
     starts = new int[subReaders.length + 1];    // build starts array
     decrefOnClose = new boolean[subReaders.length];
+
     for (int i = 0; i < subReaders.length; i++) {
       starts[i] = maxDoc;
       maxDoc += subReaders[i].maxDoc();      // compute maxDocs
@@ -80,12 +85,34 @@ public class MultiReader extends IndexReader implements Cloneable {
         decrefOnClose[i] = false;
       }
       
-      if (subReaders[i].hasDeletions())
+      if (subReaders[i].hasDeletions()) {
         hasDeletions = true;
+      }
+
+      final ReaderUtil.Slice slice = new ReaderUtil.Slice(starts[i],
+                                                          subReaders[i].maxDoc(),
+                                                          i);
+      subReaderToSlice.put(subReaders[i], slice);
     }
+
     starts[subReaders.length] = maxDoc;
   }
-  
+
+  @Override
+  public long getUniqueTermCount() throws IOException {
+    throw new UnsupportedOperationException("");
+  }
+
+  @Override
+  public int getSubReaderDocBase(IndexReader subReader) {
+    return subReaderToSlice.get(subReader).start;
+  }
+
+  @Override
+  public Fields fields() throws IOException {
+    throw new UnsupportedOperationException("please use MultiFields.getFields if you really need a top level Fields (NOTE that it's usually better to work per segment instead)");
+  }
+
   /**
    * Tries to reopen the subreaders.
    * <br>
@@ -128,6 +155,11 @@ public class MultiReader extends IndexReader implements Cloneable {
     }
   }
   
+  @Override
+  public Bits getDeletedDocs() throws IOException {
+    throw new UnsupportedOperationException("please use MultiFields.getDeletedDocs if you really need a top level Bits deletedDocs (NOTE that it's usually better to work per segment instead)");
+  }
+
   /**
    * If clone is true then we clone each of the subreaders
    * @param doClone
@@ -367,7 +399,17 @@ public class MultiReader extends IndexReader implements Cloneable {
       total += subReaders[i].docFreq(t);
     return total;
   }
-
+  
+  @Override
+  public int docFreq(String field, BytesRef t) throws IOException {
+    ensureOpen();
+    int total = 0;          // sum freqs in segments
+    for (int i = 0; i < subReaders.length; i++) {
+      total += subReaders[i].docFreq(field, t);
+    }
+    return total;
+  }
+  
   @Override
   public TermDocs termDocs() throws IOException {
     ensureOpen();

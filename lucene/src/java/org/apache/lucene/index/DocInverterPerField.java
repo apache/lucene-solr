@@ -116,8 +116,9 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
               reader = readerValue;
             else {
               String stringValue = field.stringValue();
-              if (stringValue == null)
+              if (stringValue == null) {
                 throw new IllegalArgumentException("field must have either TokenStream, String or Reader value");
+              }
               perThread.stringReader.init(stringValue);
               reader = perThread.stringReader;
             }

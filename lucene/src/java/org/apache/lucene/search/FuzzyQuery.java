@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
@@ -68,6 +69,7 @@ public class FuzzyQuery extends MultiTermQuery {
    */
   public FuzzyQuery(Term term, float minimumSimilarity, int prefixLength,
       int maxExpansions) {
+    super(term.field());
     this.term = term;
     
     if (minimumSimilarity >= 1.0f)
@@ -127,12 +129,20 @@ public class FuzzyQuery extends MultiTermQuery {
     return prefixLength;
   }
 
-  @Override
+  @Override @Deprecated
   protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
     if (!termLongEnough) {  // can only match if it's exact
       return new SingleTermEnum(reader, term);
     }
     return new FuzzyTermEnum(reader, getTerm(), minimumSimilarity, prefixLength);
+  }
+  
+  @Override
+  protected TermsEnum getTermsEnum(IndexReader reader) throws IOException {
+    if (!termLongEnough) {  // can only match if it's exact
+      return new SingleTermsEnum(reader, term);
+    }
+    return new FuzzyTermsEnum(reader, getTerm(), minimumSimilarity, prefixLength);
   }
   
   /**

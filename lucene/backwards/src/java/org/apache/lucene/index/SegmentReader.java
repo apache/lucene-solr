@@ -37,6 +37,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.CloseableThreadLocal;
+import org.apache.lucene.index.codecs.CodecProvider;
 
 /** @version $Id */
 /**
@@ -592,6 +593,17 @@ public class SegmentReader extends IndexReader implements Cloneable {
       }
     }
     return instance;
+  }
+
+  // stub
+  public static SegmentReader get(boolean readOnly,
+                                  Directory dir,
+                                  SegmentInfo si,
+                                  int readBufferSize,
+                                  boolean doOpenStores,
+                                  int termInfosIndexDivisor,
+                                  CodecProvider codecs) {
+    return null;
   }
 
   void openDocStores() throws IOException {

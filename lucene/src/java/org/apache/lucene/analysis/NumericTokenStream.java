@@ -17,12 +17,17 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.document.NumericField; // for javadocs
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 import org.apache.lucene.search.NumericRangeFilter; // for javadocs
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
@@ -91,6 +96,88 @@ public final class NumericTokenStream extends TokenStream {
 
   /** The lower precision tokens gets this token type assigned. */
   public static final String TOKEN_TYPE_LOWER_PREC = "lowerPrecNumeric";
+  
+  /** <b>Expert:</b> Use this attribute to get the details of the currently generated token
+   * @lucene.experimental
+   * @since 3.1
+   */
+  public interface NumericTermAttribute extends Attribute {
+    /** Returns current shift value, undefined before first token */
+    int getShift();
+    /** Returns {@link NumericTokenStream}'s raw value as {@code long} */
+    long getRawValue();
+    /** Returns value size in bits (32 for {@code float}, {@code int}; 64 for {@code double}, {@code long}) */
+    int getValueSize();
+  }
+  
+  private static final class NumericAttributeFactory extends AttributeFactory {
+    private final AttributeFactory delegate;
+    private NumericTokenStream ts = null;
+
+    NumericAttributeFactory(AttributeFactory delegate) {
+      this.delegate = delegate;
+    }
+  
+    @Override
+    public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
+      if (attClass == NumericTermAttribute.class)
+        return new NumericTermAttributeImpl(ts);
+      if (attClass.isAssignableFrom(CharTermAttribute.class) || attClass.isAssignableFrom(TermAttribute.class))
+        throw new IllegalArgumentException("NumericTokenStream does not support CharTermAttribute/TermAttribute.");
+      return delegate.createAttributeInstance(attClass);
+    }
+  }
+
+  private static final class NumericTermAttributeImpl extends AttributeImpl implements NumericTermAttribute,TermToBytesRefAttribute {
+    private final NumericTokenStream ts;
+    
+    public NumericTermAttributeImpl(NumericTokenStream ts) {
+      this.ts = ts;
+    }
+  
+    public int toBytesRef(BytesRef bytes) {
+      try {
+        assert ts.valSize == 64 || ts.valSize == 32;
+        return (ts.valSize == 64) ? 
+          NumericUtils.longToPrefixCoded(ts.value, ts.shift, bytes) :
+          NumericUtils.intToPrefixCoded((int) ts.value, ts.shift, bytes);
+      } catch (IllegalArgumentException iae) {
+        // return empty token before first
+        bytes.length = 0;
+        return 0;
+      }
+    }
+
+    public int getShift() { return ts.shift; }
+    public long getRawValue() { return ts.value; }
+    public int getValueSize() { return ts.valSize; }
+
+    @Override
+    public void clear() {
+      // this attribute has no contents to clear
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      return other == this;
+    }
+
+    @Override
+    public int hashCode() {
+      return System.identityHashCode(this);
+    }
+    
+    @Override
+    public void copyTo(AttributeImpl target) {
+      // this attribute has no contents to copy
+    }
+    
+    @Override
+    public Object clone() {
+      // cannot throw CloneNotSupportedException (checked)
+      throw new UnsupportedOperationException();
+    }
+  }
 
   /**
    * Creates a token stream for numeric values using the default <code>precisionStep</code>
@@ -107,23 +194,15 @@ public final class NumericTokenStream extends TokenStream {
    * before using set a value using the various set<em>???</em>Value() methods.
    */
   public NumericTokenStream(final int precisionStep) {
-    super();
-    this.precisionStep = precisionStep;
-    if (precisionStep < 1)
-      throw new IllegalArgumentException("precisionStep must be >=1");
-  }
+    super(new NumericAttributeFactory(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY));
+    // we must do this after the super call :(
+    ((NumericAttributeFactory) getAttributeFactory()).ts = this;
+    addAttribute(NumericTermAttribute.class);
 
-  /**
-   * Expert: Creates a token stream for numeric values with the specified
-   * <code>precisionStep</code> using the given {@link AttributeSource}.
-   * The stream is not yet initialized,
-   * before using set a value using the various set<em>???</em>Value() methods.
-   */
-  public NumericTokenStream(AttributeSource source, final int precisionStep) {
-    super(source);
     this.precisionStep = precisionStep;
     if (precisionStep < 1)
       throw new IllegalArgumentException("precisionStep must be >=1");
+    shift = -precisionStep;
   }
 
   /**
@@ -134,10 +213,15 @@ public final class NumericTokenStream extends TokenStream {
    * before using set a value using the various set<em>???</em>Value() methods.
    */
   public NumericTokenStream(AttributeFactory factory, final int precisionStep) {
-    super(factory);
+    super(new NumericAttributeFactory(factory));
+    // we must do this after the super call :(
+    ((NumericAttributeFactory) getAttributeFactory()).ts = this;
+    addAttribute(NumericTermAttribute.class);
+
     this.precisionStep = precisionStep;
     if (precisionStep < 1)
       throw new IllegalArgumentException("precisionStep must be >=1");
+    shift = -precisionStep;
   }
 
   /**
@@ -149,7 +233,7 @@ public final class NumericTokenStream extends TokenStream {
   public NumericTokenStream setLongValue(final long value) {
     this.value = value;
     valSize = 64;
-    shift = 0;
+    shift = -precisionStep;
     return this;
   }
   
@@ -162,7 +246,7 @@ public final class NumericTokenStream extends TokenStream {
   public NumericTokenStream setIntValue(final int value) {
     this.value = value;
     valSize = 32;
-    shift = 0;
+    shift = -precisionStep;
     return this;
   }
   
@@ -175,7 +259,7 @@ public final class NumericTokenStream extends TokenStream {
   public NumericTokenStream setDoubleValue(final double value) {
     this.value = NumericUtils.doubleToSortableLong(value);
     valSize = 64;
-    shift = 0;
+    shift = -precisionStep;
     return this;
   }
   
@@ -188,7 +272,7 @@ public final class NumericTokenStream extends TokenStream {
   public NumericTokenStream setFloatValue(final float value) {
     this.value = NumericUtils.floatToSortableInt(value);
     valSize = 32;
-    shift = 0;
+    shift = -precisionStep;
     return this;
   }
   
@@ -196,37 +280,24 @@ public final class NumericTokenStream extends TokenStream {
   public void reset() {
     if (valSize == 0)
       throw new IllegalStateException("call set???Value() before usage");
-    shift = 0;
+    shift = -precisionStep;
   }
 
   @Override
   public boolean incrementToken() {
     if (valSize == 0)
       throw new IllegalStateException("call set???Value() before usage");
-    if (shift >= valSize)
+    shift += precisionStep;
+    if (shift >= valSize) {
+      // reset so the attribute still works after exhausted stream
+      shift -= precisionStep;
       return false;
+    }
 
     clearAttributes();
-    final char[] buffer;
-    switch (valSize) {
-      case 64:
-        buffer = termAtt.resizeTermBuffer(NumericUtils.BUF_SIZE_LONG);
-        termAtt.setTermLength(NumericUtils.longToPrefixCoded(value, shift, buffer));
-        break;
-      
-      case 32:
-        buffer = termAtt.resizeTermBuffer(NumericUtils.BUF_SIZE_INT);
-        termAtt.setTermLength(NumericUtils.intToPrefixCoded((int) value, shift, buffer));
-        break;
-      
-      default:
-        // should not happen
-        throw new IllegalArgumentException("valSize must be 32 or 64");
-    }
-    
+    // the TermToBytesRefAttribute is directly accessing shift & value.
     typeAtt.setType((shift == 0) ? TOKEN_TYPE_FULL_PREC : TOKEN_TYPE_LOWER_PREC);
     posIncrAtt.setPositionIncrement((shift == 0) ? 1 : 0);
-    shift += precisionStep;
     return true;
   }
   
@@ -238,12 +309,11 @@ public final class NumericTokenStream extends TokenStream {
   }
 
   // members
-  private final TermAttribute termAtt = addAttribute(TermAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   
-  private int shift = 0, valSize = 0; // valSize==0 means not initialized
+  int shift, valSize = 0; // valSize==0 means not initialized
   private final int precisionStep;
   
-  private long value = 0L;
+  long value = 0L;
 }

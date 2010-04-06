@@ -28,40 +28,33 @@ final class PhrasePositions {
   int position;					  // position in doc
   int count;					  // remaining pos in this doc
   int offset;					  // position in phrase
-  TermPositions tp;				  // stream of positions
-  PhrasePositions next;				  // used to make lists
+  final DocsAndPositionsEnum postings;  	  // stream of docs & positions
+  PhrasePositions next;	                          // used to make lists
   boolean repeats;       // there's other pp for same term (e.g. query="1st word 2nd word"~1) 
 
-  PhrasePositions(TermPositions t, int o) {
-    tp = t;
+  PhrasePositions(DocsAndPositionsEnum postings, int o) {
+    this.postings = postings;
     offset = o;
   }
 
   final boolean next() throws IOException {	  // increments to next doc
-    if (!tp.next()) {
-      tp.close();				  // close stream
-      doc = Integer.MAX_VALUE;			  // sentinel value
+    doc = postings.nextDoc();
+    if (doc == postings.NO_MORE_DOCS) {
       return false;
     }
-    doc = tp.doc();
-    position = 0;
     return true;
   }
 
   final boolean skipTo(int target) throws IOException {
-    if (!tp.skipTo(target)) {
-      tp.close();				  // close stream
-      doc = Integer.MAX_VALUE;			  // sentinel value
+    doc = postings.advance(target);
+    if (doc == postings.NO_MORE_DOCS) {
       return false;
     }
-    doc = tp.doc();
-    position = 0;
     return true;
   }
 
-
   final void firstPosition() throws IOException {
-    count = tp.freq();				  // read first pos
+    count = postings.freq();				  // read first pos
     nextPosition();
   }
 
@@ -73,7 +66,7 @@ final class PhrasePositions {
    */
   final boolean nextPosition() throws IOException {
     if (count-- > 0) {				  // read subsequent pos's
-      position = tp.nextPosition() - offset;
+      position = postings.nextPosition() - offset;
       return true;
     } else
       return false;

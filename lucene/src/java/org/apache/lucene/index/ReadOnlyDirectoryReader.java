@@ -18,22 +18,23 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.index.codecs.CodecProvider;
 
 import java.io.IOException;
 import java.util.Map;
 
 class ReadOnlyDirectoryReader extends DirectoryReader {
-  ReadOnlyDirectoryReader(Directory directory, SegmentInfos sis, IndexDeletionPolicy deletionPolicy, int termInfosIndexDivisor) throws IOException {
-    super(directory, sis, deletionPolicy, true, termInfosIndexDivisor);
+  ReadOnlyDirectoryReader(Directory directory, SegmentInfos sis, IndexDeletionPolicy deletionPolicy, int termInfosIndexDivisor, CodecProvider codecs) throws IOException {
+    super(directory, sis, deletionPolicy, true, termInfosIndexDivisor, codecs);
   }
 
   ReadOnlyDirectoryReader(Directory directory, SegmentInfos infos, SegmentReader[] oldReaders, int[] oldStarts,  Map<String,byte[]> oldNormsCache, boolean doClone,
-                          int termInfosIndexDivisor) throws IOException {
-    super(directory, infos, oldReaders, oldStarts, oldNormsCache, true, doClone, termInfosIndexDivisor);
+                          int termInfosIndexDivisor, CodecProvider codecs) throws IOException {
+    super(directory, infos, oldReaders, oldStarts, oldNormsCache, true, doClone, termInfosIndexDivisor, codecs);
   }
   
-  ReadOnlyDirectoryReader(IndexWriter writer, SegmentInfos infos, int termInfosIndexDivisor) throws IOException {
-    super(writer, infos, termInfosIndexDivisor);
+  ReadOnlyDirectoryReader(IndexWriter writer, SegmentInfos infos, int termInfosIndexDivisor, CodecProvider codecs) throws IOException {
+    super(writer, infos, termInfosIndexDivisor, codecs);
   }
   
   @Override

@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /** This is a DocFieldConsumer that inverts each field,
  *  separately, from a Document, and accepts a
@@ -34,16 +34,16 @@ final class DocInverterPerThread extends DocFieldConsumerPerThread {
   final SingleTokenAttributeSource singleToken = new SingleTokenAttributeSource();
   
   static class SingleTokenAttributeSource extends AttributeSource {
-    final TermAttribute termAttribute;
+    final CharTermAttribute termAttribute;
     final OffsetAttribute offsetAttribute;
     
     private SingleTokenAttributeSource() {
-      termAttribute = addAttribute(TermAttribute.class);
+      termAttribute = addAttribute(CharTermAttribute.class);
       offsetAttribute = addAttribute(OffsetAttribute.class);
     }
     
     public void reinit(String stringValue, int startOffset,  int endOffset) {
-      termAttribute.setTermBuffer(stringValue);
+      termAttribute.setEmpty().append(stringValue);
       offsetAttribute.setOffset(startOffset, endOffset);
     }
   }

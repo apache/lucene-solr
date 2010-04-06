@@ -17,16 +17,21 @@ package org.apache.lucene.queryParser.surround.query;
  */
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
 
 import java.io.IOException;
 
 
 public class SrndPrefixQuery extends SimpleTerm {
+  private final BytesRef prefixRef;
   public SrndPrefixQuery(String prefix, boolean quoted, char truncator) {
     super(quoted);
     this.prefix = prefix;
+    prefixRef = new BytesRef(prefix);
     this.truncator = truncator;
   }
 
@@ -53,20 +58,35 @@ public class SrndPrefixQuery extends SimpleTerm {
     MatchingTermVisitor mtv) throws IOException
   {
     /* inspired by PrefixQuery.rewrite(): */
-    TermEnum enumerator = reader.terms(getLucenePrefixTerm(fieldName));
-    try {
-      do {
-        Term term = enumerator.term();
-        if ((term != null)
-            && term.text().startsWith(getPrefix())
-            && term.field().equals(fieldName)) {
-          mtv.visitMatchingTerm(term);
+    Terms terms = MultiFields.getTerms(reader, fieldName);
+    if (terms != null) {
+      TermsEnum termsEnum = terms.iterator();
+
+      boolean skip = false;
+      TermsEnum.SeekStatus status = termsEnum.seek(new BytesRef(getPrefix()));
+      if (status == TermsEnum.SeekStatus.FOUND) {
+        mtv.visitMatchingTerm(getLucenePrefixTerm(fieldName));
+      } else if (status == TermsEnum.SeekStatus.NOT_FOUND) {
+        if (termsEnum.term().startsWith(prefixRef)) {
+          mtv.visitMatchingTerm(new Term(fieldName, termsEnum.term().utf8ToString()));
         } else {
-          break;
+          skip = true;
         }
-      } while (enumerator.next());
-    } finally {
-      enumerator.close();
+      } else {
+        // EOF
+        skip = true;
+      }
+
+      if (!skip) {
+        while(true) {
+          BytesRef text = termsEnum.next();
+          if (text != null && text.startsWith(prefixRef)) {
+            mtv.visitMatchingTerm(new Term(fieldName, text.utf8ToString()));
+          } else {
+            break;
+          }
+        }
+      }
     }
   }
 }

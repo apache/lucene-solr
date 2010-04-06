@@ -20,8 +20,10 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.ToStringUtils;
@@ -71,12 +73,14 @@ public class TermQuery extends Query {
 
     @Override
     public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
-      TermDocs termDocs = reader.termDocs(term);
-
-      if (termDocs == null)
+      // NOTE: debateably, the caller should never pass in a
+      // multi reader...
+      DocsEnum docs = MultiFields.getTermDocsEnum(reader, MultiFields.getDeletedDocs(reader), term.field(), new BytesRef(term.text()));
+      if (docs == null) {
         return null;
+      }
 
-      return new TermScorer(this, termDocs, similarity, reader.norms(term.field()));
+      return new TermScorer(this, docs, similarity, reader.norms(term.field()));
     }
 
     @Override
@@ -114,15 +118,12 @@ public class TermQuery extends Query {
 
       Explanation tfExplanation = new Explanation();
       int tf = 0;
-      TermDocs termDocs = reader.termDocs(term);
-      if (termDocs != null) {
-        try {
-          if (termDocs.skipTo(doc) && termDocs.doc() == doc) {
-            tf = termDocs.freq();
+      DocsEnum docs = reader.termDocsEnum(MultiFields.getDeletedDocs(reader), term.field(), new BytesRef(term.text()));
+      if (docs != null) {
+          int newDoc = docs.advance(doc);
+          if (newDoc == doc) {
+            tf = docs.freq();
           }
-        } finally {
-          termDocs.close();
-        }
         tfExplanation.setValue(similarity.tf(tf));
         tfExplanation.setDescription("tf(termFreq("+term+")="+tf+")");
       } else {

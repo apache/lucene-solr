@@ -34,10 +34,10 @@ package org.apache.lucene.index;
  * hit a non-zero byte. */
 
 import java.util.Arrays;
+import org.apache.lucene.util.BytesRef;
 import java.util.List;
 import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
 import org.apache.lucene.util.ArrayUtil;
-
 
 final class ByteBlockPool {
 
@@ -148,6 +148,24 @@ final class ByteBlockPool {
     buffer[byteUpto-1] = (byte) (16|newLevel);
 
     return newUpto+3;
+  }
+
+  // Fill in a BytesRef from term's length & bytes encoded in
+  // byte block
+  final BytesRef setBytesRef(BytesRef term, int textStart) {
+    final byte[] bytes = term.bytes = buffers[textStart >> DocumentsWriter.BYTE_BLOCK_SHIFT];
+    int pos = textStart & DocumentsWriter.BYTE_BLOCK_MASK;
+    if ((bytes[pos] & 0x80) == 0) {
+      // length is 1 byte
+      term.length = bytes[pos];
+      term.offset = pos+1;
+    } else {
+      // length is 2 bytes
+      term.length = (bytes[pos]&0x7f) + ((bytes[pos+1]&0xff)<<7);
+      term.offset = pos+2;
+    }
+    assert term.length >= 0;
+    return term;
   }
 }
 

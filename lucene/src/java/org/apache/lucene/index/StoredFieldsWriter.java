@@ -90,8 +90,8 @@ final class StoredFieldsWriter {
       state.flushedFiles.add(fieldsName);
       state.flushedFiles.add(fieldsIdxName);
 
-      state.docWriter.removeOpenFile(fieldsName);
-      state.docWriter.removeOpenFile(fieldsIdxName);
+      docWriter.removeOpenFile(fieldsName);
+      docWriter.removeOpenFile(fieldsIdxName);
 
       if (4+((long) state.numDocsInStore)*8 != state.directory.fileLength(fieldsIdxName))
         throw new RuntimeException("after flush: fdx size mismatch: " + state.numDocsInStore + " docs vs " + state.directory.fileLength(fieldsIdxName) + " length in bytes of " + fieldsIdxName + " file exists?=" + state.directory.fileExists(fieldsIdxName));

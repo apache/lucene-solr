@@ -19,15 +19,9 @@ package org.apache.lucene.store;
 
 import java.io.IOException;
 import java.io.Closeable;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.Collection; // for javadocs
 
-import java.util.ArrayList;
-import static java.util.Arrays.asList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
-import org.apache.lucene.index.IndexFileNameFilter;
+import java.util.Arrays;
 import org.apache.lucene.util.IOUtils;
 
 /** A Directory is a flat list of files.  Files may be written once, when they
@@ -200,14 +194,7 @@ public abstract class Directory implements Closeable {
    * @param to        destination directory
    */
   public final void copyTo(Directory to) throws IOException {
-    List<String> filenames = new ArrayList<String>();
-    IndexFileNameFilter filter = IndexFileNameFilter.getFilter();
-
-    for (String name : listAll())
-      if (filter.accept(null, name))
-        filenames.add(name);
-
-    copyTo(to, filenames);
+    copyTo(to, Arrays.asList(listAll()));
   }
 
   /**

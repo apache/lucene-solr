@@ -1,5 +1,7 @@
 package org.apache.lucene.index;
 
+import org.apache.lucene.util.ArrayUtil;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,25 +23,49 @@ package org.apache.lucene.index;
 class ParallelPostingsArray {
   final static int BYTES_PER_POSTING = 3 * DocumentsWriter.INT_NUM_BYTE;
 
+  final int size;
   final int[] textStarts;
   final int[] intStarts;
   final int[] byteStarts;
-  
-  public ParallelPostingsArray(final int size) {
+
+  ParallelPostingsArray(final int size) {
+    this.size = size;
     textStarts = new int[size];
     intStarts = new int[size];
     byteStarts = new int[size];
   }
-  
-  ParallelPostingsArray resize(int newSize) {
-    ParallelPostingsArray newArray = new ParallelPostingsArray(newSize);
-    copy(this, newArray);
+
+  int bytesPerPosting() {
+    return BYTES_PER_POSTING;
+  }
+
+  ParallelPostingsArray newInstance(int size) {
+    return new ParallelPostingsArray(size);
+  }
+
+  final ParallelPostingsArray grow() {
+    int newSize = ArrayUtil.oversize(size + 1, bytesPerPosting());
+    ParallelPostingsArray newArray = newInstance(newSize);
+    copyTo(newArray, size);
     return newArray;
   }
-  
-  void copy(ParallelPostingsArray fromArray, ParallelPostingsArray toArray) {
-    System.arraycopy(fromArray.textStarts, 0, toArray.textStarts, 0, fromArray.textStarts.length);
-    System.arraycopy(fromArray.intStarts, 0, toArray.intStarts, 0, fromArray.intStarts.length);
-    System.arraycopy(fromArray.byteStarts, 0, toArray.byteStarts, 0, fromArray.byteStarts.length);
+
+  final ParallelPostingsArray shrink(int targetSize, boolean doCopy) {
+    int shrinkSize = ArrayUtil.getShrinkSize(size, targetSize, bytesPerPosting());
+    if (shrinkSize != size) {
+      ParallelPostingsArray newArray = newInstance(targetSize);
+      if (doCopy) {
+        copyTo(newArray, targetSize);
+      }
+      return newArray;
+    } else {
+      return this;
+    }
+  }
+
+  void copyTo(ParallelPostingsArray toArray, int numToCopy) {
+    System.arraycopy(textStarts, 0, toArray.textStarts, 0, numToCopy);
+    System.arraycopy(intStarts, 0, toArray.intStarts, 0, numToCopy);
+    System.arraycopy(byteStarts, 0, toArray.byteStarts, 0, numToCopy);
   }
 }

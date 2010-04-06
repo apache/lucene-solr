@@ -22,12 +22,8 @@ import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
-import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.analysis.tokenattributes.*;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.analysis.CharFilterFactory;
 import org.apache.solr.analysis.TokenFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
@@ -147,25 +143,33 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    */
   private List<Token> analyzeTokenStream(TokenStream tokenStream) {
     List<Token> tokens = new ArrayList<Token>();
-
-    // TODO change this API to support custom attributes
-    TermAttribute termAtt = (TermAttribute) 
-      tokenStream.addAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) 
-      tokenStream.addAttribute(OffsetAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) 
-      tokenStream.addAttribute(TypeAttribute.class);
-    FlagsAttribute flagsAtt = (FlagsAttribute) 
-      tokenStream.addAttribute(FlagsAttribute.class);
-    PayloadAttribute payloadAtt = (PayloadAttribute) 
-      tokenStream.addAttribute(PayloadAttribute.class);
-    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) 
-      tokenStream.addAttribute(PositionIncrementAttribute.class);
     
+    // TODO change this API to support custom attributes
+    TermAttribute termAtt = null;
+    TermToBytesRefAttribute bytesAtt = null;
+    if (tokenStream.hasAttribute(TermAttribute.class)) {
+      termAtt = tokenStream.getAttribute(TermAttribute.class);
+    } else if (tokenStream.hasAttribute(TermToBytesRefAttribute.class)) {
+      bytesAtt = tokenStream.getAttribute(TermToBytesRefAttribute.class);
+    }
+    final OffsetAttribute offsetAtt = tokenStream.addAttribute(OffsetAttribute.class);
+    final TypeAttribute typeAtt = tokenStream.addAttribute(TypeAttribute.class);
+    final PositionIncrementAttribute posIncAtt = tokenStream.addAttribute(PositionIncrementAttribute.class);
+    final FlagsAttribute flagsAtt = tokenStream.addAttribute(FlagsAttribute.class);
+    final PayloadAttribute payloadAtt = tokenStream.addAttribute(PayloadAttribute.class);
+    
+    final BytesRef bytes = new BytesRef();
     try {
       while (tokenStream.incrementToken()) {
         Token token = new Token();
-        token.setTermBuffer(termAtt.termBuffer(), 0, termAtt.termLength());
+        if (termAtt != null) {
+          token.setTermBuffer(termAtt.term());
+        }
+        if (bytesAtt != null) {
+          bytesAtt.toBytesRef(bytes);
+          // TODO: This is incorrect when numeric fields change in later lucene versions. It should use BytesRef directly!
+          token.setTermBuffer(bytes.utf8ToString());
+        }
         token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
         token.setType(typeAtt.type());
         token.setFlags(flagsAtt.getFlags());

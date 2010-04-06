@@ -29,6 +29,8 @@ import org.apache.lucene.index.MergePolicy.MergeAbortedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.CodecProvider;
 
 /**
  * The SegmentMerger class combines two or more Segments, represented by an IndexReader ({@link #add},
@@ -98,7 +100,12 @@ final class SegmentMerger {
     }
     termIndexInterval = writer.getTermIndexInterval();
   }
-  
+
+  // stub
+  SegmentMerger(Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, CodecProvider codecs) {  
+    checkAbort = null;
+  }
+
   boolean hasProx() {
     return fieldInfos.hasProx();
   }
@@ -169,6 +176,11 @@ final class SegmentMerger {
     for (final IndexReader reader : readers) {
       reader.close();
     }
+  }
+
+  // stub
+  final List<String> createCompoundFile(String fileName, SegmentInfo info) {
+    return null;
   }
 
   final List<String> createCompoundFile(String fileName)
@@ -551,6 +563,11 @@ final class SegmentMerger {
         checkAbort.work(300);
       }
     }
+  }
+
+  // stub
+  Codec getCodec() {
+    return null;
   }
 
   private SegmentMergeQueue queue = null;

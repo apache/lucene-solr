@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.document.NumericField; // for javadocs
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
 
@@ -100,7 +101,7 @@ public interface FieldCache {
    */
   public interface ByteParser extends Parser {
     /** Return a single Byte representation of this field's value. */
-    public byte parseByte(String string);
+    public byte parseByte(BytesRef term);
   }
 
   /** Interface to parse shorts from document fields.
@@ -108,7 +109,7 @@ public interface FieldCache {
    */
   public interface ShortParser extends Parser {
     /** Return a short representation of this field's value. */
-    public short parseShort(String string);
+    public short parseShort(BytesRef term);
   }
 
   /** Interface to parse ints from document fields.
@@ -116,7 +117,7 @@ public interface FieldCache {
    */
   public interface IntParser extends Parser {
     /** Return an integer representation of this field's value. */
-    public int parseInt(String string);
+    public int parseInt(BytesRef term);
   }
 
   /** Interface to parse floats from document fields.
@@ -124,7 +125,7 @@ public interface FieldCache {
    */
   public interface FloatParser extends Parser {
     /** Return an float representation of this field's value. */
-    public float parseFloat(String string);
+    public float parseFloat(BytesRef term);
   }
 
   /** Interface to parse long from document fields.
@@ -132,7 +133,7 @@ public interface FieldCache {
    */
   public interface LongParser extends Parser {
     /** Return an long representation of this field's value. */
-    public long parseLong(String string);
+    public long parseLong(BytesRef term);
   }
 
   /** Interface to parse doubles from document fields.
@@ -140,16 +141,20 @@ public interface FieldCache {
    */
   public interface DoubleParser extends Parser {
     /** Return an long representation of this field's value. */
-    public double parseDouble(String string);
+    public double parseDouble(BytesRef term);
   }
 
   /** Expert: The cache used internally by sorting and range query classes. */
   public static FieldCache DEFAULT = new FieldCacheImpl();
-  
+
   /** The default parser for byte values, which are encoded by {@link Byte#toString(byte)} */
   public static final ByteParser DEFAULT_BYTE_PARSER = new ByteParser() {
-    public byte parseByte(String value) {
-      return Byte.parseByte(value);
+    public byte parseByte(BytesRef term) {
+      // TODO: would be far better to directly parse from
+      // UTF8 bytes... but really users should use
+      // NumericField, instead, which already decodes
+      // directly from byte[]
+      return Byte.parseByte(term.utf8ToString());
     }
     protected Object readResolve() {
       return DEFAULT_BYTE_PARSER;
@@ -162,8 +167,12 @@ public interface FieldCache {
 
   /** The default parser for short values, which are encoded by {@link Short#toString(short)} */
   public static final ShortParser DEFAULT_SHORT_PARSER = new ShortParser() {
-    public short parseShort(String value) {
-      return Short.parseShort(value);
+    public short parseShort(BytesRef term) {
+      // TODO: would be far better to directly parse from
+      // UTF8 bytes... but really users should use
+      // NumericField, instead, which already decodes
+      // directly from byte[]
+      return Short.parseShort(term.utf8ToString());
     }
     protected Object readResolve() {
       return DEFAULT_SHORT_PARSER;
@@ -176,8 +185,12 @@ public interface FieldCache {
 
   /** The default parser for int values, which are encoded by {@link Integer#toString(int)} */
   public static final IntParser DEFAULT_INT_PARSER = new IntParser() {
-    public int parseInt(String value) {
-      return Integer.parseInt(value);
+    public int parseInt(BytesRef term) {
+      // TODO: would be far better to directly parse from
+      // UTF8 bytes... but really users should use
+      // NumericField, instead, which already decodes
+      // directly from byte[]
+      return Integer.parseInt(term.utf8ToString());
     }
     protected Object readResolve() {
       return DEFAULT_INT_PARSER;
@@ -190,8 +203,12 @@ public interface FieldCache {
 
   /** The default parser for float values, which are encoded by {@link Float#toString(float)} */
   public static final FloatParser DEFAULT_FLOAT_PARSER = new FloatParser() {
-    public float parseFloat(String value) {
-      return Float.parseFloat(value);
+    public float parseFloat(BytesRef term) {
+      // TODO: would be far better to directly parse from
+      // UTF8 bytes... but really users should use
+      // NumericField, instead, which already decodes
+      // directly from byte[]
+      return Float.parseFloat(term.utf8ToString());
     }
     protected Object readResolve() {
       return DEFAULT_FLOAT_PARSER;
@@ -204,8 +221,12 @@ public interface FieldCache {
 
   /** The default parser for long values, which are encoded by {@link Long#toString(long)} */
   public static final LongParser DEFAULT_LONG_PARSER = new LongParser() {
-    public long parseLong(String value) {
-      return Long.parseLong(value);
+    public long parseLong(BytesRef term) {
+      // TODO: would be far better to directly parse from
+      // UTF8 bytes... but really users should use
+      // NumericField, instead, which already decodes
+      // directly from byte[]
+      return Long.parseLong(term.utf8ToString());
     }
     protected Object readResolve() {
       return DEFAULT_LONG_PARSER;
@@ -218,8 +239,12 @@ public interface FieldCache {
 
   /** The default parser for double values, which are encoded by {@link Double#toString(double)} */
   public static final DoubleParser DEFAULT_DOUBLE_PARSER = new DoubleParser() {
-    public double parseDouble(String value) {
-      return Double.parseDouble(value);
+    public double parseDouble(BytesRef term) {
+      // TODO: would be far better to directly parse from
+      // UTF8 bytes... but really users should use
+      // NumericField, instead, which already decodes
+      // directly from byte[]
+      return Double.parseDouble(term.utf8ToString());
     }
     protected Object readResolve() {
       return DEFAULT_DOUBLE_PARSER;
@@ -231,15 +256,14 @@ public interface FieldCache {
   };
 
   /**
-   * A parser instance for int values encoded by {@link NumericUtils#intToPrefixCoded(int)}, e.g. when indexed
+   * A parser instance for int values encoded by {@link NumericUtils}, e.g. when indexed
    * via {@link NumericField}/{@link NumericTokenStream}.
    */
   public static final IntParser NUMERIC_UTILS_INT_PARSER=new IntParser(){
-    public int parseInt(String val) {
-      final int shift = val.charAt(0)-NumericUtils.SHIFT_START_INT;
-      if (shift>0 && shift<=31)
+    public int parseInt(BytesRef term) {
+      if (NumericUtils.getPrefixCodedIntShift(term) > 0)
         throw new FieldCacheImpl.StopFillCacheException();
-      return NumericUtils.prefixCodedToInt(val);
+      return NumericUtils.prefixCodedToInt(term);
     }
     protected Object readResolve() {
       return NUMERIC_UTILS_INT_PARSER;
@@ -255,11 +279,10 @@ public interface FieldCache {
    * via {@link NumericField}/{@link NumericTokenStream}.
    */
   public static final FloatParser NUMERIC_UTILS_FLOAT_PARSER=new FloatParser(){
-    public float parseFloat(String val) {
-      final int shift = val.charAt(0)-NumericUtils.SHIFT_START_INT;
-      if (shift>0 && shift<=31)
+    public float parseFloat(BytesRef term) {
+      if (NumericUtils.getPrefixCodedIntShift(term) > 0)
         throw new FieldCacheImpl.StopFillCacheException();
-      return NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(val));
+      return NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(term));
     }
     protected Object readResolve() {
       return NUMERIC_UTILS_FLOAT_PARSER;
@@ -271,15 +294,14 @@ public interface FieldCache {
   };
 
   /**
-   * A parser instance for long values encoded by {@link NumericUtils#longToPrefixCoded(long)}, e.g. when indexed
+   * A parser instance for long values encoded by {@link NumericUtils}, e.g. when indexed
    * via {@link NumericField}/{@link NumericTokenStream}.
    */
   public static final LongParser NUMERIC_UTILS_LONG_PARSER = new LongParser(){
-    public long parseLong(String val) {
-      final int shift = val.charAt(0)-NumericUtils.SHIFT_START_LONG;
-      if (shift>0 && shift<=63)
+    public long parseLong(BytesRef term) {
+      if (NumericUtils.getPrefixCodedLongShift(term) > 0)
         throw new FieldCacheImpl.StopFillCacheException();
-      return NumericUtils.prefixCodedToLong(val);
+      return NumericUtils.prefixCodedToLong(term);
     }
     protected Object readResolve() {
       return NUMERIC_UTILS_LONG_PARSER;
@@ -295,11 +317,10 @@ public interface FieldCache {
    * via {@link NumericField}/{@link NumericTokenStream}.
    */
   public static final DoubleParser NUMERIC_UTILS_DOUBLE_PARSER = new DoubleParser(){
-    public double parseDouble(String val) {
-      final int shift = val.charAt(0)-NumericUtils.SHIFT_START_LONG;
-      if (shift>0 && shift<=63)
+    public double parseDouble(BytesRef term) {
+      if (NumericUtils.getPrefixCodedLongShift(term) > 0)
         throw new FieldCacheImpl.StopFillCacheException();
-      return NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(val));
+      return NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(term));
     }
     protected Object readResolve() {
       return NUMERIC_UTILS_DOUBLE_PARSER;

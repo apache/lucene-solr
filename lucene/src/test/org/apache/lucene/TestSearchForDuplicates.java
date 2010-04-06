@@ -89,6 +89,9 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       for (int j = 0; j < MAX_DOCS; j++) {
         Document d = new Document();
         d.add(new Field(PRIORITY_FIELD, HIGH_PRIORITY, Field.Store.YES, Field.Index.ANALYZED));
+
+        // NOTE: this ID_FIELD produces no tokens since
+        // SimpleAnalyzer discards numbers
         d.add(new Field(ID_FIELD, Integer.toString(j), Field.Store.YES, Field.Index.ANALYZED));
         writer.addDocument(d);
       }

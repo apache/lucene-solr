@@ -20,7 +20,11 @@ package org.apache.lucene.index;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.*;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.ReaderUtil;         // for javadocs
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -213,7 +217,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory) throws CorruptIndexException, IOException {
-    return open(directory, null, null, true, DEFAULT_TERMS_INDEX_DIVISOR);
+    return open(directory, null, null, true, DEFAULT_TERMS_INDEX_DIVISOR, null);
   }
 
   /** Returns an IndexReader reading the index in the given
@@ -227,7 +231,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(directory, null, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
+    return open(directory, null, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, null);
   }
 
   /** Expert: returns an IndexReader reading the index in the given
@@ -241,7 +245,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), null, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
+    return open(commit.getDirectory(), null, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, null);
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -259,7 +263,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(directory, deletionPolicy, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
+    return open(directory, deletionPolicy, null, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, null);
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -287,7 +291,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return open(directory, deletionPolicy, null, readOnly, termInfosIndexDivisor);
+    return open(directory, deletionPolicy, null, readOnly, termInfosIndexDivisor, null);
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -307,7 +311,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy, boolean readOnly) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR);
+    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, DEFAULT_TERMS_INDEX_DIVISOR, null);
   }
 
   /** Expert: returns an IndexReader reading the index in
@@ -337,11 +341,78 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, termInfosIndexDivisor);
+    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, termInfosIndexDivisor, null);
   }
 
-  private static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly, int termInfosIndexDivisor) throws CorruptIndexException, IOException {
-    return DirectoryReader.open(directory, deletionPolicy, commit, readOnly, termInfosIndexDivisor);
+  /** Expert: returns an IndexReader reading the index in
+   *  the given Directory, with a custom {@link
+   *  IndexDeletionPolicy}, and specified {@link CodecProvider}.
+   *  You should pass readOnly=true, since it gives much
+   *  better concurrent performance, unless you intend to do
+   *  write operations (delete documents or change norms)
+   *  with the reader.
+   * @param directory the index directory
+   * @param deletionPolicy a custom deletion policy (only used
+   *  if you use this reader to perform deletes or to set
+   *  norms); see {@link IndexWriter} for details.
+   * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
+   * @param termInfosIndexDivisor Subsamples which indexed
+   *  terms are loaded into RAM. This has the same effect as {@link
+   *  IndexWriter#setTermIndexInterval} except that setting
+   *  must be done at indexing time while this setting can be
+   *  set per reader.  When set to N, then one in every
+   *  N*termIndexInterval terms in the index is loaded into
+   *  memory.  By setting this to a value > 1 you can reduce
+   *  memory usage, at the expense of higher latency when
+   *  loading a TermInfo.  The default value is 1.  Set this
+   *  to -1 to skip loading the terms index entirely.
+   * @param codecs CodecProvider to use when opening index
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(final Directory directory, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor, CodecProvider codecs) throws CorruptIndexException, IOException {
+    return open(directory, deletionPolicy, null, readOnly, termInfosIndexDivisor, codecs);
+  }
+
+  /** Expert: returns an IndexReader reading the index in
+   *  the given Directory, using a specific commit and with
+   *  a custom {@link IndexDeletionPolicy} and specified
+   *  {@link CodecProvider}.  You should pass readOnly=true, since
+   *  it gives much better concurrent performance, unless
+   *  you intend to do write operations (delete documents or
+   *  change norms) with the reader.
+
+   * @param commit the specific {@link IndexCommit} to open;
+   * see {@link IndexReader#listCommits} to list all commits
+   * in a directory
+   * @param deletionPolicy a custom deletion policy (only used
+   *  if you use this reader to perform deletes or to set
+   *  norms); see {@link IndexWriter} for details.
+   * @param readOnly true if no changes (deletions, norms) will be made with this IndexReader
+   * @param termInfosIndexDivisor Subsamples which indexed
+   *  terms are loaded into RAM. This has the same effect as {@link
+   *  IndexWriter#setTermIndexInterval} except that setting
+   *  must be done at indexing time while this setting can be
+   *  set per reader.  When set to N, then one in every
+   *  N*termIndexInterval terms in the index is loaded into
+   *  memory.  By setting this to a value > 1 you can reduce
+   *  memory usage, at the expense of higher latency when
+   *  loading a TermInfo.  The default value is 1.  Set this
+   *  to -1 to skip loading the terms index entirely.
+   * @param codecs CodecProvider to use when opening index
+   * @throws CorruptIndexException if the index is corrupt
+   * @throws IOException if there is a low-level IO error
+   */
+  public static IndexReader open(final IndexCommit commit, IndexDeletionPolicy deletionPolicy, boolean readOnly, int termInfosIndexDivisor, CodecProvider codecs) throws CorruptIndexException, IOException {
+    return open(commit.getDirectory(), deletionPolicy, commit, readOnly, termInfosIndexDivisor, codecs);
+  }
+
+  private static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly, int termInfosIndexDivisor,
+      CodecProvider codecs) throws CorruptIndexException, IOException {
+    if (codecs == null) {
+      codecs = CodecProvider.getDefault();
+    }
+    return DirectoryReader.open(directory, deletionPolicy, commit, readOnly, termInfosIndexDivisor, codecs);
   }
 
   /**
@@ -483,7 +554,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public static long getCurrentVersion(Directory directory) throws CorruptIndexException, IOException {
-    return SegmentInfos.readCurrentVersion(directory);
+    return SegmentInfos.readCurrentVersion(directory, CodecProvider.getDefault());
   }
 
   /**
@@ -501,7 +572,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @see #getCommitUserData()
    */
   public static Map<String,String> getCommitUserData(Directory directory) throws CorruptIndexException, IOException {
-    return SegmentInfos.readCurrentUserData(directory);
+    return SegmentInfos.readCurrentUserData(directory, CodecProvider.getDefault());
   }
 
   /**
@@ -803,23 +874,62 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * calling terms(), {@link TermEnum#next()} must be called
    * on the resulting enumeration before calling other methods such as
    * {@link TermEnum#term()}.
+   * @deprecated Use the new flex API ({@link #fields()}) instead.
    * @throws IOException if there is a low-level IO error
    */
+  @Deprecated
   public abstract TermEnum terms() throws IOException;
 
+  /** Flex API: returns {@link Fields} for this reader.
+   *  This method may return null if the reader has no
+   *  postings.
+   *
+   * <p><b>NOTE</b>: if this is a multi reader ({@link
+   * #getSequentialSubReaders} is not null) then this
+   * method will throw UnsupportedOperationException.  If
+   * you really need a {@link Fields} for such a reader,
+   * use {@link MultiFields#getFields}.  However, for
+   * performance reasons, it's best to get all sub-readers
+   * using {@link ReaderUtil#gatherSubReaders} and iterate
+   * through them yourself. */
+  public Fields fields() throws IOException {
+    return new LegacyFields(this);
+  }
+  
   /** Returns an enumeration of all terms starting at a given term. If
    * the given term does not exist, the enumeration is positioned at the
    * first term greater than the supplied term. The enumeration is
    * ordered by Term.compareTo(). Each term is greater than all that
    * precede it in the enumeration.
+   * @deprecated Use the new flex API ({@link #fields()}) instead.
    * @throws IOException if there is a low-level IO error
    */
+  @Deprecated
   public abstract TermEnum terms(Term t) throws IOException;
 
   /** Returns the number of documents containing the term <code>t</code>.
    * @throws IOException if there is a low-level IO error
+   * @deprecated Use {@link #docFreq(String,BytesRef)} instead.
    */
+  @Deprecated
   public abstract int docFreq(Term t) throws IOException;
+
+  /** Returns the number of documents containing the term
+   * <code>t</code>.  This method returns 0 if the term or
+   * field does not exists.  This method does not take into
+   * account deleted documents that have not yet been merged
+   * away. */
+  public int docFreq(String field, BytesRef term) throws IOException {
+    final Fields fields = fields();
+    if (fields == null) {
+      return 0;
+    }
+    final Terms terms = fields.terms(field);
+    if (terms == null) {
+      return 0;
+    }
+    return terms.docFreq(term);
+  }
 
   /** Returns an enumeration of all the documents which contain
    * <code>term</code>. For each document, the document number, the frequency of
@@ -832,8 +942,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * </ul>
    * <p>The enumeration is ordered by document number.  Each document number
    * is greater than all that precede it in the enumeration.
+   * @deprecated Use the new flex API ({@link #termDocsEnum}) instead.
    * @throws IOException if there is a low-level IO error
    */
+  @Deprecated
   public TermDocs termDocs(Term term) throws IOException {
     ensureOpen();
     TermDocs termDocs = termDocs();
@@ -841,9 +953,57 @@ public abstract class IndexReader implements Cloneable,Closeable {
     return termDocs;
   }
 
+  /** This may return null if the field does not exist.*/
+  public Terms terms(String field) throws IOException {
+    final Fields fields = fields();
+    if (fields == null) {
+      return null;
+    }
+    return fields.terms(field);
+  }
+
+  /** Returns {@link DocsEnum} for the specified field &
+   *  term.  This may return null, if either the field or
+   *  term does not exist. */
+  public DocsEnum termDocsEnum(Bits skipDocs, String field, BytesRef term) throws IOException {
+    assert field != null;
+    assert term != null;
+    final Fields fields = fields();
+    if (fields == null) {
+      return null;
+    }
+    final Terms terms = fields.terms(field);
+    if (terms != null) {
+      return terms.docs(skipDocs, term, null);
+    } else {
+      return null;
+    }
+  }
+
+  /** Returns {@link DocsAndPositionsEnum} for the specified
+   *  field & term.  This may return null, if either the
+   *  field or term does not exist, or, positions were not
+   *  stored for this term. */
+  public DocsAndPositionsEnum termPositionsEnum(Bits skipDocs, String field, BytesRef term) throws IOException {
+    assert field != null;
+    assert term != null;
+    final Fields fields = fields();
+    if (fields == null) {
+      return null;
+    }
+    final Terms terms = fields.terms(field);
+    if (terms != null) {
+      return terms.docsAndPositions(skipDocs, term, null);
+    } else {
+      return null;
+    }
+  }
+
   /** Returns an unpositioned {@link TermDocs} enumerator.
+   * @deprecated Use the new flex API ({@link #fields()}) instead.
    * @throws IOException if there is a low-level IO error
    */
+  @Deprecated
   public abstract TermDocs termDocs() throws IOException;
 
   /** Returns an enumeration of all the documents which contain
@@ -861,8 +1021,11 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * <p> This positional information facilitates phrase and proximity searching.
    * <p>The enumeration is ordered by document number.  Each document number is
    * greater than all that precede it in the enumeration.
+   * @deprecated Please switch the flex API ({@link
+   * #termDocsEnum}) instead
    * @throws IOException if there is a low-level IO error
    */
+  @Deprecated
   public TermPositions termPositions(Term term) throws IOException {
     ensureOpen();
     TermPositions termPositions = termPositions();
@@ -871,14 +1034,17 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   /** Returns an unpositioned {@link TermPositions} enumerator.
+   * @deprecated Please switch the flex API ({@link
+   * #termDocsEnum}) instead
    * @throws IOException if there is a low-level IO error
    */
+  @Deprecated
   public abstract TermPositions termPositions() throws IOException;
 
 
 
   /** Deletes the document numbered <code>docNum</code>.  Once a document is
-   * deleted it will not appear in TermDocs or TermPostitions enumerations.
+   * deleted it will not appear in TermDocs or TermPositions enumerations.
    * Attempts to read its field with the {@link #document}
    * method will result in an error.  The presence of this document may still be
    * reflected in the {@link #docFreq} statistic, though
@@ -1009,9 +1175,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @throws IOException if there is a low-level IO error
    */
   public final synchronized void commit(Map<String, String> commitUserData) throws IOException {
-    if (hasChanges) {
-      doCommit(commitUserData);
-    }
+    doCommit(commitUserData);
     hasChanges = false;
   }
 
@@ -1043,6 +1207,33 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * @see IndexReader.FieldOption
    */
   public abstract Collection<String> getFieldNames(FieldOption fldOption);
+
+  // Only used by external subclasses of IndexReader; all
+  // internal classes should implement Bits more
+  // efficiently:
+  private final class DeletedDocsBits implements Bits {
+    public boolean get(int docID) {
+      return isDeleted(docID);
+    }
+    public int length() {
+      return maxDoc();
+    }
+  }
+
+  private Bits deletedDocsBits;
+
+  /** Returns the {@link Bits} representing deleted docs.  A
+   *  set bit indicates the doc ID has been deleted.  This
+   *  method should return null when there are no deleted
+   *  docs.
+   *
+   * @lucene.experimental */
+  public Bits getDeletedDocs() throws IOException {
+    if (deletedDocsBits == null) {
+      deletedDocsBits = new DeletedDocsBits();
+    }
+    return deletedDocsBits;
+  }
 
   /**
    * Expert: return the IndexCommit that this reader has
@@ -1169,6 +1360,12 @@ public abstract class IndexReader implements Cloneable,Closeable {
     return null;
   }
 
+
+  /** Expert: returns the docID base for this subReader. */
+  public int getSubReaderDocBase(IndexReader subReader) {
+    throw new UnsupportedOperationException();
+  }
+
   /** Expert */
   public Object getFieldCacheKey() {
     return this;
@@ -1177,17 +1374,26 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /** Returns the number of unique terms (across all fields)
    *  in this reader.
    *
-   *  This method returns long, even though internally
-   *  Lucene cannot handle more than 2^31 unique terms, for
-   *  a possible future when this limitation is removed.
-   *
    *  @throws UnsupportedOperationException if this count
    *  cannot be easily determined (eg Multi*Readers).
    *  Instead, you should call {@link
    *  #getSequentialSubReaders} and ask each sub reader for
    *  its unique term count. */
   public long getUniqueTermCount() throws IOException {
-    throw new UnsupportedOperationException("this reader does not implement getUniqueTermCount()");
+    long numTerms = 0;
+    final Fields fields = fields();
+    if (fields == null) {
+      return 0;
+    }
+    FieldsEnum it = fields.iterator();
+    while(true) {
+      String field = it.next();
+      if (field == null) {
+        break;
+      }
+      numTerms += fields.terms(field).getUniqueTermCount();
+    }
+    return numTerms;
   }
 
   /** For IndexReader implementations that use
@@ -1197,5 +1403,30 @@ public abstract class IndexReader implements Cloneable,Closeable {
    */
   public int getTermInfosIndexDivisor() {
     throw new UnsupportedOperationException("This reader does not support this method.");
+  }
+
+
+  private Fields fields;
+
+  /** lucene.internal */
+  void storeFields(Fields fields) {
+    this.fields = fields;
+  }
+
+  /** lucene.internal */
+  Fields retrieveFields() {
+    return fields;
+  }
+
+  private Bits storedDelDocs;
+
+  /** lucene.internal */
+  void storeDelDocs(Bits delDocs) {
+    this.storedDelDocs = delDocs;
+  }
+
+  /** lucene.internal */
+  Bits retrieveDelDocs() {
+    return storedDelDocs;
   }
 }

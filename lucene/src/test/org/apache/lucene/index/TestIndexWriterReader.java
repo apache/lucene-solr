@@ -84,7 +84,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     // get a reader
     IndexReader r1 = writer.getReader();
-    assertTrue(r1.isCurrent());
 
     String id10 = r1.document(10).getField("id").stringValue();
     
@@ -92,20 +91,15 @@ public class TestIndexWriterReader extends LuceneTestCase {
     newDoc.removeField("id");
     newDoc.add(new Field("id", Integer.toString(8000), Store.YES, Index.NOT_ANALYZED));
     writer.updateDocument(new Term("id", id10), newDoc);
-    assertFalse(r1.isCurrent());
 
     IndexReader r2 = writer.getReader();
-    assertTrue(r2.isCurrent());
     assertEquals(0, count(new Term("id", id10), r2));
     assertEquals(1, count(new Term("id", Integer.toString(8000)), r2));
     
     r1.close();
     writer.close();
-    assertTrue(r2.isCurrent());
     
     IndexReader r3 = IndexReader.open(dir1, true);
-    assertTrue(r3.isCurrent());
-    assertTrue(r2.isCurrent());
     assertEquals(0, count(new Term("id", id10), r3));
     assertEquals(1, count(new Term("id", Integer.toString(8000)), r3));
 
@@ -149,18 +143,9 @@ public class TestIndexWriterReader extends LuceneTestCase {
     createIndexNoClose(!optimize, "index2", writer2);
     writer2.close();
 
-    IndexReader r0 = writer.getReader();
-    assertTrue(r0.isCurrent());
     writer.addIndexesNoOptimize(new Directory[] { dir2 });
-    assertFalse(r0.isCurrent());
-    r0.close();
 
     IndexReader r1 = writer.getReader();
-    assertTrue(r1.isCurrent());
-
-    writer.commit();
-    assertTrue(r1.isCurrent());
-
     assertEquals(200, r1.maxDoc());
 
     int index2df = r1.docFreq(new Term("indexname", "index2"));

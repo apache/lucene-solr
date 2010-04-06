@@ -19,8 +19,9 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.document.NumericField; // for javadocs
 
 /**
@@ -119,9 +120,9 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         
         assert inclusiveLowerPoint > 0 && inclusiveUpperPoint > 0;
         
-        // for this DocIdSet, we never need to use TermDocs,
+        // for this DocIdSet, we can ignore deleted docs
         // because deleted docs have an order of 0 (null entry in StringIndex)
-        return new FieldCacheDocIdSet(reader, false) {
+        return new FieldCacheDocIdSet(reader, true) {
           @Override
           final boolean matchDoc(int doc) {
             return fcsi.order[doc] >= inclusiveLowerPoint && fcsi.order[doc] <= inclusiveUpperPoint;
@@ -171,8 +172,8 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
           return DocIdSet.EMPTY_DOCIDSET;
         
         final byte[] values = FieldCache.DEFAULT.getBytes(reader, field, (FieldCache.ByteParser) parser);
-        // we only request the usage of termDocs, if the range contains 0
-        return new FieldCacheDocIdSet(reader, (inclusiveLowerPoint <= 0 && inclusiveUpperPoint >= 0)) {
+        // we only respect deleted docs if the range contains 0
+        return new FieldCacheDocIdSet(reader, !(inclusiveLowerPoint <= 0 && inclusiveUpperPoint >= 0)) {
           @Override
           boolean matchDoc(int doc) {
             return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
@@ -222,8 +223,8 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
           return DocIdSet.EMPTY_DOCIDSET;
         
         final short[] values = FieldCache.DEFAULT.getShorts(reader, field, (FieldCache.ShortParser) parser);
-        // we only request the usage of termDocs, if the range contains 0
-        return new FieldCacheDocIdSet(reader, (inclusiveLowerPoint <= 0 && inclusiveUpperPoint >= 0)) {
+        // ignore deleted docs if range doesn't contain 0
+        return new FieldCacheDocIdSet(reader, !(inclusiveLowerPoint <= 0 && inclusiveUpperPoint >= 0)) {
           @Override
           boolean matchDoc(int doc) {
             return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
@@ -273,8 +274,8 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
           return DocIdSet.EMPTY_DOCIDSET;
         
         final int[] values = FieldCache.DEFAULT.getInts(reader, field, (FieldCache.IntParser) parser);
-        // we only request the usage of termDocs, if the range contains 0
-        return new FieldCacheDocIdSet(reader, (inclusiveLowerPoint <= 0 && inclusiveUpperPoint >= 0)) {
+        // ignore deleted docs if range doesn't contain 0
+        return new FieldCacheDocIdSet(reader, !(inclusiveLowerPoint <= 0 && inclusiveUpperPoint >= 0)) {
           @Override
           boolean matchDoc(int doc) {
             return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
@@ -324,8 +325,8 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
           return DocIdSet.EMPTY_DOCIDSET;
         
         final long[] values = FieldCache.DEFAULT.getLongs(reader, field, (FieldCache.LongParser) parser);
-        // we only request the usage of termDocs, if the range contains 0
-        return new FieldCacheDocIdSet(reader, (inclusiveLowerPoint <= 0L && inclusiveUpperPoint >= 0L)) {
+        // ignore deleted docs if range doesn't contain 0
+        return new FieldCacheDocIdSet(reader, !(inclusiveLowerPoint <= 0L && inclusiveUpperPoint >= 0L)) {
           @Override
           boolean matchDoc(int doc) {
             return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
@@ -379,8 +380,8 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
           return DocIdSet.EMPTY_DOCIDSET;
         
         final float[] values = FieldCache.DEFAULT.getFloats(reader, field, (FieldCache.FloatParser) parser);
-        // we only request the usage of termDocs, if the range contains 0
-        return new FieldCacheDocIdSet(reader, (inclusiveLowerPoint <= 0.0f && inclusiveUpperPoint >= 0.0f)) {
+        // ignore deleted docs if range doesn't contain 0
+        return new FieldCacheDocIdSet(reader, !(inclusiveLowerPoint <= 0.0f && inclusiveUpperPoint >= 0.0f)) {
           @Override
           boolean matchDoc(int doc) {
             return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
@@ -434,8 +435,8 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
           return DocIdSet.EMPTY_DOCIDSET;
         
         final double[] values = FieldCache.DEFAULT.getDoubles(reader, field, (FieldCache.DoubleParser) parser);
-        // we only request the usage of termDocs, if the range contains 0
-        return new FieldCacheDocIdSet(reader, (inclusiveLowerPoint <= 0.0 && inclusiveUpperPoint >= 0.0)) {
+        // ignore deleted docs if range doesn't contain 0
+        return new FieldCacheDocIdSet(reader, !(inclusiveLowerPoint <= 0.0 && inclusiveUpperPoint >= 0.0)) {
           @Override
           boolean matchDoc(int doc) {
             return values[doc] >= inclusiveLowerPoint && values[doc] <= inclusiveUpperPoint;
@@ -503,99 +504,81 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   
   static abstract class FieldCacheDocIdSet extends DocIdSet {
     private final IndexReader reader;
-    private boolean mayUseTermDocs;
-  
-    FieldCacheDocIdSet(IndexReader reader, boolean mayUseTermDocs) {
+    private boolean canIgnoreDeletedDocs;
+
+    FieldCacheDocIdSet(IndexReader reader, boolean canIgnoreDeletedDocs) {
       this.reader = reader;
-      this.mayUseTermDocs = mayUseTermDocs;
+      this.canIgnoreDeletedDocs = canIgnoreDeletedDocs;
     }
-  
-    /** this method checks, if a doc is a hit, should throw AIOBE, when position invalid */
+
+    /**
+     * this method checks, if a doc is a hit, should throw AIOBE, when position
+     * invalid
+     */
     abstract boolean matchDoc(int doc) throws ArrayIndexOutOfBoundsException;
-    
-    /** this DocIdSet is cacheable, if it works solely with FieldCache and no TermDocs */
+
+    /**
+     * this DocIdSet is cacheable, if it can ignore deletions
+     */
     @Override
     public boolean isCacheable() {
-      return !(mayUseTermDocs && reader.hasDeletions());
+      return canIgnoreDeletedDocs || !reader.hasDeletions();
     }
 
     @Override
     public DocIdSetIterator iterator() throws IOException {
       // Synchronization needed because deleted docs BitVector
       // can change after call to hasDeletions until TermDocs creation.
-      // We only use an iterator with termDocs, when this was requested (e.g. range contains 0)
+      // We only use an iterator with termDocs, when this was requested (e.g.
+      // range contains 0)
       // and the index has deletions
-      final TermDocs termDocs;
-      synchronized(reader) {
-        termDocs = isCacheable() ? null : reader.termDocs(null);
+
+      final Bits skipDocs;
+      synchronized (reader) {
+        if (isCacheable()) {
+          skipDocs = null;
+        } else {
+          skipDocs = MultiFields.getDeletedDocs(reader);
+        }
       }
-      if (termDocs != null) {
-        // a DocIdSetIterator using TermDocs to iterate valid docIds
-        return new DocIdSetIterator() {
-          private int doc = -1;
-          
-          @Override
-          public int docID() {
-            return doc;
-          }
-          
-          @Override
-          public int nextDoc() throws IOException {
+      final int maxDoc = reader.maxDoc();
+
+      // a DocIdSetIterator generating docIds by
+      // incrementing a variable & checking skipDocs -
+      return new DocIdSetIterator() {
+        private int doc = -1;
+        @Override
+        public int docID() {
+          return doc;
+        }
+        
+        @Override
+        public int nextDoc() {
+          try {
             do {
-              if (!termDocs.next())
-                return doc = NO_MORE_DOCS;
-            } while (!matchDoc(doc = termDocs.doc()));
+              doc++;
+            } while ((skipDocs != null && doc < maxDoc && skipDocs.get(doc))
+                || !matchDoc(doc));
             return doc;
+          } catch (ArrayIndexOutOfBoundsException e) {
+            return doc = NO_MORE_DOCS;
           }
-          
-          @Override
-          public int advance(int target) throws IOException {
-            if (!termDocs.skipTo(target))
-              return doc = NO_MORE_DOCS;
-            while (!matchDoc(doc = termDocs.doc())) { 
-              if (!termDocs.next())
-                return doc = NO_MORE_DOCS;
+        }
+        
+        @Override
+        public int advance(int target) {
+          try {
+            doc = target;
+            while (!matchDoc(doc)) {
+              doc++;
             }
             return doc;
+          } catch (ArrayIndexOutOfBoundsException e) {
+            return doc = NO_MORE_DOCS;
           }
-        };
-      } else {
-        // a DocIdSetIterator generating docIds by incrementing a variable -
-        // this one can be used if there are no deletions are on the index
-        return new DocIdSetIterator() {
-          private int doc = -1;
-          
-          @Override
-          public int docID() {
-            return doc;
-          }
-          
-          @Override
-          public int nextDoc() {
-            try {
-              do {
-                doc++;
-              } while (!matchDoc(doc));
-              return doc;
-            } catch (ArrayIndexOutOfBoundsException e) {
-              return doc = NO_MORE_DOCS;
-            }
-          }
-          
-          @Override
-          public int advance(int target) {
-            try {
-              doc = target;
-              while (!matchDoc(doc)) { 
-                doc++;
-              }
-              return doc;
-            } catch (ArrayIndexOutOfBoundsException e) {
-              return doc = NO_MORE_DOCS;
-            }
-          }
-        };
-      }
+
+        }
+      };
     }
   }
 

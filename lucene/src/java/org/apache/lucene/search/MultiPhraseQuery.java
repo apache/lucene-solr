@@ -21,10 +21,14 @@ import java.io.IOException;
 import java.util.*;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultipleTermPositions;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermPositions;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.Bits;
 
 /**
  * MultiPhraseQuery is a generalized version of PhraseQuery, with an added
@@ -167,27 +171,31 @@ public class MultiPhraseQuery extends Query {
       if (termArrays.size() == 0)                  // optimize zero-term case
         return null;
 
-      TermPositions[] tps = new TermPositions[termArrays.size()];
-      for (int i=0; i<tps.length; i++) {
+      DocsAndPositionsEnum[] postings = new DocsAndPositionsEnum[termArrays.size()];
+      for (int i=0; i<postings.length; i++) {
         Term[] terms = termArrays.get(i);
 
-        TermPositions p;
-        if (terms.length > 1)
-          p = new MultipleTermPositions(reader, terms);
-        else
-          p = reader.termPositions(terms[0]);
+        final DocsAndPositionsEnum postingsEnum;
+        if (terms.length > 1) {
+          postingsEnum = new UnionDocsAndPositionsEnum(reader, terms);
+        } else {
+          postingsEnum = reader.termPositionsEnum(MultiFields.getDeletedDocs(reader),
+                                                  terms[0].field(),
+                                                  new BytesRef(terms[0].text()));
+        }
 
-        if (p == null)
+        if (postingsEnum == null) {
           return null;
+        }
 
-        tps[i] = p;
+        postings[i] = postingsEnum;
       }
 
       if (slop == 0)
-        return new ExactPhraseScorer(this, tps, getPositions(), similarity,
+        return new ExactPhraseScorer(this, postings, getPositions(), similarity,
                                      reader.norms(field));
       else
-        return new SloppyPhraseScorer(this, tps, getPositions(), similarity,
+        return new SloppyPhraseScorer(this, postings, getPositions(), similarity,
                                       slop, reader.norms(field));
     }
 
@@ -368,5 +376,171 @@ public class MultiPhraseQuery extends Query {
       }
     }
     return true;
+  }
+}
+
+/**
+ * Takes the logical union of multiple DocsEnum iterators.
+ */
+
+// TODO: if ever we allow subclassing of the *PhraseScorer
+class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
+
+  private static final class DocsQueue extends PriorityQueue<DocsAndPositionsEnum> {
+    DocsQueue(List<DocsAndPositionsEnum> docsEnums) throws IOException {
+      initialize(docsEnums.size());
+
+      Iterator<DocsAndPositionsEnum> i = docsEnums.iterator();
+      while (i.hasNext()) {
+        DocsAndPositionsEnum postings = (DocsAndPositionsEnum) i.next();
+        if (postings.nextDoc() != DocsAndPositionsEnum.NO_MORE_DOCS) {
+          add(postings);
+        }
+      }
+    }
+
+    final public DocsEnum peek() {
+      return top();
+    }
+
+    @Override
+    public final boolean lessThan(DocsAndPositionsEnum a, DocsAndPositionsEnum b) {
+      return a.docID() < b.docID();
+    }
+  }
+
+  private static final class IntQueue {
+    private int _arraySize = 16;
+    private int _index = 0;
+    private int _lastIndex = 0;
+    private int[] _array = new int[_arraySize];
+    
+    final void add(int i) {
+      if (_lastIndex == _arraySize)
+        growArray();
+
+      _array[_lastIndex++] = i;
+    }
+
+    final int next() {
+      return _array[_index++];
+    }
+
+    final void sort() {
+      Arrays.sort(_array, _index, _lastIndex);
+    }
+
+    final void clear() {
+      _index = 0;
+      _lastIndex = 0;
+    }
+
+    final int size() {
+      return (_lastIndex - _index);
+    }
+
+    private void growArray() {
+      int[] newArray = new int[_arraySize * 2];
+      System.arraycopy(_array, 0, newArray, 0, _arraySize);
+      _array = newArray;
+      _arraySize *= 2;
+    }
+  }
+
+  private int _doc;
+  private int _freq;
+  private DocsQueue _queue;
+  private IntQueue _posList;
+
+  public UnionDocsAndPositionsEnum(IndexReader indexReader, Term[] terms) throws IOException {
+    List<DocsAndPositionsEnum> docsEnums = new LinkedList<DocsAndPositionsEnum>();
+    final Bits delDocs = MultiFields.getDeletedDocs(indexReader);
+    for (int i = 0; i < terms.length; i++) {
+      DocsAndPositionsEnum postings = indexReader.termPositionsEnum(delDocs,
+                                                                    terms[i].field(),
+                                                                    new BytesRef(terms[i].text()));
+      if (postings != null) {
+        docsEnums.add(postings);
+      }
+    }
+
+    _queue = new DocsQueue(docsEnums);
+    _posList = new IntQueue();
+  }
+
+  @Override
+  public final int nextDoc() throws IOException {
+    if (_queue.size() == 0) {
+      return NO_MORE_DOCS;
+    }
+
+    // TODO: move this init into positions(): if the search
+    // doesn't need the positions for this doc then don't
+    // waste CPU merging them:
+    _posList.clear();
+    _doc = _queue.top().docID();
+
+    // merge sort all positions together
+    DocsAndPositionsEnum postings;
+    do {
+      postings = _queue.top();
+
+      final int freq = postings.freq();
+      for (int i = 0; i < freq; i++) {
+        _posList.add(postings.nextPosition());
+      }
+
+      if (postings.nextDoc() != NO_MORE_DOCS) {
+        _queue.updateTop();
+      } else {
+        _queue.pop();
+      }
+    } while (_queue.size() > 0 && _queue.top().docID() == _doc);
+
+    _posList.sort();
+    _freq = _posList.size();
+
+    return _doc;
+  }
+
+  @Override
+  public int nextPosition() {
+    return _posList.next();
+  }
+
+  @Override
+  public int getPayloadLength() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public BytesRef getPayload() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public boolean hasPayload() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public final int advance(int target) throws IOException {
+    while (_queue.top() != null && target > _queue.top().docID()) {
+      DocsAndPositionsEnum postings = _queue.pop();
+      if (postings.advance(target) != NO_MORE_DOCS) {
+        _queue.add(postings);
+      }
+    }
+    return nextDoc();
+  }
+
+  @Override
+  public final int freq() {
+    return _freq;
+  }
+
+  @Override
+  public final int docID() {
+    return _doc;
   }
 }

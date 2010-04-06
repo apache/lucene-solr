@@ -18,10 +18,13 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.Bits;
 
 public class DuplicateFilter extends Filter
 {
@@ -79,88 +82,87 @@ public class DuplicateFilter extends Filter
 		}
 	}
 	
-  private OpenBitSet correctBits(IndexReader reader) throws IOException
-	{
-		
-    OpenBitSet bits=new OpenBitSet(reader.maxDoc()); //assume all are INvalid
-		Term startTerm=new Term(fieldName);
-		TermEnum te = reader.terms(startTerm);
-		if(te!=null)
-		{
-			Term currTerm=te.term();
-			while((currTerm!=null)&&(currTerm.field()==startTerm.field())) //term fieldnames are interned
-			{
-				int lastDoc=-1;
-				//set non duplicates
-				TermDocs td = reader.termDocs(currTerm);
-				if(td.next())
-				{
-					if(keepMode==KM_USE_FIRST_OCCURRENCE)
-					{
-						bits.set(td.doc());
-					}
-					else
-					{
-						do
-						{
-							lastDoc=td.doc();
-						}while(td.next());
-						bits.set(lastDoc);
-					}
-				}
-				if(!te.next())
-				{
-					break;
-				}
-				currTerm=te.term();
-			}
-		}
-		return bits;
-	}
+  private OpenBitSet correctBits(IndexReader reader) throws IOException {
+    OpenBitSet bits = new OpenBitSet(reader.maxDoc()); //assume all are INvalid
+    final Bits delDocs = MultiFields.getDeletedDocs(reader);
+    Terms terms = reader.fields().terms(fieldName);
+    if (terms != null) {
+      TermsEnum termsEnum = terms.iterator();
+      DocsEnum docs = null;
+      while(true) {
+        BytesRef currTerm = termsEnum.next();
+        if (currTerm == null) {
+          break;
+        } else {
+          docs = termsEnum.docs(delDocs, docs);
+          int doc = docs.nextDoc();
+          if (doc != docs.NO_MORE_DOCS) {
+            if (keepMode == KM_USE_FIRST_OCCURRENCE) {
+              bits.set(doc);
+            } else {
+              int lastDoc = doc;
+              while (true) {
+                lastDoc = doc;
+                doc = docs.nextDoc();
+                if (doc == docs.NO_MORE_DOCS) {
+                  break;
+                }
+              }
+              bits.set(lastDoc);
+            }
+          }
+        }
+      }
+    }
+    return bits;
+  }
 	
   private OpenBitSet fastBits(IndexReader reader) throws IOException
-	{
+  {
 		
     OpenBitSet bits=new OpenBitSet(reader.maxDoc());
-		bits.set(0,reader.maxDoc()); //assume all are valid
-		Term startTerm=new Term(fieldName);
-		TermEnum te = reader.terms(startTerm);
-		if(te!=null)
-		{
-			Term currTerm=te.term();
-			
-			while((currTerm!=null)&&(currTerm.field()==startTerm.field())) //term fieldnames are interned
-			{
-				if(te.docFreq()>1)
-				{
-					int lastDoc=-1;
-					//unset potential duplicates
-					TermDocs td = reader.termDocs(currTerm);
-					td.next();
-					if(keepMode==KM_USE_FIRST_OCCURRENCE)
-					{
-						td.next();
-					}
-					do
-					{
-						lastDoc=td.doc();
-            bits.clear(lastDoc);
-					}while(td.next());
-					if(keepMode==KM_USE_LAST_OCCURRENCE)
-					{
-						//restore the last bit
-						bits.set(lastDoc);
-					}					
-				}
-				if(!te.next())
-				{
-					break;
-				}
-				currTerm=te.term();
-			}
-		}
-		return bits;
-	}
+    bits.set(0,reader.maxDoc()); //assume all are valid
+    final Bits delDocs = MultiFields.getDeletedDocs(reader);
+    Terms terms = reader.fields().terms(fieldName);
+    if (terms != null) {
+      TermsEnum termsEnum = terms.iterator();
+      DocsEnum docs = null;
+      while(true) {
+        BytesRef currTerm = termsEnum.next();
+        if (currTerm == null) {
+          break;
+        } else {
+          if (termsEnum.docFreq() > 1) {
+            // unset potential duplicates
+            docs = termsEnum.docs(delDocs, docs);
+            int doc = docs.nextDoc();
+            if (doc != docs.NO_MORE_DOCS) {
+              if (keepMode == KM_USE_FIRST_OCCURRENCE) {
+                doc = docs.nextDoc();
+              }
+            }
+            
+            int lastDoc = -1;
+            while (true) {
+              lastDoc = doc;
+              bits.clear(lastDoc);
+              doc = docs.nextDoc();
+              if (doc == docs.NO_MORE_DOCS) {
+                break;
+              }
+            }
+
+            if (keepMode==KM_USE_LAST_OCCURRENCE) {
+              // restore the last bit
+              bits.set(lastDoc);
+            }
+          }
+        }
+      }
+    }
+
+    return bits;
+  }
 
 	public String getFieldName()
 	{

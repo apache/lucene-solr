@@ -21,7 +21,9 @@ import org.apache.lucene.util.Attribute;
 
 /**
  * The term text of a Token.
+ * @deprecated Use {@link CharTermAttribute} instead.
  */
+@Deprecated
 public interface TermAttribute extends Attribute {
   /** Returns the Token's term text.
    * 

@@ -22,14 +22,17 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Version;
+
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Collections;
 
@@ -45,7 +48,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase
     }
 
     public void testPhrasePrefix() throws IOException {
-        RAMDirectory indexStore = new RAMDirectory();
+        MockRAMDirectory indexStore = new MockRAMDirectory();
         IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
         add("blueberry pie", writer);
         add("blueberry strudel", writer);
@@ -101,6 +104,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase
                 termsWithPrefix.add(te.term());
             }
         } while (te.next());
+        ir.close();
         query3.add(termsWithPrefix.toArray(new Term[0]));
         query3.add(new Term("body", "pizza"));
 
@@ -139,7 +143,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase
       // and all terms required.
       // The contained PhraseMultiQuery must contain exactly one term array.
 
-      RAMDirectory indexStore = new RAMDirectory();
+      MockRAMDirectory indexStore = new MockRAMDirectory();
       IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
       add("blueberry pie", writer);
       add("blueberry chewing gum", writer);
@@ -164,10 +168,11 @@ public class TestMultiPhraseQuery extends LuceneTestCase
 
       assertEquals("Wrong number of hits", 2, hits.length);
       searcher.close();
+      indexStore.close();
   }
     
   public void testPhrasePrefixWithBooleanQuery() throws IOException {
-    RAMDirectory indexStore = new RAMDirectory();
+    MockRAMDirectory indexStore = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new StandardAnalyzer(
         TEST_VERSION_CURRENT, Collections.emptySet())));
@@ -190,6 +195,23 @@ public class TestMultiPhraseQuery extends LuceneTestCase
     ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
     assertEquals("Wrong number of hits", 0, hits.length);
     searcher.close();
+    indexStore.close();
+  }
+
+  public void testNoDocs() throws Exception {
+    MockRAMDirectory indexStore = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(indexStore, new StandardAnalyzer(Version.LUCENE_CURRENT, new HashSet(0)), true, IndexWriter.MaxFieldLength.LIMITED);
+    add("a note", "note", writer);
+    writer.close();
+
+    IndexSearcher searcher = new IndexSearcher(indexStore, true);
+
+    MultiPhraseQuery q = new MultiPhraseQuery();
+    q.add(new Term("body", "a"));
+    q.add(new Term[] { new Term("body", "nope"), new Term("body", "nope") });
+    assertEquals("Wrong number of hits", 0, searcher.search(q, null, 1).totalHits);
+    searcher.close();
+    indexStore.close();
   }
   
   public void testHashCodeAndEquals(){

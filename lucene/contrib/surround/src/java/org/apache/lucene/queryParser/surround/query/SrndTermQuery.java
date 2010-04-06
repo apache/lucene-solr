@@ -20,7 +20,10 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.util.BytesRef;
 
  
 public class SrndTermQuery extends SimpleTerm {
@@ -46,16 +49,14 @@ public class SrndTermQuery extends SimpleTerm {
     MatchingTermVisitor mtv) throws IOException
   {
     /* check term presence in index here for symmetry with other SimpleTerm's */
-    TermEnum enumerator = reader.terms(getLuceneTerm(fieldName));
-    try {
-      Term it= enumerator.term(); /* same or following index term */
-      if ((it != null)
-          && it.text().equals(getTermText())
-          && it.field().equals(fieldName)) {
-        mtv.visitMatchingTerm(it);
+    Terms terms = MultiFields.getTerms(reader, fieldName);
+    if (terms != null) {
+      TermsEnum termsEnum = terms.iterator();
+
+      TermsEnum.SeekStatus status = termsEnum.seek(new BytesRef(getTermText()));
+      if (status == TermsEnum.SeekStatus.FOUND) {
+        mtv.visitMatchingTerm(getLuceneTerm(fieldName));
       }
-    } finally {
-      enumerator.close();
     }
   }
 }

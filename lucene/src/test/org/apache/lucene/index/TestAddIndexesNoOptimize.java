@@ -27,6 +27,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.util._TestUtil;
 
 import org.apache.lucene.search.PhraseQuery;
 
@@ -47,6 +48,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     addDocs(writer, 100);
     assertEquals(100, writer.maxDoc());
     writer.close();
+    _TestUtil.checkIndex(dir);
 
     writer = newWriter(aux, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false); // use one without a compound file
@@ -68,6 +70,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer.addIndexesNoOptimize(new Directory[] { aux, aux2 });
     assertEquals(190, writer.maxDoc());
     writer.close();
+    _TestUtil.checkIndex(dir);
 
     // make sure the old index is correct
     verifyNumDocs(aux, 40);
@@ -128,12 +131,13 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
 
   public void testWithPendingDeletes() throws IOException {
     // main directory
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     // auxiliary directory
-    Directory aux = new RAMDirectory();
+    Directory aux = new MockRAMDirectory();
 
     setUpDirs(dir, aux);
     IndexWriter writer = newWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
+
     writer.addIndexesNoOptimize(new Directory[] {aux});
 
     // Adds 10 docs, then replaces them with another 10

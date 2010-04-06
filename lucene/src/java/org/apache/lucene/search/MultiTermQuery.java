@@ -24,17 +24,24 @@ import java.util.PriorityQueue;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.Terms;
 import org.apache.lucene.queryParser.QueryParser; // for javadoc
+import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeImpl;
+import org.apache.lucene.util.VirtualMethod;
 
 /**
  * An abstract {@link Query} that matches documents
  * containing a subset of terms provided by a {@link
- * FilteredTermEnum} enumeration.
+ * FilteredTermsEnum} enumeration.
  *
  * <p>This query cannot be used directly; you must subclass
- * it and define {@link #getEnum} to provide a {@link
- * FilteredTermEnum} that iterates through the terms to be
+ * it and define {@link #getTermsEnum} to provide a {@link
+ * FilteredTermsEnum} that iterates through the terms to be
  * matched.
  *
  * <p><b>NOTE</b>: if {@link #setRewriteMethod} is either
@@ -61,8 +68,90 @@ import org.apache.lucene.queryParser.QueryParser; // for javadoc
  * #CONSTANT_SCORE_AUTO_REWRITE_DEFAULT} by default.
  */
 public abstract class MultiTermQuery extends Query {
+  protected final String field;
   protected RewriteMethod rewriteMethod = CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
   transient int numberOfTerms = 0;
+  
+  /** @deprecated remove when getEnum is removed */
+  private static final VirtualMethod<MultiTermQuery> getEnumMethod =
+    new VirtualMethod<MultiTermQuery>(MultiTermQuery.class, "getEnum", IndexReader.class);
+  /** @deprecated remove when getEnum is removed */
+  private static final VirtualMethod<MultiTermQuery> getTermsEnumMethod =
+    new VirtualMethod<MultiTermQuery>(MultiTermQuery.class, "getTermsEnum", IndexReader.class);
+  /** @deprecated remove when getEnum is removed */
+  final boolean hasNewAPI = 
+    VirtualMethod.compareImplementationDistance(getClass(), 
+        getTermsEnumMethod, getEnumMethod) >= 0; // its ok for both to be overridden
+
+  /** Add this {@link Attribute} to a {@link TermsEnum} returned by {@link #getTermsEnum}
+   * and update the boost on each returned term. This enables to control the boost factor
+   * for each matching term in {@link #SCORING_BOOLEAN_QUERY_REWRITE} or
+   * {@link TopTermsBooleanQueryRewrite} mode.
+   * {@link FuzzyQuery} is using this to take the edit distance into account.
+   */
+  public static interface BoostAttribute extends Attribute {
+    /** Sets the boost in this attribute */
+    public void setBoost(float boost);
+    /** Retrieves the boost, default is {@code 1.0f}. */
+    public float getBoost();
+    /** Sets the maximum boost for terms that would never get
+     * into the priority queue of {@link MultiTermQuery.TopTermsBooleanQueryRewrite}.
+     * This value is not changed by {@link AttributeImpl#clear}
+     * and not used in {@code equals()} and {@code hashCode()}.
+     * Do not change the value in the {@link TermsEnum}!
+     */
+    public void setMaxNonCompetitiveBoost(float maxNonCompetitiveBoost);
+    /** Retrieves the maximum boost that is not competitive,
+     * default is megative infinity. You can use this boost value
+     * as a hint when writing the {@link TermsEnum}.
+     */
+    public float getMaxNonCompetitiveBoost();
+  }
+
+  /** Implementation class for {@link BoostAttribute}. */
+  public static final class BoostAttributeImpl extends AttributeImpl implements BoostAttribute {
+    private float boost = 1.0f, maxNonCompetitiveBoost = Float.NEGATIVE_INFINITY;
+  
+    public void setBoost(float boost) {
+      this.boost = boost;
+    }
+    
+    public float getBoost() {
+      return boost;
+    }
+  
+    public void setMaxNonCompetitiveBoost(float maxNonCompetitiveBoost) {
+      this.maxNonCompetitiveBoost = maxNonCompetitiveBoost;
+    }
+    
+    public float getMaxNonCompetitiveBoost() {
+      return maxNonCompetitiveBoost;
+    }
+
+    @Override
+    public void clear() {
+      boost = 1.0f;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+      if (this == other)
+        return true;
+      if (other instanceof BoostAttributeImpl)
+        return ((BoostAttributeImpl) other).boost == boost;
+      return false;
+    }
+
+    @Override
+    public int hashCode() {
+      return Float.floatToIntBits(boost);
+    }
+    
+    @Override
+    public void copyTo(AttributeImpl target) {
+      ((BoostAttribute) target).setBoost(boost);
+    }
+  }
 
   /** Abstract class that defines how the query is rewritten. */
   public static abstract class RewriteMethod implements Serializable {
@@ -100,30 +189,79 @@ public abstract class MultiTermQuery extends Query {
   private abstract static class BooleanQueryRewrite extends RewriteMethod {
   
     protected final int collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
-      final FilteredTermEnum enumerator = query.getEnum(reader);
-      int count = 0;
-      try {
-        do {
-          Term t = enumerator.term();
-          if (t != null) {
-            if (collector.collect(t, enumerator.difference())) {
-              count++;
-            } else {
-              break;
-            }
+
+      if (query.hasNewAPI) {
+
+        if (query.field == null) {
+          throw new NullPointerException("If you implement getTermsEnum(), you must specify a non-null field in the constructor of MultiTermQuery.");
+        }
+
+        final Fields fields = MultiFields.getFields(reader);
+        if (fields == null) {
+          // reader has no fields
+          return 0;
+        }
+
+        final Terms terms = fields.terms(query.field);
+        if (terms == null) {
+          // field does not exist
+          return 0;
+        }
+
+        final TermsEnum termsEnum = query.getTermsEnum(reader);
+        assert termsEnum != null;
+
+        if (termsEnum == TermsEnum.EMPTY)
+          return 0;
+        final BoostAttribute boostAtt =
+          termsEnum.attributes().addAttribute(BoostAttribute.class);
+        collector.boostAtt = boostAtt;
+        int count = 0;
+        BytesRef term;
+        final Term placeholderTerm = new Term(query.field);
+        while ((term = termsEnum.next()) != null) {
+          if (collector.collect(placeholderTerm.createTerm(term.utf8ToString()), boostAtt.getBoost())) {
+            count++;
+          } else {
+            break;
           }
-        } while (enumerator.next());    
-      } finally {
-        enumerator.close();
+        }
+        collector.boostAtt = null;
+        return count;
+      } else {
+        // deprecated case
+        final FilteredTermEnum enumerator = query.getEnum(reader);
+        int count = 0;
+        try {
+          do {
+            Term t = enumerator.term();
+            if (t != null) {
+              if (collector.collect(t, enumerator.difference())) {
+                count++;
+              } else {
+                break;
+              }
+            }
+          } while (enumerator.next());    
+        } finally {
+          enumerator.close();
+        }
+        return count;
       }
-      return count;
     }
     
-    protected interface TermCollector {
+    protected static abstract class TermCollector {
+      /** this field is only set if a boostAttribute is used (e.g. {@link FuzzyTermsEnum}) */
+      private BoostAttribute boostAtt = null;
+    
       /** return false to stop collecting */
-      boolean collect(Term t, float boost) throws IOException;
+      public abstract boolean collect(Term t, float boost) throws IOException;
+      
+      /** set the minimum boost as a hint for the term producer */
+      protected final void setMaxNonCompetitiveBoost(float maxNonCompetitiveBoost) {
+        if (boostAtt != null) boostAtt.setMaxNonCompetitiveBoost(maxNonCompetitiveBoost);
+      }
     }
-    
   }
   
   private static class ScoringBooleanQueryRewrite extends BooleanQueryRewrite {
@@ -207,6 +345,7 @@ public abstract class MultiTermQuery extends Query {
           stQueue.offer(st);
           // possibly drop entries from queue
           st = (stQueue.size() > maxSize) ? stQueue.poll() : new ScoreTerm();
+          setMaxNonCompetitiveBoost((stQueue.size() >= maxSize) ? stQueue.peek().boost : Float.NEGATIVE_INFINITY);
           return true;
         }
         
@@ -338,6 +477,7 @@ public abstract class MultiTermQuery extends Query {
     public Query rewrite(IndexReader reader, MultiTermQuery query) throws IOException {
       Query result = super.rewrite(reader, query);
       assert result instanceof BooleanQuery;
+      // TODO: if empty boolean query return NullQuery?
       if (!((BooleanQuery) result).clauses().isEmpty()) {
         // strip the scores off
         result = new ConstantScoreQuery(new QueryWrapperFilter(result));
@@ -448,7 +588,7 @@ public abstract class MultiTermQuery extends Query {
       }
     }
     
-    private static final class CutOffTermCollector implements TermCollector {
+    private static final class CutOffTermCollector extends TermCollector {
       CutOffTermCollector(IndexReader reader, int docCountCutoff, int termCountLimit) {
         this.reader = reader;
         this.docCountCutoff = docCountCutoff;
@@ -465,6 +605,7 @@ public abstract class MultiTermQuery extends Query {
         // should not be costly, because 1) the
         // query/filter will load the TermInfo when it
         // runs, and 2) the terms dict has a cache:
+        // @deprecated: in 4.0 use BytesRef for collectTerms()
         docVisitCount += reader.docFreq(t);
         return true;
       }
@@ -538,12 +679,44 @@ public abstract class MultiTermQuery extends Query {
    * Constructs a query matching terms that cannot be represented with a single
    * Term.
    */
-  public MultiTermQuery() {
+  public MultiTermQuery(final String field) {
+    this.field = field;
   }
 
-  /** Construct the enumeration to be used, expanding the pattern term. */
-  protected abstract FilteredTermEnum getEnum(IndexReader reader)
-      throws IOException;
+  /**
+   * Constructs a query matching terms that cannot be represented with a single
+   * Term.
+   * @deprecated Use {@link #MultiTermQuery(String)}, as the flex branch can
+   * only work on one field per terms enum. If you override
+   * {@link #getTermsEnum(IndexReader)}, you cannot use this ctor.
+   */
+  @Deprecated
+  public MultiTermQuery() {
+    this(null);
+  }
+
+  /** Returns the field name for this query */
+  public final String getField() { return field; }
+
+  /** Construct the enumeration to be used, expanding the
+   * pattern term.
+   * @deprecated Please override {@link #getTermsEnum} instead */
+  @Deprecated
+  protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
+    throw new UnsupportedOperationException();
+  }
+
+  /** Construct the enumeration to be used, expanding the
+   *  pattern term.  This method should only be called if
+   *  the field exists (ie, implementations can assume the
+   *  field does exist).  This method should not return null
+   *  (should instead return {@link TermsEnum#EMPTY} if no
+   *  terms match).  The TermsEnum must already be
+   *  positioned to the first matching term. */
+  // TODO 4.0: make this method abstract
+  protected TermsEnum getTermsEnum(IndexReader reader) throws IOException {
+    throw new UnsupportedOperationException();
+  }
 
   /**
    * Expert: Return the number of unique terms visited during execution of the query.
@@ -602,8 +775,8 @@ public abstract class MultiTermQuery extends Query {
     final int prime = 31;
     int result = 1;
     result = prime * result + Float.floatToIntBits(getBoost());
-    result = prime * result;
-    result += rewriteMethod.hashCode();
+    result = prime * result + rewriteMethod.hashCode();
+    if (field != null) result = prime * result + field.hashCode();
     return result;
   }
 
@@ -621,7 +794,7 @@ public abstract class MultiTermQuery extends Query {
     if (!rewriteMethod.equals(other.rewriteMethod)) {
       return false;
     }
-    return true;
+    return (other.field == null ? field == null : other.field.equals(field));
   }
  
 }

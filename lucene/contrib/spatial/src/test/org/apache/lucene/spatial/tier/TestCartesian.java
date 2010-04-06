@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -49,7 +50,6 @@ import org.apache.lucene.spatial.tier.projections.SinusoidalProjector;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NumericUtils;
 
 public class TestCartesian extends LuceneTestCase {
 
@@ -96,8 +96,8 @@ public class TestCartesian extends LuceneTestCase {
     doc.add(new Field("name", name,Field.Store.YES, Field.Index.ANALYZED));
     
     // convert the lat / long to lucene fields
-    doc.add(new Field(latField, NumericUtils.doubleToPrefixCoded(lat),Field.Store.YES, Field.Index.NOT_ANALYZED));
-    doc.add(new Field(lngField, NumericUtils.doubleToPrefixCoded(lng),Field.Store.YES, Field.Index.NOT_ANALYZED));
+    doc.add(new NumericField(latField, Integer.MAX_VALUE, Field.Store.YES, true).setDoubleValue(lat));
+    doc.add(new NumericField(lngField, Integer.MAX_VALUE, Field.Store.YES, true).setDoubleValue(lng));
     
     // add a default meta field to make searching all documents easy 
     doc.add(new Field("metafile", "doc",Field.Store.YES, Field.Index.ANALYZED));
@@ -105,10 +105,9 @@ public class TestCartesian extends LuceneTestCase {
     int ctpsize = ctps.size();
     for (int i =0; i < ctpsize; i++){
       CartesianTierPlotter ctp = ctps.get(i);
-      doc.add(new Field(ctp.getTierFieldName(), 
-          NumericUtils.doubleToPrefixCoded(ctp.getTierBoxId(lat,lng)),
+      doc.add(new NumericField(ctp.getTierFieldName(), Integer.MAX_VALUE, 
           Field.Store.YES, 
-          Field.Index.NOT_ANALYZED_NO_NORMS));
+          true).setDoubleValue(ctp.getTierBoxId(lat,lng)));
       
       doc.add(new Field(geoHashPrefix, GeoHashUtils.encode(lat,lng), 
     		  Field.Store.YES, 
@@ -275,8 +274,8 @@ public class TestCartesian extends LuceneTestCase {
       Document d = searcher.doc(scoreDocs[i].doc);
 
       String name = d.get("name");
-      double rsLat = NumericUtils.prefixCodedToDouble(d.get(latField));
-      double rsLng = NumericUtils.prefixCodedToDouble(d.get(lngField));
+      double rsLat = Double.parseDouble(d.get(latField));
+      double rsLng = Double.parseDouble(d.get(lngField));
       Double geo_distance = distances.get(scoreDocs[i].doc);
 
       double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
@@ -369,8 +368,8 @@ public class TestCartesian extends LuceneTestCase {
     for(int i =0 ; i < results; i++){
       Document d = searcher.doc(scoreDocs[i].doc);
       String name = d.get("name");
-      double rsLat = NumericUtils.prefixCodedToDouble(d.get(latField));
-      double rsLng = NumericUtils.prefixCodedToDouble(d.get(lngField));
+      double rsLat = Double.parseDouble(d.get(latField));
+      double rsLng = Double.parseDouble(d.get(lngField));
       Double geo_distance = distances.get(scoreDocs[i].doc);
 
       double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
@@ -464,8 +463,8 @@ public class TestCartesian extends LuceneTestCase {
         Document d = searcher.doc(scoreDocs[i].doc);
       
         String name = d.get("name");
-        double rsLat = NumericUtils.prefixCodedToDouble(d.get(latField));
-        double rsLng = NumericUtils.prefixCodedToDouble(d.get(lngField)); 
+        double rsLat = Double.parseDouble(d.get(latField));
+        double rsLng = Double.parseDouble(d.get(lngField)); 
         Double geo_distance = distances.get(scoreDocs[i].doc);
       
         double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
@@ -558,8 +557,8 @@ public class TestCartesian extends LuceneTestCase {
         Document d = searcher.doc(scoreDocs[i].doc);
 	      
         String name = d.get("name");
-        double rsLat = NumericUtils.prefixCodedToDouble(d.get(latField));
-        double rsLng = NumericUtils.prefixCodedToDouble(d.get(lngField)); 
+        double rsLat = Double.parseDouble(d.get(latField));
+        double rsLng = Double.parseDouble(d.get(lngField)); 
         Double geo_distance = distances.get(scoreDocs[i].doc);
 	      
         double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);

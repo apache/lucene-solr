@@ -352,7 +352,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
         if (!termEnum1.next()) break;
       }
 
-       // iterate until we get some docs
+      // iterate until we get some docs
       int len2;
       for(;;) {
         len2=0;
@@ -369,11 +369,11 @@ public class TestStressIndexing2 extends LuceneTestCase {
         if (!termEnum2.next()) break;
       }
 
-      if (!hasDeletes)
-        assertEquals(termEnum1.docFreq(), termEnum2.docFreq());
-
       assertEquals(len1, len2);
       if (len1==0) break;  // no more terms
+
+      if (!hasDeletes)
+        assertEquals(termEnum1.docFreq(), termEnum2.docFreq());
 
       assertEquals(term1, term2);
 

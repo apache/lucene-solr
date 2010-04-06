@@ -23,17 +23,17 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Tests {@link FuzzyQuery}.
@@ -377,6 +377,11 @@ public class TestFuzzyQuery extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new Field("field", text, Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
+  }
+  
+  @Deprecated
+  public void testBackwardsLayer() {
+    assertTrue(new FuzzyQuery(new Term("dummy", "dummy")).hasNewAPI);
   }
 
 }

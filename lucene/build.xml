@@ -104,24 +104,24 @@ The source distribution does not contain sources of the previous Lucene Java ver
 
   <target name="compile-backwards" depends="compile-core, jar-core, test-backwards-message"
   	description="Runs tests of a previous Lucene version." if="backwards.available">
-    <sequential>
+	<sequential>
       <mkdir dir="${build.dir.backwards}"/>	  
 
-      <!-- first compile branch classes -->
-      <compile
+	  <!-- first compile branch classes -->
+	  <compile
         srcdir="${backwards.dir}/src/java"
         destdir="${build.dir.backwards}/classes/java"
         javac.source="${javac.source.backwards}" javac.target="${javac.target.backwards}"
       >
         <classpath refid="backwards.compile.classpath"/>
-      </compile>
-          
+	  </compile>
+		  	
       <!-- compile branch tests against branch classpath -->	
       <compile-test-macro srcdir="${backwards.dir}/src/test" destdir="${build.dir.backwards}/classes/test"
                   test.classpath="backwards.test.compile.classpath" javac.source="${javac.source.backwards}" javac.target="${javac.target.backwards}"/>
       
 
-    </sequential>
+  	</sequential>
   </target>	
 
   <target name="test-backwards" depends="compile-backwards, junit-backwards-mkdir, junit-backwards-sequential, junit-backwards-parallel"/>
@@ -713,6 +713,41 @@ The source distribution does not contain sources of the previous Lucene Java ver
         <containsregexp expression="generated.*by.*JFlex"/>
       </fileset>
     </delete>
+  </target>
+
+  <macrodef name="createLevAutomaton">
+  	<attribute name="n"/>
+  	<sequential>
+  		<exec dir="src/java/org/apache/lucene/util/automaton"
+  			executable="${python.exe}" failonerror="true">
+  	  	<arg line="createLevAutomata.py @{n}"/>
+  	</exec>
+  	</sequential>
+  </macrodef>
+
+  <target name="createLevAutomata" depends="check-moman,clone-moman,pull-moman">
+  	<createLevAutomaton n="1"/>
+  	<createLevAutomaton n="2"/>
+  </target>
+  
+  <target name="check-moman">
+  	<condition property="moman.cloned">
+      <available file="src/java/org/apache/lucene/util/automaton/moman"/>
+  	</condition>
+  </target>
+	
+  <target name="clone-moman" unless="moman.cloned">
+  	<exec dir="src/java/org/apache/lucene/util/automaton" 
+  		executable="${hg.exe}" failonerror="true">
+      <arg line="clone -r ${moman.rev} ${moman.url} moman"/>
+    </exec>
+  </target>
+
+  <target name="pull-moman" if="moman.cloned">
+	<exec dir="src/java/org/apache/lucene/util/automaton/moman" 
+		executable="${hg.exe}" failonerror="true">
+	  <arg line="pull -f -r ${moman.rev}"/>
+	</exec>
   </target>
 
   <macrodef name="contrib-crawl">

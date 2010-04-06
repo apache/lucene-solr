@@ -150,11 +150,16 @@ public class WeightedSpanTermExtractor {
         mtq.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
         query = mtq;
       }
-      FakeReader fReader = new FakeReader();
-      MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE.rewrite(fReader, mtq);
-      if (fReader.field != null) {
-        IndexReader ir = getReaderForField(fReader.field);
+      if (mtq.getField() != null) {
+        IndexReader ir = getReaderForField(mtq.getField());
         extract(query.rewrite(ir), terms);
+      } else {
+        FakeReader fReader = new FakeReader();
+        MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE.rewrite(fReader, mtq);
+        if (fReader.field != null) {
+          IndexReader ir = getReaderForField(fReader.field);
+          extract(query.rewrite(ir), terms);
+        }
       }
     } else if (query instanceof MultiPhraseQuery) {
       final MultiPhraseQuery mpq = (MultiPhraseQuery) query;

@@ -32,6 +32,7 @@ import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.NumericRangeQuery;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.NumericTokenStream;
@@ -126,7 +127,10 @@ public class TrieDateField extends DateField {
 
   @Override
   public String readableToIndexed(String val) {  
-    return NumericUtils.longToPrefixCoded(super.parseMath(null, val).getTime());
+    // TODO: Numeric should never be handled as String, that may break in future lucene versions! Change to use BytesRef for term texts!
+    BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
+    NumericUtils.longToPrefixCoded(super.parseMath(null, val).getTime(), 0, bytes);
+    return bytes.utf8ToString();
   }
 
   @Override
@@ -142,7 +146,8 @@ public class TrieDateField extends DateField {
   }
 
   @Override
-  public String indexedToReadable(String indexedForm) {
+  public String indexedToReadable(String _indexedForm) {
+    final BytesRef indexedForm = new BytesRef(_indexedForm);
     return super.toExternal( new Date(NumericUtils.prefixCodedToLong(indexedForm)) );
   }
 
