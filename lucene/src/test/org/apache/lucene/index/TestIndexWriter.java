@@ -4909,4 +4909,47 @@ public class TestIndexWriter extends LuceneTestCase {
       dir.close();
     }
   }
+
+  private static class FlushCountingIndexWriter extends IndexWriter {
+    int flushCount;
+    public FlushCountingIndexWriter(Directory dir, IndexWriterConfig iwc) throws IOException {
+      super(dir, iwc);
+    }
+    public void doAfterFlush() {
+      flushCount++;
+    }
+  }
+
+  public void testIndexingThenDeleting() throws Exception {
+    final Random r = newRandom();
+
+    Directory dir = new MockRAMDirectory();
+    FlushCountingIndexWriter w = new FlushCountingIndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setRAMBufferSizeMB(0.5));
+    //w.setInfoStream(System.out);
+    Document doc = new Document();
+    doc.add(new Field("field", "go 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20", Field.Store.NO, Field.Index.ANALYZED));
+    for(int iter=0;iter<6;iter++) {
+      int count = 0;
+
+      final boolean doIndexing = r.nextBoolean();
+      if (doIndexing) {
+        // Add docs until a flush is triggered
+        final int startFlushCount = w.flushCount;
+        while(w.flushCount == startFlushCount) {
+          w.addDocument(doc);
+          count++;
+        }
+      } else {
+        // Delete docs until a flush is triggered
+        final int startFlushCount = w.flushCount;
+        while(w.flushCount == startFlushCount) {
+          w.deleteDocuments(new Term("foo", ""+count));
+          count++;
+        }
+      }
+      assertTrue("flush happened too quickly during " + (doIndexing ? "indexing" : "deleting") + " count=" + count, count > 2500);
+    }
+    w.close();
+    dir.close();
+  }
 }

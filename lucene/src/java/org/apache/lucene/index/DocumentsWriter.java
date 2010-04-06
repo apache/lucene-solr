@@ -207,8 +207,6 @@ final class DocumentsWriter {
         setLength(0);
         
         // Recycle the blocks
-        final int blockCount = buffers.size();
-        
         perDocAllocator.recycleByteBlocks(buffers);
         buffers.clear();
         sizeInBytes = 0;
@@ -688,6 +686,7 @@ final class DocumentsWriter {
   }
 
   synchronized void clearFlushPending() {
+    bufferIsFull = false;
     flushPending = false;
   }
 
@@ -912,29 +911,37 @@ final class DocumentsWriter {
       throw new AlreadyClosedException("this IndexWriter is closed");
   }
 
-  synchronized boolean bufferDeleteTerms(Term[] terms) throws IOException {
-    waitReady(null);
-    for (int i = 0; i < terms.length; i++)
-      addDeleteTerm(terms[i], numDocsInRAM);
+  boolean bufferDeleteTerms(Term[] terms) throws IOException {
+    synchronized(this) {
+      waitReady(null);
+      for (int i = 0; i < terms.length; i++)
+        addDeleteTerm(terms[i], numDocsInRAM);
+    }
     return timeToFlushDeletes();
   }
 
-  synchronized boolean bufferDeleteTerm(Term term) throws IOException {
-    waitReady(null);
-    addDeleteTerm(term, numDocsInRAM);
+  boolean bufferDeleteTerm(Term term) throws IOException {
+    synchronized(this) {
+      waitReady(null);
+      addDeleteTerm(term, numDocsInRAM);
+    }
     return timeToFlushDeletes();
   }
 
-  synchronized boolean bufferDeleteQueries(Query[] queries) throws IOException {
-    waitReady(null);
-    for (int i = 0; i < queries.length; i++)
-      addDeleteQuery(queries[i], numDocsInRAM);
+  boolean bufferDeleteQueries(Query[] queries) throws IOException {
+    synchronized(this) {
+      waitReady(null);
+      for (int i = 0; i < queries.length; i++)
+        addDeleteQuery(queries[i], numDocsInRAM);
+    }
     return timeToFlushDeletes();
   }
 
-  synchronized boolean bufferDeleteQuery(Query query) throws IOException {
-    waitReady(null);
-    addDeleteQuery(query, numDocsInRAM);
+  boolean bufferDeleteQuery(Query query) throws IOException {
+    synchronized(this) {
+      waitReady(null);
+      addDeleteQuery(query, numDocsInRAM);
+    }
     return timeToFlushDeletes();
   }
 
@@ -947,7 +954,7 @@ final class DocumentsWriter {
 
   synchronized boolean doApplyDeletes() {
     // Very similar to deletesFull(), except we don't count
-    // numBytesAlloc, because we are checking whether
+    // numBytesUsed, because we are checking whether
     // deletes (alone) are consuming too many resources now
     // and thus should be applied.  We apply deletes if RAM
     // usage is > 1/2 of our allowed RAM buffer, to prevent
@@ -960,8 +967,11 @@ final class DocumentsWriter {
        ((deletesInRAM.size() + deletesFlushed.size()) >= maxBufferedDeleteTerms));
   }
 
-  synchronized private boolean timeToFlushDeletes() {
-    return (bufferIsFull || deletesFull()) && setFlushPending();
+  private boolean timeToFlushDeletes() {
+    balanceRAM();
+    synchronized(this) {
+      return (bufferIsFull || deletesFull()) && setFlushPending();
+    }
   }
 
   void setMaxBufferedDeleteTerms(int maxBufferedDeleteTerms) {
@@ -1155,18 +1165,13 @@ final class DocumentsWriter {
     deletesInRAM.addBytesUsed(BYTES_PER_DEL_QUERY);
   }
 
-  synchronized boolean doBalanceRAM() {
-    return ramBufferSize != IndexWriterConfig.DISABLE_AUTO_FLUSH && !bufferIsFull && (numBytesUsed+deletesInRAM.bytesUsed+deletesFlushed.bytesUsed >= ramBufferSize);
-  }
-
   /** Does the synchronized work to finish/flush the
    *  inverted document. */
   private void finishDocument(DocumentsWriterThreadState perThread, DocWriter docWriter) throws IOException {
 
-    if (doBalanceRAM())
-      // Must call this w/o holding synchronized(this) else
-      // we'll hit deadlock:
-      balanceRAM();
+    // Must call this w/o holding synchronized(this) else
+    // we'll hit deadlock:
+    balanceRAM();
 
     synchronized(this) {
 
@@ -1389,9 +1394,19 @@ final class DocumentsWriter {
    * which balances the pools to match the current docs. */
   void balanceRAM() {
 
-    final long deletesRAMUsed = deletesInRAM.bytesUsed+deletesFlushed.bytesUsed;
+    final boolean doBalance;
+    final long deletesRAMUsed;
 
-    if (numBytesUsed+deletesRAMUsed > ramBufferSize) {
+    synchronized(this) {
+      if (ramBufferSize == IndexWriterConfig.DISABLE_AUTO_FLUSH || bufferIsFull) {
+        return;
+      }
+    
+      deletesRAMUsed = deletesInRAM.bytesUsed+deletesFlushed.bytesUsed;
+      doBalance = numBytesUsed+deletesRAMUsed >= ramBufferSize;
+    }
+
+    if (doBalance) {
 
       if (infoStream != null)
         message("  RAM: now balance allocations: usedMB=" + toMB(numBytesUsed) +
