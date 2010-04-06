@@ -17,7 +17,7 @@
 #Test script to tell if the server is accepting UTF-8
 #The python writer currently escapes non-ascii chars, so it's good for testing
 
-URL=http://localhost:8983/solr/select
+URL=http://localhost:8983/solr
 
 if [ ! -z $1 ]; then
   URL=$1
