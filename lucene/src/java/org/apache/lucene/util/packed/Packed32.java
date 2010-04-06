@@ -88,9 +88,14 @@ class Packed32 extends PackedInts.ReaderImpl implements PackedInts.Mutable {
         currentMasks[base  ] =~((elementPosMask
                 << currentShifts[base + 1])
                 >>> currentShifts[base]);
-        currentMasks[base+1] = ~(elementPosMask
-                << currentShifts[base + 2]);
-        currentMasks[base+2] = currentShifts[base + 2] == 0 ? 0 : ~0;
+        if (bitPos <= BLOCK_SIZE - elementBits) { // Second block not used
+          currentMasks[base+1] = ~0; // Keep all bits
+          currentMasks[base+2] = 0;  // Or with 0
+        } else {
+          currentMasks[base+1] = ~(elementPosMask
+                                   << currentShifts[base + 2]);
+          currentMasks[base+2] = currentShifts[base + 2] == 0 ? 0 : ~0;
+        }
       }
     }
   }

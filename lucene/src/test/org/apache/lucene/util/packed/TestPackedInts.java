@@ -216,10 +216,18 @@ public class TestPackedInts extends LuceneTestCase {
     out.close();
 
     IndexInput in = dir.openInput("out");
-    PackedInts.Reader r = PackedInts.getReader(in);
+    PackedInts.getReader(in);
     assertEquals(end, in.getFilePointer());
     in.close();
 
     dir.close();
+  }
+
+  public void testSecondaryBlockChange() throws IOException {
+    PackedInts.Mutable mutable = new Packed64(26, 5);
+    mutable.set(24, 31);
+    assertEquals("The value #24 should be correct", 31, mutable.get(24));
+    mutable.set(4, 16);
+    assertEquals("The value #24 should remain unchanged", 31, mutable.get(24));
   }
 }
