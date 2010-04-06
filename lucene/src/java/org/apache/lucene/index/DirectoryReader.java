@@ -56,6 +56,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
   private IndexDeletionPolicy deletionPolicy;
   private Lock writeLock;
   private SegmentInfos segmentInfos;
+  private SegmentInfos segmentInfosStart;
   private boolean stale;
   private final int termInfosIndexDivisor;
 
@@ -148,6 +149,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     this.directory = writer.getDirectory();
     this.readOnly = true;
     segmentInfos = infos;
+    segmentInfosStart = (SegmentInfos) infos.clone();
     this.termInfosIndexDivisor = termInfosIndexDivisor;
     if (codecs == null) {
       this.codecs = CodecProvider.getDefault();
@@ -930,7 +932,12 @@ class DirectoryReader extends IndexReader implements Cloneable {
   @Override
   public boolean isCurrent() throws CorruptIndexException, IOException {
     ensureOpen();
-    return SegmentInfos.readCurrentVersion(directory, codecs) == segmentInfos.getVersion();
+    if (writer == null || writer.isClosed()) {
+      // we loaded SegmentInfos from the directory
+      return SegmentInfos.readCurrentVersion(directory, codecs) == segmentInfos.getVersion();
+    } else {
+      return writer.nrtIsCurrent(segmentInfosStart);
+    }
   }
 
   @Override
