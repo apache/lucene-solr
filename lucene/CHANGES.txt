@@ -1,6 +1,6 @@
 Lucene Change Log
 
-======================= Flexible Indexing Branch =======================
+======================= Trunk (not yet released) =======================
 
 Changes in backwards compatibility policy
 
@@ -44,39 +44,6 @@ Changes in backwards compatibility policy
     an IllegalArgumentException, because the NTS does not support
     TermAttribute/CharTermAttribute. If you want to further filter
     or attach Payloads to NTS, use the new NumericTermAttribute.
-
-Bug Fixes
-
-* LUCENE-2222: FixedIntBlockIndexInput incorrectly read one block of
-  0s before the actual data.  (Renaud Delbru via Mike McCandless)
-
-* LUCENE-2344: PostingsConsumer.merge was failing to call finishDoc,
-  which caused corruption for sep codec.  Also fixed several tests to
-  test all 4 core codecs.  (Renaud Delbru via Mike McCandless)
-  
-New features
-
-* LUCENE-1606, LUCENE-2089: Adds AutomatonQuery, a MultiTermQuery that 
-  matches terms against a finite-state machine. Implement WildcardQuery
-  and FuzzyQuery with finite-state methods. Adds RegexpQuery.
-  (Robert Muir, Mike McCandless, Uwe Schindler, Mark Miller)
-
-* LUCENE-1990: Adds internal packed ints implementation, to be used
-  for more efficient storage of int arrays when the values are
-  bounded, for example for storing the terms dict index Toke Toke
-  Eskildsen via Mike McCandless)
-
-* LUCENE-2321: Cutover to a more RAM efficient packed-ints based
-  representation for the in-memory terms dict index.  (Mike
-  McCandless)
-
-* LUCENE-2126: Add new classes for data (de)serialization: DataInput
-  and DataOutput.  IndexInput and IndexOutput extend these new classes.
-  (Michael Busch)
-
-======================= Trunk (not yet released) =======================
-
-Changes in backwards compatibility policy
 
 * LUCENE-1483: Removed utility class oal.util.SorterTemplate; this
   class is no longer used by Lucene.  (Gunnar Wagenknecht via Mike
@@ -235,6 +202,13 @@ Bug fixes
 * LUCENE-2365: IndexWriter.newestSegment (used normally for testing)
   is fixed to return null if there are no segments.  (Karthick
   Sankarachary via Mike McCandless)
+
+* LUCENE-2222: FixedIntBlockIndexInput incorrectly read one block of
+  0s before the actual data.  (Renaud Delbru via Mike McCandless)
+
+* LUCENE-2344: PostingsConsumer.merge was failing to call finishDoc,
+  which caused corruption for sep codec.  Also fixed several tests to
+  test all 4 core codecs.  (Renaud Delbru via Mike McCandless)
   
 New features
 
@@ -300,6 +274,24 @@ New features
   files between FSDirectory instances.  (Earwin Burrfoot via Mike
   McCandless).
   
+* LUCENE-1606, LUCENE-2089: Adds AutomatonQuery, a MultiTermQuery that 
+  matches terms against a finite-state machine. Implement WildcardQuery
+  and FuzzyQuery with finite-state methods. Adds RegexpQuery.
+  (Robert Muir, Mike McCandless, Uwe Schindler, Mark Miller)
+
+* LUCENE-1990: Adds internal packed ints implementation, to be used
+  for more efficient storage of int arrays when the values are
+  bounded, for example for storing the terms dict index Toke Toke
+  Eskildsen via Mike McCandless)
+
+* LUCENE-2321: Cutover to a more RAM efficient packed-ints based
+  representation for the in-memory terms dict index.  (Mike
+  McCandless)
+
+* LUCENE-2126: Add new classes for data (de)serialization: DataInput
+  and DataOutput.  IndexInput and IndexOutput extend these new classes.
+  (Michael Busch)
+
 Optimizations
 
 * LUCENE-2075: Terms dict cache is now shared across threads instead
