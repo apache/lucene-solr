@@ -282,7 +282,7 @@ public class CheckIndex {
     return checkIndex(null);
   }
 
-  protected Status checkIndex(List<String> onlySegments) throws IOException {
+  public Status checkIndex(List<String> onlySegments) throws IOException {
     return checkIndex(onlySegments, CodecProvider.getDefault());
   }
   
@@ -298,7 +298,7 @@ public class CheckIndex {
    *  <p><b>WARNING</b>: make sure
    *  you only call this when the index is not opened by any
    *  writer. */
-  protected Status checkIndex(List<String> onlySegments, CodecProvider codecs) throws IOException {
+  public Status checkIndex(List<String> onlySegments, CodecProvider codecs) throws IOException {
     NumberFormat nf = NumberFormat.getInstance();
     SegmentInfos sis = new SegmentInfos();
     Status result = new Status();

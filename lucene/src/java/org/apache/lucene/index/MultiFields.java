@@ -77,8 +77,11 @@ public final class MultiFields extends Fields {
         new ReaderUtil.Gather(r) {
           @Override
           protected void add(int base, IndexReader r) throws IOException {
-            fields.add(r.fields());
-            slices.add(new ReaderUtil.Slice(base, r.maxDoc(), fields.size()-1));
+            final Fields f = r.fields();
+            if (f != null) {
+              fields.add(f);
+              slices.add(new ReaderUtil.Slice(base, r.maxDoc(), fields.size()-1));
+            }
           }
         }.run();
 

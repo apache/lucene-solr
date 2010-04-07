@@ -178,7 +178,13 @@ API Changes
   DocsEnum, DocsAndPositionsEnum). One big difference is that field
   and terms are now enumerated separately: a TermsEnum provides a
   BytesRef (wraps a byte[]) per term within a single field, not a
-  Term.
+  Term.  Another is that when asking for a Docs/AndPositionsEnum, you
+  now specify the skipDocs explicitly (typically this will be the
+  deleted docs, but in general you can provide any Bits).
+
+* LUCENE-1458, LUCENE-2111: IndexReader now directly exposes its
+  deleted docs (getDeletedDocs), providing a new Bits interface to
+  directly query by doc ID.
 
 Bug fixes
 
@@ -315,8 +321,10 @@ New features
 
 * LUCENE-1458, LUCENE-2111: With flexible indexing it is now possible
   for an application to create its own postings codec, to alter how
-  fields, terms, docs and positions are encoded into the idnex.  The
-  standard codec is the default codec.
+  fields, terms, docs and positions are encoded into the index.  The
+  standard codec is the default codec.  Both IndexWriter and
+  IndexReader accept a CodecProvider class to obtain codecs for newly
+  written segments as well as existing segments opened for reading.
 
 * LUCENE-1458, LUCENE-2111: Some experimental codecs have been added
   for flexible indexing, including pulsing codec (inlines

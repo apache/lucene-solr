@@ -66,17 +66,13 @@ public class SingleIntIndexInput extends IntIndexInput {
   
   class Index extends IntIndexInput.Index {
     private long fp;
-    // nocmmit: only for asserts
-    boolean first = true;
 
     @Override
     public void read(IndexInput indexIn, boolean absolute)
       throws IOException {
       if (absolute) {
         fp = indexIn.readVLong();
-        first = false;
       } else {
-        assert !first;
         fp += indexIn.readVLong();
       }
     }
@@ -84,7 +80,6 @@ public class SingleIntIndexInput extends IntIndexInput {
     @Override
     public void set(IntIndexInput.Index other) {
       fp = ((Index) other).fp;
-      first = false;
     }
 
     @Override
@@ -100,7 +95,6 @@ public class SingleIntIndexInput extends IntIndexInput {
     @Override
     public Object clone() {
       Index other = new Index();
-      other.first = first;
       other.fp = fp;
       return other;
     }

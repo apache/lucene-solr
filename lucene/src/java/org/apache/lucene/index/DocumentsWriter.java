@@ -1050,58 +1050,60 @@ final class DocumentsWriter {
 
     // Delete by term
     if (deletesFlushed.terms.size() > 0) {
-      try {
-        Fields fields = reader.fields();
-        TermsEnum termsEnum = null;
+      Fields fields = reader.fields();
+      if (fields == null) {
+        // This reader has no postings
+        return false;
+      }
+
+      TermsEnum termsEnum = null;
         
-        String currentField = null;
-        BytesRef termRef = new BytesRef();
-        DocsEnum docs = null;
+      String currentField = null;
+      BytesRef termRef = new BytesRef();
+      DocsEnum docs = null;
         
-        for (Entry<Term, BufferedDeletes.Num> entry: deletesFlushed.terms.entrySet()) {
-          Term term = entry.getKey();
-          // Since we visit terms sorted, we gain performance
-          // by re-using the same TermsEnum and seeking only
-          // forwards
-          if (term.field() != currentField) {
-            assert currentField == null || currentField.compareTo(term.field()) < 0;
-            currentField = term.field();
-            Terms terms = fields.terms(currentField);
-            if (terms != null) {
-              termsEnum = terms.iterator();
-            } else {
-              termsEnum = null;
-            }
+      for (Entry<Term, BufferedDeletes.Num> entry: deletesFlushed.terms.entrySet()) {
+        Term term = entry.getKey();
+        // Since we visit terms sorted, we gain performance
+        // by re-using the same TermsEnum and seeking only
+        // forwards
+        if (term.field() != currentField) {
+          assert currentField == null || currentField.compareTo(term.field()) < 0;
+          currentField = term.field();
+          Terms terms = fields.terms(currentField);
+          if (terms != null) {
+            termsEnum = terms.iterator();
+          } else {
+            termsEnum = null;
           }
+        }
           
-          if (termsEnum == null) {
-            continue;
-          }
-          assert checkDeleteTerm(term);
+        if (termsEnum == null) {
+          continue;
+        }
+        assert checkDeleteTerm(term);
           
-          termRef.copy(term.text());
+        termRef.copy(term.text());
           
-          if (termsEnum.seek(termRef, false) == TermsEnum.SeekStatus.FOUND) {
-            DocsEnum docsEnum = termsEnum.docs(reader.getDeletedDocs(), docs);
+        if (termsEnum.seek(termRef, false) == TermsEnum.SeekStatus.FOUND) {
+          DocsEnum docsEnum = termsEnum.docs(reader.getDeletedDocs(), docs);
             
-            if (docsEnum != null) {
-              docs = docsEnum;
-              int limit = entry.getValue().getNum();
-              while (true) {
-                final int docID = docs.nextDoc();
-                if (docID == DocsEnum.NO_MORE_DOCS || docIDStart+docID >= limit) {
-                  break;
-                }
-                reader.deleteDocument(docID);
-                any = true;
+          if (docsEnum != null) {
+            docs = docsEnum;
+            int limit = entry.getValue().getNum();
+            while (true) {
+              final int docID = docs.nextDoc();
+              if (docID == DocsEnum.NO_MORE_DOCS || docIDStart+docID >= limit) {
+                break;
               }
+              reader.deleteDocument(docID);
+              any = true;
             }
           }
         }
-      } finally {
-        //docs.close();
       }
     }
+
     // Delete by docID
     for (Integer docIdInt : deletesFlushed.docIDs) {
       int docID = docIdInt.intValue();

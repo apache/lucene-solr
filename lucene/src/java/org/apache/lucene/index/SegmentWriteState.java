@@ -26,9 +26,6 @@ import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 
 /**
- * This class is not meant for public usage; it's only
- * public in order to expose access across packages.  It's
- * used internally when updating the index.
  * @lucene.experimental
  */
 public class SegmentWriteState {

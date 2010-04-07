@@ -79,12 +79,6 @@ final public class UnicodeUtil {
     public int[] offsets = new int[10];
     public int length;
 
-    /*
-    public String toString() {
-      return new String(result, 0, length);
-    }
-    */
-
     public void setLength(int newLength) {
       if (result.length < newLength)
         result = ArrayUtil.grow(result, newLength);

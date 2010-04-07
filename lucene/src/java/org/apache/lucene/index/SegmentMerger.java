@@ -572,11 +572,14 @@ final class SegmentMerger {
       docBase = new ReaderUtil.Gather(readers.get(i)) {
           @Override
           protected void add(int base, IndexReader r) throws IOException {
-            subReaders.add(r);
-            fields.add(r.fields());
-            slices.add(new ReaderUtil.Slice(base, r.maxDoc(), fields.size()-1));
-            bits.add(r.getDeletedDocs());
-            bitsStarts.add(base);
+            final Fields f = r.fields();
+            if (f != null) {
+              subReaders.add(r);
+              fields.add(f);
+              slices.add(new ReaderUtil.Slice(base, r.maxDoc(), fields.size()-1));
+              bits.add(r.getDeletedDocs());
+              bitsStarts.add(base);
+            }
           }
         }.run(docBase);
     }

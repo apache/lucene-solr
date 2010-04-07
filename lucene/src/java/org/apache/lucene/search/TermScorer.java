@@ -160,7 +160,7 @@ final class TermScorer extends Scorer {
     // not found in readahead cache, seek underlying stream
     int newDoc = docsEnum.advance(target);
     //System.out.println("ts.advance docsEnum=" + docsEnum);
-    if (newDoc != DocsEnum.NO_MORE_DOCS) {
+    if (newDoc != NO_MORE_DOCS) {
       doc = newDoc;
       freq = docsEnum.freq();
     } else {

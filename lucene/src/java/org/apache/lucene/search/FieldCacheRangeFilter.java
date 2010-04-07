@@ -504,7 +504,7 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
   
   static abstract class FieldCacheDocIdSet extends DocIdSet {
     private final IndexReader reader;
-    private boolean canIgnoreDeletedDocs;
+    private final boolean canIgnoreDeletedDocs;
 
     FieldCacheDocIdSet(IndexReader reader, boolean canIgnoreDeletedDocs) {
       this.reader = reader;
@@ -518,68 +518,89 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
     abstract boolean matchDoc(int doc) throws ArrayIndexOutOfBoundsException;
 
     /**
-     * this DocIdSet is cacheable, if it can ignore deletions
+     * this DocIdSet is always cacheable (does not go back
+     * to the reader for iteration)
      */
     @Override
     public boolean isCacheable() {
-      return canIgnoreDeletedDocs || !reader.hasDeletions();
+      return true;
     }
 
     @Override
     public DocIdSetIterator iterator() throws IOException {
-      // Synchronization needed because deleted docs BitVector
-      // can change after call to hasDeletions until TermDocs creation.
-      // We only use an iterator with termDocs, when this was requested (e.g.
-      // range contains 0)
-      // and the index has deletions
 
-      final Bits skipDocs;
-      synchronized (reader) {
-        if (isCacheable()) {
-          skipDocs = null;
-        } else {
-          skipDocs = MultiFields.getDeletedDocs(reader);
-        }
-      }
-      final int maxDoc = reader.maxDoc();
+      final Bits skipDocs = canIgnoreDeletedDocs ? null : MultiFields.getDeletedDocs(reader);
 
-      // a DocIdSetIterator generating docIds by
-      // incrementing a variable & checking skipDocs -
-      return new DocIdSetIterator() {
-        private int doc = -1;
-        @Override
-        public int docID() {
-          return doc;
-        }
+      if (skipDocs == null) {
+        // Specialization optimization disregard deletions
+        return new DocIdSetIterator() {
+          private int doc = -1;
+          @Override
+            public int docID() {
+            return doc;
+          }
         
-        @Override
-        public int nextDoc() {
-          try {
+          @Override
+          public int nextDoc() {
+            try {
+              do {
+                doc++;
+              } while (!matchDoc(doc));
+              return doc;
+            } catch (ArrayIndexOutOfBoundsException e) {
+              return doc = NO_MORE_DOCS;
+            }
+          }
+        
+          @Override
+          public int advance(int target) {
+            try {
+              doc = target;
+              while (!matchDoc(doc)) {
+                doc++;
+              }
+              return doc;
+            } catch (ArrayIndexOutOfBoundsException e) {
+              return doc = NO_MORE_DOCS;
+            }
+          }
+        };
+      } else {
+        // Must consult deletions
+
+        final int maxDoc = reader.maxDoc();
+
+        // a DocIdSetIterator generating docIds by
+        // incrementing a variable & checking skipDocs -
+        return new DocIdSetIterator() {
+          private int doc = -1;
+          @Override
+            public int docID() {
+            return doc;
+          }
+        
+          @Override
+          public int nextDoc() {
             do {
               doc++;
-            } while ((skipDocs != null && doc < maxDoc && skipDocs.get(doc))
-                || !matchDoc(doc));
+              if (doc >= maxDoc) {
+                return doc = NO_MORE_DOCS;
+              }
+            } while (skipDocs.get(doc) || !matchDoc(doc));
             return doc;
-          } catch (ArrayIndexOutOfBoundsException e) {
-            return doc = NO_MORE_DOCS;
           }
-        }
         
-        @Override
-        public int advance(int target) {
-          try {
-            doc = target;
-            while (!matchDoc(doc)) {
-              doc++;
+          @Override
+          public int advance(int target) {
+            for(doc=target;doc<maxDoc;doc++) {
+              if (!skipDocs.get(doc) && matchDoc(doc)) {
+                return doc;
+              }
             }
-            return doc;
-          } catch (ArrayIndexOutOfBoundsException e) {
             return doc = NO_MORE_DOCS;
           }
-
-        }
-      };
+        };
+      }
     }
   }
-
 }
