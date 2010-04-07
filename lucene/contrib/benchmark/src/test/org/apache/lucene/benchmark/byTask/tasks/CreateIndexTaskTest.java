@@ -25,6 +25,8 @@ import java.util.Properties;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.index.NoMergeScheduler;
 
 /** Tests the functionality of {@link CreateIndexTask}. */
 public class CreateIndexTaskTest extends BenchmarkTestCase {
@@ -33,7 +35,9 @@ public class CreateIndexTaskTest extends BenchmarkTestCase {
     Properties props = new Properties();
     props.setProperty("print.props", "false"); // don't print anything
     props.setProperty("directory", "RAMDirectory");
-    props.setProperty("writer.info.stream", infoStreamValue);
+    if (infoStreamValue != null) {
+      props.setProperty("writer.info.stream", infoStreamValue);
+    }
     Config config = new Config(props);
     return new PerfRunData(config);
   }
@@ -77,4 +81,18 @@ public class CreateIndexTaskTest extends BenchmarkTestCase {
     assertTrue(outFile.length() > 0);
   }
 
+  public void testNoMergePolicy() throws Exception {
+    PerfRunData runData = createPerfRunData(null);
+    runData.getConfig().set("merge.policy", NoMergePolicy.class.getName());
+    new CreateIndexTask(runData).doLogic();
+    new CloseIndexTask(runData).doLogic();
+  }
+  
+  public void testNoMergeScheduler() throws Exception {
+    PerfRunData runData = createPerfRunData(null);
+    runData.getConfig().set("merge.scheduler", NoMergeScheduler.class.getName());
+    new CreateIndexTask(runData).doLogic();
+    new CloseIndexTask(runData).doLogic();
+  }
+  
 }

@@ -2,6 +2,10 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
+4/07/2010
+  LUCENE-2377: Enable the use of NoMergePolicy and NoMergeScheduler by 
+  CreateIndexTask. (Shai Erera)
+  
 3/28/2010
   LUCENE-2353: Fixed bug in Config where Windows absolute path property values 
   were incorrectly handled (Shai Erera)
