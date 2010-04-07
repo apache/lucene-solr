@@ -6,6 +6,19 @@ Changes in backwards compatibility policy
 
 * LUCENE-1458, LUCENE-2111, LUCENE-2354: Changes from flexible indexing:
 
+  - On upgrading to 3.1, if you do not fully reindex your documents,
+    Lucene will emulate the new flex API on top of the old index,
+    incurring some performance cost (up to ~10% slowdown, typically).
+    Likewise, if you use the deprecated pre-flex APIs on a newly
+    created flex index, this emulation will also incur some
+    performance loss.
+
+    Mixed flex/pre-flex indexes are perfectly fine -- the two
+    emulation layers (flex API on pre-flex index, and pre-flex API on
+    flex index) will remap the access as required.  So on upgrading to
+    3.1 you can start indexing new documents into an existing index.
+    But for best performance you should fully reindex.
+
   - MultiReader ctor now throws IOException
 
   - Directory.copy/Directory.copyTo now copies all files (not just
@@ -159,6 +172,14 @@ API Changes
   FSDirectory to see a sample of how such tracking might look like, if needed
   in your custom Directories.  (Earwin Burrfoot via Mike McCandless)
 
+* LUCENE-1458, LUCENE-2111: The postings APIs (TermEnum, TermDocsEnum,
+  TermPositionsEnum) have been deprecated in favor of the new flexible
+  indexing (flex) APIs (Fields, FieldsEnum, Terms, TermsEnum,
+  DocsEnum, DocsAndPositionsEnum). One big difference is that field
+  and terms are now enumerated separately: a TermsEnum provides a
+  BytesRef (wraps a byte[]) per term within a single field, not a
+  Term.
+
 Bug fixes
 
 * LUCENE-2119: Don't throw NegativeArraySizeException if you pass
@@ -292,6 +313,28 @@ New features
   and DataOutput.  IndexInput and IndexOutput extend these new classes.
   (Michael Busch)
 
+* LUCENE-1458, LUCENE-2111: With flexible indexing it is now possible
+  for an application to create its own postings codec, to alter how
+  fields, terms, docs and positions are encoded into the idnex.  The
+  standard codec is the default codec.
+
+* LUCENE-1458, LUCENE-2111: Some experimental codecs have been added
+  for flexible indexing, including pulsing codec (inlines
+  low-frequency terms directly into the terms dict, avoiding seeking
+  for some queries), sep codec (stores docs, freqs, positions, skip
+  data and payloads in 5 separate files instead of the 2 used by
+  standard codec), and int block (really a "base" for using
+  block-based compressors like PForDelta for storing postings data).
+
+* LUCENE-2302, LUCENE-1458, LUCENE-2111: Terms are no longer required
+  to be character based.  Lucene views a term as an arbitrary byte[]:
+  during analysis, character-based terms are converted to UTF8 byte[],
+  but analyzers are free to directly create terms as byte[]
+  (NumericField does this, for example).  The term data is buffered as
+  byte[] during indexing, written as byte[] into the terms dictionary,
+  and iterated as byte[] (wrapped in a BytesRef) by IndexReader for
+  searching.
+
 Optimizations
 
 * LUCENE-2075: Terms dict cache is now shared across threads instead
@@ -359,6 +402,18 @@ Optimizations
   because then it will make sense to make the RAM buffers as large as 
   possible. (Mike McCandless, Michael Busch)
 
+* LUCENE-1458, LUCENE-2111: The in-memory terms index used by standard
+  codec is more RAM efficient: terms data is stored as block byte
+  arrays and packed integers.  Net RAM reduction for indexes that have
+  many unique terms should be substantial, and initial open time for
+  IndexReaders should be faster.  These gains only apply for newly
+  written segments after upgrading.
+
+* LUCENE-1458, LUCENE-2111: Terms data are now buffered directly as
+  byte[] during indexing, which uses half the RAM for ascii terms (and
+  also numeric fields).  This can improve indexing throughput for
+  applications that have many unique terms, since it reduces how often
+  a new segment must be flushed given a fixed RAM buffer size.
 
 Build
 
