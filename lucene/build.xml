@@ -698,11 +698,14 @@ The source distribution does not contain sources of the previous Lucene Java ver
   <target name="jflex" depends="clean-jflex,jflex-StandardAnalyzer" />
 
   <target name="jflex-StandardAnalyzer" depends="init,jflex-check" if="jflex.present">
-    <taskdef classname="JFlex.anttask.JFlexTask" name="jflex">
-      <classpath location="${jflex.home}/lib/JFlex.jar" />
+    <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
+			<classpath refid="jflex.classpath"/>
     </taskdef>
 
-    <jflex file="src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl.jflex"
+    <jflex file="src/java/org/apache/lucene/analysis/standard/StandardTokenizerImplOrig.jflex"
+           outdir="src/java/org/apache/lucene/analysis/standard"
+           nobak="on" />
+    <jflex file="src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl31.jflex"
            outdir="src/java/org/apache/lucene/analysis/standard"
            nobak="on" />
   </target>

@@ -92,6 +92,13 @@
   <property name="javacc.home" location="${common.dir}"/>
   <property name="jflex.home" location="${common.dir}"/>
 
+	<path id="jflex.classpath">
+    <fileset dir="${jflex.home}/">
+      <include name="**/target/*.jar"/>
+      <include name="**/lib/*.jar"/>
+    </fileset>
+	</path>
+	
   <property name="backwards.dir" location="backwards"/>
   <property name="build.dir.backwards" location="${build.dir}/backwards"/>
 
@@ -151,11 +158,9 @@
     classpath="${javacc.home}/bin/lib/javacc.jar"
     />
 
-   <available
-    property="jflex.present"
-    classname="JFlex.anttask.JFlexTask"
-    classpath="${jflex.home}/lib/JFlex.jar"
-    />
+  <available property="jflex.present" classname="jflex.anttask.JFlexTask">
+		<classpath refid="jflex.classpath"/>
+	</available>
 
   <available
     property="maven.ant.tasks.present"
@@ -237,17 +242,17 @@
       JFlex not found.
       JFlex Home: ${jflex.home}
 
-      Please download and install JFlex from:
+      Please install the jFlex 1.5 version (currently not released)
+      from its SVN repository:
 
-      &lt;http://jflex.de/download.html&gt;
+       svn co http://jflex.svn.sourceforge.net/svnroot/jflex/trunk jflex
+       cd jflex
+       mvn install
 
       Then, create a build.properties file either in your home
       directory, or within the Lucene directory and set the jflex.home
-      property to the path where JFlex is installed. For example,
-      if you installed JFlex in /usr/local/java/jflex-1.4.1, then set the
-      jflex.home property to:
-
-      jflex.home=/usr/local/java/jflex-1.4.1
+      property to the path where the JFlex trunk checkout is located
+      (in the above example its the directory called "jflex").
 
       ##################################################################
     </fail>

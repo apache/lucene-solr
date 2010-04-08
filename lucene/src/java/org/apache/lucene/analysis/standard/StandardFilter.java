@@ -34,12 +34,12 @@ public final class StandardFilter extends TokenFilter {
     typeAtt = addAttribute(TypeAttribute.class);
   }
 
-  private static final String APOSTROPHE_TYPE = StandardTokenizerImpl.TOKEN_TYPES[StandardTokenizerImpl.APOSTROPHE];
-  private static final String ACRONYM_TYPE = StandardTokenizerImpl.TOKEN_TYPES[StandardTokenizerImpl.ACRONYM];
+  private static final String APOSTROPHE_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.APOSTROPHE];
+  private static final String ACRONYM_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.ACRONYM];
 
   // this filters uses attribute type
-  private TypeAttribute typeAtt;
-  private TermAttribute termAtt;
+  private final TypeAttribute typeAtt;
+  private final TermAttribute termAtt;
   
   /** Returns the next token in the stream, or null at EOS.
    * <p>Removes <tt>'s</tt> from the end of words.

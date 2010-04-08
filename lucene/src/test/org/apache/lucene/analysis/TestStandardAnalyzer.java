@@ -224,4 +224,12 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
                     "<ALPHANUM>", "<NUM>", "<HOST>", "<NUM>", "<ALPHANUM>",
                     "<ALPHANUM>", "<HOST>"});
   }
+
+  public void testJava14BWCompatibility() throws Exception {
+    StandardAnalyzer sa = new StandardAnalyzer(Version.LUCENE_30);
+    assertAnalyzesTo(sa, "test\u02C6test", new String[] { "test", "test" });
+    sa = new StandardAnalyzer(Version.LUCENE_31);
+    assertAnalyzesTo(sa, "test\u02C6test", new String[] { "test\u02C6test" });
+  }
+
 }

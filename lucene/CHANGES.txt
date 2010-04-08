@@ -236,6 +236,9 @@ Bug fixes
 * LUCENE-2344: PostingsConsumer.merge was failing to call finishDoc,
   which caused corruption for sep codec.  Also fixed several tests to
   test all 4 core codecs.  (Renaud Delbru via Mike McCandless)
+
+* LUCENE-2074: Reduce buffer size of lexer back to default on reset.
+  (Ruben Laguna, Shai Erera via Uwe Schindler)
   
 New features
 
@@ -347,6 +350,9 @@ New features
   can be used to prevent commits from ever getting deleted from the index.
   (Shai Erera)
   
+* LUCENE-2074: Make StandardTokenizer fit for Unicode 4.0, if the
+  matchVersion parameter is Version.LUCENE_31. (Uwe Schindler)
+
 Optimizations
 
 * LUCENE-2075: Terms dict cache is now shared across threads instead
@@ -433,9 +439,12 @@ Build
    into core, and moved the ICU-based collation support into contrib/icu.  
    (Robert Muir)
 
-* LUCENE-2326: Removed SVN checkouts for backwards tests. The backwards branch
-  is now included in the svn repository using "svn copy" after release.
-  (Uwe Schindler)
+* LUCENE-2326: Removed SVN checkouts for backwards tests. The backwards
+  branch is now included in the svn repository using "svn copy"
+  after release. (Uwe Schindler)
+
+* LUCENE-2074: Regenerating StandardTokenizerImpl files now needs
+  JFlex 1.5 (currently only available on SVN). (Uwe Schindler)
 
 Test Cases
 
