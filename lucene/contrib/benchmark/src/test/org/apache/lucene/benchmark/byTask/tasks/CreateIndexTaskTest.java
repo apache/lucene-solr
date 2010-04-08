@@ -25,6 +25,7 @@ import java.util.Properties;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.utils.Config;
+import org.apache.lucene.index.NoDeletionPolicy;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NoMergeScheduler;
 
@@ -91,6 +92,13 @@ public class CreateIndexTaskTest extends BenchmarkTestCase {
   public void testNoMergeScheduler() throws Exception {
     PerfRunData runData = createPerfRunData(null);
     runData.getConfig().set("merge.scheduler", NoMergeScheduler.class.getName());
+    new CreateIndexTask(runData).doLogic();
+    new CloseIndexTask(runData).doLogic();
+  }
+
+  public void testNoDeletionPolicy() throws Exception {
+    PerfRunData runData = createPerfRunData(null);
+    runData.getConfig().set("deletion.policy", NoDeletionPolicy.class.getName());
     new CreateIndexTask(runData).doLogic();
     new CloseIndexTask(runData).doLogic();
   }

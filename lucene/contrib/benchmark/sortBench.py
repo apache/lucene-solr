@@ -83,7 +83,7 @@ BASE_INDEX_ALG = '''
 analyzer=org.apache.lucene.analysis.standard.StandardAnalyzer
 
 $OTHER$
-deletion.policy = org.apache.lucene.benchmark.utils.NoDeletionPolicy
+deletion.policy = org.apache.lucene.index.NoDeletionPolicy
 doc.tokenized = false
 doc.body.tokenized = true
 doc.stored = true

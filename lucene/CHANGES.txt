@@ -343,6 +343,10 @@ New features
   and iterated as byte[] (wrapped in a BytesRef) by IndexReader for
   searching.
 
+* LUCENE-2385: Moved NoDeletionPolicy from benchmark to core. NoDeletionPolicy
+  can be used to prevent commits from ever getting deleted from the index.
+  (Shai Erera)
+  
 Optimizations
 
 * LUCENE-2075: Terms dict cache is now shared across threads instead

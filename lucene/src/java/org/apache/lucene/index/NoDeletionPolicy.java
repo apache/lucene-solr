@@ -1,4 +1,4 @@
-package org.apache.lucene.benchmark.utils;
+package org.apache.lucene.index;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,18 +20,22 @@ package org.apache.lucene.benchmark.utils;
 import java.io.IOException;
 import java.util.List;
 
-import org.apache.lucene.index.IndexCommit;
-import org.apache.lucene.index.IndexDeletionPolicy;
+/**
+ * An {@link IndexDeletionPolicy} which keeps all index commits around, never
+ * deleting them. This class is a singleton and can be accessed by referencing
+ * {@link #INSTANCE}.
+ */
+public final class NoDeletionPolicy implements IndexDeletionPolicy {
 
-public class NoDeletionPolicy implements IndexDeletionPolicy {
-
-  public void onCommit(List<? extends IndexCommit> commits) throws IOException {
-    // TODO Auto-generated method stub
-    
+  /** The single instance of this class. */
+  public static final IndexDeletionPolicy INSTANCE = new NoDeletionPolicy();
+  
+  private NoDeletionPolicy() {
+    // keep private to avoid instantiation
   }
+  
+  public void onCommit(List<? extends IndexCommit> commits) throws IOException {}
 
-  public void onInit(List<? extends IndexCommit> commits) throws IOException {
-    // TODO Auto-generated method stub
-    
-  }
+  public void onInit(List<? extends IndexCommit> commits) throws IOException {}
+  
 }
