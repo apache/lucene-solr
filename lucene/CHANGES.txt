@@ -62,10 +62,6 @@ Changes in backwards compatibility policy
   class is no longer used by Lucene.  (Gunnar Wagenknecht via Mike
   McCandless)
 
-* LUCENE-2123: Removed the protected inner class ScoreTerm from
-  FuzzyQuery. The class was never intended to be public.
-  (Uwe Schindler, Mike McCandless)
-
 * LUCENE-2135: Added FieldCache.purge(IndexReader) method to the
   interface.  Anyone implementing FieldCache externally will need to
   fix their code to implement this, on upgrading.  (Mike McCandless)
