@@ -130,7 +130,7 @@ public final class NumericUtils {
     return hash;
   }
 
-  /**
+  /*
    * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
    * This is method is used by {@link LongRangeBuilder}.
    * @param val the numeric value
@@ -144,7 +144,7 @@ public final class NumericUtils {
     return buffer.utf8ToString();
   }*/
 
-  /**
+  /*
    * This is a convenience method, that returns prefix coded bits of a long without
    * reducing the precision. It can be used to store the full precision value as a
    * stored field in index.
@@ -190,7 +190,7 @@ public final class NumericUtils {
     return hash;
   }
 
-  /**
+  /*
    * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
    * This is method is used by {@link IntRangeBuilder}.
    * @param val the numeric value
@@ -204,7 +204,7 @@ public final class NumericUtils {
     return buffer.utf8ToString();
   }*/
 
-  /**
+  /*
    * This is a convenience method, that returns prefix coded bits of an int without
    * reducing the precision. It can be used to store the full precision value as a
    * stored field in index.
@@ -216,7 +216,7 @@ public final class NumericUtils {
     return intToPrefixCoded(val, 0);
   }*/
 
-  /**
+  /*
    * Returns a long from prefixCoded characters.
    * Rightmost bits will be zero for lower precision codes.
    * This method can be used to decode e.g. a stored field.
@@ -278,7 +278,7 @@ public final class NumericUtils {
     return (sortableBits << getPrefixCodedLongShift(val)) ^ 0x8000000000000000L;
   }
 
-  /**
+  /*
    * Returns an int from prefixCoded characters.
    * Rightmost bits will be zero for lower precision codes.
    * This method can be used to decode a term's value.
@@ -292,7 +292,7 @@ public final class NumericUtils {
     return prefixCodedToInt(new BytesRef(prefixCoded));
   }*/
 
-  /**
+  /*
    * Returns an int from prefixCoded bytes.
    * Rightmost bits will be zero for lower precision codes.
    * This method can be used to decode a term's value.
@@ -329,7 +329,7 @@ public final class NumericUtils {
     return f;
   }
 
-  /**
+  /*
    * Convenience method: this just returns:
    *   longToPrefixCoded(doubleToSortableLong(val))
    * @deprecated This method is no longer needed!
@@ -348,7 +348,7 @@ public final class NumericUtils {
     return Double.longBitsToDouble(val);
   }
 
-  /**
+  /*
    * Convenience method: this just returns:
    *    sortableLongToDouble(prefixCodedToLong(val))
    * @deprecated This method is no longer needed!
@@ -371,7 +371,7 @@ public final class NumericUtils {
     return f;
   }
 
-  /**
+  /*
    * Convenience method: this just returns:
    *   intToPrefixCoded(floatToSortableInt(val))
    * @deprecated This method is no longer needed!
@@ -390,7 +390,7 @@ public final class NumericUtils {
     return Float.intBitsToFloat(val);
   }
 
-  /**
+  /*
    * Convenience method: this just returns:
    *    sortableIntToFloat(prefixCodedToInt(val))
    * @deprecated This method is no longer needed!
