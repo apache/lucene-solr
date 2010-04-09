@@ -52,7 +52,7 @@ public final class MultiFields extends Fields {
    *  reader, merging fields/terms/docs/positions on the
    *  fly.  This method will not return null.
    *
-   *  <p><bNOTE</b>: this is a slow way to access postings.
+   *  <p><b>NOTE</b>: this is a slow way to access postings.
    *  It's better to get the sub-readers (using {@link
    *  Gather}) and iterate through them
    *  yourself. */
