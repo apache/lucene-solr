@@ -258,6 +258,10 @@ Bug fixes
 * LUCENE-2074: Reduce buffer size of lexer back to default on reset.
   (Ruben Laguna, Shai Erera via Uwe Schindler)
   
+* LUCENE-2387: Don't hang onto Fieldables from the last doc indexed,
+  in IndexWriter, nor the Reader in Tokenizer after close is
+  called.  (Ruben Laguna, Uwe Schindler, Mike McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
