@@ -32,7 +32,7 @@ import org.apache.lucene.util.MultiBits;
  * Exposes flex API, merged from flex API of sub-segments.
  * This is useful when you're interacting with an {@link
  * IndexReader} implementation that consists of sequential
- * sub-readers (eg {@link DirectoryReader} or {@link
+ * sub-readers (eg DirectoryReader or {@link
  * MultiReader}).
  *
  * <p><b>NOTE</b>: for multi readers, you'll get better
