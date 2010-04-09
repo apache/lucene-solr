@@ -16,7 +16,7 @@
  */
 
 
-package org.apache.lucene.wikipedia.analysis;
+package org.apache.lucene.analysis.wikipedia;
 
 import java.io.StringReader;
 import java.io.IOException;

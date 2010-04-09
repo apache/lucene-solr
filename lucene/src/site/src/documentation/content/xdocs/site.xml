@@ -73,8 +73,7 @@ See http://forrest.apache.org/docs/linking.html for more info
 		    <javadoc-contrib-spatial label="Spatial" href="ext:javadocs-contrib-spatial"/>
 		    <javadoc-contrib-spellchecker label="Spellchecker" href="ext:javadocs-contrib-spellchecker"/>
 		    <javadoc-contrib-surround label="Surround" href="ext:javadocs-contrib-surround"/>			
-		    <javadoc-contrib-swing label="Swing" href="ext:javadocs-contrib-swing"/>
-			<javadoc-contrib-wikipedia label="Wikipedia" href="ext:javadocs-contrib-wikipedia"/>					    
+		    <javadoc-contrib-swing label="Swing" href="ext:javadocs-contrib-swing"/>				    
 			<javadoc-contrib-wordnet label="Wordnet" href="ext:javadocs-contrib-wordnet"/>			
 		    <javadoc-contrib-xml-query-parser label="XML Query Parser" href="ext:javadocs-contrib-xml-query-parser"/>			
 		 </javadoc-contrib>
@@ -124,7 +123,6 @@ See http://forrest.apache.org/docs/linking.html for more info
 	<javadocs-contrib-spellchecker href="api/contrib-spellchecker/index.html"/>
 	<javadocs-contrib-surround href="api/contrib-surround/index.html"/>
 	<javadocs-contrib-swing href="api/contrib-swing/index.html"/>
-	<javadocs-contrib-wikipedia href="api/contrib-wikipedia/index.html"/>
 	<javadocs-contrib-wordnet href="api/contrib-wordnet/index.html"/>
 	<javadocs-contrib-xml-query-parser href="api/contrib-xml-query-parser/index.html"/>
 	

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.wikipedia.analysis;
+package org.apache.lucene.analysis.wikipedia;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
@@ -133,7 +133,7 @@ public final class WikipediaTokenizer extends Tokenizer {
   }
 
   /**
-   * Creates a new instance of the {@link org.apache.lucene.wikipedia.analysis.WikipediaTokenizer}.  Attaches the
+   * Creates a new instance of the {@link org.apache.lucene.analysis.wikipedia.WikipediaTokenizer}.  Attaches the
    * <code>input</code> to a the newly created JFlex scanner.
    *
    * @param input The input
@@ -147,7 +147,7 @@ public final class WikipediaTokenizer extends Tokenizer {
   }
 
   /**
-   * Creates a new instance of the {@link org.apache.lucene.wikipedia.analysis.WikipediaTokenizer}.  Attaches the
+   * Creates a new instance of the {@link org.apache.lucene.analysis.wikipedia.WikipediaTokenizer}.  Attaches the
    * <code>input</code> to a the newly created JFlex scanner. Uses the given {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
    *
    * @param input The input
@@ -161,7 +161,7 @@ public final class WikipediaTokenizer extends Tokenizer {
   }
 
   /**
-   * Creates a new instance of the {@link org.apache.lucene.wikipedia.analysis.WikipediaTokenizer}.  Attaches the
+   * Creates a new instance of the {@link org.apache.lucene.analysis.wikipedia.WikipediaTokenizer}.  Attaches the
    * <code>input</code> to a the newly created JFlex scanner. Uses the given {@link AttributeSource}.
    *
    * @param input The input

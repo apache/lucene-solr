@@ -128,7 +128,7 @@ New Features
 
 * SOLR-1857: Synced Solr analysis with Lucene 3.1. Added KeywordMarkerFilterFactory 
   and StemmerOverrideFilterFactory, which can be used to tune stemming algorithms. 
-  Added factories for Bulgarian, Czech, Hindi, and Turkish analysis. Improved the
+  Added factories for Bulgarian, Czech, Hindi, Turkish, and Wikipedia analysis. Improved the
   performance of SnowballPorterFilterFactory.  (rmuir)
 
 * SOLR-1657: Converted remaining TokenStreams to the Attributes-based API. All Solr 

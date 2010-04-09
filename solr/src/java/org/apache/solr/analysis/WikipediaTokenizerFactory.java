@@ -1,4 +1,5 @@
-<!--
+package org.apache.solr.analysis;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,20 +17,15 @@
  * limitations under the License.
  */
 
-  -->
+import java.io.Reader;
 
-<HTML>
- <!--
- * 
- --><HEAD>
-    <TITLE>org.apache.lucene.wikipedia</TITLE>
-</HEAD>
-<BODY>
-<DIV>Tools for working with <a href="http://www.wikipedia.org">Wikipedia</a> content.
-</DIV>
-<DIV>&nbsp;</DIV>
-<DIV align="center">
-Copyright &copy; 2007 <A HREF="http://www.apache.org">Apache Software Foundation</A>
-</DIV>
-</BODY>
-</HTML>
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.wikipedia.WikipediaTokenizer;
+
+/** Factory for {@link WikipediaTokenizer}*/
+public class WikipediaTokenizerFactory extends BaseTokenizerFactory {
+  // TODO: add support for WikipediaTokenizer's advanced options.
+  public Tokenizer create(Reader input) {
+    return new WikipediaTokenizer(input);
+  }
+}
