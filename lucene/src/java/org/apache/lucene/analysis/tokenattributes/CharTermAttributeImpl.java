@@ -79,18 +79,13 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   }
   
   public char[] resizeBuffer(int newSize) {
-    if (termBuffer == null) {
-      // The buffer is always at least MIN_BUFFER_SIZE
-      termBuffer = new char[ArrayUtil.oversize(newSize < MIN_BUFFER_SIZE ? MIN_BUFFER_SIZE : newSize, RamUsageEstimator.NUM_BYTES_CHAR)]; 
-    } else {
-      if(termBuffer.length < newSize){
-        // Not big enough; create a new array with slight
-        // over allocation and preserve content
-        final char[] newCharBuffer = new char[ArrayUtil.oversize(newSize, RamUsageEstimator.NUM_BYTES_CHAR)];
-        System.arraycopy(termBuffer, 0, newCharBuffer, 0, termBuffer.length);
-        termBuffer = newCharBuffer;
-      }
-    } 
+    if(termBuffer.length < newSize){
+      // Not big enough; create a new array with slight
+      // over allocation and preserve content
+      final char[] newCharBuffer = new char[ArrayUtil.oversize(newSize, RamUsageEstimator.NUM_BYTES_CHAR)];
+      System.arraycopy(termBuffer, 0, newCharBuffer, 0, termBuffer.length);
+      termBuffer = newCharBuffer;
+    }
     return termBuffer;   
   }
 
@@ -100,16 +95,11 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   }
   
   private void growTermBuffer(int newSize) {
-    if (termBuffer == null) {
-      // The buffer is always at least MIN_BUFFER_SIZE
-      termBuffer = new char[ArrayUtil.oversize(newSize < MIN_BUFFER_SIZE ? MIN_BUFFER_SIZE : newSize, RamUsageEstimator.NUM_BYTES_CHAR)];   
-    } else {
-      if(termBuffer.length < newSize){
-        // Not big enough; create a new array with slight
-        // over allocation:
-        termBuffer = new char[ArrayUtil.oversize(newSize, RamUsageEstimator.NUM_BYTES_CHAR)];
-      }
-    } 
+    if(termBuffer.length < newSize){
+      // Not big enough; create a new array with slight
+      // over allocation:
+      termBuffer = new char[ArrayUtil.oversize(newSize, RamUsageEstimator.NUM_BYTES_CHAR)];
+    }
   }
   
   @Deprecated
@@ -209,9 +199,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   public Object clone() {
     CharTermAttributeImpl t = (CharTermAttributeImpl)super.clone();
     // Do a deep clone
-    if (termBuffer != null) {
-      t.termBuffer = termBuffer.clone();
-    }
+    t.termBuffer = termBuffer.clone();
     return t;
   }
   
