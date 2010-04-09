@@ -112,10 +112,14 @@ import org.apache.lucene.util.AttributeImpl;
   <li>When caching a reusable token, clone it. When injecting a cached token into a stream that can be reset, clone it again.</li>
   </ul>
   </p>
-
+  <p>
+  <b>Please note:</b> With Lucene 3.1, the <code>{@linkplain #toString toString()}</code> method had to be changed to match the
+  {@link CharSequence} interface introduced by the interface {@link org.apache.lucene.analysis.tokenattributes.CharTermAttribute}.
+  This method now only prints the term text, no additional information anymore.
+  </p>
   @see org.apache.lucene.index.Payload
 */
-// TODO: change superclass to CharTermAttribute in 4.0!
+// TODO: change superclass to CharTermAttribute in 4.0! Maybe deprecate the whole class?
 public class Token extends TermAttributeImpl 
                    implements TypeAttribute, PositionIncrementAttribute,
                               FlagsAttribute, OffsetAttribute, PayloadAttribute {
@@ -349,19 +353,6 @@ public class Token extends TermAttributeImpl
     this.payload = payload;
   }
   
-  @Override
-  public String toString() {
-    final StringBuilder sb = new StringBuilder();
-    sb.append('(').append(super.toString()).append(',')
-      .append(startOffset).append(',').append(endOffset);
-    if (!"word".equals(type))
-      sb.append(",type=").append(type);
-    if (positionIncrement != 1)
-      sb.append(",posIncr=").append(positionIncrement);
-    sb.append(')');
-    return sb.toString();
-  }
-
   /** Resets the term text, payload, flags, and positionIncrement,
    * startOffset, endOffset and token type to default.
    */

@@ -36,6 +36,8 @@ public class TestToken extends LuceneTestCase {
     char[] content = "hello".toCharArray();
     t.setTermBuffer(content, 0, content.length);
     assertNotSame(t.termBuffer(), content);
+    assertEquals(0, t.startOffset());
+    assertEquals(0, t.endOffset());
     assertEquals("hello", t.term());
     assertEquals("word", t.type());
     assertEquals(0, t.getFlags());
@@ -43,20 +45,28 @@ public class TestToken extends LuceneTestCase {
     t = new Token(6, 22);
     t.setTermBuffer(content, 0, content.length);
     assertEquals("hello", t.term());
-    assertEquals("(hello,6,22)", t.toString());
+    assertEquals("hello", t.toString());
+    assertEquals(6, t.startOffset());
+    assertEquals(22, t.endOffset());
     assertEquals("word", t.type());
     assertEquals(0, t.getFlags());
 
     t = new Token(6, 22, 7);
     t.setTermBuffer(content, 0, content.length);
     assertEquals("hello", t.term());
-    assertEquals("(hello,6,22)", t.toString());
+    assertEquals("hello", t.toString());
+    assertEquals(6, t.startOffset());
+    assertEquals(22, t.endOffset());
+    assertEquals("word", t.type());
     assertEquals(7, t.getFlags());
 
     t = new Token(6, 22, "junk");
     t.setTermBuffer(content, 0, content.length);
     assertEquals("hello", t.term());
-    assertEquals("(hello,6,22,type=junk)", t.toString());
+    assertEquals("hello", t.toString());
+    assertEquals(6, t.startOffset());
+    assertEquals(22, t.endOffset());
+    assertEquals("junk", t.type());
     assertEquals(0, t.getFlags());
   }
 
@@ -142,10 +152,10 @@ public class TestToken extends LuceneTestCase {
     char[] b = {'a', 'l', 'o', 'h', 'a'};
     Token t = new Token("", 0, 5);
     t.setTermBuffer(b, 0, 5);
-    assertEquals("(aloha,0,5)", t.toString());
+    assertEquals("aloha", t.toString());
 
     t.setTermBuffer("hi there");
-    assertEquals("(hi there,0,5)", t.toString());
+    assertEquals("hi there", t.toString());
   }
 
   public void testTermBufferEquals() throws Exception {

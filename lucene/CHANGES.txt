@@ -94,6 +94,13 @@ Changes in backwards compatibility policy
   FSDirectory.FSIndexInput. Anyone extending this class will have to
   fix their code on upgrading. (Earwin Burrfoot via Mike McCandless)
 
+* LUCENE-2302: The new interface for term attributes, CharTermAttribute,
+  now implements CharSequence. This requires the toString() methods of
+  CharTermAttribute, deprecated TermAttribute, and Token to return only
+  the term text and no other attribute contents.
+  TODO: Point to new attribute inspection API coming with LUCENE-2374.
+  (Uwe Schindler, Robert Muir)
+
 Changes in runtime behavior
 
 * LUCENE-1923: Made IndexReader.toString() produce something
@@ -185,6 +192,17 @@ API Changes
 * LUCENE-1458, LUCENE-2111: IndexReader now directly exposes its
   deleted docs (getDeletedDocs), providing a new Bits interface to
   directly query by doc ID.
+
+* LUCENE-2302: Deprecated TermAttribute and replaced by a new
+  CharTermAttribute. The change is backwards compatible, so
+  mixed new/old TokenStreams all work on the same char[] buffer
+  independent of which interface they use. CharTermAttribute
+  has shorter method names and implements CharSequence and
+  Appendable. This allows usage like Java's StringBuilder in
+  addition to direct char[] access. Also terms can directly be
+  used in places where CharSequence is allowed (e.g. regular
+  expressions).
+  (Uwe Schindler, Robert Muir)
 
 Bug fixes
 
