@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.MockRAMDirectory;
@@ -123,12 +123,12 @@ public class TestTermVectorsReader extends LuceneTestCase {
   private class MyTokenStream extends TokenStream {
     int tokenUpto;
     
-    TermAttribute termAtt;
+    CharTermAttribute termAtt;
     PositionIncrementAttribute posIncrAtt;
     OffsetAttribute offsetAtt;
     
     public MyTokenStream() {
-      termAtt = addAttribute(TermAttribute.class);
+      termAtt = addAttribute(CharTermAttribute.class);
       posIncrAtt = addAttribute(PositionIncrementAttribute.class);
       offsetAtt = addAttribute(OffsetAttribute.class);
     }
@@ -140,7 +140,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
       else {
         final TestToken testToken = tokens[tokenUpto++];
         clearAttributes();
-        termAtt.setTermBuffer(testToken.text);
+        termAtt.append(testToken.text);
         offsetAtt.setOffset(testToken.startOffset, testToken.endOffset);
         if (tokenUpto > 1) {
           posIncrAtt.setPositionIncrement(testToken.pos - tokens[tokenUpto-2].pos);

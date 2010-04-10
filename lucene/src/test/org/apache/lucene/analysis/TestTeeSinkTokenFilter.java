@@ -19,7 +19,7 @@ package org.apache.lucene.analysis;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.English;
 import java.io.IOException;
@@ -59,16 +59,16 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
   static final TeeSinkTokenFilter.SinkFilter theFilter = new TeeSinkTokenFilter.SinkFilter() {
     @Override
     public boolean accept(AttributeSource a) {
-      TermAttribute termAtt = a.getAttribute(TermAttribute.class);
-      return termAtt.term().equalsIgnoreCase("The");
+      CharTermAttribute termAtt = a.getAttribute(CharTermAttribute.class);
+      return termAtt.toString().equalsIgnoreCase("The");
     }
   };
 
   static final TeeSinkTokenFilter.SinkFilter dogFilter = new TeeSinkTokenFilter.SinkFilter() {
     @Override
     public boolean accept(AttributeSource a) {
-      TermAttribute termAtt = a.getAttribute(TermAttribute.class);
-      return termAtt.term().equalsIgnoreCase("Dogs");
+      CharTermAttribute termAtt = a.getAttribute(CharTermAttribute.class);
+      return termAtt.toString().equalsIgnoreCase("Dogs");
     }
   };
 
@@ -135,8 +135,8 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
       TokenStream sink = teeStream.newSinkTokenStream(new ModuloSinkFilter(100));
       teeStream.consumeAllTokens();
       TokenStream stream = new ModuloTokenFilter(new StandardFilter(new StandardTokenizer(TEST_VERSION_CURRENT, new StringReader(buffer.toString()))), 100);
-      TermAttribute tfTok = stream.addAttribute(TermAttribute.class);
-      TermAttribute sinkTok = sink.addAttribute(TermAttribute.class);
+      CharTermAttribute tfTok = stream.addAttribute(CharTermAttribute.class);
+      CharTermAttribute sinkTok = sink.addAttribute(CharTermAttribute.class);
       for (int i=0; stream.incrementToken(); i++) {
         assertTrue(sink.incrementToken());
         assertTrue(tfTok + " is not equal to " + sinkTok + " at token: " + i, tfTok.equals(sinkTok) == true);

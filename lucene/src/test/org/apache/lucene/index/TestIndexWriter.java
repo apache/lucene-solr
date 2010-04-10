@@ -46,7 +46,7 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -3482,7 +3482,7 @@ public class TestIndexWriter extends LuceneTestCase {
   // LUCENE-1255
   public void testNegativePositions() throws Throwable {
     final TokenStream tokens = new TokenStream() {
-      final TermAttribute termAtt = addAttribute(TermAttribute.class);
+      final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
       final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
       
       final Iterator<String> terms = Arrays.asList("a","b","c").iterator();
@@ -3492,7 +3492,7 @@ public class TestIndexWriter extends LuceneTestCase {
       public boolean incrementToken() {
         if (!terms.hasNext()) return false;
         clearAttributes();
-        termAtt.setTermBuffer( terms.next());
+        termAtt.append(terms.next());
         posIncrAtt.setPositionIncrement(first ? 0 : 1);
         first = false;
         return true;

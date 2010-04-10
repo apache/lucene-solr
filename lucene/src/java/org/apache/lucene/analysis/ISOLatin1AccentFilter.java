@@ -1,7 +1,5 @@
 package org.apache.lucene.analysis;
 
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,6 +17,8 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+
 /**
  * A filter that replaces accented characters in the ISO Latin 1 character set 
  * (ISO-8859-1) by their unaccented equivalent. The case will not be altered.
@@ -35,25 +35,24 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 public final class ISOLatin1AccentFilter extends TokenFilter {
   public ISOLatin1AccentFilter(TokenStream input) {
     super(input);
-    termAtt = addAttribute(TermAttribute.class);
   }
 
   private char[] output = new char[256];
   private int outputPos;
-  private TermAttribute termAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     
   @Override
   public final boolean incrementToken() throws java.io.IOException {    
     if (input.incrementToken()) {
-      final char[] buffer = termAtt.termBuffer();
-      final int length = termAtt.termLength();
+      final char[] buffer = termAtt.buffer();
+      final int length = termAtt.length();
       // If no characters actually require rewriting then we
       // just return token as-is:
       for(int i=0;i<length;i++) {
         final char c = buffer[i];
         if (c >= '\u00c0' && c <= '\uFB06') {
           removeAccents(buffer, length);
-          termAtt.setTermBuffer(output, 0, outputPos);
+          termAtt.copyBuffer(output, 0, outputPos);
           break;
         }
       }

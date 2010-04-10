@@ -40,7 +40,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
@@ -82,7 +82,7 @@ public class TestQueryParser extends LocalizedTestCase {
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 
   public static class QPTestFilter extends TokenFilter {
-    TermAttribute termAtt;
+    CharTermAttribute termAtt;
     OffsetAttribute offsetAtt;
         
     /**
@@ -91,7 +91,7 @@ public class TestQueryParser extends LocalizedTestCase {
      */
     public QPTestFilter(TokenStream in) {
       super(in);
-      termAtt = addAttribute(TermAttribute.class);
+      termAtt = addAttribute(CharTermAttribute.class);
       offsetAtt = addAttribute(OffsetAttribute.class);
     }
 
@@ -103,19 +103,19 @@ public class TestQueryParser extends LocalizedTestCase {
       if (inPhrase) {
         inPhrase = false;
         clearAttributes();
-        termAtt.setTermBuffer("phrase2");
+        termAtt.append("phrase2");
         offsetAtt.setOffset(savedStart, savedEnd);
         return true;
       } else
         while (input.incrementToken()) {
-          if (termAtt.term().equals("phrase")) {
+          if (termAtt.toString().equals("phrase")) {
             inPhrase = true;
             savedStart = offsetAtt.startOffset();
             savedEnd = offsetAtt.endOffset();
-            termAtt.setTermBuffer("phrase1");
+            termAtt.setEmpty().append("phrase1");
             offsetAtt.setOffset(savedStart, savedEnd);
             return true;
-          } else if (!termAtt.term().equals("stop"))
+          } else if (!termAtt.toString().equals("stop"))
             return true;
         }
       return false;

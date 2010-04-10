@@ -97,6 +97,10 @@ Changes in backwards compatibility policy
   TODO: Point to new attribute inspection API coming with LUCENE-2374.
   (Uwe Schindler, Robert Muir)
 
+* LUCENE-2372: StandardAnalyzer, KeywordAnalyzer, PerFieldAnalyzerWrapper
+  are now final.  Also removed the now obsolete and deprecated
+  Analyzer.setOverridesTokenStreamMethod().  (Uwe Schindler)
+
 Changes in runtime behavior
 
 * LUCENE-1923: Made IndexReader.toString() produce something

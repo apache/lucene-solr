@@ -120,6 +120,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     String[] y = StandardTokenizer.TOKEN_TYPES;
   }
 
+  /* StandardAnalyzer was made final in 3.1:
   private static class MyStandardAnalyzer extends StandardAnalyzer {
     public MyStandardAnalyzer() {
       super(org.apache.lucene.util.Version.LUCENE_CURRENT);
@@ -139,6 +140,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     assertTrue(ts.incrementToken());
     assertFalse(ts.incrementToken());
   }
+  */
 }
 
 class PayloadSetter extends TokenFilter {

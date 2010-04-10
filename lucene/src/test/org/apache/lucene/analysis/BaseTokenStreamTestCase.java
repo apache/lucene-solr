@@ -83,8 +83,8 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     assertNotNull(output);
     CheckClearAttributesAttribute checkClearAtt = ts.addAttribute(CheckClearAttributesAttribute.class);
     
-    assertTrue("has no TermAttribute", ts.hasAttribute(TermAttribute.class));
-    TermAttribute termAtt = ts.getAttribute(TermAttribute.class);
+    assertTrue("has no CharTermAttribute", ts.hasAttribute(CharTermAttribute.class));
+    CharTermAttribute termAtt = ts.getAttribute(CharTermAttribute.class);
     
     OffsetAttribute offsetAtt = null;
     if (startOffsets != null || endOffsets != null || finalOffset != null) {
@@ -108,7 +108,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     for (int i = 0; i < output.length; i++) {
       // extra safety to enforce, that the state is not preserved and also assign bogus values
       ts.clearAttributes();
-      termAtt.setTermBuffer("bogusTerm");
+      termAtt.setEmpty().append("bogusTerm");
       if (offsetAtt != null) offsetAtt.setOffset(14584724,24683243);
       if (typeAtt != null) typeAtt.setType("bogusType");
       if (posIncrAtt != null) posIncrAtt.setPositionIncrement(45987657);
@@ -117,7 +117,7 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
       assertTrue("token "+i+" does not exist", ts.incrementToken());
       assertTrue("clearAttributes() was not called correctly in TokenStream chain", checkClearAtt.getAndResetClearCalled());
       
-      assertEquals("term "+i, output[i], termAtt.term());
+      assertEquals("term "+i, output[i], termAtt.toString());
       if (startOffsets != null)
         assertEquals("startOffset "+i, startOffsets[i], offsetAtt.startOffset());
       if (endOffsets != null)

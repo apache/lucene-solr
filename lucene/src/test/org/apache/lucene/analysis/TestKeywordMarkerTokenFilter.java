@@ -6,7 +6,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.junit.Test;
 
 /**
@@ -53,20 +53,20 @@ public class TestKeywordMarkerTokenFilter extends BaseTokenStreamTestCase {
 
   public static class LowerCaseFilterMock extends TokenFilter {
 
-    private TermAttribute termAtt;
-    private KeywordAttribute keywordAttr;
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
 
     public LowerCaseFilterMock(TokenStream in) {
       super(in);
-      termAtt = addAttribute(TermAttribute.class);
-      keywordAttr = addAttribute(KeywordAttribute.class);
     }
 
     @Override
     public boolean incrementToken() throws IOException {
       if (input.incrementToken()) {
-        if (!keywordAttr.isKeyword())
-          termAtt.setTermBuffer(termAtt.term().toLowerCase());
+        if (!keywordAttr.isKeyword()) {
+          final String term = termAtt.toString().toLowerCase();
+          termAtt.setEmpty().append(term);
+        }
         return true;
       }
       return false;

@@ -33,7 +33,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -538,7 +538,7 @@ public class TestPayloads extends LuceneTestCase {
         private ByteArrayPool pool;
         private String term;
 
-        TermAttribute termAtt;
+        CharTermAttribute termAtt;
         PayloadAttribute payloadAtt;
         
         PoolingPayloadTokenStream(ByteArrayPool pool) {
@@ -548,7 +548,7 @@ public class TestPayloads extends LuceneTestCase {
             term = pool.bytesToString(payload);
             first = true;
             payloadAtt = addAttribute(PayloadAttribute.class);
-            termAtt = addAttribute(TermAttribute.class);
+            termAtt = addAttribute(CharTermAttribute.class);
         }
         
         @Override
@@ -556,7 +556,7 @@ public class TestPayloads extends LuceneTestCase {
             if (!first) return false;
             first = false;
             clearAttributes();
-            termAtt.setTermBuffer(term);
+            termAtt.append(term);
             payloadAtt.setPayload(new Payload(payload));
             return true;
         }

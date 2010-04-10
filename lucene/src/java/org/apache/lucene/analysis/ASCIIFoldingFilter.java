@@ -19,7 +19,7 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -61,18 +61,17 @@ public final class ASCIIFoldingFilter extends TokenFilter {
   public ASCIIFoldingFilter(TokenStream input)
   {
     super(input);
-    termAtt = addAttribute(TermAttribute.class);
   }
 
   private char[] output = new char[512];
   private int outputPos;
-  private TermAttribute termAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
   @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      final char[] buffer = termAtt.termBuffer();
-      final int length = termAtt.termLength();
+      final char[] buffer = termAtt.buffer();
+      final int length = termAtt.length();
 
       // If no characters actually require rewriting then we
       // just return token as-is:
@@ -81,7 +80,7 @@ public final class ASCIIFoldingFilter extends TokenFilter {
         if (c >= '\u0080')
         {
           foldToASCII(buffer, length);
-          termAtt.setTermBuffer(output, 0, outputPos);
+          termAtt.copyBuffer(output, 0, outputPos);
           break;
         }
       }

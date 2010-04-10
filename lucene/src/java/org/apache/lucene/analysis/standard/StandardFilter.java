@@ -19,27 +19,24 @@ package org.apache.lucene.analysis.standard;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /** Normalizes tokens extracted with {@link StandardTokenizer}. */
 
 public final class StandardFilter extends TokenFilter {
 
-
   /** Construct filtering <i>in</i>. */
   public StandardFilter(TokenStream in) {
     super(in);
-    termAtt = addAttribute(TermAttribute.class);
-    typeAtt = addAttribute(TypeAttribute.class);
   }
 
   private static final String APOSTROPHE_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.APOSTROPHE];
   private static final String ACRONYM_TYPE = StandardTokenizer.TOKEN_TYPES[StandardTokenizer.ACRONYM];
 
   // this filters uses attribute type
-  private final TypeAttribute typeAtt;
-  private final TermAttribute termAtt;
+  private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   
   /** Returns the next token in the stream, or null at EOS.
    * <p>Removes <tt>'s</tt> from the end of words.
@@ -51,16 +48,16 @@ public final class StandardFilter extends TokenFilter {
       return false;
     }
 
-    char[] buffer = termAtt.termBuffer();
-    final int bufferLength = termAtt.termLength();
+    final char[] buffer = termAtt.buffer();
+    final int bufferLength = termAtt.length();
     final String type = typeAtt.type();
 
     if (type == APOSTROPHE_TYPE &&      // remove 's
-  bufferLength >= 2 &&
+        bufferLength >= 2 &&
         buffer[bufferLength-2] == '\'' &&
         (buffer[bufferLength-1] == 's' || buffer[bufferLength-1] == 'S')) {
       // Strip last 2 characters off
-      termAtt.setTermLength(bufferLength - 2);
+      termAtt.setLength(bufferLength - 2);
     } else if (type == ACRONYM_TYPE) {      // remove dots
       int upto = 0;
       for(int i=0;i<bufferLength;i++) {
@@ -68,7 +65,7 @@ public final class StandardFilter extends TokenFilter {
         if (c != '.')
           buffer[upto++] = c;
       }
-      termAtt.setTermLength(upto);
+      termAtt.setLength(upto);
     }
 
     return true;

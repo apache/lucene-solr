@@ -244,8 +244,8 @@ public class TestToken extends LuceneTestCase {
     assertTrue("TypeAttribute is not implemented by SenselessAttributeImpl",
       ts.addAttribute(SenselessAttribute.class) instanceof SenselessAttributeImpl);
     
-    assertTrue("TermAttribute is not implemented by Token",
-      ts.addAttribute(TermAttribute.class) instanceof Token);
+    assertTrue("CharTermAttribute is not implemented by Token",
+      ts.addAttribute(CharTermAttribute.class) instanceof Token);
     assertTrue("OffsetAttribute is not implemented by Token",
       ts.addAttribute(OffsetAttribute.class) instanceof Token);
     assertTrue("FlagsAttribute is not implemented by Token",

@@ -17,7 +17,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
@@ -522,7 +522,7 @@ public class QueryParser implements QueryParserConstants {
       source = analyzer.tokenStream(field, new StringReader(queryText));
     }
     CachingTokenFilter buffer = new CachingTokenFilter(source);
-    TermAttribute termAtt = null;
+    CharTermAttribute termAtt = null;
     PositionIncrementAttribute posIncrAtt = null;
     int numTokens = 0;
 
@@ -534,8 +534,8 @@ public class QueryParser implements QueryParserConstants {
       // success==false if we hit an exception
     }
     if (success) {
-      if (buffer.hasAttribute(TermAttribute.class)) {
-        termAtt = buffer.getAttribute(TermAttribute.class);
+      if (buffer.hasAttribute(CharTermAttribute.class)) {
+        termAtt = buffer.getAttribute(CharTermAttribute.class);
       }
       if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
         posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
@@ -581,7 +581,7 @@ public class QueryParser implements QueryParserConstants {
       try {
         boolean hasNext = buffer.incrementToken();
         assert hasNext == true;
-        term = termAtt.term();
+        term = termAtt.toString();
       } catch (IOException e) {
         // safe to ignore, because we know the number of tokens
       }
@@ -596,7 +596,7 @@ public class QueryParser implements QueryParserConstants {
             try {
               boolean hasNext = buffer.incrementToken();
               assert hasNext == true;
-              term = termAtt.term();
+              term = termAtt.toString();
             } catch (IOException e) {
               // safe to ignore, because we know the number of tokens
             }
@@ -619,7 +619,7 @@ public class QueryParser implements QueryParserConstants {
             try {
               boolean hasNext = buffer.incrementToken();
               assert hasNext == true;
-              term = termAtt.term();
+              term = termAtt.toString();
               if (posIncrAtt != null) {
                 positionIncrement = posIncrAtt.getPositionIncrement();
               }
@@ -659,7 +659,7 @@ public class QueryParser implements QueryParserConstants {
           try {
             boolean hasNext = buffer.incrementToken();
             assert hasNext == true;
-            term = termAtt.term();
+            term = termAtt.toString();
             if (posIncrAtt != null) {
               positionIncrement = posIncrAtt.getPositionIncrement();
             }

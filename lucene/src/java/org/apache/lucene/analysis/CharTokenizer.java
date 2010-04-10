@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.CharacterUtils;
 import org.apache.lucene.util.Version;
@@ -78,10 +78,7 @@ public abstract class CharTokenizer extends Tokenizer {
   public CharTokenizer(Version matchVersion, Reader input) {
     super(input);
     charUtils = CharacterUtils.getInstance(matchVersion);
-    offsetAtt = addAttribute(OffsetAttribute.class);
-    termAtt = addAttribute(TermAttribute.class);
     useOldAPI = useOldAPI(matchVersion);
-    ioBuffer = CharacterUtils.newCharacterBuffer(IO_BUFFER_SIZE);
 
   }
   
@@ -99,10 +96,7 @@ public abstract class CharTokenizer extends Tokenizer {
       Reader input) {
     super(source, input);
     charUtils = CharacterUtils.getInstance(matchVersion);
-    offsetAtt = addAttribute(OffsetAttribute.class);
-    termAtt = addAttribute(TermAttribute.class);
     useOldAPI = useOldAPI(matchVersion);
-    ioBuffer = CharacterUtils.newCharacterBuffer(IO_BUFFER_SIZE);
   }
   
   /**
@@ -119,10 +113,7 @@ public abstract class CharTokenizer extends Tokenizer {
       Reader input) {
     super(factory, input);
     charUtils = CharacterUtils.getInstance(matchVersion);
-    offsetAtt = addAttribute(OffsetAttribute.class);
-    termAtt = addAttribute(TermAttribute.class);
     useOldAPI = useOldAPI(matchVersion);
-    ioBuffer = CharacterUtils.newCharacterBuffer(IO_BUFFER_SIZE);
   }
   
   /**
@@ -164,11 +155,11 @@ public abstract class CharTokenizer extends Tokenizer {
   private static final int MAX_WORD_LEN = 255;
   private static final int IO_BUFFER_SIZE = 4096;
   
-  private final TermAttribute termAtt;
-  private final OffsetAttribute offsetAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);;
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   
   private final CharacterUtils charUtils;
-  private final CharacterBuffer ioBuffer;
+  private final CharacterBuffer ioBuffer = CharacterUtils.newCharacterBuffer(IO_BUFFER_SIZE);
   
   /**
    * @deprecated this will be removed in lucene 4.0
@@ -275,7 +266,7 @@ public abstract class CharTokenizer extends Tokenizer {
       return incrementTokenOld();
     int length = 0;
     int start = bufferIndex;
-    char[] buffer = termAtt.termBuffer();
+    char[] buffer = termAtt.buffer();
     while (true) {
       if (bufferIndex >= dataLen) {
         offset += dataLen;
@@ -297,7 +288,7 @@ public abstract class CharTokenizer extends Tokenizer {
         if (length == 0)                 // start of token
           start = offset + bufferIndex - 1;
         else if (length >= buffer.length-1) // check if a supplementary could run out of bounds
-          buffer = termAtt.resizeTermBuffer(2+length); // make sure a supplementary fits in the buffer
+          buffer = termAtt.resizeBuffer(2+length); // make sure a supplementary fits in the buffer
         length += Character.toChars(normalize(c), buffer, length); // buffer it, normalized
         if (length >= MAX_WORD_LEN) // buffer overflow! make sure to check for >= surrogate pair could break == test
           break;
@@ -305,7 +296,7 @@ public abstract class CharTokenizer extends Tokenizer {
         break;                           // return 'em
     }
 
-    termAtt.setTermLength(length);
+    termAtt.setLength(length);
     offsetAtt.setOffset(correctOffset(start), correctOffset(start+length));
     return true;
     
@@ -320,7 +311,7 @@ public abstract class CharTokenizer extends Tokenizer {
   private boolean incrementTokenOld() throws IOException {
     int length = 0;
     int start = bufferIndex;
-    char[] buffer = termAtt.termBuffer();
+    char[] buffer = termAtt.buffer();
     final char[] oldIoBuffer = ioBuffer.getBuffer();
     while (true) {
 
@@ -344,7 +335,7 @@ public abstract class CharTokenizer extends Tokenizer {
         if (length == 0)                 // start of token
           start = offset + bufferIndex - 1;
         else if (length == buffer.length)
-          buffer = termAtt.resizeTermBuffer(1+length);
+          buffer = termAtt.resizeBuffer(1+length);
 
         buffer[length++] = normalize(c); // buffer it, normalized
 
@@ -355,7 +346,7 @@ public abstract class CharTokenizer extends Tokenizer {
         break;                           // return 'em
     }
 
-    termAtt.setTermLength(length);
+    termAtt.setLength(length);
     offsetAtt.setOffset(correctOffset(start), correctOffset(start+length));
     return true;
   }  

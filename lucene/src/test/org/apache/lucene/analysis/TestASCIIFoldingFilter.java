@@ -17,7 +17,7 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import java.io.StringReader;
 import java.util.List;
 import java.util.ArrayList;
@@ -33,7 +33,7 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
       +" ð ñ ò ó ô õ ö ø œ ß þ ù ú û ü ý ÿ ﬁ ﬂ"));
     ASCIIFoldingFilter filter = new ASCIIFoldingFilter(stream);
 
-    TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
 
     assertTermEquals("Des", filter, termAtt);
     assertTermEquals("mot", filter, termAtt);
@@ -1890,7 +1890,7 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
 
     TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(inputText.toString()));
     ASCIIFoldingFilter filter = new ASCIIFoldingFilter(stream);
-    TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     Iterator<String> expectedIter = expectedOutputTokens.iterator();
     while (expectedIter.hasNext()) {
       assertTermEquals(expectedIter.next(), filter, termAtt);
@@ -1898,8 +1898,8 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
     assertFalse(filter.incrementToken());
   }
   
-  void assertTermEquals(String expected, TokenStream stream, TermAttribute termAtt) throws Exception {
+  void assertTermEquals(String expected, TokenStream stream, CharTermAttribute termAtt) throws Exception {
     assertTrue(stream.incrementToken());
-    assertEquals(expected, termAtt.term());
+    assertEquals(expected, termAtt.toString());
   }
 }

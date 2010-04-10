@@ -18,7 +18,7 @@ package org.apache.lucene.analysis;
  */
 
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Version;
 
 import java.io.StringReader;
@@ -51,10 +51,10 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
     StringReader reader = new StringReader("This is a test of the english stop analyzer");
     TokenStream stream = stop.tokenStream("test", reader);
     assertTrue(stream != null);
-    TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
     
     while (stream.incrementToken()) {
-      assertFalse(inValidTokens.contains(termAtt.term()));
+      assertFalse(inValidTokens.contains(termAtt.toString()));
     }
   }
 
@@ -67,11 +67,11 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
     StringReader reader = new StringReader("This is a good test of the english stop analyzer");
     TokenStream stream = newStop.tokenStream("test", reader);
     assertNotNull(stream);
-    TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
     PositionIncrementAttribute posIncrAtt = stream.addAttribute(PositionIncrementAttribute.class);
     
     while (stream.incrementToken()) {
-      String text = termAtt.term();
+      String text = termAtt.toString();
       assertFalse(stopWordsSet.contains(text));
       assertEquals(1,posIncrAtt.getPositionIncrement()); // in 2.4 stop tokenizer does not apply increments.
     }
@@ -88,11 +88,11 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
     TokenStream stream = newStop.tokenStream("test", reader);
     assertNotNull(stream);
     int i = 0;
-    TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
     PositionIncrementAttribute posIncrAtt = stream.addAttribute(PositionIncrementAttribute.class);
 
     while (stream.incrementToken()) {
-      String text = termAtt.term();
+      String text = termAtt.toString();
       assertFalse(stopWordsSet.contains(text));
       assertEquals(expectedIncr[i++],posIncrAtt.getPositionIncrement());
     }

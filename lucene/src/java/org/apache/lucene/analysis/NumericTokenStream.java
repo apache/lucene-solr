@@ -26,7 +26,6 @@ import org.apache.lucene.document.NumericField; // for javadocs
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 import org.apache.lucene.search.NumericRangeFilter; // for javadocs
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
@@ -118,11 +117,14 @@ public final class NumericTokenStream extends TokenStream {
       this.delegate = delegate;
     }
   
-    @Override
+    @Override @SuppressWarnings("deprecation")
     public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
       if (attClass == NumericTermAttribute.class)
         return new NumericTermAttributeImpl(ts);
-      if (attClass.isAssignableFrom(CharTermAttribute.class) || attClass.isAssignableFrom(TermAttribute.class))
+      if (attClass.isAssignableFrom(CharTermAttribute.class) ||
+          // TODO: remove in 4.0 (deprecated class, also remove the suppress above):
+          attClass.isAssignableFrom(org.apache.lucene.analysis.tokenattributes.TermAttribute.class)
+      )
         throw new IllegalArgumentException("NumericTokenStream does not support CharTermAttribute/TermAttribute.");
       return delegate.createAttributeInstance(attClass);
     }

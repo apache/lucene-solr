@@ -84,28 +84,6 @@ public abstract class Analyzer implements Closeable {
     }
   }
 
-  private static final VirtualMethod<Analyzer> tokenStreamMethod =
-    new VirtualMethod<Analyzer>(Analyzer.class, "tokenStream", String.class, Reader.class);
-  private static final VirtualMethod<Analyzer> reusableTokenStreamMethod =
-    new VirtualMethod<Analyzer>(Analyzer.class, "reusableTokenStream", String.class, Reader.class);
-
-  /** This field contains if the {@link #tokenStream} method was overridden in a
-   * more far away subclass of {@code Analyzer} on the current instance's inheritance path.
-   * If this field is {@code true}, {@link #reusableTokenStream} should delegate to {@link #tokenStream}
-   * instead of using the own implementation.
-   * @deprecated Please declare all implementations of {@link #reusableTokenStream} and {@link #tokenStream}
-   * as {@code final}.
-   */
-  @Deprecated
-  protected final boolean overridesTokenStreamMethod =
-    VirtualMethod.compareImplementationDistance(this.getClass(), tokenStreamMethod, reusableTokenStreamMethod) > 0;
-
-  /** @deprecated This is a no-op since Lucene 3.1. */
-  @Deprecated
-  protected void setOverridesTokenStreamMethod(Class<? extends Analyzer> baseClass) {
-  }
-
-
   /**
    * Invoked before indexing a Fieldable instance if
    * terms have already been added to that field.  This allows custom

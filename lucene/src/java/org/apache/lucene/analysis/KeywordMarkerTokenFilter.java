@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Version;
 
 /**
@@ -33,8 +33,8 @@ import org.apache.lucene.util.Version;
  */
 public final class KeywordMarkerTokenFilter extends TokenFilter {
 
-  private final KeywordAttribute keywordAttr;
-  private final TermAttribute termAtt;
+  private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final CharArraySet keywordSet;
 
   /**
@@ -50,8 +50,6 @@ public final class KeywordMarkerTokenFilter extends TokenFilter {
   public KeywordMarkerTokenFilter(final TokenStream in,
       final CharArraySet keywordSet) {
     super(in);
-    termAtt = addAttribute(TermAttribute.class);
-    keywordAttr = addAttribute(KeywordAttribute.class);
     this.keywordSet = keywordSet;
   }
 
@@ -73,8 +71,8 @@ public final class KeywordMarkerTokenFilter extends TokenFilter {
   @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      keywordAttr.setKeyword(keywordSet.contains(termAtt.termBuffer(), 0,
-          termAtt.termLength()));
+      keywordAttr.setKeyword(keywordSet.contains(termAtt.buffer(), 0,
+          termAtt.length()));
       return true;
     } else
       return false;

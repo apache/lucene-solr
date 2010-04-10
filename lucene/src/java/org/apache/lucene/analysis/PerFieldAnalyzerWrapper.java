@@ -44,7 +44,7 @@ import java.util.HashMap;
  * <p>A PerFieldAnalyzerWrapper can be used like any other analyzer, for both indexing
  * and query parsing.
  */
-public class PerFieldAnalyzerWrapper extends Analyzer {
+public final class PerFieldAnalyzerWrapper extends Analyzer {
   private Analyzer defaultAnalyzer;
   private Map<String,Analyzer> analyzerMap = new HashMap<String,Analyzer>();
 
@@ -99,12 +99,6 @@ public class PerFieldAnalyzerWrapper extends Analyzer {
   
   @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader) throws IOException {
-    if (overridesTokenStreamMethod) {
-      // LUCENE-1678: force fallback to tokenStream() if we
-      // have been subclassed and that subclass overrides
-      // tokenStream but not reusableTokenStream
-      return tokenStream(fieldName, reader);
-    }
     Analyzer analyzer = analyzerMap.get(fieldName);
     if (analyzer == null)
       analyzer = defaultAnalyzer;
