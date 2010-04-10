@@ -146,6 +146,8 @@ Optimizations
   are necessary for the current log level.
   (Fuad Efendi and hossman)
 
+* SOLR-1874: Optimize PatternReplaceFilter for better performance. (rmuir, uschindler)
+
 Bug Fixes
 ----------------------
 
