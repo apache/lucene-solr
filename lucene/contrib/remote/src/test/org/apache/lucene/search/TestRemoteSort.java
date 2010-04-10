@@ -17,18 +17,13 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
-import java.io.Serializable;
-import java.rmi.Naming;
-import java.rmi.registry.LocateRegistry;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Random;
-
-import junit.framework.Test;
-import junit.framework.TestSuite;
-import junit.textui.TestRunner;
 
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
@@ -38,10 +33,11 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.BytesRef;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * Unit tests for remote sorting code.
@@ -49,39 +45,14 @@ import org.apache.lucene.util._TestUtil;
  * methods and therefore unused members and methodes. 
  */
 
-public class TestRemoteSort extends LuceneTestCase implements Serializable {
+public class TestRemoteSort extends RemoteTestCaseJ4 {
 
-  private Searcher full;
+  private static IndexSearcher full;
   private Query queryX;
   private Query queryY;
   private Query queryA;
   private Query queryF;
   private Sort sort;
-
-
-  public TestRemoteSort (String name) {
-    super (name);
-  }
-
-  public static void main (String[] argv) {
-    if (argv == null || argv.length < 1)
-      TestRunner.run (suite());
-    else if ("server".equals (argv[0])) {
-      TestRemoteSort test = new TestRemoteSort (null);
-      try {
-        test.startServer();
-        Thread.sleep (500000);
-      } catch (Exception e) {
-        System.out.println (e);
-        e.printStackTrace();
-      }
-    }
-  }
-
-  public static Test suite() {
-    return new TestSuite (TestRemoteSort.class);
-  }
-
 
   // document data:
   // the tracer field is used to determine which document was hit
@@ -90,7 +61,7 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
   // the float field to sort by float
   // the string field to sort by string
     // the i18n field includes accented characters for testing locale-specific sorting
-  private String[][] data = new String[][] {
+  private static final String[][] data = new String[][] {
   // tracer  contents         int            float           string   custom   i18n               long            double, 'short', byte, 'custom parser encoding'
   {   "A",   "x a",           "5",           "4f",           "c",     "A-3",   "p\u00EAche",      "10",           "-4.0", "3", "126", "J"},//A, x
   {   "B",   "y a",           "5",           "3.4028235E38", "i",     "B-10",  "HAT",             "1000000000", "40.0", "24", "1", "I"},//B, y
@@ -109,15 +80,14 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
   };
   
   // create an index of all the documents, or just the x, or just the y documents
-  private Searcher getIndex (boolean even, boolean odd)
-  throws IOException {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
     RAMDirectory indexStore = new RAMDirectory ();
     IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
         .setMaxBufferedDocs(2));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(1000);
     for (int i=0; i<data.length; ++i) {
-      if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
         Document doc = new Document();
         doc.add (new Field ("tracer",   data[i][0], Field.Store.YES, Field.Index.NO));
         doc.add (new Field ("contents", data[i][1], Field.Store.NO, Field.Index.ANALYZED));
@@ -133,18 +103,12 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
         if (data[i][11] != null) doc.add (new Field ("parser",     data[i][11], Field.Store.NO, Field.Index.NOT_ANALYZED));
         doc.setBoost(2);  // produce some scores above 1.0
         writer.addDocument (doc);
-      }
     }
     //writer.optimize ();
     writer.close ();
-    IndexSearcher s = new IndexSearcher (indexStore, false);
-    s.setDefaultFieldSortScoring(true, true);
-    return s;
-  }
-
-  private Searcher getFullIndex()
-  throws IOException {
-    return getIndex (true, true);
+    full = new IndexSearcher (indexStore, false);
+    full.setDefaultFieldSortScoring(true, true);
+    startServer(full);
   }
   
   public String getRandomNumberString(int num, int low, int high) {
@@ -177,9 +141,9 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
   }
 
   @Override
-  protected void setUp() throws Exception {
+  @Before
+  public void setUp() throws Exception {
     super.setUp();
-    full = getFullIndex();
     queryX = new TermQuery (new Term ("contents", "x"));
     queryY = new TermQuery (new Term ("contents", "y"));
     queryA = new TermQuery (new Term ("contents", "a"));
@@ -240,8 +204,9 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
   }
 
   // test a variety of sorts using a remote searcher
+  @Test
   public void testRemoteSort() throws Exception {
-    Searchable searcher = getRemote();
+    Searchable searcher = lookupRemote();
     MultiSearcher multi = new MultiSearcher (new Searchable[] { searcher });
     runMultiSorts(multi, true); // this runs on the full index
   }
@@ -271,6 +236,7 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
 
   // test that the relevancy scores are the same even if
   // hits are sorted
+  @Test
   public void testNormalizedScores() throws Exception {
 
     // capture relevancy scores
@@ -279,7 +245,7 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
     HashMap<String,Float> scoresA = getScores (full.search (queryA, null, 1000).scoreDocs, full);
 
     // we'll test searching locally, remote and multi
-    MultiSearcher remote = new MultiSearcher (new Searchable[] { getRemote() });
+    MultiSearcher remote = new MultiSearcher (new Searchable[] { lookupRemote() });
 
     // change sorting and make sure relevancy stays the same
 
@@ -447,32 +413,4 @@ public class TestRemoteSort extends LuceneTestCase implements Serializable {
       }
     }
   }
-
-  private Searchable getRemote () throws Exception {
-    try {
-      return lookupRemote ();
-    } catch (Throwable e) {
-      startServer ();
-      return lookupRemote ();
-    }
-  }
-
-  private Searchable lookupRemote () throws Exception {
-    return (Searchable) Naming.lookup ("//localhost:" + port + "/SortedSearchable");
-  }
-
-  private int port = -1;
-
-  private void startServer () throws Exception {
-    // construct an index
-    port = _TestUtil.getRandomSocketPort();
-    Searcher local = getFullIndex();
-    // local.search (queryA, new Sort());
-
-    // publish it
-    LocateRegistry.createRegistry (port);
-    RemoteSearchable impl = new RemoteSearchable (local);
-    Naming.rebind ("//localhost:" + port + "/SortedSearchable", impl);
-  }
-
 }

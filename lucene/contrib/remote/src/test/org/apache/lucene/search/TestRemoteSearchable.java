@@ -17,46 +17,25 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-import java.rmi.Naming;
-import java.rmi.registry.LocateRegistry;
+import static org.junit.Assert.*;
+
 import java.util.Collections;
 import java.util.Set;
 import java.util.HashSet;
 
-public class TestRemoteSearchable extends LuceneTestCase {
-  public TestRemoteSearchable(String name) {
-    super(name);
-  }
+public class TestRemoteSearchable extends RemoteTestCaseJ4 {
 
-  private static int port = -1;
-
-  private static Searchable getRemote() throws Exception {
-    if (port == -1) {
-      startServer();
-    }
-
-    try {
-      return lookupRemote();
-    } catch (Throwable e) {
-      startServer();
-      return lookupRemote();
-    }
-  }
-
-  private static Searchable lookupRemote() throws Exception {
-    return (Searchable)Naming.lookup("//localhost:" + port + "/Searchable");
-  }
-
-  private static void startServer() throws Exception {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
     // construct an index
     RAMDirectory indexStore = new RAMDirectory();
     IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
@@ -67,18 +46,13 @@ public class TestRemoteSearchable extends LuceneTestCase {
     writer.addDocument(doc);
     writer.optimize();
     writer.close();
-
-    // publish it
-    port = _TestUtil.getRandomSocketPort();
-    LocateRegistry.createRegistry(port);
     Searchable local = new IndexSearcher(indexStore, true);
-    RemoteSearchable impl = new RemoteSearchable(local);
-    Naming.rebind("//localhost:" + port + "/Searchable", impl);
+    startServer(local);
   }
 
   private static void search(Query query) throws Exception {
     // try to search the published index
-    Searchable[] searchables = { getRemote() };
+    Searchable[] searchables = { lookupRemote() };
     Searcher searcher = new MultiSearcher(searchables);
     ScoreDoc[] result = searcher.search(query, null, 1000).scoreDocs;
 
@@ -99,16 +73,19 @@ public class TestRemoteSearchable extends LuceneTestCase {
     assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 1, document.getFields().size() == 1);
   }
 
+  @Test
   public void testTermQuery() throws Exception {
     search(new TermQuery(new Term("test", "test")));
   }
 
+  @Test
   public void testBooleanQuery() throws Exception {
     BooleanQuery query = new BooleanQuery();
     query.add(new TermQuery(new Term("test", "test")), BooleanClause.Occur.MUST);
     search(query);
   }
 
+  @Test
   public void testPhraseQuery() throws Exception {
     PhraseQuery query = new PhraseQuery();
     query.add(new Term("test", "test"));
@@ -117,9 +94,10 @@ public class TestRemoteSearchable extends LuceneTestCase {
   }
 
   // Tests bug fix at http://nagoya.apache.org/bugzilla/show_bug.cgi?id=20290
+  @Test
   public void testQueryFilter() throws Exception {
     // try to search the published index
-    Searchable[] searchables = { getRemote() };
+    Searchable[] searchables = { lookupRemote() };
     Searcher searcher = new MultiSearcher(searchables);
     ScoreDoc[] hits = searcher.search(
           new TermQuery(new Term("test", "text")),
@@ -131,9 +109,10 @@ public class TestRemoteSearchable extends LuceneTestCase {
     assertEquals(0, nohits.length);
   }
 
+  @Test
   public void testConstantScoreQuery() throws Exception {
     // try to search the published index
-    Searchable[] searchables = { getRemote() };
+    Searchable[] searchables = { lookupRemote() };
     Searcher searcher = new MultiSearcher(searchables);
     ScoreDoc[] hits = searcher.search(
           new ConstantScoreQuery(new QueryWrapperFilter(
