@@ -1408,24 +1408,24 @@ public abstract class IndexReader implements Cloneable,Closeable {
 
   private Fields fields;
 
-  /** lucene.internal */
+  /** @lucene.internal */
   void storeFields(Fields fields) {
     this.fields = fields;
   }
 
-  /** lucene.internal */
+  /** @lucene.internal */
   Fields retrieveFields() {
     return fields;
   }
 
   private Bits storedDelDocs;
 
-  /** lucene.internal */
+  /** @lucene.internal */
   void storeDelDocs(Bits delDocs) {
     this.storedDelDocs = delDocs;
   }
 
-  /** lucene.internal */
+  /** @lucene.internal */
   Bits retrieveDelDocs() {
     return storedDelDocs;
   }
