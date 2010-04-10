@@ -92,13 +92,21 @@
   <property name="javacc.home" location="${common.dir}"/>
   <property name="jflex.home" location="${common.dir}"/>
 
-	<path id="jflex.classpath">
+  <path id="jflex.classpath">
     <fileset dir="${jflex.home}/">
-      <include name="**/target/*.jar"/>
-      <include name="**/lib/*.jar"/>
+      <!-- for a JFlex trunk checkout: -->
+      <include name="jflex/target/*.jar"/>
+      <!-- for a JFlex distribution (not yet available): -->
+      <include name="lib/*.jar"/>
     </fileset>
-	</path>
-	
+  </path>
+
+  <path id="javacc.classpath">
+    <fileset dir="${javacc.home}/">
+      <include name="bin/lib/*.jar"/>
+    </fileset>
+  </path>
+
   <property name="backwards.dir" location="backwards"/>
   <property name="build.dir.backwards" location="${build.dir}/backwards"/>
 
@@ -200,16 +208,13 @@
   </target>
 
   <target name="javacc-check">
-    <available
-      property="javacc.present"
-      classname="org.javacc.parser.Main"
-      classpath="${javacc.home}/bin/lib/javacc.jar"
-      />
+    <available property="javacc.present" classname="org.javacc.parser.Main">
+      <classpath refid="javacc.classpath"/>
+    </available>
     <fail unless="javacc.present">
       ##################################################################
       JavaCC not found.
       JavaCC Home: ${javacc.home}
-      JavaCC JAR: ${javacc.jar}
 
       Please download and install JavaCC 4.1 from:
 

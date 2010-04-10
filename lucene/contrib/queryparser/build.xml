@@ -25,6 +25,8 @@
 
   <import file="../contrib-build.xml"/>
  
+  <target name="compile-core" depends="javacc-notice, common.compile-core"/>
+
   <!--
     NOTE: see the README.javacc for details on how to fully regenerate the parser
   -->
