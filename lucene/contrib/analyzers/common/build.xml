@@ -36,11 +36,13 @@
     <pathelement location="${build.dir}/classes/java"/>
   </path>	
 
-  <target name="jflex" depends="clean-jflex,jflex-wiki-tokenizer"/>
+  <target name="compile-core" depends="jflex-notice, common.compile-core"/>
+
+  <target name="jflex" depends="jflex-check,clean-jflex,jflex-wiki-tokenizer"/>
 
   <target name="jflex-wiki-tokenizer" depends="init,jflex-check" if="jflex.present">
-    <taskdef classname="JFlex.anttask.JFlexTask" name="jflex">
-      <classpath location="${jflex.home}/lib/JFlex.jar"/>
+    <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
+      <classpath refid="jflex.classpath"/>
     </taskdef>
     <jflex file="src/java/org/apache/lucene/analysis/wikipedia/WikipediaTokenizerImpl.jflex"
            outdir="src/java/org/apache/lucene/analysis/wikipedia"

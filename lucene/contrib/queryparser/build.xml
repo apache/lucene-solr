@@ -30,68 +30,72 @@
   -->
   <target name="javacc" depends="javacc-flexible,javacc-precedence"/>
 
-  <target name="javacc-flexible" depends="init,javacc-check" if="javacc.present">
+  <target name="javacc-flexible" depends="javacc-check">
+    <delete>
+      <fileset dir="src/java/org/apache/lucene/queryParser/standard/parser" includes="*.java">
+        <containsregexp expression="Generated.*By.*JavaCC"/>
+      </fileset>
+    </delete>
     <invoke-javacc target="src/java/org/apache/lucene/queryParser/standard/parser/StandardSyntaxParser.jj"
                    outputDir="src/java/org/apache/lucene/queryParser/standard/parser"
     />
-  	    <replaceregexp file="src/java/org/apache/lucene/queryParser/standard/parser/ParseException.java"
-  	                         match="public class ParseException extends Exception"
-  	                         replace="public class ParseException extends QueryNodeParseException"
-  	                         flags="g"
-  	                         byline="false"/>
-  	    <replaceregexp file="src/java/org/apache/lucene/queryParser/standard/parser/ParseException.java"
-  	                         match="package org.apache.lucene.queryParser.standard.parser;"
-  	                         replace="package org.apache.lucene.queryParser.standard.parser;&#10;
-  	&#10;
-  	import org.apache.lucene.messages.Message;&#10;
-  	import org.apache.lucene.messages.MessageImpl;&#10;
-  	import org.apache.lucene.queryParser.core.*;&#10;
-  	import org.apache.lucene.queryParser.core.messages.*;"
-  	                         flags="g"
-  	                         byline="false"/>
-  	    <replaceregexp file="src/java/org/apache/lucene/queryParser/standard/parser/ParseException.java"
-  	                         match="^  public ParseException\(Token currentTokenVal.*$(\s\s[^}].*\n)*  \}"
-  	                         replace="  public ParseException(Token currentTokenVal,&#10;
-  	        int[][] expectedTokenSequencesVal, String[] tokenImageVal) {&#10;
-  	    super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, initialise(&#10;
-  	      currentTokenVal, expectedTokenSequencesVal, tokenImageVal)));&#10;
-  	    this.currentToken = currentTokenVal;&#10;
-  	    this.expectedTokenSequences = expectedTokenSequencesVal;&#10;
-  	    this.tokenImage = tokenImageVal;&#10;
-  	  }"
-  	                         flags="gm"
-  	                         byline="false"/>
-  	    <replaceregexp file="src/java/org/apache/lucene/queryParser/standard/parser/ParseException.java"
-  	                         match="^  public ParseException\(String message.*$(\s\s[^}].*\n)*  \}"
-  	                         replace="  public ParseException(Message message) {&#10;
-  	    super(message);&#10;                      
-  	  }"
-  	                         flags="gm"
-  	                         byline="false"/>
-  	    <replaceregexp file="src/java/org/apache/lucene/queryParser/standard/parser/ParseException.java"
-  	                         match="^  public ParseException\(\).*$(\s\s[^}].*\n)*  \}"
-  	                         replace="  public ParseException() {&#10;
-  	    super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, &quot;Error&quot;));&#10;
-  	  }"
-  	                         flags="gm"
-  	                         byline="false"/>
-  	    <replaceregexp file="src/java/org/apache/lucene/queryParser/standard/parser/ParseException.java"
-  	                         match="^  public String getMessage\(\).*$(\s\s\s\s[^}].*\n)*    \}"
-  	                         replace="  private static String initialise(Token currentToken, &#10;
-  	      int[][] expectedTokenSequences, String[] tokenImage) {&#10;
-  	    String eol = System.getProperty(&quot;line.separator&quot;, &quot;\n&quot;);"
-  	                         flags="gm"
-  	                         byline="false"/>
-  	    <replaceregexp file="src/java/org/apache/lucene/queryParser/standard/parser/ParseException.java"
-  	                         match="\s*protected String add_escapes.*"
-  	                         replace="  static private String add_escapes(String str) {"
-  	                         flags="g"
-  	                         byline="false"/>
+        <replaceregexp file="src/java/org/apache/lucene/queryParser/standard/parser/ParseException.java"
+                             match="public class ParseException extends Exception"
+                             replace="public class ParseException extends QueryNodeParseException"
+                             flags="g"
+                             byline="false"/>
+        <replaceregexp file="src/java/org/apache/lucene/queryParser/standard/parser/ParseException.java"
+                             match="package org.apache.lucene.queryParser.standard.parser;"
+                             replace="package org.apache.lucene.queryParser.standard.parser;${line.separator}
+${line.separator}
+import org.apache.lucene.messages.Message;${line.separator}
+import org.apache.lucene.messages.MessageImpl;${line.separator}
+import org.apache.lucene.queryParser.core.*;${line.separator}
+import org.apache.lucene.queryParser.core.messages.*;"
+                             flags="g"
+                             byline="false"/>
+        <replaceregexp file="src/java/org/apache/lucene/queryParser/standard/parser/ParseException.java"
+                             match="^  public ParseException\(Token currentTokenVal.*$(\s\s[^}].*\n)*  \}"
+                             replace="  public ParseException(Token currentTokenVal,${line.separator}
+    int[][] expectedTokenSequencesVal, String[] tokenImageVal) {${line.separator}
+    super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, initialise(${line.separator}
+    currentTokenVal, expectedTokenSequencesVal, tokenImageVal)));${line.separator}
+    this.currentToken = currentTokenVal;${line.separator}
+    this.expectedTokenSequences = expectedTokenSequencesVal;${line.separator}
+    this.tokenImage = tokenImageVal;${line.separator}
+  }"
+                             flags="gm"
+                             byline="false"/>
+        <replaceregexp file="src/java/org/apache/lucene/queryParser/standard/parser/ParseException.java"
+                             match="^  public ParseException\(String message.*$(\s\s[^}].*\n)*  \}"
+                             replace="  public ParseException(Message message) {${line.separator}
+    super(message);${line.separator}                      
+  }"
+                             flags="gm"
+                             byline="false"/>
+        <replaceregexp file="src/java/org/apache/lucene/queryParser/standard/parser/ParseException.java"
+                             match="^  public ParseException\(\).*$(\s\s[^}].*\n)*  \}"
+                             replace="  public ParseException() {${line.separator}
+    super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, &quot;Error&quot;));${line.separator}
+  }"
+                             flags="gm"
+                             byline="false"/>
+        <replaceregexp file="src/java/org/apache/lucene/queryParser/standard/parser/ParseException.java"
+                             match="^  public String getMessage\(\).*$(\s\s\s\s[^}].*\n)*    \}"
+                             replace="  private static String initialise(Token currentToken, int[][] expectedTokenSequences, String[] tokenImage) {${line.separator}
+    String eol = System.getProperty(&quot;line.separator&quot;, &quot;\n&quot;);"
+                             flags="gm"
+                             byline="false"/>
+        <replaceregexp file="src/java/org/apache/lucene/queryParser/standard/parser/ParseException.java"
+                             match="\s*protected String add_escapes.*"
+                             replace="  static private String add_escapes(String str) {"
+                             flags="g"
+                             byline="false"/>
   </target>
   
   <property name="javacc.precedence.path" location="src/java/org/apache/lucene/queryParser/precedence"/>
 
-  <target name="javacc-precedence" depends="javacc-check" description="generate precedence query parser from jj (requires javacc 3.2)">
+  <target name="javacc-precedence" depends="javacc-check" description="generate precedence query parser from jj (requires javacc 4.1)">
     <delete>
       <fileset dir="${javacc.precedence.path}" includes="*.java">
         <containsregexp expression="Generated.*By.*JavaCC"/>

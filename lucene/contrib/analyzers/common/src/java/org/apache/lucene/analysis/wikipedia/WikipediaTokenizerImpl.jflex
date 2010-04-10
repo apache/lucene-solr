@@ -17,12 +17,12 @@ package org.apache.lucene.analysis.wikipedia;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 %%
 
 %class WikipediaTokenizerImpl
-%unicode
+%unicode 3.0
 %integer
 %function getNextToken
 %pack
@@ -81,7 +81,7 @@ public final int getPositionIncrement(){
 /**
  * Fills Lucene token with the current token text.
  */
-final void getText(Token t) {
+final void getText(TermAttribute t) {
   t.setTermBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
 }
 

@@ -153,16 +153,6 @@
    </condition>
 
   <available
-    property="javacc.present"
-    classname="org.javacc.parser.Main"
-    classpath="${javacc.home}/bin/lib/javacc.jar"
-    />
-
-  <available property="jflex.present" classname="jflex.anttask.JFlexTask">
-		<classpath refid="jflex.classpath"/>
-	</available>
-
-  <available
     property="maven.ant.tasks.present"
     classname="org.apache.maven.artifact.ant.Pom"
   />
@@ -179,29 +169,30 @@
   -->
   <target name="javacc-uptodate-check">
     <uptodate property="javacc.files.uptodate">
-      <srcfiles dir="src" includes="**/*.jj" />
+      <srcfiles dir="src/java" includes="**/*.jj" />
       <mapper type="glob" from="*.jj" to="*.java"/>
     </uptodate>
   </target>
 
-  <target name="javacc-notice" unless="javacc.files.uptodate">
+  <target name="javacc-notice" depends="javacc-uptodate-check" unless="javacc.files.uptodate">
     <echo>
       One or more of the JavaCC .jj files is newer than its corresponding
       .java file.  Run the "javacc" target to regenerate the artifacts.
     </echo>
   </target>
 
-  <target name="init" depends="javacc-uptodate-check, javacc-notice, jflex-uptodate-check, jflex-notice">
+  <target name="init">
+    <!-- currently empty -->
   </target>
 
   <target name="jflex-uptodate-check">
     <uptodate property="jflex.files.uptodate">
-      <srcfiles dir="src" includes="**/*.jflex" />
+      <srcfiles dir="src/java" includes="**/*.jflex" />
       <mapper type="glob" from="*.jflex" to="*.java"/>
     </uptodate>
   </target>
  
-  <target name="jflex-notice" unless="jflex.files.uptodate">
+  <target name="jflex-notice" depends="jflex-uptodate-check" unless="jflex.files.uptodate">
     <echo>
       One or more of the JFlex .jflex files is newer than its corresponding
       .java file.  Run the "jflex" target to regenerate the artifacts.
@@ -209,13 +200,18 @@
   </target>
 
   <target name="javacc-check">
+    <available
+      property="javacc.present"
+      classname="org.javacc.parser.Main"
+      classpath="${javacc.home}/bin/lib/javacc.jar"
+      />
     <fail unless="javacc.present">
       ##################################################################
       JavaCC not found.
       JavaCC Home: ${javacc.home}
       JavaCC JAR: ${javacc.jar}
 
-      Please download and install JavaCC from:
+      Please download and install JavaCC 4.1 from:
 
       &lt;http://javacc.dev.java.net&gt;
 
@@ -237,6 +233,9 @@
   </target>
 	
   <target name="jflex-check">
+    <available property="jflex.present" classname="jflex.anttask.JFlexTask">
+      <classpath refid="jflex.classpath"/>
+    </available>
     <fail unless="jflex.present">
       ##################################################################
       JFlex not found.

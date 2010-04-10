@@ -156,7 +156,7 @@ public class QueryParser implements QueryParserConstants {
   static public enum Operator { OR, AND }
 
   /** Constructs a query parser.
-   *  @param matchVersion  Lucene version to match.  See <a href="#version">above</a>)
+   *  @param matchVersion  Lucene version to match. See <a href="#version">above</a>.
    *  @param f  the default field for query terms.
    *  @param a   used to find terms in the query text.
    */
