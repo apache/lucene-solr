@@ -90,7 +90,7 @@ import org.apache.lucene.queryParser.core.messages.*;"
                              match="\s*protected String add_escapes.*"
                              replace="  static private String add_escapes(String str) {"
                              flags="g"
-                             byline="false"/>
+                             byline="true"/>
   </target>
   
   <property name="javacc.precedence.path" location="src/java/org/apache/lucene/queryParser/precedence"/>
