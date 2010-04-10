@@ -68,7 +68,7 @@ public class TestCodecs extends MultiCodecTestCase {
   private Random RANDOM;
   private static String[] fieldNames = new String[] {"one", "two", "three", "four"};
 
-  private final static int NUM_TEST_ITER = 4000;
+  private final static int NUM_TEST_ITER = 20;
   private final static int NUM_TEST_THREADS = 3;
   private final static int NUM_FIELDS = 4;
   private final static int NUM_TERMS_RAND = 50; // must be > 16 to test skipping
