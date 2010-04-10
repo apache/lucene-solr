@@ -18,11 +18,11 @@
 package org.apache.lucene.spatial.tier;
 
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.ChainedFilter;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.spatial.geohash.GeoHashDistanceFilter;
-import org.apache.lucene.misc.ChainedFilter;
 
 /**
  * <p><font color="red"><b>NOTE:</b> This API is still in
