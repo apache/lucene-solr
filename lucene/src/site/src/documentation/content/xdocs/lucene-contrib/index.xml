@@ -124,12 +124,7 @@
             <section id="spellchecker"><title>spellchecker</title>
                 <p>Provides tools for spellchecking and suggestions with Lucene.</p>
                 <p>See <a href="../api/contrib-spellchecker/index.html">spellchecker javadoc</a></p>
-            </section>                
-  
-            <section id="surround"><title>surround</title>
-                <p>A QueryParser that supports the Span family of queries as well as pre and infix notation.</p>
-                <p>See <a href="../api/contrib-surround/index.html">surround javadoc</a></p>
-            </section>       
+            </section>                     
             
             <section id="swing"><title>swing</title>
                 <p>Swing components designed to integrate with Lucene.</p>

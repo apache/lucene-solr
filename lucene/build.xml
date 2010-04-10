@@ -347,7 +347,6 @@ The source distribution does not contain sources of the previous Lucene Java ver
           <packageset dir="contrib/remote/src/java"/>
           <packageset dir="contrib/spatial/src/java"/>
           <packageset dir="contrib/spellchecker/src/java"/>
-          <packageset dir="contrib/surround/src/java"/>
           <packageset dir="contrib/swing/src/java"/>
           <packageset dir="contrib/wordnet/src/java"/>
           <packageset dir="contrib/xml-query-parser/src/java"/>
@@ -376,7 +375,6 @@ The source distribution does not contain sources of the previous Lucene Java ver
           <group title="contrib: Query Parser" packages="org.apache.lucene.queryParser.*"/>
           <group title="contrib: Spatial" packages="org.apache.lucene.spatial*"/>
           <group title="contrib: SpellChecker" packages="org.apache.lucene.search.spell*"/>
-          <group title="contrib: Surround Parser" packages="org.apache.lucene.queryParser.surround*"/>
           <group title="contrib: Swing" packages="org.apache.lucene.swing*"/>
           <group title="contrib: WordNet" packages="org.apache.lucene.wordnet*"/>
           <group title="contrib: XML Query Parser" packages="org.apache.lucene.xmlparser*"/>
@@ -611,7 +609,7 @@ The source distribution does not contain sources of the previous Lucene Java ver
       <fileset dir="src/java/org/apache/lucene/queryParser" includes="*.java">
         <containsregexp expression="Generated.*By.*JavaCC"/>
       </fileset>
-      <fileset dir="contrib/surround/src/java/org/apache/lucene/queryParser/surround/parser" includes="*.java">
+      <fileset dir="contrib/queryparser/src/java/org/apache/lucene/queryParser/surround/parser" includes="*.java">
         <containsregexp expression="Generated.*By.*JavaCC"/>
       </fileset>
       <fileset dir="contrib/queryparser/src/java/org/apache/lucene/queryParser/standard/parser" includes="*.java">
@@ -623,7 +621,7 @@ The source distribution does not contain sources of the previous Lucene Java ver
     </delete>
   </target>
 
-  <target name="javacc" depends="init,javacc-check,clean-javacc,javacc-QueryParser,javacc-HTMLParser,javacc-contrib-queryparser,javacc-contrib-surround"/>
+  <target name="javacc" depends="init,javacc-check,clean-javacc,javacc-QueryParser,javacc-HTMLParser,javacc-contrib-queryparser"/>
 
   <target name="javacc-QueryParser" depends="init,javacc-check" if="javacc.present">
     <sequential>
@@ -652,13 +650,6 @@ The source distribution does not contain sources of the previous Lucene Java ver
   <target name="javacc-contrib-queryparser" depends="init,javacc-check" if="javacc.present">
     <ant target="javacc"
       dir="contrib/queryparser"
-      antfile="build.xml" 
-    />
-  </target>
-	
-  <target name="javacc-contrib-surround" depends="init,javacc-check" if="javacc.present">
-    <ant target="javacc"
-      dir="contrib/surround"
       antfile="build.xml" 
     />
   </target>

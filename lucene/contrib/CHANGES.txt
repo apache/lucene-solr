@@ -126,8 +126,8 @@ Build
    (Steven Rowe, Robert Muir)
 
  * LUCENE-2323: Moved contrib/regex into contrib/queries. Moved the
-   queryparsers under contrib/misc into contrib/queryparser. Moved
-   contrib/fast-vector-highlighter into contrib/highlighter.  (Robert Muir)
+   queryparsers under contrib/misc and contrib/surround into contrib/queryparser. 
+   Moved contrib/fast-vector-highlighter into contrib/highlighter.  (Robert Muir)
    
  * LUCENE-2333: Fix failures during contrib builds, when classes in
    core were changed without ant clean. This fix also optimizes the
