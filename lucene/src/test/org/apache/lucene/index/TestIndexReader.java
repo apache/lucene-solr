@@ -466,18 +466,17 @@ public class TestIndexReader extends LuceneTestCase
     public void testLockObtainFailed() throws IOException {
         Directory dir = new RAMDirectory();
 
-        IndexWriter writer = null;
-        IndexReader reader = null;
         Term searchTerm = new Term("content", "aaa");
 
         //  add 11 documents with term : aaa
-        writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        writer.commit();
         for (int i = 0; i < 11; i++) {
             addDoc(writer, searchTerm.text());
         }
 
         // Create reader:
-        reader = IndexReader.open(dir, false);
+        IndexReader reader = IndexReader.open(dir, false);
 
         // Try to make changes
         try {
@@ -1749,6 +1748,7 @@ public class TestIndexReader extends LuceneTestCase
     Directory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    writer.commit();
     Document doc = new Document();
     writer.addDocument(doc);
     IndexReader r = IndexReader.open(dir, true);

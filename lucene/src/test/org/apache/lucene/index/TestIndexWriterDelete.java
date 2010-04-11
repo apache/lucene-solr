@@ -749,7 +749,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     MockRAMDirectory dir = new MockRAMDirectory();
     IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-
+    modifier.commit();
     dir.failOn(failure.reset());
 
     for (int i = 0; i < keywords.length; i++) {

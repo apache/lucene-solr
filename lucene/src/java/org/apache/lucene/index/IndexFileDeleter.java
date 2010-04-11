@@ -144,16 +144,13 @@ final class IndexFileDeleter {
     long currentGen = segmentInfos.getGeneration();
     indexFilenameFilter = new IndexFileNameFilter(codecs);
     
-    String[] files = directory.listAll();
-
     CommitPoint currentCommitPoint = null;
-
-    for(int i=0;i<files.length;i++) {
-
-      String fileName = files[i];
+    boolean seenIndexFiles = false;
+    for (String fileName : directory.listAll()) {
 
       if ((indexFilenameFilter.accept(null, fileName)) && !fileName.endsWith("write.lock") && !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
-
+        seenIndexFiles = true;
+        
         // Add this file to refCounts with initial count 0:
         getRefCount(fileName);
 
@@ -195,7 +192,10 @@ final class IndexFileDeleter {
       }
     }
 
-    if (currentCommitPoint == null) {
+    // If we haven't seen any Lucene files, then currentCommitPoint is expected
+    // to be null, because it means it's a fresh Directory. Therefore it cannot
+    // be any NFS cache issues - so just ignore.
+    if (currentCommitPoint == null && seenIndexFiles) {
       // We did not in fact see the segments_N file
       // corresponding to the segmentInfos that was passed
       // in.  Yet, it must exist, because our caller holds
@@ -235,13 +235,15 @@ final class IndexFileDeleter {
 
     // Finally, give policy a chance to remove things on
     // startup:
-    policy.onInit(commits);
+    if (seenIndexFiles) {
+      policy.onInit(commits);
+    }
 
     // Always protect the incoming segmentInfos since
     // sometime it may not be the most recent commit
     checkpoint(segmentInfos, false);
     
-    startingCommitDeleted = currentCommitPoint.isDeleted();
+    startingCommitDeleted = currentCommitPoint == null ? false : currentCommitPoint.isDeleted();
 
     deleteCommits();
   }

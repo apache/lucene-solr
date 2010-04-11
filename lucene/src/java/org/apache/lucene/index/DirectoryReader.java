@@ -1030,7 +1030,11 @@ class DirectoryReader extends IndexReader implements Cloneable {
     Collection<IndexCommit> commits = new ArrayList<IndexCommit>();
 
     SegmentInfos latest = new SegmentInfos();
-    latest.read(dir, codecs);
+    try {
+      latest.read(dir, codecs);
+    } catch (IndexNotFoundException e) {
+      return Collections.emptyList();
+    }
     final long currentGen = latest.getGeneration();
 
     commits.add(new ReaderCommit(latest, dir));

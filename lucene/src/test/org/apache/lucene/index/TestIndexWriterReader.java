@@ -561,6 +561,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
   public void testAfterCommit() throws Exception {
     Directory dir1 = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir1, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    writer.commit();
     writer.setInfoStream(infoStream);
 
     // create the index

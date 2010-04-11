@@ -243,6 +243,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
 
     public void testSetBufferSize() throws IOException {
       File indexDir = new File(TEMP_DIR, "testSetBufferSize");
+      indexDir.mkdirs(); // required for this MockFSDir since we don't commit on IW creation anymore.
       MockFSDirectory dir = new MockFSDirectory(indexDir, newRandom());
       try {
         IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(

@@ -649,7 +649,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
           
           if (gen == -1) {
             // Neither approach found a generation
-            throw new FileNotFoundException("no segments* file found in " + directory + ": files: " + Arrays.toString(files));
+            throw new IndexNotFoundException("no segments* file found in " + directory + ": files: " + Arrays.toString(files));
           }
         }
 

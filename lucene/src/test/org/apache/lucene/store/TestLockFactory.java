@@ -82,7 +82,7 @@ public class TestLockFactory extends LuceneTestCase {
                    NoLockFactory.class.isInstance(dir.getLockFactory()));
 
         IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-
+        writer.commit(); // required so the second open succeed 
         // Create a 2nd IndexWriter.  This is normally not allowed but it should run through since we're not
         // using any locks:
         IndexWriter writer2 = null;

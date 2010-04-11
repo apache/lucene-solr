@@ -16,6 +16,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.store.*;
 import org.apache.lucene.document.*;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.analysis.*;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -124,6 +125,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   public DocsAndWriter indexRandomIWReader(int nThreads, int iterations, int range, Directory dir) throws IOException, InterruptedException {
     Map docs = new HashMap();
     IndexWriter w = new MockIndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
+    w.commit();
     w.setUseCompoundFile(false);
 
     /***

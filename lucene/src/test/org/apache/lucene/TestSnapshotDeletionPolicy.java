@@ -45,8 +45,8 @@ import org.apache.lucene.util._TestUtil;
 // http://lucenebook.com
 //
 
-public class TestSnapshotDeletionPolicy extends LuceneTestCase
-{
+public class TestSnapshotDeletionPolicy extends LuceneTestCase {
+  
   public static final String INDEX_PATH = "test.snapshots";
 
   public void testSnapshotDeletionPolicy() throws Exception {
@@ -119,7 +119,8 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
         TEST_VERSION_CURRENT, 
         new StandardAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(dp)
         .setMaxBufferedDocs(2));
-
+    writer.commit();
+    
     final Thread t = new Thread() {
         @Override
         public void run() {
