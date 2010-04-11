@@ -148,7 +148,7 @@ public class TokenSources {
     }
 
     // an object used to iterate across an array of tokens
-    class StoredTokenStream extends TokenStream {
+    final class StoredTokenStream extends TokenStream {
       Token tokens[];
 
       int currentToken = 0;

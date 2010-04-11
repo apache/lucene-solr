@@ -35,7 +35,7 @@ import org.apache.lucene.util.Version;
  * {@link CharTokenizer#normalize(int)} for details.</li>
  * </ul>
  */
-public class WhitespaceTokenizer extends CharTokenizer {
+public final class WhitespaceTokenizer extends CharTokenizer {
   
   /**
    * Construct a new WhitespaceTokenizer. * @param matchVersion Lucene version

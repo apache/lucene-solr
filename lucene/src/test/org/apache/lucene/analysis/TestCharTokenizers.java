@@ -162,7 +162,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     }
   }
 
-  static class TestingCharTokenizer extends CharTokenizer {
+  static final class TestingCharTokenizer extends CharTokenizer {
     public TestingCharTokenizer(Version matchVersion, Reader input) {
       super(matchVersion, input);
     }
@@ -178,7 +178,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     }
   }
 
-  static class TestingCharTokenizerNormalize extends CharTokenizer {
+  static final class TestingCharTokenizerNormalize extends CharTokenizer {
     public TestingCharTokenizerNormalize(Version matchVersion, Reader input) {
       super(matchVersion, input);
     }
@@ -194,7 +194,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     }
   }
 
-  static class TestingCharTokenizerNormalizeIsTokenChar extends CharTokenizer {
+  static final class TestingCharTokenizerNormalizeIsTokenChar extends CharTokenizer {
     public TestingCharTokenizerNormalizeIsTokenChar(Version matchVersion,
         Reader input) {
       super(matchVersion, input);

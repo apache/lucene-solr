@@ -81,7 +81,7 @@ public class TestQueryParser extends LocalizedTestCase {
   
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 
-  public static class QPTestFilter extends TokenFilter {
+  public static final class QPTestFilter extends TokenFilter {
     CharTermAttribute termAtt;
     OffsetAttribute offsetAtt;
         
@@ -123,7 +123,7 @@ public class TestQueryParser extends LocalizedTestCase {
   }
 
   
-  public static class QPTestAnalyzer extends Analyzer {
+  public static final class QPTestAnalyzer extends Analyzer {
 
     /** Filters LowerCaseTokenizer with StopFilter. */
     @Override

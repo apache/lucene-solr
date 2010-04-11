@@ -1783,7 +1783,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 // behaviour to synonyms
 // ===================================================================
 
-class SynonymAnalyzer extends Analyzer {
+final class SynonymAnalyzer extends Analyzer {
   private Map<String,String> synonyms;
 
   public SynonymAnalyzer(Map<String,String> synonyms) {
@@ -1810,7 +1810,7 @@ class SynonymAnalyzer extends Analyzer {
  * Expands a token stream with synonyms (TODO - make the synonyms analyzed by choice of analyzer)
  *
  */
-class SynonymTokenizer extends TokenStream {
+final class SynonymTokenizer extends TokenStream {
   private TokenStream realStream;
   private Token currentRealToken = null;
   private Map<String,String> synonyms;

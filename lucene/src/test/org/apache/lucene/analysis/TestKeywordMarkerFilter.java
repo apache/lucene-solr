@@ -51,7 +51,7 @@ public class TestKeywordMarkerFilter extends BaseTokenStreamTestCase {
             "The quIck browN LuceneFox Jumps")), set2)), output);
   }
 
-  public static class LowerCaseFilterMock extends TokenFilter {
+  public static final class LowerCaseFilterMock extends TokenFilter {
 
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);

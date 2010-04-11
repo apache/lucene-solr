@@ -20,9 +20,9 @@ package org.apache.lucene.analysis;
 import java.io.Reader;
 import java.io.IOException;
 import java.io.Closeable;
+import java.lang.reflect.Modifier;
 
 import org.apache.lucene.util.CloseableThreadLocal;
-import org.apache.lucene.util.VirtualMethod;
 import org.apache.lucene.store.AlreadyClosedException;
 
 import org.apache.lucene.document.Fieldable;
@@ -33,8 +33,34 @@ import org.apache.lucene.document.Fieldable;
  *  Typical implementations first build a Tokenizer, which breaks the stream of
  *  characters from the Reader into raw Tokens.  One or more TokenFilters may
  *  then be applied to the output of the Tokenizer.
+ * <p>The {@code Analyzer}-API in Lucene is based on the decorator pattern.
+ * Therefore all non-abstract subclasses must be final or their {@link #tokenStream}
+ * and {@link #reusableTokenStream} implementations must be final! This is checked
+ * when Java assertions are enabled.
  */
 public abstract class Analyzer implements Closeable {
+
+  protected Analyzer() {
+    super();
+    assert assertFinal();
+  }
+  
+  private boolean assertFinal() {
+    try {
+      final Class<?> clazz = getClass();
+      assert clazz.isAnonymousClass() ||
+        (clazz.getModifiers() & (Modifier.FINAL | Modifier.PRIVATE)) != 0 ||
+        (
+          Modifier.isFinal(clazz.getMethod("tokenStream", String.class, Reader.class).getModifiers()) &&
+          Modifier.isFinal(clazz.getMethod("reusableTokenStream", String.class, Reader.class).getModifiers())
+        ) :
+        "Analyzer implementation classes or at least their tokenStream() and reusableTokenStream() implementations must be final";
+      return true;
+    } catch (NoSuchMethodException nsme) {
+      return false;
+    }
+  }
+
   /** Creates a TokenStream which tokenizes all the text in the provided
    * Reader.  Must be able to handle null field name for
    * backward compatibility.
