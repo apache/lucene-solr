@@ -325,7 +325,7 @@ Other Changes
 * SOLR-1821: Fix TimeZone-dependent test failure in TestEvaluatorBag.
   (Chris Male via rmuir)
 
-
+* SOLR-1851: luceneAutoCommit no longer has any effect - it has been remove (Mark Miller)
   
   
 Build

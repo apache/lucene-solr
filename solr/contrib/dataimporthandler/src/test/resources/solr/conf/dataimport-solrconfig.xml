@@ -55,15 +55,6 @@
     <commitLockTimeout>10000</commitLockTimeout>
 
     <!--
-     Expert: Turn on Lucene's auto commit capability.
-
-     TODO: Add recommendations on why you would want to do this.
-
-     NOTE: Despite the name, this value does not have any relation to Solr's autoCommit functionality
-
-     -->
-    <!--<luceneAutoCommit>false</luceneAutoCommit>-->
-    <!--
      Expert:
      The Merge Policy in Lucene controls how merging is handled by Lucene.  The default in 2.3 is the LogByteSizeMergePolicy, previous
      versions used LogDocMergePolicy.

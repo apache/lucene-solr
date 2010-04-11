@@ -101,8 +101,6 @@ public class TestConfig extends SolrTestCaseJ4 {
     assertTrue(mergePolicy + " is not equal to " + SolrIndexConfig.DEFAULT_MERGE_POLICY_CLASSNAME, mergePolicy.equals(SolrIndexConfig.DEFAULT_MERGE_POLICY_CLASSNAME) == true);
     String mergeSched = solrConfig.get("indexDefaults/mergeScheduler/@class");
     assertTrue(mergeSched + " is not equal to " + SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME, mergeSched.equals(SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME) == true);
-    boolean luceneAutoCommit = solrConfig.getBool("indexDefaults/luceneAutoCommit");
-    assertTrue(luceneAutoCommit + " does not equal: " + false, luceneAutoCommit == false);
   }
 
   // sometime if the config referes to old things, it must be replaced with new stuff
