@@ -423,7 +423,7 @@
 	    This is very loud and obnoxious. abuse touch instead for a "quiet" mkdir
 	    -->
     	<touch file="@{tempDir}/@{pattern}/quiet.ant" verbose="false" mkdirs="true"/>
-	    <junit printsummary="off" haltonfailure="no" maxmemory="512M"
+	    <junit printsummary="off" haltonfailure="no" maxmemory="512M" tempdir="@{tempDir}/@{pattern}"
 	      errorProperty="tests.failed" failureProperty="tests.failed" forkmode="perBatch" dir=".">
 	      <classpath refid="@{junit.classpath}"/>
 	      <assertions>
