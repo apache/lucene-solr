@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.bg;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter; // for javadoc
+import org.apache.lucene.analysis.KeywordMarkerFilter; // for javadoc
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * words.
  * <p>
  * To prevent terms from being stemmed use an instance of
- * {@link KeywordMarkerTokenFilter} or a custom {@link TokenFilter} that sets
+ * {@link KeywordMarkerFilter} or a custom {@link TokenFilter} that sets
  * the {@link KeywordAttribute} before this {@link TokenStream}.
  * </p>
  */

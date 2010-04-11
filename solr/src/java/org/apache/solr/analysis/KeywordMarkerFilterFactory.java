@@ -3,7 +3,7 @@ package org.apache.solr.analysis;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
+import org.apache.lucene.analysis.KeywordMarkerFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
@@ -26,7 +26,7 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
  */
 
 /**
- * Factory for {@link KeywordMarkerTokenFilter}
+ * Factory for {@link KeywordMarkerFilter}
  */
 public class KeywordMarkerFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";
@@ -50,6 +50,6 @@ public class KeywordMarkerFilterFactory extends BaseTokenFilterFactory implement
   }
 
   public TokenStream create(TokenStream input) {
-    return protectedWords == null ? input : new KeywordMarkerTokenFilter(input, protectedWords);
+    return protectedWords == null ? input : new KeywordMarkerFilter(input, protectedWords);
   }
 }

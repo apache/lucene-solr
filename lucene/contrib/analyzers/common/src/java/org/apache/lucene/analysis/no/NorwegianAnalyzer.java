@@ -23,7 +23,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
+import org.apache.lucene.analysis.KeywordMarkerFilter;
 import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
@@ -91,7 +91,7 @@ public final class NorwegianAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * Builds an analyzer with the given stop words. If a non-empty stem exclusion set is
-   * provided this analyzer will add a {@link KeywordMarkerTokenFilter} before
+   * provided this analyzer will add a {@link KeywordMarkerFilter} before
    * stemming.
    * 
    * @param matchVersion lucene compatibility version
@@ -113,7 +113,7 @@ public final class NorwegianAnalyzer extends StopwordAnalyzerBase {
    *         {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
-   *         , {@link KeywordMarkerTokenFilter} if a stem exclusion set is
+   *         , {@link KeywordMarkerFilter} if a stem exclusion set is
    *         provided and {@link SnowballFilter}.
    */
   @Override
@@ -124,7 +124,7 @@ public final class NorwegianAnalyzer extends StopwordAnalyzerBase {
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())
-      result = new KeywordMarkerTokenFilter(result, stemExclusionSet);
+      result = new KeywordMarkerFilter(result, stemExclusionSet);
     result = new SnowballFilter(result, new NorwegianStemmer());
     return new TokenStreamComponents(source, result);
   }

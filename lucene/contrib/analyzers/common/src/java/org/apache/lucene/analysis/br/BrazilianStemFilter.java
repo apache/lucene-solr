@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.br;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter; // for javadoc
+import org.apache.lucene.analysis.KeywordMarkerFilter; // for javadoc
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
@@ -30,10 +30,10 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * A {@link TokenFilter} that applies {@link BrazilianStemmer}.
  * <p>
  * To prevent terms from being stemmed use an instance of
- * {@link KeywordMarkerTokenFilter} or a custom {@link TokenFilter} that sets
+ * {@link KeywordMarkerFilter} or a custom {@link TokenFilter} that sets
  * the {@link KeywordAttribute} before this {@link TokenStream}.
  * </p>
- * @see KeywordMarkerTokenFilter
+ * @see KeywordMarkerFilter
  * 
  */
 public final class BrazilianStemFilter extends TokenFilter {
@@ -63,7 +63,7 @@ public final class BrazilianStemFilter extends TokenFilter {
    * 
    * @param in the source {@link TokenStream} 
    * @param exclusiontable a set of terms that should be prevented from being stemmed.
-   * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerTokenFilter} instead.
+   * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerFilter} instead.
    */
   @Deprecated
   public BrazilianStemFilter(TokenStream in, Set<?> exclusiontable) {

@@ -29,7 +29,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
+import org.apache.lucene.analysis.KeywordMarkerFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
@@ -209,7 +209,7 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
     result = new StandardFilter(result);
     result = new StopFilter(matchVersion, result, stopwords);
     if(excltable != null && !excltable.isEmpty())
-      result = new KeywordMarkerTokenFilter(result, excltable);
+      result = new KeywordMarkerFilter(result, excltable);
     return new TokenStreamComponents(source, new BrazilianStemFilter(result));
   }
 }

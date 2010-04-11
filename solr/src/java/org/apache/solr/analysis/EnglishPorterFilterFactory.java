@@ -18,7 +18,7 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
+import org.apache.lucene.analysis.KeywordMarkerFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
@@ -50,7 +50,7 @@ public class EnglishPorterFilterFactory extends BaseTokenFilterFactory implement
 
   public TokenFilter create(TokenStream input) {
     if (protectedWords != null)
-      input = new KeywordMarkerTokenFilter(input, protectedWords);
+      input = new KeywordMarkerFilter(input, protectedWords);
     return new SnowballFilter(input, new org.tartarus.snowball.ext.EnglishStemmer());
   }
 

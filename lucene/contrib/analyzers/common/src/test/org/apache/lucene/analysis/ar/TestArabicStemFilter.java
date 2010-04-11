@@ -22,7 +22,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
+import org.apache.lucene.analysis.KeywordMarkerFilter;
 
 /**
  * Test the Arabic Normalization Filter
@@ -119,7 +119,7 @@ public class TestArabicStemFilter extends BaseTokenStreamTestCase {
     set.add("ساهدهات");
     ArabicLetterTokenizer tokenStream  = new ArabicLetterTokenizer(TEST_VERSION_CURRENT, new StringReader("ساهدهات"));
 
-    ArabicStemFilter filter = new ArabicStemFilter(new KeywordMarkerTokenFilter(tokenStream, set));
+    ArabicStemFilter filter = new ArabicStemFilter(new KeywordMarkerFilter(tokenStream, set));
     assertTokenStreamContents(filter, new String[]{"ساهدهات"});
   }
 

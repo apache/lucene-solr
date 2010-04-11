@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter;// for javadoc
+import org.apache.lucene.analysis.KeywordMarkerFilter;// for javadoc
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
@@ -39,10 +39,10 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * </p>
  * <p>
  * To prevent terms from being stemmed use an instance of
- * {@link KeywordMarkerTokenFilter} or a custom {@link TokenFilter} that sets
+ * {@link KeywordMarkerFilter} or a custom {@link TokenFilter} that sets
  * the {@link KeywordAttribute} before this {@link TokenStream}.
  * </p>
- * @see KeywordMarkerTokenFilter
+ * @see KeywordMarkerFilter
  * @deprecated Use {@link SnowballFilter} with 
  * {@link org.tartarus.snowball.ext.DutchStemmer} instead, which has the
  * same functionality. This filter will be removed in Lucene 4.0
@@ -67,7 +67,7 @@ public final class DutchStemFilter extends TokenFilter {
 
   /**
    * Builds a DutchStemFilter that uses an exclusion table.
-   * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerTokenFilter} instead.
+   * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerFilter} instead.
    */
   @Deprecated
   public DutchStemFilter(TokenStream _in, Set<?> exclusiontable) {
@@ -85,7 +85,7 @@ public final class DutchStemFilter extends TokenFilter {
 
   /**
    * @param stemdictionary Dictionary of word stem pairs, that overrule the algorithm
-   * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerTokenFilter} instead.
+   * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerFilter} instead.
    */
   @Deprecated
   public DutchStemFilter(TokenStream _in, Set<?> exclusiontable, Map<?,?> stemdictionary) {
@@ -125,7 +125,7 @@ public final class DutchStemFilter extends TokenFilter {
 
   /**
    * Set an alternative exclusion list for this filter.
-   * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerTokenFilter} instead.
+   * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerFilter} instead.
    */
   @Deprecated
   public void setExclusionTable(HashSet<?> exclusiontable) {

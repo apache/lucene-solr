@@ -22,7 +22,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
+import org.apache.lucene.analysis.KeywordMarkerFilter;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.util.Version;
 
@@ -219,7 +219,7 @@ public class TestBulgarianStemmer extends BaseTokenStreamTestCase {
         new StringReader("строевете строеве"));
 
     BulgarianStemFilter filter = new BulgarianStemFilter(
-        new KeywordMarkerTokenFilter(tokenStream, set));
+        new KeywordMarkerFilter(tokenStream, set));
     assertTokenStreamContents(filter, new String[] { "строй", "строеве" });
   }
 }

@@ -23,7 +23,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
+import org.apache.lucene.analysis.KeywordMarkerFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
@@ -94,7 +94,7 @@ public final class TurkishAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * Builds an analyzer with the given stop words. If a non-empty stem exclusion set is
-   * provided this analyzer will add a {@link KeywordMarkerTokenFilter} before
+   * provided this analyzer will add a {@link KeywordMarkerFilter} before
    * stemming.
    * 
    * @param matchVersion lucene compatibility version
@@ -116,7 +116,7 @@ public final class TurkishAnalyzer extends StopwordAnalyzerBase {
    *         {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link TurkishLowerCaseFilter},
-   *         {@link StopFilter}, {@link KeywordMarkerTokenFilter} if a stem
+   *         {@link StopFilter}, {@link KeywordMarkerFilter} if a stem
    *         exclusion set is provided and {@link SnowballFilter}.
    */
   @Override
@@ -127,7 +127,7 @@ public final class TurkishAnalyzer extends StopwordAnalyzerBase {
     result = new TurkishLowerCaseFilter(result);
     result = new StopFilter(matchVersion, result, stopwords);
     if(!stemExclusionSet.isEmpty())
-      result = new KeywordMarkerTokenFilter(result, stemExclusionSet);
+      result = new KeywordMarkerFilter(result, stemExclusionSet);
     result = new SnowballFilter(result, new TurkishStemmer());
     return new TokenStreamComponents(source, result);
   }
