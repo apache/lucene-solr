@@ -54,7 +54,8 @@
 
   <!-- default arguments to pass to JVM executing tests -->
   <property name="args" value=""/>
-
+  <property name="threadsPerProcessor" value="1" />
+    
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
   <property name="javac.source" value="1.5"/>
@@ -484,7 +485,7 @@
   </target>
 
   <target name="junit-parallel" unless="runsequential">
-    <parallel threadsPerProcessor="2">
+    <parallel threadsPerProcessor="${threadsPerProcessor}">
      <test-macro pattern="A"/>
      <test-macro pattern="B"/>
      <test-macro pattern="C"/>

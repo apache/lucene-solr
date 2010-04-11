@@ -478,6 +478,12 @@ Build
 * LUCENE-2074: Regenerating StandardTokenizerImpl files now needs
   JFlex 1.5 (currently only available on SVN). (Uwe Schindler)
 
+* LUCENE-1709: Tests are now parallelized by default (except for benchmark). You
+  can force them to run sequentially by passing -Drunsequential=1 on the command
+  line. The number of threads that are spwaned per CPU defaults to '1'. If you 
+  wish to change that, you can run the tests with -DthreadsPerProcessor=[num].
+  (Robert Muir, Shai Erera) 
+
 Test Cases
 
 * LUCENE-2037 Allow Junit4 tests in our envrionment (Erick Erickson
