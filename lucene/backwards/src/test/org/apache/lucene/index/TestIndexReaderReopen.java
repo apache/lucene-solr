@@ -36,7 +36,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
@@ -173,7 +172,6 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   private void doTestReopenWithCommit (Directory dir, boolean withReopen) throws IOException {
     IndexWriter iwriter = new IndexWriter(dir, new KeywordAnalyzer(), true, MaxFieldLength.LIMITED);
     iwriter.setMergeScheduler(new SerialMergeScheduler());
-    iwriter.commit();
     IndexReader reader = IndexReader.open(dir, false);
     try {
       int M = 3;

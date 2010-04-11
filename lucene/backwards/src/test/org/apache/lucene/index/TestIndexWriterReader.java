@@ -30,7 +30,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -643,7 +642,6 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Directory dir1 = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir1, new WhitespaceAnalyzer(),
                                          IndexWriter.MaxFieldLength.LIMITED);
-    writer.commit();
     writer.setInfoStream(infoStream);
 
     // create the index

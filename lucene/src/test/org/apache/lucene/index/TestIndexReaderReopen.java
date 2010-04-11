@@ -174,7 +174,6 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     IndexWriter iwriter = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new KeywordAnalyzer()).setOpenMode(
         OpenMode.CREATE).setMergeScheduler(new SerialMergeScheduler()));
-    iwriter.commit();
     IndexReader reader = IndexReader.open(dir, false);
     try {
       int M = 3;

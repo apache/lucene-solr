@@ -558,10 +558,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       assertTrue("could not locate the 'content' field number in the _2.cfs segment", contentFieldIndex != -1);
 
       // Now verify file names:
-      String[] expected = new String[] {"_0.cfs",
+      String[] expected;
+      expected = new String[] {"_0.cfs",
                                "_0_1.del",
                                "_0_1.s" + contentFieldIndex,
-                               "segments_2",
+                               "segments_3",
                                "segments.gen"};
 
       String[] actual = dir.listAll();

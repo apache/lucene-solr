@@ -305,7 +305,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       writer.optimize();
       writer.close();
 
-      assertEquals(1, policy.numOnInit);
+      assertEquals(2, policy.numOnInit);
 
       // If we are not auto committing then there should
       // be exactly 2 commits (one per close above):
@@ -313,8 +313,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       // Test listCommits
       Collection<IndexCommit> commits = IndexReader.listCommits(dir);
-      // 2 from closing writer
-      assertEquals(2, commits.size());
+      // 1 from opening writer + 2 from closing writer
+      assertEquals(3, commits.size());
 
       // Make sure we can open a reader on each commit:
       for (final IndexCommit commit : commits) {
@@ -374,7 +374,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     writer.close();
 
     Collection<IndexCommit> commits = IndexReader.listCommits(dir);
-    assertEquals(5, commits.size());
+    assertEquals(6, commits.size());
     IndexCommit lastCommit = null;
     for (final IndexCommit commit : commits) {
       if (lastCommit == null || commit.getGeneration() > lastCommit.getGeneration())
@@ -389,7 +389,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     writer.optimize();
     writer.close();
 
-    assertEquals(6, IndexReader.listCommits(dir).size());
+    assertEquals(7, IndexReader.listCommits(dir).size());
 
     // Now open writer on the commit just before optimize:
     writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
@@ -412,7 +412,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     writer.close();
 
     // Now 8 because we made another commit
-    assertEquals(7, IndexReader.listCommits(dir).size());
+    assertEquals(8, IndexReader.listCommits(dir).size());
     
     r = IndexReader.open(dir, true);
     // Not optimized because we rolled it back, and now only
@@ -491,7 +491,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       writer.optimize();
       writer.close();
 
-      assertEquals(1, policy.numOnInit);
+      assertEquals(2, policy.numOnInit);
       // If we are not auto committing then there should
       // be exactly 2 commits (one per close above):
       assertEquals(2, policy.numOnCommit);
@@ -537,7 +537,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       }
 
       assertTrue(policy.numDelete > 0);
-      assertEquals(N, policy.numOnInit);
+      assertEquals(N+1, policy.numOnInit);
       assertEquals(N+1, policy.numOnCommit);
 
       // Simplistic check: just verify only the past N segments_N's still
@@ -625,8 +625,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
       // this is a commit
       writer.close();
 
-      assertEquals(2*(N+1)+1, policy.numOnInit);
-      assertEquals(2*(N+2), policy.numOnCommit);
+      assertEquals(2*(N+2), policy.numOnInit);
+      assertEquals(2*(N+2)-1, policy.numOnCommit);
 
       IndexSearcher searcher = new IndexSearcher(dir, false);
       ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -735,8 +735,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
         writer.close();
       }
 
-      assertEquals(3*(N+1), policy.numOnInit);
-      assertEquals(3*(N+1)+1, policy.numOnCommit);
+      assertEquals(1+3*(N+1), policy.numOnInit);
+      assertEquals(3*(N+1), policy.numOnCommit);
 
       IndexSearcher searcher = new IndexSearcher(dir, false);
       ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;

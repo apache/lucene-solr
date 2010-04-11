@@ -85,8 +85,7 @@ public class TestLockFactory extends LuceneTestCase {
 
         IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true,
                                              IndexWriter.MaxFieldLength.LIMITED);
-        writer.commit(); // required so the second open succeed
-        
+
         // Create a 2nd IndexWriter.  This is normally not allowed but it should run through since we're not
         // using any locks:
         IndexWriter writer2 = null;

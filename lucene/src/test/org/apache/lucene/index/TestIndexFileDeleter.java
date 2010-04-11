@@ -138,11 +138,11 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     copyFile(dir, "_0.cfs", "deletable");
 
     // Create some old segments file:
-    copyFile(dir, "segments_2", "segments");
-    copyFile(dir, "segments_2", "segments_1");
+    copyFile(dir, "segments_3", "segments");
+    copyFile(dir, "segments_3", "segments_2");
 
     // Create a bogus cfs file shadowing a non-cfs segment:
-    copyFile(dir, "_1.cfs", "_2.cfs");
+    copyFile(dir, "_2.cfs", "_3.cfs");
 
     String[] filesPre = dir.listAll();
 

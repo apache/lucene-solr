@@ -134,7 +134,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     MockIndexWriter writer  = new MockIndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setRAMBufferSizeMB(0.1));
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
     //writer.setMaxBufferedDocs(10);
-    writer.commit();
 
     if (VERBOSE)
       writer.setInfoStream(System.out);
@@ -172,7 +171,6 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     MockIndexWriter writer  = new MockIndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setRAMBufferSizeMB(0.2));
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
     //writer.setMaxBufferedDocs(10);
-    writer.commit();
 
     if (VERBOSE)
       writer.setInfoStream(System.out);

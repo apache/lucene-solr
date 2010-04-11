@@ -105,12 +105,6 @@ Changes in backwards compatibility policy
   of incrementToken(), tokenStream(), and reusableTokenStream().
   (Uwe Schindler, Robert Muir)
 
-* LUCENE-2386: IndexWriter no longer performs an empty commit upon new index
-  creation. Previously, if you passed an empty Directory and set OpenMode to
-  CREATE*, IndexWriter would make a first empty commit. If you need that 
-  behavior you can call writer.commit() immediately after you create it.
-  (Shai Erera, Mike McCandless)
-
 Changes in runtime behavior
 
 * LUCENE-1923: Made IndexReader.toString() produce something

@@ -29,7 +29,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.NumericRangeFilter;
@@ -63,8 +62,7 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
 		Filter filter = filterBuilder.getFilter(doc.getDocumentElement());
 
 		RAMDirectory ramDir = new RAMDirectory();
-		IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
-		writer.commit();
+		IndexWriter writer = new IndexWriter(ramDir, null, MaxFieldLength.UNLIMITED);
 		try
 		{
 			IndexReader reader = IndexReader.open(ramDir, true);

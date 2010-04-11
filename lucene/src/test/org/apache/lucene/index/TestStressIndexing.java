@@ -122,8 +122,7 @@ public class TestStressIndexing extends MultiCodecTestCase {
         TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
         .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10).setMergeScheduler(
             mergeScheduler));
-    modifier.commit();
-    
+
     TimedThread[] threads = new TimedThread[4];
     int numThread = 0;
 

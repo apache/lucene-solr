@@ -39,7 +39,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.SetBasedFieldSelector;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
@@ -475,7 +474,6 @@ public class TestIndexReader extends LuceneTestCase
 
         //  add 11 documents with term : aaa
         writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
-        writer.commit();
         for (int i = 0; i < 11; i++)
         {
             addDoc(writer, searchTerm.text());
@@ -1767,7 +1765,6 @@ public class TestIndexReader extends LuceneTestCase
   public void testPrepareCommitIsCurrent() throws Throwable {
     Directory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
-    writer.commit();
     Document doc = new Document();
     writer.addDocument(doc);
     IndexReader r = IndexReader.open(dir, true);

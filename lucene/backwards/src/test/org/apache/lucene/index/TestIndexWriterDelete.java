@@ -23,7 +23,6 @@ import java.util.Arrays;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
@@ -765,7 +764,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     MockRAMDirectory dir = new MockRAMDirectory();
     IndexWriter modifier = new IndexWriter(dir,
                                            new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.UNLIMITED);
-    modifier.commit();
+
     dir.failOn(failure.reset());
 
     for (int i = 0; i < keywords.length; i++) {
