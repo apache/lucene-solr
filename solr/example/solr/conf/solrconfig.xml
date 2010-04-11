@@ -966,7 +966,7 @@
       <!-- allow 50% slop on fragment sizes -->
       <float name="hl.regex.slop">0.5</float>
       <!-- a basic sentence pattern -->
-      <str name="hl.regex.pattern">[-\w ,/\n\"']{20,200}</str>
+      <str name="hl.regex.pattern">[-\w ,/\n\&quot;&apos;]{20,200}</str>
     </lst>
    </fragmenter>
 
