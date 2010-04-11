@@ -145,10 +145,10 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     List<Token> tokens = new ArrayList<Token>();
     
     // TODO change this API to support custom attributes
-    TermAttribute termAtt = null;
+    CharTermAttribute termAtt = null;
     TermToBytesRefAttribute bytesAtt = null;
-    if (tokenStream.hasAttribute(TermAttribute.class)) {
-      termAtt = tokenStream.getAttribute(TermAttribute.class);
+    if (tokenStream.hasAttribute(CharTermAttribute.class)) {
+      termAtt = tokenStream.getAttribute(CharTermAttribute.class);
     } else if (tokenStream.hasAttribute(TermToBytesRefAttribute.class)) {
       bytesAtt = tokenStream.getAttribute(TermToBytesRefAttribute.class);
     }
@@ -163,7 +163,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       while (tokenStream.incrementToken()) {
         Token token = new Token();
         if (termAtt != null) {
-          token.setTermBuffer(termAtt.term());
+          token.setTermBuffer(termAtt.toString());
         }
         if (bytesAtt != null) {
           bytesAtt.toBytesRef(bytes);
@@ -259,12 +259,12 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    * TokenStream that iterates over a list of pre-existing Tokens
    */
   // TODO refactor to support custom attributes
-  protected static class ListBasedTokenStream extends TokenStream {
+  protected final static class ListBasedTokenStream extends TokenStream {
     private final List<Token> tokens;
     private Iterator<Token> tokenIterator;
 
-    private final TermAttribute termAtt = (TermAttribute) 
-      addAttribute(TermAttribute.class);
+    private final CharTermAttribute termAtt = (CharTermAttribute) 
+      addAttribute(CharTermAttribute.class);
     private final OffsetAttribute offsetAtt = (OffsetAttribute) 
       addAttribute(OffsetAttribute.class);
     private final TypeAttribute typeAtt = (TypeAttribute) 
@@ -292,7 +292,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     public boolean incrementToken() throws IOException {
       if (tokenIterator.hasNext()) {
         Token next = tokenIterator.next();
-        termAtt.setTermBuffer(next.termBuffer(), 0, next.termLength());
+        termAtt.copyBuffer(next.termBuffer(), 0, next.termLength());
         typeAtt.setType(next.type());
         offsetAtt.setOffset(next.startOffset(), next.endOffset());
         flagsAtt.setFlags(next.getFlags());

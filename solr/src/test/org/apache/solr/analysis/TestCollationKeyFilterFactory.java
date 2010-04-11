@@ -30,7 +30,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.KeywordTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.solr.common.ResourceLoader;
 
 public class TestCollationKeyFilterFactory extends BaseTokenTestCase {
@@ -177,13 +177,13 @@ public class TestCollationKeyFilterFactory extends BaseTokenTestCase {
   
   private void assertCollatesToSame(TokenStream stream1, TokenStream stream2)
       throws IOException {
-    TermAttribute term1 = stream1
-        .addAttribute(TermAttribute.class);
-    TermAttribute term2 = stream2
-        .addAttribute(TermAttribute.class);
+    CharTermAttribute term1 = stream1
+        .addAttribute(CharTermAttribute.class);
+    CharTermAttribute term2 = stream2
+        .addAttribute(CharTermAttribute.class);
     assertTrue(stream1.incrementToken());
     assertTrue(stream2.incrementToken());
-    assertEquals(term1.term(), term2.term());
+    assertEquals(term1.toString(), term2.toString());
     assertFalse(stream1.incrementToken());
     assertFalse(stream2.incrementToken());
   }

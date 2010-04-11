@@ -32,7 +32,7 @@ import java.io.Reader;
 // An analyzer that uses a tokenizer and a list of token filters to
 // create a TokenStream.
 //
-public class TokenizerChain extends SolrAnalyzer {
+public final class TokenizerChain extends SolrAnalyzer {
   final private CharFilterFactory[] charFilters;
   final private TokenizerFactory tokenizer;
   final private TokenFilterFactory[] filters;

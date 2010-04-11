@@ -21,7 +21,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 import java.util.Iterator;
 import java.util.Arrays;
@@ -44,14 +44,14 @@ public class TestRemoveDuplicatesTokenFilter extends BaseTokenTestCase {
     RemoveDuplicatesTokenFilterFactory factory = new RemoveDuplicatesTokenFilterFactory();
     final TokenStream ts = factory.create
       (new TokenStream() {
-          TermAttribute termAtt = addAttribute(TermAttribute.class);
+          CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
           OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
           PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
           public boolean incrementToken() {
             if (toks.hasNext()) {
               clearAttributes();
               Token tok = toks.next();
-              termAtt.setTermBuffer(tok.term());
+              termAtt.setEmpty().append(tok.term());
               offsetAtt.setOffset(tok.startOffset(), tok.endOffset());
               posIncAtt.setPositionIncrement(tok.getPositionIncrement());
               return true;

@@ -1043,7 +1043,7 @@ class ExtendedDismaxQParser extends QParser {
 }
 
 
-class ExtendedAnalyzer extends Analyzer {
+final class ExtendedAnalyzer extends Analyzer {
   final Map<String, Analyzer> map = new HashMap<String, Analyzer>();
   final QParser parser;
   final Analyzer queryAnalyzer;

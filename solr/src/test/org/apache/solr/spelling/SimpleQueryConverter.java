@@ -19,11 +19,11 @@ package org.apache.solr.spelling;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 import java.util.Collection;
@@ -43,18 +43,18 @@ class SimpleQueryConverter extends SpellingQueryConverter{
     WhitespaceAnalyzer analyzer = new WhitespaceAnalyzer();
     TokenStream ts = analyzer.tokenStream("", new StringReader(origQuery));
     // TODO: support custom attributes
-    TermAttribute termAtt = (TermAttribute) ts.addAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) ts.addAttribute(OffsetAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) ts.addAttribute(TypeAttribute.class);
-    FlagsAttribute flagsAtt = (FlagsAttribute) ts.addAttribute(FlagsAttribute.class);
-    PayloadAttribute payloadAtt = (PayloadAttribute) ts.addAttribute(PayloadAttribute.class);
-    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) ts.addAttribute(PositionIncrementAttribute.class);
+    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+    OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
+    TypeAttribute typeAtt = ts.addAttribute(TypeAttribute.class);
+    FlagsAttribute flagsAtt = ts.addAttribute(FlagsAttribute.class);
+    PayloadAttribute payloadAtt = ts.addAttribute(PayloadAttribute.class);
+    PositionIncrementAttribute posIncAtt = ts.addAttribute(PositionIncrementAttribute.class);
     
     try {
       ts.reset();
       while (ts.incrementToken()){
         Token tok = new Token();
-        tok.setTermBuffer(termAtt.termBuffer(), 0, termAtt.termLength());
+        tok.setTermBuffer(termAtt.buffer(), 0, termAtt.length());
         tok.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
         tok.setFlags(flagsAtt.getFlags());
         tok.setPayload(payloadAtt.getPayload());

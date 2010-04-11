@@ -21,7 +21,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.Query;
@@ -369,7 +369,7 @@ public abstract class FieldType extends FieldProperties {
    * Default analyzer for types that only produce 1 verbatim token...
    * A maximum size of chars to be read must be specified
    */
-  protected class DefaultAnalyzer extends SolrAnalyzer {
+  protected final class DefaultAnalyzer extends SolrAnalyzer {
     final int maxChars;
 
     DefaultAnalyzer(int maxChars) {
@@ -379,15 +379,15 @@ public abstract class FieldType extends FieldProperties {
     public TokenStreamInfo getStream(String fieldName, Reader reader) {
       Tokenizer ts = new Tokenizer(reader) {
         final char[] cbuf = new char[maxChars];
-        final TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-        final OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+        final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+        final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
         @Override
         public boolean incrementToken() throws IOException {
           clearAttributes();
           int n = input.read(cbuf,0,maxChars);
           if (n<=0) return false;
           String s = toInternal(new String(cbuf,0,n));
-          termAtt.setTermBuffer(s);
+          termAtt.setEmpty().append(s);
           offsetAtt.setOffset(correctOffset(0),correctOffset(n));
           return true;
         }

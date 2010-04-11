@@ -22,7 +22,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -120,7 +120,7 @@ final class WordDelimiterFilter extends TokenFilter {
    */
   final CharArraySet protWords;
     
-  private final TermAttribute termAttribute = addAttribute(TermAttribute.class);
+  private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
   private final PositionIncrementAttribute posIncAttribute = addAttribute(PositionIncrementAttribute.class);
   private final TypeAttribute typeAttribute = addAttribute(TypeAttribute.class);
@@ -338,8 +338,8 @@ final class WordDelimiterFilter extends TokenFilter {
           return false;
         }
 
-        int termLength = termAttribute.termLength();
-        char[] termBuffer = termAttribute.termBuffer();
+        int termLength = termAttribute.length();
+        char[] termBuffer = termAttribute.buffer();
         
         accumPosInc += posIncAttribute.getPositionIncrement();
 
@@ -462,14 +462,14 @@ final class WordDelimiterFilter extends TokenFilter {
     savedStartOffset = offsetAttribute.startOffset();
     savedEndOffset = offsetAttribute.endOffset();
     // if length by start + end offsets doesn't match the term text then assume this is a synonym and don't adjust the offsets.
-    hasIllegalOffsets = (savedEndOffset - savedStartOffset != termAttribute.termLength());
+    hasIllegalOffsets = (savedEndOffset - savedStartOffset != termAttribute.length());
     savedType = typeAttribute.type();
 
-    if (savedBuffer.length < termAttribute.termLength()) {
-      savedBuffer = new char[ArrayUtil.oversize(termAttribute.termLength(), RamUsageEstimator.NUM_BYTES_CHAR)];
+    if (savedBuffer.length < termAttribute.length()) {
+      savedBuffer = new char[ArrayUtil.oversize(termAttribute.length(), RamUsageEstimator.NUM_BYTES_CHAR)];
     }
 
-    System.arraycopy(termAttribute.termBuffer(), 0, savedBuffer, 0, termAttribute.termLength());
+    System.arraycopy(termAttribute.buffer(), 0, savedBuffer, 0, termAttribute.length());
     iterator.text = savedBuffer;
 
     hasSavedState = true;
@@ -531,7 +531,7 @@ final class WordDelimiterFilter extends TokenFilter {
    */
   private void generatePart(boolean isSingleWord) {
     clearAttributes();
-    termAttribute.setTermBuffer(savedBuffer, iterator.current, iterator.end - iterator.current);
+    termAttribute.copyBuffer(savedBuffer, iterator.current, iterator.end - iterator.current);
 
     int startOffSet = (isSingleWord || !hasIllegalOffsets) ? savedStartOffset + iterator.current : savedStartOffset;
     int endOffSet = (hasIllegalOffsets) ? savedEndOffset : savedStartOffset + iterator.end;
@@ -636,13 +636,13 @@ final class WordDelimiterFilter extends TokenFilter {
      */
     void write() {
       clearAttributes();
-      if (termAttribute.termLength() < buffer.length()) {
-        termAttribute.resizeTermBuffer(buffer.length());
+      if (termAttribute.length() < buffer.length()) {
+        termAttribute.resizeBuffer(buffer.length());
       }
-      char termbuffer[] = termAttribute.termBuffer();
+      char termbuffer[] = termAttribute.buffer();
       
       buffer.getChars(0, buffer.length(), termbuffer, 0);
-      termAttribute.setTermLength(buffer.length());
+      termAttribute.setLength(buffer.length());
         
       if (hasIllegalOffsets) {
         offsetAttribute.setOffset(savedStartOffset, savedEndOffset);

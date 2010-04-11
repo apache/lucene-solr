@@ -22,25 +22,23 @@ import java.util.LinkedList;
 import org.apache.commons.codec.language.DoubleMetaphone;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
-public class DoubleMetaphoneFilter extends TokenFilter {
+public final class DoubleMetaphoneFilter extends TokenFilter {
 
   private static final String TOKEN_TYPE = "DoubleMetaphone";
   
   private final LinkedList<State> remainingTokens = new LinkedList<State>();
   private final DoubleMetaphone encoder = new DoubleMetaphone();
   private final boolean inject;
-  private final TermAttribute termAtt;
-  private final PositionIncrementAttribute posAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final PositionIncrementAttribute posAtt = addAttribute(PositionIncrementAttribute.class);
 
   protected DoubleMetaphoneFilter(TokenStream input, int maxCodeLength, boolean inject) {
     super(input);
     this.encoder.setMaxCodeLen(maxCodeLength);
     this.inject = inject;
-    this.termAtt = addAttribute(TermAttribute.class);
-    this.posAtt = addAttribute(PositionIncrementAttribute.class);
   }
 
   @Override
@@ -55,12 +53,12 @@ public class DoubleMetaphoneFilter extends TokenFilter {
 
       if (!input.incrementToken()) return false;
 
-      int len = termAtt.termLength();
+      int len = termAtt.length();
       if (len==0) return true; // pass through zero length terms
       
       int firstAlternativeIncrement = inject ? 0 : posAtt.getPositionIncrement();
 
-      String v = new String(termAtt.termBuffer(), 0, len);
+      String v = termAtt.toString();
       String primaryPhoneticValue = encoder.doubleMetaphone(v);
       String alternatePhoneticValue = encoder.doubleMetaphone(v, true);
 
@@ -74,7 +72,7 @@ public class DoubleMetaphoneFilter extends TokenFilter {
         }
         posAtt.setPositionIncrement( firstAlternativeIncrement );
         firstAlternativeIncrement = 0;
-        termAtt.setTermBuffer(primaryPhoneticValue);
+        termAtt.setEmpty().append(primaryPhoneticValue);
         saveState = true;
       }
 
@@ -86,7 +84,7 @@ public class DoubleMetaphoneFilter extends TokenFilter {
           saveState = false;
         }
         posAtt.setPositionIncrement( firstAlternativeIncrement );
-        termAtt.setTermBuffer(alternatePhoneticValue);
+        termAtt.setEmpty().append(alternatePhoneticValue);
         saveState = true;
       }
 

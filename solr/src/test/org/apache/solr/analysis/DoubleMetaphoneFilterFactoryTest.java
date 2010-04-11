@@ -22,7 +22,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 public class DoubleMetaphoneFilterFactoryTest extends BaseTokenTestCase {
 
@@ -59,12 +59,12 @@ public class DoubleMetaphoneFilterFactoryTest extends BaseTokenTestCase {
     TokenStream inputStream = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("international"));
 
     TokenStream filteredStream = factory.create(inputStream);
-    TermAttribute termAtt = filteredStream.addAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = filteredStream.addAttribute(CharTermAttribute.class);
     assertEquals(DoubleMetaphoneFilter.class, filteredStream.getClass());
     
     assertTrue(filteredStream.incrementToken());
-    assertEquals(13, termAtt.termLength());
-    assertEquals("international", termAtt.term());
+    assertEquals(13, termAtt.length());
+    assertEquals("international", termAtt.toString());
     filteredStream.reset();
     
     // ensure there are no more tokens, such as ANTRNXNL

@@ -20,8 +20,8 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.Version;
 
 import java.io.IOException;
@@ -31,7 +31,7 @@ import java.io.IOException;
  */
 public final class RemoveDuplicatesTokenFilter extends TokenFilter {
 
-  private final TermAttribute termAttribute = addAttribute(TermAttribute.class);
+  private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posIncAttribute =  addAttribute(PositionIncrementAttribute.class);
   
   // use a fixed version, as we don't care about case sensitivity.
@@ -52,8 +52,8 @@ public final class RemoveDuplicatesTokenFilter extends TokenFilter {
   @Override
   public boolean incrementToken() throws IOException {
     while (input.incrementToken()) {
-      final char term[] = termAttribute.termBuffer();
-      final int length = termAttribute.termLength();
+      final char term[] = termAttribute.buffer();
+      final int length = termAttribute.length();
       final int posIncrement = posIncAttribute.getPositionIncrement();
       
       if (posIncrement > 0) {

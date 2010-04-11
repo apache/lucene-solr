@@ -27,7 +27,7 @@ import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Analyzer;
@@ -88,7 +88,7 @@ public class TextField extends FieldType {
       source = analyzer.tokenStream(field, new StringReader(queryText));
     }
     CachingTokenFilter buffer = new CachingTokenFilter(source);
-    TermAttribute termAtt = null;
+    CharTermAttribute termAtt = null;
     PositionIncrementAttribute posIncrAtt = null;
     int numTokens = 0;
 
@@ -100,11 +100,11 @@ public class TextField extends FieldType {
       // success==false if we hit an exception
     }
     if (success) {
-      if (buffer.hasAttribute(TermAttribute.class)) {
-        termAtt = (TermAttribute) buffer.getAttribute(TermAttribute.class);
+      if (buffer.hasAttribute(CharTermAttribute.class)) {
+        termAtt = buffer.getAttribute(CharTermAttribute.class);
       }
       if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
-        posIncrAtt = (PositionIncrementAttribute) buffer.getAttribute(PositionIncrementAttribute.class);
+        posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
       }
     }
 
@@ -147,7 +147,7 @@ public class TextField extends FieldType {
       try {
         boolean hasNext = buffer.incrementToken();
         assert hasNext == true;
-        term = termAtt.term();
+        term = termAtt.toString();
       } catch (IOException e) {
         // safe to ignore, because we know the number of tokens
       }
@@ -164,7 +164,7 @@ public class TextField extends FieldType {
             try {
               boolean hasNext = buffer.incrementToken();
               assert hasNext == true;
-              term = termAtt.term();
+              term = termAtt.toString();
             } catch (IOException e) {
               // safe to ignore, because we know the number of tokens
             }
@@ -188,7 +188,7 @@ public class TextField extends FieldType {
             try {
               boolean hasNext = buffer.incrementToken();
               assert hasNext == true;
-              term = termAtt.term();
+              term = termAtt.toString();
               if (posIncrAtt != null) {
                 positionIncrement = posIncrAtt.getPositionIncrement();
               }
@@ -229,7 +229,7 @@ public class TextField extends FieldType {
           try {
             boolean hasNext = buffer.incrementToken();
             assert hasNext == true;
-            term = termAtt.term();
+            term = termAtt.toString();
             if (posIncrAtt != null) {
               positionIncrement = posIncrAtt.getPositionIncrement();
             }

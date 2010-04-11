@@ -21,7 +21,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * This class produces a special form of reversed tokens, suitable for
@@ -35,17 +35,17 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * <code>withOriginal == true</code>, which proportionally increases the size
  * of postings and term dictionary in the index.
  */
-public class ReversedWildcardFilter extends TokenFilter {
+public final class ReversedWildcardFilter extends TokenFilter {
   
   private boolean withOriginal;
   private char markerChar;
   private State save;
-  private TermAttribute termAtt;
+  private CharTermAttribute termAtt;
   private PositionIncrementAttribute posAtt;
 
   protected ReversedWildcardFilter(TokenStream input, boolean withOriginal, char markerChar) {
     super(input);
-    this.termAtt = addAttribute(TermAttribute.class);
+    this.termAtt = addAttribute(CharTermAttribute.class);
     this.posAtt = addAttribute(PositionIncrementAttribute.class);
     this.withOriginal = withOriginal;
     this.markerChar = markerChar;
@@ -63,19 +63,19 @@ public class ReversedWildcardFilter extends TokenFilter {
     if (!input.incrementToken()) return false;
 
     // pass through zero-length terms
-    int oldLen = termAtt.termLength();
+    int oldLen = termAtt.length();
     if (oldLen ==0) return true;
     int origOffset = posAtt.getPositionIncrement();
     if (withOriginal == true){
       posAtt.setPositionIncrement(0);
       save = captureState();
     }
-    char [] buffer = termAtt.resizeTermBuffer(oldLen + 1);
+    char [] buffer = termAtt.resizeBuffer(oldLen + 1);
     buffer[oldLen] = markerChar;
     reverse(buffer, 0, oldLen + 1);
 
     posAtt.setPositionIncrement(origOffset);
-    termAtt.setTermBuffer(buffer, 0, oldLen +1);
+    termAtt.copyBuffer(buffer, 0, oldLen +1);
     return true;
   }
   

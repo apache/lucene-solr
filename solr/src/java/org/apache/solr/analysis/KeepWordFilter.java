@@ -20,7 +20,7 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 import java.io.IOException;
 import java.util.Set;
@@ -34,7 +34,7 @@ import java.util.Set;
  */
 public final class KeepWordFilter extends TokenFilter {
   private final CharArraySet words;
-  private final TermAttribute termAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
   /** @deprecated Use {@link #KeepWordFilter(TokenStream, Set, boolean)} instead */
   @Deprecated
@@ -47,13 +47,12 @@ public final class KeepWordFilter extends TokenFilter {
   public KeepWordFilter(TokenStream in, CharArraySet words) {
     super(in);
     this.words = words;
-    this.termAtt = addAttribute(TermAttribute.class);
   }
 
   @Override
   public boolean incrementToken() throws IOException {
     while (input.incrementToken()) {
-      if (words.contains(termAtt.termBuffer(), 0, termAtt.termLength())) return true;
+      if (words.contains(termAtt.buffer(), 0, termAtt.length())) return true;
     }
     return false;
   }

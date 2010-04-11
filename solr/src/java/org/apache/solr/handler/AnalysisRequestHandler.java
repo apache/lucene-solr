@@ -18,7 +18,6 @@ package org.apache.solr.handler;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.util.BytesRef;
@@ -135,10 +134,10 @@ public class AnalysisRequestHandler extends RequestHandlerBase {
     // outer is namedList since order of tokens is important
     NamedList<NamedList<Object>> tokens = new NamedList<NamedList<Object>>();
     // TODO: support custom attributes
-    TermAttribute termAtt = null;
+    CharTermAttribute termAtt = null;
     TermToBytesRefAttribute bytesAtt = null;
-    if (tstream.hasAttribute(TermAttribute.class)) {
-      termAtt = tstream.getAttribute(TermAttribute.class);
+    if (tstream.hasAttribute(CharTermAttribute.class)) {
+      termAtt = tstream.getAttribute(CharTermAttribute.class);
     } else if (tstream.hasAttribute(TermToBytesRefAttribute.class)) {
       bytesAtt = tstream.getAttribute(TermToBytesRefAttribute.class);
     }
@@ -151,7 +150,7 @@ public class AnalysisRequestHandler extends RequestHandlerBase {
       NamedList<Object> token = new SimpleOrderedMap<Object>();
       tokens.add("token", token);
       if (termAtt != null) {
-        token.add("value", termAtt.term());
+        token.add("value", termAtt.toString());
       }
       if (bytesAtt != null) {
         bytesAtt.toBytesRef(bytes);

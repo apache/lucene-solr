@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.miscellaneous.SingleTokenTokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -347,19 +347,17 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
    * Set a large position increment gap of 10 if the token is "largegap" or "/"
    */
   private final class LargePosIncTokenFilter extends TokenFilter {
-    private TermAttribute termAtt;
-    private PositionIncrementAttribute posIncAtt;
+    private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
     
     protected LargePosIncTokenFilter(TokenStream input) {
       super(input);
-      termAtt = addAttribute(TermAttribute.class);
-      posIncAtt = addAttribute(PositionIncrementAttribute.class);
     }
 
     @Override
     public boolean incrementToken() throws IOException {
       if (input.incrementToken()) {
-        if (termAtt.term().equals("largegap") || termAtt.term().equals("/"))
+        if (termAtt.toString().equals("largegap") || termAtt.toString().equals("/"))
           posIncAtt.setPositionIncrement(10);
         return true;
       } else {

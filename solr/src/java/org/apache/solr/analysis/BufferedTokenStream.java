@@ -20,11 +20,11 @@ package org.apache.solr.analysis;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource; // javadoc @link
 
@@ -73,7 +73,7 @@ public abstract class BufferedTokenStream extends TokenFilter {
   private final LinkedList<Token> inQueue = new LinkedList<Token>();
   private final LinkedList<Token> outQueue = new LinkedList<Token>();
 
-  private final TermAttribute termAtt = addAttribute(TermAttribute.class);
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
   private final FlagsAttribute flagsAtt = addAttribute(FlagsAttribute.class);
@@ -150,7 +150,7 @@ public abstract class BufferedTokenStream extends TokenFilter {
       return null;
     } else {
       Token token = new Token();
-      token.setTermBuffer(termAtt.termBuffer(), 0, termAtt.termLength());
+      token.setTermBuffer(termAtt.buffer(), 0, termAtt.length());
       token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
       token.setType(typeAtt.type());
       token.setFlags(flagsAtt.getFlags());
@@ -163,7 +163,7 @@ public abstract class BufferedTokenStream extends TokenFilter {
   /** old api emulation for back compat */
   private boolean writeToken(Token token) throws IOException {
     clearAttributes();
-    termAtt.setTermBuffer(token.termBuffer(), 0, token.termLength());
+    termAtt.copyBuffer(token.termBuffer(), 0, token.termLength());
     offsetAtt.setOffset(token.startOffset(), token.endOffset());
     typeAtt.setType(token.type());
     flagsAtt.setFlags(token.getFlags());

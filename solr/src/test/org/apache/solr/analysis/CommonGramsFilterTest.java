@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * Tests CommonGramsQueryFilter
@@ -38,20 +38,20 @@ public class CommonGramsFilterTest extends BaseTokenTestCase {
     WhitespaceTokenizer wt = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input));
     CommonGramsFilter cgf = new CommonGramsFilter(wt, commonWords);
     
-    TermAttribute term = cgf.addAttribute(TermAttribute.class);
+    CharTermAttribute term = cgf.addAttribute(CharTermAttribute.class);
     assertTrue(cgf.incrementToken());
-    assertEquals("How", term.term());
+    assertEquals("How", term.toString());
     assertTrue(cgf.incrementToken());
-    assertEquals("How_the", term.term());
+    assertEquals("How_the", term.toString());
     assertTrue(cgf.incrementToken());
-    assertEquals("the", term.term());
+    assertEquals("the", term.toString());
     assertTrue(cgf.incrementToken());
-    assertEquals("the_s", term.term());
+    assertEquals("the_s", term.toString());
     
     wt.reset(new StringReader(input));
     cgf.reset();
     assertTrue(cgf.incrementToken());
-    assertEquals("How", term.term());
+    assertEquals("How", term.toString());
   }
   
   public void testQueryReset() throws Exception {
@@ -60,16 +60,16 @@ public class CommonGramsFilterTest extends BaseTokenTestCase {
     CommonGramsFilter cgf = new CommonGramsFilter(wt, commonWords);
     CommonGramsQueryFilter nsf = new CommonGramsQueryFilter(cgf);
     
-    TermAttribute term = wt.addAttribute(TermAttribute.class);
+    CharTermAttribute term = wt.addAttribute(CharTermAttribute.class);
     assertTrue(nsf.incrementToken());
-    assertEquals("How_the", term.term());
+    assertEquals("How_the", term.toString());
     assertTrue(nsf.incrementToken());
-    assertEquals("the_s", term.term());
+    assertEquals("the_s", term.toString());
     
     wt.reset(new StringReader(input));
     nsf.reset();
     assertTrue(nsf.incrementToken());
-    assertEquals("How_the", term.term());
+    assertEquals("How_the", term.toString());
   }
   
   /**

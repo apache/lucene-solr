@@ -19,7 +19,7 @@ package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 
 import java.io.IOException;
@@ -32,24 +32,21 @@ import java.io.IOException;
 public final class TrimFilter extends TokenFilter {
 
   final boolean updateOffsets;
-  private final TermAttribute termAtt;
-  private final OffsetAttribute offsetAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
 
   public TrimFilter(TokenStream in, boolean updateOffsets) {
     super(in);
     this.updateOffsets = updateOffsets;
-
-    this.termAtt = addAttribute(TermAttribute.class);
-    this.offsetAtt = addAttribute(OffsetAttribute.class);
   }
 
   @Override
   public boolean incrementToken() throws IOException {
     if (!input.incrementToken()) return false;
 
-    char[] termBuffer = termAtt.termBuffer();
-    int len = termAtt.termLength();
+    char[] termBuffer = termAtt.buffer();
+    int len = termAtt.length();
     //TODO: Is this the right behavior or should we return false?  Currently, "  ", returns true, so I think this should
     //also return true
     if (len == 0){
@@ -69,9 +66,9 @@ public final class TrimFilter extends TokenFilter {
     }
     if (start > 0 || end < len) {
       if (start < end) {
-        termAtt.setTermBuffer(termBuffer, start, (end - start));
+        termAtt.copyBuffer(termBuffer, start, (end - start));
       } else {
-        termAtt.setTermLength(0);
+        termAtt.setEmpty();
       }
       if (updateOffsets) {
         int newStart = offsetAtt.startOffset()+start;

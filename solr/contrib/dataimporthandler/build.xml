@@ -162,6 +162,10 @@
            >
       <formatter type="brief" usefile="false" if="junit.details"/>
       <classpath refid="test.extras.classpath"/>
+      <assertions>
+        <enable package="org.apache.lucene"/>
+        <enable package="org.apache.solr"/>
+      </assertions>
       <formatter type="xml"/>
       <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
         <fileset dir="src/extras/test/java" includes="${junit.includes}"/>

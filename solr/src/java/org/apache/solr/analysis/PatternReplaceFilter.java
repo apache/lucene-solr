@@ -42,7 +42,7 @@ public final class PatternReplaceFilter extends TokenFilter {
   private final Pattern p;
   private final String replacement;
   private final boolean all;
-  private final CharTermAttribute termAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final Matcher m;
 
   /**
@@ -64,7 +64,6 @@ public final class PatternReplaceFilter extends TokenFilter {
     this.p=p;
     this.replacement = (null == replacement) ? "" : replacement;
     this.all=all;
-    this.termAtt = addAttribute(CharTermAttribute.class);
     this.m = p.matcher(termAtt);
   }
 

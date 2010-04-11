@@ -22,7 +22,7 @@ import java.io.Reader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.commons.io.IOUtils;
 
@@ -56,7 +56,7 @@ import org.apache.commons.io.IOUtils;
  */
 public final class PatternTokenizer extends Tokenizer {
 
-  private final TermAttribute termAtt = addAttribute(TermAttribute.class);
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
   private String str;
@@ -86,7 +86,7 @@ public final class PatternTokenizer extends Tokenizer {
       while (matcher.find()) {
         final String match = matcher.group(group);
         if (match.length() == 0) continue;
-        termAtt.setTermBuffer(match);
+        termAtt.setEmpty().append(match);
         index = matcher.start(group);
         offsetAtt.setOffset(correctOffset(index), correctOffset(matcher.end(group)));
         return true;
@@ -101,7 +101,7 @@ public final class PatternTokenizer extends Tokenizer {
       while (matcher.find()) {
         if (matcher.start() - index > 0) {
           // found a non-zero-length token
-          termAtt.setTermBuffer(str, index, matcher.start() - index);
+          termAtt.setEmpty().append(str, index, matcher.start());
           offsetAtt.setOffset(correctOffset(index), correctOffset(matcher.start()));
           index = matcher.end();
           return true;
@@ -115,7 +115,7 @@ public final class PatternTokenizer extends Tokenizer {
         return false;
       }
       
-      termAtt.setTermBuffer(str, index, str.length() - index);
+      termAtt.setEmpty().append(str, index, str.length());
       offsetAtt.setOffset(correctOffset(index), correctOffset(str.length()));
       index = Integer.MAX_VALUE; // mark exhausted
       return true;
