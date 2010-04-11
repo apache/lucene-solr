@@ -13,6 +13,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,7 +26,7 @@ import java.util.*;
  *
  * @since solr 1.5
  */
-public abstract class BaseDistributedSearchTestCase extends TestCase {
+public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   public static Random r = new Random(0);
 
   protected int shardCount = 4;
@@ -493,6 +494,7 @@ public abstract class BaseDistributedSearchTestCase extends TestCase {
     }
   }
 
+  @Test
   public void testDistribSearch() throws Exception {
     if (fixShardCount) {
       createServers(shardCount);
