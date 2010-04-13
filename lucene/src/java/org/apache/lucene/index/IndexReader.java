@@ -1334,7 +1334,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  it by calling {@link IndexReader#open(IndexCommit,boolean)}
    *  There must be at least one commit in
    *  the Directory, else this method throws {@link
-   *  java.io.IOException}.  Note that if a commit is in
+   *  IndexNotFoundException}.  Note that if a commit is in
    *  progress while this method is running, that commit
    *  may or may not be returned array.  */
   public static Collection<IndexCommit> listCommits(Directory dir) throws IOException {

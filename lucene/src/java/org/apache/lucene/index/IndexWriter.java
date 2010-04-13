@@ -1115,25 +1115,16 @@ public class IndexWriter implements Closeable {
         // against an index that's currently open for
         // searching.  In this case we write the next
         // segments_N file with no segments:
-        boolean doCommit;
         try {
           segmentInfos.read(directory, codecs);
           segmentInfos.clear();
-          doCommit = false;
         } catch (IOException e) {
           // Likely this means it's a fresh directory
-          doCommit = true;
         }
 
-        if (doCommit) {
-          // Only commit if there is no segments file in
-          // this dir already.
-          segmentInfos.commit(directory);
-        } else {
-          // Record that we have a change (zero out all
-          // segments) pending:
-          changeCount++;
-        }
+        // Record that we have a change (zero out all
+        // segments) pending:
+        changeCount++;
       } else {
         segmentInfos.read(directory, codecs);
 

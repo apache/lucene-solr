@@ -82,10 +82,7 @@ public class TestNoDeletionPolicy extends LuceneTestCaseJ4 {
       doc.add(new Field("c", "a" + i, Store.YES, Index.ANALYZED));
       writer.addDocument(doc);
       writer.commit();
-      // the reason to expect i + 2 commits is because when IndexWriter is
-      // created it creates a first commit. If this ever changes, then the
-      // expected should be i + 1 (and this comment removed).
-      assertEquals("wrong number of commits !", i + 2, IndexReader.listCommits(dir).size());
+      assertEquals("wrong number of commits !", i + 1, IndexReader.listCommits(dir).size());
     }
     writer.close();
   }

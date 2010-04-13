@@ -150,6 +150,7 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
     IndexWriter w = new MockIndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE).setRAMBufferSizeMB(
         0.1).setMaxBufferedDocs(maxBufferedDocs));
+    w.commit();
     LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
     lmp.setUseCompoundFile(false);
     lmp.setUseCompoundDocStore(false);

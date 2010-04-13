@@ -48,9 +48,12 @@ public abstract class Directory implements Closeable {
    * this Directory instance). */
   protected LockFactory lockFactory;
 
-  /** Returns an array of strings, one for each file in the
-   *  directory.
-   * @throws IOException
+  /**
+   * Returns an array of strings, one for each file in the directory.
+   * 
+   * @throws NoSuchDirectoryException if the directory is not prepared for any
+   *         write operations (such as {@link #createOutput(String)}).
+   * @throws IOException in case of other IO errors
    */
   public abstract String[] listAll() throws IOException;
 

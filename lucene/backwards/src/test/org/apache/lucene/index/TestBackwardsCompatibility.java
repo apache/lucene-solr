@@ -553,7 +553,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase
       expected = new String[] {"_0.cfs",
                                "_0_1.del",
                                "_0_1.s" + contentFieldIndex,
-                               "segments_3",
+                               "segments_2",
                                "segments.gen"};
 
       String[] actual = dir.listAll();

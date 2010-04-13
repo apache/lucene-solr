@@ -25,20 +25,24 @@ import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriter;
 
 public class TestCrash extends LuceneTestCase {
 
-  private IndexWriter initIndex() throws IOException {
-    return initIndex(new MockRAMDirectory());
+  private IndexWriter initIndex(boolean initialCommit) throws IOException {
+    return initIndex(new MockRAMDirectory(), initialCommit);
   }
 
-  private IndexWriter initIndex(MockRAMDirectory dir) throws IOException {
+  private IndexWriter initIndex(MockRAMDirectory dir, boolean initialCommit) throws IOException {
     dir.setLockFactory(NoLockFactory.getNoLockFactory());
 
     IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
     //writer.setMaxBufferedDocs(2);
     writer.setMaxBufferedDocs(10);
     ((ConcurrentMergeScheduler) writer.getMergeScheduler()).setSuppressExceptions();
+    if (initialCommit) {
+      writer.commit();
+    }
 
     Document doc = new Document();
     doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.ANALYZED));
@@ -58,7 +62,7 @@ public class TestCrash extends LuceneTestCase {
   }
 
   public void testCrashWhileIndexing() throws IOException {
-    IndexWriter writer = initIndex();
+    IndexWriter writer = initIndex(true);
     MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
     crash(writer);
     IndexReader reader = IndexReader.open(dir, false);
@@ -66,11 +70,11 @@ public class TestCrash extends LuceneTestCase {
   }
 
   public void testWriterAfterCrash() throws IOException {
-    IndexWriter writer = initIndex();
+    IndexWriter writer = initIndex(true);
     MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
     dir.setPreventDoubleWrite(false);
     crash(writer);
-    writer = initIndex(dir);
+    writer = initIndex(dir, false);
     writer.close();
 
     IndexReader reader = IndexReader.open(dir, false);
@@ -78,10 +82,10 @@ public class TestCrash extends LuceneTestCase {
   }
 
   public void testCrashAfterReopen() throws IOException {
-    IndexWriter writer = initIndex();
+    IndexWriter writer = initIndex(false);
     MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
     writer.close();
-    writer = initIndex(dir);
+    writer = initIndex(dir, false);
     assertEquals(314, writer.maxDoc());
     crash(writer);
 
@@ -100,7 +104,7 @@ public class TestCrash extends LuceneTestCase {
 
   public void testCrashAfterClose() throws IOException {
     
-    IndexWriter writer = initIndex();
+    IndexWriter writer = initIndex(false);
     MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
 
     writer.close();
@@ -119,7 +123,7 @@ public class TestCrash extends LuceneTestCase {
 
   public void testCrashAfterCloseNoWait() throws IOException {
     
-    IndexWriter writer = initIndex();
+    IndexWriter writer = initIndex(false);
     MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
 
     writer.close(false);
@@ -138,7 +142,7 @@ public class TestCrash extends LuceneTestCase {
 
   public void testCrashReaderDeletes() throws IOException {
     
-    IndexWriter writer = initIndex();
+    IndexWriter writer = initIndex(false);
     MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
 
     writer.close(false);
@@ -159,7 +163,7 @@ public class TestCrash extends LuceneTestCase {
 
   public void testCrashReaderDeletesAfterClose() throws IOException {
     
-    IndexWriter writer = initIndex();
+    IndexWriter writer = initIndex(false);
     MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
 
     writer.close(false);

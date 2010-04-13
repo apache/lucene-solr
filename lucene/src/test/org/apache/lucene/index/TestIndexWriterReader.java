@@ -561,6 +561,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
   public void testAfterCommit() throws Exception {
     Directory dir1 = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir1, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    writer.commit();
     writer.setInfoStream(infoStream);
 
     // create the index
@@ -828,4 +829,15 @@ public class TestIndexWriterReader extends LuceneTestCase {
     w.close();
     dir.close();
   }
+  
+  public void testEmptyIndex() throws Exception {
+    // Ensures that getReader works on an empty index, which hasn't been committed yet.
+    Directory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    IndexReader r = w.getReader();
+    assertEquals(0, r.numDocs());
+    r.close();
+    w.close();
+  }
+
 }

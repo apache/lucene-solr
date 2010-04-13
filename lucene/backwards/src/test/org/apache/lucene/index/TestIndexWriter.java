@@ -47,6 +47,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -783,7 +784,7 @@ public class TestIndexWriter extends LuceneTestCase {
         writer.close();
 
         long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
-        assertTrue("segment generation should be > 1 but got " + gen, gen > 1);
+        assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
 
         // Make the next segments file, with last byte
         // missing, to simulate a writer that crashed while
@@ -843,7 +844,7 @@ public class TestIndexWriter extends LuceneTestCase {
         writer.close();
 
         long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
-        assertTrue("segment generation should be > 1 but got " + gen, gen > 1);
+        assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
 
         String fileNameIn = SegmentInfos.getCurrentSegmentFileName(dir);
         String fileNameOut = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
@@ -908,7 +909,7 @@ public class TestIndexWriter extends LuceneTestCase {
         writer.close();
 
         long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
-        assertTrue("segment generation should be > 1 but got " + gen, gen > 1);
+        assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
 
         String[] files = dir.listAll();
         for(int i=0;i<files.length;i++) {
@@ -2324,7 +2325,7 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testImmediateDiskFull() throws IOException {
     MockRAMDirectory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
-    dir.setMaxSizeInBytes(dir.getRecomputedActualSizeInBytes());
+    dir.setMaxSizeInBytes(Math.max(1, dir.getRecomputedActualSizeInBytes()));
     writer.setMaxBufferedDocs(2);
     final Document doc = new Document();
     doc.add(new Field("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
@@ -2647,7 +2648,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.close();
 
     long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
-    assertTrue("segment generation should be > 1 but got " + gen, gen > 1);
+    assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
 
     final String segmentsFileName = SegmentInfos.getCurrentSegmentFileName(dir);
     IndexInput in = dir.openInput(segmentsFileName);
@@ -2675,7 +2676,8 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexWriter writer  = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
     writer.setMaxBufferedDocs(2);
     writer.setMergeFactor(5);
-
+    writer.commit();
+    
     for (int i = 0; i < 23; i++)
       addDoc(writer);
 
@@ -3542,7 +3544,8 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
     writer.setMaxBufferedDocs(2);
     writer.setMergeFactor(5);
-
+    writer.commit();
+    
     for (int i = 0; i < 23; i++)
       addDoc(writer);
 
@@ -3595,7 +3598,8 @@ public class TestIndexWriter extends LuceneTestCase {
 
     writer.setMaxBufferedDocs(2);
     writer.setMergeFactor(5);
-
+    writer.commit();
+    
     for (int i = 0; i < 23; i++)
       addDoc(writer);
 
@@ -3679,6 +3683,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
       dir2 = new MockRAMDirectory();
       writer2 = new IndexWriter(dir2, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
+      writer2.commit();
       cms = (ConcurrentMergeScheduler) writer2.getMergeScheduler();
 
       readers = new IndexReader[NUM_COPY];
