@@ -83,6 +83,7 @@
            errorProperty="tests.failed"
            failureProperty="tests.failed"
            dir="src/main"
+           tempdir="${junit.output.dir}"
            >
   	 <sysproperty key="java.util.logging.config.file" value="${common-solr.dir}/testlogging.properties"/>
       <formatter type="brief" usefile="false"/>
