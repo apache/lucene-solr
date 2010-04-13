@@ -30,7 +30,7 @@ import junit.framework.TestCase;
 public class TestCartesianShapeFilter extends TestCase {
 
   public void testSerializable() throws IOException {
-    CartesianShapeFilter filter = new CartesianShapeFilter(new Shape("1"),
+    CartesianShapeFilter filter = new CartesianShapeFilter(new Shape(1),
         "test");
     try {
       ByteArrayOutputStream bos = new ByteArrayOutputStream();

@@ -17,6 +17,8 @@
 
 package org.apache.lucene.spatial.tier.projections;
 
+import org.apache.lucene.spatial.geometry.DistanceUnits;
+
 /**
  * <p><font color="red"><b>NOTE:</b> This API is still in
  * flux and might change in incompatible ways in the next
@@ -33,6 +35,8 @@ public class CartesianTierPlotter {
   final String fieldPrefix;
   Double idd = Double.valueOf(180);
   
+  private static final double LOG_2 = Math.log(2);
+  
   public CartesianTierPlotter (int tierLevel, IProjector projector, String fieldPrefix) {
   
     this.tierLevel  = tierLevel;
@@ -42,6 +46,11 @@ public class CartesianTierPlotter {
     setTierLength();
     setTierBoxes();
     setTierVerticalPosDivider();
+  }
+
+  public CartesianTierPlotter(double radius, IProjector projector,
+      String fieldPrefix) {
+    this(CartesianTierPlotter.bestFit(radius), projector, fieldPrefix);
   }
   
   private void setTierLength (){
@@ -133,17 +142,15 @@ public class CartesianTierPlotter {
    *  Distances less than a mile return 15, finer granularity is
    *  in accurate
    */
-  public int bestFit(double miles){
-    
-    //28,892 a rough circumference of the earth
-    int circ = 28892;
-    
-    double r = miles / 2.0;
-    
-    double corner = r - Math.sqrt(Math.pow(r, 2) / 2.0d);
-    double times = circ / corner;
-    int bestFit =  (int)Math.ceil(log2(times)) + 1;
-    
+  static public int bestFit(double range) {
+    return bestFit(range, DistanceUnits.MILES);
+  }
+
+  static public int bestFit(double range, DistanceUnits distanceUnit) {
+    double times = distanceUnit.earthCircumference() / (2.0d * range);
+
+    int bestFit = (int) Math.ceil(log2(times));
+
     if (bestFit > 15) {
       // 15 is the granularity of about 1 mile
       // finer granularity isn't accurate with standard java math
@@ -153,12 +160,23 @@ public class CartesianTierPlotter {
   }
   
   /**
-   * a log to the base 2 formula
-   * <code>Math.log(value) / Math.log(2)</code>
+   * Computes log to base 2 of the given value
+   * 
    * @param value
+   *          Value to compute the log of
+   * @return Log_2 of the value
    */
-  public double log2(double value) {
-    
-    return Math.log(value) / Math.log(2);
+  public static double log2(double value) {
+    return Math.log(value) / LOG_2;
   }
+
+  /**
+   * Returns the ID of the tier level plotting is occuring at
+   * 
+   * @return ID of the tier level plotting is occuring at
+   */
+  public int getTierLevelId() {
+    return this.tierLevel;
+  }
+
 }

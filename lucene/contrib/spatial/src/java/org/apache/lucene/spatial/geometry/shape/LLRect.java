@@ -17,6 +17,7 @@
 
 package org.apache.lucene.spatial.geometry.shape;
 
+import org.apache.lucene.spatial.geometry.DistanceUnits;
 import org.apache.lucene.spatial.geometry.FloatLatLng;
 import org.apache.lucene.spatial.geometry.LatLng;
 
@@ -74,14 +75,34 @@ public class LLRect {
    * @param heightMi
    */
   public static LLRect createBox(LatLng center, double widthMi, double heightMi) {
-    double d = widthMi;
-    LatLng ur = boxCorners(center, d, 45.0); // assume right angles
-    LatLng ll = boxCorners(center, d, 225.0);
+		double minLat;
+    double maxLat;
+		double minLng;
+    double maxLng;
+    double radius= Math.max(widthMi, heightMi);
+		
+		if (radius > center.arcDistance(new FloatLatLng(LatLng.LATITUDE_DEGREE_MAX, LatLng.HEADING_NORTH))) {
+			maxLat = LatLng.LATITUDE_DEGREE_MAX;
+		} else {
+			maxLat = LatLng.computeDestination(center, radius, LatLng.HEADING_NORTH).getLat();
+			
+		}
+		if (radius > center.arcDistance(new FloatLatLng(LatLng.LATITUDE_DEGREE_MIN, LatLng.HEADING_NORTH))) {
+			minLat = LatLng.LATITUDE_DEGREE_MIN;
+		} else {
+			minLat = LatLng.computeDestination(center, radius, LatLng.HEADING_SOUTH).getLat();
+		}
 
-    //System.err.println("boxCorners: ur " + ur.getLat() + ',' + ur.getLng());
-    //System.err.println("boxCorners: cnt " + center.getLat() + ',' + center.getLng());
-    //System.err.println("boxCorners: ll " + ll.getLat() + ',' + ll.getLng());
-    return new LLRect(ll, ur);
+		if((radius > 2 * Math.PI * DistanceUnits.MILES.earthRadius() * Math.cos(Math.toRadians(minLat))) ||
+        (radius > 2 * Math.PI * DistanceUnits.MILES.earthRadius() * Math.cos(Math.toRadians(maxLat)))) {
+			maxLng = LatLng.LONGITUDE_DEGREE_MAX;
+			minLng = LatLng.LONGITUDE_DEGREE_MIN;
+		} else {
+			maxLng = LatLng.computeDestination(new FloatLatLng(Math.max(Math.abs(minLat), Math.abs(maxLat)), center.getLng()), radius, LatLng.HEADING_EAST).getLng();
+			minLng = LatLng.computeDestination(new FloatLatLng(Math.max(Math.abs(minLat), Math.abs(maxLat)), center.getLng()), radius, LatLng.HEADING_WEST).getLng();
+		}
+
+		return new LLRect((new FloatLatLng(minLat, minLng).normalize()), (new FloatLatLng(maxLat, maxLng)).normalize());
   }
   
   /**
