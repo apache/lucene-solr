@@ -41,6 +41,9 @@
   <!-- default arguments to pass to jvm executing tests -->
   <property name="args" value="" />
 
+  <!-- TODO: measure toning this down by default to 1 -->
+  <property name="threadsPerProcessor" value="2"/>
+
   <!-- Example directory -->
   <property name="example" value="${common-solr.dir}/example" />
   <!-- 

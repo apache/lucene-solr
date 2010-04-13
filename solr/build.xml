@@ -390,7 +390,7 @@
   </target>
 
   <target name="junit-parallel" unless="runsequential">
-   <parallel threadsPerProcessor="2">
+   <parallel threadsPerProcessor="${threadsPerProcessor}">
     <junit-macro pattern="S"/>
     <junit-macro pattern="D"/>
     <junit-macro pattern="A"/>
