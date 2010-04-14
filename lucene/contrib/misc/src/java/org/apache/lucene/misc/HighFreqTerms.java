@@ -17,6 +17,8 @@ package org.apache.lucene.misc;
   */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.TermsEnum;
@@ -55,7 +57,11 @@ public class HighFreqTerms {
     TermInfoQueue tiq = new TermInfoQueue(numTerms);
 
     if (field != null) { 
-      Terms terms = reader.fields().terms(field);
+      Fields fields = MultiFields.getFields(reader);
+      if (fields == null) {
+        return;
+      }
+      Terms terms = fields.terms(field);
       if (terms != null) {
         TermsEnum termsEnum = terms.iterator();
         while(true) {
@@ -68,11 +74,15 @@ public class HighFreqTerms {
         }
       }
     } else {
-      FieldsEnum fields = reader.fields().iterator();
+      Fields fields = MultiFields.getFields(reader);
+      if (fields == null) {
+        return;
+      }
+      FieldsEnum fieldsEnum = fields.iterator();
       while(true) {
-        field = fields.next();
+        field = fieldsEnum.next();
         if (field != null) {
-          TermsEnum terms = fields.terms();
+          TermsEnum terms = fieldsEnum.terms();
           while(true) {
             BytesRef term = terms.next();
             if (term != null) {
