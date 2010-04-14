@@ -26,6 +26,8 @@ import org.apache.lucene.spatial.geometry.DistanceUnits;
  */
 public class CartesianTierPlotter {
   public static final String DEFALT_FIELD_PREFIX = "_tier_";
+  public static final int DEFALT_MIN_TIER = 0;
+  public static final int DEFALT_MAX_TIER = 15;
   
   final int tierLevel;
   int tierLength;
@@ -49,8 +51,8 @@ public class CartesianTierPlotter {
   }
 
   public CartesianTierPlotter(double radius, IProjector projector,
-      String fieldPrefix) {
-    this(CartesianTierPlotter.bestFit(radius), projector, fieldPrefix);
+      String fieldPrefix, int minTier, int maxTier) {
+    this(CartesianTierPlotter.bestFit(radius, minTier, maxTier), projector, fieldPrefix);
   }
   
   private void setTierLength (){
@@ -143,18 +145,22 @@ public class CartesianTierPlotter {
    *  in accurate
    */
   static public int bestFit(double range) {
-    return bestFit(range, DistanceUnits.MILES);
+    return bestFit(range, DEFALT_MIN_TIER, DEFALT_MAX_TIER, DistanceUnits.MILES);
+  }
+  
+  static public int bestFit(double range, int minTier, int maxTier) {
+    return bestFit(range, minTier, maxTier, DistanceUnits.MILES);
   }
 
-  static public int bestFit(double range, DistanceUnits distanceUnit) {
+  static public int bestFit(double range, int minTier, int maxTier, DistanceUnits distanceUnit) {
     double times = distanceUnit.earthCircumference() / (2.0d * range);
 
     int bestFit = (int) Math.ceil(log2(times));
 
-    if (bestFit > 15) {
-      // 15 is the granularity of about 1 mile
-      // finer granularity isn't accurate with standard java math
-      return 15;
+    if (bestFit > maxTier) {
+      return maxTier;
+    } else if (bestFit < minTier) {
+    	return minTier;
     }
     return bestFit;
   }
