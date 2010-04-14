@@ -69,7 +69,7 @@ public class CartesianPolyFilterBuilder {
     double longUpperRight = upperRight.getLng();
     double longLowerLeft = lowerLeft.getLng();
 
-    CartesianTierPlotter ctp = new CartesianTierPlotter( miles, projector, tierPrefix, minTier, maxTier );
+    CartesianTierPlotter ctp = new CartesianTierPlotter( CartesianTierPlotter.bestFit(miles, minTier, maxTier), projector, tierPrefix);
     Shape shape = new Shape(ctp.getTierLevelId());
 
     if (longUpperRight < longLowerLeft) { // Box cross the 180 meridian

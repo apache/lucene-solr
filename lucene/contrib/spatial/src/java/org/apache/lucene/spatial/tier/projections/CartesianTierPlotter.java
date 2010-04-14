@@ -50,10 +50,6 @@ public class CartesianTierPlotter {
     setTierVerticalPosDivider();
   }
 
-  public CartesianTierPlotter(double radius, IProjector projector,
-      String fieldPrefix, int minTier, int maxTier) {
-    this(CartesianTierPlotter.bestFit(radius, minTier, maxTier), projector, fieldPrefix);
-  }
   
   private void setTierLength (){
     this.tierLength = (int) Math.pow(2 , this.tierLevel);
@@ -144,15 +140,15 @@ public class CartesianTierPlotter {
    *  Distances less than a mile return 15, finer granularity is
    *  in accurate
    */
-  static public int bestFit(double range) {
+  public static int bestFit(double range) {
     return bestFit(range, DEFALT_MIN_TIER, DEFALT_MAX_TIER, DistanceUnits.MILES);
   }
   
-  static public int bestFit(double range, int minTier, int maxTier) {
+  public static int bestFit(double range, int minTier, int maxTier) {
     return bestFit(range, minTier, maxTier, DistanceUnits.MILES);
   }
 
-  static public int bestFit(double range, int minTier, int maxTier, DistanceUnits distanceUnit) {
+  public static int bestFit(double range, int minTier, int maxTier, DistanceUnits distanceUnit) {
     double times = distanceUnit.earthCircumference() / (2.0d * range);
 
     int bestFit = (int) Math.ceil(log2(times));

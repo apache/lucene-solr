@@ -215,7 +215,7 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
       }
     }
 
-    assertQ(req("fl", "*,score", "q", qry.toString()),
+    assertQ(req("fl", "*,score", "indent", "true", "q", qry.toString()),
             "//*[@numFound='1']");
     clearIndex();
   }
