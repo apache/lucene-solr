@@ -17,6 +17,7 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Closeable;
 import java.util.Collection; // for javadocs
@@ -73,9 +74,20 @@ public abstract class Directory implements Closeable {
   public abstract void deleteFile(String name)
        throws IOException;
 
-  /** Returns the length of a file in the directory. */
-  public abstract long fileLength(String name)
-       throws IOException;
+  /**
+   * Returns the length of a file in the directory. This method follows the
+   * following contract:
+   * <ul>
+   * <li>Throws {@link FileNotFoundException} if the file does not exist
+   * <li>Returns a value &ge;0 if the file exists, which specifies its length.
+   * </ul>
+   * 
+   * @param name the name of the file for which to return the length.
+   * @throws FileNotFoundException if the file does not exist.
+   * @throws IOException if there was an IO error while retrieving the file's
+   *         length.
+   */
+  public abstract long fileLength(String name) throws IOException;
 
 
   /** Creates a new, empty file in the directory with the given name.

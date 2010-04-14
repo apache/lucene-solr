@@ -24,6 +24,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 
 import java.util.HashMap;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 
@@ -183,12 +184,10 @@ public class CompoundFileReader extends Directory {
     /** Returns the length of a file in the directory.
      * @throws IOException if the file does not exist */
     @Override
-    public long fileLength(String name)
-    throws IOException
-    {
+    public long fileLength(String name) throws IOException {
         FileEntry e = entries.get(name);
         if (e == null)
-            throw new IOException("File " + name + " does not exist");
+            throw new FileNotFoundException(name);
         return e.length;
     }
 

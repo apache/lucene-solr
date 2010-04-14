@@ -17,6 +17,7 @@ package org.apache.lucene.store.db;
  * limitations under the License.
  */
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -140,15 +141,13 @@ public class DbDirectory extends Directory {
     }
 
     @Override
-    public long fileLength(String name)
-        throws IOException
-    {
+    public long fileLength(String name) throws IOException {
         File file = new File(name);
 
         if (file.exists(this))
             return file.getLength();
 
-        throw new IOException("File does not exist: " + name);
+        throw new FileNotFoundException(name);
     }
     
     @Override
