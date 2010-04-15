@@ -29,9 +29,9 @@ import java.util.List;
 public class Shape implements Serializable{
 
   private List<Double> area = new ArrayList<Double>();
-  private int tierId;
+  private String tierId;
   
-  public Shape (int tierId){
+  public Shape (String tierId){
     this.tierId = tierId;
   }
 
@@ -43,7 +43,7 @@ public class Shape implements Serializable{
     return area;
   }
   
-  public int getTierId(){
+  public String getTierId(){
     return tierId;
   }
   

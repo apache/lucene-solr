@@ -17,8 +17,6 @@
 
 package org.apache.lucene.spatial.tier.projections;
 
-import org.apache.lucene.spatial.geometry.DistanceUnits;
-
 /**
  * <p><font color="red"><b>NOTE:</b> This API is still in
  * flux and might change in incompatible ways in the next
@@ -26,8 +24,9 @@ import org.apache.lucene.spatial.geometry.DistanceUnits;
  */
 public class CartesianTierPlotter {
   public static final String DEFALT_FIELD_PREFIX = "_tier_";
-  public static final int DEFALT_MIN_TIER = 0;
-  public static final int DEFALT_MAX_TIER = 15;
+  
+  
+  private static final double LOG_2 = Math.log(2);
   
   final int tierLevel;
   int tierLength;
@@ -36,8 +35,6 @@ public class CartesianTierPlotter {
   final IProjector projector;
   final String fieldPrefix;
   Double idd = Double.valueOf(180);
-  
-  private static final double LOG_2 = Math.log(2);
   
   public CartesianTierPlotter (int tierLevel, IProjector projector, String fieldPrefix) {
   
@@ -49,7 +46,6 @@ public class CartesianTierPlotter {
     setTierBoxes();
     setTierVerticalPosDivider();
   }
-
   
   private void setTierLength (){
     this.tierLength = (int) Math.pow(2 , this.tierLevel);
@@ -140,33 +136,29 @@ public class CartesianTierPlotter {
    *  Distances less than a mile return 15, finer granularity is
    *  in accurate
    */
-  public static int bestFit(double range) {
-    return bestFit(range, DEFALT_MIN_TIER, DEFALT_MAX_TIER, DistanceUnits.MILES);
-  }
-  
-  public static int bestFit(double range, int minTier, int maxTier) {
-    return bestFit(range, minTier, maxTier, DistanceUnits.MILES);
-  }
-
-  public static int bestFit(double range, int minTier, int maxTier, DistanceUnits distanceUnit) {
-    double times = distanceUnit.earthCircumference() / (2.0d * range);
-
-    int bestFit = (int) Math.ceil(log2(times));
-
-    if (bestFit > maxTier) {
-      return maxTier;
-    } else if (bestFit < minTier) {
-    	return minTier;
+  public int bestFit(double miles){
+    
+    //28,892 a rough circumference of the earth
+    int circ = 28892;
+    
+    double r = miles / 2.0;
+    
+    double corner = r - Math.sqrt(Math.pow(r, 2) / 2.0d);
+    double times = circ / corner;
+    int bestFit =  (int)Math.ceil(log2(times)) + 1;
+    
+    if (bestFit > 15) {
+      // 15 is the granularity of about 1 mile
+      // finer granularity isn't accurate with standard java math
+      return 15;
     }
     return bestFit;
   }
   
   /**
-   * Computes log to base 2 of the given value
-   * 
+   * a log to the base 2 formula
+   * <code>Math.log(value) / Math.log(2)</code>
    * @param value
-   *          Value to compute the log of
-   * @return Log_2 of the value
    */
   public static double log2(double value) {
     return Math.log(value) / LOG_2;

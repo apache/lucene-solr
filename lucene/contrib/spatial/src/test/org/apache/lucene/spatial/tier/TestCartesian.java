@@ -141,8 +141,6 @@ public class TestCartesian extends LuceneTestCase {
     addPoint(writer, "Wonga Wongue Reserve, Gabon", -0.546562,9.459229);
     addPoint(writer,"Midway Island",25.7, -171.7);
     addPoint(writer,"North Pole Way",55.0, 4.0);
-    addPoint(writer,"Close to the North Pole",89.9, 4.0);
-    addPoint(writer,"Close to the North Pole, other side",89.9, -176.0);
    
     writer.commit();
     writer.close();
@@ -364,8 +362,8 @@ public class TestCartesian extends LuceneTestCase {
       System.out.println("Results should be 18 "+ results);
     }
 
-    assertEquals(20, distances.size()); // fixed a store of only needed distances
-    assertEquals(20, results);
+    assertEquals(18, distances.size()); // fixed a store of only needed distances
+    assertEquals(18, results);
     double lastDistance = 0;
     for(int i =0 ; i < results; i++){
       Document d = searcher.doc(scoreDocs[i].doc);
@@ -385,103 +383,6 @@ public class TestCartesian extends LuceneTestCase {
       lastDistance = geo_distance;
     }
   }
-
-  public void testPoles() throws IOException, InvalidGeoException {
-    searcher = new IndexSearcher(directory, true);
-
-    final double miles = 50.0;
-    lat = 89.99;
-    lng = 4;
-
-    if (VERBOSE) System.out.println("testPoleFlipping");
-
-    // create a distance query
-    final DistanceQueryBuilder dq = new DistanceQueryBuilder(lat, lng, miles,
-        latField, lngField, CartesianTierPlotter.DEFALT_FIELD_PREFIX, true, 2, 15);
-
-    if (VERBOSE) System.out.println(dq);
-    //create a term query to search against all documents
-    Query tq = new TermQuery(new Term("metafile", "doc"));
-
-    FieldScoreQuery fsQuery = new FieldScoreQuery("geo_distance", Type.FLOAT);
-
-    CustomScoreQuery customScore = new CustomScoreQuery(dq.getQuery(tq),fsQuery){
-
-      @Override
-      protected CustomScoreProvider getCustomScoreProvider(IndexReader reader) {
-        return new CustomScoreProvider(reader) {
-          @Override // TODO: broken, as reader is not used!
-          public float customScore(int doc, float subQueryScore, float valSrcScore){
-            if (VERBOSE) System.out.println(doc);
-            if (dq.distanceFilter.getDistance(doc) == null)
-              return 0;
-
-            double distance = dq.distanceFilter.getDistance(doc);
-            // boost score shouldn't exceed 1
-            if (distance < 1.0d)
-              distance = 1.0d;
-            //boost by distance is invertly proportional to
-            // to distance from center point to location
-            float score = (float) ((miles - distance) / miles );
-            return score * subQueryScore;
-          }
-        };
-      }
-      
-    };
-    // Create a distance sort
-    // As the radius filter has performed the distance calculations
-    // already, pass in the filter to reuse the results.
-    //
-    DistanceFieldComparatorSource dsort = new DistanceFieldComparatorSource(dq.distanceFilter);
-    Sort sort = new Sort(new SortField("foo", dsort,false));
-
-    // Perform the search, using the term query, the serial chain filter, and the
-    // distance sort
-    TopDocs hits = searcher.search(customScore.createWeight(searcher),null, 1000, sort);
-    int results = hits.totalHits;
-    ScoreDoc[] scoreDocs = hits.scoreDocs; 
-
-    // Get a list of distances
-    Map<Integer,Double> distances = dq.distanceFilter.getDistances();
-
-    // distances calculated from filter first pass must be less than total
-    // docs, from the above test of 20 items, 12 will come from the boundary box
-    // filter, but only 5 are actually in the radius of the results.
-
-    // Note Boundary Box filtering, is not accurate enough for most systems.
-
-
-    if (VERBOSE) {
-      System.out.println("Distance Filter filtered: " + distances.size());
-      System.out.println("Results: " + results);
-      System.out.println("=============================");
-      System.out.println("Distances should be 18 "+ distances.size());
-      System.out.println("Results should be 18 "+ results);
-    }
-
-    assertEquals(2, distances.size()); // fixed a store of only needed distances
-    assertEquals(2, results);
-    double lastDistance = 0;
-    for(int i =0 ; i < results; i++){
-      Document d = searcher.doc(scoreDocs[i].doc);
-      String name = d.get("name");
-      double rsLat = Double.parseDouble(d.get(latField));
-      double rsLng = Double.parseDouble(d.get(lngField));
-      Double geo_distance = distances.get(scoreDocs[i].doc);
-
-      double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
-      double llm = DistanceUtils.getInstance().getLLMDistance(lat, lng, rsLat, rsLng);
-      if (VERBOSE) System.out.println("Name: "+ name +", Distance "+ distance); //(res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ hits.score(i));
-      assertTrue(Math.abs((distance - llm)) < 1);
-      if (VERBOSE) System.out.println("checking limit "+ distance + " < " + miles);
-      assertTrue((distance < miles ));
-      if (VERBOSE) System.out.println("checking sort "+ geo_distance + " >= " + lastDistance);
-      assertTrue(geo_distance >= lastDistance);
-      lastDistance = geo_distance;
-    }
-  }
-
   
   public void testRange() throws IOException, InvalidGeoException {
     searcher = new IndexSearcher(directory, true);

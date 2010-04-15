@@ -17,6 +17,9 @@
 
 package org.apache.lucene.spatial.tier;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.spatial.tier.projections.CartesianTierPlotter;
 import org.apache.lucene.spatial.tier.projections.IProjector;
@@ -61,71 +64,121 @@ public class CartesianPolyFilterBuilder {
       miles = MILES_FLOOR;
     }
     LLRect box1 = LLRect.createBox( new FloatLatLng( latitude, longitude ), miles, miles );
-    LatLng lowerLeft = box1.getLowerLeft();
-    LatLng upperRight = box1.getUpperRight();
+    LatLng ll = box1.getLowerLeft();
+    LatLng ur = box1.getUpperRight();
 
-    double latUpperRight = upperRight.getLat();
-    double latLowerLeft = lowerLeft.getLat();
-    double longUpperRight = upperRight.getLng();
-    double longLowerLeft = lowerLeft.getLng();
-
-    CartesianTierPlotter ctp = new CartesianTierPlotter( CartesianTierPlotter.bestFit(miles, minTier, maxTier), projector, tierPrefix);
-    Shape shape = new Shape(ctp.getTierLevelId());
-
-    if (longUpperRight < longLowerLeft) { // Box cross the 180 meridian
-      addBoxes(shape, ctp, latLowerLeft, longLowerLeft, latUpperRight, LatLng.LONGITUDE_DEGREE_MAX);
-      addBoxes(shape, ctp, latLowerLeft, -LatLng.LONGITUDE_DEGREE_MIN, latUpperRight, longUpperRight);
-    } else {
-      addBoxes(shape, ctp, latLowerLeft, longLowerLeft, latUpperRight, longUpperRight);
+    double latY = ur.getLat();
+    double latX = ll.getLat();
+    double longY = ur.getLng();
+    double longX = ll.getLng();
+    double longX2 = 0.0;
+	//These two if checks setup us up to deal with issues around the prime meridian and the 180th meridian
+	//In these two cases, we need to get tiles (tiers) from the lower left up to the meridian and then 
+	//from the meridan to the upper right
+	//Are we crossing the 180 deg. longitude, if so, we need to do some special things
+    if (ur.getLng() < 0.0 && ll.getLng() > 0.0) {
+	longX2 = ll.getLng();
+ 	longX = -180.0;	
     }
+	//are we crossing the prime meridian (0 degrees)?  If so, we need to account for it and boxes on both sides
+    if (ur.getLng() > 0.0 && ll.getLng() < 0.0) {
+	longX2 = ll.getLng();
+ 	longX = 0.0;	
+    }
+    
+    //System.err.println("getBoxShape:"+latY+"," + longY);
+    //System.err.println("getBoxShape:"+latX+"," + longX);
+    CartesianTierPlotter ctp = new CartesianTierPlotter(2, projector,tierPrefix);
+    int bestFit = ctp.bestFit(miles);
+	if (bestFit < minTier){
+		bestFit = minTier;
+	} else if (bestFit > maxTier){
+		bestFit = maxTier;
+	}
+    
+    ctp = new CartesianTierPlotter(bestFit, projector,tierPrefix);
+    Shape shape = new Shape(ctp.getTierFieldName());
+    
+    // generate shape
+    // iterate from startX->endX
+    //     iterate from startY -> endY
+    //      shape.add(currentLat.currentLong);
+	//for the edge cases (prime meridian and the 180th meridian), this call handles all tiles East of the meridian
+    //for all other cases, it handles the whole set of tiles
+    shape = getShapeLoop(shape,ctp,latX,longX,latY,longY);
+	if (longX2 != 0.0) {
+	      if (longX == 0.0) {
+	        longX = longX2;
+	        longY = 0.0;
+	        //handles the lower left longitude to the prime meridian
+	        //shape = getShapeLoop(shape, ctp, latX, longX, latY, longY);
+	      } else {
+	        //this clause handles the lower left longitude up to the 180 meridian
+	        longX = longX2;
+	        longY = 180.0;
+	      }
+	      shape = getShapeLoop(shape, ctp, latX, longX, latY, longY);
+
+	      //System.err.println("getBoxShape2:"+latY+"," + longY);
+	        //System.err.println("getBoxShape2:"+latX+"," + longX);
+	    }
+	
  
     return shape; 
   } 
   
-  private void addBoxes(Shape shape, CartesianTierPlotter tierPlotter, double lat1, double long1, double lat2, double long2) {
-    double boxId1 = tierPlotter.getTierBoxId(lat1, long1);
-    double boxId2 = tierPlotter.getTierBoxId(lat2, long2);
-
-    double tierVert = tierPlotter.getTierVerticalPosDivider();
-
-    int LongIndex1 = (int) Math.round(boxId1);
-    int LatIndex1 = (int) Math.round((boxId1 - LongIndex1) * tierVert);
-
-    int LongIndex2 = (int) Math.round(boxId2);
-    int LatIndex2 = (int) Math.round((boxId2 - LongIndex2) * tierVert);
-
-    int startLong, endLong;
-    int startLat, endLat;
-
-    if (LongIndex1 > LongIndex2) {
-      startLong = LongIndex2;
-      endLong = LongIndex1;
-    } else {
-      startLong = LongIndex1;
-      endLong = LongIndex2;
-    }
-
-    if (LatIndex1 > LatIndex2) {
-      startLat = LatIndex2;
-      endLat = LatIndex1;
-    } else {
-      startLat = LatIndex1;
-      endLat = LatIndex2;
-    }
-
-    int LatIndex, LongIndex;
-    for (LongIndex = startLong; LongIndex <= endLong; LongIndex++) {
-      for (LatIndex = startLat; LatIndex <= endLat; LatIndex++) {
-        // create a boxId
-        double boxId = LongIndex + LatIndex / tierVert;
+  public Shape getShapeLoop(Shape shape, CartesianTierPlotter ctp, double latX, double longX, double latY, double longY)
+  {  
+ 
+    //System.err.println("getShapeLoop:"+latY+"," + longY);
+    //System.err.println("getShapeLoop:"+latX+"," + longX);
+    double beginAt = ctp.getTierBoxId(latX, longX);
+    double endAt = ctp.getTierBoxId(latY, longY);
+    if (beginAt > endAt){
+	      double tmp = beginAt;
+	      beginAt = endAt;
+	      endAt = tmp;
+	}
+    double tierVert = ctp.getTierVerticalPosDivider();
+    //System.err.println(" | "+ beginAt+" | "+ endAt);
+    
+    double startX = beginAt - (beginAt %1);
+    double startY = beginAt - startX ; //should give a whole number
+    
+    double endX = endAt - (endAt %1);
+    double endY = endAt -endX; //should give a whole number
+    
+    int scale = (int)Math.log10(tierVert);
+    endY = new BigDecimal(endY).setScale(scale, RoundingMode.HALF_EVEN).doubleValue();
+    startY = new BigDecimal(startY).setScale(scale, RoundingMode.HALF_EVEN).doubleValue();
+    double xInc = 1.0d / tierVert;
+    xInc = new BigDecimal(xInc).setScale(scale, RoundingMode.HALF_EVEN).doubleValue();
+    
+    //System.err.println("go from startX:"+startX+" to:" + endX);
+    for (; startX <= endX; startX++){
+      
+      double itY = startY;
+      //System.err.println("go from startY:"+startY+" to:" + endY);
+      while (itY <= endY){
+        //create a boxId
+        // startX.startY
+        double boxId = startX + itY ;
         shape.addBox(boxId);
+        //System.err.println("----"+startX+" and "+itY);
+        //System.err.println("----"+boxId);
+        itY += xInc;
+        
+        // java keeps 0.0001 as 1.0E-1
+        // which ends up as 0.00011111
+        itY = new BigDecimal(itY).setScale(scale, RoundingMode.HALF_EVEN).doubleValue();
       }
     }
+    return shape;
   }
   
   public Filter getBoundingArea(double latitude, double longitude, double miles) 
   {
     Shape shape = getBoxShape(latitude, longitude, miles);
-    return new CartesianShapeFilter(shape, tierPrefix + shape.getTierId());
+    return new CartesianShapeFilter(shape, shape.getTierId());
   }
 }

@@ -30,19 +30,6 @@ package org.apache.lucene.spatial.geometry;
  */
 public abstract class LatLng {
 
-  public final static int LONGITUDE_DEGREE_RANGE = 360;
-  public final static int LONGITUDE_DEGREE_MIN = -LONGITUDE_DEGREE_RANGE / 2;
-  public final static int LONGITUDE_DEGREE_MAX = LONGITUDE_DEGREE_RANGE / 2;
-  public final static int LATITUDE_DEGREE_RANGE = 180;
-  public final static int LATITUDE_DEGREE_MIN = -LATITUDE_DEGREE_RANGE / 2;
-  public final static int LATITUDE_DEGREE_MAX = LATITUDE_DEGREE_RANGE / 2;
-
-  public final static int HEADING_NORTH= 0;
-  public final static int HEADING_SOUTH= 180;
-  public final static int HEADING_EAST= 90;
-  public final static int HEADING_WEST= 270;
-  
-  
   public abstract boolean isNormalized();
 
   public abstract boolean isFixedPoint();
@@ -80,47 +67,6 @@ public abstract class LatLng {
         lng+180*FixedLatLng.SCALE_FACTOR_INT,
         lat+90*FixedLatLng.SCALE_FACTOR_INT
     );
-  }
-  
-  public static LatLng computeDestination(LatLng startPoint, double distance,
-      double heading) {
-    return computeDestination(startPoint, distance, heading,
-        DistanceUnits.MILES);
-  }
-
-  /**
-   * Utility method for calculating a target point given a start, a heading (in degrees), a distance and a distance unit
-   * @param startPoint
-   * 									beginning point of the path
-   * @param distance
-   * 									distance to be travel from the starting point
-   * @param heading
-   * 									heading in degrees to follow during the travel
-   * @param distanceUnit
-   * 									unit of the distance to to travel
-   * @return arrival point of the described travel   
-   */
-  public static LatLng computeDestination(LatLng startPoint, double distance, double heading, DistanceUnits distanceUnit) {
-    double startPointLatitude = startPoint.getLat();
-    double startPointLongitude = startPoint.getLng();
-    double earthRadius = distanceUnit.earthRadius();
-    double headingRad = Math.toRadians(heading);
-    double startPointLatitudeRad = Math.toRadians(startPointLatitude);
-    double startPointLongitudeRad = Math.toRadians(startPointLongitude);
-
-    // Haversine formula (http://www.movable-type.co.uk/scripts/latlong.html)
-    double destinationLatitudeRad = Math.asin(Math.sin(startPointLatitudeRad)
-        * Math.cos(distance / earthRadius) + Math.cos(startPointLatitudeRad)
-        * Math.sin(distance / earthRadius) * Math.cos(headingRad));
-
-    double destinationLongitudeRad = startPointLongitudeRad
-        + Math.atan2(Math.sin(headingRad) * Math.sin(distance / earthRadius)
-            * Math.cos(startPointLatitudeRad), Math.cos(distance / earthRadius)
-            - Math.sin(startPointLatitudeRad)
-            * Math.sin(destinationLatitudeRad));
-
-    return new FloatLatLng(Math.toDegrees(destinationLatitudeRad), Math
-        .toDegrees(destinationLongitudeRad));
   }
   
   /**

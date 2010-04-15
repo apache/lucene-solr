@@ -66,11 +66,7 @@ Bug fixes
 		not an indexed field.  Note, this change affects the APIs. (Grant Ingersoll)
 		
  * LUCENE-2359: Fix bug in CartesianPolyFilterBuilder related to handling of behavior around
-		the 180th meridian (Grant Ingersoll, Nicolas Hellinger)
-		
- * LUCENE-2366: Fix LLRect issue with properly calculating box points (Nicolas Hellinger via Grant Ingersoll)
-		
-		
+		the 180th meridian (Grant Ingersoll)
    
 API Changes
 
