@@ -67,7 +67,7 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
     Directory dir = new MockRAMDirectory();
     
     // TODO: verify equals using IW.getReader
-    DocsAndWriter dw = indexRandomIWReader(10, 10, 100, dir);
+    DocsAndWriter dw = indexRandomIWReader(5, 3, 100, dir);
     IndexReader r = dw.writer.getReader();
     dw.writer.commit();
     verifyEquals(r, dir, "id");
@@ -86,7 +86,7 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
     // mergeFactor=2; maxBufferedDocs=2; Map docs = indexRandom(1, 3, 2, dir1);
     int maxThreadStates = 1+r.nextInt(10);
     boolean doReaderPooling = r.nextBoolean();
-    Map<String,Document> docs = indexRandom(10, 10, 100, dir1, maxThreadStates, doReaderPooling);
+    Map<String,Document> docs = indexRandom(5, 3, 100, dir1, maxThreadStates, doReaderPooling);
     indexSerial(docs, dir2);
 
     // verifying verify
@@ -103,7 +103,7 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
 
     r = newRandom();
 
-    for (int i=0; i<20; i++) {  // increase iterations for better testing
+    for (int i=0; i<3; i++) {  // increase iterations for better testing
       sameFieldOrder=r.nextBoolean();
       mergeFactor=r.nextInt(3)+2;
       maxBufferedDocs=r.nextInt(3)+2;
@@ -112,7 +112,7 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
       seed++;
 
       int nThreads=r.nextInt(5)+1;
-      int iter=r.nextInt(10)+1;
+      int iter=r.nextInt(5)+1;
       int range=r.nextInt(20)+1;
       Directory dir1 = new MockRAMDirectory();
       Directory dir2 = new MockRAMDirectory();
