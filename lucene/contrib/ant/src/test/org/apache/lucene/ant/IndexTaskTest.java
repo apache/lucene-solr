@@ -39,9 +39,6 @@ public class IndexTaskTest extends LuceneTestCase {
     private final static String docHandler =
             "org.apache.lucene.ant.FileExtensionDocumentHandler";
 
-    private String docsDir = System.getProperty("docs.dir");
-    private File indexDir = new File(System.getProperty("index.dir"));
-
     private Searcher searcher;
     private Analyzer analyzer;
     private FSDirectory dir;
@@ -55,6 +52,9 @@ public class IndexTaskTest extends LuceneTestCase {
     @Override
     protected void setUp() throws Exception {
       super.setUp();
+      // slightly hackish way to get the src/test dir
+      String docsDir = getDataFile("test.txt").getParent();
+      File indexDir = TEMP_DIR;
         Project project = new Project();
 
         IndexTask task = new IndexTask();

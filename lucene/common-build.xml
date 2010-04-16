@@ -441,10 +441,6 @@
 
 	      <sysproperty key="lucene.version" value="${dev.version}"/>
 	
-          <!-- contrib/ant IndexTaskTest needs these two system properties -->
-          <sysproperty key="docs.dir" file="src/test"/>
-          <sysproperty key="index.dir" file="${build.dir}/test/index"/>
-	    		
           <!-- contrib/benchmark uses this system property to locate docs data and defined tasks -->
           <sysproperty key="tasks.dir" file="${build.dir}/classes/java/org/apache/lucene/benchmark/byTask/tasks"/>
           <sysproperty key="benchmark.work.dir" file="@{tempDir}/@{pattern}"/>
