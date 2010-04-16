@@ -440,10 +440,6 @@
 	      <sysproperty key="tempDir" file="@{tempDir}/@{pattern}"/>
 
 	      <sysproperty key="lucene.version" value="${dev.version}"/>
-	
-          <!-- contrib/benchmark uses this system property to locate docs data and defined tasks -->
-          <sysproperty key="tasks.dir" file="${build.dir}/classes/java/org/apache/lucene/benchmark/byTask/tasks"/>
-          <sysproperty key="benchmark.work.dir" file="@{tempDir}/@{pattern}"/>
 	    	
 	      <formatter type="xml"/>
 	      <formatter classname="${junit.details.formatter}" usefile="false"/>
