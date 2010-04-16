@@ -523,6 +523,9 @@ Test Cases
   access to "real" files from the test folder itsself, can use
   LuceneTestCase(J4).getDataFile().  (Uwe Schindler)
 
+* LUCENE-2398: Improve tests to work better from IDEs such as Eclipse.
+  (Paolo Castagna via Robert Muir)
+
 ================== Release 2.9.2 / 3.0.1 2010-02-26 ====================
 
 Changes in backwards compatibility policy

@@ -19,7 +19,7 @@ package org.apache.lucene.util.cache;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-public class BaseTestLRU extends LuceneTestCase {
+public abstract class BaseTestLRU extends LuceneTestCase {
 
   protected void testCache(Cache<Integer,Object> cache, int n) throws Exception {
     Object dummy = new Object();
