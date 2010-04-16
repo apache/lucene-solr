@@ -29,6 +29,7 @@ final class StoredFieldsWriter {
   final DocumentsWriter docWriter;
   final FieldInfos fieldInfos;
   int lastDocID;
+  private String docStoreSegment;
 
   PerDoc[] docFreeList = new PerDoc[1];
   int freeCount;
@@ -58,10 +59,10 @@ final class StoredFieldsWriter {
     if (fieldsWriter != null)
       fieldsWriter.flush();
   }
-  
-  private void initFieldsWriter() throws IOException {
+
+  private synchronized void initFieldsWriter() throws IOException {
     if (fieldsWriter == null) {
-      final String docStoreSegment = docWriter.getDocStoreSegment();
+      docStoreSegment = docWriter.getDocStoreSegment();
       if (docStoreSegment != null) {
         fieldsWriter = new FieldsWriter(docWriter.directory,
                                         docStoreSegment,
@@ -83,8 +84,10 @@ final class StoredFieldsWriter {
     if (fieldsWriter != null) {
       fieldsWriter.close();
       fieldsWriter = null;
-      lastDocID = 0;
+      assert docStoreSegment != null;
       assert state.docStoreSegmentName != null;
+      assert docStoreSegment.equals(state.docStoreSegmentName): "fieldsWriter wrote to segment=" + docStoreSegment + " vs SegmentWriteState segment=" + state.docStoreSegmentName;
+      lastDocID = 0;
       String fieldsName = IndexFileNames.segmentFileName(state.docStoreSegmentName, IndexFileNames.FIELDS_EXTENSION);
       String fieldsIdxName = IndexFileNames.segmentFileName(state.docStoreSegmentName, IndexFileNames.FIELDS_INDEX_EXTENSION);
       state.flushedFiles.add(fieldsName);
