@@ -119,6 +119,11 @@ New features
    the ability to override any stemmer with a custom dictionary map.
    (Robert Muir, Uwe Schindler, Simon Willnauer)
 
+ * LUCENE-2399: Add ICUNormalizer2Filter, which normalizes tokens with ICU's
+   Normalizer2. This allows for efficient combinations of normalization and custom 
+   mappings in addition to standard normalization, and normalization combined
+   with unicode case folding.  (Robert Muir)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
@@ -135,6 +140,8 @@ Build
    core were changed without ant clean. This fix also optimizes the
    dependency management between contribs by a new ANT macro.
    (Uwe Schindler, Shai Erera)
+
+ * LUCENE-2399: Upgrade contrib/icu's ICU jar file to ICU 4.4.  (Robert Muir)
    
 Optimizations
 
