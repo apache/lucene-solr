@@ -51,7 +51,7 @@ public final class ThaiAnalyzer extends ReusableAnalyzerBase {
    * 
    * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
    *         built from a {@link StandardTokenizer} filtered with
-   *         {@link StandardFilter}, {@link ThaiWordFilter}, and
+   *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link ThaiWordFilter}, and
    *         {@link StopFilter}
    */
   @Override
