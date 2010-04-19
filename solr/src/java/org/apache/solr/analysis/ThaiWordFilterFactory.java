@@ -25,7 +25,8 @@ import org.apache.lucene.analysis.TokenStream;
 /** Factory for {@link ThaiWordFilter} */
 public class ThaiWordFilterFactory extends BaseTokenFilterFactory {
   public ThaiWordFilter create(TokenStream input) {
-    return new ThaiWordFilter(input);
+    assureMatchVersion();
+    return new ThaiWordFilter(luceneMatchVersion, input);
   }
 }
 
