@@ -80,9 +80,8 @@ public class ICUNormalizer2Filter extends TokenFilter {
     if (input.incrementToken()) {
       if (normalizer.quickCheck(termAtt) != Normalizer.YES) {
         buffer.setLength(0);
-        buffer.append(termAtt.buffer(), 0, termAtt.length());
-        termAtt.setEmpty();
-        normalizer.normalize(buffer, termAtt);
+        normalizer.normalize(termAtt, buffer);
+        termAtt.setEmpty().append(buffer);
       }
       return true;
     } else {
