@@ -41,7 +41,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
     return new String(termBuffer, 0, termLength);
   }
 
-  public void copyBuffer(char[] buffer, int offset, int length) {
+  public final void copyBuffer(char[] buffer, int offset, int length) {
     growTermBuffer(length);
     System.arraycopy(buffer, offset, termBuffer, 0, length);
     termLength = length;
@@ -69,7 +69,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
     termLength = length;
   }
 
-  public char[] buffer() {
+  public final char[] buffer() {
     return termBuffer;
   }
 
@@ -78,7 +78,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
     return termBuffer;
   }
   
-  public char[] resizeBuffer(int newSize) {
+  public final char[] resizeBuffer(int newSize) {
     if(termBuffer.length < newSize){
       // Not big enough; create a new array with slight
       // over allocation and preserve content
@@ -107,14 +107,14 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
     return termLength;
   }
 
-  public CharTermAttribute setLength(int length) {
+  public final CharTermAttribute setLength(int length) {
     if (length > termBuffer.length)
       throw new IllegalArgumentException("length " + length + " exceeds the size of the termBuffer (" + termBuffer.length + ")");
     termLength = length;
     return this;
   }
   
-  public CharTermAttribute setEmpty() {
+  public final CharTermAttribute setEmpty() {
     termLength = 0;
     return this;
   }
@@ -125,7 +125,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   }
   
   // *** TermToBytesRefAttribute interface ***
-  public int toBytesRef(BytesRef target) {
+  public final int toBytesRef(BytesRef target) {
     // TODO: Maybe require that bytes is already initialized? TermsHashPerField ensures this.
     if (target.bytes == null) {
       target.bytes = new byte[termLength * 4];
@@ -134,50 +134,106 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   }
   
   // *** CharSequence interface ***
-  public int length() {
+  public final int length() {
     return termLength;
   }
   
-  public char charAt(int index) {
+  public final char charAt(int index) {
     if (index >= termLength)
       throw new IndexOutOfBoundsException();
     return termBuffer[index];
   }
   
-  public CharSequence subSequence(final int start, final int end) {
+  public final CharSequence subSequence(final int start, final int end) {
     if (start > termLength || end > termLength)
       throw new IndexOutOfBoundsException();
     return new String(termBuffer, start, end - start);
   }
   
   // *** Appendable interface ***
-  public CharTermAttribute append(CharSequence csq) {
+
+  public final CharTermAttribute append(CharSequence csq) {
+    if (csq == null) // needed for Appendable compliance
+      return appendNull();
     return append(csq, 0, csq.length());
   }
   
-  public CharTermAttribute append(CharSequence csq, int start, int end) {
-    resizeBuffer(termLength + end - start);
-    if (csq instanceof String) {
-      ((String) csq).getChars(start, end, termBuffer, termLength);
-    } else if (csq instanceof StringBuilder) {
-      ((StringBuilder) csq).getChars(start, end, termBuffer, termLength);
-    } else if (csq instanceof StringBuffer) {
-      ((StringBuffer) csq).getChars(start, end, termBuffer, termLength);
-    } else if (csq instanceof CharBuffer && ((CharBuffer) csq).hasArray()) {
-      final CharBuffer cb = (CharBuffer) csq;
-      System.arraycopy(cb.array(), cb.arrayOffset() + cb.position() + start, termBuffer, termLength, end - start);
+  public final CharTermAttribute append(CharSequence csq, int start, int end) {
+    if (csq == null) // needed for Appendable compliance
+      csq = "null";
+    final int len = end - start, csqlen = csq.length();
+    if (len < 0 || start > csqlen || end > csqlen)
+      throw new IndexOutOfBoundsException();
+    if (len == 0)
+      return this;
+    resizeBuffer(termLength + len);
+    if (len > 4) { // only use instanceof check series for longer CSQs, else simply iterate
+      if (csq instanceof String) {
+        ((String) csq).getChars(start, end, termBuffer, termLength);
+      } else if (csq instanceof StringBuilder) {
+        ((StringBuilder) csq).getChars(start, end, termBuffer, termLength);
+      } else if (csq instanceof CharTermAttribute) {
+        System.arraycopy(((CharTermAttribute) csq).buffer(), start, termBuffer, termLength, len);
+      } else if (csq instanceof CharBuffer && ((CharBuffer) csq).hasArray()) {
+        final CharBuffer cb = (CharBuffer) csq;
+        System.arraycopy(cb.array(), cb.arrayOffset() + cb.position() + start, termBuffer, termLength, len);
+      } else if (csq instanceof StringBuffer) {
+        ((StringBuffer) csq).getChars(start, end, termBuffer, termLength);
+      } else {
+        while (start < end)
+          termBuffer[termLength++] = csq.charAt(start++);
+        // no fall-through here, as termLength is updated!
+        return this;
+      }
+      termLength += len;
+      return this;
     } else {
       while (start < end)
         termBuffer[termLength++] = csq.charAt(start++);
-      // no fall-through here, as termLength is updated!
       return this;
     }
-    termLength += end - start;
+  }
+  
+  public final CharTermAttribute append(char c) {
+    resizeBuffer(termLength + 1)[termLength++] = c;
     return this;
   }
   
-  public CharTermAttribute append(char c) {
-    resizeBuffer(termLength + 1)[termLength++] = c;
+  // *** For performance some convenience methods in addition to CSQ's ***
+  
+  public final CharTermAttribute append(String s) {
+    if (s == null) // needed for Appendable compliance
+      return appendNull();
+    final int len = s.length();
+    s.getChars(0, len, resizeBuffer(termLength + len), termLength);
+    termLength += len;
+    return this;
+  }
+  
+  public final CharTermAttribute append(StringBuilder s) {
+    if (s == null) // needed for Appendable compliance
+      return appendNull();
+    final int len = s.length();
+    s.getChars(0, len, resizeBuffer(termLength + len), termLength);
+    termLength += len;
+    return this;
+  }
+  
+  public final CharTermAttribute append(CharTermAttribute ta) {
+    if (ta == null) // needed for Appendable compliance
+      return appendNull();
+    final int len = ta.length();
+    System.arraycopy(ta.buffer(), 0, resizeBuffer(termLength + len), termLength, len);
+    termLength += len;
+    return this;
+  }
+
+  private CharTermAttribute appendNull() {
+    resizeBuffer(termLength + 4);
+    termBuffer[termLength++] = 'n';
+    termBuffer[termLength++] = 'u';
+    termBuffer[termLength++] = 'l';
+    termBuffer[termLength++] = 'l';
     return this;
   }
   

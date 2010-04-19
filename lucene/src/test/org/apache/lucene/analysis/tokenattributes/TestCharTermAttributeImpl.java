@@ -22,6 +22,7 @@ import java.nio.CharBuffer;
 import java.util.Formatter;
 import java.util.Locale;
 import java.util.regex.Pattern;
+import java.util.Random;
 
 public class TestCharTermAttributeImpl extends LuceneTestCase {
 
@@ -157,21 +158,155 @@ public class TestCharTermAttributeImpl extends LuceneTestCase {
     assertEquals("12345678", t.toString());
     t.append('9');
     assertEquals("123456789", t.toString());
-    t.append("0");
+    t.append((CharSequence) "0");
     assertEquals("1234567890", t.toString());
-    t.append("0123456789", 1, 3);
+    t.append((CharSequence) "0123456789", 1, 3);
     assertEquals("123456789012", t.toString());
-    t.append(CharBuffer.wrap("0123456789".toCharArray()), 3, 5);
+    t.append((CharSequence) CharBuffer.wrap("0123456789".toCharArray()), 3, 5);
     assertEquals("12345678901234", t.toString());
-    t.append(t);
+    t.append((CharSequence) t);
     assertEquals("1234567890123412345678901234", t.toString());
-    t.append(new StringBuilder("0123456789"), 5, 7);
+    t.append((CharSequence) new StringBuilder("0123456789"), 5, 7);
     assertEquals("123456789012341234567890123456", t.toString());
-    t.append(new StringBuffer(t));
+    t.append((CharSequence) new StringBuffer(t));
     assertEquals("123456789012341234567890123456123456789012341234567890123456", t.toString());
     // very wierd, to test if a subSlice is wrapped correct :)
-    t.setEmpty().append(CharBuffer.wrap("0123456789".toCharArray(), 3, 5) /* "34" */, 1, 2);
+    CharBuffer buf = CharBuffer.wrap("0123456789".toCharArray(), 3, 5);
+    assertEquals("34567", buf.toString());
+    t.setEmpty().append((CharSequence) buf, 1, 2);
     assertEquals("4", t.toString());
+    CharTermAttribute t2 = new CharTermAttributeImpl();
+    t2.append("test");
+    t.append((CharSequence) t2);
+    assertEquals("4test", t.toString());
+    t.append((CharSequence) t2, 1, 2);
+    assertEquals("4teste", t.toString());
+    
+    try {
+      t.append((CharSequence) t2, 1, 5);
+      fail("Should throw IndexOutOfBoundsException");
+    } catch(IndexOutOfBoundsException iobe) {
+    }
+    
+    try {
+      t.append((CharSequence) t2, 1, 0);
+      fail("Should throw IndexOutOfBoundsException");
+    } catch(IndexOutOfBoundsException iobe) {
+    }
+    
+    t.append((CharSequence) null);
+    assertEquals("4testenull", t.toString());
   }
   
+  public void testAppendableInterfaceWithLongSequences() {
+    CharTermAttributeImpl t = new CharTermAttributeImpl();
+    t.append((CharSequence) "01234567890123456789012345678901234567890123456789");
+    t.append((CharSequence) CharBuffer.wrap("01234567890123456789012345678901234567890123456789".toCharArray()), 3, 50);
+    assertEquals("0123456789012345678901234567890123456789012345678934567890123456789012345678901234567890123456789", t.toString());
+    t.setEmpty().append((CharSequence) new StringBuilder("01234567890123456789"), 5, 17);
+    assertEquals((CharSequence) "567890123456", t.toString());
+    t.append(new StringBuffer(t));
+    assertEquals((CharSequence) "567890123456567890123456", t.toString());
+    // very wierd, to test if a subSlice is wrapped correct :)
+    CharBuffer buf = CharBuffer.wrap("012345678901234567890123456789".toCharArray(), 3, 15);
+    assertEquals("345678901234567", buf.toString());
+    t.setEmpty().append(buf, 1, 14);
+    assertEquals("4567890123456", t.toString());
+    
+    // finally use a completely custom CharSequence that is not catched by instanceof checks
+    final String longTestString = "012345678901234567890123456789";
+    t.append(new CharSequence() {
+      public char charAt(int i) { return longTestString.charAt(i); }
+      public int length() { return longTestString.length(); }
+      public CharSequence subSequence(int start, int end) { return longTestString.subSequence(start, end); }
+      public String toString() { return longTestString; }
+    });
+    assertEquals("4567890123456"+longTestString, t.toString());
+  }
+  
+  public void testNonCharSequenceAppend() {
+    CharTermAttributeImpl t = new CharTermAttributeImpl();
+    t.append("0123456789");
+    t.append("0123456789");
+    assertEquals("01234567890123456789", t.toString());
+    t.append(new StringBuilder("0123456789"));
+    assertEquals("012345678901234567890123456789", t.toString());
+    CharTermAttribute t2 = new CharTermAttributeImpl();
+    t2.append("test");
+    t.append(t2);
+    assertEquals("012345678901234567890123456789test", t.toString());
+    t.append((String) null);
+    t.append((StringBuilder) null);
+    t.append((CharTermAttribute) null);
+    assertEquals("012345678901234567890123456789testnullnullnull", t.toString());
+  }
+  
+  public void testExceptions() {
+    CharTermAttributeImpl t = new CharTermAttributeImpl();
+    t.append("test");
+    assertEquals("test", t.toString());
+
+    try {
+      t.charAt(-1);
+      fail("Should throw IndexOutOfBoundsException");
+    } catch(IndexOutOfBoundsException iobe) {
+    }
+
+    try {
+      t.charAt(4);
+      fail("Should throw IndexOutOfBoundsException");
+    } catch(IndexOutOfBoundsException iobe) {
+    }
+
+    try {
+      t.subSequence(0, 5);
+      fail("Should throw IndexOutOfBoundsException");
+    } catch(IndexOutOfBoundsException iobe) {
+    }
+
+    try {
+      t.subSequence(5, 0);
+      fail("Should throw IndexOutOfBoundsException");
+    } catch(IndexOutOfBoundsException iobe) {
+    }
+  }
+
+  /*
+  
+  // test speed of the dynamic instanceof checks in append(CharSequence),
+  // to find the best max length for the generic while (start<end) loop:
+  public void testAppendPerf() {
+    CharTermAttributeImpl t = new CharTermAttributeImpl();
+    final int count = 32;
+    CharSequence[] csq = new CharSequence[count * 6];
+    final StringBuilder sb = new StringBuilder();
+    for (int i=0,j=0; i<count; i++) {
+      sb.append(i%10);
+      final String testString = sb.toString();
+      CharTermAttribute cta = new CharTermAttributeImpl();
+      cta.append(testString);
+      csq[j++] = cta;
+      csq[j++] = testString;
+      csq[j++] = new StringBuilder(sb);
+      csq[j++] = new StringBuffer(sb);
+      csq[j++] = CharBuffer.wrap(testString.toCharArray());
+      csq[j++] = new CharSequence() {
+        public char charAt(int i) { return testString.charAt(i); }
+        public int length() { return testString.length(); }
+        public CharSequence subSequence(int start, int end) { return testString.subSequence(start, end); }
+        public String toString() { return testString; }
+      };
+    }
+
+    Random rnd = newRandom();
+    long startTime = System.currentTimeMillis();
+    for (int i=0; i<100000000; i++) {
+      t.setEmpty().append(csq[rnd.nextInt(csq.length)]);
+    }
+    long endTime = System.currentTimeMillis();
+    System.out.println("Time: " + (endTime-startTime)/1000.0 + " s");
+  }
+  
+  */
+
 }
