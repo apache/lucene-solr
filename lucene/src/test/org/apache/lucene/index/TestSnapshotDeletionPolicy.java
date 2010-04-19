@@ -1,6 +1,4 @@
-package org.apache.lucene;
-// Intentionally not in org.apache.lucene.index, to assert
-// that we do not require any package private access.
+package org.apache.lucene.index;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,6 +17,8 @@ package org.apache.lucene;
  * limitations under the License.
  */
 
+import static org.junit.Assert.*;
+
 import java.util.Collection;
 import java.io.File;
 import java.io.IOException;
@@ -34,21 +34,22 @@ import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.TestIndexWriter;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
+import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Test;
 
 //
 // This was developed for Lucene In Action,
 // http://lucenebook.com
 //
 
-public class TestSnapshotDeletionPolicy extends LuceneTestCase {
+public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
   
   public static final String INDEX_PATH = "test.snapshots";
 
+  @Test
   public void testSnapshotDeletionPolicy() throws Exception {
     File dir = _TestUtil.getTempDir(INDEX_PATH);
     try {
@@ -64,6 +65,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     dir2.close();
   }
 
+  @Test
   public void testReuseAcrossWriters() throws Exception {
     Directory dir = new MockRAMDirectory();
 
@@ -235,5 +237,13 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
       input.close();
     }
   }
+  
+  @Test(expected=IllegalStateException.class)
+  public void testNoCommits() throws Exception {
+    // Tests that if there were no commits when snapshot() is called, then
+    // IllegalStateException is thrown rather than NPE.
+    SnapshotDeletionPolicy sdp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
+    sdp.snapshot();
+  }
+  
 }
-
