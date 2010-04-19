@@ -67,6 +67,10 @@ Bug fixes
 		
  * LUCENE-2359: Fix bug in CartesianPolyFilterBuilder related to handling of behavior around
 		the 180th meridian (Grant Ingersoll)
+
+ * LUCENE-2404: Fix bugs with position increment and empty tokens in ThaiWordFilter.
+   For matchVersion >= 3.1 the filter also no longer lowercases. ThaiAnalyzer
+   will use a separate LowerCaseFilter instead. (Uwe Schindler, Robert Muir)
    
 API Changes
 
@@ -84,6 +88,7 @@ API Changes
    (Robert Muir, Uwe Schindler, Simon Willnauer)
    
 New features
+
  * LUCENE-2306: Add NumericRangeFilter and NumericRangeQuery support to XMLQueryParser.
    (Jingkei Ly, via Mark Harwood)
 
@@ -157,6 +162,9 @@ Optimizations
  * LUCENE-2194, LUCENE-2201, LUCENE-2288: Snowball stemmers in contrib/analyzers
    have been optimized to work on char[] and remove unnecessary object creation.
    (Shai Erera, Robert Muir)
+
+ * LUCENE-2404: Improve performance of ThaiWordFilter by using a char[]-backed
+   CharacterIterator (currently from javax.swing).  (Uwe Schindler, Robert Muir)
 
 Test Cases
 

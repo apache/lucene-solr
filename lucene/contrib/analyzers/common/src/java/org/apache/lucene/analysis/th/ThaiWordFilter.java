@@ -19,64 +19,101 @@ package org.apache.lucene.analysis.th;
 import java.io.IOException;
 import java.util.Locale;
 import java.lang.Character.UnicodeBlock;
+import javax.swing.text.Segment;
+import java.text.BreakIterator;
+
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-
-import java.text.BreakIterator;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.Version;
 
 /**
  * {@link TokenFilter} that use {@link java.text.BreakIterator} to break each 
  * Token that is Thai into separate Token(s) for each Thai word.
- * @version 0.2
+ * <p>Please note: Since matchVersion 3.1 on, this filter no longer lowercases non-thai text.
+ * {@link ThaiAnalyzer} will insert a {@link LowerCaseFilter} before this filter
+ * so the behaviour of the Analyzer does not change. With version 3.1, the filter handles
+ * position increments correctly.
  */
 public final class ThaiWordFilter extends TokenFilter {
   
-  private BreakIterator breaker = null;
+  private final BreakIterator breaker = BreakIterator.getWordInstance(new Locale("th"));
+  private final Segment charIterator = new Segment();
   
-  private TermAttribute termAtt;
-  private OffsetAttribute offsetAtt;
-    
-  private State thaiState = null;
+  private final boolean handlePosIncr;
+  
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+  private final PositionIncrementAttribute posAtt = addAttribute(PositionIncrementAttribute.class);
+  
+  private AttributeSource clonedToken = null;
+  private CharTermAttribute clonedTermAtt = null;
+  private OffsetAttribute clonedOffsetAtt = null;
+  private boolean hasMoreTokensInClone = false;
 
+  /** Creates a new ThaiWordFilter that also lowercases non-thai text.
+   * @deprecated Use the ctor with {@code matchVersion} instead!
+   */
+  @Deprecated
   public ThaiWordFilter(TokenStream input) {
-    super(input);
-    breaker = BreakIterator.getWordInstance(new Locale("th"));
-    termAtt = addAttribute(TermAttribute.class);
-    offsetAtt = addAttribute(OffsetAttribute.class);
+    this(Version.LUCENE_30, input);
+  }
+  
+  /** Creates a new ThaiWordFilter with the specified match version. */
+  public ThaiWordFilter(Version matchVersion, TokenStream input) {
+    super(matchVersion.onOrAfter(Version.LUCENE_31) ?
+      input : new LowerCaseFilter(matchVersion, input));
+    handlePosIncr = matchVersion.onOrAfter(Version.LUCENE_31);
   }
   
   @Override
-  public final boolean incrementToken() throws IOException {
-    if (thaiState != null) {
+  public boolean incrementToken() throws IOException {
+    if (hasMoreTokensInClone) {
       int start = breaker.current();
       int end = breaker.next();
       if (end != BreakIterator.DONE) {
-        restoreState(thaiState);
-        termAtt.setTermBuffer(termAtt.termBuffer(), start, end - start);
-        offsetAtt.setOffset(offsetAtt.startOffset() + start, offsetAtt.startOffset() + end);
+        clonedToken.copyTo(this);
+        termAtt.copyBuffer(clonedTermAtt.buffer(), start, end - start);
+        offsetAtt.setOffset(clonedOffsetAtt.startOffset() + start, clonedOffsetAtt.startOffset() + end);
+        if (handlePosIncr) posAtt.setPositionIncrement(1);
         return true;
       }
-      thaiState = null;
+      hasMoreTokensInClone = false;
     }
 
-    if (input.incrementToken() == false || termAtt.termLength() == 0)
+    if (!input.incrementToken()) {
       return false;
-
-    String text = termAtt.term();
-    if (UnicodeBlock.of(text.charAt(0)) != UnicodeBlock.THAI) {
-      termAtt.setTermBuffer(text.toLowerCase());
+    }
+    
+    if (termAtt.length() == 0 || UnicodeBlock.of(termAtt.charAt(0)) != UnicodeBlock.THAI) {
       return true;
     }
     
-    thaiState = captureState();
+    hasMoreTokensInClone = true;
 
-    breaker.setText(text);
+    // we lazy init the cloned token, as in ctor not all attributes may be added
+    if (clonedToken == null) {
+      clonedToken = cloneAttributes();
+      clonedTermAtt = clonedToken.getAttribute(CharTermAttribute.class);
+      clonedOffsetAtt = clonedToken.getAttribute(OffsetAttribute.class);
+    } else {
+      this.copyTo(clonedToken);
+    }
+    
+    // reinit CharacterIterator
+    charIterator.array = clonedTermAtt.buffer();
+    charIterator.offset = 0;
+    charIterator.count = clonedTermAtt.length();
+    breaker.setText(charIterator);
     int end = breaker.next();
     if (end != BreakIterator.DONE) {
-      termAtt.setTermBuffer(text, 0, end);
-      offsetAtt.setOffset(offsetAtt.startOffset(), offsetAtt.startOffset() + end);
+      termAtt.setLength(end);
+      offsetAtt.setOffset(clonedOffsetAtt.startOffset(), clonedOffsetAtt.startOffset() + end);
+      // position increment keeps as it is for first token
       return true;
     }
     return false;
@@ -85,6 +122,6 @@ public final class ThaiWordFilter extends TokenFilter {
   @Override
   public void reset() throws IOException {
     super.reset();
-    thaiState = null;
+    hasMoreTokensInClone = false;
   }
 }
