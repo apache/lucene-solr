@@ -972,7 +972,11 @@
     <get src="http://luke.googlecode.com/files/luke-${luke.version}.jar"
         dest="luke/luke-${luke.version}.jar"/>
   </target>
-  
+  <path id="luke.classpath">
+    <pathelement location="${common-solr.dir}/../lucene/build/classes/java" />
+    <pathelement location="${common-solr.dir}/../lucene/build/contrib/xml-query-parser/classes/java" />
+
+  </path>
   <target name="luke" depends="luke-download">
     <java fork="true" 
           classname="org.getopt.luke.Luke"
@@ -983,6 +987,7 @@
           <include name="luke-${luke.version}.jar"/>
         </fileset>
         <path refid="lucene.classpath"/>
+        <path refid="luke.classpath"/>
         <path refid="test.run.classpath"/>
        </classpath>
     </java>
