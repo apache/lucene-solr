@@ -219,6 +219,12 @@ API Changes
   expressions).
   (Uwe Schindler, Robert Muir)
 
+* LUCENE-2402: IndexWriter.deleteUnusedFiles now deletes unreferenced commit
+  points too. If you use an IndexDeletionPolicy which holds onto index commits
+  (such as SnapshotDeletionPolicy), you can call this method to remove those
+  commit points when they are not needed anymore (instead of waiting for the 
+  next commit). (Shai Erera)
+  
 Bug fixes
 
 * LUCENE-2119: Don't throw NegativeArraySizeException if you pass

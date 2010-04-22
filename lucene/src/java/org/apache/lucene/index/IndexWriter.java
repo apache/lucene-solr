@@ -4961,8 +4961,18 @@ public class IndexWriter implements Closeable {
    *  IndexWriter, you'll see the unused files linger.  If
    *  that's a problem, call this method to delete them
    *  (once you've closed the open readers that were
-   *  preventing their deletion). */
+   *  preventing their deletion). 
+   *  
+   *  <p> In addition, you can call this method to delete 
+   *  unreferenced index commits. This might be useful if you 
+   *  are using an {@link IndexDeletionPolicy} which holds
+   *  onto index commits until some criteria are met, but those
+   *  commits are no longer needed. Otherwise, those commits will
+   *  be deleted the next time commit() is called.
+   */
   public synchronized void deleteUnusedFiles() throws IOException {
     deleter.deletePendingFiles();
+    deleter.revisitPolicy();
   }
+  
 }

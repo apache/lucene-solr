@@ -353,6 +353,26 @@ final class IndexFileDeleter {
     deletePendingFiles();
   }
 
+  /**
+   * Revisits the {@link IndexDeletionPolicy} by calling its
+   * {@link IndexDeletionPolicy#onCommit(List)} again with the known commits.
+   * This is useful in cases where a deletion policy which holds onto index
+   * commits is used. The application may know that some commits are not held by
+   * the deletion policy anymore and call
+   * {@link IndexWriter#deleteUnusedFiles()}, which will attempt to delete the
+   * unused commits again.
+   */
+  void revisitPolicy() throws IOException {
+    if (infoStream != null) {
+      message("now revisitPolicy");
+    }
+
+    if (commits.size() > 0) {
+      policy.onCommit(commits);
+      deleteCommits();
+    }
+  }
+  
   public void deletePendingFiles() throws IOException {
     if (deletable != null) {
       List<String> oldDeletable = deletable;

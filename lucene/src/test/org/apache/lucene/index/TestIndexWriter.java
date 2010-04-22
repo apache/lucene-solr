@@ -4915,6 +4915,40 @@ public class TestIndexWriter extends LuceneTestCase {
     }
   }
 
+  public void testDeleteUnsedFiles2() throws Exception {
+    // Validates that iw.deleteUnusedFiles() also deletes unused index commits
+    // in case a deletion policy which holds onto commits is used.
+    Directory dir = new MockRAMDirectory();
+    SnapshotDeletionPolicy sdp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        .setIndexDeletionPolicy(sdp));
+    
+    // First commit
+    Document doc = new Document();
+    doc.add(new Field("c", "val", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
+    writer.addDocument(doc);
+    writer.commit();
+    assertEquals(1, IndexReader.listCommits(dir).size());
+
+    // Keep that commit
+    sdp.snapshot();
+    
+    // Second commit - now KeepOnlyLastCommit cannot delete the prev commit.
+    doc = new Document();
+    doc.add(new Field("c", "val", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
+    writer.addDocument(doc);
+    writer.commit();
+    assertEquals(2, IndexReader.listCommits(dir).size());
+
+    // Should delete the unreferenced commit
+    sdp.release();
+    writer.deleteUnusedFiles();
+    assertEquals(1, IndexReader.listCommits(dir).size());
+    
+    writer.close();
+  }
+  
   private static class FlushCountingIndexWriter extends IndexWriter {
     int flushCount;
     public FlushCountingIndexWriter(Directory dir, IndexWriterConfig iwc) throws IOException {
