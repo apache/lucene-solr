@@ -133,6 +133,10 @@ New features
    does a more thorough job of normalizing unicode text for search.
    (Robert Haschart, Robert Muir)
 
+ * LUCENE-2409: Add ICUTransformFilter, which transforms text in a context
+   sensitive way, either from ICU built-in rules (such as Traditional-Simplified),
+   or from rules you write yourself.  (Robert Muir)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
