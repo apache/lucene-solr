@@ -16,11 +16,31 @@
 -->
 <html>
   <head>
+    <META http-equiv="Content-Type" content="text/html; charset=UTF-8">
     <title>
-      Apache Lucene ICUCollationKeyFilter/Analyzer
+      Apache Lucene ICU integration module
     </title>
   </head>
 <body>
+<p>
+This module exposes functionality from 
+<a href="http://site.icu-project.org/">ICU</a> to Apache Lucene. ICU4J is a Java
+library that enhances Java's internationalization support by improving 
+performance, keeping current with the Unicode Standard, and providing richer
+APIs. This module exposes the following functionality:
+</p>
+<ul>
+  <li><a href="#collation">Collation</a>: Compare strings according to the 
+  conventions and standards of a particular language, region or country.</li>
+  <li><a href="#normalization">Normalization</a>: Converts text to a unique,
+  equivalent form.</li>
+  <li><a href="#casefolding">Case Folding</a>: Removes case distinctions with
+  Unicode's Default Caseless Matching algorithm.</li>
+  <li><a href="#searchfolding">Search Term Folding</a>: Removes distinctions
+  (such as accent marks) between similar characters for a loose or fuzzy search.</li>
+</ul>
+<hr/>
+<h1><a name="collation">Collation</a></h1>
 <p>
   <code>ICUCollationKeyFilter</code>
   converts each token into its binary <code>CollationKey</code> using the 
@@ -30,11 +50,9 @@
   stored as an index term.
 </p>
 <p>
-  <code>ICUCollationKeyFilter</code> depends on ICU4J 4.0 to produce the 
-  <code>CollationKey</code>s.  <code>icu4j-collation-4.0.jar</code>, 
-  a trimmed-down version of <code>icu4j-4.0.jar</code> that contains only the 
-  code and data needed to support collation, is included in Lucene's Subversion 
-  repository at <code>contrib/icu/lib/</code>.
+  <code>ICUCollationKeyFilter</code> depends on ICU4J 4.4 to produce the 
+  <code>CollationKey</code>s.  <code>icu4j-4.4.jar</code>
+  is included in Lucene's Subversion repository at <code>contrib/icu/lib/</code>.
 </p>
 
 <h2>Use Cases</h2>
@@ -176,7 +194,96 @@
   you use <code>CollationKeyFilter</code> to generate index terms, do not use
   <code>ICUCollationKeyFilter</code> on the query side, or vice versa.
 </p>
-<pre>
-</pre>
+<hr/>
+<h1><a name="normalization">Normalization</a></h1>
+<p>
+  <code>ICUNormalizer2Filter</code> normalizes term text to a 
+  <a href="http://unicode.org/reports/tr15/">Unicode Normalization Form</a>, so 
+  that <a href="http://en.wikipedia.org/wiki/Unicode_equivalence">equivalent</a>
+  forms are standardized to a unique form.
+</p>
+<h2>Use Cases</h2>
+<ul>
+  <li> Removing differences in width for Asian-language text. 
+  </li>
+  <li> Standardizing complex text with non-spacing marks so that characters are 
+  ordered consistently.
+  </li>
+</ul>
+<h2>Example Usages</h2>
+<h3>Normalizing text to NFC</h3>
+<code><pre>
+  /**
+   * Normalizer2 objects are unmodifiable and immutable.
+   */
+  Normalizer2 normalizer = Normalizer2.getInstance(null, "nfc", Normalizer2.Mode.COMPOSE);
+  /**
+   * This filter will normalize to NFC.
+   */
+  TokenStream tokenstream = new ICUNormalizer2Filter(tokenizer, normalizer);
+</pre></code>
+<hr/>
+<h1><a name="casefolding">Case Folding</a></h1>
+<p>
+Default caseless matching, or case-folding is more than just conversion to
+lowercase. For example, it handles cases such as the Greek sigma, so that
+"Μάϊος" and "ΜΆΪΟΣ" will match correctly.
+</p>
+<p>
+Case-folding is still only an approximation of the language-specific rules
+governing case. If the specific language is known, consider using
+ICUCollationKeyFilter and indexing collation keys instead. This implementation
+performs the "full" case-folding specified in the Unicode standard, and this
+may change the length of the term. For example, the German ß is case-folded
+to the string 'ss'.
+</p>
+<p>
+Case folding is related to normalization, and as such is coupled with it in
+this integration. To perform case-folding, you use normalization with the form
+"nfkc_cf" (which is the default).
+</p>
+<h2>Use Cases</h2>
+<ul>
+  <li>
+    As a more thorough replacement for LowerCaseFilter that has good behavior
+    for most languages.
+  </li>
+</ul>
+<h2>Example Usages</h2>
+<h3>Lowercasing text</h3>
+<code><pre>
+  /**
+   * This filter will case-fold and normalize to NFKC.
+   */
+  TokenStream tokenstream = new ICUNormalizer2Filter(tokenizer);
+</pre></code>
+<hr/>
+<h1><a name="searchfolding">Search Term Folding</a></h1>
+<p>
+Search term folding removes distinctions (such as accent marks) between 
+similar characters. It is useful for a fuzzy or loose search.
+</p>
+<p>
+Search term folding implements many of the foldings specified in
+<a href="http://www.unicode.org/reports/tr30/tr30-4.html">Character Foldings</a>
+as a special normalization form.  This folding applies NFKC, Case Folding, and
+many character foldings recursively.
+</p>
+<h2>Use Cases</h2>
+<ul>
+  <li>
+    As a more thorough replacement for ASCIIFoldingFilter and LowerCaseFilter 
+    that applies the same ideas to many more languages. 
+  </li>
+</ul>
+<h2>Example Usages</h2>
+<h3>Removing accents</h3>
+<code><pre>
+  /**
+   * This filter will case-fold, remove accents and other distinctions, and
+   * normalize to NFKC.
+   */
+  TokenStream tokenstream = new ICUFoldingFilter(tokenizer);
+</pre></code>
 </body>
 </html>
