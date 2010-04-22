@@ -36,4 +36,14 @@
 
   <import file="../contrib-build.xml"/>
 
+  <property name="gennorm2.src.dir" value="src/data/utr30"/>
+  <property name="gennorm2.src.files" 
+  	value="nfkc.txt nfkc_cf.txt BasicFoldings.txt DiacriticFolding.txt DingbatFolding.txt HanRadicalFolding.txt NativeDigitFolding.txt"/>
+  <property name="gennorm2.dst" value="src/resources/org/apache/lucene/analysis/icu/utr30.nrm"/>
+  <target name="gennorm2">
+  	<echo>Warning: only works on a big-endian platform!</echo>
+    <exec executable="gennorm2" failonerror="true">
+      <arg line="-v -s ${gennorm2.src.dir} ${gennorm2.src.files} -o ${gennorm2.dst}"/>
+    </exec>
+  </target>
 </project>
