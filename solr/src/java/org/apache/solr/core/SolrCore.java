@@ -1626,7 +1626,10 @@ public final class SolrCore implements SolrInfoMBean {
     lst.add("coreName", name==null ? "(null)" : name);
     lst.add("startTime", new Date(startTime));
     lst.add("refCount", getOpenCount());
-    lst.add("aliases", getCoreDescriptor().getCoreContainer().getCoreNames(this));
+
+    if (null != getCoreDescriptor() && null != getCoreDescriptor().getCoreContainer()) {
+      lst.add("aliases", getCoreDescriptor().getCoreContainer().getCoreNames(this));
+    }
     return lst;
   }
 
