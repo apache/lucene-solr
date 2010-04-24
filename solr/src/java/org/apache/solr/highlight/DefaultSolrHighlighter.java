@@ -354,10 +354,14 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
    */
   private boolean useFastVectorHighlighter( SolrParams params, IndexSchema schema, String fieldName ){
     SchemaField schemaField = schema.getFieldOrNull( fieldName );
-    return schemaField != null &&
-      schemaField.storeTermPositions() &&
-      schemaField.storeTermOffsets() &&
-      params.getFieldBool( fieldName, HighlightParams.USE_FVH, false );
+    if( schemaField == null ) return false;
+    boolean useFvhParam = params.getFieldBool( fieldName, HighlightParams.USE_FVH, false );
+    if( !useFvhParam ) return false;
+    boolean termPosOff = schemaField.storeTermPositions() && schemaField.storeTermOffsets();
+    if( !termPosOff ) {
+      log.warn( "Solr will use Highlighter instead of FastVectorHighlighter because {} field does not store TermPositions and TermOffsets.", fieldName );
+    }
+    return termPosOff;
   }
   
   private void doHighlightingByHighlighter( Query query, SolrQueryRequest req, NamedList docSummaries,
