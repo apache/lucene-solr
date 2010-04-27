@@ -333,7 +333,7 @@ public class DocMaker {
     String col = "                  ";
     StringBuffer sb = new StringBuffer();
     String newline = System.getProperty("line.separator");
-    sb.append("------------> ").append(Format.simpleName(getClass())).append(" statistics (").append(printNum).append("): ").append(newline);
+    sb.append("------------> ").append(getClass().getSimpleName()).append(" statistics (").append(printNum).append("): ").append(newline);
     int nut = source.getTotalDocsCount();
     if (nut > lastPrintedNumUniqueTexts) {
       print = true;

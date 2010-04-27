@@ -2,6 +2,12 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
+4/27/2010: WriteLineDocTask now supports multi-threading. Also, 
+  StringBufferReader was renamed to StringBuilderReader and works on 
+  StringBuilder now. In addition, LongToEnglishCountentSource starts from 0
+  (instead of Long.MIN_VAL+10) and wraps around to MIN_VAL (if you ever hit 
+  Long.MAX_VAL). (Shai Erera)
+
 4/07/2010
   LUCENE-2377: Enable the use of NoMergePolicy and NoMergeScheduler by 
   CreateIndexTask. (Shai Erera)

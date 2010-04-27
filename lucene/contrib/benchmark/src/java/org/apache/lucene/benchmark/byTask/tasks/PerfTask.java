@@ -23,7 +23,6 @@ import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.stats.Points;
 import org.apache.lucene.benchmark.byTask.stats.TaskStats;
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.benchmark.byTask.utils.Format;
 
 /**
  * An abstract task to be tested for performance. <br>
@@ -67,7 +66,7 @@ public abstract class PerfTask implements Cloneable {
 
   /** Should not be used externally */
   private PerfTask() {
-    name = Format.simpleName(getClass());
+    name = getClass().getSimpleName();
     if (name.endsWith("Task")) {
       name = name.substring(0, name.length() - 4);
     }
@@ -99,13 +98,7 @@ public abstract class PerfTask implements Cloneable {
     this.maxDepthLogStart = config.get("task.max.depth.log",0);
 
     String logStepAtt = "log.step";
-    // TODO (1.5): call getClass().getSimpleName() instead.
-    String taskName = getClass().getName();
-    int idx = taskName.lastIndexOf('.');
-    // To support test internal classes. when we move to getSimpleName, this can be removed.
-    int idx2 = taskName.indexOf('$', idx);
-    if (idx2 != -1) idx = idx2;
-    String taskLogStepAtt = "log.step." + taskName.substring(idx + 1, taskName.length() - 4 /* w/o the 'Task' part */);
+    String taskLogStepAtt = "log.step." + name;
     if (config.get(taskLogStepAtt, null) != null) {
       logStepAtt = taskLogStepAtt;
     }

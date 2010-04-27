@@ -40,8 +40,6 @@ import java.util.Stack;
  * denotes a relative path (<b>default=work</b>).
  * <li><b>docs.dir</b> - specifies the directory the Dir collection. Can be set
  * to a relative path if "work.dir" is also specified (<b>default=dir-out</b>).
- * <li><b>html.parser</b> - specifies the {@link HTMLParser} class to use for
- * parsing the TREC documents content (<b>default=DemoHTMLParser</b>).
  * </ul>
  */
 public class DirContentSource extends ContentSource {

@@ -32,7 +32,7 @@ import java.util.Locale;
 import java.util.zip.GZIPInputStream;
 
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.benchmark.byTask.utils.StringBufferReader;
+import org.apache.lucene.benchmark.byTask.utils.StringBuilderReader;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
@@ -53,7 +53,6 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * </ul>
  */
 public class TrecContentSource extends ContentSource {
-  // TODO (3.0): change StringBuffer to StringBuilder
 
   private static final class DateFormatInfo {
     DateFormat[] dfs;
@@ -79,8 +78,8 @@ public class TrecContentSource extends ContentSource {
   };
 
   private ThreadLocal<DateFormatInfo> dateFormats = new ThreadLocal<DateFormatInfo>();
-  private ThreadLocal<StringBufferReader> trecDocReader = new ThreadLocal<StringBufferReader>();
-  private ThreadLocal<StringBuffer> trecDocBuffer = new ThreadLocal<StringBuffer>();
+  private ThreadLocal<StringBuilderReader> trecDocReader = new ThreadLocal<StringBuilderReader>();
+  private ThreadLocal<StringBuilder> trecDocBuffer = new ThreadLocal<StringBuilder>();
   private File dataDir = null;
   private ArrayList<File> inputFiles = new ArrayList<File>();
   private int nextFile = 0;
@@ -110,19 +109,19 @@ public class TrecContentSource extends ContentSource {
     return dfi;
   }
 
-  private StringBuffer getDocBuffer() {
-    StringBuffer sb = trecDocBuffer.get();
+  private StringBuilder getDocBuffer() {
+    StringBuilder sb = trecDocBuffer.get();
     if (sb == null) {
-      sb = new StringBuffer();
+      sb = new StringBuilder();
       trecDocBuffer.set(sb);
     }
     return sb;
   }
   
-  private Reader getTrecDocReader(StringBuffer docBuffer) {
-    StringBufferReader r = trecDocReader.get();
+  private Reader getTrecDocReader(StringBuilder docBuffer) {
+    StringBuilderReader r = trecDocReader.get();
     if (r == null) {
-      r = new StringBufferReader(docBuffer);
+      r = new StringBuilderReader(docBuffer);
       trecDocReader.set(r);
     } else {
       r.set(docBuffer);
@@ -131,7 +130,7 @@ public class TrecContentSource extends ContentSource {
   }
 
   // read until finding a line that starts with the specified prefix, or a terminating tag has been found.
-  private void read(StringBuffer buf, String prefix, boolean collectMatchLine,
+  private void read(StringBuilder buf, String prefix, boolean collectMatchLine,
                     boolean collectAll, String terminatingTag)
       throws IOException, NoMoreDataException {
     String sep = "";
@@ -248,7 +247,7 @@ public class TrecContentSource extends ContentSource {
         openNextFile();
       }
 
-      StringBuffer docBuf = getDocBuffer();
+      StringBuilder docBuf = getDocBuffer();
       
       // 1. skip until doc start
       docBuf.setLength(0);

@@ -17,7 +17,6 @@ package org.apache.lucene.benchmark.byTask.feeds;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.benchmark.byTask.utils.Config;
-import org.apache.lucene.benchmark.byTask.utils.Format;
 
 /**
  * Abstract base query maker. 
@@ -45,7 +44,7 @@ public abstract class AbstractQueryMaker implements QueryMaker {
     StringBuffer sb = new StringBuffer();
     if (queries != null) {
       for (int i = 0; i < queries.length; i++) {
-        sb.append(i+". "+ Format.simpleName(queries[i].getClass())+" - "+queries[i].toString());
+        sb.append(i+". "+ queries[i].getClass().getSimpleName()+" - "+queries[i].toString());
         sb.append(newline);
       }
     }
