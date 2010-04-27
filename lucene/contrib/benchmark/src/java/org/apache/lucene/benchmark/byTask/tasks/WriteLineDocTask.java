@@ -54,12 +54,12 @@ import org.apache.lucene.document.Field;
 public class WriteLineDocTask extends PerfTask {
 
   public final static char SEP = '\t';
-  private static final Matcher NORMALIZER = Pattern.compile("[\t\r\n]+").matcher("");
-
+  
   private int docSize = 0;
   private PrintWriter lineFileOut = null;
   private DocMaker docMaker;
   private ThreadLocal<StringBuilder> threadBuffer = new ThreadLocal<StringBuilder>();
+  private ThreadLocal<Matcher> threadNormalizer = new ThreadLocal<Matcher>();
   
   public WriteLineDocTask(PerfRunData runData) throws Exception {
     super(runData);
@@ -100,16 +100,22 @@ public class WriteLineDocTask extends PerfTask {
   public int doLogic() throws Exception {
     Document doc = docSize > 0 ? docMaker.makeDocument(docSize) : docMaker.makeDocument();
 
+    Matcher matcher = threadNormalizer.get();
+    if (matcher == null) {
+      matcher = Pattern.compile("[\t\r\n]+").matcher("");
+      threadNormalizer.set(matcher);
+    }
+    
     Field f = doc.getField(DocMaker.BODY_FIELD);
-    String body = f != null ? NORMALIZER.reset(f.stringValue()).replaceAll(" ") : "";
+    String body = f != null ? matcher.reset(f.stringValue()).replaceAll(" ") : "";
     
     f = doc.getField(DocMaker.TITLE_FIELD);
-    String title = f != null ? NORMALIZER.reset(f.stringValue()).replaceAll(" ") : "";
+    String title = f != null ? matcher.reset(f.stringValue()).replaceAll(" ") : "";
     
     if (body.length() > 0 || title.length() > 0) {
       
       f = doc.getField(DocMaker.DATE_FIELD);
-      String date = f != null ? NORMALIZER.reset(f.stringValue()).replaceAll(" ") : "";
+      String date = f != null ? matcher.reset(f.stringValue()).replaceAll(" ") : "";
       
       StringBuilder sb = threadBuffer.get();
       if (sb == null) {
