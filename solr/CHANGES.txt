@@ -139,6 +139,11 @@ New Features
 * SOLR-1740: ShingleFilterFactory supports the "minShingleSize" and "tokenSeparator"
   parameters for controlling the minimum shingle size produced by the filter, and
   the separator string that it uses, respectively.  (Steven Rowe via rmuir)
+  
+* SOLR-571: The autowarmCount for LRUCaches (LRUCache and FastLRUCache) now 
+  supports "percentages" which get evaluated  relative the current size of 
+  the cache when warming happens. 
+  (Tomas Fernandez Lobbe and hossman)
    
 Optimizations
 ----------------------

@@ -43,7 +43,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * @see org.apache.solr.search.SolrCache
  * @since solr 1.4
  */
-public class FastLRUCache<K,V> implements SolrCache<K,V> {
+public class FastLRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
 
   // contains the statistics objects for all open caches of the same type
   private List<ConcurrentLRUCache.Stats> statsList;
@@ -51,7 +51,7 @@ public class FastLRUCache<K,V> implements SolrCache<K,V> {
   private long warmupTime = 0;
 
   private String name;
-  private int autowarmCount;
+  private AutoWarmCountRef autowarm;
   private State state;
   private CacheRegenerator regenerator;
   private String description = "Concurrent LRU Cache";
@@ -86,8 +86,7 @@ public class FastLRUCache<K,V> implements SolrCache<K,V> {
 
     str = (String) args.get("initialSize");
     final int initialSize = str == null ? limit : Integer.parseInt(str);
-    str = (String) args.get("autowarmCount");
-    autowarmCount = str == null ? 0 : Integer.parseInt(str);
+    autowarm = new AutoWarmCountRef((String)args.get("autowarmCount"));
     str = (String) args.get("cleanupThread");
     boolean newThread = str == null ? false : Boolean.parseBoolean(str);
 
@@ -97,8 +96,8 @@ public class FastLRUCache<K,V> implements SolrCache<K,V> {
 
     description = "Concurrent LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize +
             ", minSize="+minLimit + ", acceptableSize="+acceptableLimit+", cleanupThread="+newThread;
-    if (autowarmCount > 0) {
-      description += ", autowarmCount=" + autowarmCount + ", regenerator=" + regenerator;
+    if (autowarm.isAutoWarmingOn()) {
+      description += ", autowarmCount=" + autowarm + ", regenerator=" + regenerator;
     }
     description += ')';
 
@@ -154,9 +153,8 @@ public class FastLRUCache<K,V> implements SolrCache<K,V> {
     long warmingStartTime = System.currentTimeMillis();
     FastLRUCache other = (FastLRUCache) old;
     // warm entries
-    if (autowarmCount != 0) {
-      int sz = other.size();
-      if (autowarmCount != -1) sz = Math.min(sz, autowarmCount);
+    if (autowarm.isAutoWarmingOn()) {
+      int sz = autowarm.getWarmCount(other.size());
       Map items = other.cache.getLatestAccessedItems(sz);
       Map.Entry[] itemsArr = new Map.Entry[items.size()];
       int counter = 0;

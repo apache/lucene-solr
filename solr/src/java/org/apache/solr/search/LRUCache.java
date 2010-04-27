@@ -31,7 +31,7 @@ import java.net.URL;
 /**
  * @version $Id$
  */
-public class LRUCache<K,V> implements SolrCache<K,V> {
+public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V> {
 
   /* An instance of this class will be shared across multiple instances
    * of an LRUCache at the same time.  Make sure everything is thread safe.
@@ -56,7 +56,7 @@ public class LRUCache<K,V> implements SolrCache<K,V> {
 
   private Map<K,V> map;
   private String name;
-  private int autowarmCount;
+  private AutoWarmCountRef autowarm;
   private State state;
   private CacheRegenerator regenerator;
   private String description="LRU Cache";
@@ -69,13 +69,10 @@ public class LRUCache<K,V> implements SolrCache<K,V> {
     final int limit = str==null ? 1024 : Integer.parseInt(str);
     str = (String)args.get("initialSize");
     final int initialSize = Math.min(str==null ? 1024 : Integer.parseInt(str), limit);
-    str = (String)args.get("autowarmCount");
-    autowarmCount = str==null ? 0 : Integer.parseInt(str);
-
+    autowarm = new AutoWarmCountRef((String)args.get("autowarmCount"));
     description = "LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize;
-    if (autowarmCount>0) {
-      description += ", autowarmCount=" + autowarmCount
-              + ", regenerator=" + regenerator;
+    if (autowarm.isAutoWarmingOn()) {
+      description += ", autowarmCount=" + autowarm + ", regenerator=" + regenerator;
     }
     description += ')';
 
@@ -162,13 +159,14 @@ public class LRUCache<K,V> implements SolrCache<K,V> {
     LRUCache<K,V> other = (LRUCache<K,V>)old;
 
     // warm entries
-    if (autowarmCount != 0) {
+    if (autowarm.isAutoWarmingOn()) {
       Object[] keys,vals = null;
 
       // Don't do the autowarming in the synchronized block, just pull out the keys and values.
       synchronized (other.map) {
-        int sz = other.map.size();
-        if (autowarmCount!=-1) sz = Math.min(sz,autowarmCount);
+        
+        int sz = autowarm.getWarmCount(other.map.size());
+        
         keys = new Object[sz];
         vals = new Object[sz];
 
@@ -254,7 +252,7 @@ public class LRUCache<K,V> implements SolrCache<K,V> {
     return Integer.toString(ones) + '.' + tenths;
     ***/
   }
-
+  
   public NamedList getStatistics() {
     NamedList lst = new SimpleOrderedMap();
     synchronized (map) {
