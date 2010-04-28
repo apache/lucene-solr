@@ -117,6 +117,7 @@
   <property name="junit.reports.backwards" location="${build.dir.backwards}/test/reports"/>
   <property name="junit.excludes" value=""/>
   <property name="junit.details.formatter" value="org.apache.lucene.util.LuceneJUnitResultFormatter"/>
+  <property name="junit.parallel.selector" value="org.apache.lucene.util.LuceneJUnitDividingSelector"/>
   <condition property="runsequential">
     <or>
       <isset property="testcase"/>
@@ -410,7 +411,8 @@
   	<attribute name="junit.classpath" default="junit.classpath"/>
   	<attribute name="dataDir" default="src/test"/>
   	<attribute name="tempDir" default="${build.dir}/test"/>
-  	<attribute name="pattern" default=""/>
+  	<attribute name="threadNum" default="1"/>
+  	<attribute name="threadTotal" default="1"/>
 
     <sequential>
 	    <condition property="runall">
@@ -423,8 +425,8 @@
 	    <!-- <mkdir dir="@{tempDir}/@{pattern}"/> 
 	    This is very loud and obnoxious. abuse touch instead for a "quiet" mkdir
 	    -->
-    	<touch file="@{tempDir}/@{pattern}/quiet.ant" verbose="false" mkdirs="true"/>
-	    <junit printsummary="off" haltonfailure="no" maxmemory="512M" tempdir="@{tempDir}/@{pattern}"
+    	<touch file="@{tempDir}/@{threadNum}/quiet.ant" verbose="false" mkdirs="true"/>
+	    <junit printsummary="off" haltonfailure="no" maxmemory="512M" tempdir="@{tempDir}/@{threadNum}"
 	      errorProperty="tests.failed" failureProperty="tests.failed" forkmode="perBatch" dir=".">
 	      <classpath refid="@{junit.classpath}"/>
 	      <assertions>
@@ -437,20 +439,35 @@
 	      <sysproperty key="tests.verbose" value="${tests.verbose}"/>
 	
 	      <!-- TODO: create propertyset for test properties, so each project can have its own set -->
-	      <sysproperty key="tempDir" file="@{tempDir}/@{pattern}"/>
+	      <sysproperty key="tempDir" file="@{tempDir}/@{threadNum}"/>
 
 	      <sysproperty key="lucene.version" value="${dev.version}"/>
 	    	
 	      <formatter type="xml"/>
 	      <formatter classname="${junit.details.formatter}" usefile="false"/>
 	      <batchtest fork="yes" todir="@{junit.output.dir}" if="runall">
-	        <fileset dir="@{dataDir}" includes="**/Test@{pattern}*.java,**/@{pattern}*Test.java" excludes="${junit.excludes}"/>
+	        <fileset dir="@{dataDir}" includes="**/Test*.java,**/*Test.java" excludes="${junit.excludes}">
+	          <custom classname="${junit.parallel.selector}" classpathref="@{junit.classpath}">
+	            <param name="divisor" value="@{threadTotal}" />
+	            <param name="part" value="@{threadNum}" />
+	          </custom>
+	        </fileset>
 	      </batchtest>
 	      <batchtest fork="yes" todir="@{junit.output.dir}" if="testpackage">
-	        <fileset dir="@{dataDir}" includes="**/${testpackage}/**/Test@{pattern}*.java,**/${testpackage}/**/@{pattern}*Test.java" excludes="${junit.excludes}"/>
+	        <fileset dir="@{dataDir}" includes="**/${testpackage}/**/Test*.java,**/${testpackage}/**/*Test.java" excludes="${junit.excludes}">
+		      <custom classname="${junit.parallel.selector}" classpathref="@{junit.classpath}">
+		        <param name="divisor" value="@{threadTotal}" />
+		        <param name="part" value="@{threadNum}" />
+		      </custom>
+	        </fileset>
 	      </batchtest>
 	      <batchtest fork="yes" todir="@{junit.output.dir}" if="testpackageroot">
-	        <fileset dir="@{dataDir}" includes="**/${testpackageroot}/Test@{pattern}*.java,**/${testpackageroot}/@{pattern}*Test.java" excludes="${junit.excludes}"/>
+	        <fileset dir="@{dataDir}" includes="**/${testpackageroot}/Test*.java,**/${testpackageroot}/*Test.java" excludes="${junit.excludes}">
+			  <custom classname="${junit.parallel.selector}" classpathref="@{junit.classpath}">
+			    <param name="divisor" value="@{threadTotal}" />
+			    <param name="part" value="@{threadNum}" />
+			  </custom>
+	        </fileset>
 	      </batchtest>
 	      <batchtest fork="yes" todir="@{junit.output.dir}" if="testcase">
 	        <fileset dir="@{dataDir}" includes="**/${testcase}.java"/>
@@ -472,32 +489,14 @@
 
   <target name="junit-parallel" unless="runsequential">
     <parallel threadsPerProcessor="${threadsPerProcessor}">
-     <test-macro pattern="A"/>
-     <test-macro pattern="B"/>
-     <test-macro pattern="C"/>
-     <test-macro pattern="D"/>
-     <test-macro pattern="E"/>
-     <test-macro pattern="F"/>
-     <test-macro pattern="G"/>
-     <test-macro pattern="H"/>
-     <test-macro pattern="I"/>
-     <test-macro pattern="J"/>
-     <test-macro pattern="K"/>
-     <test-macro pattern="L"/>
-     <test-macro pattern="M"/>
-     <test-macro pattern="N"/>
-     <test-macro pattern="O"/>
-     <test-macro pattern="P"/>
-     <test-macro pattern="Q"/>
-     <test-macro pattern="R"/>
-     <test-macro pattern="S"/>
-     <test-macro pattern="T"/>
-     <test-macro pattern="U"/>
-     <test-macro pattern="V"/>
-     <test-macro pattern="W"/>
-     <test-macro pattern="X"/>
-     <test-macro pattern="Y"/>
-     <test-macro pattern="Z"/>
+     <test-macro threadNum="1" threadTotal="8"/>
+     <test-macro threadNum="2" threadTotal="8"/>
+     <test-macro threadNum="3" threadTotal="8"/>
+     <test-macro threadNum="4" threadTotal="8"/>
+     <test-macro threadNum="5" threadTotal="8"/>
+     <test-macro threadNum="6" threadTotal="8"/>
+     <test-macro threadNum="7" threadTotal="8"/>
+     <test-macro threadNum="8" threadTotal="8"/>
     </parallel>
   </target>
 

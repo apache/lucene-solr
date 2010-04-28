@@ -131,7 +131,8 @@ The source distribution does not contain sources of the previous Lucene Java ver
   </target>
 
   <macrodef name="backwards-test-macro">
-  	<attribute name="pattern" default=""/>
+  	<attribute name="threadNum" default="1"/>
+  	<attribute name="threadTotal" default="1"/>
   	<sequential>
   	  <!-- run branch tests against trunk jar -->
       <test-macro 
@@ -139,7 +140,8 @@ The source distribution does not contain sources of the previous Lucene Java ver
     	tempDir="${build.dir.backwards}/test" 
     	junit.classpath="backwards.junit.classpath" 
     	junit.output.dir="${junit.output.dir.backwards}" 
-        pattern="@{pattern}" />
+        threadNum="@{threadNum}" 
+        threadTotal="@{threadTotal}"/>
   	</sequential>
   </macrodef>
 
@@ -148,33 +150,15 @@ The source distribution does not contain sources of the previous Lucene Java ver
   </target>
 
   <target name="junit-backwards-parallel" unless="runsequential">
-    <parallel threadsPerProcessor="2">
-     <backwards-test-macro pattern="A"/>
-     <backwards-test-macro pattern="B"/>
-     <backwards-test-macro pattern="C"/>
-     <backwards-test-macro pattern="D"/>
-     <backwards-test-macro pattern="E"/>
-     <backwards-test-macro pattern="F"/>
-     <backwards-test-macro pattern="G"/>
-     <backwards-test-macro pattern="H"/>
-     <backwards-test-macro pattern="I"/>
-     <backwards-test-macro pattern="J"/>
-     <backwards-test-macro pattern="K"/>
-     <backwards-test-macro pattern="L"/>
-     <backwards-test-macro pattern="M"/>
-     <backwards-test-macro pattern="N"/>
-     <backwards-test-macro pattern="O"/>
-     <backwards-test-macro pattern="P"/>
-     <backwards-test-macro pattern="Q"/>
-     <backwards-test-macro pattern="R"/>
-     <backwards-test-macro pattern="S"/>
-     <backwards-test-macro pattern="T"/>
-     <backwards-test-macro pattern="U"/>
-     <backwards-test-macro pattern="V"/>
-     <backwards-test-macro pattern="W"/>
-     <backwards-test-macro pattern="X"/>
-     <backwards-test-macro pattern="Y"/>
-     <backwards-test-macro pattern="Z"/>
+    <parallel threadsPerProcessor="${threadsPerProcessor}">
+     <backwards-test-macro threadNum="1" threadTotal="8"/>
+     <backwards-test-macro threadNum="2" threadTotal="8"/>
+     <backwards-test-macro threadNum="3" threadTotal="8"/>
+     <backwards-test-macro threadNum="4" threadTotal="8"/>
+     <backwards-test-macro threadNum="5" threadTotal="8"/>
+     <backwards-test-macro threadNum="6" threadTotal="8"/>
+     <backwards-test-macro threadNum="7" threadTotal="8"/>
+     <backwards-test-macro threadNum="8" threadTotal="8"/>
     </parallel>
   </target>
 

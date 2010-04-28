@@ -1,4 +1,4 @@
-/*
+/**
  *  Licensed to the Apache Software Foundation (ASF) under one or more
  *  contributor license agreements.  See the NOTICE file distributed with
  *  this work for additional information regarding copyright ownership.
@@ -43,7 +43,7 @@ import org.apache.tools.ant.util.StringUtils;
 public class LuceneJUnitResultFormatter implements JUnitResultFormatter {
   private static final double ONE_SECOND = 1000.0;
   
-  private NativeFSLockFactory lockFactory;
+  private static final NativeFSLockFactory lockFactory;
   
   /** Where to write the log to. */
   private OutputStream out;
@@ -60,13 +60,13 @@ public class LuceneJUnitResultFormatter implements JUnitResultFormatter {
   /** Buffer output until the end of the test */
   private StringBuilder sb;
 
-  private org.apache.lucene.store.Lock lock;
+  private static final org.apache.lucene.store.Lock lock;
 
-  /** Constructor for SolrJUnitResultFormatter. */
-  public LuceneJUnitResultFormatter() {
-    File lockDir = new File(System.getProperty("java.io.tmpdir"), "lucene_junit_lock");
+  static {
+    File lockDir = new File(System.getProperty("java.io.tmpdir"),
+        "lucene_junit_lock");
     lockDir.mkdirs();
-    if(!lockDir.exists()) {
+    if (!lockDir.exists()) {
       throw new RuntimeException("Could not make Lock directory:" + lockDir);
     }
     try {
@@ -75,6 +75,10 @@ public class LuceneJUnitResultFormatter implements JUnitResultFormatter {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  /** Constructor for LuceneJUnitResultFormatter. */
+  public LuceneJUnitResultFormatter() {
     sb = new StringBuilder();
   }
   

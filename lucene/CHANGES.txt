@@ -497,7 +497,7 @@ Build
   can force them to run sequentially by passing -Drunsequential=1 on the command
   line. The number of threads that are spwaned per CPU defaults to '1'. If you 
   wish to change that, you can run the tests with -DthreadsPerProcessor=[num].
-  (Robert Muir, Shai Erera) 
+  (Robert Muir, Shai Erera, Peter Kofler) 
 
 Test Cases
 
