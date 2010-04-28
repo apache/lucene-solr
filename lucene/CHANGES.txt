@@ -282,6 +282,10 @@ Bug fixes
 * LUCENE-2387: Don't hang onto Fieldables from the last doc indexed,
   in IndexWriter, nor the Reader in Tokenizer after close is
   called.  (Ruben Laguna, Uwe Schindler, Mike McCandless)
+  
+* LUCENE-2417: IndexCommit did not implement hashCode() and equals() 
+  consitently. Now they both take Directory and version into consideration. 
+  (Shai Erera)
 
 New features
 

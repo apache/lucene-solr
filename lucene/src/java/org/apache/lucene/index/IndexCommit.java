@@ -99,7 +99,7 @@ public abstract class IndexCommit {
 
   @Override
   public int hashCode() {
-    return getDirectory().hashCode() + getSegmentsFileName().hashCode();
+    return (int) (getDirectory().hashCode() + getVersion());
   }
 
   /** Returns the version for this IndexCommit.  This is the
