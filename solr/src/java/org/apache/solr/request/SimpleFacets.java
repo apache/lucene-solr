@@ -41,6 +41,10 @@ import org.apache.solr.handler.component.ResponseBuilder;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A class that generates simple Facet information for a request.
@@ -64,6 +68,7 @@ public class SimpleFacets {
   String facetValue;      // the field to or query to facet on (minus local params)
   DocSet base;            // the base docset for this particular facet
   String key;             // what name should the results be stored under
+  int threads;
 
   public SimpleFacets(SolrQueryRequest req,
                       DocSet docs,
@@ -88,6 +93,7 @@ public class SimpleFacets {
     base = docs;
     facetValue = param;
     key = param;
+    threads = -1;
 
     if (localParams == null) return;
 
@@ -101,6 +107,11 @@ public class SimpleFacets {
 
     // allow explicit set of the key
     key = localParams.get(CommonParams.OUTPUT_KEY, key);
+
+    String threadStr = localParams.get(CommonParams.THREADS);
+    if (threadStr != null) {
+      threads = Integer.parseInt(threadStr);
+    }
 
     // figure out if we need a new base DocSet
     String excludeStr = localParams.get(CommonParams.EXCLUDE);
@@ -229,6 +240,10 @@ public class SimpleFacets {
     // determine what type of faceting method to use
     String method = params.getFieldParam(field, FacetParams.FACET_METHOD);
     boolean enumMethod = FacetParams.FACET_METHOD_enum.equals(method);
+
+    // TODO: default to per-segment or not?
+    boolean per_segment = FacetParams.FACET_METHOD_fcs.equals(method);
+
     if (method == null && ft instanceof BoolField) {
       // Always use filters for booleans... we know the number of values is very small.
       enumMethod = true;
@@ -252,7 +267,16 @@ public class SimpleFacets {
       } else {
         // TODO: future logic could use filters instead of the fieldcache if
         // the number of terms in the field is small enough.
-        counts = getFieldCacheCounts(searcher, base, field, offset,limit, mincount, missing, sort, prefix);
+
+        if (per_segment) {
+          PerSegmentSingleValuedFaceting ps = new PerSegmentSingleValuedFaceting(searcher, base, field, offset,limit, mincount, missing, sort, prefix);
+          Executor executor = threads==0 ? directExecutor : facetExecutor;
+          ps.setNumThreads(threads);
+          counts = ps.getFacetCounts(facetExecutor);
+        } else {
+          counts = getFieldCacheCounts(searcher, base, field, offset,limit, mincount, missing, sort, prefix);         
+        }
+
       }
     }
 
@@ -260,6 +284,19 @@ public class SimpleFacets {
   }
 
 
+  static final Executor directExecutor = new Executor() {
+    public void execute(Runnable r) {
+      r.run();
+    }
+  };
+
+  static final Executor facetExecutor = new ThreadPoolExecutor(
+          0,
+          Integer.MAX_VALUE,
+          10, TimeUnit.SECONDS, // terminate idle threads after 10 sec
+          new SynchronousQueue<Runnable>()  // directly hand off tasks
+  );
+  
   /**
    * Returns a list of value constraints and the associated facet counts 
    * for each facet field specified in the params.

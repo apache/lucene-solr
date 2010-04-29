@@ -265,31 +265,31 @@ public class SolrTestCaseJ4 extends LuceneTestCaseJ4 {
 
   /** Validates an update XML String is successful
    */
-  public void assertU(String update) {
+  public static void assertU(String update) {
     assertU(null, update);
   }
 
   /** Validates an update XML String is successful
    */
-  public void assertU(String message, String update) {
+  public static void assertU(String message, String update) {
     checkUpdateU(message, update, true);
   }
 
   /** Validates an update XML String failed
    */
-  public void assertFailedU(String update) {
+  public static void assertFailedU(String update) {
     assertFailedU(null, update);
   }
 
   /** Validates an update XML String failed
    */
-  public void assertFailedU(String message, String update) {
+  public static void assertFailedU(String message, String update) {
     checkUpdateU(message, update, false);
   }
 
   /** Checks the success or failure of an update message
    */
-  private void checkUpdateU(String message, String update, boolean shouldSucceed) {
+  private static void checkUpdateU(String message, String update, boolean shouldSucceed) {
     try {
       String m = (null == message) ? "" : message + " ";
       if (shouldSucceed) {
@@ -305,12 +305,12 @@ public class SolrTestCaseJ4 extends LuceneTestCaseJ4 {
   }
 
   /** Validates a query matches some XPath test expressions and closes the query */
-  public void assertQ(SolrQueryRequest req, String... tests) {
+  public static void assertQ(SolrQueryRequest req, String... tests) {
     assertQ(null, req, tests);
   }
 
   /** Validates a query matches some XPath test expressions and closes the query */
-  public void assertQ(String message, SolrQueryRequest req, String... tests) {
+  public static void assertQ(String message, SolrQueryRequest req, String... tests) {
     try {
       String m = (null == message) ? "" : message + " ";
       String response = h.query(req);

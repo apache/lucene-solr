@@ -122,6 +122,7 @@ public interface CommonParams {
   public static final String OUTPUT_KEY = "key";
   public static final String FIELD = "f";
   public static final String VALUE = "v";
+  public static final String THREADS = "threads";
   public static final String TRUE = Boolean.TRUE.toString();
   public static final String FALSE = Boolean.FALSE.toString();
 }

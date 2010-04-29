@@ -92,7 +92,9 @@ public class LuceneTestCaseJ4 {
    * <p><b>NOTE:</b> Change this when development starts for new Lucene version:
    */
   public static final Version TEST_VERSION_CURRENT = Version.LUCENE_31;
-  
+
+  public static boolean checkFieldCacheSanity = true;
+
   /** Create indexes in this directory, optimally use a subdir, named after the test */
   public static final File TEMP_DIR;
   static {
@@ -197,7 +199,8 @@ public class LuceneTestCaseJ4 {
       // index readers are used, because they could be gc'ed just before
       // tearDown is called.
       // But it's better then nothing.
-      assertSaneFieldCaches(getTestLabel());
+      if (checkFieldCacheSanity)
+        assertSaneFieldCaches(getTestLabel());
 
       if (ConcurrentMergeScheduler.anyUnhandledExceptions()) {
         // Clear the failure so that we don't just keep

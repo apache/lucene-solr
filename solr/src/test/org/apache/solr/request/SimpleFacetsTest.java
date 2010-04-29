@@ -18,35 +18,76 @@
 package org.apache.solr.request;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Random;
+
 
 public class SimpleFacetsTest extends SolrTestCaseJ4 {
-
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml","schema.xml");
+    createIndex();
+    checkFieldCacheSanity = false;
+  }
+
+  static Random rand = new Random(); // TODO: a way to use lucene's newRandom()?
+  static int random_commit_percent = 30;
+  static int random_dupe_percent = 25;   // some duplicates in the index to create deleted docs
+
+  static void randomCommit(int percent_chance) {
+    if (rand.nextInt(100) <= percent_chance)
+      assertU(commit());
+  }
+
+  static ArrayList<String[]> pendingDocs = new ArrayList<String[]>();
+
+  // committing randomly gives different looking segments each time
+  static void add_doc(String... fieldsAndValues) {
+    do {
+      pendingDocs.add(fieldsAndValues);      
+    } while (rand.nextInt(100) <= random_dupe_percent);
+
+    // assertU(adoc(fieldsAndValues));
+    // randomCommit(random_commit_percent);
+  }
+
+
+  static void createIndex() {
+    indexSimpleFacetCounts();
+    indexDateFacets();
+    indexFacetSingleValued();
+    indexFacetPrefixMultiValued();
+    indexFacetPrefixSingleValued();
+    
+   Collections.shuffle(pendingDocs, rand);
+    for (String[] doc : pendingDocs) {
+      assertU(adoc(doc));
+      randomCommit(random_commit_percent);
+    }
+    assertU(commit());
+  }
+
+  static void indexSimpleFacetCounts() {
+    add_doc("id", "42", "trait_s", "Tool", "trait_s", "Obnoxious",
+                 "name", "Zapp Brannigan");
+    add_doc("id", "43" ,
+                 "title", "Democratic Order of Planets");
+    add_doc("id", "44", "trait_s", "Tool",
+                 "name", "The Zapper");
+    add_doc("id", "45", "trait_s", "Chauvinist",
+                 "title", "25 star General");
+    add_doc("id", "46", "trait_s", "Obnoxious",
+                 "subject", "Defeated the pacifists of the Gandhi nebula");
+    add_doc("id", "47", "trait_s", "Pig",
+                 "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!");   
   }
 
   @Test
   public void testSimpleFacetCounts() {
-    assertU(adoc("id", "42", "trait_s", "Tool", "trait_s", "Obnoxious",
-                 "name", "Zapp Brannigan"));
-    assertU(adoc("id", "43" ,
-                 "title", "Democratic Order of Planets"));
-    assertU(commit());
-    assertU(adoc("id", "44", "trait_s", "Tool",
-                 "name", "The Zapper"));
-    assertU(adoc("id", "45", "trait_s", "Chauvinist",
-                 "title", "25 star General"));
-    assertU(adoc("id", "46", "trait_s", "Obnoxious",
-                 "subject", "Defeated the pacifists of the Gandhi nebula"));
-    assertU(commit());
-    assertU(adoc("id", "47", "trait_s", "Pig",
-                 "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!"));
-    assertU(commit());
  
     assertQ("standard request handler returns all matches",
             req("id:[42 TO 47]"),
@@ -217,28 +258,30 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
   }
 
+  public static void indexDateFacets() {
+    final String f = "bday";
+    final String pre = "//lst[@name='facet_dates']/lst[@name='"+f+"']";
+
+    add_doc("id", "201",  f, "1976-07-04T12:08:56.235Z");
+    add_doc("id", "202",  f, "1976-07-05T00:00:00.000Z");
+    add_doc("id", "203",  f, "1976-07-15T00:07:67.890Z");
+    add_doc("id", "204",  f, "1976-07-21T00:07:67.890Z");
+    add_doc("id", "205",  f, "1976-07-13T12:12:25.255Z");
+    add_doc("id", "206",  f, "1976-07-03T17:01:23.456Z");
+    add_doc("id", "207",  f, "1976-07-12T12:12:25.255Z");
+    add_doc("id", "208",  f, "1976-07-15T15:15:15.155Z");
+    add_doc("id", "209",  f, "1907-07-12T13:13:23.235Z");
+    add_doc("id", "2010", f, "1976-07-03T11:02:45.678Z");
+    add_doc("id", "2011", f, "1907-07-12T12:12:25.255Z");
+    add_doc("id", "2012", f, "2007-07-30T07:07:07.070Z");
+    add_doc("id", "2013", f, "1976-07-30T22:22:22.222Z");
+    add_doc("id", "2014", f, "1976-07-05T22:22:22.222Z");
+  }
+
   @Test
   public void testDateFacets() {
     final String f = "bday";
     final String pre = "//lst[@name='facet_dates']/lst[@name='"+f+"']";
-
-    assertU(adoc("id", "1",  f, "1976-07-04T12:08:56.235Z"));
-    assertU(adoc("id", "2",  f, "1976-07-05T00:00:00.000Z"));
-    assertU(adoc("id", "3",  f, "1976-07-15T00:07:67.890Z"));
-    assertU(commit());
-    assertU(adoc("id", "4",  f, "1976-07-21T00:07:67.890Z"));
-    assertU(adoc("id", "5",  f, "1976-07-13T12:12:25.255Z"));
-    assertU(adoc("id", "6",  f, "1976-07-03T17:01:23.456Z"));
-    assertU(adoc("id", "7",  f, "1976-07-12T12:12:25.255Z"));
-    assertU(adoc("id", "8",  f, "1976-07-15T15:15:15.155Z"));
-    assertU(adoc("id", "9",  f, "1907-07-12T13:13:23.235Z"));
-    assertU(adoc("id", "10", f, "1976-07-03T11:02:45.678Z"));
-    assertU(commit());
-    assertU(adoc("id", "11", f, "1907-07-12T12:12:25.255Z"));
-    assertU(adoc("id", "12", f, "2007-07-30T07:07:07.070Z"));
-    assertU(adoc("id", "13", f, "1976-07-30T22:22:22.222Z"));
-    assertU(adoc("id", "14", f, "1976-07-05T22:22:22.222Z"));
-    assertU(commit());
 
     assertQ("check counts for month of facet by day",
             req( "q", "*:*"
@@ -389,43 +432,40 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     
   }
 
-  @Test
-  public void testFacetMultiValued() {
-    doFacetPrefix("t_s", "facet.method","enum");
-    doFacetPrefix("t_s", "facet.method", "enum", "facet.enum.cache.minDf", "2");
-    doFacetPrefix("t_s", "facet.method", "enum", "facet.enum.cache.minDf", "100");
-    doFacetPrefix("t_s", "facet.method", "fc");
+  static void indexFacetSingleValued() {
+    indexFacets("40","t_s1");
   }
 
   @Test
   public void testFacetSingleValued() {
     doFacets("t_s1");
+    doFacets("t_s1","facet.method","fcs");
+  }
+
+  static void indexFacets(String idPrefix, String f) {
+    add_doc("id", idPrefix+"1",  f, "A");
+    add_doc("id", idPrefix+"2",  f, "B");
+    add_doc("id", idPrefix+"3",  f, "C");
+    add_doc("id", idPrefix+"4",  f, "C");
+    add_doc("id", idPrefix+"5",  f, "D");
+    add_doc("id", idPrefix+"6",  f, "E");
+    add_doc("id", idPrefix+"7",  f, "E");
+    add_doc("id", idPrefix+"8",  f, "E");
+    add_doc("id", idPrefix+"9",  f, "F");
+    add_doc("id", idPrefix+"10", f, "G");
+    add_doc("id", idPrefix+"11", f, "G");
+    add_doc("id", idPrefix+"12", f, "G");
+    add_doc("id", idPrefix+"13", f, "G");
+    add_doc("id", idPrefix+"14", f, "G");
   }
 
   public void doFacets(String f, String... params) {
     String pre = "//lst[@name='"+f+"']";
     String notc = "id:[* TO *] -"+f+":C";
 
-    assertU(adoc("id", "1",  f, "A"));
-    assertU(adoc("id", "2",  f, "B"));
-    assertU(commit());
-    assertU(adoc("id", "3",  f, "C"));
-    assertU(adoc("id", "4",  f, "C"));
-    assertU(adoc("id", "5",  f, "D"));
-    assertU(adoc("id", "6",  f, "E"));
-    assertU(adoc("id", "7",  f, "E"));
-    assertU(adoc("id", "8",  f, "E"));
-    assertU(adoc("id", "9",  f, "F"));
-    assertU(commit());
-    assertU(adoc("id", "10", f, "G"));
-    assertU(adoc("id", "11", f, "G"));
-    assertU(adoc("id", "12", f, "G"));
-    assertU(adoc("id", "13", f, "G"));
-    assertU(adoc("id", "14", f, "G"));
-    assertU(commit());
 
     assertQ("check counts for unlimited facet",
-            req(params, "q", "id:[* TO *]"
+            req(params, "q", "id:[* TO *]", "indent","true"
                 ,"facet", "true"
                 ,"facet.field", f
                 )
@@ -566,47 +606,60 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   }
 
 
+  static void indexFacetPrefixMultiValued() {
+    indexFacetPrefix("50","t_s");
+  }
+
   @Test
   public void testFacetPrefixMultiValued() {
-    doFacetPrefix("t_s", "facet.method","enum");
-    doFacetPrefix("t_s", "facet.method", "enum", "facet.enum.cache.minDf", "3");
-    doFacetPrefix("t_s", "facet.method", "enum", "facet.enum.cache.minDf", "100");
-    doFacetPrefix("t_s", "facet.method", "fc");
+    doFacetPrefix("t_s", null, "facet.method","enum");
+    doFacetPrefix("t_s", null, "facet.method", "enum", "facet.enum.cache.minDf", "3");
+    doFacetPrefix("t_s", null, "facet.method", "enum", "facet.enum.cache.minDf", "100");
+    doFacetPrefix("t_s", null, "facet.method", "fc");
+  }
+
+  static void indexFacetPrefixSingleValued() {
+    indexFacetPrefix("60","tt_s1");
   }
 
   @Test
   public void testFacetPrefixSingleValued() {
-    doFacetPrefix("t_s1");
+    doFacetPrefix("tt_s1", null);
+    doFacetPrefix("tt_s1", null, "facet.method","fcs");
+    doFacetPrefix("tt_s1", "{!threads=0}", "facet.method","fcs");   // direct execution
+    doFacetPrefix("tt_s1", "{!threads=-1}", "facet.method","fcs");  // default / unlimited threads
+    doFacetPrefix("tt_s1", "{!threads=2}", "facet.method","fcs");   // specific number of threads
   }
 
-  public void doFacetPrefix(String f, String... params) {
+
+  static void indexFacetPrefix(String idPrefix, String f) {
+    add_doc("id", idPrefix+"1",  f, "AAA");
+    add_doc("id", idPrefix+"2",  f, "B");
+    add_doc("id", idPrefix+"3",  f, "BB");
+    add_doc("id", idPrefix+"4",  f, "BB");
+    add_doc("id", idPrefix+"5",  f, "BBB");
+    add_doc("id", idPrefix+"6",  f, "BBB");
+    add_doc("id", idPrefix+"7",  f, "BBB");
+    add_doc("id", idPrefix+"8",  f, "CC");
+    add_doc("id", idPrefix+"9",  f, "CC");
+    add_doc("id", idPrefix+"10", f, "CCC");
+    add_doc("id", idPrefix+"11", f, "CCC");
+    add_doc("id", idPrefix+"12", f, "CCC");
+    assertU(commit());
+  }
+
+  public void doFacetPrefix(String f, String local, String... params) {
     String indent="on";
     String pre = "//lst[@name='"+f+"']";
     String notc = "id:[* TO *] -"+f+":C";
+    String lf = local==null ? f : local+f;
 
-    assertU(adoc("id", "1",  f, "AAA"));
-    assertU(adoc("id", "2",  f, "B"));
-    assertU(adoc("id", "3",  f, "BB"));
-    assertU(adoc("id", "4",  f, "BB"));
-    assertU(commit());
-    assertU(adoc("id", "5",  f, "BBB"));
-    assertU(adoc("id", "6",  f, "BBB"));
-    assertU(commit());
-    assertU(adoc("id", "7",  f, "BBB"));
-    assertU(adoc("id", "8",  f, "CC"));
-    assertU(adoc("id", "9",  f, "CC"));
-    assertU(commit());
-    assertU(adoc("id", "10", f, "CCC"));
-    assertU(adoc("id", "11", f, "CCC"));
-    assertU(commit());    
-    assertU(adoc("id", "12", f, "CCC"));
-    assertU(commit());
 
     assertQ("test facet.prefix middle, exact match first term",
             req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
-                    ,"facet.field", f
+                    ,"facet.field", lf
                     ,"facet.mincount","0"
                     ,"facet.offset","0"
                     ,"facet.limit","100"
@@ -623,7 +676,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
-                    ,"facet.field", f
+                    ,"facet.field", lf
                     ,"facet.mincount","0"
                     ,"facet.offset","0"
                     ,"facet.limit","100"
@@ -641,7 +694,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
-                    ,"facet.field", f
+                    ,"facet.field", lf
                     ,"facet.mincount","0"
                     ,"facet.offset","0"
                     ,"facet.limit","100"
@@ -659,7 +712,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
-                    ,"facet.field", f
+                    ,"facet.field", lf
                     ,"facet.mincount","0"
                     ,"facet.offset","1"
                     ,"facet.limit","100"
@@ -675,7 +728,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
-                    ,"facet.field", f
+                    ,"facet.field", lf
                     ,"facet.mincount","0"
                     ,"facet.offset","1"
                     ,"facet.limit","1"
@@ -690,7 +743,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
-                    ,"facet.field", f
+                    ,"facet.field", lf
                     ,"facet.mincount","0"
                     ,"facet.offset","1"
                     ,"facet.limit","1"
@@ -705,7 +758,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
-                    ,"facet.field", f
+                    ,"facet.field", lf
                     ,"facet.mincount","0"
                     ,"facet.offset","0"
                     ,"facet.limit","100"
@@ -721,7 +774,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
-                    ,"facet.field", f
+                    ,"facet.field", lf
                     ,"facet.mincount","0"
                     ,"facet.offset","0"
                     ,"facet.limit","100"
@@ -737,7 +790,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
-                    ,"facet.field", f
+                    ,"facet.field", lf
                     ,"facet.mincount","0"
                     ,"facet.offset","0"
                     ,"facet.limit","100"
@@ -751,7 +804,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
-                    ,"facet.field", f
+                    ,"facet.field", lf
                     ,"facet.mincount","0"
                     ,"facet.offset","1"
                     ,"facet.limit","-1"
@@ -765,7 +818,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
-                    ,"facet.field", f
+                    ,"facet.field", lf
                     ,"facet.mincount","0"
                     ,"facet.offset","0"
                     ,"facet.limit","100"
@@ -779,7 +832,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
-                    ,"facet.field", f
+                    ,"facet.field", lf
                     ,"facet.mincount","0"
                     ,"facet.offset","0"
                     ,"facet.limit","100"
@@ -793,7 +846,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
-                    ,"facet.field", f
+                    ,"facet.field", lf
                     ,"facet.mincount","0"
                     ,"facet.offset","0"
                     ,"facet.limit","100"
@@ -807,7 +860,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
-                    ,"facet.field", f
+                    ,"facet.field", lf
                     ,"facet.mincount","0"
                     ,"facet.offset","0"
                     ,"facet.limit","100"
@@ -821,7 +874,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             req(params, "q", "id:[* TO *]"
                     ,"indent",indent
                     ,"facet","true"
-                    ,"facet.field", f
+                    ,"facet.field", lf
                     ,"facet.mincount","0"
                     ,"facet.offset","2"
                     ,"facet.limit","100"

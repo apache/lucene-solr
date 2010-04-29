@@ -154,6 +154,11 @@ Optimizations
 
 * SOLR-1874: Optimize PatternReplaceFilter for better performance. (rmuir, uschindler)
 
+* SOLR-1875: Per-segment field faceting for single valued string fields.
+  Enable with facet.method=fcs, control the number of threads used with
+  the "threads" local param on the facet.field param.  This algorithm will
+  only be faster in the presence of rapid index changes.  (yonik)
+
 Bug Fixes
 ----------------------
 

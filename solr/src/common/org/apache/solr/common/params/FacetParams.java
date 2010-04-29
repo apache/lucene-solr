@@ -43,7 +43,11 @@ public interface FacetParams {
    * (such as the FieldCache used for sorting).
    */
   public static final String FACET_METHOD_fc = "fc";
-  
+
+  /** Value for FACET_METHOD param, like FACET_METHOD_fc but counts per-segment.
+   */
+  public static final String FACET_METHOD_fcs = "fcs";
+
   /**
    * Any lucene formated queries the user would like to use for
    * Facet Constraint Counts (multi-value)
