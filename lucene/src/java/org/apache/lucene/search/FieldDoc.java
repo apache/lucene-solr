@@ -70,6 +70,6 @@ public class FieldDoc extends ScoreDoc {
           }
     sb.setLength(sb.length() - 2); // discard last ", "
     sb.append("]");
-    return super.toString();
+    return sb.toString();
   }
 }
