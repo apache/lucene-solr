@@ -1125,6 +1125,11 @@ class DirectoryReader extends IndexReader implements Cloneable {
     public Map<String,String> getUserData() {
       return userData;
     }
+
+    @Override
+    public void delete() {
+      throw new UnsupportedOperationException("This IndexCommit does not support deletions");
+    }
   }
   
   // @deprecated This is pre-flex API

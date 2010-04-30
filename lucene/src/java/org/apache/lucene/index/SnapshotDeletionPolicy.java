@@ -132,6 +132,10 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
     public Map<String,String> getUserData() throws IOException {
       return cp.getUserData();
     }
+    @Override
+    public boolean isOptimized() {
+      return cp.isOptimized();
+    }
   }
 
   private List<IndexCommit> wrapCommits(List<? extends IndexCommit> commits) {
