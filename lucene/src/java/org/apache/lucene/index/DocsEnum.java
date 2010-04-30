@@ -24,7 +24,9 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.IntsRef;
 
 /** Iterates through the documents, term freq and positions.
- *  NOTE: you must first call {@link #nextDoc}.
+ *  NOTE: you must first call {@link #nextDoc} before using
+ *  any of the per-doc methods (this does not apply to the
+ *  bulk read {@link #read} method).
  *
  *  @lucene.experimental */
 public abstract class DocsEnum extends DocIdSetIterator {
