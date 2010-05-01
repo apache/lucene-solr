@@ -93,8 +93,6 @@ public class LuceneTestCaseJ4 {
    */
   public static final Version TEST_VERSION_CURRENT = Version.LUCENE_31;
 
-  public static boolean checkFieldCacheSanity = true;
-
   /** Create indexes in this directory, optimally use a subdir, named after the test */
   public static final File TEMP_DIR;
   static {
@@ -195,12 +193,19 @@ public class LuceneTestCaseJ4 {
   public void tearDown() throws Exception {
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
     try {
-      // this isn't as useful as calling directly from the scope where the
-      // index readers are used, because they could be gc'ed just before
-      // tearDown is called.
+      // calling assertSaneFieldCaches here isn't as useful as having test 
+      // classes call it directly from the scope where the index readers 
+      // are used, because they could be gc'ed just before this tearDown 
+      // method is called.
+      //
       // But it's better then nothing.
-      if (checkFieldCacheSanity)
-        assertSaneFieldCaches(getTestLabel());
+      //
+      // If you are testing functionality that you know for a fact 
+      // "violates" FieldCache sanity, then you should either explicitly 
+      // call purgeFieldCache at the end of your test method, or refactor
+      // your Test class so that the inconsistant FieldCache usages are 
+      // isolated in distinct test methods  
+      assertSaneFieldCaches(getTestLabel());
 
       if (ConcurrentMergeScheduler.anyUnhandledExceptions()) {
         // Clear the failure so that we don't just keep
