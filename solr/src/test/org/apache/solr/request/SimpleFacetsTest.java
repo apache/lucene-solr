@@ -31,7 +31,6 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml","schema.xml");
     createIndex();
-    checkFieldCacheSanity = false;
   }
 
   static Random rand = new Random(); // TODO: a way to use lucene's newRandom()?
@@ -439,6 +438,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   @Test
   public void testFacetSingleValued() {
     doFacets("t_s1");
+  }
+  @Test
+  public void testFacetSingleValuedFcs() {
     doFacets("t_s1","facet.method","fcs");
   }
 
@@ -625,6 +627,9 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
   @Test
   public void testFacetPrefixSingleValued() {
     doFacetPrefix("tt_s1", null);
+  }
+  @Test
+  public void testFacetPrefixSingleValuedFcs() {
     doFacetPrefix("tt_s1", null, "facet.method","fcs");
     doFacetPrefix("tt_s1", "{!threads=0}", "facet.method","fcs");   // direct execution
     doFacetPrefix("tt_s1", "{!threads=-1}", "facet.method","fcs");  // default / unlimited threads
