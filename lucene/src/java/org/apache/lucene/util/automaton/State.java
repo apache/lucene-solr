@@ -28,13 +28,14 @@
  */
 
 package org.apache.lucene.util.automaton;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.Comparator;
+import java.util.Iterator;
 
 /**
  * <tt>Automaton</tt> state.
@@ -44,7 +45,8 @@ import java.util.Set;
 public class State implements Serializable, Comparable<State> {
   
   boolean accept;
-  Set<Transition> transitions;
+  public Transition[] transitionsArray;
+  public int numTransitions;
   
   int number;
 
@@ -63,7 +65,25 @@ public class State implements Serializable, Comparable<State> {
    * Resets transition set.
    */
   final void resetTransitions() {
-    transitions = new HashSet<Transition>();
+    transitionsArray = new Transition[0];
+    numTransitions = 0;
+  }
+
+  private class TransitionsIterable implements Iterable<Transition> {
+    public Iterator<Transition> iterator() {
+      return new Iterator<Transition>() {
+        int upto;
+        public boolean hasNext() {
+          return upto < numTransitions;
+        }
+        public Transition next() {
+          return transitionsArray[upto++];
+        }
+        public void remove() {
+          throw new UnsupportedOperationException();
+        }
+      };
+    }
   }
   
   /**
@@ -72,8 +92,17 @@ public class State implements Serializable, Comparable<State> {
    * 
    * @return transition set
    */
-  public Set<Transition> getTransitions() {
-    return transitions;
+  public Iterable<Transition> getTransitions() {
+    return new TransitionsIterable();
+  }
+
+  public int numTransitions() {
+    return numTransitions;
+  }
+
+  public void setTransitions(Transition[] transitions) {
+    this.numTransitions = transitions.length;
+    this.transitionsArray = transitions;
   }
   
   /**
@@ -82,7 +111,12 @@ public class State implements Serializable, Comparable<State> {
    * @param t transition
    */
   public void addTransition(Transition t) {
-    transitions.add(t);
+    if (numTransitions == transitionsArray.length) {
+      final Transition[] newArray = new Transition[ArrayUtil.oversize(1+numTransitions, RamUsageEstimator.NUM_BYTES_OBJ_REF)];
+      System.arraycopy(transitionsArray, 0, newArray, 0, numTransitions);
+      transitionsArray = newArray;
+    }
+    transitionsArray[numTransitions++] = t;
   }
   
   /**
@@ -106,44 +140,88 @@ public class State implements Serializable, Comparable<State> {
   /**
    * Performs lookup in transitions, assuming determinism.
    * 
-   * @param c character to look up
+   * @param c codepoint to look up
    * @return destination state, null if no matching outgoing transition
-   * @see #step(char, Collection)
+   * @see #step(int, Collection)
    */
-  public State step(char c) {
-    for (Transition t : transitions)
+  public State step(int c) {
+    assert c >= 0;
+    for (int i=0;i<numTransitions;i++) {
+      final Transition t = transitionsArray[i];
       if (t.min <= c && c <= t.max) return t.to;
+    }
     return null;
   }
   
   /**
    * Performs lookup in transitions, allowing nondeterminism.
    * 
-   * @param c character to look up
+   * @param c codepoint to look up
    * @param dest collection where destination states are stored
-   * @see #step(char)
+   * @see #step(int)
    */
-  public void step(char c, Collection<State> dest) {
-    for (Transition t : transitions)
+  public void step(int c, Collection<State> dest) {
+    for (int i=0;i<numTransitions;i++) {
+      final Transition t = transitionsArray[i];
       if (t.min <= c && c <= t.max) dest.add(t.to);
+    }
   }
   
   void addEpsilon(State to) {
     if (to.accept) accept = true;
-    for (Transition t : to.transitions)
-      transitions.add(t);
+    for (Transition t : to.getTransitions())
+      addTransition(t);
+  }
+
+  /** Downsizes transitionArray to numTransitions */
+  public void trimTransitionsArray() {
+    if (numTransitions < transitionsArray.length) {
+      final Transition[] newArray = new Transition[numTransitions];
+      System.arraycopy(transitionsArray, 0, newArray, 0, numTransitions);
+      transitionsArray = newArray;
+    }
   }
   
   /**
-   * Returns transitions sorted by (min, reverse max, to) or (to, min, reverse
-   * max)
+   * Reduces this state. A state is "reduced" by combining overlapping
+   * and adjacent edge intervals with same destination.
    */
-  public Transition[] getSortedTransitionArray(boolean to_first) {
-    Transition[] e = transitions.toArray(new Transition[transitions.size()]);
-    Arrays.sort(e, new TransitionComparator(to_first));
-    return e;
+  public void reduce() {
+    if (numTransitions <= 1) {
+      return;
+    }
+    sortTransitions(Transition.CompareByDestThenMinMax);
+    State p = null;
+    int min = -1, max = -1;
+    int upto = 0;
+    for (int i=0;i<numTransitions;i++) {
+      final Transition t = transitionsArray[i];
+      if (p == t.to) {
+        if (t.min <= max + 1) {
+          if (t.max > max) max = t.max;
+        } else {
+          if (p != null) {
+            transitionsArray[upto++] = new Transition(min, max, p);
+          }
+          min = t.min;
+          max = t.max;
+        }
+      } else {
+        if (p != null) {
+          transitionsArray[upto++] = new Transition(min, max, p);
+        }
+        p = t.to;
+        min = t.min;
+        max = t.max;
+      }
+    }
+
+    if (p != null) {
+      transitionsArray[upto++] = new Transition(min, max, p);
+    }
+    numTransitions = upto;
   }
-  
+
   /**
    * Returns sorted list of outgoing transitions.
    * 
@@ -151,10 +229,11 @@ public class State implements Serializable, Comparable<State> {
    *          reverse max, to)
    * @return transition list
    */
-  public List<Transition> getSortedTransitions(boolean to_first) {
-    return Arrays.asList(getSortedTransitionArray(to_first));
-  }
   
+  /** Sorts transitions array in-place. */
+  public void sortTransitions(Comparator<Transition> comparator) {
+    Arrays.sort(transitionsArray, 0, numTransitions, comparator);
+  }
   
   /**
    * Return this state's number. 
@@ -178,7 +257,7 @@ public class State implements Serializable, Comparable<State> {
     if (accept) b.append(" [accept]");
     else b.append(" [reject]");
     b.append(":\n");
-    for (Transition t : transitions)
+    for (Transition t : getTransitions())
       b.append("  ").append(t.toString()).append("\n");
     return b.toString();
   }
@@ -189,21 +268,5 @@ public class State implements Serializable, Comparable<State> {
    */
   public int compareTo(State s) {
     return s.id - id;
-  }
-  
-  /**
-   * See {@link java.lang.Object#equals(java.lang.Object)}.
-   */
-  @Override
-  public boolean equals(Object obj) {
-    return super.equals(obj);
-  }
-  
-  /**
-   * See {@link java.lang.Object#hashCode()}.
-   */
-  @Override
-  public int hashCode() {
-    return super.hashCode();
   }
 }

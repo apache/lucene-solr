@@ -56,6 +56,20 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
   static final float epsilon = 0.00001f;
 
   public void testFromTestData() throws Exception {
+    // TODO: randomize!
+    assertFromTestData(new int[] { 0x40, 0x41 });
+    assertFromTestData(new int[] { 0x40, 0x0195 });
+    assertFromTestData(new int[] { 0x40, 0x0906 });
+    assertFromTestData(new int[] { 0x40, 0x1040F });
+    assertFromTestData(new int[] { 0x0194, 0x0195 });
+    assertFromTestData(new int[] { 0x0194, 0x0906 });
+    assertFromTestData(new int[] { 0x0194, 0x1040F });
+    assertFromTestData(new int[] { 0x0905, 0x0906 });
+    assertFromTestData(new int[] { 0x0905, 0x1040F });
+    assertFromTestData(new int[] { 0x1040E, 0x1040F });
+  }
+
+  public void assertFromTestData(int codePointTable[]) throws Exception {
     InputStream stream = getClass().getResourceAsStream("fuzzyTestData.txt");
     BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
     
@@ -71,7 +85,7 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     doc.add(field);
     
     for (int i = 0; i < terms; i++) {
-      field.setValue(Integer.toBinaryString(i));
+      field.setValue(mapInt(codePointTable, i));
       writer.addDocument(doc);
     }
     
@@ -82,7 +96,7 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     String line;
     while ((line = reader.readLine()) != null) {
       String params[] = line.split(",");
-      String query = Integer.toBinaryString(Integer.parseInt(params[0]));
+      String query = mapInt(codePointTable, Integer.parseInt(params[0]));
       int prefix = Integer.parseInt(params[1]);
       int pqSize = Integer.parseInt(params[2]);
       float minScore = Float.parseFloat(params[3]);
@@ -101,6 +115,15 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     dir.close();
   }
   
+  /* map bits to unicode codepoints */
+  private static String mapInt(int codePointTable[], int i) {
+    StringBuilder sb = new StringBuilder();
+    String binary = Integer.toBinaryString(i);
+    for (int j = 0; j < binary.length(); j++)
+      sb.appendCodePoint(codePointTable[binary.charAt(j) - '0']);
+    return sb.toString();
+  }
+
   /* Code to generate test data
   public static void main(String args[]) throws Exception {
     int bits = 3;

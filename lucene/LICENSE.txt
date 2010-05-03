@@ -237,6 +237,12 @@ http://www.python.org. Full license is here:
 
   http://www.python.org/download/releases/2.4.2/license/
 
+Some code in src/java/org/apache/lucene/util/UnicodeUtil.java was
+derived from Python 3.1.2 sources available at
+http://www.python.org. Full license is here:
+
+  http://www.python.org/download/releases/3.1.2/license/
+
 Some code in src/java/org/apache/lucene/util/automaton was
 derived from Brics automaton sources available at
 www.brics.dk/automaton/. Here is the copyright from those sources:

@@ -30,6 +30,10 @@ public final class IntsRef {
   public IntsRef() {
   }
 
+  public IntsRef(int capacity) {
+    ints = new int[capacity];
+  }
+
   public IntsRef(int[] ints, int offset, int length) {
     this.ints = ints;
     this.offset = offset;

@@ -31,7 +31,6 @@ package org.apache.lucene.util.automaton;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
-import java.util.Set;
 
 /**
  * Operations for minimizing automata.
@@ -41,7 +40,7 @@ import java.util.Set;
 final public class MinimizationOperations {
   
   private MinimizationOperations() {}
-  
+
   /**
    * Minimizes (and determinizes if not already deterministic) the given
    * automaton.
@@ -53,8 +52,8 @@ final public class MinimizationOperations {
       minimizeHopcroft(a);
     }
     // recompute hash code
-    a.hash_code = a.getNumberOfStates() * 3 + a.getNumberOfTransitions() * 2;
-    if (a.hash_code == 0) a.hash_code = 1;
+    //a.hash_code = 1a.getNumberOfStates() * 3 + a.getNumberOfTransitions() * 2;
+    //if (a.hash_code == 0) a.hash_code = 1;
   }
   
   private static <T> void initialize(ArrayList<T> list, int size) {
@@ -67,24 +66,18 @@ final public class MinimizationOperations {
    */
   public static void minimizeHopcroft(Automaton a) {
     a.determinize();
-    Set<Transition> tr = a.initial.getTransitions();
-    if (tr.size() == 1) {
-      Transition t = tr.iterator().next();
-      if (t.to == a.initial && t.min == Character.MIN_VALUE
-          && t.max == Character.MAX_VALUE) return;
+    if (a.initial.numTransitions == 1) {
+      Transition t = a.initial.transitionsArray[0];
+      if (t.to == a.initial && t.min == Character.MIN_CODE_POINT
+          && t.max == Character.MAX_CODE_POINT) return;
     }
     a.totalize();
-    // make arrays for numbered states and effective alphabet
-    Set<State> ss = a.getStates();
-    State[] states = new State[ss.size()];
-    int number = 0;
-    for (State q : ss) {
-      states[number] = q;
-      q.number = number++;
-    }
-    char[] sigma = a.getStartPoints();
+
+    int[] sigma = a.getStartPoints();
     // initialize data structures
     ArrayList<ArrayList<LinkedList<State>>> reverse = new ArrayList<ArrayList<LinkedList<State>>>();
+    final State[] states = a.getNumberedStates();
+
     for (int q = 0; q < states.length; q++) {
       ArrayList<LinkedList<State>> v = new ArrayList<LinkedList<State>>();
       initialize(v, sigma.length);
@@ -121,7 +114,7 @@ final public class MinimizationOperations {
       partition.get(j).add(qq);
       block[qq.number] = j;
       for (int x = 0; x < sigma.length; x++) {
-        char y = sigma[x];
+        int y = sigma[x];
         State p = qq.step(y);
         reverse.get(p.number).get(x).add(qq);
         reverse_nonempty[p.number][x] = true;
@@ -218,9 +211,10 @@ final public class MinimizationOperations {
     for (int n = 0; n < newstates.length; n++) {
       State s = newstates[n];
       s.accept = states[s.number].accept;
-      for (Transition t : states[s.number].transitions)
-        s.transitions.add(new Transition(t.min, t.max, newstates[t.to.number]));
+      for (Transition t : states[s.number].getTransitions())
+        s.addTransition(new Transition(t.min, t.max, newstates[t.to.number]));
     }
+    a.clearNumberedStates();
     a.removeDeadTransitions();
   }
   

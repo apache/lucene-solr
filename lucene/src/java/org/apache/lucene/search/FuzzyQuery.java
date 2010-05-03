@@ -83,7 +83,8 @@ public class FuzzyQuery extends MultiTermQuery {
     
     setRewriteMethod(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(maxExpansions));
     
-    if (term.text().length() > 1.0f / (1.0f - minimumSimilarity)) {
+    String text = term.text();
+    if (text.codePointCount(0, text.length()) > 1.0f / (1.0f - minimumSimilarity)) {
       this.termLongEnough = true;
     }
     

@@ -124,6 +124,11 @@ Changes in backwards compatibility policy
   actual file's length if the file exists, and throws FileNotFoundException
   otherwise. Returning length=0 for a non-existent file is no longer allowed. If
   you relied on that, make sure to catch the exception. (Shai Erera)
+
+* LUCENE-2265: FuzzyQuery and WildcardQuery now operate on Unicode codepoints,
+  not unicode code units. For example, a Wildcard "?" represents any unicode
+  character. Furthermore, the rest of the automaton package and RegexpQuery use 
+  true Unicode codepoint representation.  (Robert Muir, Mike McCandless)
   
 Changes in runtime behavior
 

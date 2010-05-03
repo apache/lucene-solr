@@ -21,11 +21,9 @@ import java.io.IOException;
 import java.util.Comparator;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.RunAutomaton;
+import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.SpecialOperations;
 import org.apache.lucene.util.automaton.State;
 import org.apache.lucene.util.automaton.Transition;
@@ -51,7 +49,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
   // the object-oriented form of the DFA
   private final Automaton automaton;
   // a tableized array-based form of the DFA
-  private final RunAutomaton runAutomaton;
+  private final ByteRunAutomaton runAutomaton;
   // common suffix of the automaton
   private final BytesRef commonSuffixRef;
   // true if the automaton accepts a finite language
@@ -62,8 +60,6 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
   // visited the state; we use gens to avoid having to clear
   private final long[] visited;
   private long curGen;
-  // used for unicode conversion from BytesRef byte[] to char[]
-  private final UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
   // the reference used for seeking forwards through the term dictionary
   private final BytesRef seekBytesRef = new BytesRef(10); 
   // true if we are enumerating an infinite portion of the DFA.
@@ -72,7 +68,6 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
   // of terms where we should simply do sequential reads instead.
   private boolean linear = false;
   private final BytesRef linearUpperBound = new BytesRef(10);
-  private final UnicodeUtil.UTF16Result linearUpperBoundUTF16 = new UnicodeUtil.UTF16Result();
   private final Comparator<BytesRef> termComp;
 
   /**
@@ -80,39 +75,38 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
    * Construct an enumerator based upon an automaton, enumerating the specified
    * field, working on a supplied reader.
    * <p>
-   * @lucene.internal Use the public ctor instead. This constructor allows the
-   * (dangerous) option of passing in a pre-compiled RunAutomaton. If you use 
-   * this ctor and compile your own RunAutomaton, you are responsible for 
-   * ensuring it is in sync with the Automaton object, including internal
-   * State numbering, or you will get undefined behavior.
+   * @lucene.internal Use the public ctor instead. 
    * <p>
-   * @param preCompiled optional pre-compiled RunAutomaton (can be null)
+   * @param runAutomaton pre-compiled ByteRunAutomaton
    * @param finite true if the automaton accepts a finite language
    */
-  AutomatonTermsEnum(Automaton automaton, RunAutomaton preCompiled,
-      Term queryTerm, IndexReader reader, boolean finite)
+  AutomatonTermsEnum(ByteRunAutomaton runAutomaton,
+                     String field, IndexReader reader,
+                     boolean finite, BytesRef commonSuffixRef)
       throws IOException {
-    super(reader, queryTerm.field());
-    this.automaton = automaton;
+    super(reader, field);
+    this.automaton = runAutomaton.getAutomaton();
     this.finite = finite;
 
-    /* 
-     * tableize the automaton. this also ensures it is deterministic, and has no 
-     * transitions to dead states. it also invokes Automaton.setStateNumbers to
-     * number the original states (this is how they are tableized)
-     */
-    if (preCompiled == null)
-      runAutomaton = new RunAutomaton(this.automaton);
-    else
-      runAutomaton = preCompiled;
+    this.runAutomaton = runAutomaton;
+    if (finite) {
+      // don't use suffix w/ finite DFAs
+      this.commonSuffixRef = null;
+    } else if (commonSuffixRef == null) {
+      // compute now
+      this.commonSuffixRef = SpecialOperations.getCommonSuffixBytesRef(automaton);
+    } else {
+      // precomputed
+      this.commonSuffixRef = commonSuffixRef;
+    }
 
-    commonSuffixRef = finite ? null : new BytesRef(getValidUTF16Suffix(SpecialOperations
-        .getCommonSuffix(automaton)));
-    
     // build a cache of sorted transitions for every state
     allTransitions = new Transition[runAutomaton.getSize()][];
-    for (State state : this.automaton.getStates())
-      allTransitions[state.getNumber()] = state.getSortedTransitionArray(false);
+    for (State state : this.automaton.getNumberedStates()) {
+      state.sortTransitions(Transition.CompareByMinMaxThenDestUTF8InUTF16Order);
+      state.trimTransitionsArray();
+      allTransitions[state.getNumber()] = state.transitionsArray;
+    }
     // used for path tracking, where each bit is a numbered state.
     visited = new long[runAutomaton.getSize()];
 
@@ -126,9 +120,9 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
    * <p>
    * It will automatically calculate whether or not the automaton is finite
    */
-  public AutomatonTermsEnum(Automaton automaton, Term queryTerm, IndexReader reader)
-      throws IOException {
-    this(automaton, null, queryTerm, reader, SpecialOperations.isFinite(automaton));
+  public AutomatonTermsEnum(Automaton automaton, String field, IndexReader reader)
+    throws IOException {
+    this(new ByteRunAutomaton(automaton), field, reader, SpecialOperations.isFinite(automaton), null);
   }
  
   /**
@@ -138,8 +132,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
   @Override
   protected AcceptStatus accept(final BytesRef term) {
     if (commonSuffixRef == null || term.endsWith(commonSuffixRef)) {
-      UnicodeUtil.UTF8toUTF16(term.bytes, term.offset, term.length, utf16);
-      if (runAutomaton.run(utf16.result, 0, utf16.length))
+      if (runAutomaton.run(term.bytes, term.offset, term.length))
         return linear ? AcceptStatus.YES : AcceptStatus.YES_AND_SEEK;
       else
         return (linear && termComp.compare(term, linearUpperBound) < 0) ? 
@@ -153,15 +146,13 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
   @Override
   protected BytesRef nextSeekTerm(final BytesRef term) throws IOException {
     if (term == null) {
+      seekBytesRef.copy("");
       // return the empty term, as its valid
-      if (runAutomaton.run("")) {
-        seekBytesRef.copy("");
+      if (runAutomaton.run(seekBytesRef.bytes, seekBytesRef.offset, seekBytesRef.length)) {   
         return seekBytesRef;
       }
-      
-      utf16.copyText("");
     } else {
-      UnicodeUtil.UTF8toUTF16(term.bytes, term.offset, term.length, utf16);
+      seekBytesRef.copy(term);
     }
 
     // seek to the next possible string;
@@ -169,8 +160,6 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
       // reposition
       if (linear)
         setLinear(infinitePosition);
-      UnicodeUtil.nextValidUTF16String(utf16);
-      UnicodeUtil.UTF16toUTF8(utf16.result, 0, utf16.length, seekBytesRef);
       return seekBytesRef;
     }
     // no more possible strings can match
@@ -187,27 +176,28 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
    */
   private void setLinear(int position) {
     int state = runAutomaton.getInitialState();
-    char maxInterval = 0xffff;
-    for (int i = 0; i < position; i++)
-      state = runAutomaton.step(state, utf16.result[i]);
+    int maxInterval = 0xef;
+    for (int i = 0; i < position; i++) {
+      state = runAutomaton.step(state, seekBytesRef.bytes[i] & 0xff);
+      assert state >= 0: "state=" + state;
+    }
     for (int i = 0; i < allTransitions[state].length; i++) {
       Transition t = allTransitions[state][i];
-      if (t.getMin() <= utf16.result[position] && utf16.result[position] <= t.getMax()) {
+      if (compareToUTF16(t.getMin(), (seekBytesRef.bytes[position] & 0xff)) <= 0 && 
+          compareToUTF16((seekBytesRef.bytes[position] & 0xff), t.getMax()) <= 0) {
         maxInterval = t.getMax();
         break;
       }
     }
-    // 0xffff terms don't get the optimization... not worth the trouble.
-    if (maxInterval < 0xffff)
-      maxInterval++;
+    // 0xef terms don't get the optimization... not worth the trouble.
+    if (maxInterval != 0xef)
+      maxInterval = incrementUTF16(maxInterval);
     int length = position + 1; /* position + maxTransition */
-    if (linearUpperBoundUTF16.result.length < length)
-      linearUpperBoundUTF16.result = new char[length];
-    System.arraycopy(utf16.result, 0, linearUpperBoundUTF16.result, 0, position);
-    linearUpperBoundUTF16.result[position] = maxInterval;
-    linearUpperBoundUTF16.setLength(length);
-    UnicodeUtil.nextValidUTF16String(linearUpperBoundUTF16);
-    UnicodeUtil.UTF16toUTF8(linearUpperBoundUTF16.result, 0, length, linearUpperBound);
+    if (linearUpperBound.bytes.length < length)
+      linearUpperBound.bytes = new byte[length];
+    System.arraycopy(seekBytesRef.bytes, 0, linearUpperBound.bytes, 0, position);
+    linearUpperBound.bytes[position] = (byte) maxInterval;
+    linearUpperBound.length = length;
   }
 
   /**
@@ -229,9 +219,9 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
       linear = false;
       state = runAutomaton.getInitialState();
       // walk the automaton until a character is rejected.
-      for (pos = 0; pos < utf16.length; pos++) {
+      for (pos = 0; pos < seekBytesRef.length; pos++) {
         visited[state] = curGen;
-        int nextState = runAutomaton.step(state, utf16.result[pos]);
+        int nextState = runAutomaton.step(state, seekBytesRef.bytes[pos] & 0xff);
         if (nextState == -1)
           break;
         // we found a loop, record it for faster enumeration
@@ -249,7 +239,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
       } else { /* no more solutions exist from this useful portion, backtrack */
         if (!backtrack(pos)) /* no more solutions at all */
           return false;
-        else if (runAutomaton.run(utf16.result, 0, utf16.length)) 
+        else if (runAutomaton.run(seekBytesRef.bytes, 0, seekBytesRef.length)) 
           /* String is good to go as-is */
           return true;
         /* else advance further */
@@ -280,19 +270,18 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
      * the next lexicographic character must be greater than the existing
      * character, if it exists.
      */
-    char c = 0;
-    if (position < utf16.length) {
-      c = utf16.result[position];
+    int c = 0;
+    if (position < seekBytesRef.length) {
+      c = seekBytesRef.bytes[position] & 0xff;
       // if the next character is U+FFFF and is not part of the useful portion,
       // then by definition it puts us in a reject state, and therefore this
       // path is dead. there cannot be any higher transitions. backtrack.
-      if (c == '\uFFFF')
+      c = incrementUTF16(c);
+      if (c == -1)
         return false;
-      else
-        c++;
     }
 
-    utf16.setLength(position);
+    seekBytesRef.length = position;
     visited[state] = curGen;
 
     Transition transitions[] = allTransitions[state];
@@ -301,11 +290,12 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     
     for (int i = 0; i < transitions.length; i++) {
       Transition transition = transitions[i];
-      if (transition.getMax() >= c) {
-        char nextChar = (char) Math.max(c, transition.getMin());
+      if (compareToUTF16(transition.getMax(), c) >= 0) {
+        int nextChar = compareToUTF16(c, transition.getMin()) > 0 ? c : transition.getMin();
         // append either the next sequential char, or the minimum transition
-        utf16.setLength(utf16.length + 1);
-        utf16.result[utf16.length - 1] = nextChar;
+        seekBytesRef.grow(seekBytesRef.length + 1);
+        seekBytesRef.length++;
+        seekBytesRef.bytes[seekBytesRef.length - 1] = (byte) nextChar;
         state = transition.getDest().getNumber();
         /* 
          * as long as is possible, continue down the minimal path in
@@ -323,11 +313,12 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
           // we found a loop, record it for faster enumeration
           if (!finite && !linear && visited[state] == curGen) {
             linear = true;
-            infinitePosition = utf16.length;
+            infinitePosition = seekBytesRef.length;
           }
           // append the minimum transition
-          utf16.setLength(utf16.length + 1);
-          utf16.result[utf16.length - 1] = transition.getMin();
+          seekBytesRef.grow(seekBytesRef.length + 1);
+          seekBytesRef.length++;
+          seekBytesRef.bytes[seekBytesRef.length - 1] = (byte) transition.getMin();
         }
         return true;
       }
@@ -345,33 +336,48 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
    */
   private boolean backtrack(int position) {
     while (position > 0) {
-      char nextChar = utf16.result[position - 1];
-      // if a character is U+FFFF its a dead-end too,
+      int nextChar = seekBytesRef.bytes[position - 1] & 0xff;
+      // if a character is 0xef its a dead-end too,
       // because there is no higher character in UTF-16 sort order.
-      if (nextChar != '\uFFFF') {
-        nextChar++;
-        utf16.result[position - 1] = nextChar;
-        utf16.setLength(position);
+      nextChar = incrementUTF16(nextChar);
+      if (nextChar != -1) {
+        seekBytesRef.bytes[position - 1] = (byte) nextChar;
+        seekBytesRef.length = position;
         return true;
       }
       position--;
     }
     return false; /* all solutions exhausted */
   }
+
+  /* return the next utf8 byte in utf16 order, or -1 if exhausted */
+  private final int incrementUTF16(int utf8) {
+    switch(utf8) {
+      case 0xed: return 0xf0;
+      case 0xfd: return 0xee;
+      case 0xee: return 0xef;
+      case 0xef: return -1;
+      default: return utf8 + 1;
+    }
+  }
   
-  /**
-   * if the suffix starts with a low surrogate, remove it.
-   * This won't be quite as efficient, but can be converted to valid UTF-8
-   * 
-   * This isn't nearly as complex as cleanupPosition, because its not 
-   * going to use this suffix to walk any path thru the terms.
-   * 
-   */
-  private String getValidUTF16Suffix(String suffix) {
-    if (suffix != null && suffix.length() > 0 &&
-        Character.isLowSurrogate(suffix.charAt(0)))
-      return suffix.substring(1);
-    else
-      return suffix;
+  int compareToUTF16(int aByte, int bByte) {
+    if (aByte != bByte) {
+      // See http://icu-project.org/docs/papers/utf16_code_point_order.html#utf-8-in-utf-16-order
+
+      // We know the terms are not equal, but, we may
+      // have to carefully fixup the bytes at the
+      // difference to match UTF16's sort order:
+      if (aByte >= 0xee && bByte >= 0xee) {
+        if ((aByte & 0xfe) == 0xee) {
+          aByte += 0x10;
+        }
+        if ((bByte&0xfe) == 0xee) {
+          bByte += 0x10;
+        }
+      }
+      return aByte - bByte;
+    }
+    return 0;
   }
 }

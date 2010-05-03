@@ -33,6 +33,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.apache.lucene.util.BytesRef;
+
 /**
  * Special automata operations.
  * 
@@ -46,7 +48,7 @@ final public class SpecialOperations {
    * Finds the largest entry whose value is less than or equal to c, or 0 if
    * there is no such entry.
    */
-  static int findIndex(char c, char[] points) {
+  static int findIndex(int c, int[] points) {
     int a = 0;
     int b = points.length;
     while (b - a > 1) {
@@ -70,9 +72,11 @@ final public class SpecialOperations {
    * Checks whether there is a loop containing s. (This is sufficient since
    * there are never transitions to dead states.)
    */
+  // TODO: not great that this is recursive... in theory a
+  // large automata could exceed java's stack
   private static boolean isFinite(State s, HashSet<State> path) {
     path.add(s);
-    for (Transition t : s.transitions)
+    for (Transition t : s.getTransitions())
       if (path.contains(t.to) || !isFinite(t.to, path)) return false;
     path.remove(s);
     return true;
@@ -93,16 +97,41 @@ final public class SpecialOperations {
     do {
       done = true;
       visited.add(s);
-      if (!s.accept && s.transitions.size() == 1) {
-        Transition t = s.transitions.iterator().next();
+      if (!s.accept && s.numTransitions() == 1) {
+        Transition t = s.getTransitions().iterator().next();
         if (t.min == t.max && !visited.contains(t.to)) {
-          b.append(t.min);
+          b.appendCodePoint(t.min);
           s = t.to;
           done = false;
         }
       }
     } while (!done);
     return b.toString();
+  }
+  
+  // TODO: this currently requites a determinized machine,
+  // but it need not -- we can speed it up by walking the
+  // NFA instead.  it'd still be fail fast.
+  public static BytesRef getCommonPrefixBytesRef(Automaton a) {
+    if (a.isSingleton()) return new BytesRef(a.singleton);
+    BytesRef ref = new BytesRef(10);
+    HashSet<State> visited = new HashSet<State>();
+    State s = a.initial;
+    boolean done;
+    do {
+      done = true;
+      visited.add(s);
+      if (!s.accept && s.numTransitions() == 1) {
+        Transition t = s.getTransitions().iterator().next();
+        if (t.min == t.max && !visited.contains(t.to)) {
+          ref.grow(++ref.length);
+          ref.bytes[ref.length - 1] = (byte)t.min;
+          s = t.to;
+          done = false;
+        }
+      }
+    } while (!done);
+    return ref;
   }
   
   /**
@@ -119,7 +148,30 @@ final public class SpecialOperations {
     Automaton r = a.clone();
     reverse(r);
     r.determinize();
-    return reverseUnicode3(SpecialOperations.getCommonPrefix(r));
+    return new StringBuilder(SpecialOperations.getCommonPrefix(r)).reverse().toString();
+  }
+  
+  public static BytesRef getCommonSuffixBytesRef(Automaton a) {
+    if (a.isSingleton()) // if singleton, the suffix is the string itself.
+      return new BytesRef(a.singleton);
+    
+    // reverse the language of the automaton, then reverse its common prefix.
+    Automaton r = a.clone();
+    reverse(r);
+    r.determinize();
+    BytesRef ref = SpecialOperations.getCommonPrefixBytesRef(r);
+    reverseBytes(ref);
+    return ref;
+  }
+  
+  private static void reverseBytes(BytesRef ref) {
+    if (ref.length <= 1) return;
+    int num = ref.length >> 1;
+    for (int i = ref.offset; i < ( ref.offset + num ); i++) {
+      byte b = ref.bytes[i];
+      ref.bytes[i] = ref.bytes[ref.offset * 2 + ref.length - i - 1];
+      ref.bytes[ref.offset * 2 + ref.length - i - 1] = b;
+    }
   }
   
   /**
@@ -130,8 +182,11 @@ final public class SpecialOperations {
     a.expandSingleton();
     // reverse all edges
     HashMap<State, HashSet<Transition>> m = new HashMap<State, HashSet<Transition>>();
-    Set<State> states = a.getStates();
-    Set<State> accept = a.getAcceptStates();
+    State[] states = a.getNumberedStates();
+    Set<State> accept = new HashSet<State>();
+    for (State s : states)
+      if (s.isAccept())
+        accept.add(s);
     for (State r : states) {
       m.put(r, new HashSet<Transition>());
       r.accept = false;
@@ -139,41 +194,17 @@ final public class SpecialOperations {
     for (State r : states)
       for (Transition t : r.getTransitions())
         m.get(t.to).add(new Transition(t.min, t.max, r));
-    for (State r : states)
-      r.transitions = m.get(r);
+    for (State r : states) {
+      Set<Transition> tr = m.get(r);
+      r.setTransitions(tr.toArray(new Transition[tr.size()]));
+    }
     // make new initial+final states
     a.initial.accept = true;
     a.initial = new State();
     for (State r : accept)
       a.initial.addEpsilon(r); // ensures that all initial states are reachable
     a.deterministic = false;
+    a.clearNumberedStates();
     return accept;
-  }
-  
-  /**
-   * Intentionally use a unicode 3 reverse.
-   * This is because we are only going to reverse it again...
-   */
-  private static String reverseUnicode3( final String input ){
-    char[] charInput = input.toCharArray();
-    reverseUnicode3(charInput, 0, charInput.length);
-    return new String(charInput);
-  }
-  
-  /**
-   * Intentionally use a unicode 3 reverse.
-   * This is because it is only used by getCommonSuffix(),
-   * which will reverse the entire FSM using code unit reversal,
-   * so we must then reverse its common prefix back using the 
-   * same code unit reversal.
-   */
-  private static void reverseUnicode3(char[] buffer, int start, int len){
-    if (len <= 1) return;
-    int num = len>>1;
-    for (int i = start; i < ( start + num ); i++) {
-      char c = buffer[i];
-      buffer[i] = buffer[start * 2 + len - i - 1];
-      buffer[start * 2 + len - i - 1] = c;
-    }
   }
 }

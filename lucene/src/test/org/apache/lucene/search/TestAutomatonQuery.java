@@ -145,10 +145,8 @@ public class TestAutomatonQuery extends LuceneTestCase {
         .makeString("foobar"));
     
     assertEquals(a1, a2);
-    assertEquals(a1.hashCode(), a2.hashCode());
     
     assertEquals(a1, a3);
-    assertEquals(a1.hashCode(), a3.hashCode());
     
     assertEquals(a1.toString(), a3.toString());
     

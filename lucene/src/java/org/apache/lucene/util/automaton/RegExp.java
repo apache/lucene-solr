@@ -366,9 +366,9 @@ public class RegExp {
   Kind kind;
   RegExp exp1, exp2;
   String s;
-  char c;
+  int c;
   int min, max, digits;
-  char from, to;
+  int from, to;
   
   String b;
   int flags;
@@ -625,10 +625,10 @@ public class RegExp {
         b.append(")");
         break;
       case REGEXP_CHAR:
-        b.append("\\").append(c);
+        b.append("\\").appendCodePoint(c);
         break;
       case REGEXP_CHAR_RANGE:
-        b.append("[\\").append(from).append("-\\").append(to).append("]");
+        b.append("[\\").appendCodePoint(from).append("-\\").appendCodePoint(to).append("]");
         break;
       case REGEXP_ANYCHAR:
         b.append(".");
@@ -725,9 +725,9 @@ public class RegExp {
   static private RegExp makeString(RegExp exp1, RegExp exp2) {
     StringBuilder b = new StringBuilder();
     if (exp1.kind == Kind.REGEXP_STRING) b.append(exp1.s);
-    else b.append(exp1.c);
+    else b.appendCodePoint(exp1.c);
     if (exp2.kind == Kind.REGEXP_STRING) b.append(exp2.s);
-    else b.append(exp2.c);
+    else b.appendCodePoint(exp2.c);
     return makeString(b.toString());
   }
   
@@ -777,14 +777,14 @@ public class RegExp {
     return r;
   }
   
-  static RegExp makeChar(char c) {
+  static RegExp makeChar(int c) {
     RegExp r = new RegExp();
     r.kind = Kind.REGEXP_CHAR;
     r.c = c;
     return r;
   }
   
-  static RegExp makeCharRange(char from, char to) {
+  static RegExp makeCharRange(int from, int to) {
     RegExp r = new RegExp();
     r.kind = Kind.REGEXP_CHAR_RANGE;
     r.from = from;
@@ -834,13 +834,13 @@ public class RegExp {
   }
   
   private boolean peek(String s) {
-    return more() && s.indexOf(b.charAt(pos)) != -1;
+    return more() && s.indexOf(b.codePointAt(pos)) != -1;
   }
   
-  private boolean match(char c) {
+  private boolean match(int c) {
     if (pos >= b.length()) return false;
-    if (b.charAt(pos) == c) {
-      pos++;
+    if (b.codePointAt(pos) == c) {
+      pos += Character.charCount(c);
       return true;
     }
     return false;
@@ -850,9 +850,11 @@ public class RegExp {
     return pos < b.length();
   }
   
-  private char next() throws IllegalArgumentException {
+  private int next() throws IllegalArgumentException {
     if (!more()) throw new IllegalArgumentException("unexpected end-of-string");
-    return b.charAt(pos++);
+    int ch = b.codePointAt(pos);
+    pos += Character.charCount(ch);
+    return ch;
   }
   
   private boolean check(int flag) {
@@ -933,7 +935,7 @@ public class RegExp {
   }
   
   final RegExp parseCharClass() throws IllegalArgumentException {
-    char c = parseCharExp();
+    int c = parseCharExp();
     if (match('-')) return makeCharRange(c, parseCharExp());
     else return makeChar(c);
   }
@@ -993,7 +995,7 @@ public class RegExp {
     } else return makeChar(parseCharExp());
   }
   
-  final char parseCharExp() throws IllegalArgumentException {
+  final int parseCharExp() throws IllegalArgumentException {
     match('\\');
     return next();
   }

@@ -30,12 +30,13 @@
 package org.apache.lucene.util.automaton;
 
 import java.io.Serializable;
+import java.util.Comparator;
 
 /**
  * <tt>Automaton</tt> transition.
  * <p>
  * A transition, which belongs to a source state, consists of a Unicode
- * character interval and a destination state.
+ * codepoint interval and a destination state.
  * 
  * @lucene.experimental
  */
@@ -45,18 +46,18 @@ public class Transition implements Serializable, Cloneable {
    * CLASS INVARIANT: min<=max
    */
 
-  char min;
-  char max;
-  
-  State to;
+  final int min;
+  final int max;
+  final State to;
   
   /**
    * Constructs a new singleton interval transition.
    * 
-   * @param c transition character
+   * @param c transition codepoint
    * @param to destination state
    */
-  public Transition(char c, State to) {
+  public Transition(int c, State to) {
+    assert c >= 0;
     min = max = c;
     this.to = to;
   }
@@ -68,9 +69,11 @@ public class Transition implements Serializable, Cloneable {
    * @param max transition interval maximum
    * @param to destination state
    */
-  public Transition(char min, char max, State to) {
+  public Transition(int min, int max, State to) {
+    assert min >= 0;
+    assert max >= 0;
     if (max < min) {
-      char t = max;
+      int t = max;
       max = min;
       min = t;
     }
@@ -80,12 +83,12 @@ public class Transition implements Serializable, Cloneable {
   }
   
   /** Returns minimum of this transition interval. */
-  public char getMin() {
+  public int getMin() {
     return min;
   }
   
   /** Returns maximum of this transition interval. */
-  public char getMax() {
+  public int getMax() {
     return max;
   }
   
@@ -134,14 +137,18 @@ public class Transition implements Serializable, Cloneable {
     }
   }
   
-  static void appendCharString(char c, StringBuilder b) {
-    if (c >= 0x21 && c <= 0x7e && c != '\\' && c != '"') b.append(c);
+  static void appendCharString(int c, StringBuilder b) {
+    if (c >= 0x21 && c <= 0x7e && c != '\\' && c != '"') b.appendCodePoint(c);
     else {
-      b.append("\\u");
+      b.append("\\\\U");
       String s = Integer.toHexString(c);
-      if (c < 0x10) b.append("000").append(s);
-      else if (c < 0x100) b.append("00").append(s);
-      else if (c < 0x1000) b.append("0").append(s);
+      if (c < 0x10) b.append("0000000").append(s);
+      else if (c < 0x100) b.append("000000").append(s);
+      else if (c < 0x1000) b.append("00000").append(s);
+      else if (c < 0x10000) b.append("0000").append(s);
+      else if (c < 0x100000) b.append("000").append(s);
+      else if (c < 0x1000000) b.append("00").append(s);
+      else if (c < 0x10000000) b.append("0").append(s);
       else b.append(s);
     }
   }
@@ -171,4 +178,96 @@ public class Transition implements Serializable, Cloneable {
     }
     b.append("\"]\n");
   }
+
+  private static final class CompareByDestThenMinMaxSingle implements Comparator<Transition> {
+    public int compare(Transition t1, Transition t2) {
+      if (t1.to != t2.to) {
+        if (t1.to.number < t2.to.number) return -1;
+        else if (t1.to.number > t2.to.number) return 1;
+      }
+      if (t1.min < t2.min) return -1;
+      if (t1.min > t2.min) return 1;
+      if (t1.max > t2.max) return -1;
+      if (t1.max < t2.max) return 1;
+      return 0;
+    }
+  }
+
+  public static final Comparator<Transition> CompareByDestThenMinMax = new CompareByDestThenMinMaxSingle();
+
+  private static final class CompareByMinMaxThenDestSingle implements Comparator<Transition> {
+    public int compare(Transition t1, Transition t2) {
+      if (t1.min < t2.min) return -1;
+      if (t1.min > t2.min) return 1;
+      if (t1.max > t2.max) return -1;
+      if (t1.max < t2.max) return 1;
+      if (t1.to != t2.to) {
+        if (t1.to.number < t2.to.number) return -1;
+        if (t1.to.number > t2.to.number) return 1;
+      }
+      return 0;
+    }
+  }
+
+  public static final Comparator<Transition> CompareByMinMaxThenDest = new CompareByMinMaxThenDestSingle();
+
+  private static class UTF8InUTF16Order {
+    protected int compareCodePoint(int aByte, int bByte) {
+      if (aByte != bByte) {
+        // See http://icu-project.org/docs/papers/utf16_code_point_order.html#utf-8-in-utf-16-order
+
+        // We know the terms are not equal, but, we may
+        // have to carefully fixup the bytes at the
+        // difference to match UTF16's sort order:
+        if (aByte >= 0xee && bByte >= 0xee) {
+          if ((aByte & 0xfe) == 0xee) {
+            aByte += 0x10;
+          }
+          if ((bByte&0xfe) == 0xee) {
+            bByte += 0x10;
+          }
+        }
+        return aByte - bByte;
+      }
+      return 0;
+    }
+  }
+
+  private static final class CompareByDestThenMinMaxUTF8InUTF16OrderSingle extends UTF8InUTF16Order implements Comparator<Transition> {
+    public int compare(Transition t1, Transition t2) {
+      if (t1.to != t2.to) {
+        if (t1.to == null) return -1;
+        else if (t2.to == null) return 1;
+        else if (t1.to.number < t2.to.number) return -1;
+        else if (t1.to.number > t2.to.number) return 1;
+      }
+      int minComp = compareCodePoint(t1.min, t2.min);
+      if (minComp != 0) return minComp;
+      int maxComp = compareCodePoint(t1.max, t2.max);
+      if (maxComp != 0) return maxComp;
+      return 0;
+    }
+  }
+
+  public static final Comparator<Transition> CompareByDestThenMinMaxUTF8InUTF16Order = new CompareByDestThenMinMaxUTF8InUTF16OrderSingle();
+
+  private static final class CompareByMinMaxThenDestUTF8InUTF16OrderSingle extends UTF8InUTF16Order implements Comparator<Transition> {
+    public int compare(Transition t1, Transition t2) {
+      int minComp = compareCodePoint(t1.min, t2.min);
+      if (minComp != 0) return minComp;
+      int maxComp = compareCodePoint(t1.max, t2.max);
+      if (maxComp != 0) return maxComp;
+      if (t1.to != t2.to) {
+        if (t1.to == null) return -1;
+        else if (t2.to == null) return 1;
+        else if (t1.to.number < t2.to.number) return -1;
+        else if (t1.to.number > t2.to.number) return 1;
+      }
+      return 0;
+    }
+  }
+
+  public static final Comparator<Transition> CompareByMinMaxThenDestUTF8InUTF16Order = new CompareByMinMaxThenDestUTF8InUTF16OrderSingle();
+
+
 }

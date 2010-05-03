@@ -24,7 +24,9 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.util.automaton.MinimizationOperations;
@@ -50,9 +52,13 @@ import org.apache.lucene.util.automaton.SpecialOperations;
  */
 public class AutomatonQuery extends MultiTermQuery {
   /** the automaton to match index terms against */
-  protected Automaton automaton;
+  protected final Automaton automaton;
   /** term containing the field, and possibly some pattern structure */
-  protected Term term;
+  protected final Term term;
+
+  transient ByteRunAutomaton runAutomaton;
+  transient boolean isFinite;
+  transient BytesRef commonSuffixRef;
 
   /**
    * Create a new AutomatonQuery from an {@link Automaton}.
@@ -67,6 +73,14 @@ public class AutomatonQuery extends MultiTermQuery {
     this.term = term;
     this.automaton = automaton;
     MinimizationOperations.minimize(automaton);
+  }
+
+  private void compileAutomaton() {
+    if (runAutomaton == null) {
+      runAutomaton = new ByteRunAutomaton(automaton);
+      isFinite = SpecialOperations.isFinite(automaton);
+      commonSuffixRef = isFinite ? null : SpecialOperations.getCommonSuffixBytesRef(runAutomaton.getAutomaton());
+    }
   }
 
   @Override
@@ -85,28 +99,42 @@ public class AutomatonQuery extends MultiTermQuery {
     String singleton = automaton.getSingleton();
     if (singleton != null)
       return new SingleTermsEnum(reader, term.createTerm(singleton));
-  
+
     // matches a fixed string in expanded representation
-    String commonPrefix = SpecialOperations.getCommonPrefix(automaton);
-    if (automaton.equals(BasicAutomata.makeString(commonPrefix))) {
-      return new SingleTermsEnum(reader, term.createTerm(commonPrefix));
-    }
+    final String commonPrefix = SpecialOperations.getCommonPrefix(automaton);
+
+    if (commonPrefix.length() > 0) {
+      if (BasicOperations.sameLanguage(automaton, BasicAutomata.makeString(commonPrefix))) {
+        return new SingleTermsEnum(reader, term.createTerm(commonPrefix));
+      }
     
-    // matches a constant prefix
-    Automaton prefixAutomaton = BasicOperations.concatenate(BasicAutomata
-        .makeString(commonPrefix), BasicAutomata.makeAnyString());
-    if (automaton.equals(prefixAutomaton)) {
-      return new PrefixTermsEnum(reader, term.createTerm(commonPrefix));
+      // matches a constant prefix
+      Automaton prefixAutomaton = BasicOperations.concatenate(BasicAutomata
+                                                              .makeString(commonPrefix), BasicAutomata.makeAnyString());
+      if (BasicOperations.sameLanguage(automaton, prefixAutomaton)) {
+        return new PrefixTermsEnum(reader, term.createTerm(commonPrefix));
+      }
     }
+
+    compileAutomaton();
     
-    return new AutomatonTermsEnum(automaton, term, reader);
+    return new AutomatonTermsEnum(runAutomaton, term.field(), reader, isFinite, commonSuffixRef);
   }
-  
+
   @Override
   public int hashCode() {
     final int prime = 31;
     int result = super.hashCode();
-    result = prime * result + ((automaton == null) ? 0 : automaton.hashCode());
+    if (automaton != null) {
+      // we already minimized the automaton in the ctor, so
+      // this hash code will be the same for automata that
+      // are the same:
+      int automatonHashCode = automaton.getNumberOfStates() * 3 + automaton.getNumberOfTransitions() * 2;
+      if (automatonHashCode == 0) {
+        automatonHashCode = 1;
+      }
+      result = prime * result + automatonHashCode;
+    }
     result = prime * result + ((term == null) ? 0 : term.hashCode());
     return result;
   }
@@ -123,7 +151,7 @@ public class AutomatonQuery extends MultiTermQuery {
     if (automaton == null) {
       if (other.automaton != null)
         return false;
-    } else if (!automaton.equals(other.automaton))
+    } else if (!BasicOperations.sameLanguage(automaton, other.automaton))
       return false;
     if (term == null) {
       if (other.term != null)

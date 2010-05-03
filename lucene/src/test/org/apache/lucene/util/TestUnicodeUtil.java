@@ -17,6 +17,8 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.util.Random;
+
 
 /*
  * Some of this code came from the excellent Unicode
@@ -80,5 +82,48 @@ public class TestUnicodeUtil extends LuceneTestCase {
     // "upper BMP")
     assertEquals("dogs\uE000", UnicodeUtil.nextValidUTF16String("dogs\uDC00"));
     assertEquals("\uE000", UnicodeUtil.nextValidUTF16String("\uDC00dogs"));
+  }
+
+  public void testCodePointCount() {
+    final Random r = newRandom();
+    BytesRef utf8 = new BytesRef(20);
+    for(int i=0;i<50000;i++) {
+      final String s = _TestUtil.randomUnicodeString(r);
+      UnicodeUtil.UTF16toUTF8(s, 0, s.length(), utf8);
+      assertEquals(s.codePointCount(0, s.length()),
+                   UnicodeUtil.codePointCount(utf8));
+    }
+  }
+
+  public void testUTF8toUTF32() {
+    final Random r = newRandom();
+    BytesRef utf8 = new BytesRef(20);
+    IntsRef utf32 = new IntsRef(20);
+    int[] codePoints = new int[20];
+    for(int i=0;i<50000;i++) {
+      final String s = _TestUtil.randomUnicodeString(r);
+      UnicodeUtil.UTF16toUTF8(s, 0, s.length(), utf8);
+      UnicodeUtil.UTF8toUTF32(utf8, utf32);
+      
+      int charUpto = 0;
+      int intUpto = 0;
+      while(charUpto < s.length()) {
+        final int cp = s.codePointAt(charUpto);
+        codePoints[intUpto++] = cp;
+        charUpto += Character.charCount(cp);
+      }
+      if (!ArrayUtil.equals(codePoints, 0, utf32.ints, utf32.offset, intUpto)) {
+        System.out.println("FAILED");
+        for(int j=0;j<s.length();j++) {
+          System.out.println("  char[" + j + "]=" + Integer.toHexString(s.charAt(j)));
+        }
+        System.out.println();
+        assertEquals(intUpto, utf32.length);
+        for(int j=0;j<intUpto;j++) {
+          System.out.println("  " + Integer.toHexString(utf32.ints[j]) + " vs " + Integer.toHexString(codePoints[j]));
+        }
+        fail("mismatch");
+      }
+    }
   }
 }

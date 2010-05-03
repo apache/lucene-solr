@@ -21,10 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.BasicAutomata;
-import org.apache.lucene.util.automaton.BasicOperations;
-import org.apache.lucene.util.automaton.MinimizationOperations;
 
 public class TestLevenshteinAutomata extends LuceneTestCase {
  
@@ -79,11 +75,11 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
       switch(n) {
         case 0:
           // easy, matches the string itself
-          assertEquals(BasicAutomata.makeString(s), automata[0]);
+          assertTrue(BasicOperations.sameLanguage(BasicAutomata.makeString(s), automata[0]));
           break;
         case 1:
           // generate a lev1 naively, and check the accepted lang is the same.
-          assertEquals(naiveLev1(s), automata[1]);
+          assertTrue(BasicOperations.sameLanguage(naiveLev1(s), automata[1]));
           break;
         default:
           assertBruteForce(s, automata[n], n);
@@ -169,7 +165,7 @@ public class TestLevenshteinAutomata extends LuceneTestCase {
   }
   
   private void assertBruteForce(String input, Automaton dfa, int distance) {
-    RunAutomaton ra = new RunAutomaton(dfa);
+    CharacterRunAutomaton ra = new CharacterRunAutomaton(dfa);
     int maxLen = input.length() + distance + 1;
     int maxNum = (int) Math.pow(2, maxLen);
     for (int i = 0; i < maxNum; i++) {

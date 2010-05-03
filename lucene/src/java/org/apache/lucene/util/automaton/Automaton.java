@@ -31,13 +31,16 @@ package org.apache.lucene.util.automaton;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Finite-state automaton with regular expression operations.
@@ -93,7 +96,7 @@ public class Automaton implements Serializable, Cloneable {
   /**
    * Hash code. Recomputed by {@link MinimizationOperations#minimize(Automaton)}
    */
-  int hash_code;
+  //int hash_code;
   
   /** Singleton string. Null if not applicable. */
   String singleton;
@@ -116,14 +119,14 @@ public class Automaton implements Serializable, Cloneable {
    * @see State
    * @see Transition
    */
-  public Automaton() {
-    initial = new State();
+  public Automaton(State initial) {
+    this.initial = initial;
     deterministic = true;
     singleton = null;
   }
-  
-  boolean isDebug() {
-    return System.getProperty("dk.brics.automaton.debug") != null;
+
+  public Automaton() {
+    this(new State());
   }
   
   /**
@@ -198,10 +201,12 @@ public class Automaton implements Serializable, Cloneable {
    * 
    * @param s state
    */
+  /*
   public void setInitialState(State s) {
     initial = s;
     singleton = null;
   }
+  */
   
   /**
    * Gets initial state.
@@ -252,34 +257,70 @@ public class Automaton implements Serializable, Cloneable {
   public Object getInfo() {
     return info;
   }
-  
-  /**
-   * Returns the set of states that are reachable from the initial state.
-   * 
-   * @return set of {@link State} objects
-   */
-  public Set<State> getStates() {
-    expandSingleton();
-    Set<State> visited;
-    if (isDebug()) visited = new LinkedHashSet<State>();
-    else visited = new HashSet<State>();
-    LinkedList<State> worklist = new LinkedList<State>();
-    worklist.add(initial);
-    visited.add(initial);
-    while (worklist.size() > 0) {
-      State s = worklist.removeFirst();
-      Collection<Transition> tr;
-      if (isDebug()) tr = s.getSortedTransitions(false);
-      else tr = s.transitions;
-      for (Transition t : tr)
-        if (!visited.contains(t.to)) {
-          visited.add(t.to);
-          worklist.add(t.to);
+
+  // cached
+  private State[] numberedStates;
+
+  public State[] getNumberedStates() {
+    if (numberedStates == null) {
+      expandSingleton();
+      final Set<State> visited = new HashSet<State>();
+      final LinkedList<State> worklist = new LinkedList<State>();
+      numberedStates = new State[4];
+      int upto = 0;
+      worklist.add(initial);
+      visited.add(initial);
+      initial.number = upto;
+      numberedStates[upto] = initial;
+      upto++;
+      while (worklist.size() > 0) {
+        State s = worklist.removeFirst();
+        for (int i=0;i<s.numTransitions;i++) {
+          final Transition t = s.transitionsArray[i];
+          if (!visited.contains(t.to)) {
+            visited.add(t.to);
+            worklist.add(t.to);
+            t.to.number = upto;
+            if (upto == numberedStates.length) {
+              final State[] newArray = new State[ArrayUtil.oversize(1+upto, RamUsageEstimator.NUM_BYTES_OBJ_REF)];
+              System.arraycopy(numberedStates, 0, newArray, 0, upto);
+              numberedStates = newArray;
+            }
+            numberedStates[upto] = t.to;
+            upto++;
+          }
         }
+      }
+      if (numberedStates.length != upto) {
+        final State[] newArray = new State[upto];
+        System.arraycopy(numberedStates, 0, newArray, 0, upto);
+        numberedStates = newArray;
+      }
     }
-    return visited;
+
+    return numberedStates;
   }
-  
+
+  public void setNumberedStates(State[] states) {
+    setNumberedStates(states, states.length);
+  }
+
+  public void setNumberedStates(State[] states, int count) {
+    assert count <= states.length;
+    // TODO: maybe we can eventually allow for oversizing here...
+    if (count < states.length) {
+      final State[] newArray = new State[count];
+      System.arraycopy(states, 0, newArray, 0, count);
+      numberedStates = newArray;
+    } else {
+      numberedStates = states;
+    }
+  }
+
+  public void clearNumberedStates() {
+    numberedStates = null;
+  }
+
   /**
    * Returns the set of reachable accept states.
    * 
@@ -295,7 +336,7 @@ public class Automaton implements Serializable, Cloneable {
     while (worklist.size() > 0) {
       State s = worklist.removeFirst();
       if (s.accept) accepts.add(s);
-      for (Transition t : s.transitions)
+      for (Transition t : s.getTransitions())
         if (!visited.contains(t.to)) {
           visited.add(t.to);
           worklist.add(t.to);
@@ -305,32 +346,25 @@ public class Automaton implements Serializable, Cloneable {
   }
   
   /**
-   * Assigns consecutive numbers to the given states.
-   */
-  static void setStateNumbers(Set<State> states) {
-    int number = 0;
-    for (State s : states)
-      s.number = number++;
-  }
-  
-  /**
    * Adds transitions to explicit crash state to ensure that transition function
    * is total.
    */
   void totalize() {
     State s = new State();
-    s.transitions.add(new Transition(Character.MIN_VALUE, Character.MAX_VALUE,
+    s.addTransition(new Transition(Character.MIN_CODE_POINT, Character.MAX_CODE_POINT,
         s));
-    for (State p : getStates()) {
-      int maxi = Character.MIN_VALUE;
-      for (Transition t : p.getSortedTransitions(false)) {
-        if (t.min > maxi) p.transitions.add(new Transition((char) maxi,
-            (char) (t.min - 1), s));
+    for (State p : getNumberedStates()) {
+      int maxi = Character.MIN_CODE_POINT;
+      p.sortTransitions(Transition.CompareByMinMaxThenDest);
+      for (Transition t : p.getTransitions()) {
+        if (t.min > maxi) p.addTransition(new Transition(maxi,
+            (t.min - 1), s));
         if (t.max + 1 > maxi) maxi = t.max + 1;
       }
-      if (maxi <= Character.MAX_VALUE) p.transitions.add(new Transition(
-          (char) maxi, Character.MAX_VALUE, s));
+      if (maxi <= Character.MAX_CODE_POINT) p.addTransition(new Transition(
+          maxi, Character.MAX_CODE_POINT, s));
     }
+    clearNumberedStates();
   }
   
   /**
@@ -349,52 +383,28 @@ public class Automaton implements Serializable, Cloneable {
    * and adjacent edge intervals with same destination.
    */
   public void reduce() {
+    final State[] states = getNumberedStates();
     if (isSingleton()) return;
-    Set<State> states = getStates();
-    setStateNumbers(states);
-    for (State s : states) {
-      List<Transition> st = s.getSortedTransitions(true);
-      s.resetTransitions();
-      State p = null;
-      int min = -1, max = -1;
-      for (Transition t : st) {
-        if (p == t.to) {
-          if (t.min <= max + 1) {
-            if (t.max > max) max = t.max;
-          } else {
-            if (p != null) s.transitions.add(new Transition((char) min,
-                (char) max, p));
-            min = t.min;
-            max = t.max;
-          }
-        } else {
-          if (p != null) s.transitions.add(new Transition((char) min,
-              (char) max, p));
-          p = t.to;
-          min = t.min;
-          max = t.max;
-        }
-      }
-      if (p != null) s.transitions
-          .add(new Transition((char) min, (char) max, p));
-    }
+    for (State s : states)
+      s.reduce();
   }
   
   /**
    * Returns sorted array of all interval start points.
    */
-  char[] getStartPoints() {
-    Set<Character> pointset = new HashSet<Character>();
-    for (State s : getStates()) {
-      pointset.add(Character.MIN_VALUE);
-      for (Transition t : s.transitions) {
+  int[] getStartPoints() {
+    final State[] states = getNumberedStates();
+    Set<Integer> pointset = new HashSet<Integer>();
+    pointset.add(Character.MIN_CODE_POINT);
+    for (State s : states) {
+      for (Transition t : s.getTransitions()) {
         pointset.add(t.min);
-        if (t.max < Character.MAX_VALUE) pointset.add((char) (t.max + 1));
+        if (t.max < Character.MAX_CODE_POINT) pointset.add((t.max + 1));
       }
     }
-    char[] points = new char[pointset.size()];
+    int[] points = new int[pointset.size()];
     int n = 0;
-    for (Character m : pointset)
+    for (Integer m : pointset)
       points[n++] = m;
     Arrays.sort(points);
     return points;
@@ -406,46 +416,70 @@ public class Automaton implements Serializable, Cloneable {
    * 
    * @return set of {@link State} objects
    */
-  public Set<State> getLiveStates() {
-    expandSingleton();
-    return getLiveStates(getStates());
-  }
-  
-  private Set<State> getLiveStates(Set<State> states) {
-    HashMap<State,Set<State>> map = new HashMap<State,Set<State>>();
-    for (State s : states)
-      map.put(s, new HashSet<State>());
-    for (State s : states)
-      for (Transition t : s.transitions)
-        map.get(t.to).add(s);
-    Set<State> live = new HashSet<State>(getAcceptStates());
+  private State[] getLiveStates() {
+    final State[] states = getNumberedStates();
+    Set<State> live = new HashSet<State>();
+    for (State q : states) {
+      if (q.isAccept()) {
+        live.add(q);
+      }
+    }
+    // map<state, set<state>>
+    Set<State> map[] = new Set[states.length];
+    for (int i = 0; i < map.length; i++)
+      map[i] = new HashSet<State>();
+    for (State s : states) {
+      for(int i=0;i<s.numTransitions;i++) {
+        map[s.transitionsArray[i].to.number].add(s);
+      }
+    }
     LinkedList<State> worklist = new LinkedList<State>(live);
     while (worklist.size() > 0) {
       State s = worklist.removeFirst();
-      for (State p : map.get(s))
+      for (State p : map[s.number])
         if (!live.contains(p)) {
           live.add(p);
           worklist.add(p);
         }
     }
-    return live;
+
+    return live.toArray(new State[live.size()]);
   }
-  
+
   /**
-   * Removes transitions to dead states and calls {@link #reduce()} and
-   * {@link #clearHashCode()}. (A state is "dead" if no accept state is
+   * Removes transitions to dead states and calls {@link #reduce()}.
+   * (A state is "dead" if no accept state is
    * reachable from it.)
    */
   public void removeDeadTransitions() {
-    clearHashCode();
+    final State[] states = getNumberedStates();
+    //clearHashCode();
     if (isSingleton()) return;
-    Set<State> states = getStates();
-    Set<State> live = getLiveStates(states);
+    State[] live = getLiveStates();
+
+    BitSet liveSet = new BitSet(states.length);
+    for (State s : live)
+      liveSet.set(s.number);
+
     for (State s : states) {
-      Set<Transition> st = s.transitions;
-      s.resetTransitions();
-      for (Transition t : st)
-        if (live.contains(t.to)) s.transitions.add(t);
+      // filter out transitions to dead states:
+      int upto = 0;
+      for(int i=0;i<s.numTransitions;i++) {
+        final Transition t = s.transitionsArray[i];
+        if (liveSet.get(t.to.number)) {
+          s.transitionsArray[upto++] = s.transitionsArray[i];
+        }
+      }
+      s.numTransitions = upto;
+    }
+    for(int i=0;i<live.length;i++) {
+      live[i].number = i;
+    }
+    if (live.length > 0) {
+      setNumberedStates(live);
+    } else {
+      // sneaky corner case -- if machine accepts no strings
+      clearNumberedStates();
     }
     reduce();
   }
@@ -454,11 +488,15 @@ public class Automaton implements Serializable, Cloneable {
    * Returns a sorted array of transitions for each state (and sets state
    * numbers).
    */
-  static Transition[][] getSortedTransitions(Set<State> states) {
-    setStateNumbers(states);
-    Transition[][] transitions = new Transition[states.size()][];
-    for (State s : states)
-      transitions[s.number] = s.getSortedTransitionArray(false);
+  Transition[][] getSortedTransitions() {
+    final State[] states = getNumberedStates();
+    Transition[][] transitions = new Transition[states.length][];
+    for (State s : states) {
+      s.sortTransitions(Transition.CompareByMinMaxThenDest);
+      s.trimTransitionsArray();
+      transitions[s.number] = s.transitionsArray;
+      assert s.transitionsArray != null;
+    }
     return transitions;
   }
   
@@ -470,9 +508,9 @@ public class Automaton implements Serializable, Cloneable {
     if (isSingleton()) {
       State p = new State();
       initial = p;
-      for (int i = 0; i < singleton.length(); i++) {
+      for (int i = 0, cp = 0; i < singleton.length(); i += Character.charCount(cp)) {
         State q = new State();
-        p.transitions.add(new Transition(singleton.charAt(i), q));
+        p.addTransition(new Transition(cp = singleton.codePointAt(i), q));
         p = q;
       }
       p.accept = true;
@@ -485,8 +523,8 @@ public class Automaton implements Serializable, Cloneable {
    * Returns the number of states in this automaton.
    */
   public int getNumberOfStates() {
-    if (isSingleton()) return singleton.length() + 1;
-    return getStates().size();
+    if (isSingleton()) return singleton.codePointCount(0, singleton.length()) + 1;
+    return getNumberedStates().length;
   }
   
   /**
@@ -494,45 +532,31 @@ public class Automaton implements Serializable, Cloneable {
    * as the total number of edges, where one edge may be a character interval.
    */
   public int getNumberOfTransitions() {
-    if (isSingleton()) return singleton.length();
+    if (isSingleton()) return singleton.codePointCount(0, singleton.length());
     int c = 0;
-    for (State s : getStates())
-      c += s.transitions.size();
+    for (State s : getNumberedStates())
+      c += s.numTransitions();
     return c;
   }
   
-  /**
-   * Returns true if the language of this automaton is equal to the language of
-   * the given automaton. Implemented using <code>hashCode</code> and
-   * <code>subsetOf</code>.
-   */
   @Override
   public boolean equals(Object obj) {
-    if (obj == this) return true;
-    if (!(obj instanceof Automaton)) return false;
-    Automaton a = (Automaton) obj;
-    if (isSingleton() && a.isSingleton()) return singleton.equals(a.singleton);
-    return hashCode() == a.hashCode() && BasicOperations.subsetOf(this, a)
-        && BasicOperations.subsetOf(a, this);
+    throw new UnsupportedOperationException("use BasicOperations.sameLanguage instead");
   }
-  
-  /**
-   * Returns hash code for this automaton. The hash code is based on the number
-   * of states and transitions in the minimized automaton. Invoking this method
-   * may involve minimizing the automaton.
-   */
+
   @Override
   public int hashCode() {
-    if (hash_code == 0) MinimizationOperations.minimize(this);
-    return hash_code;
+    throw new UnsupportedOperationException();
   }
   
   /**
    * Must be invoked when the stored hash code may no longer be valid.
    */
+  /*
   void clearHashCode() {
     hash_code = 0;
   }
+  */
   
   /**
    * Returns a string representation of this automaton.
@@ -542,12 +566,15 @@ public class Automaton implements Serializable, Cloneable {
     StringBuilder b = new StringBuilder();
     if (isSingleton()) {
       b.append("singleton: ");
-      for (char c : singleton.toCharArray())
+      int length = singleton.codePointCount(0, singleton.length());
+      int codepoints[] = new int[length];
+      for (int i = 0, j = 0, cp = 0; i < singleton.length(); i += Character.charCount(cp))
+        codepoints[j++] = cp = singleton.codePointAt(i);
+      for (int c : codepoints)
         Transition.appendCharString(c, b);
       b.append("\n");
     } else {
-      Set<State> states = getStates();
-      setStateNumbers(states);
+      State[] states = getNumberedStates();
       b.append("initial state: ").append(initial.number).append("\n");
       for (State s : states)
         b.append(s.toString());
@@ -562,8 +589,7 @@ public class Automaton implements Serializable, Cloneable {
   public String toDot() {
     StringBuilder b = new StringBuilder("digraph Automaton {\n");
     b.append("  rankdir = LR;\n");
-    Set<State> states = getStates();
-    setStateNumbers(states);
+    State[] states = getNumberedStates();
     for (State s : states) {
       b.append("  ").append(s.number);
       if (s.accept) b.append(" [shape=doublecircle,label=\"\"];\n");
@@ -572,7 +598,7 @@ public class Automaton implements Serializable, Cloneable {
         b.append("  initial [shape=plaintext,label=\"\"];\n");
         b.append("  initial -> ").append(s.number).append("\n");
       }
-      for (Transition t : s.transitions) {
+      for (Transition t : s.getTransitions()) {
         b.append("  ").append(s.number);
         t.appendDot(b);
       }
@@ -609,17 +635,18 @@ public class Automaton implements Serializable, Cloneable {
       Automaton a = (Automaton) super.clone();
       if (!isSingleton()) {
         HashMap<State,State> m = new HashMap<State,State>();
-        Set<State> states = getStates();
+        State[] states = getNumberedStates();
         for (State s : states)
           m.put(s, new State());
         for (State s : states) {
           State p = m.get(s);
           p.accept = s.accept;
           if (s == initial) a.initial = p;
-          for (Transition t : s.transitions)
-            p.transitions.add(new Transition(t.min, t.max, m.get(t.to)));
+          for (Transition t : s.getTransitions())
+            p.addTransition(new Transition(t.min, t.max, m.get(t.to)));
         }
       }
+      a.clearNumberedStates();
       return a;
     } catch (CloneNotSupportedException e) {
       throw new RuntimeException(e);

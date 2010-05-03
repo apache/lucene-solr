@@ -491,4 +491,92 @@ final public class UnicodeUtil {
 
     return true;
   }
+
+  // Borrowed from Python's 3.1.2 sources,
+  // Objects/unicodeobject.c, and modified (see commented
+  // out section, and the -1s) to disallow the reserved for
+  // future (RFC 3629) 5/6 byte sequence characters, and
+  // invalid 0xFE and 0xFF bytes.
+
+  /* Map UTF-8 encoded prefix byte to sequence length.  -1 (0xFF)
+   * means illegal prefix.  see RFC 2279 for details */
+  static byte[] utf8CodeLength = new byte[] {
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+    2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+    3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+    4, 4, 4, 4, 4, 4, 4, 4 //, 5, 5, 5, 5, 6, 6, 0, 0
+  };
+
+
+  /** Returns the number of code points in this utf8
+   *  sequence.  Behavior is undefined if the utf8 sequence
+   *  is invalid.*/
+  public static final int codePointCount(BytesRef utf8) {
+    int upto = utf8.offset;
+    final int limit = utf8.offset + utf8.length;
+    final byte[] bytes = utf8.bytes;
+    int codePointCount = 0;
+    while (upto < limit) {
+      codePointCount++;
+      upto += utf8CodeLength[bytes[upto]&0xFF];
+    }
+    return codePointCount;
+  }
+
+  public static void UTF8toUTF32(final BytesRef utf8, final IntsRef utf32) {
+    // pre-alloc for worst case
+    if (utf32.ints == null || utf32.ints.length < utf8.length) {
+      utf32.ints = new int[utf8.length];
+    }
+    int utf32Count = 0;
+    int utf8Upto = utf8.offset;
+    final int[] ints = utf32.ints;
+    final byte[] bytes = utf8.bytes;
+    final int utf8Limit = utf8.offset + utf8.length;
+    while(utf8Upto < utf8Limit) {
+      final int numBytes = utf8CodeLength[bytes[utf8Upto]&0xFF];
+      int v = 0;
+      switch(numBytes) {
+      case 1:
+        ints[utf32Count++] = bytes[utf8Upto++];
+        continue;
+      case 2:
+        // 5 useful bits
+        v = bytes[utf8Upto++] & 31;
+        break;
+      case 3:
+        // 4 useful bits
+        v = bytes[utf8Upto++] & 15;
+        break;
+      case 4:
+        // 3 useful bits
+        v = bytes[utf8Upto++] & 7;
+        break;
+      default :
+        throw new IllegalStateException("invalid utf8");
+      }
+
+      final int limit = utf8Upto + numBytes-1;
+
+      while(utf8Upto < limit) {
+        v = v << 6 | bytes[utf8Upto++]&63;
+      }
+      ints[utf32Count++] = v;
+    }
+    
+    utf32.offset = 0;
+    utf32.length = utf32Count;
+  }
 }

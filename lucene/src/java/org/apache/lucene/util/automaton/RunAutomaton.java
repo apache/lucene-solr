@@ -30,22 +30,22 @@
 package org.apache.lucene.util.automaton;
 
 import java.io.Serializable;
-import java.util.Set;
 
 /**
  * Finite-state automaton with fast run operation.
  * 
  * @lucene.experimental
  */
-public final class RunAutomaton implements Serializable {
-  
+public abstract class RunAutomaton implements Serializable {
+  final int maxInterval;
   final int size;
   final boolean[] accept;
   final int initial;
   final int[] transitions; // delta(state,c) = transitions[state*points.length +
                      // getCharClass(c)]
-  final char[] points; // char interval start points
+  final int[] points; // char interval start points
   final int[] classmap; // map from char number to class class
+  final Automaton automaton;
   
   /**
    * Returns a string representation of this automaton.
@@ -61,10 +61,10 @@ public final class RunAutomaton implements Serializable {
       for (int j = 0; j < points.length; j++) {
         int k = transitions[i * points.length + j];
         if (k != -1) {
-          char min = points[j];
-          char max;
-          if (j + 1 < points.length) max = (char) (points[j + 1] - 1);
-          else max = Character.MAX_VALUE;
+          int min = points[j];
+          int max;
+          if (j + 1 < points.length) max = (points[j + 1] - 1);
+          else max = maxInterval;
           b.append(" ");
           Transition.appendCharString(min, b);
           if (min != max) {
@@ -81,52 +81,59 @@ public final class RunAutomaton implements Serializable {
   /**
    * Returns number of states in automaton.
    */
-  public int getSize() {
+  public final int getSize() {
     return size;
   }
   
   /**
    * Returns acceptance status for given state.
    */
-  public boolean isAccept(int state) {
+  public final boolean isAccept(int state) {
     return accept[state];
   }
   
   /**
    * Returns initial state.
    */
-  public int getInitialState() {
+  public final int getInitialState() {
     return initial;
   }
   
   /**
-   * Returns array of character class interval start points. The array should
+   * Returns array of codepoint class interval start points. The array should
    * not be modified by the caller.
    */
-  public char[] getCharIntervals() {
+  public final int[] getCharIntervals() {
     return points.clone();
   }
   
   /**
-   * Gets character class of given char.
+   * Gets character class of given codepoint
    */
-  int getCharClass(char c) {
+  final int getCharClass(int c) {
     return SpecialOperations.findIndex(c, points);
   }
   
+  /**
+   * @return the automaton
+   */
+  public Automaton getAutomaton() {
+    return automaton;
+  }
+
   /**
    * Constructs a new <code>RunAutomaton</code> from a deterministic
    * <code>Automaton</code>.
    * 
    * @param a an automaton
    */
-  public RunAutomaton(Automaton a) {
+  public RunAutomaton(Automaton a, int maxInterval, boolean tableize) {
+    this.maxInterval = maxInterval;
     a.determinize();
     points = a.getStartPoints();
-    Set<State> states = a.getStates();
-    Automaton.setStateNumbers(states);
     initial = a.initial.number;
-    size = states.size();
+    final State[] states = a.getNumberedStates();
+    size = states.length;
     accept = new boolean[size];
     transitions = new int[size * points.length];
     for (int n = 0; n < size * points.length; n++)
@@ -142,12 +149,18 @@ public final class RunAutomaton implements Serializable {
     /*
      * Set alphabet table for optimal run performance.
      */
-    classmap = new int[Character.MAX_VALUE + 1];
-    int i = 0;
-    for (int j = 0; j <= Character.MAX_VALUE; j++) {
-      if (i + 1 < points.length && j == points[i + 1]) i++;
-      classmap[j] = i;
+    if (tableize) {
+      classmap = new int[maxInterval + 1];
+      int i = 0;
+      for (int j = 0; j <= maxInterval; j++) {
+        if (i + 1 < points.length && j == points[i + 1])
+          i++;
+        classmap[j] = i;
+      }
+    } else {
+      classmap = null;
     }
+    this.automaton = a;
   }
   
   /**
@@ -157,54 +170,10 @@ public final class RunAutomaton implements Serializable {
    * if a dead state is entered in an equivalent automaton with a total
    * transition function.)
    */
-  public int step(int state, char c) {
-    return transitions[state * points.length + classmap[c]];
-  }
-  
-  /**
-   * Returns true if the given string is accepted by this automaton.
-   */
-  public boolean run(String s) {
-    int p = initial;
-    int l = s.length();
-    for (int i = 0; i < l; i++) {
-      p = step(p, s.charAt(i));
-      if (p == -1) return false;
-    }
-    return accept[p];
-  }
-  
-  /**
-   * Returns true if the given string is accepted by this automaton
-   */
-  public boolean run(char[] s, int offset, int length) {
-    int p = initial;
-    int l = offset + length;
-    for (int i = offset; i < l; i++) {
-      p = step(p, s[i]);
-      if (p == -1) return false;
-    }
-    return accept[p];
-  }
-  
-  /**
-   * Returns the length of the longest accepted run of the given string starting
-   * at the given offset.
-   * 
-   * @param s the string
-   * @param offset offset into <code>s</code> where the run starts
-   * @return length of the longest accepted run, -1 if no run is accepted
-   */
-  public int run(String s, int offset) {
-    int p = initial;
-    int l = s.length();
-    int max = -1;
-    for (int r = 0; offset <= l; offset++, r++) {
-      if (accept[p]) max = r;
-      if (offset == l) break;
-      p = step(p, s.charAt(offset));
-      if (p == -1) break;
-    }
-    return max;
+  public final int step(int state, int c) {
+    if (classmap == null)
+      return transitions[state * points.length + getCharClass(c)];
+    else
+      return transitions[state * points.length + classmap[c]];
   }
 }

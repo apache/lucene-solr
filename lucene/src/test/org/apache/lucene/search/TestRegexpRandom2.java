@@ -31,9 +31,11 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.AutomatonTestUtil;
+import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
-import org.apache.lucene.util.automaton.RunAutomaton;
 
 /**
  * Create an index with random unicode terms
@@ -46,17 +48,17 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    random = newRandom(System.nanoTime());
+    random = newRandom();
     RAMDirectory dir = new RAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new KeywordAnalyzer(),
         IndexWriter.MaxFieldLength.UNLIMITED);
     
     Document doc = new Document();
-    Field field = new Field("field", "", Field.Store.YES, Field.Index.ANALYZED);
+    Field field = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);
     doc.add(field);
     
-    for (int i = 0; i < 1000; i++) {
-      field.setValue(randomString());
+    for (int i = 0; i < 2000; i++) {
+      field.setValue(_TestUtil.randomUnicodeString(random));
       writer.addDocument(doc);
     }
     
@@ -87,7 +89,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     }
 
     private class SimpleAutomatonTermsEnum extends FilteredTermsEnum {
-      RunAutomaton runAutomaton = new RunAutomaton(automaton);
+      CharacterRunAutomaton runAutomaton = new CharacterRunAutomaton(automaton);
       UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
 
       private SimpleAutomatonTermsEnum(IndexReader reader, String field) throws IOException {
@@ -111,25 +113,14 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   
   /** test a bunch of random regular expressions */
   public void testRegexps() throws Exception {
-      for (int i = 0; i < 500; i++)
-        assertSame(randomRegex());
+      for (int i = 0; i < 1000; i++)
+        assertSame(AutomatonTestUtil.randomRegexp(random).toString());
   }
   
   /** check that the # of hits is the same as from a very
    * simple regexpquery implementation.
    */
-  private void assertSame(String regexp) throws IOException {
-    // we will generate some illegal syntax regular expressions...
-    try {
-      new RegExp(regexp).toAutomaton();
-    } catch (Exception e) {
-      return;
-    }
-    
-    // we will also generate some undefined unicode queries
-    if (!UnicodeUtil.validUTF16String(regexp))
-      return;
-    
+  private void assertSame(String regexp) throws IOException {   
     RegexpQuery smart = new RegexpQuery(new Term("field", regexp));
     DumbRegexpQuery dumb = new DumbRegexpQuery(new Term("field", regexp));
     
@@ -143,79 +134,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     
     TopDocs smartDocs = searcher.search(smart, 25);
     TopDocs dumbDocs = searcher.search(dumb, 25);
-
-    assertEquals(dumbDocs.totalHits, smartDocs.totalHits);
-  }
-  
-  char buffer[] = new char[20];
-  
-  // start is inclusive and end is exclusive
-  public int nextInt(int start, int end) {
-    return start + random.nextInt(end - start);
-  }
-  
-  public String randomString() {
-    final int end = random.nextInt(20);
-    if (buffer.length < 1 + end) {
-      char[] newBuffer = new char[(int) ((1 + end) * 1.25)];
-      System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
-      buffer = newBuffer;
-    }
-    for (int i = 0; i < end - 1; i++) {
-      int t = random.nextInt(6);
-      if (0 == t && i < end - 1) {
-        // Make a surrogate pair
-        // High surrogate
-        buffer[i++] = (char) nextInt(0xd800, 0xdc00);
-        // Low surrogate
-        buffer[i] = (char) nextInt(0xdc00, 0xe000);
-      } else if (t <= 1) buffer[i] = (char) random.nextInt(0x80);
-      else if (2 == t) buffer[i] = (char) nextInt(0x80, 0x800);
-      else if (3 == t) buffer[i] = (char) nextInt(0x800, 0xd800);
-      else if (4 == t) buffer[i] = (char) nextInt(0xe000, 0xffff);
-      else if (5 == t) {
-        // Illegal unpaired surrogate
-        if (random.nextBoolean()) buffer[i] = (char) nextInt(0xd800, 0xdc00);
-        else buffer[i] = (char) nextInt(0xdc00, 0xe000);
-      }
-    }
-    return new String(buffer, 0, end);
-  }
-  
-  // a random string biased towards populating a ton of operators
-  public String randomRegex() {
-    final int end = random.nextInt(20);
-    if (buffer.length < 1 + end) {
-      char[] newBuffer = new char[(int) ((1 + end) * 1.25)];
-      System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
-      buffer = newBuffer;
-    }
-    for (int i = 0; i < end - 1; i++) {
-      int t = random.nextInt(10);
-      if (0 == t && i < end - 1) {
-        // Make a surrogate pair
-        // High surrogate
-        buffer[i++] = (char) nextInt(0xd800, 0xdc00);
-        // Low surrogate
-        buffer[i] = (char) nextInt(0xdc00, 0xe000);
-      } else if (t <= 1) buffer[i] = (char) random.nextInt(0x80);
-      else if (2 == t) buffer[i] = (char) nextInt(0x80, 0x800);
-      else if (3 == t) buffer[i] = (char) nextInt(0x800, 0xd800);
-      else if (4 == t) buffer[i] = (char) nextInt(0xe000, 0xffff);
-      else if (5 == t) {
-        // Illegal unpaired surrogate
-        if (random.nextBoolean()) buffer[i] = (char) nextInt(0xd800, 0xdc00);
-        else buffer[i] = (char) nextInt(0xdc00, 0xe000);
-      } else if (6 == t) {
-        buffer[i] = '.';
-      } else if (7 == t) {
-        buffer[i] = '?';
-      } else if (8 == t) {
-        buffer[i] = '*';
-      } else if (9 == t) {
-        buffer[i] = '+';
-      }
-    }
-    return new String(buffer, 0, end);
+    
+    assertEquals("for re:" + regexp, dumbDocs.totalHits, smartDocs.totalHits);
   }
 }

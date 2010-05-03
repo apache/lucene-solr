@@ -29,15 +29,22 @@
 
 package org.apache.lucene.util.automaton;
 
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.RamUsageEstimator;
+
 import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Random;
 
 /**
  * Basic automata operations.
@@ -73,7 +80,8 @@ final public class BasicOperations {
       s.addEpsilon(a2.initial);
     }
     a1.deterministic = deterministic;
-    a1.clearHashCode();
+    //a1.clearHashCode();
+    a1.clearNumberedStates();
     a1.checkMinimizeAlways();
     return a1;
   }
@@ -125,7 +133,8 @@ final public class BasicOperations {
           ac = ns;
         }
       b.deterministic = false;
-      b.clearHashCode();
+      //b.clearHashCode();
+      b.clearNumberedStates();
       b.checkMinimizeAlways();
       return b;
     }
@@ -144,7 +153,8 @@ final public class BasicOperations {
     s.accept = true;
     a.initial = s;
     a.deterministic = false;
-    a.clearHashCode();
+    //a.clearHashCode();
+    a.clearNumberedStates();
     a.checkMinimizeAlways();
     return a;
   }
@@ -165,7 +175,8 @@ final public class BasicOperations {
       p.addEpsilon(s);
     a.initial = s;
     a.deterministic = false;
-    a.clearHashCode();
+    //a.clearHashCode();
+    a.clearNumberedStates();
     a.checkMinimizeAlways();
     return a;
   }
@@ -217,7 +228,8 @@ final public class BasicOperations {
       for (State p : b.getAcceptStates())
         p.addEpsilon(d.initial);
       b.deterministic = false;
-      b.clearHashCode();
+      //b.clearHashCode();
+      b.clearNumberedStates();
       b.checkMinimizeAlways();
     }
     return b;
@@ -233,7 +245,7 @@ final public class BasicOperations {
     a = a.cloneExpandedIfRequired();
     a.determinize();
     a.totalize();
-    for (State p : a.getStates())
+    for (State p : a.getNumberedStates())
       p.accept = !p.accept;
     a.removeDeadTransitions();
     return a;
@@ -274,10 +286,8 @@ final public class BasicOperations {
       else return BasicAutomata.makeEmpty();
     }
     if (a1 == a2) return a1.cloneIfRequired();
-    Transition[][] transitions1 = Automaton
-        .getSortedTransitions(a1.getStates());
-    Transition[][] transitions2 = Automaton
-        .getSortedTransitions(a2.getStates());
+    Transition[][] transitions1 = a1.getSortedTransitions();
+    Transition[][] transitions2 = a2.getSortedTransitions();
     Automaton c = new Automaton();
     LinkedList<StatePair> worklist = new LinkedList<StatePair>();
     HashMap<StatePair,StatePair> newstates = new HashMap<StatePair,StatePair>();
@@ -302,9 +312,9 @@ final public class BasicOperations {
               newstates.put(q, q);
               r = q;
             }
-            char min = t1[n1].min > t2[n2].min ? t1[n1].min : t2[n2].min;
-            char max = t1[n1].max < t2[n2].max ? t1[n1].max : t2[n2].max;
-            p.s.transitions.add(new Transition(min, max, r.s));
+            int min = t1[n1].min > t2[n2].min ? t1[n1].min : t2[n2].min;
+            int max = t1[n1].max < t2[n2].max ? t1[n1].max : t2[n2].max;
+            p.s.addTransition(new Transition(min, max, r.s));
           }
       }
     }
@@ -312,6 +322,24 @@ final public class BasicOperations {
     c.removeDeadTransitions();
     c.checkMinimizeAlways();
     return c;
+  }
+
+  /** Returns true if these two auotomata accept exactly the
+   *  same language.  This is a costly computation!  Note
+   *  also that a1 and a2 will be determinized as a side
+   *  effect. */
+  public static boolean sameLanguage(Automaton a1, Automaton a2) {
+    if (a1 == a2) {
+      return true;
+    }
+    if (a1.isSingleton() && a2.isSingleton()) {
+      return a1.singleton.equals(a2.singleton);
+    } else if (a1.isSingleton()) {
+      // subsetOf is faster if the first automaton is a singleton
+      return subsetOf(a1, a2) && subsetOf(a2, a1);
+    } else {
+      return subsetOf(a2, a1) && subsetOf(a1, a2);
+    }
   }
   
   /**
@@ -328,10 +356,8 @@ final public class BasicOperations {
       return BasicOperations.run(a2, a1.singleton);
     }
     a2.determinize();
-    Transition[][] transitions1 = Automaton
-        .getSortedTransitions(a1.getStates());
-    Transition[][] transitions2 = Automaton
-        .getSortedTransitions(a2.getStates());
+    Transition[][] transitions1 = a1.getSortedTransitions();
+    Transition[][] transitions2 = a2.getSortedTransitions();
     LinkedList<StatePair> worklist = new LinkedList<StatePair>();
     HashSet<StatePair> visited = new HashSet<StatePair>();
     StatePair p = new StatePair(a1.initial, a2.initial);
@@ -339,19 +365,24 @@ final public class BasicOperations {
     visited.add(p);
     while (worklist.size() > 0) {
       p = worklist.removeFirst();
-      if (p.s1.accept && !p.s2.accept) return false;
+      if (p.s1.accept && !p.s2.accept) {
+        return false;
+      }
       Transition[] t1 = transitions1[p.s1.number];
       Transition[] t2 = transitions2[p.s2.number];
       for (int n1 = 0, b2 = 0; n1 < t1.length; n1++) {
         while (b2 < t2.length && t2[b2].max < t1[n1].min)
           b2++;
         int min1 = t1[n1].min, max1 = t1[n1].max;
+
         for (int n2 = b2; n2 < t2.length && t1[n1].max >= t2[n2].min; n2++) {
-          if (t2[n2].min > min1) return false;
-          if (t2[n2].max < Character.MAX_VALUE) min1 = t2[n2].max + 1;
+          if (t2[n2].min > min1) {
+            return false;
+          }
+          if (t2[n2].max < Character.MAX_CODE_POINT) min1 = t2[n2].max + 1;
           else {
-            min1 = Character.MAX_VALUE;
-            max1 = Character.MIN_VALUE;
+            min1 = Character.MAX_CODE_POINT;
+            max1 = Character.MIN_CODE_POINT;
           }
           StatePair q = new StatePair(t1[n1].to, t2[n2].to);
           if (!visited.contains(q)) {
@@ -359,7 +390,9 @@ final public class BasicOperations {
             visited.add(q);
           }
         }
-        if (min1 <= max1) return false;
+        if (min1 <= max1) {
+          return false;
+        }
       }
     }
     return true;
@@ -387,7 +420,8 @@ final public class BasicOperations {
     s.addEpsilon(a2.initial);
     a1.initial = s;
     a1.deterministic = false;
-    a1.clearHashCode();
+    //a1.clearHashCode();
+    a1.clearNumberedStates();
     a1.checkMinimizeAlways();
     return a1;
   }
@@ -414,64 +448,257 @@ final public class BasicOperations {
     Automaton a = new Automaton();
     a.initial = s;
     a.deterministic = false;
-    a.clearHashCode();
+    //a.clearHashCode();
+    a.clearNumberedStates();
     a.checkMinimizeAlways();
     return a;
   }
-  
+
+  // Simple custom ArrayList<Transition>
+  private final static class TransitionList {
+    Transition[] transitions = new Transition[2];
+    int count;
+
+    public void add(Transition t) {
+      if (transitions.length == count) {
+        Transition[] newArray = new Transition[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_OBJ_REF)];
+        System.arraycopy(transitions, 0, newArray, 0, count);
+        transitions = newArray;
+      }
+      transitions[count++] = t;
+    }
+  }
+
+  // Holds all transitions that start on this int point, or
+  // end at this point-1
+  private final static class PointTransitions implements Comparable<PointTransitions> {
+    int point;
+    final TransitionList ends = new TransitionList();
+    final TransitionList starts = new TransitionList();
+    public int compareTo(PointTransitions other) {
+      return point - other.point;
+    }
+
+    public void reset(int point) {
+      this.point = point;
+      ends.count = 0;
+      starts.count = 0;
+    }
+
+    public boolean equals(Object other) {
+      return ((PointTransitions) other).point == point;
+    }
+
+    public int hashCode() {
+      return point;
+    }
+  }
+
+  private final static class PointTransitionSet {
+    int count;
+    PointTransitions[] points = new PointTransitions[5];
+
+    private final static int HASHMAP_CUTOVER = 30;
+    private final HashMap<Integer,PointTransitions> map = new HashMap<Integer,PointTransitions>();
+    private boolean useHash = false;
+
+    private PointTransitions next(int point) {
+      // 1st time we are seeing this point
+      if (count == points.length) {
+        final PointTransitions[] newArray = new PointTransitions[ArrayUtil.oversize(1+count, RamUsageEstimator.NUM_BYTES_OBJ_REF)];
+        System.arraycopy(points, 0, newArray, 0, count);
+        points = newArray;
+      }
+      PointTransitions points0 = points[count];
+      if (points0 == null) {
+        points0 = points[count] = new PointTransitions();
+      }
+      points0.reset(point);
+      count++;
+      return points0;
+    }
+
+    private PointTransitions find(int point) {
+      if (useHash) {
+        final Integer pi = point;
+        PointTransitions p = map.get(pi);
+        if (p == null) {
+          p = next(point);
+          map.put(pi, p);
+        }
+        return p;
+      } else {
+        for(int i=0;i<count;i++) {
+          if (points[i].point == point) {
+            return points[i];
+          }
+        }
+
+        final PointTransitions p = next(point);
+        if (count == HASHMAP_CUTOVER) {
+          // switch to HashMap on the fly
+          assert map.size() == 0;
+          for(int i=0;i<count;i++) {
+            map.put(points[i].point, points[i]);
+          }
+          useHash = true;
+        }
+        return p;
+      }
+    }
+
+    public void reset() {
+      if (useHash) {
+        map.clear();
+        useHash = false;
+      }
+      count = 0;
+    }
+
+    public void sort() {
+      if (count > 1) {
+        Arrays.sort(points, 0, count);
+      }
+    }
+
+    public void add(Transition t) {
+      find(t.min).starts.add(t);
+      find(1+t.max).ends.add(t);
+    }
+
+    public String toString() {
+      StringBuilder s = new StringBuilder();
+      for(int i=0;i<count;i++) {
+        if (i > 0) {
+          s.append(' ');
+        }
+        s.append(points[i].point).append(':').append(points[i].starts.count).append(',').append(points[i].ends.count);
+      }
+      return s.toString();
+    }
+  }
+
   /**
    * Determinizes the given automaton.
    * <p>
-   * Complexity: exponential in number of states.
+   * Worst case complexity: exponential in number of states.
    */
-  public static void determinize(Automaton a) {
-    if (a.deterministic || a.isSingleton()) return;
-    Set<State> initialset = new HashSet<State>();
-    initialset.add(a.initial);
-    determinize(a, initialset);
-  }
-  
-  /**
-   * Determinizes the given automaton using the given set of initial states.
-   */
-  static void determinize(Automaton a, Set<State> initialset) {
-    char[] points = a.getStartPoints();
+  static void determinize(Automaton a) {
+    if (a.deterministic || a.isSingleton()) {
+      return;
+    }
+
+    final State[] allStates = a.getNumberedStates();
+
     // subset construction
-    Map<Set<State>,Set<State>> sets = new HashMap<Set<State>,Set<State>>();
-    LinkedList<Set<State>> worklist = new LinkedList<Set<State>>();
-    Map<Set<State>,State> newstate = new HashMap<Set<State>,State>();
-    sets.put(initialset, initialset);
-    worklist.add(initialset);
+    final boolean initAccept = a.initial.accept;
+    final int initNumber = a.initial.number;
     a.initial = new State();
+    SortedIntSet.FrozenIntSet initialset = new SortedIntSet.FrozenIntSet(initNumber, a.initial);
+
+    LinkedList<SortedIntSet.FrozenIntSet> worklist = new LinkedList<SortedIntSet.FrozenIntSet>();
+    Map<SortedIntSet.FrozenIntSet,State> newstate = new HashMap<SortedIntSet.FrozenIntSet,State>();
+
+    worklist.add(initialset);
+
+    a.initial.accept = initAccept;
     newstate.put(initialset, a.initial);
+
+    int newStateUpto = 0;
+    State[] newStatesArray = new State[5];
+    newStatesArray[newStateUpto] = a.initial;
+    a.initial.number = newStateUpto;
+    newStateUpto++;
+
+    // like Set<Integer,PointTransitions>
+    final PointTransitionSet points = new PointTransitionSet();
+
+    // like SortedMap<Integer,Integer>
+    final SortedIntSet statesSet = new SortedIntSet(5);
+
     while (worklist.size() > 0) {
-      Set<State> s = worklist.removeFirst();
-      State r = newstate.get(s);
-      for (State q : s)
-        if (q.accept) {
-          r.accept = true;
-          break;
+      SortedIntSet.FrozenIntSet s = worklist.removeFirst();
+
+      // Collate all outgoing transitions by min/1+max:
+      for(int i=0;i<s.values.length;i++) {
+        final State s0 = allStates[s.values[i]];
+        for(int j=0;j<s0.numTransitions;j++) {
+          points.add(s0.transitionsArray[j]);
         }
-      for (int n = 0; n < points.length; n++) {
-        Set<State> p = new HashSet<State>();
-        for (State q : s)
-          for (Transition t : q.transitions)
-            if (t.min <= points[n] && points[n] <= t.max) p.add(t.to);
-        if (!sets.containsKey(p)) {
-          sets.put(p, p);
-          worklist.add(p);
-          newstate.put(p, new State());
-        }
-        State q = newstate.get(p);
-        char min = points[n];
-        char max;
-        if (n + 1 < points.length) max = (char) (points[n + 1] - 1);
-        else max = Character.MAX_VALUE;
-        r.transitions.add(new Transition(min, max, q));
       }
+
+      if (points.count == 0) {
+        // No outgoing transitions -- skip it
+        continue;
+      }
+
+      points.sort();
+
+      int lastPoint = -1;
+      int accCount = 0;
+
+      final State r = s.state;
+      for(int i=0;i<points.count;i++) {
+
+        final int point = points.points[i].point;
+
+        if (statesSet.upto > 0) {
+          assert lastPoint != -1;
+
+          statesSet.computeHash();
+          
+          State q = newstate.get(statesSet);
+          if (q == null) {
+            q = new State();
+            final SortedIntSet.FrozenIntSet p = statesSet.freeze(q);
+            worklist.add(p);
+            if (newStateUpto == newStatesArray.length) {
+              final State[] newArray = new State[ArrayUtil.oversize(1+newStateUpto, RamUsageEstimator.NUM_BYTES_OBJ_REF)];
+              System.arraycopy(newStatesArray, 0, newArray, 0, newStateUpto);
+              newStatesArray = newArray;
+            }
+            newStatesArray[newStateUpto] = q;
+            q.number = newStateUpto;
+            newStateUpto++;
+            q.accept = accCount > 0;
+            newstate.put(p, q);
+          } else {
+            assert (accCount > 0 ? true:false) == q.accept: "accCount=" + accCount + " vs existing accept=" + q.accept + " states=" + statesSet;
+          }
+
+          r.addTransition(new Transition(lastPoint, point-1, q));
+        }
+
+        // process transitions that end on this point
+        // (closes an overlapping interval)
+        Transition[] transitions = points.points[i].ends.transitions;
+        int limit = points.points[i].ends.count;
+        for(int j=0;j<limit;j++) {
+          final Transition t = transitions[j];
+          final Integer num = t.to.number;
+          statesSet.decr(num);
+          accCount -= t.to.accept ? 1:0;
+        }
+        points.points[i].ends.count = 0;
+
+        // process transitions that start on this point
+        // (opens a new interval)
+        transitions = points.points[i].starts.transitions;
+        limit = points.points[i].starts.count;
+        for(int j=0;j<limit;j++) {
+          final Transition t = transitions[j];
+          final Integer num = t.to.number;
+          statesSet.incr(num);
+          accCount += t.to.accept ? 1:0;
+        }
+        lastPoint = point;
+        points.points[i].starts.count = 0;
+      }
+      points.reset();
+      assert statesSet.upto == 0: "upto=" + statesSet.upto;
     }
     a.deterministic = true;
-    a.removeDeadTransitions();
+    a.setNumberedStates(newStatesArray, newStateUpto);
   }
   
   /**
@@ -535,7 +762,8 @@ final public class BasicOperations {
     for (StatePair p : pairs)
       p.s1.addEpsilon(p.s2);
     a.deterministic = false;
-    a.clearHashCode();
+    //a.clearHashCode();
+    a.clearNumberedStates();
     a.checkMinimizeAlways();
   }
   
@@ -545,7 +773,7 @@ final public class BasicOperations {
    */
   public static boolean isEmptyString(Automaton a) {
     if (a.isSingleton()) return a.singleton.length() == 0;
-    else return a.initial.accept && a.initial.transitions.isEmpty();
+    else return a.initial.accept && a.initial.numTransitions() == 0;
   }
   
   /**
@@ -553,7 +781,7 @@ final public class BasicOperations {
    */
   public static boolean isEmpty(Automaton a) {
     if (a.isSingleton()) return false;
-    return !a.initial.accept && a.initial.transitions.isEmpty();
+    return !a.initial.accept && a.initial.numTransitions() == 0;
   }
   
   /**
@@ -561,10 +789,10 @@ final public class BasicOperations {
    */
   public static boolean isTotal(Automaton a) {
     if (a.isSingleton()) return false;
-    if (a.initial.accept && a.initial.transitions.size() == 1) {
-      Transition t = a.initial.transitions.iterator().next();
-      return t.to == a.initial && t.min == Character.MIN_VALUE
-          && t.max == Character.MAX_VALUE;
+    if (a.initial.accept && a.initial.numTransitions() == 1) {
+      Transition t = a.initial.getTransitions().iterator().next();
+      return t.to == a.initial && t.min == Character.MIN_CODE_POINT
+          && t.max == Character.MAX_CODE_POINT;
     }
     return false;
   }
@@ -580,24 +808,23 @@ final public class BasicOperations {
     if (a.isSingleton()) return s.equals(a.singleton);
     if (a.deterministic) {
       State p = a.initial;
-      for (int i = 0; i < s.length(); i++) {
-        State q = p.step(s.charAt(i));
+      for (int i = 0, cp = 0; i < s.length(); i += Character.charCount(cp)) {
+        State q = p.step(cp = s.codePointAt(i));
         if (q == null) return false;
         p = q;
       }
       return p.accept;
     } else {
-      Set<State> states = a.getStates();
-      Automaton.setStateNumbers(states);
+      State[] states = a.getNumberedStates();
       LinkedList<State> pp = new LinkedList<State>();
       LinkedList<State> pp_other = new LinkedList<State>();
-      BitSet bb = new BitSet(states.size());
-      BitSet bb_other = new BitSet(states.size());
+      BitSet bb = new BitSet(states.length);
+      BitSet bb_other = new BitSet(states.length);
       pp.add(a.initial);
       ArrayList<State> dest = new ArrayList<State>();
       boolean accept = a.initial.accept;
-      for (int i = 0; i < s.length(); i++) {
-        char c = s.charAt(i);
+      for (int i = 0, c = 0; i < s.length(); i += Character.charCount(c)) {
+        c = s.codePointAt(i);
         accept = false;
         pp_other.clear();
         bb_other.clear();
@@ -620,6 +847,151 @@ final public class BasicOperations {
         bb_other = tb;
       }
       return accept;
+    }
+  }
+
+  // picks a random int code point that this transition
+  // accepts, avoiding the surrogates range since they are
+  // "defined" in UTF32.  Don't call this on a transition
+  // that only accepts UTF16 surrogate values!!
+  private static int getRandomCodePoint(final Random r, final Transition t) {
+    while(true) {
+      final int v = t.min+r.nextInt(t.max-t.min+1);
+      if (v < UnicodeUtil.UNI_SUR_HIGH_START ||
+          v > UnicodeUtil.UNI_SUR_LOW_END) {
+        return v;
+      }
+    }
+  }
+
+  public static class RandomAcceptedStrings {
+
+    private final Map<Transition,Boolean> leadsToAccept;
+    private final Automaton a;
+
+    private static class ArrivingTransition {
+      final State from;
+      final Transition t;
+      public ArrivingTransition(State from, Transition t) {
+        this.from = from;
+        this.t = t;
+      }
+    }
+
+    public RandomAcceptedStrings(Automaton a) {
+      this.a = a;
+      if (a.isSingleton()) {
+        leadsToAccept = null;
+        return;
+      }
+
+      // must use IdentityHashmap because two Transitions w/
+      // different start nodes can be considered the same
+      leadsToAccept = new IdentityHashMap<Transition,Boolean>();
+      final Map<State,List<ArrivingTransition>> allArriving = new HashMap<State,List<ArrivingTransition>>();
+
+      final LinkedList<State> q = new LinkedList<State>();
+      final Set<State> seen = new HashSet<State>();
+
+      // reverse map the transitions, so we can quickly look
+      // up all arriving transitions to a given state
+      for(State s: a.getNumberedStates()) {
+        for(int i=0;i<s.numTransitions;i++) {
+          final Transition t = s.transitionsArray[i];
+          List<ArrivingTransition> tl = allArriving.get(t.to);
+          if (tl == null) {
+            tl = new ArrayList<ArrivingTransition>();
+            allArriving.put(t.to, tl);
+          }
+          tl.add(new ArrivingTransition(s, t));
+        }
+        if (s.accept) {
+          q.add(s);
+          seen.add(s);
+        }
+      }
+
+      // Breadth-first search, from accept states,
+      // backwards:
+      while(!q.isEmpty()) {
+        final State s = q.pop();
+        List<ArrivingTransition> arriving = allArriving.get(s);
+        if (arriving != null) {
+          for(ArrivingTransition at : arriving) {
+            final State from = at.from;
+            if (!seen.contains(from)) {
+              q.add(from);
+              seen.add(from);
+              leadsToAccept.put(at.t, Boolean.TRUE);
+            }
+          }
+        }
+      }
+    }
+
+    public int[] getRandomAcceptedString(Random r) {
+
+      final List<Integer> soFar = new ArrayList<Integer>();
+      if (a.isSingleton()) {
+        // accepts only one
+        final String s = a.singleton;
+      
+        int charUpto = 0;
+        while(charUpto < s.length()) {
+          final int cp = s.codePointAt(charUpto);
+          charUpto += Character.charCount(cp);
+          soFar.add(cp);
+        }
+      } else {
+
+        State s = a.initial;
+
+        while(true) {
+      
+          if (s.accept) {
+            if (s.numTransitions == 0) {
+              // stop now
+              break;
+            } else {
+              if (r.nextBoolean()) {
+                break;
+              }
+            }
+          }
+
+          if (s.numTransitions == 0) {
+            throw new RuntimeException("this automaton has dead states");
+          }
+
+          boolean cheat = r.nextBoolean();
+
+          final Transition t;
+          if (cheat) {
+            // pick a transition that we know is the fastest
+            // path to an accept state
+            List<Transition> toAccept = new ArrayList<Transition>();
+            for(int i=0;i<s.numTransitions;i++) {
+              final Transition t0 = s.transitionsArray[i];
+              if (leadsToAccept.containsKey(t0)) {
+                toAccept.add(t0);
+              }
+            }
+            if (toAccept.size() == 0) {
+              // this is OK -- it means we jumped into a cycle
+              t = s.transitionsArray[r.nextInt(s.numTransitions)];
+            } else {
+              t = toAccept.get(r.nextInt(toAccept.size()));
+            }
+          } else {
+            t = s.transitionsArray[r.nextInt(s.numTransitions)];
+          }
+          
+          soFar.add(getRandomCodePoint(r, t));
+          s = t.to;
+        }
+      }
+
+      return ArrayUtil.toIntArray(soFar);
     }
   }
 }

@@ -21,11 +21,6 @@ import java.util.Iterator;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.BasicAutomata;
-import org.apache.lucene.util.automaton.State;
-import org.apache.lucene.util.automaton.Transition;
-
 /**
  * Class to construct DFAs that match a word within some edit distance.
  * <p>
@@ -39,13 +34,13 @@ public class LevenshteinAutomata {
   public static final int MAXIMUM_SUPPORTED_DISTANCE = 2;
   /* input word */
   final String input;
-  final char word[];
+  final int word[];
   /* the automata alphabet. */
-  final char alphabet[];
+  final int alphabet[];
 
   /* the unicode ranges outside of alphabet */
-  final char rangeLower[];
-  final char rangeUpper[];
+  final int rangeLower[];
+  final int rangeUpper[];
   int numRanges = 0;
   
   ParametricDescription descriptions[]; 
@@ -55,42 +50,46 @@ public class LevenshteinAutomata {
    */
   public LevenshteinAutomata(String input) {
     this.input = input;
-    this.word = input.toCharArray();
+    int length = Character.codePointCount(input, 0, input.length());
+    word = new int[length];
+    for (int i = 0, j = 0, cp = 0; i < input.length(); i += Character.charCount(cp)) {
+      word[j++] = cp = input.codePointAt(i);
+    }
     
     // calculate the alphabet
-    SortedSet<Character> set = new TreeSet<Character>();
+    SortedSet<Integer> set = new TreeSet<Integer>();
     for (int i = 0; i < word.length; i++)
       set.add(word[i]);
-    alphabet = new char[set.size()];
-    Iterator<Character> iterator = set.iterator();
+    alphabet = new int[set.size()];
+    Iterator<Integer> iterator = set.iterator();
     for (int i = 0; i < alphabet.length; i++)
       alphabet[i] = iterator.next();
       
-    rangeLower = new char[alphabet.length + 2];
-    rangeUpper = new char[alphabet.length + 2];
+    rangeLower = new int[alphabet.length + 2];
+    rangeUpper = new int[alphabet.length + 2];
     // calculate the unicode range intervals that exclude the alphabet
     // these are the ranges for all unicode characters not in the alphabet
     int lower = 0;
     for (int i = 0; i < alphabet.length; i++) {
-      char higher = alphabet[i];
+      int higher = alphabet[i];
       if (higher > lower) {
-        rangeLower[numRanges] = (char) lower;
-        rangeUpper[numRanges] = (char) (higher - 1);
+        rangeLower[numRanges] = lower;
+        rangeUpper[numRanges] = higher - 1;
         numRanges++;
       }
       lower = higher + 1;
     }
     /* add the final endpoint */
-    if (lower <= 0xFFFF) {
-      rangeLower[numRanges] = (char) lower;
-      rangeUpper[numRanges] = '\uFFFF';
+    if (lower <= Character.MAX_CODE_POINT) {
+      rangeLower[numRanges] = lower;
+      rangeUpper[numRanges] = Character.MAX_CODE_POINT;
       numRanges++;
     }
 
     descriptions = new ParametricDescription[] {
         null, /* for n=0, we do not need to go through the trouble */
-        new Lev1ParametricDescription(input.length()),
-        new Lev2ParametricDescription(input.length()),
+        new Lev1ParametricDescription(word.length),
+        new Lev2ParametricDescription(word.length),
     };
   }
   
@@ -119,6 +118,7 @@ public class LevenshteinAutomata {
     // create all states, and mark as accept states if appropriate
     for (int i = 0; i < states.length; i++) {
       states[i] = new State();
+      states[i].number = i;
       states[i].setAccept(description.isAccept(i));
     }
     // create transitions from state to state
@@ -129,7 +129,7 @@ public class LevenshteinAutomata {
       final int end = xpos + Math.min(word.length - xpos, range);
       
       for (int x = 0; x < alphabet.length; x++) {
-        final char ch = alphabet[x];
+        final int ch = alphabet[x];
         // get the characteristic vector at this position wrt ch
         final int cvec = getVector(ch, xpos, end);
         int dest = description.transition(k, xpos, cvec);
@@ -143,13 +143,15 @@ public class LevenshteinAutomata {
       if (dest >= 0)
         for (int r = 0; r < numRanges; r++)
           states[k].addTransition(new Transition(rangeLower[r], rangeUpper[r], states[dest]));      
+      // reduce the state: this doesn't appear to help anything
+      //states[k].reduce();
     }
 
-    Automaton a = new Automaton();
-    a.setInitialState(states[0]);
+    Automaton a = new Automaton(states[0]);
     a.setDeterministic(true);
+    a.setNumberedStates(states);
     // we need not trim transitions to dead states, as they are not created.
-    // a.restoreInvariant();
+    //a.restoreInvariant();
     return a;
   }
   
@@ -157,7 +159,7 @@ public class LevenshteinAutomata {
    * Get the characteristic vector <code>X(x, V)</code> 
    * where V is <code>substring(pos, end)</code>
    */
-  int getVector(char x, int pos, int end) {
+  int getVector(int x, int pos, int end) {
     int vector = 0;
     for (int i = pos; i < end; i++) {
       vector <<= 1;

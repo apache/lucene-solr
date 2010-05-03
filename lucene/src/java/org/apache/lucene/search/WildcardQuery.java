@@ -63,8 +63,8 @@ public class WildcardQuery extends AutomatonQuery {
     
     String wildcardText = wildcardquery.text();
     
-    for (int i = 0; i < wildcardText.length(); i++) {
-      final char c = wildcardText.charAt(i);
+    for (int i = 0; i < wildcardText.length();) {
+      final int c = wildcardText.codePointAt(i);
       switch(c) {
         case WILDCARD_STRING: 
           automata.add(BasicAutomata.makeAnyString());
@@ -75,6 +75,7 @@ public class WildcardQuery extends AutomatonQuery {
         default:
           automata.add(BasicAutomata.makeChar(c));
       }
+      i += Character.charCount(c);
     }
     
     return BasicOperations.concatenate(automata);

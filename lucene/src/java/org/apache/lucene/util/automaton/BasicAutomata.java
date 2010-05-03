@@ -70,42 +70,42 @@ final public class BasicAutomata {
     State s = new State();
     a.initial = s;
     s.accept = true;
-    s.transitions.add(new Transition(Character.MIN_VALUE, Character.MAX_VALUE,
+    s.addTransition(new Transition(Character.MIN_CODE_POINT, Character.MAX_CODE_POINT,
         s));
     a.deterministic = true;
     return a;
   }
   
   /**
-   * Returns a new (deterministic) automaton that accepts any single character.
+   * Returns a new (deterministic) automaton that accepts any single codepoint.
    */
   public static Automaton makeAnyChar() {
-    return makeCharRange(Character.MIN_VALUE, Character.MAX_VALUE);
+    return makeCharRange(Character.MIN_CODE_POINT, Character.MAX_CODE_POINT);
   }
   
   /**
-   * Returns a new (deterministic) automaton that accepts a single character of
+   * Returns a new (deterministic) automaton that accepts a single codepoint of
    * the given value.
    */
-  public static Automaton makeChar(char c) {
+  public static Automaton makeChar(int c) {
     Automaton a = new Automaton();
-    a.singleton = Character.toString(c);
+    a.singleton = new String(Character.toChars(c));
     a.deterministic = true;
     return a;
   }
   
   /**
-   * Returns a new (deterministic) automaton that accepts a single char whose
+   * Returns a new (deterministic) automaton that accepts a single codepoint whose
    * value is in the given interval (including both end points).
    */
-  public static Automaton makeCharRange(char min, char max) {
+  public static Automaton makeCharRange(int min, int max) {
     if (min == max) return makeChar(min);
     Automaton a = new Automaton();
     State s1 = new State();
     State s2 = new State();
     a.initial = s1;
     s2.accept = true;
-    if (min <= max) s1.transitions.add(new Transition(min, max, s2));
+    if (min <= max) s1.addTransition(new Transition(min, max, s2));
     a.deterministic = true;
     return a;
   }

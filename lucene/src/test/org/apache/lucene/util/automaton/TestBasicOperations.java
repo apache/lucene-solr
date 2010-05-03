@@ -16,7 +16,10 @@ package org.apache.lucene.util.automaton;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 import org.apache.lucene.util.LuceneTestCase;
+
+import java.util.Random;
 
 public class TestBasicOperations extends LuceneTestCase { 
   /** Test optimization to concatenate() */
@@ -26,7 +29,7 @@ public class TestBasicOperations extends LuceneTestCase {
     Automaton other = BasicAutomata.makeCharRange('5', '7');
     Automaton concat = BasicOperations.concatenate(singleton, other);
     assertTrue(concat.isDeterministic());
-    assertEquals(BasicOperations.concatenate(expandedSingleton, other), concat);
+    assertTrue(BasicOperations.sameLanguage(BasicOperations.concatenate(expandedSingleton, other), concat));
   }
   
   /** Test optimization to concatenate() to an NFA */
@@ -38,7 +41,7 @@ public class TestBasicOperations extends LuceneTestCase {
         BasicAutomata.makeString("three"));
     Automaton concat = BasicOperations.concatenate(singleton, nfa);
     assertFalse(concat.isDeterministic());
-    assertEquals(BasicOperations.concatenate(expandedSingleton, nfa), concat);
+    assertTrue(BasicOperations.sameLanguage(BasicOperations.concatenate(expandedSingleton, nfa), concat));
   }
   
   /** Test optimization to concatenate() with empty String */
@@ -49,9 +52,9 @@ public class TestBasicOperations extends LuceneTestCase {
     Automaton concat1 = BasicOperations.concatenate(expandedSingleton, other);
     Automaton concat2 = BasicOperations.concatenate(singleton, other);
     assertTrue(concat2.isDeterministic());
-    assertEquals(concat1, concat2);
-    assertEquals(other, concat1);
-    assertEquals(other, concat2);
+    assertTrue(BasicOperations.sameLanguage(concat1, concat2));
+    assertTrue(BasicOperations.sameLanguage(other, concat1));
+    assertTrue(BasicOperations.sameLanguage(other, concat2));
   }
   
   /** Test optimization to concatenate() with empty String to an NFA */
@@ -64,8 +67,50 @@ public class TestBasicOperations extends LuceneTestCase {
     Automaton concat1 = BasicOperations.concatenate(expandedSingleton, nfa);
     Automaton concat2 = BasicOperations.concatenate(singleton, nfa);
     assertFalse(concat2.isDeterministic());
-    assertEquals(concat1, concat2);
-    assertEquals(nfa, concat1);
-    assertEquals(nfa, concat2);
+    assertTrue(BasicOperations.sameLanguage(concat1, concat2));
+    assertTrue(BasicOperations.sameLanguage(nfa, concat1));
+    assertTrue(BasicOperations.sameLanguage(nfa, concat2));
+  }
+
+  /** Test singletons work correctly */
+  public void testSingleton() {
+    Automaton singleton = BasicAutomata.makeString("foobar");
+    Automaton expandedSingleton = singleton.cloneExpanded();
+    assertTrue(BasicOperations.sameLanguage(singleton, expandedSingleton));
+    
+    singleton = BasicAutomata.makeString("\ud801\udc1c");
+    expandedSingleton = singleton.cloneExpanded();
+    //assertEquals(singleton, expandedSingleton);
+  }
+
+  public void testGetRandomAcceptedString() throws Throwable {
+    final Random r = newRandom();
+    final int ITER1 = 100;
+    final int ITER2 = 100;
+    for(int i=0;i<ITER1;i++) {
+
+      final RegExp re = AutomatonTestUtil.randomRegexp(r);
+      final Automaton a = re.toAutomaton();
+      assertFalse(BasicOperations.isEmpty(a));
+
+      final BasicOperations.RandomAcceptedStrings rx = new BasicOperations.RandomAcceptedStrings(a);
+      for(int j=0;j<ITER2;j++) {
+        int[] acc = null;
+        try {
+          acc = rx.getRandomAcceptedString(r);
+          final String s = new String(acc, 0, acc.length);
+          assertTrue(BasicOperations.run(a, s));
+        } catch (Throwable t) {
+          System.out.println("regexp: " + re);
+          if (acc != null) {
+            System.out.println("fail acc re=" + re + " count=" + acc.length);
+            for(int k=0;k<acc.length;k++) {
+              System.out.println("  " + Integer.toHexString(acc[k]));
+            }
+          }
+          throw t;
+        }
+      }
+    }
   }
 }
