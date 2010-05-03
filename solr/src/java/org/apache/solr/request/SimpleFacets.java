@@ -516,6 +516,7 @@ public class SimpleFacets {
     Terms terms = fields==null ? null : fields.terms(field);
     TermsEnum termsEnum = null;
 
+    BytesRef term = null;
     if (terms != null) {
       termsEnum = terms.iterator();
 
@@ -525,10 +526,12 @@ public class SimpleFacets {
       if (startTermBytes != null) {
         if (termsEnum.seek(startTermBytes, true) == TermsEnum.SeekStatus.END) {
           termsEnum = null;
+        } else {
+          term = termsEnum.term();
         }
       } else {
         // position termsEnum on first term
-        termsEnum.next();
+        term = termsEnum.next();
       }
     }
 
@@ -536,11 +539,8 @@ public class SimpleFacets {
     DocsEnum docsEnum = null;
 
 
-    if (termsEnum != null && docs.size() >= mincount) {
-      for(;;) {
-        BytesRef term = termsEnum.term();
-        if (term == null)
-          break;
+    if (docs.size() >= mincount) {
+      while (term != null) {
 
         if (startTermBytes != null && !term.startsWith(startTermBytes))
           break;
@@ -597,7 +597,7 @@ public class SimpleFacets {
           }
         }
 
-        termsEnum.next();
+        term = termsEnum.next();
       }
     }
 

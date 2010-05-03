@@ -18,12 +18,11 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig;
@@ -631,21 +630,29 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         Term t = ((TermQuery)query).getTerm();
         SolrIndexReader[] readers = reader.getLeafReaders();
         int[] offsets = reader.getLeafOffsets();
-        int[] arr = new int[256];
-        int[] freq = new int[256];
+
         for (int i=0; i<readers.length; i++) {
           SolrIndexReader sir = readers[i];
           int offset = offsets[i];
           collector.setNextReader(sir, offset);
-          TermDocs tdocs = sir.termDocs(t);
-          for(;;) {
-            int num = tdocs.read(arr, freq);
-            if (num==0) break;
-            for (int j=0; j<num; j++) {
-              collector.collect(arr[j]);
+          
+          Fields fields = sir.fields();
+          Terms terms = fields.terms(t.field());
+          BytesRef termBytes = new BytesRef(t.text());
+          DocsEnum docsEnum = terms==null ? null : terms.docs(null, termBytes, null);
+
+          if (docsEnum != null) {
+            DocsEnum.BulkReadResult readResult = docsEnum.getBulkResult();
+            for (;;) {
+              int n = docsEnum.read();
+              if (n==0) break;
+              int[] arr = readResult.docs.ints;
+              int end = readResult.docs.offset + n;
+              for (int j=readResult.docs.offset; j<end; j++) {
+                collector.collect(arr[j]);
+              }
             }
           }
-          tdocs.close();
         }
       } else {
         super.search(query,null,collector);
