@@ -99,6 +99,7 @@ public final class NumericUtils {
   /**
    * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
    * This is method is used by {@link NumericTokenStream}.
+   * After encoding, {@code bytes.offset} will always be 0. 
    * @param val the numeric value
    * @param shift how many bits to strip from the right
    * @param bytes will contain the encoded value
@@ -108,6 +109,7 @@ public final class NumericUtils {
     if (shift>63 || shift<0)
       throw new IllegalArgumentException("Illegal shift value, must be 0..63");
     int hash, nChars = (63-shift)/7 + 1;
+    bytes.offset = 0;
     bytes.length = nChars+1;
     if (bytes.bytes.length < bytes.length) {
       bytes.grow(NumericUtils.BUF_SIZE_LONG);
@@ -157,6 +159,7 @@ public final class NumericUtils {
   /**
    * Returns prefix coded bits after reducing the precision by <code>shift</code> bits.
    * This is method is used by {@link NumericTokenStream}.
+   * After encoding, {@code bytes.offset} will always be 0. 
    * @param val the numeric value
    * @param shift how many bits to strip from the right
    * @param bytes will contain the encoded value
@@ -166,6 +169,7 @@ public final class NumericUtils {
     if (shift>31 || shift<0)
       throw new IllegalArgumentException("Illegal shift value, must be 0..31");
     int hash, nChars = (31-shift)/7 + 1;
+    bytes.offset = 0;
     bytes.length = nChars+1;
     if (bytes.bytes.length < bytes.length) {
       bytes.grow(NumericUtils.BUF_SIZE_INT);
