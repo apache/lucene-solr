@@ -137,6 +137,9 @@ New features
    sensitive way, either from ICU built-in rules (such as Traditional-Simplified),
    or from rules you write yourself.  (Robert Muir)
 
+ * LUCENE-2298: Add analyzers/stempel, an algorithmic stemmer with support for
+   the Polish language.  (Andrzej Bialecki via Robert Muir)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 

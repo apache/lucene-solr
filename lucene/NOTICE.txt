@@ -38,6 +38,15 @@ stopword list that is BSD-licensed created by Jacques Savoy.  The file resides i
 contrib/analyzers/common/src/resources/org/apache/lucene/analysis/hi/stopwords.txt.
 See http://members.unine.ch/jacques.savoy/clef/index.html.
 
+The Stempel analyzer (contrib/analyzers) includes BSD-licensed software developed 
+by the Egothor project http://egothor.sf.net/, created by Leo Galambos, Martin Kvapil,
+and Edmond Nolan.
+
+The Polish analyzer (contrib/analyzers) comes with a default
+stopword list that is BSD-licensed created by the Carrot2 project. The file resides
+in contrib/analyzers/stempel/src/resources/org/apache/lucene/analysis/pl/stopwords.txt.
+See http://project.carrot2.org/license.html.
+
 Includes lib/servlet-api-2.4.jar from  Apache Tomcat
 
 The SmartChineseAnalyzer source code (under contrib/analyzers) was
