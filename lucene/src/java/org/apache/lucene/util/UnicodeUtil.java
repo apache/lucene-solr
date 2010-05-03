@@ -99,7 +99,7 @@ final public class UnicodeUtil {
   }
 
   /** Encode characters from a char[] source, starting at
-   *  offset for length chars.  Returns a hash of the resulting bytes */
+   *  offset for length chars.  Returns a hash of the resulting bytes.  After encoding, result.offset will always be 0. */
   public static int UTF16toUTF8WithHash(final char[] source, final int offset, final int length, BytesRef result) {
     int hash = 0;
     int upto = 0;
@@ -154,7 +154,7 @@ final public class UnicodeUtil {
   }
 
   /** Encode characters from a char[] source, starting at
-   *  offset for length chars.
+   *  offset for length chars. After encoding, result.offset will always be 0.
    */
   public static void UTF16toUTF8(final char[] source, final int offset, final int length, BytesRef result) {
 
@@ -209,7 +209,7 @@ final public class UnicodeUtil {
   }
 
   /** Encode characters from this String, starting at offset
-   *  for length characters.
+   *  for length characters. After encoding, result.offset will always be 0.
    */
   public static void UTF16toUTF8(final CharSequence s, final int offset, final int length, BytesRef result) {
     final int end = offset + length;

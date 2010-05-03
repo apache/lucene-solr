@@ -40,7 +40,9 @@ public final class BytesRef implements Comparable<BytesRef> {
     bytes = EMPTY_BYTES;
   }
 
-  /** bytes[] should not be null */
+  /** This instance will directly reference bytes w/o making a copy.
+   * bytes should not be null.
+   */
   public BytesRef(byte[] bytes, int offset, int length) {
     assert bytes != null;
     this.bytes = bytes;
@@ -48,7 +50,8 @@ public final class BytesRef implements Comparable<BytesRef> {
     this.length = length;
   }
 
-  /** bytes[] should not be null */
+  /** This instance will directly reference bytes w/o making a copy.
+   * bytes should not be null */
   public BytesRef(byte[] bytes) {
     assert bytes != null;
     this.bytes = bytes;
