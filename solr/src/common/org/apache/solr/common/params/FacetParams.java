@@ -19,6 +19,7 @@ package org.apache.solr.common.params;
 
 import org.apache.solr.common.SolrException;
 
+import java.util.EnumSet;
 
 /**
  * Facet parameters
@@ -165,6 +166,7 @@ public interface FacetParams {
    * <li>none = no additional info requested</li>
    * </ul>
    * @see #FACET_DATE_OTHER
+   * @see #FACET_DATE_INCLUDE
    */
   public enum FacetDateOther {
     BEFORE, AFTER, BETWEEN, ALL, NONE;
@@ -180,6 +182,73 @@ public interface FacetParams {
     }
   }
   
+  /**
+   * <p>
+   * Multivalued string indicating what rules should be applied to determine 
+   * when the the ranges generated for date faceting should be inclusive or 
+   * exclusive of their end points.
+   * </p>
+   * <p>
+   * The default value if none are specified is: [lower,upper,edge]
+   * </p>
+   * <p>
+   * Can be overriden on a per field basis.
+   * </p>
+   * @see FacetDateInclude
+   */
+  public static final String FACET_DATE_INCLUDE = FACET_DATE + ".include";
+
+  /**
+   * An enumeration of the legal values for FACET_DATE_INCLUDE...
+   * <ul>
+   * <li>lower = all gap based ranges include their lower bound</li>
+   * <li>upper = all gap based ranges include their upper bound</li>
+   * <li>edge = the first and last gap ranges include their edge bounds (ie: lower 
+   *     for the first one, upper for the last one) even if the corrisponding 
+   *     upper/lower option is not specified
+   * </li>
+   * <li>outer = the FacetDateOther.BEFORE and FacetDateOther.AFTER ranges 
+   *     should be inclusive of their bounds, even if the first or last ranges 
+   *     already include thouse boundaries.
+   * </li>
+   * <li>all = shorthand for lower, upper, edge, and outer</li>
+   * </ul>
+   * @see #FACET_DATE_INCLUDE
+   */
+  public enum FacetDateInclude {
+    ALL, LOWER, UPPER, EDGE, OUTER;
+    public String toString() { return super.toString().toLowerCase(); }
+    public static FacetDateInclude get(String label) {
+      try {
+        return valueOf(label.toUpperCase());
+      } catch (IllegalArgumentException e) {
+        throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST,
+           label+" is not a valid type of for "+FACET_DATE_INCLUDE+" information",e);
+      }
+    }
+    /**
+     * Convinience method for parsing the param value according to the correct semantics.
+     */
+    public static EnumSet<FacetDateInclude> parseParam(final String[] param) {
+      // short circut for default behavior
+      if (null == param || 0 == param.length ) 
+        return EnumSet.of(LOWER, UPPER, EDGE);
+
+      // build up set containing whatever is specified
+      final EnumSet<FacetDateInclude> include = EnumSet.noneOf(FacetDateInclude.class);
+      for (final String o : param) {
+        include.add(FacetDateInclude.get(o));
+      }
+
+      // if set contains all, then we're back to short circuting
+      if (include.contains(FacetDateInclude.ALL)) 
+        return EnumSet.allOf(FacetDateInclude.class);
+
+      // use whatever we've got.
+      return include;
+    }
+  }
 
 }
 

@@ -29,6 +29,7 @@ import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.FacetParams.FacetDateOther;
+import org.apache.solr.common.params.FacetParams.FacetDateInclude;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -636,8 +637,10 @@ public class SimpleFacets {
 
       int minCount = params.getFieldInt(f,FacetParams.FACET_MINCOUNT, 0);
 
+      final EnumSet<FacetDateInclude> include = FacetDateInclude.parseParam
+        (params.getFieldParams(f,FacetParams.FACET_DATE_INCLUDE));
+
       try {
-        
         Date low = start;
         while (low.before(end)) {
           dmp.setNow(low);
@@ -656,7 +659,14 @@ public class SimpleFacets {
               (SolrException.ErrorCode.BAD_REQUEST,
                "date facet infinite loop (is gap negative?)");
           }
-          int count = rangeCount(sf,low,high,true,true);
+          boolean includeLower = 
+            (include.contains(FacetDateInclude.LOWER) ||
+             (include.contains(FacetDateInclude.EDGE) && low.equals(start)));
+          boolean includeUpper = 
+            (include.contains(FacetDateInclude.UPPER) ||
+             (include.contains(FacetDateInclude.EDGE) && high.equals(end)));
+
+          int count = rangeCount(sf,low,high,includeLower,includeUpper);
           if (count >= minCount) {
             resInner.add(label, count);
           }
@@ -687,16 +697,30 @@ public class SimpleFacets {
           boolean all = others.contains(FacetDateOther.ALL);
         
           if (all || others.contains(FacetDateOther.BEFORE)) {
+            // include upper bound if "outer" or if first gap doesn't already include it
             resInner.add(FacetDateOther.BEFORE.toString(),
-                         rangeCount(sf,null,start,false,false));
+                         rangeCount(sf,null,start,
+                                    false,
+                                    (include.contains(FacetDateInclude.OUTER) ||
+                                     (! (include.contains(FacetDateInclude.LOWER) ||
+                                         include.contains(FacetDateInclude.EDGE))))));
           }
           if (all || others.contains(FacetDateOther.AFTER)) {
+            // include lower bound if "outer" or if last gap doesn't already include it
             resInner.add(FacetDateOther.AFTER.toString(),
-                         rangeCount(sf,end,null,false,false));
+                         rangeCount(sf,end,null,
+                                    (include.contains(FacetDateInclude.OUTER) ||
+                                     (! (include.contains(FacetDateInclude.UPPER) ||
+                                         include.contains(FacetDateInclude.EDGE)))),
+                                    false));
           }
           if (all || others.contains(FacetDateOther.BETWEEN)) {
             resInner.add(FacetDateOther.BETWEEN.toString(),
-                         rangeCount(sf,start,end,true,true));
+                         rangeCount(sf,start,end,
+                                    (include.contains(FacetDateInclude.LOWER) ||
+                                     include.contains(FacetDateInclude.EDGE)),
+                                    (include.contains(FacetDateInclude.UPPER) ||
+                                     include.contains(FacetDateInclude.EDGE))));
           }
         }
       }

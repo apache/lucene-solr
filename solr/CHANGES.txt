@@ -144,6 +144,14 @@ New Features
   supports "percentages" which get evaluated  relative the current size of 
   the cache when warming happens. 
   (Tomas Fernandez Lobbe and hossman)
+
+* SOLR-397: Date Faceting now supports a "facet.date.include" param
+  for specifying when the upper & lower end points of computed date
+  ranges should be included in the range.  Legal values are: "all",
+  "lower", "upper", "edge", and "outer".  For backwards compatibility
+  the default value is the set: [lower,upper,edge], so that al ranges
+  between start and ed are inclusive of their endpoints, but the
+  "before" and "after" ranges are not.
    
 Optimizations
 ----------------------
