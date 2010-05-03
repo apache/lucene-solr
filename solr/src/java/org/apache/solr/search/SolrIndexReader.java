@@ -23,6 +23,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -223,6 +225,11 @@ public class SolrIndexReader extends FilterIndexReader {
   }
 
   @Override
+  public Bits getDeletedDocs() throws IOException {
+    return in.getDeletedDocs();
+  }
+
+  @Override
   public TermFreqVector[] getTermFreqVectors(int docNumber) throws IOException {
     return in.getTermFreqVectors(docNumber);
   }
@@ -298,6 +305,11 @@ public class SolrIndexReader extends FilterIndexReader {
   }
 
   @Override
+  public Fields fields() throws IOException {
+    return in.fields();
+  }
+
+  @Override
   public TermEnum terms(Term t) throws IOException {
     return in.terms(t);
   }
@@ -306,6 +318,11 @@ public class SolrIndexReader extends FilterIndexReader {
   public int docFreq(Term t) throws IOException {
     ensureOpen();
     return in.docFreq(t);
+  }
+
+  @Override
+  public int docFreq(String field, BytesRef t) throws IOException {
+    return in.docFreq(field, t);
   }
 
   @Override
@@ -321,6 +338,21 @@ public class SolrIndexReader extends FilterIndexReader {
   }
 
   @Override
+  public Terms terms(String field) throws IOException {
+    return in.terms(field);
+  }
+
+  @Override
+  public DocsEnum termDocsEnum(Bits skipDocs, String field, BytesRef term) throws IOException {
+    return in.termDocsEnum(skipDocs, field, term);
+  }
+
+  @Override
+  public DocsAndPositionsEnum termPositionsEnum(Bits skipDocs, String field, BytesRef term) throws IOException {
+    return in.termPositionsEnum(skipDocs, field, term);
+  }
+
+  @Override
   public TermPositions termPositions() throws IOException {
     ensureOpen();
     return in.termPositions();
@@ -328,6 +360,7 @@ public class SolrIndexReader extends FilterIndexReader {
 
   @Override
   protected void doDelete(int n) throws  CorruptIndexException, IOException { in.deleteDocument(n); }
+
 
   // Let FilterIndexReader handle commit()... we cannot override commit()
   // or call in.commit() ourselves.
@@ -361,6 +394,11 @@ public class SolrIndexReader extends FilterIndexReader {
   @Override
   public SolrIndexReader[] getSequentialSubReaders() {
     return subReaders;
+  }
+
+  @Override
+  public int getSubReaderDocBase(IndexReader subReader) {
+    return in.getSubReaderDocBase(subReader);
   }
 
   @Override
@@ -405,7 +443,7 @@ public class SolrIndexReader extends FilterIndexReader {
 
   @Override
   public long getUniqueTermCount() throws IOException {
-    return super.getUniqueTermCount();
+    return in.getUniqueTermCount();
   }
 
   @Override

@@ -17,12 +17,11 @@
 
 package org.apache.solr.request;
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.*;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.RequiredSolrParams;
@@ -498,76 +497,121 @@ public class SimpleFacets {
     IndexReader r = searcher.getReader();
     FieldType ft = schema.getFieldType(field);
 
-    final int maxsize = limit>=0 ? offset+limit : Integer.MAX_VALUE-1;    
-    final BoundedTreeSet<CountPair<String,Integer>> queue = (sort.equals("count") || sort.equals("true")) ? new BoundedTreeSet<CountPair<String,Integer>>(maxsize) : null;
+    boolean sortByCount = sort.equals("count") || sort.equals("true");
+    final int maxsize = limit>=0 ? offset+limit : Integer.MAX_VALUE-1;
+    final BoundedTreeSet<CountPair<BytesRef,Integer>> queue = sortByCount ? new BoundedTreeSet<CountPair<BytesRef,Integer>>(maxsize) : null;
     final NamedList res = new NamedList();
 
     int min=mincount-1;  // the smallest value in the top 'N' values    
     int off=offset;
     int lim=limit>=0 ? limit : Integer.MAX_VALUE;
 
-    String startTerm = prefix==null ? "" : ft.toInternal(prefix);
-    TermEnum te = r.terms(new Term(field,startTerm));
-    TermDocs td = r.termDocs();
-
-    if (docs.size() >= mincount) { 
-    do {
-      Term t = te.term();
-
-      if (null == t || ! t.field().equals(field))
-        break;
-
-      if (prefix!=null && !t.text().startsWith(prefix)) break;
-
-      int df = te.docFreq();
-
-      // If we are sorting, we can use df>min (rather than >=) since we
-      // are going in index order.  For certain term distributions this can
-      // make a large difference (for example, many terms with df=1).
-      if (df>0 && df>min) {
-        int c;
-
-        if (df >= minDfFilterCache) {
-          // use the filter cache
-          c = searcher.numDocs(new TermQuery(t), docs);
-        } else {
-          // iterate over TermDocs to calculate the intersection
-          td.seek(te);
-          c=0;
-          while (td.next()) {
-            if (docs.exists(td.doc())) c++;
-          }
-        }
-
-        if (sort.equals("count") || sort.equals("true")) {
-          if (c>min) {
-            queue.add(new CountPair<String,Integer>(t.text(), c));
-            if (queue.size()>=maxsize) min=queue.last().val;
-          }
-        } else {
-          if (c >= mincount && --off<0) {
-            if (--lim<0) break;
-            res.add(ft.indexedToReadable(t.text()), c);
-          }
-        }
-      }
-    } while (te.next());
+    BytesRef startTermBytes = null;
+    if (prefix != null) {
+      String indexedPrefix = ft.toInternal(prefix);
+      startTermBytes = new BytesRef(indexedPrefix);
     }
 
-    if (sort.equals("count") || sort.equals("true")) {
-      for (CountPair<String,Integer> p : queue) {
+    Fields fields = MultiFields.getFields(r);
+    Terms terms = fields==null ? null : fields.terms(field);
+    TermsEnum termsEnum = null;
+
+    if (terms != null) {
+      termsEnum = terms.iterator();
+
+      // TODO: OPT: if seek(ord) is supported for this termsEnum, then we could use it for
+      // facet.offset when sorting by index order.
+
+      if (startTermBytes != null) {
+        if (termsEnum.seek(startTermBytes, true) == TermsEnum.SeekStatus.END) {
+          termsEnum = null;
+        }
+      } else {
+        // position termsEnum on first term
+        termsEnum.next();
+      }
+    }
+
+    Term template = new Term(field);
+    DocsEnum docsEnum = null;
+
+
+    if (termsEnum != null && docs.size() >= mincount) {
+      for(;;) {
+        BytesRef term = termsEnum.term();
+        if (term == null)
+          break;
+
+        if (startTermBytes != null && !term.startsWith(startTermBytes))
+          break;
+
+        int df = termsEnum.docFreq();
+
+        // If we are sorting, we can use df>min (rather than >=) since we
+        // are going in index order.  For certain term distributions this can
+        // make a large difference (for example, many terms with df=1).
+        if (df>0 && df>min) {
+          int c;
+
+          if (df >= minDfFilterCache) {
+            // use the filter cache
+            // TODO: not a big deal, but there are prob more efficient ways to go from utf8 to string
+            // TODO: need a term query that takes a BytesRef
+            Term t = template.createTerm(new String(term.utf8ToString()));
+            c = searcher.numDocs(new TermQuery(t), docs);
+          } else {
+            // iterate over TermDocs to calculate the intersection
+
+            // TODO: specialize when base docset is a bitset or hash set (skipDocs)?  or does it matter for this?
+            // TODO: do this per-segment for better efficiency (MultiDocsEnum just uses base class impl)
+            docsEnum = termsEnum.docs(null, docsEnum);
+
+            // this should be the same bulk result object if sharing of the docsEnum succeeded
+            DocsEnum.BulkReadResult bulk = docsEnum.getBulkResult();
+
+            c=0;
+            for (;;) {
+              int nDocs = docsEnum.read();
+              if (nDocs == 0) break;
+              int[] docArr = bulk.docs.ints;  // this might be movable outside the loop, but perhaps not worth the risk.
+              for (int i=0; i<nDocs; i++) {
+                if (docs.exists(docArr[i])) c++;
+              }
+            }
+          }
+
+          if (sortByCount) {
+            if (c>min) {
+              BytesRef termCopy = new BytesRef(term);
+              queue.add(new CountPair<BytesRef,Integer>(termCopy, c));
+              if (queue.size()>=maxsize) min=queue.last().val;
+            }
+          } else {
+            if (c >= mincount && --off<0) {
+              if (--lim<0) break;
+              BytesRef termCopy = new BytesRef(term);
+              String s = term.utf8ToString();
+              res.add(ft.indexedToReadable(s), c);
+            }
+          }
+        }
+
+        termsEnum.next();
+      }
+    }
+
+    if (sortByCount) {
+      for (CountPair<BytesRef,Integer> p : queue) {
         if (--off>=0) continue;
         if (--lim<0) break;
-        res.add(ft.indexedToReadable(p.key), p.val);
+        String s = p.key.utf8ToString();        
+        res.add(ft.indexedToReadable(s), p.val);
       }
     }
 
     if (missing) {
       res.add(null, getFieldMissingCount(searcher,docs,field));
     }
-
-    te.close();
-    td.close();    
 
     return res;
   }
