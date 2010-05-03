@@ -86,7 +86,7 @@ class PHPSerializedWriter extends JSONWriter {
   public PHPSerializedWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp, boolean CESU8) {
     super(writer, req, rsp);
     this.CESU8 = CESU8;
-    this.utf8 = CESU8 ? null : new BytesRef(10);
+    this.utf8 = CESU8 ? null : new BytesRef();
     // never indent serialized PHP data
     doIndent = false;
   }

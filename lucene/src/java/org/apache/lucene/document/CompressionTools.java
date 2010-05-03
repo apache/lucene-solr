@@ -86,7 +86,7 @@ public class CompressionTools {
    *  compressionLevel (constants are defined in
    *  java.util.zip.Deflater). */
   public static byte[] compressString(String value, int compressionLevel) {
-    BytesRef result = new BytesRef(10);
+    BytesRef result = new BytesRef();
     UnicodeUtil.UTF16toUTF8(value, 0, value.length(), result);
     return compress(result.bytes, 0, result.length, compressionLevel);
   }
