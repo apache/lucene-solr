@@ -18,7 +18,7 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.PorterStemFilter;
+import org.apache.lucene.analysis.en.PorterStemFilter;
 
 /**
  * @version $Id$

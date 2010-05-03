@@ -23,6 +23,11 @@ Changes in backwards compatibility policy
  * LUCENE-2323: Moved contrib/wikipedia functionality into contrib/analyzers.
    Additionally the package was changed from org.apache.lucene.wikipedia.analysis
    to org.apache.lucene.analysis.wikipedia.  (Robert Muir)
+
+ * LUCENE-2413: Consolidated all analyzers into contrib/analyzers. 
+   - contrib/analyzers/smartcn now depends on contrib/analyzers/common
+   - The "AnalyzerUtil" in wordnet was removed. 
+   ... (in progress)
     
 Changes in runtime behavior
 

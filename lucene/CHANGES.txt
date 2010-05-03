@@ -4,6 +4,10 @@ Lucene Change Log
 
 Changes in backwards compatibility policy
 
+* LUCENE-2413: Consolidated all Lucene analyzers into contrib/analyzers.
+  - o.a.l.analysis.PorterStemFilter -> o.a.l.analysis.en.PorterStemFilter
+  ... (in progress)
+
 * LUCENE-1458, LUCENE-2111, LUCENE-2354: Changes from flexible indexing:
 
   - On upgrading to 3.1, if you do not fully reindex your documents,
