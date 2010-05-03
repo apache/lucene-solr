@@ -107,13 +107,11 @@ public final class NumericUtils {
   public static int longToPrefixCoded(final long val, final int shift, final BytesRef bytes) {
     if (shift>63 || shift<0)
       throw new IllegalArgumentException("Illegal shift value, must be 0..63");
-    if (bytes.bytes == null) {
-      bytes.bytes = new byte[NumericUtils.BUF_SIZE_LONG];
-    } else if (bytes.bytes.length < NumericUtils.BUF_SIZE_LONG) {
-      bytes.grow(NumericUtils.BUF_SIZE_LONG);
-    }
     int hash, nChars = (63-shift)/7 + 1;
     bytes.length = nChars+1;
+    if (bytes.bytes.length < bytes.length) {
+      bytes.grow(NumericUtils.BUF_SIZE_LONG);
+    }
     bytes.bytes[0] = (byte) (hash = (SHIFT_START_LONG + shift));
     long sortableBits = val ^ 0x8000000000000000L;
     sortableBits >>>= shift;
@@ -167,13 +165,11 @@ public final class NumericUtils {
   public static int intToPrefixCoded(final int val, final int shift, final BytesRef bytes) {
     if (shift>31 || shift<0)
       throw new IllegalArgumentException("Illegal shift value, must be 0..31");
-    if (bytes.bytes == null) {
-      bytes.bytes = new byte[NumericUtils.BUF_SIZE_INT];
-    } else if (bytes.bytes.length < NumericUtils.BUF_SIZE_INT) {
-      bytes.grow(NumericUtils.BUF_SIZE_INT);
-    }
     int hash, nChars = (31-shift)/7 + 1;
     bytes.length = nChars+1;
+    if (bytes.bytes.length < bytes.length) {
+      bytes.grow(NumericUtils.BUF_SIZE_INT);
+    }
     bytes.bytes[0] = (byte) (hash = (SHIFT_START_INT + shift));
     int sortableBits = val ^ 0x80000000;
     sortableBits >>>= shift;

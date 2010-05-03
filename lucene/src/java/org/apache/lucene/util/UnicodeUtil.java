@@ -154,8 +154,8 @@ final public class UnicodeUtil {
   }
 
   /** Encode characters from a char[] source, starting at
-   *  offset for length chars.  Returns the number of bytes
-   *  written to bytesOut. */
+   *  offset for length chars.
+   */
   public static void UTF16toUTF8(final char[] source, final int offset, final int length, BytesRef result) {
 
     int upto = 0;
@@ -165,7 +165,7 @@ final public class UnicodeUtil {
     // Pre-allocate for worst case 4-for-1
     final int maxLen = length * 4;
     if (out.length < maxLen)
-      out = result.bytes = new byte[ArrayUtil.oversize(maxLen, 1)];
+      out = result.bytes = new byte[maxLen];
     result.offset = 0;
 
     while(i < end) {
@@ -209,8 +209,8 @@ final public class UnicodeUtil {
   }
 
   /** Encode characters from this String, starting at offset
-   *  for length characters.  Returns the number of bytes
-   *  written to bytesOut. */
+   *  for length characters.
+   */
   public static void UTF16toUTF8(final CharSequence s, final int offset, final int length, BytesRef result) {
     final int end = offset + length;
 
@@ -219,7 +219,7 @@ final public class UnicodeUtil {
     // Pre-allocate for worst case 4-for-1
     final int maxLen = length * 4;
     if (out.length < maxLen)
-      out = result.bytes = new byte[ArrayUtil.oversize(maxLen, 1)];
+      out = result.bytes = new byte[maxLen];
 
     int upto = 0;
     for(int i=offset;i<end;i++) {

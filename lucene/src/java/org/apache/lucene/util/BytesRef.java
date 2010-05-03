@@ -24,22 +24,33 @@ import java.io.UnsupportedEncodingException;
  *  existing byte[].
  *
  *  @lucene.experimental */
-public final class BytesRef {
+public final class BytesRef implements Comparable<BytesRef> {
+  public static final byte[] EMPTY_BYTES = new byte[0]; 
 
+  /** The contents of the BytesRef. Should never be {@code null}. */
   public byte[] bytes;
+
+  /** Offset of first valid byte. */
   public int offset;
+
+  /** Length of used bytes. */
   public int length;
 
   public BytesRef() {
+    bytes = EMPTY_BYTES;
   }
 
+  /** bytes[] should not be null */
   public BytesRef(byte[] bytes, int offset, int length) {
+    assert bytes != null;
     this.bytes = bytes;
     this.offset = offset;
     this.length = length;
   }
 
+  /** bytes[] should not be null */
   public BytesRef(byte[] bytes) {
+    assert bytes != null;
     this.bytes = bytes;
     this.offset = 0;
     this.length = bytes.length;
@@ -55,10 +66,12 @@ public final class BytesRef {
    * unicode text, with no unpaired surrogates or U+FFFF.
    */
   public BytesRef(CharSequence text) {
+    this();
     copy(text);
   }
 
   public BytesRef(BytesRef other) {
+    this();
     copy(other);
   }
 
@@ -69,13 +82,6 @@ public final class BytesRef {
    * unpaired surrogates or invalid UTF16 code units.
    */
   public void copy(CharSequence text) {
-    // TODO: new byte[10] is waste of resources; it should
-    // simply allocate text.length()*4 like UnicodeUtil.
-    // Ideally, I would remove this here and add a
-    // null-check in UnicodeUtil. (Uwe)
-    if (bytes == null) {
-      bytes = new byte[10];
-    }
     UnicodeUtil.UTF16toUTF8(text, 0, text.length(), this);
   }
 
@@ -178,10 +184,8 @@ public final class BytesRef {
   }
 
   public void copy(BytesRef other) {
-    if (bytes == null) {
+    if (bytes.length < other.length) {
       bytes = new byte[other.length];
-    } else {
-      bytes = ArrayUtil.grow(bytes, other.length);
     }
     System.arraycopy(other.bytes, other.offset, bytes, 0, other.length);
     length = other.length;
@@ -196,6 +200,68 @@ public final class BytesRef {
 
   public static Comparator<BytesRef> getUTF8SortedAsUTF16Comparator() {
     return utf8SortedAsUTF16SortOrder;
+  }
+
+  /** Unsigned byte order comparison */
+  /*
+  public int compareTo(BytesRef other) {
+    if (this == other) return 0;
+
+    final byte[] aBytes = this.bytes;
+    int aUpto = this.offset;
+    final byte[] bBytes = other.bytes;
+    int bUpto = other.offset;
+
+    final int aStop = aUpto + Math.min(this.length, other.length);
+
+    while(aUpto < aStop) {
+      int aByte = aBytes[aUpto++] & 0xff;
+      int bByte = bBytes[bUpto++] & 0xff;
+      int diff = aByte - bByte;
+      if (diff != 0) return diff;
+    }
+
+    // One is a prefix of the other, or, they are equal:
+    return this.length - other.length;
+  }
+  */
+
+  /** Lucene default index order. Currently the same as String.compareTo() (UTF16) but will change
+   * in the future to unsigned byte comparison. */
+  public int compareTo(BytesRef other) {
+    if (this == other) return 0;
+
+    final byte[] aBytes = this.bytes;
+    int aUpto = this.offset;
+    final byte[] bBytes = other.bytes;
+    int bUpto = other.offset;
+
+    final int aStop = aUpto + Math.min(this.length, other.length);
+
+    while(aUpto < aStop) {
+      int aByte = aBytes[aUpto++] & 0xff;
+      int bByte = bBytes[bUpto++] & 0xff;
+      if (aByte != bByte) {
+
+        // See http://icu-project.org/docs/papers/utf16_code_point_order.html#utf-8-in-utf-16-order
+
+        // We know the terms are not equal, but, we may
+        // have to carefully fixup the bytes at the
+        // difference to match UTF16's sort order:
+        if (aByte >= 0xee && bByte >= 0xee) {
+          if ((aByte & 0xfe) == 0xee) {
+            aByte += 0x10;
+          }
+          if ((bByte&0xfe) == 0xee) {
+            bByte += 0x10;
+          }
+        }
+        return aByte - bByte;
+      }
+    }
+
+    // One is a prefix of the other, or, they are equal:
+    return this.length - other.length;
   }
 
   private static class UTF8SortedAsUTF16Comparator implements Comparator<BytesRef> {

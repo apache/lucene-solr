@@ -32,6 +32,8 @@ import org.apache.lucene.util.BytesRef;
 public interface TermToBytesRefAttribute extends Attribute {
   /** Copies the token's term text into the given {@link BytesRef}.
    * @param termBytes destination to write the bytes to (UTF-8 for text terms).
+   * The length of the BytesRef's buffer may be not large enough, so you need to grow.
+   * The parameters' {@code bytes} is guaranteed to be not {@code null}.
    * @return the hashcode as defined by {@link BytesRef#hashCode}:
    * <pre>
    *  int hash = 0;

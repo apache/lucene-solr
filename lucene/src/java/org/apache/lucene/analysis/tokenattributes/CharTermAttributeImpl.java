@@ -126,10 +126,6 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   
   // *** TermToBytesRefAttribute interface ***
   public final int toBytesRef(BytesRef target) {
-    // TODO: Maybe require that bytes is already initialized? TermsHashPerField ensures this.
-    if (target.bytes == null) {
-      target.bytes = new byte[termLength * 4];
-    }
     return UnicodeUtil.UTF16toUTF8WithHash(termBuffer, 0, termLength, target);
   }
   
