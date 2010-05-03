@@ -15,11 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.charfilter;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.util.LinkedList;
+
+import org.apache.lucene.analysis.CharReader;
+import org.apache.lucene.analysis.CharStream;
 
 /**
  * Simplistic {@link CharFilter} that applies the mappings

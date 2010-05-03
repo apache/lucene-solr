@@ -26,8 +26,8 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.CharStream;
-import org.apache.lucene.analysis.MappingCharFilter;
-import org.apache.lucene.analysis.NormalizeCharMap;
+import org.apache.lucene.analysis.charfilter.MappingCharFilter;
+import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 

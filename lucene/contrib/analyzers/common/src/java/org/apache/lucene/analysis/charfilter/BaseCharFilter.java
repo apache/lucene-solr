@@ -15,10 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.charfilter;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import org.apache.lucene.analysis.CharFilter;
+import org.apache.lucene.analysis.CharStream;
 
 /**
  * Base utility class for implementing a {@link CharFilter}.

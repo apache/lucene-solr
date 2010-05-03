@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.charfilter;
 
 import java.util.HashMap;
 import java.util.Map;

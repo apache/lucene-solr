@@ -22,7 +22,7 @@ import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.lucene.analysis.BaseCharFilter;
+import org.apache.lucene.analysis.charfilter.BaseCharFilter;
 import org.apache.lucene.analysis.CharStream;
 
 /**
