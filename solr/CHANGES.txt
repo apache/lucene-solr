@@ -351,6 +351,9 @@ Build
 
 * SOLR-1522: Automated release signing process. (gsingers)
 
+* SOLR-1891: Make lucene-jars-to-solr fail if copying any of the jars fails, and 
+  update clean to remove the jars in that directory (Mark Miller)
+
 Documentation
 ----------------------
 

@@ -72,6 +72,7 @@
     <delete dir="${dest}" />
     <delete dir="${dist}" />
     <delete dir="example/solr/lib" />
+    <delete dir="${lucene-libs}" />
   </target>
 
   <target name="clean-dest"
@@ -565,7 +566,7 @@
          <exclude name="*.template" />
        </lib>
       
-       <lib dir="lucene-libs"/>
+       <lib dir="${lucene-libs}"/>
          
        <lib dir="${dist}">
          <include name="${fullname}-solrj-${version}.jar" />

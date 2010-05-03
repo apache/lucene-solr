@@ -86,6 +86,9 @@
 
   <!-- Destination for compiled classes and binaries -->
   <property name="dest" value="build" />
+  
+  <!-- Destination for Lucene jars -->
+  <property name="lucene-libs" location="lucene-libs" />
 
   <!-- Javadoc properties -->
   <property name="javadoc.years" value="2006 - ${year}" />
@@ -178,18 +181,32 @@
   </target>
       
   <target name="lucene-jars-to-solr" depends="prep-lucene-jars">
-    <mkdir dir="lucene-libs"/>
-    <copy todir="lucene-libs" preservelastmodified="true" flatten="true" failonerror="true">
-      <resources>
-        <file file="../lucene/build/lucene-core-${lucene_version}.jar" />
-        <file file="../lucene/build/contrib/analyzers/common/lucene-analyzers-${lucene_version}.jar" />
-        <file file="../lucene/build/contrib/highlighter/lucene-highlighter-${lucene_version}.jar" />
-        <file file="../lucene/build/contrib/memory/lucene-memory-${lucene_version}.jar" />
-        <file file="../lucene/build/contrib/misc/lucene-misc-${lucene_version}.jar" />
-        <file file="../lucene/build/contrib/queries/lucene-queries-${lucene_version}.jar" />
-        <file file="../lucene/build/contrib/spatial/lucene-spatial-${lucene_version}.jar" />
-        <file file="../lucene/build/contrib/spellchecker/lucene-spellchecker-${lucene_version}.jar" />
-      </resources>
+    <mkdir dir="${lucene-libs}"/>
+    <copy todir="${lucene-libs}" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
+      <fileset dir="../lucene/build/">
+        <include name="lucene-core-${lucene_version}.jar" />
+      </fileset>
+      <fileset dir="../lucene/build/contrib/analyzers/common">
+        <include name="lucene-analyzers-${lucene_version}.jar" />
+      </fileset>
+      <fileset dir="../lucene/build/contrib/highlighter">
+        <include name="lucene-highlighter-${lucene_version}.jar" />
+      </fileset>
+      <fileset dir="../lucene/build/contrib/memory">
+        <include name="lucene-memory-${lucene_version}.jar" />
+      </fileset>
+      <fileset dir="../lucene/build/contrib/misc">
+        <include name="lucene-misc-${lucene_version}.jar" />
+      </fileset>
+      <fileset dir="../lucene/build/contrib/queries">
+        <include name="lucene-queries-${lucene_version}.jar" />
+      </fileset>
+      <fileset dir="../lucene/build/contrib/spatial">
+        <include name="lucene-spatial-${lucene_version}.jar" />
+      </fileset>
+      <fileset dir="../lucene/build/contrib/spellchecker">
+        <include name="lucene-spellchecker-${lucene_version}.jar" />
+      </fileset>
       </copy>
   </target>  
   
