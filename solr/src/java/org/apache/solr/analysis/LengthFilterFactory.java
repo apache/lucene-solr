@@ -18,7 +18,7 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.LengthFilter;
+import org.apache.lucene.analysis.miscellaneous.LengthFilter;
 
 import java.util.Map;
 

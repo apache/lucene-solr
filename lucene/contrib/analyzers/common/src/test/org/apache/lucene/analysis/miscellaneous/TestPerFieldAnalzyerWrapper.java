@@ -1,8 +1,9 @@
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.StringReader;
 
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,24 +26,24 @@ public class TestPerFieldAnalzyerWrapper extends BaseTokenStreamTestCase {
   public void testPerField() throws Exception {
     String text = "Qwerty";
     PerFieldAnalyzerWrapper analyzer =
-              new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer());
-    analyzer.addAnalyzer("special", new SimpleAnalyzer());
+              new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    analyzer.addAnalyzer("special", new SimpleAnalyzer(TEST_VERSION_CURRENT));
 
     TokenStream tokenStream = analyzer.tokenStream("field",
                                             new StringReader(text));
-    TermAttribute termAtt = tokenStream.getAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
 
     assertTrue(tokenStream.incrementToken());
     assertEquals("WhitespaceAnalyzer does not lowercase",
                  "Qwerty",
-                 termAtt.term());
+                 termAtt.toString());
 
     tokenStream = analyzer.tokenStream("special",
                                             new StringReader(text));
-    termAtt = tokenStream.getAttribute(TermAttribute.class);
+    termAtt = tokenStream.getAttribute(CharTermAttribute.class);
     assertTrue(tokenStream.incrementToken());
     assertEquals("SimpleAnalyzer lowercases",
                  "qwerty",
-                 termAtt.term());
+                 termAtt.toString());
   }
 }

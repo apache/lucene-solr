@@ -19,7 +19,6 @@ package org.apache.lucene.collation;
 
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.PerFieldAnalyzerWrapper;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexWriter;
@@ -40,6 +39,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.util.IndexableBinaryStringTools;
 import org.apache.lucene.util.LuceneTestCase;
 
+import java.io.StringReader;
 import java.io.IOException;
 
 public abstract class CollationTestBase extends LuceneTestCase {
@@ -172,14 +172,8 @@ public abstract class CollationTestBase extends LuceneTestCase {
                                    Analyzer denmarkAnalyzer,
                                    String usResult) throws Exception {
     RAMDirectory indexStore = new RAMDirectory();
-    PerFieldAnalyzerWrapper analyzer
-      = new PerFieldAnalyzerWrapper(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
-    analyzer.addAnalyzer("US", usAnalyzer);
-    analyzer.addAnalyzer("France", franceAnalyzer);
-    analyzer.addAnalyzer("Sweden", swedenAnalyzer);
-    analyzer.addAnalyzer("Denmark", denmarkAnalyzer);
     IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer));
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
 
     // document data:
     // the tracer field is used to determine which document was hit
@@ -204,17 +198,13 @@ public abstract class CollationTestBase extends LuceneTestCase {
       doc.add(new Field("contents", sortData[i][1], 
                         Field.Store.NO, Field.Index.ANALYZED));
       if (sortData[i][2] != null) 
-        doc.add(new Field("US", sortData[i][2], 
-                          Field.Store.NO, Field.Index.ANALYZED));
+        doc.add(new Field("US", usAnalyzer.reusableTokenStream("US", new StringReader(sortData[i][2]))));
       if (sortData[i][3] != null) 
-        doc.add(new Field("France", sortData[i][3], 
-                          Field.Store.NO, Field.Index.ANALYZED));
+        doc.add(new Field("France", franceAnalyzer.reusableTokenStream("France", new StringReader(sortData[i][3]))));
       if (sortData[i][4] != null)
-        doc.add(new Field("Sweden", sortData[i][4], 
-                          Field.Store.NO, Field.Index.ANALYZED));
+        doc.add(new Field("Sweden", swedenAnalyzer.reusableTokenStream("Sweden", new StringReader(sortData[i][4]))));
       if (sortData[i][5] != null) 
-        doc.add(new Field("Denmark", sortData[i][5], 
-                          Field.Store.NO, Field.Index.ANALYZED));
+        doc.add(new Field("Denmark", denmarkAnalyzer.reusableTokenStream("Denmark", new StringReader(sortData[i][5]))));
       writer.addDocument(doc);
     }
     writer.optimize();

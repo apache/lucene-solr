@@ -56,6 +56,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     searcher = new IndexSearcher(directory, true);
   }
 
+  /*
   public void testPerFieldAnalyzer() throws Exception {
     PerFieldAnalyzerWrapper analyzer = new PerFieldAnalyzerWrapper(new SimpleAnalyzer());
     analyzer.addAnalyzer("partnum", new KeywordAnalyzer());
@@ -68,6 +69,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
               "+partnum:Q36 +space", query.toString("description"));
     assertEquals("doc found!", 1, hits.length);
   }
+  */
 
   public void testMutipleDocument() throws Exception {
     RAMDirectory dir = new RAMDirectory();
