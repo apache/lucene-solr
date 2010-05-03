@@ -17,7 +17,7 @@
  
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.ISOLatin1AccentFilter;
+import org.apache.lucene.analysis.miscellaneous.ISOLatin1AccentFilter;
 import org.apache.lucene.analysis.TokenStream;
 
 /** Factory for ISOLatin1AccentFilter

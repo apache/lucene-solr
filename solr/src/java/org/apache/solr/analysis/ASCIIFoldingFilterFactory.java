@@ -18,7 +18,7 @@
 
 
 package org.apache.solr.analysis;
-import org.apache.lucene.analysis.ASCIIFoldingFilter;
+import org.apache.lucene.analysis.miscellaneous.ASCIIFoldingFilter;
 import org.apache.lucene.analysis.TokenStream;
 
 /** Factory for {@link ASCIIFoldingFilter} */

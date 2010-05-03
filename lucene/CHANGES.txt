@@ -6,6 +6,8 @@ Changes in backwards compatibility policy
 
 * LUCENE-2413: Consolidated all Lucene analyzers into contrib/analyzers.
   - o.a.l.analysis.PorterStemFilter -> o.a.l.analysis.en.PorterStemFilter
+  - o.a.l.analysis.ASCIIFoldingFilter -> o.a.l.analysis.miscellaneous.ASCIIFoldingFilter
+  - o.a.l.analysis.ISOLatin1AccentFilter -> o.a.l.analysis.miscellaneous.ISOLatin1AccentFilter
   ... (in progress)
 
 * LUCENE-1458, LUCENE-2111, LUCENE-2354: Changes from flexible indexing:
