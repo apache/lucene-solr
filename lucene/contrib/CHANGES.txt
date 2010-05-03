@@ -148,6 +148,7 @@ New features
  * LUCENE-2400: ShingleFilter was changed to don't output all-filler shingles and 
    unigrams, and uses a more performant algorithm to build grams using a linked list
    of AttributeSource.cloneAttributes() instances and the new copyTo() method.
+   (Steven Rowe via Uwe Schindler)
 
 Build
 
