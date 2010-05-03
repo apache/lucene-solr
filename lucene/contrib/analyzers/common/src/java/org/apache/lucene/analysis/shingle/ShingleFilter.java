@@ -18,14 +18,16 @@ package org.apache.lucene.analysis.shingle;
  */
 
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.LinkedList;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.util.AttributeSource;
 
 
 /**
@@ -66,12 +68,12 @@ public final class ShingleFilter extends TokenFilter {
    */
   public static final String TOKEN_SEPARATOR = " ";
 
-
   /**
    * The sequence of input stream tokens (or filler tokens, if necessary)
    * that will be composed to form output shingles.
    */
-  private LinkedList<State> inputWindow = new LinkedList<State>();
+  private LinkedList<InputWindowToken> inputWindow
+    = new LinkedList<InputWindowToken>();
   
   /**
    * The number of input tokens in the next output token.  This is the "n" in
@@ -80,9 +82,9 @@ public final class ShingleFilter extends TokenFilter {
   private CircularSequence gramSize;
 
   /**
-   * Shingle text is composed here.
+   * Shingle and unigram text is composed here.
    */
-  private StringBuilder shingleBuilder = new StringBuilder();
+  private StringBuilder gramBuilder = new StringBuilder();
 
   /**
    * The token type attribute value to use - default is "shingle"
@@ -111,18 +113,31 @@ public final class ShingleFilter extends TokenFilter {
   private int minShingleSize;
 
   /**
-   * The remaining number of filler tokens inserted into the input stream
+   * The remaining number of filler tokens to be inserted into the input stream
    * from which shingles are composed, to handle position increments greater
    * than one.
    */
   private int numFillerTokensToInsert;
 
   /**
-   * The next input stream token.
+   * When the next input stream token has a position increment greater than
+   * one, it is stored in this field until sufficient filler tokens have been
+   * inserted to account for the position increment. 
    */
-  private State nextInputStreamToken;
+  private AttributeSource nextInputStreamToken;
+
+  /**
+   * Whether or not there is a next input stream token.
+   */
+  private boolean isNextInputStreamToken = false;
+
+  /**
+   * Whether at least one unigram or shingle has been output at the current 
+   * position.
+   */
+  private boolean isOutputHere = false;
   
-  private final TermAttribute termAtt;
+  private final CharTermAttribute termAtt;
   private final OffsetAttribute offsetAtt;
   private final PositionIncrementAttribute posIncrAtt;
   private final TypeAttribute typeAtt;
@@ -140,7 +155,7 @@ public final class ShingleFilter extends TokenFilter {
     super(input);
     setMaxShingleSize(maxShingleSize);
     setMinShingleSize(minShingleSize);
-    this.termAtt = addAttribute(TermAttribute.class);
+    this.termAtt = addAttribute(CharTermAttribute.class);
     this.offsetAtt = addAttribute(OffsetAttribute.class);
     this.posIncrAtt = addAttribute(PositionIncrementAttribute.class);
     this.typeAtt = addAttribute(TypeAttribute.class);
@@ -241,23 +256,49 @@ public final class ShingleFilter extends TokenFilter {
     this.tokenSeparator = null == tokenSeparator ? "" : tokenSeparator;
   }
 
-  /* (non-Javadoc)
-   * @see org.apache.lucene.analysis.TokenStream#next()
-   */
   @Override
   public final boolean incrementToken() throws IOException {
-    boolean tokenAvailable = false; 
+    boolean tokenAvailable = false;
+    int builtGramSize = 0;
     if (gramSize.atMinValue() || inputWindow.size() < gramSize.getValue()) {
       shiftInputWindow();
+      gramBuilder.setLength(0);
+    } else {
+      builtGramSize = gramSize.getPreviousValue();
     }
-    if ( ! inputWindow.isEmpty()) {
-      restoreState(inputWindow.getFirst());
-      if (1 == gramSize.getValue()) {
-        posIncrAtt.setPositionIncrement(1);
-        gramSize.advance();
-        tokenAvailable = true;
-      } else if (inputWindow.size() >= gramSize.getValue()) {
-        getNextShingle();
+    if (inputWindow.size() >= gramSize.getValue()) {
+      boolean isAllFiller = true;
+      InputWindowToken nextToken = null;
+      Iterator<InputWindowToken> iter = inputWindow.iterator();
+      for (int gramNum = 1 ;
+           iter.hasNext() && builtGramSize < gramSize.getValue() ;
+           ++gramNum) {
+        nextToken = iter.next();
+        if (builtGramSize < gramNum) {
+          if (builtGramSize > 0) {
+            gramBuilder.append(tokenSeparator);
+          }
+          gramBuilder.append(nextToken.termAtt.buffer(), 0, 
+                             nextToken.termAtt.length());
+          ++builtGramSize;
+        }
+        if (isAllFiller && nextToken.isFiller) {
+          if (gramNum == gramSize.getValue()) {
+            gramSize.advance();
+          }
+        } else { 
+          isAllFiller = false;
+        }
+      }
+      if ( ! isAllFiller && builtGramSize == gramSize.getValue()) {
+        inputWindow.getFirst().attSource.copyTo(this);
+        posIncrAtt.setPositionIncrement(isOutputHere ? 0 : 1);
+        termAtt.setEmpty().append(gramBuilder);
+        if (gramSize.getValue() > 1) {
+          typeAtt.setType(tokenType);
+        }
+        offsetAtt.setOffset(offsetAtt.startOffset(), nextToken.offsetAtt.endOffset());
+        isOutputHere = true;
         gramSize.advance();
         tokenAvailable = true;
       }
@@ -266,82 +307,68 @@ public final class ShingleFilter extends TokenFilter {
   }
 
   /**
-   * <p>Makes the next token a shingle of length {@link #gramSize}, 
-   * composed of tokens taken from {@link #inputWindow}.
-   * <p>Callers of this method must first insure that there are at least 
-   * <code>gramSize</code> tokens available in <code>inputWindow</code>.
-   */
-  private void getNextShingle() {
-    int startOffset = offsetAtt.startOffset();
-
-    int minTokNum = gramSize.getValue() - 1; // zero-based inputWindow position
-    if (gramSize.getValue() == minShingleSize) {
-      // Clear the shingle text buffer if this is the first shingle
-      // at the current position in the input stream.
-      shingleBuilder.setLength(0);
-      minTokNum = 0;
-    }
-    for (int tokNum = minTokNum ; tokNum < gramSize.getValue() ; ++tokNum) {
-      if (tokNum > 0) {
-        shingleBuilder.append(tokenSeparator);
-      }
-      restoreState(inputWindow.get(tokNum));
-      shingleBuilder.append(termAtt.termBuffer(), 0, termAtt.termLength());
-    }
-    char[] termBuffer = termAtt.termBuffer();
-    int termLength = shingleBuilder.length();
-    if (termBuffer.length < termLength) {
-      termBuffer = termAtt.resizeTermBuffer(termLength);
-    }
-    shingleBuilder.getChars(0, termLength, termBuffer, 0);
-    termAtt.setTermLength(termLength);
-    posIncrAtt.setPositionIncrement(gramSize.atMinValue() ? 1 : 0);
-    typeAtt.setType(tokenType);
-    offsetAtt.setOffset(startOffset, offsetAtt.endOffset());
-  }
-  
-  /**
    * <p>Get the next token from the input stream.
    * <p>If the next token has <code>positionIncrement > 1</code>,
    * <code>positionIncrement - 1</code> {@link #FILLER_TOKEN}s are
    * inserted first.
-   * @return false for end of stream; true otherwise
+   * @param target Where to put the new token; if null, a new instance is created.
+   * @return On success, the populated token; null otherwise
    * @throws IOException if the input stream has a problem
    */
-  private boolean getNextToken() throws IOException {
-    boolean success = false;
+  private InputWindowToken getNextToken(InputWindowToken target) 
+    throws IOException {
+    InputWindowToken newTarget = target;
     if (numFillerTokensToInsert > 0) {
-      insertFillerToken();
-      success = true;
-    } else if (null != nextInputStreamToken) {
-      restoreState(nextInputStreamToken);
-      nextInputStreamToken = null;
-      success = true;
-    } else if (input.incrementToken()) {
-      if (posIncrAtt.getPositionIncrement() > 1) {
-        numFillerTokensToInsert = posIncrAtt.getPositionIncrement() - 1;
-        insertFillerToken();
+      if (null == target) {
+        newTarget = new InputWindowToken(nextInputStreamToken.cloneAttributes());
+      } else {
+        nextInputStreamToken.copyTo(target.attSource);
       }
-      success = true;
-    }
-    return success;
-	}
-
-  /**
-   * Inserts a {@link #FILLER_TOKEN} and decrements
-   * {@link #numFillerTokensToInsert}.
-   */
-  private void insertFillerToken() {
-    if (null == nextInputStreamToken) {
-      nextInputStreamToken = captureState();
+      // A filler token occupies no space
+      newTarget.offsetAtt.setOffset(newTarget.offsetAtt.startOffset(), 
+                                    newTarget.offsetAtt.startOffset());
+      newTarget.termAtt.copyBuffer(FILLER_TOKEN, 0, FILLER_TOKEN.length);
+      newTarget.isFiller = true;
+      --numFillerTokensToInsert;
+    } else if (isNextInputStreamToken) {
+      if (null == target) {
+        newTarget = new InputWindowToken(nextInputStreamToken.cloneAttributes());
+      } else {
+        nextInputStreamToken.copyTo(target.attSource);
+      }
+      isNextInputStreamToken = false;
+      newTarget.isFiller = false;
+    } else if (input.incrementToken()) {
+      if (null == target) {
+        newTarget = new InputWindowToken(cloneAttributes());
+      } else {
+        this.copyTo(target.attSource);
+      }
+      if (posIncrAtt.getPositionIncrement() > 1) {
+        // Each output shingle must contain at least one input token, 
+        // so no more than (maxShingleSize - 1) filler tokens will be inserted.
+        numFillerTokensToInsert 
+          = Math.min(posIncrAtt.getPositionIncrement() - 1, maxShingleSize - 1);
+        // Save the current token as the next input stream token
+        if (null == nextInputStreamToken) {
+          nextInputStreamToken = cloneAttributes();
+        } else {
+          this.copyTo(nextInputStreamToken);
+        }
+        isNextInputStreamToken = true;
+        // A filler token occupies no space
+        newTarget.offsetAtt.setOffset(offsetAtt.startOffset(), offsetAtt.startOffset());
+        newTarget.termAtt.copyBuffer(FILLER_TOKEN, 0, FILLER_TOKEN.length);
+        newTarget.isFiller = true;
+        --numFillerTokensToInsert;
+      } else {
+        newTarget.isFiller = false;
+      }
     } else {
-      restoreState(nextInputStreamToken);
+      newTarget = null;
     }
-    --numFillerTokensToInsert;
-    // A filler token occupies no space
-    offsetAtt.setOffset(offsetAtt.startOffset(), offsetAtt.startOffset());
-    termAtt.setTermBuffer(FILLER_TOKEN, 0, FILLER_TOKEN.length);
-  }
+    return newTarget;
+	}
 
   /**
    * <p>Fills {@link #inputWindow} with input stream tokens, if available, 
@@ -351,16 +378,29 @@ public final class ShingleFilter extends TokenFilter {
    * @throws IOException if there's a problem getting the next token
    */
   private void shiftInputWindow() throws IOException {
+    InputWindowToken firstToken = null;
     if (inputWindow.size() > 0) {
-      inputWindow.removeFirst();
+      firstToken = inputWindow.removeFirst();
     }
-    while (getNextToken()) {
-      inputWindow.add(captureState());
-      if (inputWindow.size() == maxShingleSize) {
-        break;
+    while (inputWindow.size() < maxShingleSize) {
+      if (null != firstToken) {  // recycle the firstToken, if available
+        if (null != getNextToken(firstToken)) {
+          inputWindow.add(firstToken); // the firstToken becomes the last
+          firstToken = null;
+        } else {
+          break; // end of input stream
+        }
+      } else {
+        InputWindowToken nextToken = getNextToken(null);
+        if (null != nextToken) {
+          inputWindow.add(nextToken);
+        } else {
+          break; // end of input stream
+        }
       }
     }
     gramSize.reset();
+    isOutputHere = false;
   }
 
   @Override
@@ -369,6 +409,7 @@ public final class ShingleFilter extends TokenFilter {
     gramSize.reset();
     inputWindow.clear();
     numFillerTokensToInsert = 0;
+    isOutputHere = false;
   }
 
 
@@ -383,6 +424,7 @@ public final class ShingleFilter extends TokenFilter {
    */
   private class CircularSequence {
     private int value;
+    private int previousValue;
     private int minValue;
     
     public CircularSequence() {
@@ -405,10 +447,9 @@ public final class ShingleFilter extends TokenFilter {
      * <b>{ [ 1, ] {@link #minShingleSize} [ , ... , {@link #maxShingleSize} ] }</b>.
      * <p>1 is included in the circular sequence only if 
      * {@link #outputUnigrams} = true.
-     * 
-     * @return the next member in the circular sequence
      */
-    public int advance() {
+    public void advance() {
+      previousValue = value;
       if (value == 1) {
         value = minShingleSize;
       } else if (value == maxShingleSize) {
@@ -416,7 +457,6 @@ public final class ShingleFilter extends TokenFilter {
       } else {
         ++value;
       }
-      return value;
     }
 
     /**
@@ -428,7 +468,7 @@ public final class ShingleFilter extends TokenFilter {
      * {@link #outputUnigrams} = true.
      */
     public void reset() {
-      value = minValue;
+      previousValue = value = minValue;
     }
 
     /**
@@ -442,6 +482,26 @@ public final class ShingleFilter extends TokenFilter {
      */
     public boolean atMinValue() {
       return value == minValue;
+    }
+
+    /**
+     * @return the value this instance had before the last advance() call
+     */
+    public int getPreviousValue() {
+      return previousValue;
+    }
+  }
+    
+  private class InputWindowToken {
+    final AttributeSource attSource;
+    final CharTermAttribute termAtt;
+    final OffsetAttribute offsetAtt;
+    boolean isFiller = false;
+      
+    public InputWindowToken(AttributeSource attSource) {
+      this.attSource = attSource;
+      this.termAtt = attSource.getAttribute(CharTermAttribute.class);
+      this.offsetAtt = attSource.getAttribute(OffsetAttribute.class);
     }
   }
 }

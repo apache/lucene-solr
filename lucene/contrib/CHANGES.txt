@@ -145,6 +145,10 @@ New features
    multiple languages.  The default configuration includes special support for
    Thai, Lao, Myanmar, and Khmer.  (Robert Muir, Uwe Schindler)
 
+ * LUCENE-2400: ShingleFilter was changed to don't output all-filler shingles and 
+   unigrams, and uses a more performant algorithm to build grams using a linked list
+   of AttributeSource.cloneAttributes() instances and the new copyTo() method.
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
