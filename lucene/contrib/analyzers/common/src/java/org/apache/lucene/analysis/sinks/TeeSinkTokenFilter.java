@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.sinks;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,6 +23,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
 
@@ -124,7 +126,7 @@ public final class TeeSinkTokenFilter extends TokenFilter {
    * This instance is exhausted after this, but all sinks are instant available.
    */
   public void consumeAllTokens() throws IOException {
-    while (incrementToken());
+    while (incrementToken()) {}
   }
   
   @Override

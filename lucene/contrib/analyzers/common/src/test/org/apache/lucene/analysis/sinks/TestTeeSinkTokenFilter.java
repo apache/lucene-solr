@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.sinks;
 
 /**
  * Copyright 2004 The Apache Software Foundation
@@ -16,10 +16,26 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CachingTokenFilter;
+import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.TermPositionVector;
+import org.apache.lucene.index.TermVectorOffsetInfo;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.English;
 import java.io.IOException;
@@ -72,6 +88,33 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
     }
   };
 
+  // LUCENE-1448
+  // TODO: instead of testing it this way, we can test 
+  // with BaseTokenStreamTestCase now...
+  public void testEndOffsetPositionWithTeeSinkTokenFilter() throws Exception {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    Analyzer analyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    Document doc = new Document();
+    TeeSinkTokenFilter tee = new TeeSinkTokenFilter(analyzer.tokenStream("field", new StringReader("abcd   ")));
+    TokenStream sink = tee.newSinkTokenStream();
+    Field f1 = new Field("field", tee, Field.TermVector.WITH_POSITIONS_OFFSETS);
+    Field f2 = new Field("field", sink, Field.TermVector.WITH_POSITIONS_OFFSETS);
+    doc.add(f1);
+    doc.add(f2);
+    w.addDocument(doc);
+    w.close();
+
+    IndexReader r = IndexReader.open(dir, true);
+    TermVectorOffsetInfo[] termOffsets = ((TermPositionVector) r.getTermFreqVector(0, "field")).getOffsets(0);
+    assertEquals(2, termOffsets.length);
+    assertEquals(0, termOffsets[0].getStartOffset());
+    assertEquals(4, termOffsets[0].getEndOffset());
+    assertEquals(8, termOffsets[1].getStartOffset());
+    assertEquals(12, termOffsets[1].getEndOffset());
+    r.close();
+    dir.close();
+  }
   
   public void testGeneral() throws IOException {
     final TeeSinkTokenFilter source = new TeeSinkTokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(buffer1.toString())));

@@ -10,6 +10,7 @@ Changes in backwards compatibility policy
   - o.a.l.analysis.ISOLatin1AccentFilter -> o.a.l.analysis.miscellaneous.ISOLatin1AccentFilter
   - o.a.l.analysis.LengthFilter -> o.a.l.analysis.miscellaneous.LengthFilter
   - o.a.l.analysis.PerFieldAnalyzerWrapper -> o.a.l.analysis.miscellaneous.PerFieldAnalyzerWrapper
+  - o.a.l.analysis.TeeSinkTokenFilter -> o.a.l.analysis.sinks.TeeSinkTokenFilter
   ... (in progress)
 
 * LUCENE-1458, LUCENE-2111, LUCENE-2354: Changes from flexible indexing:

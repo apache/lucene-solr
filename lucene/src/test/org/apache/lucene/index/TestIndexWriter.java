@@ -39,7 +39,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
-import org.apache.lucene.analysis.TeeSinkTokenFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -4169,32 +4168,6 @@ public class TestIndexWriter extends LuceneTestCase {
     Field f = new Field("field", stream, Field.TermVector.WITH_POSITIONS_OFFSETS);
     doc.add(f);
     doc.add(f);
-    w.addDocument(doc);
-    w.close();
-
-    IndexReader r = IndexReader.open(dir, true);
-    TermVectorOffsetInfo[] termOffsets = ((TermPositionVector) r.getTermFreqVector(0, "field")).getOffsets(0);
-    assertEquals(2, termOffsets.length);
-    assertEquals(0, termOffsets[0].getStartOffset());
-    assertEquals(4, termOffsets[0].getEndOffset());
-    assertEquals(8, termOffsets[1].getStartOffset());
-    assertEquals(12, termOffsets[1].getEndOffset());
-    r.close();
-    dir.close();
-  }
-
-  // LUCENE-1448
-  public void testEndOffsetPositionWithTeeSinkTokenFilter() throws Exception {
-    MockRAMDirectory dir = new MockRAMDirectory();
-    Analyzer analyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
-    Document doc = new Document();
-    TeeSinkTokenFilter tee = new TeeSinkTokenFilter(analyzer.tokenStream("field", new StringReader("abcd   ")));
-    TokenStream sink = tee.newSinkTokenStream();
-    Field f1 = new Field("field", tee, Field.TermVector.WITH_POSITIONS_OFFSETS);
-    Field f2 = new Field("field", sink, Field.TermVector.WITH_POSITIONS_OFFSETS);
-    doc.add(f1);
-    doc.add(f2);
     w.addDocument(doc);
     w.close();
 

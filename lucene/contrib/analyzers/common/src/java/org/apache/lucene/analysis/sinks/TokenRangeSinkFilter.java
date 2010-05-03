@@ -19,14 +19,13 @@ package org.apache.lucene.analysis.sinks;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.TeeSinkTokenFilter.SinkFilter;
 import org.apache.lucene.util.AttributeSource;
 
 /**
  * Counts the tokens as they go by and saves to the internal list those between the range of lower and upper, exclusive of upper
  *
  **/
-public class TokenRangeSinkFilter extends SinkFilter {
+public class TokenRangeSinkFilter extends TeeSinkTokenFilter.SinkFilter {
   private int lower;
   private int upper;
   private int count;

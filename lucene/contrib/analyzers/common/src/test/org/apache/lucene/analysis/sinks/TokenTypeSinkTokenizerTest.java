@@ -20,11 +20,9 @@ import java.io.IOException;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.TeeSinkTokenFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.TeeSinkTokenFilter.SinkTokenStream;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
@@ -39,7 +37,7 @@ public class TokenTypeSinkTokenizerTest extends BaseTokenStreamTestCase {
     String test = "The quick red fox jumped over the lazy brown dogs";
 
     TeeSinkTokenFilter ttf = new TeeSinkTokenFilter(new WordTokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(test))));
-    SinkTokenStream sink = ttf.newSinkTokenStream(sinkFilter);
+    TeeSinkTokenFilter.SinkTokenStream sink = ttf.newSinkTokenStream(sinkFilter);
     
     boolean seenDogs = false;
 

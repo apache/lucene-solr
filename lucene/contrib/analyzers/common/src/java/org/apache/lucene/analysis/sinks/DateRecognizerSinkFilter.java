@@ -21,7 +21,6 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.util.Date;
 
-import org.apache.lucene.analysis.TeeSinkTokenFilter.SinkFilter;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.AttributeSource;
 
@@ -31,7 +30,7 @@ import org.apache.lucene.util.AttributeSource;
  * <p/> 
  *
  **/
-public class DateRecognizerSinkFilter extends SinkFilter {
+public class DateRecognizerSinkFilter extends TeeSinkTokenFilter.SinkFilter {
   public static final String DATE_TYPE = "date";
 
   protected DateFormat dateFormat;
