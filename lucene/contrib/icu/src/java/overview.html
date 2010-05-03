@@ -30,6 +30,8 @@ performance, keeping current with the Unicode Standard, and providing richer
 APIs. This module exposes the following functionality:
 </p>
 <ul>
+  <li><a href="#segmentation">Text Segmentation</a>: Tokenizes text based on 
+  properties and rules defined in Unicode.</li>
   <li><a href="#collation">Collation</a>: Compare strings according to the 
   conventions and standards of a particular language, region or country.</li>
   <li><a href="#normalization">Normalization</a>: Converts text to a unique,
@@ -41,6 +43,35 @@ APIs. This module exposes the following functionality:
   <li><a href="#transform">Text Transformation</a>: Transforms Unicode text in
   a context-sensitive fashion: e.g. mapping Traditional to Simplified Chinese</li>
 </ul>
+<hr/>
+<h1><a name="segmentation">Text Segmentation</a></h1>
+<p>
+Text Segmentation (Tokenization) divides document and query text into index terms
+(typically words). Unicode provides special properties and rules so that this can
+be done in a manner that works well with most languages.
+</p>
+<p>
+Text Segmentation implements the word segmentation specified in
+<a href="http://unicode.org/reports/tr29/">Unicode Text Segmentation</a>.
+Additionally the algorithm can be tailored based on writing system, for example
+text in the Thai script is automatically delegated to a dictionary-based segmentation 
+algorithm.
+</p>
+<h2>Use Cases</h2>
+<ul>
+  <li>
+    As a more thorough replacement for StandardTokenizer that works well for
+    most languages. 
+  </li>
+</ul>
+<h2>Example Usages</h2>
+<h3>Tokenizing multilanguage text</h3>
+<code><pre>
+  /**
+   * This tokenizer will work well in general for most languages.
+   */
+  Tokenizer tokenizer = new ICUTokenizer(reader);
+</pre></code>
 <hr/>
 <h1><a name="collation">Collation</a></h1>
 <p>

@@ -140,6 +140,11 @@ New features
  * LUCENE-2298: Add analyzers/stempel, an algorithmic stemmer with support for
    the Polish language.  (Andrzej Bialecki via Robert Muir)
 
+ * LUCENE-2414: Add ICUTokenizer, a tailorable tokenizer that implements Unicode
+   Text Segmentation. This tokenizer is useful for documents or collections with
+   multiple languages.  The default configuration includes special support for
+   Thai, Lao, Myanmar, and Khmer.  (Robert Muir, Uwe Schindler)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 

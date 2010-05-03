@@ -43,7 +43,39 @@
   <target name="gennorm2">
   	<echo>Warning: only works on a big-endian platform!</echo>
     <exec executable="gennorm2" failonerror="true">
-      <arg line="-v -s ${gennorm2.src.dir} ${gennorm2.src.files} -o ${gennorm2.dst}"/>
+      <arg value="-v"/>
+      <arg value="-s"/>
+      <arg value="${gennorm2.src.dir}"/>
+      <arg value="${gennorm2.src.files}"/>
+      <arg value="-o"/>
+      <arg value="${gennorm2.dst}"/>
     </exec>
+  </target>
+  
+  <property name="rbbi.src.dir" location="src/data/uax29"/>
+  <property name="rbbi.dst.dir" location="src/resources/org/apache/lucene/analysis/icu/segmentation"/>
+		
+  <target name="genrbbi" depends="compile-tools">
+    <mkdir dir="${rbbi.dst.dir}"/>
+    <java
+      classname="org.apache.lucene.analysis.icu.RBBIRuleCompiler"
+      dir="."
+      fork="true"
+      failonerror="true">
+      <classpath>
+      	<path refid="additional.dependencies"/>
+      	<pathelement location="${build.dir}/classes/tools"/>
+      </classpath>
+      <arg value="${rbbi.src.dir}"/>
+      <arg value="${rbbi.dst.dir}"/>
+    </java>
+  </target>
+			
+  <target name="compile-tools">
+    <compile
+      srcdir="src/tools/java"
+      destdir="${build.dir}/classes/tools">
+      <classpath refid="classpath"/>
+    </compile>
   </target>
 </project>

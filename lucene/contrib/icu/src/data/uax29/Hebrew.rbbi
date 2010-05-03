@@ -1,0 +1,61 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+#
+# This is an example of rule tailoring for Hebrew.
+# In this example the single-quote is added to the Extend category
+# The double-quote is added to the MidLetter category.
+#
+!!chain;
+$CR           = [\p{Word_Break = CR}];
+$LF           = [\p{Word_Break = LF}];
+$Newline      = [\p{Word_Break = Newline}];
+$Extend       = [\p{Word_Break = Extend}\u0027];
+$Format       = [\p{Word_Break = Format}];
+$ALetter      = [\p{Word_Break = ALetter}];
+$MidNumLet    = [\p{Word_Break = MidNumLet}];
+$MidLetter    = [\p{Word_Break = MidLetter}\u0022];
+$MidNum       = [\p{Word_Break = MidNum}];
+$Numeric      = [\p{Word_Break = Numeric}];
+$ExtendNumLet = [\p{Word_Break = ExtendNumLet}];
+$dictionary   = [:LineBreak = Complex_Context:];
+$Control        = [\p{Grapheme_Cluster_Break = Control}]; 
+$ALetterPlus  = [$ALetter [$dictionary-$Extend-$Control]]; 
+                                                              
+$ALetterEx      = $ALetterPlus  ($Extend |  $Format)*;
+$MidNumLetEx    = $MidNumLet    ($Extend |  $Format)*;
+$MidLetterEx    = $MidLetter    ($Extend |  $Format)*;
+$MidNumEx       = $MidNum       ($Extend |  $Format)*;
+$NumericEx      = $Numeric      ($Extend |  $Format)*;
+$ExtendNumLetEx = $ExtendNumLet ($Extend |  $Format)*;
+
+!!forward;
+
+$CR $LF;
+[^$CR $LF $Newline]? ($Extend |  $Format)+;
+$NumericEx {100};
+$ALetterEx {200};    
+$ALetterEx $ALetterEx {200};
+$ALetterEx ($MidLetterEx | $MidNumLetEx) $ALetterEx {200};
+$NumericEx $NumericEx {100};
+$ALetterEx $NumericEx {200};
+$NumericEx $ALetterEx {200};
+$NumericEx ($MidNumEx | $MidNumLetEx) $NumericEx {100};
+$ALetterEx      $ExtendNumLetEx {200};    
+$NumericEx      $ExtendNumLetEx {100};      
+$ExtendNumLetEx $ExtendNumLetEx {200};    
+$ExtendNumLetEx $ALetterEx  {200};    
+$ExtendNumLetEx $NumericEx  {100};    

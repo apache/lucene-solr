@@ -1,0 +1,112 @@
+package org.apache.lucene.analysis.icu.segmentation;
+
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import java.io.IOException;
+import java.io.InputStream;
+
+import com.ibm.icu.lang.UScript;
+import com.ibm.icu.text.BreakIterator;
+import com.ibm.icu.text.RuleBasedBreakIterator;
+import com.ibm.icu.util.ULocale;
+
+/**
+ * Default {@link ICUTokenizerConfig} that is generally applicable
+ * to many languages.
+ * <p>
+ * Generally tokenizes Unicode text according to UAX#29 
+ * ({@link BreakIterator#getWordInstance(ULocale) BreakIterator.getWordInstance(ULocale.ROOT)}), 
+ * but with the following tailorings:
+ * <ul>
+ *   <li>Thai text is broken into words with a 
+ *   {@link com.ibm.icu.text.DictionaryBasedBreakIterator}
+ *   <li>Lao, Myanmar, and Khmer text is broken into syllables
+ *   based on custom BreakIterator rules.
+ *   <li>Hebrew text has custom tailorings to handle special cases
+ *   involving punctuation.
+ * </ul>
+ * @lucene.experimental
+ */
+public class DefaultICUTokenizerConfig extends ICUTokenizerConfig {
+  /** Token type for words containing ideographic characters */
+  public static final String WORD_IDEO = "<IDEO>";
+  /** Token type for words containing Japanese kana */
+  public static final String WORD_KANA = "<KANA>";
+  /** Token type for words that contain letters */
+  public static final String WORD_LETTER = "<WORD>";
+  /** Token type for words that appear to be numbers */
+  public static final String WORD_NUMBER = "<NUM>";
+  
+  /*
+   * the default breakiterators in use. these can be expensive to
+   * instantiate, cheap to clone.
+   */  
+  private static final BreakIterator rootBreakIterator = 
+    BreakIterator.getWordInstance(ULocale.ROOT);
+  private static final BreakIterator thaiBreakIterator = 
+    BreakIterator.getWordInstance(new ULocale("th_TH"));
+  private static final BreakIterator hebrewBreakIterator = 
+    readBreakIterator("Hebrew.brk");
+  private static final BreakIterator khmerBreakIterator = 
+    readBreakIterator("Khmer.brk");
+  private static final BreakIterator laoBreakIterator = 
+    new LaoBreakIterator(readBreakIterator("Lao.brk"));
+  private static final BreakIterator myanmarBreakIterator = 
+    readBreakIterator("Myanmar.brk");
+  
+  @Override
+  public BreakIterator getBreakIterator(int script) {
+    switch(script) {
+      case UScript.THAI: return (BreakIterator)thaiBreakIterator.clone();
+      case UScript.HEBREW: return (BreakIterator)hebrewBreakIterator.clone();
+      case UScript.KHMER: return (BreakIterator)khmerBreakIterator.clone();
+      case UScript.LAO: return (BreakIterator)laoBreakIterator.clone();
+      case UScript.MYANMAR: return (BreakIterator)myanmarBreakIterator.clone();
+      default: return (BreakIterator)rootBreakIterator.clone();
+    }
+  }
+
+  @Override
+  public String getType(int script, int ruleStatus) {
+    switch (ruleStatus) {
+      case RuleBasedBreakIterator.WORD_IDEO:
+        return WORD_IDEO;
+      case RuleBasedBreakIterator.WORD_KANA:
+        return WORD_KANA;
+      case RuleBasedBreakIterator.WORD_LETTER:
+        return WORD_LETTER;
+      case RuleBasedBreakIterator.WORD_NUMBER:
+        return WORD_NUMBER;
+      default: /* some other custom code */
+        return "<OTHER>";
+    }
+  }
+
+  private static RuleBasedBreakIterator readBreakIterator(String filename) {
+    InputStream is = 
+      DefaultICUTokenizerConfig.class.getResourceAsStream(filename);
+    try {
+      RuleBasedBreakIterator bi = 
+        RuleBasedBreakIterator.getInstanceFromCompiledRules(is);
+      is.close();
+      return bi;
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+}
