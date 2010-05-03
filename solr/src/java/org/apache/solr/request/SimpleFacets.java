@@ -574,7 +574,8 @@ public class SimpleFacets {
               int nDocs = docsEnum.read();
               if (nDocs == 0) break;
               int[] docArr = bulk.docs.ints;  // this might be movable outside the loop, but perhaps not worth the risk.
-              for (int i=0; i<nDocs; i++) {
+              int end = bulk.docs.offset + nDocs;
+              for (int i=bulk.docs.offset; i<end; i++) {
                 if (docs.exists(docArr[i])) c++;
               }
             }
