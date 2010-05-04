@@ -141,6 +141,10 @@ Changes in runtime behavior
 * LUCENE-2179: CharArraySet.clear() is now functional.
   (Robert Muir, Uwe Schindler)
 
+* LUCENE-2421: NativeFSLockFactory does not throw LockReleaseFailedException if 
+  it cannot delete the lock file, since obtaining the lock does not fail if the 
+  file is there. (Shai Erera)
+
 API Changes
 
 * LUCENE-2076: Rename FSDirectory.getFile -> getDirectory.  (George
