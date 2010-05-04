@@ -127,7 +127,7 @@
 
   <target name="compile-solrj"
           description="Compile the java client."
-          depends="init-forrest-entities">
+          depends="init-forrest-entities, compile-lucene">
 
     <solr-javac destdir="${dest}/solrj"
                 classpathref="compile.classpath">
@@ -150,7 +150,7 @@
   <!-- Compile the project. -->
   <target name="compile"
           description="Compile the source code."
-          depends="compile-lucene, compile-solrj,init-forrest-entities">
+          depends="compile-solrj,init-forrest-entities">
 
     <solr-javac destdir="${dest}/solr"
                 classpathref="compile.classpath.solrj">
