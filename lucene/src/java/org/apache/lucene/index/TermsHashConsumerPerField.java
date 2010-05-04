@@ -34,8 +34,6 @@ abstract class TermsHashConsumerPerField {
   abstract void newTerm(int termID) throws IOException;
   abstract void addTerm(int termID) throws IOException;
   abstract int getStreamCount();
-  
-  abstract ParallelPostingsArray createPostingsArray(int size);
-  abstract int bytesPerPosting();
 
+  abstract ParallelPostingsArray createPostingsArray(int size);
 }

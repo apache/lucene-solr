@@ -275,23 +275,25 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     int[] lastOffsets;                                 // Last offset we saw
     int[] lastPositions;                               // Last position where this term occurred
     
+    ParallelPostingsArray newInstance(int size) {
+      return new TermVectorsPostingsArray(size);
+    }
+
     @Override
-    ParallelPostingsArray resize(int newSize) {
-      TermVectorsPostingsArray newArray = new TermVectorsPostingsArray(newSize);
-      copy(this, newArray);
-      return newArray;
+    void copyTo(ParallelPostingsArray toArray, int numToCopy) {
+      assert toArray instanceof TermVectorsPostingsArray;
+      TermVectorsPostingsArray to = (TermVectorsPostingsArray) toArray;
+
+      super.copyTo(toArray, numToCopy);
+
+      System.arraycopy(freqs, 0, to.freqs, 0, size);
+      System.arraycopy(lastOffsets, 0, to.lastOffsets, 0, size);
+      System.arraycopy(lastPositions, 0, to.lastPositions, 0, size);
     }
-    
-    void copy(TermVectorsPostingsArray fromArray, TermVectorsPostingsArray toArray) {
-      super.copy(fromArray, toArray);
-      System.arraycopy(fromArray.freqs, 0, toArray.freqs, 0, fromArray.freqs.length);
-      System.arraycopy(fromArray.lastOffsets, 0, toArray.lastOffsets, 0, fromArray.lastOffsets.length);
-      System.arraycopy(fromArray.lastPositions, 0, toArray.lastPositions, 0, fromArray.lastPositions.length);
+
+    @Override
+    int bytesPerPosting() {
+      return super.bytesPerPosting() + 3 * DocumentsWriter.INT_NUM_BYTE;
     }
-  }
-  
-  @Override
-  int bytesPerPosting() {
-    return ParallelPostingsArray.BYTES_PER_POSTING + 3 * DocumentsWriter.INT_NUM_BYTE;
   }
 }
