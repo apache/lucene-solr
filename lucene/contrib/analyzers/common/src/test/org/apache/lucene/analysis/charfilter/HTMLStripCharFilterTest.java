@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.charfilter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,6 +21,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashSet;
@@ -69,8 +71,8 @@ public class HTMLStripCharFilterTest extends TestCase {
 
   //Some sanity checks, but not a full-fledged check
   public void testHTML() throws Exception {
-
-    HTMLStripCharFilter reader = new HTMLStripCharFilter(CharReader.get(new FileReader(new File("htmlStripReaderTest.html"))));
+    InputStream stream = getClass().getResourceAsStream("htmlStripReaderTest.html");
+    HTMLStripCharFilter reader = new HTMLStripCharFilter(CharReader.get(new InputStreamReader(stream, "UTF-8")));
     StringBuilder builder = new StringBuilder();
     int ch = -1;
     while ((ch = reader.read()) != -1){

@@ -159,6 +159,8 @@ New features
    New features from Solr now available to Lucene users include:
    - o.a.l.analysis.commongrams: Constructs n-grams for frequently occurring terms
      and phrases. 
+   - o.a.l.analysis.charfilter.HTMLStripCharFilter: CharFilter that strips HTML 
+     constructs.
    (... in progress)
 
 Build

@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.charfilter;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -30,8 +30,6 @@ import org.apache.lucene.analysis.CharStream;
 
 /**
  * A CharFilter that wraps another Reader and attempts to strip out HTML constructs.
- * 
- * @version $Id$
  */
 public class HTMLStripCharFilter extends BaseCharFilter {
   private int readAheadLimit = DEFAULT_READ_AHEAD;

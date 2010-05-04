@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
  */
 
 import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.charfilter.HTMLStripCharFilter;
 
 public class HTMLStripCharFilterFactory extends BaseCharFilterFactory {
 
