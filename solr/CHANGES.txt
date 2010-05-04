@@ -167,6 +167,9 @@ Optimizations
   the "threads" local param on the facet.field param.  This algorithm will
   only be faster in the presence of rapid index changes.  (yonik)
 
+* SOLR-1904: When facet.enum.cache.minDf > 0 and the base doc set is a
+  SortedIntSet, convert to HashDocSet for better performance. (yonik)
+
 Bug Fixes
 ----------------------
 

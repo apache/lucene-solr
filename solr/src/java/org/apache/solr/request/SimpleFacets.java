@@ -493,6 +493,14 @@ public class SimpleFacets {
     // Minimum term docFreq in order to use the filterCache for that term.
     int minDfFilterCache = params.getFieldInt(field, FacetParams.FACET_ENUM_CACHE_MINDF, 0);
 
+    // make sure we have a set that is fast for random access, if we will use it for that
+    DocSet fastForRandomSet = docs;
+    if (minDfFilterCache>0 && docs instanceof SortedIntDocSet) {
+      SortedIntDocSet sset = (SortedIntDocSet)docs;
+      fastForRandomSet = new HashDocSet(sset.getDocs(), 0, sset.size());
+    }
+
+
     IndexSchema schema = searcher.getSchema();
     IndexReader r = searcher.getReader();
     FieldType ft = schema.getFieldType(field);
@@ -576,7 +584,7 @@ public class SimpleFacets {
               int[] docArr = bulk.docs.ints;  // this might be movable outside the loop, but perhaps not worth the risk.
               int end = bulk.docs.offset + nDocs;
               for (int i=bulk.docs.offset; i<end; i++) {
-                if (docs.exists(docArr[i])) c++;
+                if (fastForRandomSet.exists(docArr[i])) c++;
               }
             }
           }
