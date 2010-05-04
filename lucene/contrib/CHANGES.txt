@@ -4,6 +4,81 @@ Lucene contrib change Log
 
 Changes in backwards compatibility policy
 
+   
+ * LUCENE-2323: Moved contrib/wikipedia functionality into contrib/analyzers.
+   Additionally the package was changed from org.apache.lucene.wikipedia.analysis
+   to org.apache.lucene.analysis.wikipedia.  (Robert Muir)
+
+ * LUCENE-2413: Consolidated all analyzers into contrib/analyzers. 
+   - contrib/analyzers/smartcn now depends on contrib/analyzers/common
+   - The "AnalyzerUtil" in wordnet was removed. 
+   ... (in progress)
+
+Bug fixes
+
+ * LUCENE-2404: Fix bugs with position increment and empty tokens in ThaiWordFilter.
+   For matchVersion >= 3.1 the filter also no longer lowercases. ThaiAnalyzer
+
+API Changes
+
+ * LUCENE-2413: Deprecated PatternAnalyzer in contrib/analyzers, in favor of the 
+   pattern package (CharFilter, Tokenizer, TokenFilter).  (Robert Muir)
+   
+New features
+
+ * LUCENE-2399: Add ICUNormalizer2Filter, which normalizes tokens with ICU's
+   Normalizer2. This allows for efficient combinations of normalization and custom 
+   mappings in addition to standard normalization, and normalization combined
+   with unicode case folding.  (Robert Muir)
+
+ * LUCENE-1343: Add ICUFoldingFilter, a replacement for ASCIIFoldingFilter that
+   does a more thorough job of normalizing unicode text for search.
+   (Robert Haschart, Robert Muir)
+
+ * LUCENE-2409: Add ICUTransformFilter, which transforms text in a context
+   sensitive way, either from ICU built-in rules (such as Traditional-Simplified),
+   or from rules you write yourself.  (Robert Muir)
+
+ * LUCENE-2298: Add analyzers/stempel, an algorithmic stemmer with support for
+   the Polish language.  (Andrzej Bialecki via Robert Muir)
+
+ * LUCENE-2414: Add ICUTokenizer, a tailorable tokenizer that implements Unicode
+   Text Segmentation. This tokenizer is useful for documents or collections with
+   multiple languages.  The default configuration includes special support for
+   Thai, Lao, Myanmar, and Khmer.  (Robert Muir, Uwe Schindler)
+
+ * LUCENE-2413: Consolidated Solr analysis components into contrib/analyzers. 
+   New features from Solr now available to Lucene users include:
+   - o.a.l.analysis.commongrams: Constructs n-grams for frequently occurring terms
+     and phrases. 
+   - o.a.l.analysis.charfilter.HTMLStripCharFilter: CharFilter that strips HTML 
+     constructs.
+   - o.a.l.analysis.miscellaneous.WordDelimiterFilter: TokenFilter that splits words 
+     into subwords and performs optional transformations on subword groups.
+   - o.a.l.analysis.miscellaneous.RemoveDuplicatesTokenFilter: TokenFilter which 
+     filters out Tokens at the same position and Term text as the previous token.
+   - o.a.l.analysis.pattern: Package for pattern-based analysis, containing a 
+     CharFilter, Tokenizer, and Tokenfilter for transforming text with regexes.
+   (... in progress)
+
+Build
+
+ * LUCENE-2399: Upgrade contrib/icu's ICU jar file to ICU 4.4.  (Robert Muir)
+
+Optimizations
+
+* LUCENE-2404: Improve performance of ThaiWordFilter by using a char[]-backed
+   CharacterIterator (currently from javax.swing).  (Uwe Schindler, Robert Muir)
+
+Other
+
+ * LUCENE-2415: Use reflection instead of a shim class to access Jakarta
+   Regex prefix.  (Uwe Schindler)
+
+======================= Lucene 3.x (not yet released) =======================
+
+Changes in backwards compatibility policy
+
  * LUCENE-2100: All Analyzers in Lucene-contrib have been marked as final.
    Analyzers should be only act as a composition of TokenStreams, users should
    compose their own analyzers instead of subclassing existing ones.
@@ -19,15 +94,6 @@ Changes in backwards compatibility policy
  * LUCENE-2226: Moved contrib/snowball functionality into contrib/analyzers.
    Be sure to remove any old obselete lucene-snowball jar files from your
    classpath!  (Robert Muir)
-   
- * LUCENE-2323: Moved contrib/wikipedia functionality into contrib/analyzers.
-   Additionally the package was changed from org.apache.lucene.wikipedia.analysis
-   to org.apache.lucene.analysis.wikipedia.  (Robert Muir)
-
- * LUCENE-2413: Consolidated all analyzers into contrib/analyzers. 
-   - contrib/analyzers/smartcn now depends on contrib/analyzers/common
-   - The "AnalyzerUtil" in wordnet was removed. 
-   ... (in progress)
     
 Changes in runtime behavior
 
@@ -72,10 +138,6 @@ Bug fixes
 		
  * LUCENE-2359: Fix bug in CartesianPolyFilterBuilder related to handling of behavior around
 		the 180th meridian (Grant Ingersoll)
-
- * LUCENE-2404: Fix bugs with position increment and empty tokens in ThaiWordFilter.
-   For matchVersion >= 3.1 the filter also no longer lowercases. ThaiAnalyzer
-   will use a separate LowerCaseFilter instead. (Uwe Schindler, Robert Muir)
    
 API Changes
 
@@ -92,11 +154,7 @@ API Changes
    stemming. Add Turkish and Romanian stopwords lists to support this.
    (Robert Muir, Uwe Schindler, Simon Willnauer)
    
- * LUCENE-2413: Deprecated PatternAnalyzer in contrib/analyzers, in favor of the 
-   pattern package (CharFilter, Tokenizer, TokenFilter).  (Robert Muir)
-   
 New features
-
  * LUCENE-2306: Add NumericRangeFilter and NumericRangeQuery support to XMLQueryParser.
    (Jingkei Ly, via Mark Harwood)
 
@@ -132,45 +190,9 @@ New features
    the ability to override any stemmer with a custom dictionary map.
    (Robert Muir, Uwe Schindler, Simon Willnauer)
 
- * LUCENE-2399: Add ICUNormalizer2Filter, which normalizes tokens with ICU's
-   Normalizer2. This allows for efficient combinations of normalization and custom 
-   mappings in addition to standard normalization, and normalization combined
-   with unicode case folding.  (Robert Muir)
-
- * LUCENE-1343: Add ICUFoldingFilter, a replacement for ASCIIFoldingFilter that
-   does a more thorough job of normalizing unicode text for search.
-   (Robert Haschart, Robert Muir)
-
- * LUCENE-2409: Add ICUTransformFilter, which transforms text in a context
-   sensitive way, either from ICU built-in rules (such as Traditional-Simplified),
-   or from rules you write yourself.  (Robert Muir)
-
- * LUCENE-2298: Add analyzers/stempel, an algorithmic stemmer with support for
-   the Polish language.  (Andrzej Bialecki via Robert Muir)
-
- * LUCENE-2414: Add ICUTokenizer, a tailorable tokenizer that implements Unicode
-   Text Segmentation. This tokenizer is useful for documents or collections with
-   multiple languages.  The default configuration includes special support for
-   Thai, Lao, Myanmar, and Khmer.  (Robert Muir, Uwe Schindler)
-
  * LUCENE-2400: ShingleFilter was changed to don't output all-filler shingles and 
    unigrams, and uses a more performant algorithm to build grams using a linked list
    of AttributeSource.cloneAttributes() instances and the new copyTo() method.
-   (Steven Rowe via Uwe Schindler)
-
- * LUCENE-2413: Consolidated Solr analysis components into contrib/analyzers. 
-   New features from Solr now available to Lucene users include:
-   - o.a.l.analysis.commongrams: Constructs n-grams for frequently occurring terms
-     and phrases. 
-   - o.a.l.analysis.charfilter.HTMLStripCharFilter: CharFilter that strips HTML 
-     constructs.
-   - o.a.l.analysis.miscellaneous.WordDelimiterFilter: TokenFilter that splits words 
-     into subwords and performs optional transformations on subword groups.
-   - o.a.l.analysis.miscellaneous.RemoveDuplicatesTokenFilter: TokenFilter which 
-     filters out Tokens at the same position and Term text as the previous token.
-   - o.a.l.analysis.pattern: Package for pattern-based analysis, containing a 
-     CharFilter, Tokenizer, and Tokenfilter for transforming text with regexes.
-   (... in progress)
 
 Build
 
@@ -179,17 +201,13 @@ Build
    (Steven Rowe, Robert Muir)
 
  * LUCENE-2323: Moved contrib/regex into contrib/queries. Moved the
-   queryparsers under contrib/misc and contrib/surround into contrib/queryparser. 
-   Moved contrib/fast-vector-highlighter into contrib/highlighter. 
-   Moved ChainedFilter from contrib/misc to contrib/queries. contrib/spatial now
-   depends on contrib/queries instead of contrib/misc.  (Robert Muir)
+   queryparsers under contrib/misc into contrib/queryparser. Moved
+   contrib/fast-vector-highlighter into contrib/highlighter.  (Robert Muir)
    
  * LUCENE-2333: Fix failures during contrib builds, when classes in
    core were changed without ant clean. This fix also optimizes the
    dependency management between contribs by a new ANT macro.
    (Uwe Schindler, Shai Erera)
-
- * LUCENE-2399: Upgrade contrib/icu's ICU jar file to ICU 4.4.  (Robert Muir)
    
 Optimizations
 
@@ -206,9 +224,6 @@ Optimizations
    have been optimized to work on char[] and remove unnecessary object creation.
    (Shai Erera, Robert Muir)
 
- * LUCENE-2404: Improve performance of ThaiWordFilter by using a char[]-backed
-   CharacterIterator (currently from javax.swing).  (Uwe Schindler, Robert Muir)
-
 Test Cases
 
  * LUCENE-2115: Cutover contrib tests to use Java5 generics.  (Kay Kay
@@ -218,9 +233,6 @@ Other
 
  * LUCENE-1845: Updated bdb-je jar from version 3.3.69 to 3.3.93.
    (Simon Willnauer via Mike McCandless)
-
- * LUCENE-2415: Use reflection instead of a shim class to access Jakarta
-   Regex prefix.  (Uwe Schindler)
 
 ================== Release 2.9.2 / 3.0.1 2010-02-26 ====================
 
