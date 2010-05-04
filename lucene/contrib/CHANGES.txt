@@ -67,14 +67,6 @@ Build
 
 Optimizations
 
-* LUCENE-2404: Improve performance of ThaiWordFilter by using a char[]-backed
-   CharacterIterator (currently from javax.swing).  (Uwe Schindler, Robert Muir)
-
-Other
-
- * LUCENE-2415: Use reflection instead of a shim class to access Jakarta
-   Regex prefix.  (Uwe Schindler)
-
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy
@@ -138,6 +130,10 @@ Bug fixes
 		
  * LUCENE-2359: Fix bug in CartesianPolyFilterBuilder related to handling of behavior around
 		the 180th meridian (Grant Ingersoll)
+
+ * LUCENE-2404: Fix bugs with position increment and empty tokens in ThaiWordFilter.
+   For matchVersion >= 3.1 the filter also no longer lowercases. ThaiAnalyzer
+   will use a separate LowerCaseFilter instead. (Uwe Schindler, Robert Muir)
    
 API Changes
 
@@ -155,6 +151,7 @@ API Changes
    (Robert Muir, Uwe Schindler, Simon Willnauer)
    
 New features
+
  * LUCENE-2306: Add NumericRangeFilter and NumericRangeQuery support to XMLQueryParser.
    (Jingkei Ly, via Mark Harwood)
 
@@ -193,6 +190,7 @@ New features
  * LUCENE-2400: ShingleFilter was changed to don't output all-filler shingles and 
    unigrams, and uses a more performant algorithm to build grams using a linked list
    of AttributeSource.cloneAttributes() instances and the new copyTo() method.
+   (Steven Rowe via Uwe Schindler)
 
 Build
 
@@ -224,6 +222,9 @@ Optimizations
    have been optimized to work on char[] and remove unnecessary object creation.
    (Shai Erera, Robert Muir)
 
+ * LUCENE-2404: Improve performance of ThaiWordFilter by using a char[]-backed
+   CharacterIterator (currently from javax.swing).  (Uwe Schindler, Robert Muir)
+
 Test Cases
 
  * LUCENE-2115: Cutover contrib tests to use Java5 generics.  (Kay Kay
@@ -233,6 +234,9 @@ Other
 
  * LUCENE-1845: Updated bdb-je jar from version 3.3.69 to 3.3.93.
    (Simon Willnauer via Mike McCandless)
+
+ * LUCENE-2415: Use reflection instead of a shim class to access Jakarta
+   Regex prefix.  (Uwe Schindler)
 
 ================== Release 2.9.2 / 3.0.1 2010-02-26 ====================
 
