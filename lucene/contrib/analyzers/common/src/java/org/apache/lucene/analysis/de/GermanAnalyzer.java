@@ -29,7 +29,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
+import org.apache.lucene.analysis.KeywordMarkerFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
@@ -230,7 +230,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
    * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
    *         built from a {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
-   *         , {@link KeywordMarkerTokenFilter} if a stem exclusion set is
+   *         , {@link KeywordMarkerFilter} if a stem exclusion set is
    *         provided, and {@link SnowballFilter}
    */
   @Override
@@ -240,7 +240,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
     TokenStream result = new StandardFilter(source);
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter( matchVersion, result, stopwords);
-    result = new KeywordMarkerTokenFilter(result, exclusionSet);
+    result = new KeywordMarkerFilter(result, exclusionSet);
     if (matchVersion.onOrAfter(Version.LUCENE_31))
       result = new SnowballFilter(result, new German2Stemmer());
     else

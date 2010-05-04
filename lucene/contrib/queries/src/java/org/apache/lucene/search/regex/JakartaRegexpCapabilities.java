@@ -18,7 +18,9 @@ package org.apache.lucene.search.regex;
  */
 
 import org.apache.regexp.RE;
-import org.apache.regexp.RegexpTunnel;
+import org.apache.regexp.REProgram;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 /**
  * Implementation tying <a href="http://jakarta.apache.org/regexp">Jakarta
@@ -29,6 +31,22 @@ import org.apache.regexp.RegexpTunnel;
  */
 public class JakartaRegexpCapabilities implements RegexCapabilities {
   private RE regexp;
+
+  private static Field prefixField;
+  private static Method getPrefixMethod;
+  static {
+    try {
+      getPrefixMethod = REProgram.class.getMethod("getPrefix");
+    } catch (Exception e) {
+      getPrefixMethod = null;
+    }
+    try {
+      prefixField = REProgram.class.getDeclaredField("prefix");
+      prefixField.setAccessible(true);
+    } catch (Exception e) {
+      prefixField = null;
+    }
+  }
   
   // Define the flags that are possible. Redefine them here
   // to avoid exposing the RE class to the caller.
@@ -70,8 +88,20 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
   }
 
   public String prefix() {
-    char[] prefix = RegexpTunnel.getPrefix(regexp);
-    return prefix == null ? null : new String(prefix);
+    try {
+      final char[] prefix;
+      if (getPrefixMethod != null) {
+        prefix = (char[]) getPrefixMethod.invoke(regexp.getProgram());
+      } else if (prefixField != null) {
+        prefix = (char[]) prefixField.get(regexp.getProgram());
+      } else {
+        return null;
+      }
+      return prefix == null ? null : new String(prefix);
+    } catch (Exception e) {
+      // if we cannot get the prefix, return none
+      return null;
+    }
   }
 
   @Override

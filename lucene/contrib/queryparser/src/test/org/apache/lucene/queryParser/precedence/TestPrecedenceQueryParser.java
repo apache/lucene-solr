@@ -56,7 +56,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
 
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 
-  public static class QPTestFilter extends TokenFilter {
+  public static final class QPTestFilter extends TokenFilter {
     /**
      * Filter which discards the token 'stop' and which expands the
      * token 'phrase' into 'phrase1 phrase2'
@@ -94,7 +94,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     }
   }
 
-  public static class QPTestAnalyzer extends Analyzer {
+  public static final class QPTestAnalyzer extends Analyzer {
 
     /** Filters LowerCaseTokenizer with StopFilter. */
     @Override

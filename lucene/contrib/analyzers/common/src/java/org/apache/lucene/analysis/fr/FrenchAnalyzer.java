@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.fr;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
+import org.apache.lucene.analysis.KeywordMarkerFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
@@ -232,7 +232,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
    *         built from a {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link ElisionFilter},
    *         {@link LowerCaseFilter}, {@link StopFilter},
-   *         {@link KeywordMarkerTokenFilter} if a stem exclusion set is
+   *         {@link KeywordMarkerFilter} if a stem exclusion set is
    *         provided, and {@link SnowballFilter}
    */
   @Override
@@ -245,7 +245,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
       result = new LowerCaseFilter(matchVersion, result);
       result = new StopFilter(matchVersion, result, stopwords);
       if(!excltable.isEmpty())
-        result = new KeywordMarkerTokenFilter(result, excltable);
+        result = new KeywordMarkerFilter(result, excltable);
       result = new SnowballFilter(result, new org.tartarus.snowball.ext.FrenchStemmer());
       return new TokenStreamComponents(source, result);
     } else {
@@ -253,7 +253,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
       TokenStream result = new StandardFilter(source);
       result = new StopFilter(matchVersion, result, stopwords);
       if(!excltable.isEmpty())
-        result = new KeywordMarkerTokenFilter(result, excltable);
+        result = new KeywordMarkerFilter(result, excltable);
       result = new FrenchStemFilter(result);
       // Convert to lowercase after stemming!
       return new TokenStreamComponents(source, new LowerCaseFilter(matchVersion, result));

@@ -18,7 +18,6 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -60,7 +59,7 @@ public class TestPorterStemFilter extends BaseTokenStreamTestCase {
     CharArraySet set = new CharArraySet(TEST_VERSION_CURRENT, 1, true);
     set.add("yourselves");
     Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("yourselves yours"));
-    TokenStream filter = new PorterStemFilter(new KeywordMarkerTokenFilter(tokenizer, set));   
+    TokenStream filter = new PorterStemFilter(new KeywordMarkerFilter(tokenizer, set));   
     assertTokenStreamContents(filter, new String[] {"yourselves", "your"});
   }
 }

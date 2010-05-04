@@ -27,9 +27,9 @@ import org.junit.Test;
  */
 
 /**
- * Testcase for {@link KeywordMarkerTokenFilter}
+ * Testcase for {@link KeywordMarkerFilter}
  */
-public class TestKeywordMarkerTokenFilter extends BaseTokenStreamTestCase {
+public class TestKeywordMarkerFilter extends BaseTokenStreamTestCase {
 
   @Test
   public void testIncrementToken() throws IOException {
@@ -38,20 +38,20 @@ public class TestKeywordMarkerTokenFilter extends BaseTokenStreamTestCase {
     String[] output = new String[] { "the", "quick", "brown", "LuceneFox",
         "jumps" };
     assertTokenStreamContents(new LowerCaseFilterMock(
-        new KeywordMarkerTokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
+        new KeywordMarkerFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
             "The quIck browN LuceneFox Jumps")), set)), output);
     Set<String> jdkSet = new HashSet<String>();
     jdkSet.add("LuceneFox");
     assertTokenStreamContents(new LowerCaseFilterMock(
-        new KeywordMarkerTokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
+        new KeywordMarkerFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
             "The quIck browN LuceneFox Jumps")), jdkSet)), output);
     Set<?> set2 = set;
     assertTokenStreamContents(new LowerCaseFilterMock(
-        new KeywordMarkerTokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
+        new KeywordMarkerFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
             "The quIck browN LuceneFox Jumps")), set2)), output);
   }
 
-  public static class LowerCaseFilterMock extends TokenFilter {
+  public static final class LowerCaseFilterMock extends TokenFilter {
 
     private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);

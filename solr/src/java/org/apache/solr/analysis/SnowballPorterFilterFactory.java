@@ -19,7 +19,7 @@ package org.apache.solr.analysis;
 import java.util.Map;
 import java.io.IOException;
 
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
+import org.apache.lucene.analysis.KeywordMarkerFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.CharArraySet;
@@ -77,7 +77,7 @@ public class SnowballPorterFilterFactory extends BaseTokenFilterFactory implemen
     }
 
     if (protectedWords != null)
-      input = new KeywordMarkerTokenFilter(input, protectedWords);
+      input = new KeywordMarkerFilter(input, protectedWords);
     return new SnowballFilter(input, program);
   }
 }

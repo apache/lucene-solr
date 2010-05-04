@@ -313,7 +313,7 @@ public class TestPositionIncrement extends LuceneTestCase {
   }
 }
 
-class TestPayloadAnalyzer extends Analyzer {
+final class TestPayloadAnalyzer extends Analyzer {
 
   @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
@@ -322,7 +322,7 @@ class TestPayloadAnalyzer extends Analyzer {
   }
 }
 
-class PayloadFilter extends TokenFilter {
+final class PayloadFilter extends TokenFilter {
   String fieldName;
 
   int pos;

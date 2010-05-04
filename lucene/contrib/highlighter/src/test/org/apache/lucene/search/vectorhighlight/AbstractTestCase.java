@@ -170,14 +170,14 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     }
   }
 
-  static class BigramAnalyzer extends Analyzer {
+  static final class BigramAnalyzer extends Analyzer {
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
       return new BasicNGramTokenizer( reader );
     }
   }
   
-  static class BasicNGramTokenizer extends Tokenizer {
+  static final class BasicNGramTokenizer extends Tokenizer {
 
     public static final int DEFAULT_N_SIZE = 2;
     public static final String DEFAULT_DELIMITERS = " \t\n.,";

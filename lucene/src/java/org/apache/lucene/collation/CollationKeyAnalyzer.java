@@ -76,7 +76,7 @@ import java.io.IOException;
  *   ICUCollationKeyAnalyzer on the query side, or vice versa.
  * </p>
  */
-public class CollationKeyAnalyzer extends Analyzer {
+public final class CollationKeyAnalyzer extends Analyzer {
   private Collator collator;
 
   public CollationKeyAnalyzer(Collator collator) {

@@ -17,7 +17,7 @@ package org.apache.lucene.analysis.fr;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter;// for javadoc
+import org.apache.lucene.analysis.KeywordMarkerFilter;// for javadoc
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
@@ -37,10 +37,10 @@ import java.util.Set;
  * </p>
  * <p>
  * To prevent terms from being stemmed use an instance of
- * {@link KeywordMarkerTokenFilter} or a custom {@link TokenFilter} that sets
+ * {@link KeywordMarkerFilter} or a custom {@link TokenFilter} that sets
  * the {@link KeywordAttribute} before this {@link TokenStream}.
  * </p>
- * @see KeywordMarkerTokenFilter
+ * @see KeywordMarkerFilter
  * @deprecated Use {@link SnowballFilter} with 
  * {@link org.tartarus.snowball.ext.FrenchStemmer} instead, which has the
  * same functionality. This filter will be removed in Lucene 4.0
@@ -68,7 +68,7 @@ public final class FrenchStemFilter extends TokenFilter {
    * 
    * @param in the {@link TokenStream} to filter
    * @param exclusiontable a set of terms not to be stemmed
-   * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerTokenFilter} instead.
+   * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerFilter} instead.
    */
 	@Deprecated // TODO remove in 3.2
 	public FrenchStemFilter( TokenStream in, Set<?> exclusiontable ) {
@@ -106,7 +106,7 @@ public final class FrenchStemFilter extends TokenFilter {
 	}
 	/**
 	 * Set an alternative exclusion list for this filter.
-   * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerTokenFilter} instead.
+   * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerFilter} instead.
 	 */
 	@Deprecated // TODO remove in 3.2
 	public void setExclusionTable( Map<?,?> exclusiontable ) {

@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.de;
 import java.io.IOException;
 import java.util.Set;
 
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter;// for javadoc
+import org.apache.lucene.analysis.KeywordMarkerFilter;// for javadoc
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
@@ -35,10 +35,10 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * </p>
  * <p>
  * To prevent terms from being stemmed use an instance of
- * {@link KeywordMarkerTokenFilter} or a custom {@link TokenFilter} that sets
+ * {@link KeywordMarkerFilter} or a custom {@link TokenFilter} that sets
  * the {@link KeywordAttribute} before this {@link TokenStream}.
  * </p>
- * @see KeywordMarkerTokenFilter
+ * @see KeywordMarkerFilter
  */
 public final class GermanStemFilter extends TokenFilter
 {
@@ -65,7 +65,7 @@ public final class GermanStemFilter extends TokenFilter
 
     /**
      * Builds a GermanStemFilter that uses an exclusion table.
-     * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerTokenFilter} instead.
+     * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerFilter} instead.
      */
     @Deprecated
     public GermanStemFilter( TokenStream in, Set<?> exclusionSet )
@@ -107,7 +107,7 @@ public final class GermanStemFilter extends TokenFilter
 
     /**
      * Set an alternative exclusion list for this filter.
-     * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerTokenFilter} instead.
+     * @deprecated use {@link KeywordAttribute} with {@link KeywordMarkerFilter} instead.
      */
     @Deprecated
     public void setExclusionSet( Set<?> exclusionSet )

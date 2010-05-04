@@ -105,7 +105,7 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
 
 }
 
-class ASCIIAnalyzer extends org.apache.lucene.analysis.Analyzer {
+final class ASCIIAnalyzer extends org.apache.lucene.analysis.Analyzer {
   public ASCIIAnalyzer() {
   }
 

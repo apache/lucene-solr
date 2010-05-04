@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
+import org.apache.lucene.analysis.KeywordMarkerFilter;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
@@ -167,7 +167,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
    * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
    *         built from a {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
-   *         , {@link KeywordMarkerTokenFilter} if a stem exclusion set is
+   *         , {@link KeywordMarkerFilter} if a stem exclusion set is
    *         provided, and {@link SnowballFilter}
    */
     @Override
@@ -178,7 +178,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
         TokenStream result = new StandardFilter(source);
         result = new LowerCaseFilter(matchVersion, result);
         result = new StopFilter(matchVersion, result, stopwords);
-        if (!stemExclusionSet.isEmpty()) result = new KeywordMarkerTokenFilter(
+        if (!stemExclusionSet.isEmpty()) result = new KeywordMarkerFilter(
             result, stemExclusionSet);
         result = new SnowballFilter(result, new org.tartarus.snowball.ext.RussianStemmer());
         return new TokenStreamComponents(source, result);
@@ -186,7 +186,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
         final Tokenizer source = new RussianLetterTokenizer(matchVersion, reader);
         TokenStream result = new LowerCaseFilter(matchVersion, source);
         result = new StopFilter(matchVersion, result, stopwords);
-        if (!stemExclusionSet.isEmpty()) result = new KeywordMarkerTokenFilter(
+        if (!stemExclusionSet.isEmpty()) result = new KeywordMarkerFilter(
           result, stemExclusionSet);
         return new TokenStreamComponents(source, new RussianStemFilter(result));
       }

@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.hi;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter;
+import org.apache.lucene.analysis.KeywordMarkerFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
@@ -31,7 +31,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * <p>
  * In some cases the normalization may cause unrelated terms to conflate, so
  * to prevent terms from being normalized use an instance of
- * {@link KeywordMarkerTokenFilter} or a custom {@link TokenFilter} that sets
+ * {@link KeywordMarkerFilter} or a custom {@link TokenFilter} that sets
  * the {@link KeywordAttribute} before this {@link TokenStream}.
  * </p>
  * @see HindiNormalizer

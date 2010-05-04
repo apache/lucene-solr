@@ -31,10 +31,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermVectorOffsetInfo;
 
-/**
- * @author CMorris
- */
-public class TokenStreamFromTermPositionVector extends TokenStream {
+public final class TokenStreamFromTermPositionVector extends TokenStream {
 
   private final List<Token> positionedTokens = new ArrayList<Token>();
 

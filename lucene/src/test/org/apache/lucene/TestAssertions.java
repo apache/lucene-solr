@@ -17,16 +17,80 @@ package org.apache.lucene;
  * limitations under the License.
  */
 
+import java.io.Reader;
+
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenStream;
 
 public class TestAssertions extends LuceneTestCase {
 
-  public void test() {
+  public void testBasics() {
     try {
       assert Boolean.FALSE.booleanValue();
       fail("assertions are not enabled!");
     } catch (AssertionError e) {
       assert Boolean.TRUE.booleanValue();
+    }
+  }
+  
+  static class TestAnalyzer1 extends Analyzer {
+    public final TokenStream tokenStream(String s, Reader r) { return null; }
+    public final TokenStream reusableTokenStream(String s, Reader r) { return null; }
+  }
+
+  static final class TestAnalyzer2 extends Analyzer {
+    public TokenStream tokenStream(String s, Reader r) { return null; }
+    public TokenStream reusableTokenStream(String s, Reader r) { return null; }
+  }
+
+  static class TestAnalyzer3 extends Analyzer {
+    public TokenStream tokenStream(String s, Reader r) { return null; }
+    public TokenStream reusableTokenStream(String s, Reader r) { return null; }
+  }
+
+  static class TestAnalyzer4 extends Analyzer {
+    public final TokenStream tokenStream(String s, Reader r) { return null; }
+    public TokenStream reusableTokenStream(String s, Reader r) { return null; }
+  }
+
+  static class TestTokenStream1 extends TokenStream {
+    public final boolean incrementToken() { return false; }
+  }
+
+  static final class TestTokenStream2 extends TokenStream {
+    public boolean incrementToken() { return false; }
+  }
+
+  static class TestTokenStream3 extends TokenStream {
+    public boolean incrementToken() { return false; }
+  }
+
+  public void testTokenStreams() {
+    new TestAnalyzer1();
+    
+    new TestAnalyzer2();
+    
+    try {
+      new TestAnalyzer3();
+      fail("TestAnalyzer3 should fail assertion");
+    } catch (AssertionError e) {
+    }
+    
+    try {
+      new TestAnalyzer4();
+      fail("TestAnalyzer4 should fail assertion");
+    } catch (AssertionError e) {
+    }
+    
+    new TestTokenStream1();
+    
+    new TestTokenStream2();
+    
+    try {
+      new TestTokenStream3();
+      fail("TestTokenStream3 should fail assertion");
+    } catch (AssertionError e) {
     }
   }
 

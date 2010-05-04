@@ -482,7 +482,7 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
   }
 
 
-  public static class TokenListStream extends TokenStream {
+  public final static class TokenListStream extends TokenStream {
 
     private Collection<Token> tokens;
     TermAttribute termAtt;

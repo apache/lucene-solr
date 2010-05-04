@@ -31,14 +31,14 @@ import org.apache.lucene.util.Version;
  * 
  * @see KeywordAttribute
  */
-public final class KeywordMarkerTokenFilter extends TokenFilter {
+public final class KeywordMarkerFilter extends TokenFilter {
 
   private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final CharArraySet keywordSet;
 
   /**
-   * Create a new KeywordMarkerTokenFilter, that marks the current token as a
+   * Create a new KeywordMarkerFilter, that marks the current token as a
    * keyword if the tokens term buffer is contained in the given set via the
    * {@link KeywordAttribute}.
    * 
@@ -47,14 +47,14 @@ public final class KeywordMarkerTokenFilter extends TokenFilter {
    * @param keywordSet
    *          the keywords set to lookup the current termbuffer
    */
-  public KeywordMarkerTokenFilter(final TokenStream in,
+  public KeywordMarkerFilter(final TokenStream in,
       final CharArraySet keywordSet) {
     super(in);
     this.keywordSet = keywordSet;
   }
 
   /**
-   * Create a new KeywordMarkerTokenFilter, that marks the current token as a
+   * Create a new KeywordMarkerFilter, that marks the current token as a
    * keyword if the tokens term buffer is contained in the given set via the
    * {@link KeywordAttribute}.
    * 
@@ -63,7 +63,7 @@ public final class KeywordMarkerTokenFilter extends TokenFilter {
    * @param keywordSet
    *          the keywords set to lookup the current termbuffer
    */
-  public KeywordMarkerTokenFilter(final TokenStream in, final Set<?> keywordSet) {
+  public KeywordMarkerFilter(final TokenStream in, final Set<?> keywordSet) {
     this(in, keywordSet instanceof CharArraySet ? (CharArraySet) keywordSet
         : CharArraySet.copy(Version.LUCENE_31, keywordSet));
   }

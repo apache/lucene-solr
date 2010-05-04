@@ -471,7 +471,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     assertEquals(numSpans, cnt);
   }
 
-  class PayloadAnalyzer extends Analyzer {
+  final class PayloadAnalyzer extends Analyzer {
 
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
@@ -481,7 +481,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     }
   }
 
-  class PayloadFilter extends TokenFilter {
+  final class PayloadFilter extends TokenFilter {
     String fieldName;
     int numSeen = 0;
     Set entities = new HashSet();
@@ -523,7 +523,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     }
   }
   
-  public class TestPayloadAnalyzer extends Analyzer {
+  public final class TestPayloadAnalyzer extends Analyzer {
 
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {

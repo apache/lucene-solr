@@ -216,7 +216,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   
 }
 
-class PayloadSetter extends TokenFilter {
+final class PayloadSetter extends TokenFilter {
   PayloadAttribute payloadAtt;
   public  PayloadSetter(TokenStream input) {
     super(input);

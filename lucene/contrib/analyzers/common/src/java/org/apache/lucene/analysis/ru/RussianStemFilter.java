@@ -17,7 +17,7 @@ package org.apache.lucene.analysis.ru;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.KeywordMarkerTokenFilter;// for javadoc
+import org.apache.lucene.analysis.KeywordMarkerFilter;// for javadoc
 import org.apache.lucene.analysis.LowerCaseFilter; // for javadoc
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -37,10 +37,10 @@ import java.io.IOException;
  * </p>
  * <p>
  * To prevent terms from being stemmed use an instance of
- * {@link KeywordMarkerTokenFilter} or a custom {@link TokenFilter} that sets
+ * {@link KeywordMarkerFilter} or a custom {@link TokenFilter} that sets
  * the {@link KeywordAttribute} before this {@link TokenStream}.
  * </p>
- * @see KeywordMarkerTokenFilter
+ * @see KeywordMarkerFilter
  * @deprecated Use {@link SnowballFilter} with 
  * {@link org.tartarus.snowball.ext.RussianStemmer} instead, which has the
  * same functionality. This filter will be removed in Lucene 4.0

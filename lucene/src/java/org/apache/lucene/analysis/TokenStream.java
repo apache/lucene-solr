@@ -19,6 +19,7 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 import java.io.Closeable;
+import java.lang.reflect.Modifier;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -76,6 +77,10 @@ import org.apache.lucene.util.AttributeSource;
  * {@link TeeSinkTokenFilter}). For this usecase
  * {@link AttributeSource#captureState} and {@link AttributeSource#restoreState}
  * can be used.
+ * <p>The {@code TokenStream}-API in Lucene is based on the decorator pattern.
+ * Therefore all non-abstract subclasses must be final or have at least a final
+ * implementation of {@link #incrementToken}! This is checked when Java
+ * assertions are enabled.
  */
 public abstract class TokenStream extends AttributeSource implements Closeable {
 
@@ -84,6 +89,7 @@ public abstract class TokenStream extends AttributeSource implements Closeable {
    */
   protected TokenStream() {
     super();
+    assert assertFinal();
   }
   
   /**
@@ -91,6 +97,7 @@ public abstract class TokenStream extends AttributeSource implements Closeable {
    */
   protected TokenStream(AttributeSource input) {
     super(input);
+    assert assertFinal();
   }
   
   /**
@@ -98,6 +105,20 @@ public abstract class TokenStream extends AttributeSource implements Closeable {
    */
   protected TokenStream(AttributeFactory factory) {
     super(factory);
+    assert assertFinal();
+  }
+  
+  private boolean assertFinal() {
+    try {
+      final Class<?> clazz = getClass();
+      assert clazz.isAnonymousClass() ||
+        (clazz.getModifiers() & (Modifier.FINAL | Modifier.PRIVATE)) != 0 ||
+        Modifier.isFinal(clazz.getMethod("incrementToken").getModifiers()) :
+        "TokenStream implementation classes or at least their incrementToken() implementation must be final";
+      return true;
+    } catch (NoSuchMethodException nsme) {
+      return false;
+    }
   }
   
   /**

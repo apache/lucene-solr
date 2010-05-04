@@ -44,7 +44,7 @@ public class PayloadHelper {
   public static final String MULTI_FIELD = "multiField";
   public static final String FIELD = "field";
 
-  public class PayloadAnalyzer extends Analyzer {
+  public final class PayloadAnalyzer extends Analyzer {
 
 
 
@@ -56,7 +56,7 @@ public class PayloadHelper {
     }
   }
 
-  public class PayloadFilter extends TokenFilter {
+  public final class PayloadFilter extends TokenFilter {
     String fieldName;
     int numSeen = 0;
     PayloadAttribute payloadAtt;
