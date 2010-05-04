@@ -155,6 +155,12 @@ New features
    of AttributeSource.cloneAttributes() instances and the new copyTo() method.
    (Steven Rowe via Uwe Schindler)
 
+ * LUCENE-2413: Consolidated Solr analysis components into contrib/analyzers. 
+   New features from Solr now available to Lucene users include:
+   - o.a.l.analysis.commongrams: Constructs n-grams for frequently occurring terms
+     and phrases. 
+   (... in progress)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 

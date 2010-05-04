@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.commongrams;
 
 import java.io.IOException;
 
@@ -22,7 +22,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
-import static org.apache.solr.analysis.CommonGramsFilter.GRAM_TYPE;
+import static org.apache.lucene.analysis.commongrams.CommonGramsFilter.GRAM_TYPE;
 
 /**
  * Wrap a CommonGramsFilter optimizing phrase queries by only returning single
