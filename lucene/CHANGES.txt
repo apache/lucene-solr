@@ -70,6 +70,118 @@ Changes in backwards compatibility policy
     TermAttribute/CharTermAttribute. If you want to further filter
     or attach Payloads to NTS, use the new NumericTermAttribute.
 
+* LUCENE-2386: IndexWriter no longer performs an empty commit upon new index
+  creation. Previously, if you passed an empty Directory and set OpenMode to
+  CREATE*, IndexWriter would make a first empty commit. If you need that 
+  behavior you can call writer.commit()/close() immediately after you create it.
+  (Shai Erera, Mike McCandless)
+  
+* LUCENE-2316: Directory.fileLength contract was clarified - it returns the
+  actual file's length if the file exists, and throws FileNotFoundException
+  otherwise. Returning length=0 for a non-existent file is no longer allowed. If
+  you relied on that, make sure to catch the exception. (Shai Erera)
+
+* LUCENE-2265: FuzzyQuery and WildcardQuery now operate on Unicode codepoints,
+  not unicode code units. For example, a Wildcard "?" represents any unicode
+  character. Furthermore, the rest of the automaton package and RegexpQuery use 
+  true Unicode codepoint representation.  (Robert Muir, Mike McCandless)
+ 
+Changes in runtime behavior
+
+* LUCENE-2421: NativeFSLockFactory does not throw LockReleaseFailedException if 
+  it cannot delete the lock file, since obtaining the lock does not fail if the 
+  file is there. (Shai Erera)
+
+API Changes
+
+* LUCENE-1458, LUCENE-2111: The postings APIs (TermEnum, TermDocsEnum,
+  TermPositionsEnum) have been deprecated in favor of the new flexible
+  indexing (flex) APIs (Fields, FieldsEnum, Terms, TermsEnum,
+  DocsEnum, DocsAndPositionsEnum). One big difference is that field
+  and terms are now enumerated separately: a TermsEnum provides a
+  BytesRef (wraps a byte[]) per term within a single field, not a
+  Term.  Another is that when asking for a Docs/AndPositionsEnum, you
+  now specify the skipDocs explicitly (typically this will be the
+  deleted docs, but in general you can provide any Bits).
+
+* LUCENE-1458, LUCENE-2111: IndexReader now directly exposes its
+  deleted docs (getDeletedDocs), providing a new Bits interface to
+  directly query by doc ID.
+
+* LUCENE-2402: IndexWriter.deleteUnusedFiles now deletes unreferenced commit
+  points too. If you use an IndexDeletionPolicy which holds onto index commits
+  (such as SnapshotDeletionPolicy), you can call this method to remove those
+  commit points when they are not needed anymore (instead of waiting for the 
+  next commit). (Shai Erera)
+
+New features
+
+* LUCENE-1606, LUCENE-2089: Adds AutomatonQuery, a MultiTermQuery that 
+  matches terms against a finite-state machine. Implement WildcardQuery
+  and FuzzyQuery with finite-state methods. Adds RegexpQuery.
+  (Robert Muir, Mike McCandless, Uwe Schindler, Mark Miller)
+
+* LUCENE-1990: Adds internal packed ints implementation, to be used
+  for more efficient storage of int arrays when the values are
+  bounded, for example for storing the terms dict index Toke Toke
+  Eskildsen via Mike McCandless)
+
+* LUCENE-2321: Cutover to a more RAM efficient packed-ints based
+  representation for the in-memory terms dict index.  (Mike
+  McCandless)
+
+* LUCENE-2126: Add new classes for data (de)serialization: DataInput
+  and DataOutput.  IndexInput and IndexOutput extend these new classes.
+  (Michael Busch)
+
+* LUCENE-1458, LUCENE-2111: With flexible indexing it is now possible
+  for an application to create its own postings codec, to alter how
+  fields, terms, docs and positions are encoded into the index.  The
+  standard codec is the default codec.  Both IndexWriter and
+  IndexReader accept a CodecProvider class to obtain codecs for newly
+  written segments as well as existing segments opened for reading.
+
+* LUCENE-1458, LUCENE-2111: Some experimental codecs have been added
+  for flexible indexing, including pulsing codec (inlines
+  low-frequency terms directly into the terms dict, avoiding seeking
+  for some queries), sep codec (stores docs, freqs, positions, skip
+  data and payloads in 5 separate files instead of the 2 used by
+  standard codec), and int block (really a "base" for using
+  block-based compressors like PForDelta for storing postings data).
+
+* LUCENE-2302, LUCENE-1458, LUCENE-2111: Terms are no longer required
+  to be character based.  Lucene views a term as an arbitrary byte[]:
+  during analysis, character-based terms are converted to UTF8 byte[],
+  but analyzers are free to directly create terms as byte[]
+  (NumericField does this, for example).  The term data is buffered as
+  byte[] during indexing, written as byte[] into the terms dictionary,
+  and iterated as byte[] (wrapped in a BytesRef) by IndexReader for
+  searching.
+
+* LUCENE-2385: Moved NoDeletionPolicy from benchmark to core. NoDeletionPolicy
+  can be used to prevent commits from ever getting deleted from the index.
+  (Shai Erera)
+  
+* LUCENE-1458, LUCENE-2111: The in-memory terms index used by standard
+  codec is more RAM efficient: terms data is stored as block byte
+  arrays and packed integers.  Net RAM reduction for indexes that have
+  many unique terms should be substantial, and initial open time for
+  IndexReaders should be faster.  These gains only apply for newly
+  written segments after upgrading.
+
+* LUCENE-1458, LUCENE-2111: Terms data are now buffered directly as
+  byte[] during indexing, which uses half the RAM for ascii terms (and
+  also numeric fields).  This can improve indexing throughput for
+  applications that have many unique terms, since it reduces how often
+  a new segment must be flushed given a fixed RAM buffer size.
+
+* LUCENE-2398: Improve tests to work better from IDEs such as Eclipse.
+  (Paolo Castagna via Robert Muir)
+
+======================= Lucene 3.x (not yet released) =======================
+
+Changes in backwards compatibility policy
+
 * LUCENE-1483: Removed utility class oal.util.SorterTemplate; this
   class is no longer used by Lucene.  (Gunnar Wagenknecht via Mike
   McCandless)
@@ -117,22 +229,6 @@ Changes in backwards compatibility policy
   of incrementToken(), tokenStream(), and reusableTokenStream().
   (Uwe Schindler, Robert Muir)
 
-* LUCENE-2386: IndexWriter no longer performs an empty commit upon new index
-  creation. Previously, if you passed an empty Directory and set OpenMode to
-  CREATE*, IndexWriter would make a first empty commit. If you need that 
-  behavior you can call writer.commit()/close() immediately after you create it.
-  (Shai Erera, Mike McCandless)
-  
-* LUCENE-2316: Directory.fileLength contract was clarified - it returns the
-  actual file's length if the file exists, and throws FileNotFoundException
-  otherwise. Returning length=0 for a non-existent file is no longer allowed. If
-  you relied on that, make sure to catch the exception. (Shai Erera)
-
-* LUCENE-2265: FuzzyQuery and WildcardQuery now operate on Unicode codepoints,
-  not unicode code units. For example, a Wildcard "?" represents any unicode
-  character. Furthermore, the rest of the automaton package and RegexpQuery use 
-  true Unicode codepoint representation.  (Robert Muir, Mike McCandless)
-  
 Changes in runtime behavior
 
 * LUCENE-1923: Made IndexReader.toString() produce something
@@ -140,10 +236,6 @@ Changes in runtime behavior
 
 * LUCENE-2179: CharArraySet.clear() is now functional.
   (Robert Muir, Uwe Schindler)
-
-* LUCENE-2421: NativeFSLockFactory does not throw LockReleaseFailedException if 
-  it cannot delete the lock file, since obtaining the lock does not fail if the 
-  file is there. (Shai Erera)
 
 API Changes
 
@@ -215,20 +307,6 @@ API Changes
   FSDirectory to see a sample of how such tracking might look like, if needed
   in your custom Directories.  (Earwin Burrfoot via Mike McCandless)
 
-* LUCENE-1458, LUCENE-2111: The postings APIs (TermEnum, TermDocsEnum,
-  TermPositionsEnum) have been deprecated in favor of the new flexible
-  indexing (flex) APIs (Fields, FieldsEnum, Terms, TermsEnum,
-  DocsEnum, DocsAndPositionsEnum). One big difference is that field
-  and terms are now enumerated separately: a TermsEnum provides a
-  BytesRef (wraps a byte[]) per term within a single field, not a
-  Term.  Another is that when asking for a Docs/AndPositionsEnum, you
-  now specify the skipDocs explicitly (typically this will be the
-  deleted docs, but in general you can provide any Bits).
-
-* LUCENE-1458, LUCENE-2111: IndexReader now directly exposes its
-  deleted docs (getDeletedDocs), providing a new Bits interface to
-  directly query by doc ID.
-
 * LUCENE-2302: Deprecated TermAttribute and replaced by a new
   CharTermAttribute. The change is backwards compatible, so
   mixed new/old TokenStreams all work on the same char[] buffer
@@ -240,12 +318,6 @@ API Changes
   expressions).
   (Uwe Schindler, Robert Muir)
 
-* LUCENE-2402: IndexWriter.deleteUnusedFiles now deletes unreferenced commit
-  points too. If you use an IndexDeletionPolicy which holds onto index commits
-  (such as SnapshotDeletionPolicy), you can call this method to remove those
-  commit points when they are not needed anymore (instead of waiting for the 
-  next commit). (Shai Erera)
-  
 Bug fixes
 
 * LUCENE-2119: Don't throw NegativeArraySizeException if you pass
@@ -290,28 +362,9 @@ Bug fixes
   is fixed to return null if there are no segments.  (Karthick
   Sankarachary via Mike McCandless)
 
-* LUCENE-2222: FixedIntBlockIndexInput incorrectly read one block of
-  0s before the actual data.  (Renaud Delbru via Mike McCandless)
-
-* LUCENE-2344: PostingsConsumer.merge was failing to call finishDoc,
-  which caused corruption for sep codec.  Also fixed several tests to
-  test all 4 core codecs.  (Renaud Delbru via Mike McCandless)
-
 * LUCENE-2074: Reduce buffer size of lexer back to default on reset.
   (Ruben Laguna, Shai Erera via Uwe Schindler)
   
-* LUCENE-2387: Don't hang onto Fieldables from the last doc indexed,
-  in IndexWriter, nor the Reader in Tokenizer after close is
-  called.  (Ruben Laguna, Uwe Schindler, Mike McCandless)
-  
-* LUCENE-2417: IndexCommit did not implement hashCode() and equals() 
-  consitently. Now they both take Directory and version into consideration. In
-  addition, all of IndexComnmit methods which threw 
-  UnsupportedOperationException are now abstract. (Shai Erera)
-
-* LUCENE-2424: Fix FieldDoc.toString to actually return its fields
-  (Stephen Green via Mike McCandless)
-
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
@@ -375,52 +428,6 @@ New features
   Directory.copyTo, and use nio's FileChannel.transferTo when copying
   files between FSDirectory instances.  (Earwin Burrfoot via Mike
   McCandless).
-  
-* LUCENE-1606, LUCENE-2089: Adds AutomatonQuery, a MultiTermQuery that 
-  matches terms against a finite-state machine. Implement WildcardQuery
-  and FuzzyQuery with finite-state methods. Adds RegexpQuery.
-  (Robert Muir, Mike McCandless, Uwe Schindler, Mark Miller)
-
-* LUCENE-1990: Adds internal packed ints implementation, to be used
-  for more efficient storage of int arrays when the values are
-  bounded, for example for storing the terms dict index Toke Toke
-  Eskildsen via Mike McCandless)
-
-* LUCENE-2321: Cutover to a more RAM efficient packed-ints based
-  representation for the in-memory terms dict index.  (Mike
-  McCandless)
-
-* LUCENE-2126: Add new classes for data (de)serialization: DataInput
-  and DataOutput.  IndexInput and IndexOutput extend these new classes.
-  (Michael Busch)
-
-* LUCENE-1458, LUCENE-2111: With flexible indexing it is now possible
-  for an application to create its own postings codec, to alter how
-  fields, terms, docs and positions are encoded into the index.  The
-  standard codec is the default codec.  Both IndexWriter and
-  IndexReader accept a CodecProvider class to obtain codecs for newly
-  written segments as well as existing segments opened for reading.
-
-* LUCENE-1458, LUCENE-2111: Some experimental codecs have been added
-  for flexible indexing, including pulsing codec (inlines
-  low-frequency terms directly into the terms dict, avoiding seeking
-  for some queries), sep codec (stores docs, freqs, positions, skip
-  data and payloads in 5 separate files instead of the 2 used by
-  standard codec), and int block (really a "base" for using
-  block-based compressors like PForDelta for storing postings data).
-
-* LUCENE-2302, LUCENE-1458, LUCENE-2111: Terms are no longer required
-  to be character based.  Lucene views a term as an arbitrary byte[]:
-  during analysis, character-based terms are converted to UTF8 byte[],
-  but analyzers are free to directly create terms as byte[]
-  (NumericField does this, for example).  The term data is buffered as
-  byte[] during indexing, written as byte[] into the terms dictionary,
-  and iterated as byte[] (wrapped in a BytesRef) by IndexReader for
-  searching.
-
-* LUCENE-2385: Moved NoDeletionPolicy from benchmark to core. NoDeletionPolicy
-  can be used to prevent commits from ever getting deleted from the index.
-  (Shai Erera)
   
 * LUCENE-2074: Make StandardTokenizer fit for Unicode 4.0, if the
   matchVersion parameter is Version.LUCENE_31. (Uwe Schindler)
@@ -492,24 +499,12 @@ Optimizations
   because then it will make sense to make the RAM buffers as large as 
   possible. (Mike McCandless, Michael Busch)
 
-* LUCENE-1458, LUCENE-2111: The in-memory terms index used by standard
-  codec is more RAM efficient: terms data is stored as block byte
-  arrays and packed integers.  Net RAM reduction for indexes that have
-  many unique terms should be substantial, and initial open time for
-  IndexReaders should be faster.  These gains only apply for newly
-  written segments after upgrading.
-
-* LUCENE-1458, LUCENE-2111: Terms data are now buffered directly as
-  byte[] during indexing, which uses half the RAM for ascii terms (and
-  also numeric fields).  This can improve indexing throughput for
-  applications that have many unique terms, since it reduces how often
-  a new segment must be flushed given a fixed RAM buffer size.
 
 Build
 
 * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
-   into core, and moved the ICU-based collation support into contrib/icu.  
-   (Robert Muir)
+  into core, and moved the ICU-based collation support into contrib/icu.  
+  (Robert Muir)
 
 * LUCENE-2326: Removed SVN checkouts for backwards tests. The backwards
   branch is now included in the svn repository using "svn copy"
@@ -517,12 +512,6 @@ Build
 
 * LUCENE-2074: Regenerating StandardTokenizerImpl files now needs
   JFlex 1.5 (currently only available on SVN). (Uwe Schindler)
-
-* LUCENE-1709: Tests are now parallelized by default (except for benchmark). You
-  can force them to run sequentially by passing -Drunsequential=1 on the command
-  line. The number of threads that are spwaned per CPU defaults to '1'. If you 
-  wish to change that, you can run the tests with -DthreadsPerProcessor=[num].
-  (Robert Muir, Shai Erera, Peter Kofler) 
 
 Test Cases
 
@@ -557,9 +546,6 @@ Test Cases
   getClass().getResourceAsStream() to retrieve test data. Tests needing
   access to "real" files from the test folder itsself, can use
   LuceneTestCase(J4).getDataFile().  (Uwe Schindler)
-
-* LUCENE-2398: Improve tests to work better from IDEs such as Eclipse.
-  (Paolo Castagna via Robert Muir)
 
 ================== Release 2.9.2 / 3.0.1 2010-02-26 ====================
 
