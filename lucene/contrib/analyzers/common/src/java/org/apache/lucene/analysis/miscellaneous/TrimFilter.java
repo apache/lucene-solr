@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.miscellaneous;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -26,8 +26,6 @@ import java.io.IOException;
 
 /**
  * Trims leading and trailing whitespace from Tokens in the stream.
- *
- * @version $Id:$
  */
 public final class TrimFilter extends TokenFilter {
 

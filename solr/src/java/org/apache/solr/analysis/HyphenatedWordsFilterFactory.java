@@ -18,6 +18,7 @@ package org.apache.solr.analysis;
  */
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.miscellaneous.HyphenatedWordsFilter;
 import org.apache.solr.analysis.BaseTokenFilterFactory;
 
 /**

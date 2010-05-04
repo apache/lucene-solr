@@ -21,6 +21,7 @@ import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.miscellaneous.KeepWordFilter;
 
 import java.util.Set;
 import java.io.IOException;

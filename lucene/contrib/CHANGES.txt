@@ -57,6 +57,12 @@ New features
      into subwords and performs optional transformations on subword groups.
    - o.a.l.analysis.miscellaneous.RemoveDuplicatesTokenFilter: TokenFilter which 
      filters out Tokens at the same position and Term text as the previous token.
+   - o.a.l.analysis.miscellaneous.TrimFilter: Trims leading and trailing whitespace 
+     from Tokens in the stream.
+   - o.a.l.analysis.miscellaneous.KeepWordFilter: A TokenFilter that only keeps tokens 
+     with text contained in the required words (inverse of StopFilter).
+   - o.a.l.analysis.miscellaneous.HyphenatedWordsFilter: A TokenFilter that puts 
+     hyphenated words broken into two lines back together.
    - o.a.l.analysis.pattern: Package for pattern-based analysis, containing a 
      CharFilter, Tokenizer, and Tokenfilter for transforming text with regexes.
    (... in progress)

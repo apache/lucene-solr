@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.miscellaneous;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -29,14 +29,13 @@ import java.util.Set;
  * A TokenFilter that only keeps tokens with text contained in the
  * required words.  This filter behaves like the inverse of StopFilter.
  * 
- * @version $Id$
  * @since solr 1.3
  */
 public final class KeepWordFilter extends TokenFilter {
   private final CharArraySet words;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
-  /** @deprecated Use {@link #KeepWordFilter(TokenStream, Set, boolean)} instead */
+  /** @deprecated Use {@link #KeepWordFilter(TokenStream, CharArraySet)} instead */
   @Deprecated
   public KeepWordFilter(TokenStream in, Set<String> words, boolean ignoreCase ) {
     this(in, new CharArraySet(words, ignoreCase));

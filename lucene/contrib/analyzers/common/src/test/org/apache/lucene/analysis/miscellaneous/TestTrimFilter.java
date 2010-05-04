@@ -15,13 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
@@ -34,7 +33,7 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 /**
  * @version $Id:$
  */
-public class TestTrimFilter extends BaseTokenTestCase {
+public class TestTrimFilter extends BaseTokenStreamTestCase {
 
   public void testTrim() throws Exception {
     char[] a = " a ".toCharArray();
@@ -42,15 +41,13 @@ public class TestTrimFilter extends BaseTokenTestCase {
     char[] ccc = "cCc".toCharArray();
     char[] whitespace = "   ".toCharArray();
     char[] empty = "".toCharArray();
-    TrimFilterFactory factory = new TrimFilterFactory();
-    Map<String,String> args = new HashMap<String,String>();
-    args.put("updateOffsets", "false");
-    factory.init(args);
-    TokenStream ts = factory.create(new IterTokenStream(new Token(a, 0, a.length, 1, 5),
+
+    TokenStream ts = new IterTokenStream(new Token(a, 0, a.length, 1, 5),
                     new Token(b, 0, b.length, 6, 10),
                     new Token(ccc, 0, ccc.length, 11, 15),
                     new Token(whitespace, 0, whitespace.length, 16, 20),
-                    new Token(empty, 0, empty.length, 21, 21)));
+                    new Token(empty, 0, empty.length, 21, 21));
+    ts = new TrimFilter(ts, false);
 
     assertTokenStreamContents(ts, new String[] { "a", "b", "cCc", "", ""});
 
@@ -58,15 +55,12 @@ public class TestTrimFilter extends BaseTokenTestCase {
     b = "b ".toCharArray();
     ccc = " c ".toCharArray();
     whitespace = "   ".toCharArray();
-    factory = new TrimFilterFactory();
-    args = new HashMap<String,String>();
-    args.put("updateOffsets", "true");
-    factory.init(args);
-    ts = factory.create(new IterTokenStream(
+    ts = new IterTokenStream(
             new Token(a, 0, a.length, 0, 2),
             new Token(b, 0, b.length, 0, 2),
             new Token(ccc, 0, ccc.length, 0, 3),
-            new Token(whitespace, 0, whitespace.length, 0, 3)));
+            new Token(whitespace, 0, whitespace.length, 0, 3));
+    ts = new TrimFilter(ts, true);
     
     assertTokenStreamContents(ts, 
         new String[] { "a", "b", "c", "" },

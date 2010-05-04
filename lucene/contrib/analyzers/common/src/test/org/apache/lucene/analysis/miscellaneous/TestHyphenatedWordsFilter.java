@@ -15,23 +15,23 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 
 /**
  * HyphenatedWordsFilter test
  */
-public class TestHyphenatedWordsFilter extends BaseTokenTestCase {
+public class TestHyphenatedWordsFilter extends BaseTokenStreamTestCase {
 	public void testHyphenatedWords() throws Exception {
 		String input = "ecologi-\r\ncal devel-\r\n\r\nop compre-\u0009hensive-hands-on and ecologi-\ncal";
 		// first test
-		TokenStream ts = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input));
-		HyphenatedWordsFilterFactory factory = new HyphenatedWordsFilterFactory();
-		ts = factory.create(ts);
+		TokenStream ts = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
+		ts = new HyphenatedWordsFilter(ts);
 		assertTokenStreamContents(ts, 
 		    new String[] { "ecological", "develop", "comprehensive-hands-on", "and", "ecological" });
 	}
@@ -42,9 +42,8 @@ public class TestHyphenatedWordsFilter extends BaseTokenTestCase {
 	public void testHyphenAtEnd() throws Exception {
 	    String input = "ecologi-\r\ncal devel-\r\n\r\nop compre-\u0009hensive-hands-on and ecology-";
 	    // first test
-	    TokenStream ts = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input));
-	    HyphenatedWordsFilterFactory factory = new HyphenatedWordsFilterFactory();
-	    ts = factory.create(ts);
+	    TokenStream ts = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
+	    ts = new HyphenatedWordsFilter(ts);
 	    assertTokenStreamContents(ts, 
 	        new String[] { "ecological", "develop", "comprehensive-hands-on", "and", "ecology-" });
 	  }
