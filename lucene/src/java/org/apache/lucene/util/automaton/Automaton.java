@@ -425,7 +425,7 @@ public class Automaton implements Serializable, Cloneable {
       }
     }
     // map<state, set<state>>
-    Set<State> map[] = new Set[states.length];
+    @SuppressWarnings("unchecked") Set<State> map[] = new Set[states.length];
     for (int i = 0; i < map.length; i++)
       map[i] = new HashSet<State>();
     for (State s : states) {

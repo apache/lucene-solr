@@ -914,7 +914,7 @@ final public class BasicOperations {
       // Breadth-first search, from accept states,
       // backwards:
       while(!q.isEmpty()) {
-        final State s = q.pop();
+        final State s = q.removeFirst();
         List<ArrivingTransition> arriving = allArriving.get(s);
         if (arriving != null) {
           for(ArrivingTransition at : arriving) {
