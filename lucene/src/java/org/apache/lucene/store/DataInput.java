@@ -29,8 +29,6 @@ import org.apache.lucene.util.RamUsageEstimator;
  * data types.
  */
 public abstract class DataInput implements Cloneable {
-  private byte[] bytes;                           // used by readString()
-  private char[] chars;                           // used by readModifiedUTF8String()
   private boolean preUTF8Strings;                 // true if we are reading old (modified UTF8) string format
 
   /** Reads and returns a single byte.
@@ -131,18 +129,14 @@ public abstract class DataInput implements Cloneable {
     if (preUTF8Strings)
       return readModifiedUTF8String();
     int length = readVInt();
-    if (bytes == null || length > bytes.length) {
-      bytes = new byte[ArrayUtil.oversize(length, 1)];
-    }
+    final byte[] bytes = new byte[length];
     readBytes(bytes, 0, length);
     return new String(bytes, 0, length, "UTF-8");
   }
 
   private String readModifiedUTF8String() throws IOException {
     int length = readVInt();
-    if (chars == null || length > chars.length) {
-      chars = new char[ArrayUtil.oversize(length, RamUsageEstimator.NUM_BYTES_CHAR)];
-    }
+    final char[] chars = new char[length];
     readChars(chars, 0, length);
     return new String(chars, 0, length);
   }
@@ -218,9 +212,6 @@ public abstract class DataInput implements Cloneable {
     try {
       clone = (DataInput)super.clone();
     } catch (CloneNotSupportedException e) {}
-
-    clone.bytes = null;
-    clone.chars = null;
 
     return clone;
   }

@@ -365,6 +365,10 @@ Bug fixes
 * LUCENE-2074: Reduce buffer size of lexer back to default on reset.
   (Ruben Laguna, Shai Erera via Uwe Schindler)
   
+* LUCENE-2422: Don't reuse byte[] in IndexInput/Output -- it gains
+  little performance, and ties up possibly large amounts of memory for
+  apps that index large docs.  (Ross Woolf via Mike McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight

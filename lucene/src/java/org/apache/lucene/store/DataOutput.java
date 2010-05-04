@@ -29,8 +29,6 @@ import org.apache.lucene.util.UnicodeUtil;
  */
 public abstract class DataOutput {
 
-  private BytesRef utf8Result = new BytesRef(10);
-
   /** Writes a single byte.
    * @see IndexInput#readByte()
    */
@@ -101,6 +99,7 @@ public abstract class DataOutput {
    * @see DataInput#readString()
    */
   public void writeString(String s) throws IOException {
+    final BytesRef utf8Result = new BytesRef(10);
     UnicodeUtil.UTF16toUTF8(s, 0, s.length(), utf8Result);
     writeVInt(utf8Result.length);
     writeBytes(utf8Result.bytes, 0, utf8Result.length);
