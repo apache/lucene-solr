@@ -1,3 +1,7 @@
+* This is a placeholder for 4.1, when 4.0 will be branched *
+
+============== DISABLED =============================================================================
+
 This folder contains the src/ folder of the previous Lucene major version.
 
 The test-backwards ANT task compiles the core classes of the previous version and its tests
