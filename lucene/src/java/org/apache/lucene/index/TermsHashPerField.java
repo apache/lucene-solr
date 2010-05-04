@@ -67,8 +67,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
 
     fieldState = docInverterPerField.fieldState;
     this.consumer = perThread.consumer.addField(this, fieldInfo);
-
-    postingsArray = consumer.createPostingsArray(postingsHashSize/2);
+    initPostingsArray();
     bytesUsed(postingsArray.size * postingsArray.bytesPerPosting());
 
     streamCount = consumer.getStreamCount();
@@ -78,6 +77,10 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       nextPerField = (TermsHashPerField) nextPerThread.addField(docInverterPerField, fieldInfo);
     else
       nextPerField = null;
+  }
+
+  private void initPostingsArray() {
+    postingsArray = consumer.createPostingsArray(2);
   }
 
   // sugar: just forwards to DW
@@ -107,10 +110,10 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       postingsHashMask = newSize-1;
     }
 
+    // Fully free the postings array on each flush:
     if (postingsArray != null) {
-      final int startSize = postingsArray.size;
-      postingsArray = postingsArray.shrink(targetSize, false);
-      bytesUsed(postingsArray.bytesPerPosting() * (postingsArray.size - startSize));
+      bytesUsed(-postingsArray.bytesPerPosting() * postingsArray.size);
+      postingsArray = null;
     }
   }
 
@@ -299,6 +302,10 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   @Override
   boolean start(Fieldable[] fields, int count) throws IOException {
     doCall = consumer.start(fields, count);
+    if (postingsArray == null) {
+      initPostingsArray();
+    }
+
     if (nextPerField != null)
       doNextCall = nextPerField.start(fields, count);
     return doCall || doNextCall;

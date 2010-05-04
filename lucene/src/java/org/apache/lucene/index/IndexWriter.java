@@ -3787,6 +3787,7 @@ public class IndexWriter implements Closeable {
       // never hit
       return false;
     } finally {
+      docWriter.clearFlushPending();
       docWriter.resumeAllThreads();
     }
   }
@@ -4540,6 +4541,9 @@ public class IndexWriter implements Closeable {
   // Apply buffered deletes to all segments.
   private final synchronized boolean applyDeletes() throws CorruptIndexException, IOException {
     assert testPoint("startApplyDeletes");
+    if (infoStream != null) {
+      message("applyDeletes");
+    }
     flushDeletesCount++;
     SegmentInfos rollback = (SegmentInfos) segmentInfos.clone();
     boolean success = false;
