@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.miscellaneous;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.KeywordTokenizer;
 import org.apache.lucene.analysis.StopFilter;
@@ -29,11 +30,7 @@ import org.apache.lucene.analysis.miscellaneous.SingleTokenTokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
-import org.apache.solr.SolrTestCaseJ4;
-import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.apache.solr.analysis.BaseTokenTestCase.*;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -43,96 +40,10 @@ import java.util.HashSet;
 
 /**
  * New WordDelimiterFilter tests... most of the tests are in ConvertedLegacyTest
+ * TODO: should explicitly test things like protWords and not rely on
+ * the factory tests in Solr.
  */
-public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
-
-  @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema.xml");
-  }
-
-  public void posTst(String v1, String v2, String s1, String s2) {
-    assertU(adoc("id",  "42",
-                 "subword", v1,
-                 "subword", v2));
-    assertU(commit());
-
-    // there is a positionIncrementGap of 100 between field values, so
-    // we test if that was maintained.
-    assertQ("position increment lost",
-            req("+id:42 +subword:\"" + s1 + ' ' + s2 + "\"~90")
-            ,"//result[@numFound=0]"
-    );
-    assertQ("position increment lost",
-            req("+id:42 +subword:\"" + s1 + ' ' + s2 + "\"~110")
-            ,"//result[@numFound=1]"
-    );
-    clearIndex();
-  }
-
-  @Test
-  public void testRetainPositionIncrement() {
-    posTst("foo","bar","foo","bar");
-    posTst("-foo-","-bar-","foo","bar");
-    posTst("foo","bar","-foo-","-bar-");
-
-    posTst("123","456","123","456");
-    posTst("/123/","/456/","123","456");
-
-    posTst("/123/abc","qwe/456/","abc","qwe");
-
-    posTst("zoo-foo","bar-baz","foo","bar");
-    posTst("zoo-foo-123","456-bar-baz","foo","bar");
-  }
-
-  @Test
-  public void testNoGenerationEdgeCase() {
-    assertU(adoc("id", "222", "numberpartfail", "123.123.123.123"));
-    clearIndex();
-  }
-
-  @Test
-  public void testIgnoreCaseChange() {
-
-    assertU(adoc("id",  "43",
-                 "wdf_nocase", "HellO WilliAM",
-                 "subword", "GoodBye JonEs"));
-    assertU(commit());
-    
-    assertQ("no case change",
-            req("wdf_nocase:(hell o am)")
-            ,"//result[@numFound=0]"
-    );
-    assertQ("case change",
-            req("subword:(good jon)")
-            ,"//result[@numFound=1]"
-    );
-    clearIndex();
-  }
-
-  @Test
-  public void testPreserveOrignalTrue() {
-
-    assertU(adoc("id",  "144",
-                 "wdf_preserve", "404-123"));
-    assertU(commit());
-    
-    assertQ("preserving original word",
-            req("wdf_preserve:404")
-            ,"//result[@numFound=1]"
-    );
-    
-    assertQ("preserving original word",
-        req("wdf_preserve:123")
-        ,"//result[@numFound=1]"
-    );
-
-    assertQ("preserving original word",
-        req("wdf_preserve:404-123*")
-        ,"//result[@numFound=1]"
-    );
-    clearIndex();
-  }
+public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
 
   /***
   public void testPerformance() throws IOException {
@@ -232,59 +143,6 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
         new int[] { 11, 15, 15 });
   }
 
-  @Test
-  public void testAlphaNumericWords(){
-     assertU(adoc("id",  "68","numericsubword","Java/J2SE"));
-     assertU(commit());
-
-     assertQ("j2se found",
-            req("numericsubword:(J2SE)")
-            ,"//result[@numFound=1]"
-    );
-      assertQ("no j2 or se",
-            req("numericsubword:(J2 OR SE)")
-            ,"//result[@numFound=0]"
-    );
-    clearIndex();
-  }
-
-  @Test
-  public void testProtectedWords(){
-    assertU(adoc("id", "70","protectedsubword","c# c++ .net Java/J2SE"));
-    assertU(commit());
-
-    assertQ("java found",
-            req("protectedsubword:(java)")
-            ,"//result[@numFound=1]"
-    );
-
-    assertQ(".net found",
-            req("protectedsubword:(.net)")
-            ,"//result[@numFound=1]"
-    );
-
-    assertQ("c# found",
-            req("protectedsubword:(c#)")
-            ,"//result[@numFound=1]"
-    );
-
-    assertQ("c++ found",
-            req("protectedsubword:(c++)")
-            ,"//result[@numFound=1]"
-    );
-
-    assertQ("c found?",
-            req("protectedsubword:c")
-            ,"//result[@numFound=0]"
-    );
-    assertQ("net found?",
-            req("protectedsubword:net")
-            ,"//result[@numFound=0]"
-    );
-    clearIndex();
-  }
-
-
   public void doSplit(final String input, String... output) throws Exception {
     WordDelimiterFilter wdf = new WordDelimiterFilter(new KeywordTokenizer(
         new StringReader(input)), 1, 1, 0, 0, 0);
@@ -368,13 +226,13 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
   
   @Test
   public void testPositionIncrements() throws Exception {
-    final CharArraySet protWords = new CharArraySet(DEFAULT_VERSION, new HashSet<String>(Arrays.asList("NUTCH")), false);
+    final CharArraySet protWords = new CharArraySet(TEST_VERSION_CURRENT, new HashSet<String>(Arrays.asList("NUTCH")), false);
     
     /* analyzer that uses whitespace + wdf */
     Analyzer a = new Analyzer() {
       public TokenStream tokenStream(String field, Reader reader) {
         return new WordDelimiterFilter(
-            new WhitespaceTokenizer(DEFAULT_VERSION, reader),
+            new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader),
             1, 1, 0, 0, 1, 1, 0, 1, 1, protWords);
       }
     };
@@ -401,7 +259,7 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
       public TokenStream tokenStream(String field, Reader reader) {
         return new WordDelimiterFilter(
             new LargePosIncTokenFilter(
-            new WhitespaceTokenizer(DEFAULT_VERSION, reader)),
+            new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader)),
             1, 1, 0, 0, 1, 1, 0, 1, 1, protWords);
       }
     };
@@ -431,8 +289,8 @@ public class TestWordDelimiterFilter extends SolrTestCaseJ4 {
 
     Analyzer a3 = new Analyzer() {
       public TokenStream tokenStream(String field, Reader reader) {
-        StopFilter filter = new StopFilter(DEFAULT_VERSION,
-            new WhitespaceTokenizer(DEFAULT_VERSION, reader), StandardAnalyzer.STOP_WORDS_SET);
+        StopFilter filter = new StopFilter(TEST_VERSION_CURRENT,
+            new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader), StandardAnalyzer.STOP_WORDS_SET);
         filter.setEnablePositionIncrements(true);
         return new WordDelimiterFilter(filter, 
             1, 1, 0, 0, 1, 1, 0, 1, 1, protWords);

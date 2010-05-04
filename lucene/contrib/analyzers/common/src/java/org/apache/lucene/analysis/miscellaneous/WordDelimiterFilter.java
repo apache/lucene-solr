@@ -15,7 +15,7 @@
  * limitations under the License.
  */
  
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.miscellaneous;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -58,10 +58,9 @@ import java.io.IOException;
  *  in the analyzer used for querying.  Given that the current StandardTokenizer immediately removes many intra-word
  *  delimiters, it is recommended that this filter be used after a tokenizer that does not do this (such as WhitespaceTokenizer).
  *
- *  @version $Id$
  */
 
-final class WordDelimiterFilter extends TokenFilter {
+public final class WordDelimiterFilter extends TokenFilter {
   
   public static final int LOWER = 0x01;
   public static final int UPPER = 0x02;

@@ -161,6 +161,8 @@ New features
      and phrases. 
    - o.a.l.analysis.charfilter.HTMLStripCharFilter: CharFilter that strips HTML 
      constructs.
+   - o.a.l.analysis.miscellaneous.WordDelimiterFilter: TokenFilter that splits words 
+     into subwords and performs optional transformations on subword groups.
    (... in progress)
 
 Build

@@ -1,4 +1,4 @@
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.miscellaneous;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,7 +17,7 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import static org.apache.solr.analysis.WordDelimiterFilter.*;
+import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.*;
 
 /**
  * A BreakIterator-like API for iterating over subwords in text, according to WordDelimiterFilter rules.
