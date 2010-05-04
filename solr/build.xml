@@ -37,7 +37,7 @@
   <property name="junit.details" value="1"/>
   
   <!-- change this together with the default and test's solrconfig.xml after starting a new development branch: -->
-  <property name="tests.luceneMatchVersion" value="3.1"/>
+  <property name="tests.luceneMatchVersion" value="4.0"/>
 
     <available
             property="clover.present"

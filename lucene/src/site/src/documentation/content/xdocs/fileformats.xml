@@ -12,7 +12,7 @@
 
             <p>
                 This document defines the index file formats used
-                in Lucene version 3.1. If you are using a different
+                in Lucene version 4.0. If you are using a different
                 version of Lucene, please consult the copy of
                 <code>docs/fileformats.html</code>
                 that was distributed
@@ -27,7 +27,7 @@
                 languages</a>.  If these versions are to remain compatible with Apache
                 Lucene, then a language-independent definition of the Lucene index
                 format is required.  This document thus attempts to provide a
-                complete and independent definition of the Apache Lucene 3.1 file
+                complete and independent definition of the Apache Lucene 4.0 file
                 formats.
             </p>
 
