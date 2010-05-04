@@ -17,6 +17,7 @@
 
 package org.apache.solr.analysis;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.pattern.PatternReplaceFilter;
 
 import java.util.Map;
 import java.util.regex.Pattern;

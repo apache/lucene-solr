@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.pattern.PatternTokenizer;
 import org.apache.solr.common.SolrException;
 
 

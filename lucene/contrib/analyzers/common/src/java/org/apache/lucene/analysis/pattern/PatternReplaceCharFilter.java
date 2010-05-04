@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.pattern;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -45,7 +45,6 @@ import org.apache.lucene.analysis.CharStream;
  * highlight snippet="aa1&lt;em&gt;23bb&lt;/em&gt;"
  * </p>
  * 
- * @version $Id$
  * @since Solr 1.5
  */
 public class PatternReplaceCharFilter extends BaseCharFilter {

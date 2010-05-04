@@ -92,6 +92,9 @@ API Changes
    stemming. Add Turkish and Romanian stopwords lists to support this.
    (Robert Muir, Uwe Schindler, Simon Willnauer)
    
+ * LUCENE-2413: Deprecated PatternAnalyzer in contrib/analyzers, in favor of the 
+   pattern package (CharFilter, Tokenizer, TokenFilter).  (Robert Muir)
+   
 New features
 
  * LUCENE-2306: Add NumericRangeFilter and NumericRangeQuery support to XMLQueryParser.
@@ -165,6 +168,8 @@ New features
      into subwords and performs optional transformations on subword groups.
    - o.a.l.analysis.miscellaneous.RemoveDuplicatesTokenFilter: TokenFilter which 
      filters out Tokens at the same position and Term text as the previous token.
+   - o.a.l.analysis.pattern: Package for pattern-based analysis, containing a 
+     CharFilter, Tokenizer, and Tokenfilter for transforming text with regexes.
    (... in progress)
 
 Build

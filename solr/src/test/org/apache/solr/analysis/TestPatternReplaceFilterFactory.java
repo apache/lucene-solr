@@ -17,25 +17,29 @@
 
 package org.apache.solr.analysis;
 
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
+
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.analysis.TokenStream;
+/**
+ * Simple tests to ensure this factory is working
+ */
+public class TestPatternReplaceFilterFactory extends BaseTokenTestCase {
 
-/** Simple Tests to ensure this factory is working */
-public class TestPatternTokenizerFactory extends BaseTokenTestCase 
-{
-  public void testFactory() throws Exception {
-    final String INPUT = "Günther Günther is here";
-
-    // create PatternTokenizer
-    Map<String,String> args = new HashMap<String, String>();
-    args.put( PatternTokenizerFactory.PATTERN, "[,;/\\s]+" );
-    PatternTokenizerFactory tokFactory = new PatternTokenizerFactory();
-    tokFactory.init( args );
-    TokenStream stream = tokFactory.create( new StringReader(INPUT) );
-    assertTokenStreamContents(stream,
-        new String[] { "Günther", "Günther", "is", "here" });
+  public void testReplaceAll() throws Exception {
+    String input = "aabfooaabfooabfoob ab caaaaaaaaab";
+    PatternReplaceFilterFactory factory = new PatternReplaceFilterFactory();
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("pattern", "a*b");
+    args.put("replacement", "-");
+    factory.init(args);
+    TokenStream ts = factory.create
+            (new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input)));
+                   
+    assertTokenStreamContents(ts, 
+        new String[] { "-foo-foo-foo-", "-", "c-" });
   }
 }

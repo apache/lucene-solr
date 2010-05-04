@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.pattern;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -35,7 +35,6 @@ import java.io.IOException;
  * string.
  * </p>
  * 
- * @version $Id:$
  * @see Pattern
  */
 public final class PatternReplaceFilter extends TokenFilter {

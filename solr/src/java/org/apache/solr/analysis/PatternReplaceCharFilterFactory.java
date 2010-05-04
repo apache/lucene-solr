@@ -22,6 +22,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.pattern.PatternReplaceCharFilter;
 
 /**
  * 

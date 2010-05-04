@@ -62,8 +62,10 @@ import org.apache.lucene.util.Version;
  *     pat.tokenStream("content", "James is running round in the woods"), 
  *     "English"));
  * </pre>
- *
+ * @deprecated use the pattern-based analysis in the analysis/pattern package instead.
+ * This analyzer will be removed in a future release (4.1)
  */
+@Deprecated
 public final class PatternAnalyzer extends Analyzer {
   
   /** <code>"\\W+"</code>; Divides text at non-letters (NOT Character.isLetter(c)) */
