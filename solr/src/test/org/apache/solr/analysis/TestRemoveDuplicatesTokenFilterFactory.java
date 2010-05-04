@@ -26,7 +26,8 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import java.util.Iterator;
 import java.util.Arrays;
 
-public class TestRemoveDuplicatesTokenFilter extends BaseTokenTestCase {
+/** Simple tests to ensure this factory is working */
+public class TestRemoveDuplicatesTokenFilterFactory extends BaseTokenTestCase {
 
   public static Token tok(int pos, String t, int start, int end) {
     Token tok = new Token(t,start,end);
@@ -63,23 +64,8 @@ public class TestRemoveDuplicatesTokenFilter extends BaseTokenTestCase {
     
     assertTokenStreamContents(ts, expected.split("\\s"));   
   }
-  
-  public void testNoDups() throws Exception {
-
-    testDups("A B B C D E"
-             ,tok(1,"A", 0,  4)
-             ,tok(1,"B", 5, 10)
-             ,tok(1,"B",11, 15)
-             ,tok(1,"C",16, 20)
-             ,tok(0,"D",16, 20)
-             ,tok(1,"E",21, 25)
-             );
-    
-  }
-  
-
+ 
   public void testSimpleDups() throws Exception {
-
     testDups("A B C D E"
              ,tok(1,"A", 0,  4)
              ,tok(1,"B", 5, 10)
@@ -87,34 +73,6 @@ public class TestRemoveDuplicatesTokenFilter extends BaseTokenTestCase {
              ,tok(1,"C",16, 20)
              ,tok(0,"D",16, 20)
              ,tok(1,"E",21, 25)
-             );
-    
+             ); 
   }
-  
-  public void testComplexDups() throws Exception {
-
-    testDups("A B C D E F G H I J K"
-             ,tok(1,"A")
-             ,tok(1,"B")
-             ,tok(0,"B")
-             ,tok(1,"C")
-             ,tok(1,"D")
-             ,tok(0,"D")
-             ,tok(0,"D")
-             ,tok(1,"E")
-             ,tok(1,"F")
-             ,tok(0,"F")
-             ,tok(1,"G")
-             ,tok(0,"H")
-             ,tok(0,"H")
-             ,tok(1,"I")
-             ,tok(1,"J")
-             ,tok(0,"K")
-             ,tok(0,"J")
-             );
-             
-  }
-  
-  
-
 }
