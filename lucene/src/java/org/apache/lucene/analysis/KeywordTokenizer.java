@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.AttributeSource;
 
 /**
@@ -31,10 +31,10 @@ public final class KeywordTokenizer extends Tokenizer {
   
   private static final int DEFAULT_BUFFER_SIZE = 256;
 
-  private boolean done;
+  private boolean done = false;
   private int finalOffset;
-  private TermAttribute termAtt;
-  private OffsetAttribute offsetAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   
   public KeywordTokenizer(Reader input) {
     this(input, DEFAULT_BUFFER_SIZE);
@@ -42,24 +42,17 @@ public final class KeywordTokenizer extends Tokenizer {
 
   public KeywordTokenizer(Reader input, int bufferSize) {
     super(input);
-    init(bufferSize);
+    termAtt.resizeBuffer(bufferSize);
   }
 
   public KeywordTokenizer(AttributeSource source, Reader input, int bufferSize) {
     super(source, input);
-    init(bufferSize);
+    termAtt.resizeBuffer(bufferSize);
   }
 
   public KeywordTokenizer(AttributeFactory factory, Reader input, int bufferSize) {
     super(factory, input);
-    init(bufferSize);
-  }
-  
-  private void init(int bufferSize) {
-    this.done = false;
-    termAtt = addAttribute(TermAttribute.class);
-    offsetAtt = addAttribute(OffsetAttribute.class);
-    termAtt.resizeTermBuffer(bufferSize);    
+    termAtt.resizeBuffer(bufferSize);
   }
   
   @Override
@@ -68,15 +61,15 @@ public final class KeywordTokenizer extends Tokenizer {
       clearAttributes();
       done = true;
       int upto = 0;
-      char[] buffer = termAtt.termBuffer();
+      char[] buffer = termAtt.buffer();
       while (true) {
         final int length = input.read(buffer, upto, buffer.length-upto);
         if (length == -1) break;
         upto += length;
         if (upto == buffer.length)
-          buffer = termAtt.resizeTermBuffer(1+buffer.length);
+          buffer = termAtt.resizeBuffer(1+buffer.length);
       }
-      termAtt.setTermLength(upto);
+      termAtt.setLength(upto);
       finalOffset = correctOffset(upto);
       offsetAtt.setOffset(correctOffset(0), finalOffset);
       return true;

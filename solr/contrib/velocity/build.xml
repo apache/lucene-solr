@@ -87,6 +87,10 @@
   	 <sysproperty key="java.util.logging.config.file" value="${common-solr.dir}/testlogging.properties"/>
       <formatter type="brief" usefile="false"/>
       <classpath refid="test.classpath"/>
+      <assertions>
+        <enable package="org.apache.lucene"/>
+        <enable package="org.apache.solr"/>
+      </assertions>
       <!--<formatter type="xml" usefile="false"/>-->
       <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
         <fileset dir="src/test" includes="${junit.includes}"/>

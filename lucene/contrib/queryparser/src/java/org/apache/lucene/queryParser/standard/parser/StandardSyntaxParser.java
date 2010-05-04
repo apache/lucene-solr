@@ -19,10 +19,14 @@ package org.apache.lucene.queryParser.standard.parser;
  */
 
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Vector;
 
 import org.apache.lucene.messages.Message;
 import org.apache.lucene.messages.MessageImpl;
+import org.apache.lucene.queryParser.core.QueryNodeError;
+import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.QueryNodeParseException;
 import org.apache.lucene.queryParser.core.messages.QueryParserMessages;
 import org.apache.lucene.queryParser.core.nodes.AndQueryNode;
@@ -30,14 +34,17 @@ import org.apache.lucene.queryParser.core.nodes.BooleanQueryNode;
 import org.apache.lucene.queryParser.core.nodes.BoostQueryNode;
 import org.apache.lucene.queryParser.core.nodes.FieldQueryNode;
 import org.apache.lucene.queryParser.core.nodes.FuzzyQueryNode;
-import org.apache.lucene.queryParser.core.nodes.GroupQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ModifierQueryNode;
+import org.apache.lucene.queryParser.core.nodes.GroupQueryNode;
+import org.apache.lucene.queryParser.core.nodes.OpaqueQueryNode;
 import org.apache.lucene.queryParser.core.nodes.OrQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricRangeQueryNode;
-import org.apache.lucene.queryParser.core.nodes.QueryNode;
-import org.apache.lucene.queryParser.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryParser.core.nodes.SlopQueryNode;
+import org.apache.lucene.queryParser.core.nodes.ProximityQueryNode;
+import org.apache.lucene.queryParser.core.nodes.QueryNode;
+import org.apache.lucene.queryParser.core.nodes.QueryNodeImpl;
+import org.apache.lucene.queryParser.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryParser.core.parser.SyntaxParser;
 
 @SuppressWarnings("all")

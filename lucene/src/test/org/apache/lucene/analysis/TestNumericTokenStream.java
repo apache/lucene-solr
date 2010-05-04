@@ -18,7 +18,7 @@ package org.apache.lucene.analysis;
  */
 
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 public class TestNumericTokenStream extends BaseTokenStreamTestCase {
@@ -29,11 +29,11 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
   public void testLongStream() throws Exception {
     final NumericTokenStream stream=new NumericTokenStream().setLongValue(lvalue);
     // use getAttribute to test if attributes really exist, if not an IAE will be throwed
-    final TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
+    final CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
     final TypeAttribute typeAtt = stream.getAttribute(TypeAttribute.class);
     for (int shift=0; shift<64; shift+=NumericUtils.PRECISION_STEP_DEFAULT) {
       assertTrue("New token is available", stream.incrementToken());
-      assertEquals("Term is correctly encoded", NumericUtils.longToPrefixCoded(lvalue, shift), termAtt.term());
+      assertEquals("Term is correctly encoded", NumericUtils.longToPrefixCoded(lvalue, shift), termAtt.toString());
       assertEquals("Type correct", (shift == 0) ? NumericTokenStream.TOKEN_TYPE_FULL_PREC : NumericTokenStream.TOKEN_TYPE_LOWER_PREC, typeAtt.type());
     }
     assertFalse("No more tokens available", stream.incrementToken());
@@ -42,11 +42,11 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
   public void testIntStream() throws Exception {
     final NumericTokenStream stream=new NumericTokenStream().setIntValue(ivalue);
     // use getAttribute to test if attributes really exist, if not an IAE will be throwed
-    final TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
+    final CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
     final TypeAttribute typeAtt = stream.getAttribute(TypeAttribute.class);
     for (int shift=0; shift<32; shift+=NumericUtils.PRECISION_STEP_DEFAULT) {
       assertTrue("New token is available", stream.incrementToken());
-      assertEquals("Term is correctly encoded", NumericUtils.intToPrefixCoded(ivalue, shift), termAtt.term());
+      assertEquals("Term is correctly encoded", NumericUtils.intToPrefixCoded(ivalue, shift), termAtt.toString());
       assertEquals("Type correct", (shift == 0) ? NumericTokenStream.TOKEN_TYPE_FULL_PREC : NumericTokenStream.TOKEN_TYPE_LOWER_PREC, typeAtt.type());
     }
     assertFalse("No more tokens available", stream.incrementToken());

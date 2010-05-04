@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.MappingCharFilter;
 import org.apache.lucene.analysis.NormalizeCharMap;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 public class TestPatternTokenizerFactory extends BaseTokenTestCase 
 {
@@ -117,17 +117,17 @@ public class TestPatternTokenizerFactory extends BaseTokenTestCase
    */
   private static String tsToString(TokenStream in) throws IOException {
     StringBuilder out = new StringBuilder();
-    TermAttribute termAtt = in.addAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = in.addAttribute(CharTermAttribute.class);
     // extra safety to enforce, that the state is not preserved and also
     // assign bogus values
     in.clearAttributes();
-    termAtt.setTermBuffer("bogusTerm");
+    termAtt.setEmpty().append("bogusTerm");
     while (in.incrementToken()) {
       if (out.length() > 0)
         out.append(' ');
-      out.append(termAtt.term());
+      out.append(termAtt.toString());
       in.clearAttributes();
-      termAtt.setTermBuffer("bogusTerm");
+      termAtt.setEmpty().append("bogusTerm");
     }
 
     in.close();

@@ -19,17 +19,17 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * Removes words that are too long or too short from the stream.
  */
 public final class LengthFilter extends TokenFilter {
 
-  final int min;
-  final int max;
+  private final int min;
+  private final int max;
   
-  private TermAttribute termAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
   /**
    * Build a filter that removes words that are too long or too
@@ -40,7 +40,6 @@ public final class LengthFilter extends TokenFilter {
     super(in);
     this.min = min;
     this.max = max;
-    termAtt = addAttribute(TermAttribute.class);
   }
   
   /**
@@ -50,7 +49,7 @@ public final class LengthFilter extends TokenFilter {
   public final boolean incrementToken() throws IOException {
     // return the first non-stop word found
     while (input.incrementToken()) {
-      int len = termAtt.termLength();
+      int len = termAtt.length();
       if (len >= min && len <= max) {
           return true;
       }

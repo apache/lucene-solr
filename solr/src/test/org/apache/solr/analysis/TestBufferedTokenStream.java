@@ -21,7 +21,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 import java.io.IOException;
 import java.io.StringReader;
@@ -75,18 +75,18 @@ public class TestBufferedTokenStream extends BaseTokenTestCase {
     final String input = "How now A B brown A cow B like A B thing?";
     Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input));
     TokenStream ts = new AB_AAB_Stream(tokenizer);
-    TermAttribute term = ts.addAttribute(TermAttribute.class);
+    CharTermAttribute term = ts.addAttribute(CharTermAttribute.class);
     assertTrue(ts.incrementToken());
-    assertEquals("How", term.term());
+    assertEquals("How", term.toString());
     assertTrue(ts.incrementToken());
-    assertEquals("now", term.term());
+    assertEquals("now", term.toString());
     assertTrue(ts.incrementToken());
-    assertEquals("A", term.term());
+    assertEquals("A", term.toString());
     // reset back to input, 
     // if reset() does not work correctly then previous buffered tokens will remain 
     tokenizer.reset(new StringReader(input));
     ts.reset();
     assertTrue(ts.incrementToken());
-    assertEquals("How", term.term());
+    assertEquals("How", term.toString());
   }
 }

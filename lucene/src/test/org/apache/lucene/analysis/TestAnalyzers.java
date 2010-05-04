@@ -24,7 +24,7 @@ import java.io.Reader;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.Payload;
 
 public class TestAnalyzers extends BaseTokenStreamTestCase {
@@ -120,26 +120,6 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     String[] y = StandardTokenizer.TOKEN_TYPES;
   }
 
-  private static class MyStandardAnalyzer extends StandardAnalyzer {
-    public MyStandardAnalyzer() {
-      super(TEST_VERSION_CURRENT);
-    }
-  
-    @Override
-    public TokenStream tokenStream(String field, Reader reader) {
-      return new WhitespaceAnalyzer(TEST_VERSION_CURRENT).tokenStream(field, reader);
-    }
-  }
-
-  public void testSubclassOverridingOnlyTokenStream() throws Throwable {
-    Analyzer a = new MyStandardAnalyzer();
-    TokenStream ts = a.reusableTokenStream("field", new StringReader("the"));
-    // StandardAnalyzer will discard "the" (it's a
-    // stopword), by my subclass will not:
-    assertTrue(ts.incrementToken());
-    assertFalse(ts.incrementToken());
-  }
-  
   private static class LowerCaseWhitespaceAnalyzer extends Analyzer {
 
     @Override
@@ -202,8 +182,8 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     String highSurEndingLower = "bogustermboguster\ud801";
     tokenizer.reset(new StringReader(highSurEndingUpper));
     assertTokenStreamContents(filter, new String[] {highSurEndingLower});
-    assertTrue(filter.hasAttribute(TermAttribute.class));
-    char[] termBuffer = filter.getAttribute(TermAttribute.class).termBuffer();
+    assertTrue(filter.hasAttribute(CharTermAttribute.class));
+    char[] termBuffer = filter.getAttribute(CharTermAttribute.class).buffer();
     int length = highSurEndingLower.length();
     assertEquals('\ud801', termBuffer[length - 1]);
     assertEquals('\udc3e', termBuffer[length]);

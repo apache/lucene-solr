@@ -19,7 +19,7 @@ package org.apache.lucene.analysis;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.CharacterUtils;
 import org.apache.lucene.util.Version;
 
@@ -34,7 +34,8 @@ import org.apache.lucene.util.Version;
  */
 public final class LowerCaseFilter extends TokenFilter {
   private final CharacterUtils charUtils;
-
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  
   /**
    * Create a new LowerCaseFilter, that normalizes token text to lower case.
    * 
@@ -43,7 +44,6 @@ public final class LowerCaseFilter extends TokenFilter {
    */
   public LowerCaseFilter(Version matchVersion, TokenStream in) {
     super(in);
-    termAtt = addAttribute(TermAttribute.class);
     charUtils = CharacterUtils.getInstance(matchVersion);
   }
   
@@ -55,13 +55,11 @@ public final class LowerCaseFilter extends TokenFilter {
     this(Version.LUCENE_30, in);
   }
 
-  private TermAttribute termAtt;
-  
   @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      final char[] buffer = termAtt.termBuffer();
-      final int length = termAtt.termLength();
+      final char[] buffer = termAtt.buffer();
+      final int length = termAtt.length();
       for (int i = 0; i < length;) {
        i += Character.toChars(
                Character.toLowerCase(

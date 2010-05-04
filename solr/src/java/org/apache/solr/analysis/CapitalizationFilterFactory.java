@@ -18,7 +18,7 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -188,22 +188,21 @@ public class CapitalizationFilterFactory extends BaseTokenFilterFactory {
  * <p/>
  * This is package protected since it is not useful without the Factory
  */
-class CapitalizationFilter extends TokenFilter {
+final class CapitalizationFilter extends TokenFilter {
   private final CapitalizationFilterFactory factory;
-  private final TermAttribute termAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
   public CapitalizationFilter(TokenStream in, final CapitalizationFilterFactory factory) {
     super(in);
     this.factory = factory;
-    this.termAtt = addAttribute(TermAttribute.class);
   }
 
   @Override
   public boolean incrementToken() throws IOException {
     if (!input.incrementToken()) return false;
 
-    char[] termBuffer = termAtt.termBuffer();
-    int termBufferLength = termAtt.termLength();
+    char[] termBuffer = termAtt.buffer();
+    int termBufferLength = termAtt.length();
     char[] backup = null;
     if (factory.maxWordCount < CapitalizationFilterFactory.DEFAULT_MAX_WORD_COUNT) {
       //make a backup in case we exceed the word count
@@ -232,7 +231,7 @@ class CapitalizationFilter extends TokenFilter {
       }
 
       if (wordCount > factory.maxWordCount) {
-        termAtt.setTermBuffer(backup, 0, termBufferLength);
+        termAtt.copyBuffer(backup, 0, termBufferLength);
       }
     }
 

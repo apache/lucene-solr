@@ -100,8 +100,8 @@ public abstract class ReusableAnalyzerBase extends Analyzer {
    * {@link Analyzer#reusableTokenStream(String, Reader)}.
    */
   public static class TokenStreamComponents {
-    final Tokenizer source;
-    final TokenStream sink;
+    protected final Tokenizer source;
+    protected final TokenStream sink;
 
     /**
      * Creates a new {@link TokenStreamComponents} instance.

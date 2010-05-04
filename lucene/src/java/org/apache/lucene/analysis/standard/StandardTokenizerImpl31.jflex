@@ -19,23 +19,19 @@ package org.apache.lucene.analysis.standard;
 
 /*
 
-WARNING: if you change StandardTokenizerImpl.jflex and need to regenerate
-      the tokenizer, only use Java 1.4 !!!
-      This grammar currently uses constructs (eg :digit:, :letter:) whose 
-      meaning can vary according to the JRE used to run jflex.  See
-      https://issues.apache.org/jira/browse/LUCENE-1126 for details.
-      For current backwards compatibility it is needed to support
-      only Java 1.4 - this will change in Lucene 3.1.
+WARNING: if you change StandardTokenizerImpl*.jflex and need to regenerate
+      the tokenizer, only use the trunk version of JFlex 1.5 at the moment!
 
 */
 
-import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import java.io.Reader;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 %%
 
-%class StandardTokenizerImpl
-%unicode
+%class StandardTokenizerImpl31
+%implements StandardTokenizerInterface
+%unicode 4.0
 %integer
 %function getNextToken
 %pack
@@ -55,7 +51,6 @@ public static final int CJ                = StandardTokenizer.CJ;
  * @deprecated this solves a bug where HOSTs that end with '.' are identified
  *             as ACRONYMs.
  */
-@Deprecated
 public static final int ACRONYM_DEP       = StandardTokenizer.ACRONYM_DEP;
 
 public static final String [] TOKEN_TYPES = StandardTokenizer.TOKEN_TYPES;
@@ -66,17 +61,21 @@ public final int yychar()
 }
 
 /**
- * Fills Lucene token with the current token text.
+ * Fills CharTermAttribute with the current token text.
  */
-final void getText(Token t) {
-  t.setTermBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
+public final void getText(CharTermAttribute t) {
+  t.copyBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
 }
 
 /**
- * Fills TermAttribute with the current token text.
+ * Resets the Tokenizer to a new Reader.
  */
-final void getText(TermAttribute t) {
-  t.setTermBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
+public final void reset(Reader r) {
+  // reset to default buffer size, if buffer has grown
+  if (zzBuffer.length > ZZ_BUFFERSIZE) {
+    zzBuffer = new char[ZZ_BUFFERSIZE];
+  }
+  yyreset(r);
 }
 
 %}

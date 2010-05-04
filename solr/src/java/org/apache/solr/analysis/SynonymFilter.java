@@ -22,7 +22,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
 
@@ -41,7 +41,7 @@ import java.util.LinkedList;
  *
  * @version $Id$
  */
-public class SynonymFilter extends TokenFilter {
+public final class SynonymFilter extends TokenFilter {
 
   private final SynonymMap map;  // Map<String, SynonymMap>
   private Iterator<AttributeSource> replacement;  // iterator over generated tokens
@@ -50,7 +50,7 @@ public class SynonymFilter extends TokenFilter {
     super(in);
     this.map = map;
     // just ensuring these attributes exist...
-    addAttribute(TermAttribute.class);
+    addAttribute(CharTermAttribute.class);
     addAttribute(PositionIncrementAttribute.class);
     addAttribute(OffsetAttribute.class);
     addAttribute(TypeAttribute.class);
@@ -87,8 +87,8 @@ public class SynonymFilter extends TokenFilter {
       // common case fast-path of first token not matching anything
       AttributeSource firstTok = nextTok();
       if (firstTok == null) return false;
-      TermAttribute termAtt = firstTok.addAttribute(TermAttribute.class);
-      SynonymMap result = map.submap!=null ? map.submap.get(termAtt.termBuffer(), 0, termAtt.termLength()) : null;
+      CharTermAttribute termAtt = firstTok.addAttribute(CharTermAttribute.class);
+      SynonymMap result = map.submap!=null ? map.submap.get(termAtt.buffer(), 0, termAtt.length()) : null;
       if (result == null) {
         copy(this, firstTok);
         return true;
@@ -128,14 +128,14 @@ public class SynonymFilter extends TokenFilter {
       for (int i=0; i<result.synonyms.length; i++) {
         Token repTok = result.synonyms[i];
         AttributeSource newTok = firstTok.cloneAttributes();
-        TermAttribute newTermAtt = newTok.addAttribute(TermAttribute.class);
+        CharTermAttribute newTermAtt = newTok.addAttribute(CharTermAttribute.class);
         OffsetAttribute newOffsetAtt = newTok.addAttribute(OffsetAttribute.class);
         PositionIncrementAttribute newPosIncAtt = newTok.addAttribute(PositionIncrementAttribute.class);
 
         OffsetAttribute lastOffsetAtt = lastTok.addAttribute(OffsetAttribute.class);
 
         newOffsetAtt.setOffset(newOffsetAtt.startOffset(), lastOffsetAtt.endOffset());
-        newTermAtt.setTermBuffer(repTok.termBuffer(), 0, repTok.termLength());
+        newTermAtt.copyBuffer(repTok.termBuffer(), 0, repTok.termLength());
         repPos += repTok.getPositionIncrement();
         if (i==0) repPos=origPos;  // make position of first token equal to original
 
@@ -215,8 +215,8 @@ public class SynonymFilter extends TokenFilter {
         if (tok == this)
           tok = cloneAttributes();
         // check for positionIncrement!=1?  if>1, should not match, if==0, check multiple at this level?
-        TermAttribute termAtt = tok.getAttribute(TermAttribute.class);
-        SynonymMap subMap = map.submap.get(termAtt.termBuffer(), 0, termAtt.termLength());
+        CharTermAttribute termAtt = tok.getAttribute(CharTermAttribute.class);
+        SynonymMap subMap = map.submap.get(termAtt.buffer(), 0, termAtt.length());
 
         if (subMap != null) {
           // recurse

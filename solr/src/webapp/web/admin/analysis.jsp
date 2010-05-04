@@ -213,17 +213,17 @@
 
          final Iterator<Token> iter = tokens.iterator();
          tstream = filtfac.create( new TokenStream() {
-           TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
-           OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute (OffsetAttribute.class);
-           TypeAttribute typeAtt = (TypeAttribute) addAttribute (TypeAttribute.class);
-           FlagsAttribute flagsAtt = (FlagsAttribute) addAttribute (FlagsAttribute.class);
-           PayloadAttribute payloadAtt = (PayloadAttribute) addAttribute (PayloadAttribute.class);
-           PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) addAttribute (PositionIncrementAttribute.class);
+           CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+           OffsetAttribute offsetAtt = addAttribute (OffsetAttribute.class);
+           TypeAttribute typeAtt = addAttribute (TypeAttribute.class);
+           FlagsAttribute flagsAtt = addAttribute (FlagsAttribute.class);
+           PayloadAttribute payloadAtt = addAttribute (PayloadAttribute.class);
+           PositionIncrementAttribute posIncAtt = addAttribute (PositionIncrementAttribute.class);
            
            public boolean incrementToken() throws IOException {
              if (iter.hasNext()) {
                Token token = iter.next();
-               termAtt.setTermBuffer(token.termBuffer(), 0, token.termLength());
+               termAtt.copyBuffer(token.termBuffer(), 0, token.termLength());
                offsetAtt.setOffset(token.startOffset(), token.endOffset());
                typeAtt.setType(token.type());
                flagsAtt.setFlags(token.getFlags());
@@ -255,19 +255,19 @@
 
   static List<Token> getTokens(TokenStream tstream) throws IOException {
     List<Token> tokens = new ArrayList<Token>();
-    TermAttribute termAtt = (TermAttribute) tstream.addAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) tstream.addAttribute (OffsetAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) tstream.addAttribute (TypeAttribute.class);
-    FlagsAttribute flagsAtt = (FlagsAttribute) tstream.addAttribute (FlagsAttribute.class);
-    PayloadAttribute payloadAtt = (PayloadAttribute) tstream.addAttribute (PayloadAttribute.class);
-    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) tstream.addAttribute (PositionIncrementAttribute.class);
+    CharTermAttribute termAtt = tstream.addAttribute(CharTermAttribute.class);
+    OffsetAttribute offsetAtt = tstream.addAttribute (OffsetAttribute.class);
+    TypeAttribute typeAtt = tstream.addAttribute (TypeAttribute.class);
+    FlagsAttribute flagsAtt = tstream.addAttribute (FlagsAttribute.class);
+    PayloadAttribute payloadAtt = tstream.addAttribute (PayloadAttribute.class);
+    PositionIncrementAttribute posIncAtt = tstream.addAttribute (PositionIncrementAttribute.class);
    
     while (true) {
       if (!tstream.incrementToken())
         break;
       else {
       	Token token = new Token();
-      	token.setTermBuffer(termAtt.termBuffer(), 0, termAtt.termLength());
+      	token.setTermBuffer(termAtt.buffer(), 0, termAtt.length());
       	token.setType(typeAtt.type());
       	token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
       	token.setPayload(payloadAtt.getPayload());

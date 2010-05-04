@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
@@ -148,14 +148,14 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     private int prevStartOffset;
     private int prevEndOffset;
     
-    TermAttribute termAtt;
+    CharTermAttribute termAtt;
     PositionIncrementAttribute posIncrAtt;
     OffsetAttribute offsetAtt;
     TypeAttribute typeAtt;
     
     public TestFilter(TokenStream in) {
       super(in);
-      termAtt = addAttribute(TermAttribute.class);
+      termAtt = addAttribute(CharTermAttribute.class);
       posIncrAtt = addAttribute(PositionIncrementAttribute.class);
       offsetAtt = addAttribute(OffsetAttribute.class);
       typeAtt = addAttribute(TypeAttribute.class);
@@ -164,7 +164,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     @Override
     public final boolean incrementToken() throws java.io.IOException {
       if (multiToken > 0) {
-        termAtt.setTermBuffer("multi"+(multiToken+1));
+        termAtt.setEmpty().append("multi"+(multiToken+1));
         offsetAtt.setOffset(prevStartOffset, prevEndOffset);
         typeAtt.setType(prevType);
         posIncrAtt.setPositionIncrement(0);
@@ -178,7 +178,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
         prevType = typeAtt.type();
         prevStartOffset = offsetAtt.startOffset();
         prevEndOffset = offsetAtt.endOffset();
-        String text = termAtt.term();
+        String text = termAtt.toString();
         if (text.equals("triplemulti")) {
           multiToken = 2;
           return true;
@@ -212,21 +212,21 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
 
   private final class TestPosIncrementFilter extends TokenFilter {
     
-    TermAttribute termAtt;
+    CharTermAttribute termAtt;
     PositionIncrementAttribute posIncrAtt;
     
     public TestPosIncrementFilter(TokenStream in) {
       super(in);
-      termAtt = addAttribute(TermAttribute.class);
+      termAtt = addAttribute(CharTermAttribute.class);
       posIncrAtt = addAttribute(PositionIncrementAttribute.class);
     }
 
     @Override
     public final boolean incrementToken () throws java.io.IOException {
       while(input.incrementToken()) {
-        if (termAtt.term().equals("the")) {
+        if (termAtt.toString().equals("the")) {
           // stopword, do nothing
-        } else if (termAtt.term().equals("quick")) {
+        } else if (termAtt.toString().equals("quick")) {
           posIncrAtt.setPositionIncrement(2);
           return true;
         } else {

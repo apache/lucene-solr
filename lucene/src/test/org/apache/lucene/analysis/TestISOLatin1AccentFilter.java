@@ -17,14 +17,14 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import java.io.StringReader;
 
 public class TestISOLatin1AccentFilter extends BaseTokenStreamTestCase {
   public void testU() throws Exception {
     TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("Des mot clés À LA CHAÎNE À Á Â Ã Ä Å Æ Ç È É Ê Ë Ì Í Î Ï Ĳ Ð Ñ Ò Ó Ô Õ Ö Ø Œ Þ Ù Ú Û Ü Ý Ÿ à á â ã ä å æ ç è é ê ë ì í î ï ĳ ð ñ ò ó ô õ ö ø œ ß þ ù ú û ü ý ÿ ﬁ ﬂ"));
     ISOLatin1AccentFilter filter = new ISOLatin1AccentFilter(stream);
-    TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     assertTermEquals("Des", filter, termAtt);
     assertTermEquals("mot", filter, termAtt);
     assertTermEquals("cles", filter, termAtt);
@@ -103,8 +103,8 @@ public class TestISOLatin1AccentFilter extends BaseTokenStreamTestCase {
     assertFalse(filter.incrementToken());
   }
   
-  void assertTermEquals(String expected, TokenStream stream, TermAttribute termAtt) throws Exception {
+  void assertTermEquals(String expected, TokenStream stream, CharTermAttribute termAtt) throws Exception {
     assertTrue(stream.incrementToken());
-    assertEquals(expected, termAtt.term());
+    assertEquals(expected, termAtt.toString());
   }
 }

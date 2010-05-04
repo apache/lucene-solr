@@ -23,7 +23,7 @@ import java.io.Reader;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
@@ -55,7 +55,7 @@ import org.apache.lucene.util.Version;
 
 public final class StandardTokenizer extends Tokenizer {
   /** A private instance of the JFlex-constructed scanner */
-  private final StandardTokenizerImpl scanner;
+  private StandardTokenizerInterface scanner;
 
   public static final int ALPHANUM          = 0;
   public static final int APOSTROPHE        = 1;
@@ -111,7 +111,6 @@ public final class StandardTokenizer extends Tokenizer {
    */
   public StandardTokenizer(Version matchVersion, Reader input) {
     super();
-    this.scanner = new StandardTokenizerImpl(input);
     init(input, matchVersion);
   }
 
@@ -120,7 +119,6 @@ public final class StandardTokenizer extends Tokenizer {
    */
   public StandardTokenizer(Version matchVersion, AttributeSource source, Reader input) {
     super(source);
-    this.scanner = new StandardTokenizerImpl(input);
     init(input, matchVersion);
   }
 
@@ -129,29 +127,26 @@ public final class StandardTokenizer extends Tokenizer {
    */
   public StandardTokenizer(Version matchVersion, AttributeFactory factory, Reader input) {
     super(factory);
-    this.scanner = new StandardTokenizerImpl(input);
     init(input, matchVersion);
   }
 
-  private void init(Reader input, Version matchVersion) {
+  private final void init(Reader input, Version matchVersion) {
+    this.scanner = matchVersion.onOrAfter(Version.LUCENE_31) ?
+      new StandardTokenizerImpl31(input) : new StandardTokenizerImplOrig(input);
     if (matchVersion.onOrAfter(Version.LUCENE_24)) {
       replaceInvalidAcronym = true;
     } else {
       replaceInvalidAcronym = false;
     }
     this.input = input;    
-    termAtt = addAttribute(TermAttribute.class);
-    offsetAtt = addAttribute(OffsetAttribute.class);
-    posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-    typeAtt = addAttribute(TypeAttribute.class);
   }
 
   // this tokenizer generates three attributes:
-  // offset, positionIncrement and type
-  private TermAttribute termAtt;
-  private OffsetAttribute offsetAtt;
-  private PositionIncrementAttribute posIncrAtt;
-  private TypeAttribute typeAtt;
+  // term offset, positionIncrement and type
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
 
   /*
    * (non-Javadoc)
@@ -166,7 +161,7 @@ public final class StandardTokenizer extends Tokenizer {
     while(true) {
       int tokenType = scanner.getNextToken();
 
-      if (tokenType == StandardTokenizerImpl.YYEOF) {
+      if (tokenType == StandardTokenizerInterface.YYEOF) {
         return false;
       }
 
@@ -174,19 +169,19 @@ public final class StandardTokenizer extends Tokenizer {
         posIncrAtt.setPositionIncrement(posIncr);
         scanner.getText(termAtt);
         final int start = scanner.yychar();
-        offsetAtt.setOffset(correctOffset(start), correctOffset(start+termAtt.termLength()));
+        offsetAtt.setOffset(correctOffset(start), correctOffset(start+termAtt.length()));
         // This 'if' should be removed in the next release. For now, it converts
         // invalid acronyms to HOST. When removed, only the 'else' part should
         // remain.
-        if (tokenType == StandardTokenizerImpl.ACRONYM_DEP) {
+        if (tokenType == StandardTokenizer.ACRONYM_DEP) {
           if (replaceInvalidAcronym) {
-            typeAtt.setType(StandardTokenizerImpl.TOKEN_TYPES[StandardTokenizerImpl.HOST]);
-            termAtt.setTermLength(termAtt.termLength() - 1); // remove extra '.'
+            typeAtt.setType(StandardTokenizer.TOKEN_TYPES[StandardTokenizer.HOST]);
+            termAtt.setLength(termAtt.length() - 1); // remove extra '.'
           } else {
-            typeAtt.setType(StandardTokenizerImpl.TOKEN_TYPES[StandardTokenizerImpl.ACRONYM]);
+            typeAtt.setType(StandardTokenizer.TOKEN_TYPES[StandardTokenizer.ACRONYM]);
           }
         } else {
-          typeAtt.setType(StandardTokenizerImpl.TOKEN_TYPES[tokenType]);
+          typeAtt.setType(StandardTokenizer.TOKEN_TYPES[tokenType]);
         }
         return true;
       } else
@@ -203,21 +198,10 @@ public final class StandardTokenizer extends Tokenizer {
     offsetAtt.setOffset(finalOffset, finalOffset);
   }
 
-  /*
-   * (non-Javadoc)
-   *
-   * @see org.apache.lucene.analysis.TokenStream#reset()
-   */
-  @Override
-  public void reset() throws IOException {
-    super.reset();
-    scanner.yyreset(input);
-  }
-
   @Override
   public void reset(Reader reader) throws IOException {
     super.reset(reader);
-    reset();
+    scanner.reset(reader);
   }
 
   /**

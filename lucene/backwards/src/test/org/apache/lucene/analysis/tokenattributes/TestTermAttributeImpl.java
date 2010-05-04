@@ -107,10 +107,10 @@ public class TestTermAttributeImpl extends LuceneTestCase {
     char[] b = {'a', 'l', 'o', 'h', 'a'};
     TermAttributeImpl t = new TermAttributeImpl();
     t.setTermBuffer(b, 0, 5);
-    assertEquals("term=aloha", t.toString());
+    assertEquals("aloha", t.toString());
 
     t.setTermBuffer("hi there");
-    assertEquals("term=hi there", t.toString());
+    assertEquals("hi there", t.toString());
   }
 
   public void testMixedStringArray() throws Exception {

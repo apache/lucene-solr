@@ -23,7 +23,7 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -33,12 +33,12 @@ import org.apache.lucene.util.LuceneTestCase;
 
 class RepeatingTokenStream extends TokenStream {
   public int num;
-  TermAttribute termAtt;
+  CharTermAttribute termAtt;
   String value;
 
    public RepeatingTokenStream(String val) {
      this.value = val;
-     this.termAtt = addAttribute(TermAttribute.class);
+     this.termAtt = addAttribute(CharTermAttribute.class);
    }
 
    @Override
@@ -46,7 +46,7 @@ class RepeatingTokenStream extends TokenStream {
      num--;
      if (num >= 0) {
        clearAttributes();
-       termAtt.setTermBuffer(value);
+       termAtt.append(value);
        return true;
      }
      return false;

@@ -31,6 +31,7 @@ public class TestToken extends LuceneTestCase {
     super(name);
   }
 
+  /* toString changed in 3.1:
   public void testCtor() throws Exception {
     Token t = new Token();
     char[] content = "hello".toCharArray();
@@ -60,6 +61,7 @@ public class TestToken extends LuceneTestCase {
     assertEquals("(hello,6,22,type=junk)", t.toString());
     assertEquals(0, t.getFlags());
   }
+  */
 
   public void testResize() {
     Token t = new Token();
@@ -139,6 +141,7 @@ public class TestToken extends LuceneTestCase {
     assertEquals(20000, t.termLength());
   }
 
+  /* toString changed in 3.1:
   public void testToString() throws Exception {
     char[] b = {'a', 'l', 'o', 'h', 'a'};
     Token t = new Token("", 0, 5);
@@ -148,6 +151,7 @@ public class TestToken extends LuceneTestCase {
     t.setTermBuffer("hi there");
     assertEquals("(hi there,0,5)", t.toString());
   }
+  */
 
   public void testTermBufferEquals() throws Exception {
     Token t1a = new Token();

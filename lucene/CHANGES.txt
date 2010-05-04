@@ -1,6 +1,6 @@
 Lucene Change Log
 
-======================= Trunk (not yet released) =======================
+======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy
 
@@ -39,6 +39,17 @@ Changes in backwards compatibility policy
 * LUCENE-2328: SimpleFSDirectory.SimpleFSIndexInput is moved to
   FSDirectory.FSIndexInput. Anyone extending this class will have to
   fix their code on upgrading. (Earwin Burrfoot via Mike McCandless)
+
+* LUCENE-2372: StandardAnalyzer, KeywordAnalyzer, PerFieldAnalyzerWrapper
+  are now final.  Also removed the now obsolete and deprecated
+  Analyzer.setOverridesTokenStreamMethod().  (Uwe Schindler)
+
+* LUCENE-2302: The new interface for term attributes, CharTermAttribute,
+  now implements CharSequence. This requires the toString() methods of
+  CharTermAttribute, deprecated TermAttribute, and Token to return only
+  the term text and no other attribute contents.
+  TODO: Point to new attribute inspection API coming with LUCENE-2374.
+  (Uwe Schindler, Robert Muir)
 
 Changes in runtime behavior
 
@@ -118,6 +129,17 @@ API Changes
   FSDirectory to see a sample of how such tracking might look like, if needed
   in your custom Directories.  (Earwin Burrfoot via Mike McCandless)
 
+* LUCENE-2302: Deprecated TermAttribute and replaced by a new
+  CharTermAttribute. The change is backwards compatible, so
+  mixed new/old TokenStreams all work on the same char[] buffer
+  independent of which interface they use. CharTermAttribute
+  has shorter method names and implements CharSequence and
+  Appendable. This allows usage like Java's StringBuilder in
+  addition to direct char[] access. Also terms can directly be
+  used in places where CharSequence is allowed (e.g. regular
+  expressions).
+  (Uwe Schindler, Robert Muir)
+
 Bug fixes
 
 * LUCENE-2119: Don't throw NegativeArraySizeException if you pass
@@ -161,6 +183,9 @@ Bug fixes
 * LUCENE-2365: IndexWriter.newestSegment (used normally for testing)
   is fixed to return null if there are no segments.  (Karthick
   Sankarachary via Mike McCandless)
+
+* LUCENE-2074: Reduce buffer size of lexer back to default on reset.
+  (Ruben Laguna, Shai Erera via Uwe Schindler)
   
 New features
 
@@ -226,6 +251,9 @@ New features
   files between FSDirectory instances.  (Earwin Burrfoot via Mike
   McCandless).
   
+* LUCENE-2074: Make StandardTokenizer fit for Unicode 4.0, if the
+  matchVersion parameter is Version.LUCENE_31. (Uwe Schindler)
+
 Optimizations
 
 * LUCENE-2075: Terms dict cache is now shared across threads instead
@@ -300,9 +328,12 @@ Build
   into core, and moved the ICU-based collation support into contrib/icu.  
   (Robert Muir)
 
-* LUCENE-2326: Removed SVN checkouts for backwards tests. The backwards branch
-  is now included in the svn repository using "svn copy" after release.
-  (Uwe Schindler)
+* LUCENE-2326: Removed SVN checkouts for backwards tests. The backwards
+  branch is now included in the svn repository using "svn copy"
+  after release. (Uwe Schindler)
+
+* LUCENE-2074: Regenerating StandardTokenizerImpl files now needs
+  JFlex 1.5 (currently only available on SVN). (Uwe Schindler)
 
 Test Cases
 

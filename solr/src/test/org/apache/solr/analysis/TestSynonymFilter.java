@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 import java.io.IOException;
@@ -381,7 +381,7 @@ public class TestSynonymFilter extends BaseTokenTestCase {
   private static class IterTokenStream extends TokenStream {
     final Token tokens[];
     int index = 0;
-    TermAttribute termAtt = addAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
     FlagsAttribute flagsAtt = addAttribute(FlagsAttribute.class);
@@ -403,7 +403,7 @@ public class TestSynonymFilter extends BaseTokenTestCase {
       else {
         clearAttributes();
         Token token = tokens[index++];
-        termAtt.setTermBuffer(token.term());
+        termAtt.setEmpty().append(token.term());
         offsetAtt.setOffset(token.startOffset(), token.endOffset());
         posIncAtt.setPositionIncrement(token.getPositionIncrement());
         flagsAtt.setFlags(token.getFlags());

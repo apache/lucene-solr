@@ -17,36 +17,18 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import java.io.IOException;
 import java.io.Reader;
 
 /**
  * "Tokenizes" the entire stream as a single token. This is useful
  * for data like zip codes, ids, and some product names.
  */
-public class KeywordAnalyzer extends Analyzer {
+public final class KeywordAnalyzer extends ReusableAnalyzerBase {
   public KeywordAnalyzer() {
   }
+
   @Override
-  public TokenStream tokenStream(String fieldName,
-                                 final Reader reader) {
-    return new KeywordTokenizer(reader);
-  }
-  @Override
-  public TokenStream reusableTokenStream(String fieldName,
-                                         final Reader reader) throws IOException {
-    if (overridesTokenStreamMethod) {
-      // LUCENE-1678: force fallback to tokenStream() if we
-      // have been subclassed and that subclass overrides
-      // tokenStream but not reusableTokenStream
-      return tokenStream(fieldName, reader);
-    }
-    Tokenizer tokenizer = (Tokenizer) getPreviousTokenStream();
-    if (tokenizer == null) {
-      tokenizer = new KeywordTokenizer(reader);
-      setPreviousTokenStream(tokenizer);
-    } else
-      tokenizer.reset(reader);
-    return tokenizer;
+  protected TokenStreamComponents createComponents(final String fieldName, final Reader reader) {
+    return new TokenStreamComponents(new KeywordTokenizer(reader));
   }
 }

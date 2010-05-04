@@ -51,7 +51,7 @@ public class TrieTokenizerFactory extends BaseTokenizerFactory {
   }
 }
 
-class TrieTokenizer extends Tokenizer {
+final class TrieTokenizer extends Tokenizer {
   protected static final DateField dateField = new DateField();
   protected final int precisionStep;
   protected final TrieTypes type;

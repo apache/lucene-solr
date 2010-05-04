@@ -21,7 +21,7 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.TermVector;
@@ -43,7 +43,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     Document doc = new Document();
     TokenStream stream = new TokenStream() {
       private int index = 0;
-      private TermAttribute termAtt = addAttribute(TermAttribute.class);
+      private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
       private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
       
       @Override
@@ -52,7 +52,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
           return false;
         } else {
           clearAttributes();
-          termAtt.setTermBuffer(tokens[index++]);
+          termAtt.append(tokens[index++]);
           offsetAtt.setOffset(0,0);
           return true;
         }        
@@ -100,11 +100,10 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
   private void checkTokens(TokenStream stream) throws IOException {
     int count = 0;
     
-    TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
-    assertNotNull(termAtt);
+    CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
     while (stream.incrementToken()) {
       assertTrue(count < tokens.length);
-      assertEquals(tokens[count], termAtt.term());
+      assertEquals(tokens[count], termAtt.toString());
       count++;
     }
     

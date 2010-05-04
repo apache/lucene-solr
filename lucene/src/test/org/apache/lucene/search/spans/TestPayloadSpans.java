@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
@@ -479,7 +479,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     Set<String> nopayload = new HashSet<String>();
     int pos;
     PayloadAttribute payloadAtt;
-    TermAttribute termAtt;
+    CharTermAttribute termAtt;
     PositionIncrementAttribute posIncrAtt;
 
     public PayloadFilter(TokenStream input, String fieldName) {
@@ -490,7 +490,7 @@ public class TestPayloadSpans extends LuceneTestCase {
       entities.add("one");
       nopayload.add("nopayload");
       nopayload.add("np");
-      termAtt = addAttribute(TermAttribute.class);
+      termAtt = addAttribute(CharTermAttribute.class);
       posIncrAtt = addAttribute(PositionIncrementAttribute.class);
       payloadAtt = addAttribute(PayloadAttribute.class);
     }
@@ -498,7 +498,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     @Override
     public boolean incrementToken() throws IOException {
       if (input.incrementToken()) {
-        String token = new String(termAtt.termBuffer(), 0, termAtt.termLength());
+        String token = termAtt.toString();
 
         if (!nopayload.contains(token)) {
           if (entities.contains(token)) {

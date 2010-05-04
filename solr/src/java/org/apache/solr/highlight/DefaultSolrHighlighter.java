@@ -512,7 +512,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
  * This is meant to work around fickleness in the highlighter only.  It
  * can mess up token positions and should not be used for indexing or querying.
  */
-class TokenOrderingFilter extends TokenFilter {
+final class TokenOrderingFilter extends TokenFilter {
   private final int windowSize;
   private final LinkedList<OrderedToken> queue = new LinkedList<OrderedToken>();
   private boolean done=false;
@@ -586,7 +586,7 @@ class TermOffsetsTokenStream {
     return new MultiValuedStream(length);
   }
   
-  class MultiValuedStream extends TokenStream {
+  final class MultiValuedStream extends TokenStream {
     private final int length;
     OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
 

@@ -22,7 +22,7 @@ import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.document.NumericField; // for javadocs
 import org.apache.lucene.search.NumericRangeQuery; // for javadocs
 import org.apache.lucene.search.NumericRangeFilter; // for javadocs
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
@@ -210,13 +210,13 @@ public final class NumericTokenStream extends TokenStream {
     final char[] buffer;
     switch (valSize) {
       case 64:
-        buffer = termAtt.resizeTermBuffer(NumericUtils.BUF_SIZE_LONG);
-        termAtt.setTermLength(NumericUtils.longToPrefixCoded(value, shift, buffer));
+        buffer = termAtt.resizeBuffer(NumericUtils.BUF_SIZE_LONG);
+        termAtt.setLength(NumericUtils.longToPrefixCoded(value, shift, buffer));
         break;
       
       case 32:
-        buffer = termAtt.resizeTermBuffer(NumericUtils.BUF_SIZE_INT);
-        termAtt.setTermLength(NumericUtils.intToPrefixCoded((int) value, shift, buffer));
+        buffer = termAtt.resizeBuffer(NumericUtils.BUF_SIZE_INT);
+        termAtt.setLength(NumericUtils.intToPrefixCoded((int) value, shift, buffer));
         break;
       
       default:
@@ -238,7 +238,7 @@ public final class NumericTokenStream extends TokenStream {
   }
 
   // members
-  private final TermAttribute termAtt = addAttribute(TermAttribute.class);
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
   private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   

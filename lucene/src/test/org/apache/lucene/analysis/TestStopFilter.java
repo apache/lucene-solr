@@ -17,7 +17,7 @@ package org.apache.lucene.analysis;
  */
 
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.Version;
 
@@ -37,11 +37,11 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     StringReader reader = new StringReader("Now is The Time");
     Set<String> stopWords = new HashSet<String>(Arrays.asList("is", "the", "Time"));
     TokenStream stream = new StopFilter(TEST_VERSION_CURRENT, new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader), stopWords, false);
-    final TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
+    final CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
     assertTrue(stream.incrementToken());
-    assertEquals("Now", termAtt.term());
+    assertEquals("Now", termAtt.toString());
     assertTrue(stream.incrementToken());
-    assertEquals("The", termAtt.term());
+    assertEquals("The", termAtt.toString());
     assertFalse(stream.incrementToken());
   }
 
@@ -49,9 +49,9 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     StringReader reader = new StringReader("Now is The Time");
     Set<Object> stopWords = new HashSet<Object>(Arrays.asList( "is", "the", "Time" ));
     TokenStream stream = new StopFilter(TEST_VERSION_CURRENT, new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader), stopWords, true);
-    final TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
+    final CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
     assertTrue(stream.incrementToken());
-    assertEquals("Now", termAtt.term());
+    assertEquals("Now", termAtt.toString());
     assertFalse(stream.incrementToken());
   }
 
@@ -60,11 +60,11 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
     String[] stopWords = new String[] { "is", "the", "Time" };
     Set<Object> stopSet = StopFilter.makeStopSet(TEST_VERSION_CURRENT, stopWords);
     TokenStream stream = new StopFilter(TEST_VERSION_CURRENT, new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader), stopSet);
-    final TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
+    final CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
     assertTrue(stream.incrementToken());
-    assertEquals("Now", termAtt.term());
+    assertEquals("Now", termAtt.toString());
     assertTrue(stream.incrementToken());
-    assertEquals("The", termAtt.term());
+    assertEquals("The", termAtt.toString());
     assertFalse(stream.incrementToken());
   }
 
@@ -117,13 +117,13 @@ public class TestStopFilter extends BaseTokenStreamTestCase {
   private void doTestStopPositons(StopFilter stpf, boolean enableIcrements) throws IOException {
     log("---> test with enable-increments-"+(enableIcrements?"enabled":"disabled"));
     stpf.setEnablePositionIncrements(enableIcrements);
-    TermAttribute termAtt = stpf.getAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = stpf.getAttribute(CharTermAttribute.class);
     PositionIncrementAttribute posIncrAtt = stpf.getAttribute(PositionIncrementAttribute.class);
     for (int i=0; i<20; i+=3) {
       assertTrue(stpf.incrementToken());
       log("Token "+i+": "+stpf);
       String w = English.intToEnglish(i).trim();
-      assertEquals("expecting token "+i+" to be "+w,w,termAtt.term());
+      assertEquals("expecting token "+i+" to be "+w,w,termAtt.toString());
       assertEquals("all but first token must have position increment of 3",enableIcrements?(i==0?1:3):1,posIncrAtt.getPositionIncrement());
     }
     assertFalse(stpf.incrementToken());

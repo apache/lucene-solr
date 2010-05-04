@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
@@ -152,15 +152,15 @@ public class TestDocumentWriter extends LuceneTestCase {
               restoreState(state);
               payloadAtt.setPayload(null);
               posIncrAtt.setPositionIncrement(0);
-              termAtt.setTermBuffer(new char[]{'b'}, 0, 1);
+              termAtt.setEmpty().append("b");
               state = null;
               return true;
             }
 
             boolean hasNext = input.incrementToken();
             if (!hasNext) return false;
-            if (Character.isDigit(termAtt.termBuffer()[0])) {
-              posIncrAtt.setPositionIncrement(termAtt.termBuffer()[0] - '0');
+            if (Character.isDigit(termAtt.buffer()[0])) {
+              posIncrAtt.setPositionIncrement(termAtt.buffer()[0] - '0');
             }
             if (first) {
               // set payload on first position only
@@ -174,7 +174,7 @@ public class TestDocumentWriter extends LuceneTestCase {
 
           }
 
-          TermAttribute termAtt = addAttribute(TermAttribute.class);
+          CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
           PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
           PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);          
         };
@@ -215,7 +215,7 @@ public class TestDocumentWriter extends LuceneTestCase {
       private String[] tokens = new String[] {"term1", "term2", "term3", "term2"};
       private int index = 0;
       
-      private TermAttribute termAtt = addAttribute(TermAttribute.class);
+      private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
       
       @Override
       public boolean incrementToken() throws IOException {
@@ -223,7 +223,7 @@ public class TestDocumentWriter extends LuceneTestCase {
           return false;
         } else {
           clearAttributes();
-          termAtt.setTermBuffer(tokens[index++]);
+          termAtt.setEmpty().append(tokens[index++]);
           return true;
         }        
       }

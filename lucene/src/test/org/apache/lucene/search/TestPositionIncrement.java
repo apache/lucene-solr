@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -71,7 +71,7 @@ public class TestPositionIncrement extends LuceneTestCase {
           private int i = 0;
 
           PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-          TermAttribute termAtt = addAttribute(TermAttribute.class);
+          CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
           OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
           
           @Override
@@ -79,7 +79,7 @@ public class TestPositionIncrement extends LuceneTestCase {
             if (i == TOKENS.length)
               return false;
             clearAttributes();
-            termAtt.setTermBuffer(TOKENS[i]);
+            termAtt.append(TOKENS[i]);
             offsetAtt.setOffset(i,i);
             posIncrAtt.setPositionIncrement(INCREMENTS[i]);
             i++;
@@ -331,7 +331,7 @@ class PayloadFilter extends TokenFilter {
 
   final PositionIncrementAttribute posIncrAttr;
   final PayloadAttribute payloadAttr;
-  final TermAttribute termAttr;
+  final CharTermAttribute termAttr;
 
   public PayloadFilter(TokenStream input, String fieldName) {
     super(input);
@@ -340,7 +340,7 @@ class PayloadFilter extends TokenFilter {
     i = 0;
     posIncrAttr = input.addAttribute(PositionIncrementAttribute.class);
     payloadAttr = input.addAttribute(PayloadAttribute.class);
-    termAttr = input.addAttribute(TermAttribute.class);
+    termAttr = input.addAttribute(CharTermAttribute.class);
   }
 
   @Override
@@ -355,7 +355,9 @@ class PayloadFilter extends TokenFilter {
       }
       posIncrAttr.setPositionIncrement(posIncr);
       pos += posIncr;
-      // System.out.println("term=" + termAttr.term() + " pos=" + pos);
+      if (TestPositionIncrement.VERBOSE) {
+        System.out.println("term=" + termAttr + " pos=" + pos);
+      }
       i++;
       return true;
     } else {

@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.util.UnicodeUtil;
 
@@ -32,7 +32,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   final TermsHashPerThread perThread;
   final DocumentsWriter.DocState docState;
   final FieldInvertState fieldState;
-  TermAttribute termAtt;
+  CharTermAttribute termAtt;
   
   // Copied from our perThread
   final CharBlockPool charPool;
@@ -291,7 +291,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     if (postingsArray == null) {
       initPostingsArray();
     }
-    termAtt = fieldState.attributeSource.addAttribute(TermAttribute.class);
+    termAtt = fieldState.attributeSource.addAttribute(CharTermAttribute.class);
     consumer.start(f);
     if (nextPerField != null) {
       nextPerField.start(f);
@@ -393,8 +393,8 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     // term text into textStart address
 
     // Get the text of this term.
-    final char[] tokenText = termAtt.termBuffer();
-    final int tokenTextLen = termAtt.termLength();
+    final char[] tokenText = termAtt.buffer();
+    final int tokenTextLen = termAtt.length();
 
     // Compute hashcode & replace any invalid UTF16 sequences
     int downto = tokenTextLen;

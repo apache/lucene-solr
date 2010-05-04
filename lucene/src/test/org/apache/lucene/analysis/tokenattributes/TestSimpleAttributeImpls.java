@@ -22,6 +22,7 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
+@Deprecated
 public class TestSimpleAttributeImpls extends LuceneTestCase {
 
   public TestSimpleAttributeImpls(String name) {

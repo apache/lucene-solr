@@ -20,7 +20,7 @@ package org.apache.solr.analysis;
 import org.apache.commons.codec.Encoder;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 
 import java.io.IOException;
@@ -31,23 +31,21 @@ import java.io.IOException;
  *
  * @version $Id$
  */
-public class PhoneticFilter extends TokenFilter 
+public final class PhoneticFilter extends TokenFilter 
 {
   protected boolean inject = true; 
   protected Encoder encoder = null;
   protected String name = null;
   
   protected State save = null;
-  private final TermAttribute termAtt;
-  private final PositionIncrementAttribute posAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final PositionIncrementAttribute posAtt = addAttribute(PositionIncrementAttribute.class);
 
   public PhoneticFilter(TokenStream in, Encoder encoder, String name, boolean inject) {
     super(in);
     this.encoder = encoder;
     this.name = name;
-    this.inject = inject;
-    this.termAtt = addAttribute(TermAttribute.class);
-    this.posAtt = addAttribute(PositionIncrementAttribute.class);    
+    this.inject = inject;   
   }
 
   @Override
@@ -62,9 +60,9 @@ public class PhoneticFilter extends TokenFilter
     if (!input.incrementToken()) return false;
 
     // pass through zero-length terms
-    if (termAtt.termLength()==0) return true;
+    if (termAtt.length() == 0) return true;
 
-    String value = termAtt.term();
+    String value = termAtt.toString();
     String phonetic = null;
     try {
      String v = encoder.encode(value).toString();
@@ -75,7 +73,7 @@ public class PhoneticFilter extends TokenFilter
 
     if (!inject) {
       // just modify this token
-      termAtt.setTermBuffer(phonetic);
+      termAtt.setEmpty().append(phonetic);
       return true;
     }
 
@@ -88,7 +86,7 @@ public class PhoneticFilter extends TokenFilter
     save = captureState();
 
     posAtt.setPositionIncrement(origOffset);
-    termAtt.setTermBuffer(phonetic);
+    termAtt.setEmpty().append(phonetic);
     return true;
   }
 

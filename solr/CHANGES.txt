@@ -59,7 +59,8 @@ Upgrading from Solr 1.4
   "terms" container is a map instead of a named list.  This affects
    response formats like JSON, but not XML. (yonik)
   
-
+* SOLR-1876: All Analyzers and TokenStreams are now final to enforce
+  the decorator pattern.  (rmuir, uschindler)
 
 Detailed Change List
 ----------------------

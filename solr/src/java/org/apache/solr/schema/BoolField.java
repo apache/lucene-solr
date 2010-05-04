@@ -20,11 +20,9 @@ package org.apache.solr.schema;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.OrdFieldSource;
-import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Fieldable;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.response.XMLWriter;
@@ -59,7 +57,7 @@ public class BoolField extends FieldType {
   protected final static Analyzer boolAnalyzer = new SolrAnalyzer() {
     public TokenStreamInfo getStream(String fieldName, Reader reader) {
       Tokenizer tokenizer = new Tokenizer(reader) {
-        final TermAttribute termAtt = (TermAttribute) addAttribute(TermAttribute.class);
+        final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
         boolean done = false;
 
         @Override
@@ -75,7 +73,7 @@ public class BoolField extends FieldType {
           done = true;
           int ch = input.read();
           if (ch==-1) return false;
-          termAtt.setTermBuffer(
+          termAtt.copyBuffer(
                   ((ch=='t' || ch=='T' || ch=='1') ? TRUE_TOKEN : FALSE_TOKEN)
                   ,0,1);
           return true;

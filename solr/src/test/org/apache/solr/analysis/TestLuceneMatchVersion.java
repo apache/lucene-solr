@@ -68,8 +68,8 @@ public class TestLuceneMatchVersion extends AbstractSolrTestCase {
     tok = (StandardTokenizer) tsi.getTokenizer();
     assertFalse(tok.isReplaceInvalidAcronym());
 
-    // this is a hack to get the private matchVersion field in StandardAnalyzer, may break in later lucene versions - we have no getter :(
-    final Field matchVersionField = StandardAnalyzer.class.getDeclaredField("matchVersion");
+    // this is a hack to get the private matchVersion field in StandardAnalyzer's superclass, may break in later lucene versions - we have no getter :(
+    final Field matchVersionField = StandardAnalyzer.class.getSuperclass().getDeclaredField("matchVersion");
     matchVersionField.setAccessible(true);
 
     type = schema.getFieldType("textStandardAnalyzerDefault");

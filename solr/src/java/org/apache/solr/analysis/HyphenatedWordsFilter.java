@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * When the plain text is extracted from documents, we will often have many words hyphenated and broken into
@@ -54,7 +54,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  */
 public final class HyphenatedWordsFilter extends TokenFilter {
 
-  private final TermAttribute termAttribute = addAttribute(TermAttribute.class);
+  private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
   
   private final StringBuilder hyphenated = new StringBuilder();
@@ -75,8 +75,8 @@ public final class HyphenatedWordsFilter extends TokenFilter {
   @Override
   public boolean incrementToken() throws IOException {
     while (input.incrementToken()) {
-      char[] term = termAttribute.termBuffer();
-      int termLength = termAttribute.termLength();
+      char[] term = termAttribute.buffer();
+      int termLength = termAttribute.length();
       
       if (termLength > 0 && term[termLength - 1] == '-') {
         // a hyphenated word
@@ -128,14 +128,14 @@ public final class HyphenatedWordsFilter extends TokenFilter {
     restoreState(savedState);
     savedState = null;
     
-    char term[] = termAttribute.termBuffer();
+    char term[] = termAttribute.buffer();
     int length = hyphenated.length();
-    if (length > termAttribute.termLength()) {
-      term = termAttribute.resizeTermBuffer(length);
+    if (length > termAttribute.length()) {
+      term = termAttribute.resizeBuffer(length);
     }
     
     hyphenated.getChars(0, length, term, 0);
-    termAttribute.setTermLength(length);
+    termAttribute.setLength(length);
     offsetAttribute.setOffset(offsetAttribute.startOffset(), endOffset);
     hyphenated.setLength(0);
   }

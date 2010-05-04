@@ -28,7 +28,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.TermFreqVector;
 
 /**
@@ -61,11 +61,11 @@ public class QueryTermVector implements TermFreqVector {
           boolean hasMoreTokens = false;
           
           stream.reset(); 
-          TermAttribute termAtt = stream.addAttribute(TermAttribute.class);
+          final CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
 
           hasMoreTokens = stream.incrementToken();
           while (hasMoreTokens) {
-            terms.add(termAtt.term());
+            terms.add(termAtt.toString());
             hasMoreTokens = stream.incrementToken();
           }
           processTerms(terms.toArray(new String[terms.size()]));

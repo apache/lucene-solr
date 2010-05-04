@@ -18,7 +18,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.Version;
 
@@ -52,7 +52,7 @@ public final class CommonGramsFilter extends TokenFilter {
 
   private final StringBuilder buffer = new StringBuilder();
   
-  private final TermAttribute termAttribute = addAttribute(TermAttribute.class);
+  private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
   private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
   private final TypeAttribute typeAttribute = addAttribute(TypeAttribute.class);
   private final PositionIncrementAttribute posIncAttribute = addAttribute(PositionIncrementAttribute.class);
@@ -231,7 +231,7 @@ public final class CommonGramsFilter extends TokenFilter {
    * @return {@code true} if the current token is a common term, {@code false} otherwise
    */
   private boolean isCommon() {
-    return commonWords != null && commonWords.contains(termAttribute.termBuffer(), 0, termAttribute.termLength());
+    return commonWords != null && commonWords.contains(termAttribute.buffer(), 0, termAttribute.length());
   }
 
   /**
@@ -239,7 +239,7 @@ public final class CommonGramsFilter extends TokenFilter {
    */
   private void saveTermBuffer() {
     buffer.setLength(0);
-    buffer.append(termAttribute.termBuffer(), 0, termAttribute.termLength());
+    buffer.append(termAttribute.buffer(), 0, termAttribute.length());
     buffer.append(SEPARATOR);
     lastStartOffset = offsetAttribute.startOffset();
     lastWasCommon = isCommon();
@@ -249,19 +249,19 @@ public final class CommonGramsFilter extends TokenFilter {
    * Constructs a compound token.
    */
   private void gramToken() {
-    buffer.append(termAttribute.termBuffer(), 0, termAttribute.termLength());
+    buffer.append(termAttribute.buffer(), 0, termAttribute.length());
     int endOffset = offsetAttribute.endOffset();
 
     clearAttributes();
 
     int length = buffer.length();
-    char termText[] = termAttribute.termBuffer();
+    char termText[] = termAttribute.buffer();
     if (length > termText.length) {
-      termText = termAttribute.resizeTermBuffer(length);
+      termText = termAttribute.resizeBuffer(length);
     }
     
     buffer.getChars(0, length, termText, 0);
-    termAttribute.setTermLength(length);
+    termAttribute.setLength(length);
     posIncAttribute.setPositionIncrement(0);
     offsetAttribute.setOffset(lastStartOffset, endOffset);
     typeAttribute.setType(GRAM_TYPE);

@@ -34,7 +34,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
     protected int index = 0;
     protected Token[] testToken;
     
-    private TermAttribute termAtt;
+    private CharTermAttribute termAtt;
     private OffsetAttribute offsetAtt;
     private PositionIncrementAttribute posIncrAtt;
     private TypeAttribute typeAtt;
@@ -42,7 +42,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
     public TestTokenStream(Token[] testToken) {
       super();
       this.testToken = testToken;
-      this.termAtt = addAttribute(TermAttribute.class);
+      this.termAtt = addAttribute(CharTermAttribute.class);
       this.offsetAtt = addAttribute(OffsetAttribute.class);
       this.posIncrAtt = addAttribute(PositionIncrementAttribute.class);
       this.typeAtt = addAttribute(TypeAttribute.class);
@@ -53,7 +53,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
       clearAttributes();
       if (index < testToken.length) {
         Token t = testToken[index++];
-        termAtt.setTermBuffer(t.termBuffer(), 0, t.termLength());
+        termAtt.copyBuffer(t.buffer(), 0, t.length());
         offsetAtt.setOffset(t.startOffset(), t.endOffset());
         posIncrAtt.setPositionIncrement(t.getPositionIncrement());
         typeAtt.setType(TypeAttributeImpl.DEFAULT_TYPE);
@@ -103,17 +103,20 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
     createToken("please divide", 0, 13),
     createToken("divide", 7, 13),
     createToken("divide _", 7, 19),
-    createToken("_", 19, 19),
     createToken("_ sentence", 19, 27),
     createToken("sentence", 19, 27),
     createToken("sentence _", 19, 33),
-    createToken("_", 33, 33),
     createToken("_ shingles", 33, 39),
     createToken("shingles", 33, 39),
   };
 
   public static final int[] BI_GRAM_POSITION_INCREMENTS_WITH_HOLES = new int[] {
-    1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1
+    1, 0, 1, 0, 1, 1, 0, 1, 1
+  };
+
+  private static final String[] BI_GRAM_TYPES_WITH_HOLES = {
+    "word", "shingle", 
+    "word", "shingle", "shingle", "word", "shingle", "shingle", "word"
   };
 
   public static final Token[] BI_GRAM_TOKENS_WITHOUT_UNIGRAMS = new Token[] {
@@ -642,18 +645,157 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
     "word"
   };
   
+  public static final Token[] TEST_TOKEN_POS_INCR_EQUAL_TO_N = new Token[] {
+    createToken("please", 0, 6),
+    createToken("divide", 7, 13),
+    createToken("this", 14, 18),
+    createToken("sentence", 29, 37, 3),
+    createToken("into", 38, 42),
+    createToken("shingles", 43, 49),
+  };
+
+  public static final Token[] TRI_GRAM_TOKENS_POS_INCR_EQUAL_TO_N = new Token[] {
+    createToken("please", 0, 6),
+    createToken("please divide", 0, 13),
+    createToken("please divide this", 0, 18),
+    createToken("divide", 7, 13),
+    createToken("divide this", 7, 18),
+    createToken("divide this _", 7, 29),
+    createToken("this", 14, 18),
+    createToken("this _", 14, 29),
+    createToken("this _ _", 14, 29),
+    createToken("_ _ sentence", 29, 37),
+    createToken("_ sentence", 29, 37),
+    createToken("_ sentence into", 29, 42),
+    createToken("sentence", 29, 37),
+    createToken("sentence into", 29, 42),
+    createToken("sentence into shingles", 29, 49),
+    createToken("into", 38, 42),
+    createToken("into shingles", 38, 49),
+    createToken("shingles", 43, 49)
+  };
+  
+  public static final int[] TRI_GRAM_POSITION_INCREMENTS_POS_INCR_EQUAL_TO_N = new int[] {
+    1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1
+  };
+  
+  public static final String[] TRI_GRAM_TYPES_POS_INCR_EQUAL_TO_N = new String[] {
+    "word", "shingle", "shingle",
+    "word", "shingle", "shingle",
+    "word", "shingle", "shingle",
+    "shingle", "shingle", "shingle", "word", "shingle", "shingle",
+    "word", "shingle",
+    "word"
+  };
+  
+  public static final Token[] TRI_GRAM_TOKENS_POS_INCR_EQUAL_TO_N_WITHOUT_UNIGRAMS = new Token[] {
+    createToken("please divide", 0, 13),
+    createToken("please divide this", 0, 18),
+    createToken("divide this", 7, 18),
+    createToken("divide this _", 7, 29),
+    createToken("this _", 14, 29),
+    createToken("this _ _", 14, 29),
+    createToken("_ _ sentence", 29, 37),
+    createToken("_ sentence", 29, 37),
+    createToken("_ sentence into", 29, 42),
+    createToken("sentence into", 29, 42),
+    createToken("sentence into shingles", 29, 49),
+    createToken("into shingles", 38, 49),
+  };
+
+  public static final int[] TRI_GRAM_POSITION_INCREMENTS_POS_INCR_EQUAL_TO_N_WITHOUT_UNIGRAMS = new int[] {
+    1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 1
+  };
+
+  public static final String[] TRI_GRAM_TYPES_POS_INCR_EQUAL_TO_N_WITHOUT_UNIGRAMS = new String[] {
+    "shingle", "shingle",
+    "shingle", "shingle",
+    "shingle", "shingle",
+    "shingle", "shingle", "shingle",
+    "shingle", "shingle",
+    "shingle",
+  };
+
+  public static final Token[] TEST_TOKEN_POS_INCR_GREATER_THAN_N = new Token[] {
+    createToken("please", 0, 6),
+    createToken("divide", 57, 63, 8),
+    createToken("this", 64, 68),
+    createToken("sentence", 69, 77),
+    createToken("into", 78, 82),
+    createToken("shingles", 83, 89),
+  };
+  
+  public static final Token[] TRI_GRAM_TOKENS_POS_INCR_GREATER_THAN_N = new Token[] {
+    createToken("please", 0, 6),
+    createToken("please _", 0, 57),
+    createToken("please _ _", 0, 57),
+    createToken("_ _ divide", 57, 63),
+    createToken("_ divide", 57, 63),
+    createToken("_ divide this", 57, 68),
+    createToken("divide", 57, 63),
+    createToken("divide this", 57, 68),
+    createToken("divide this sentence", 57, 77),
+    createToken("this", 64, 68),
+    createToken("this sentence", 64, 77),
+    createToken("this sentence into", 64, 82),
+    createToken("sentence", 69, 77),
+    createToken("sentence into", 69, 82),
+    createToken("sentence into shingles", 69, 89),
+    createToken("into", 78, 82),
+    createToken("into shingles", 78, 89),
+    createToken("shingles", 83, 89)
+  };
+  
+  public static final int[] TRI_GRAM_POSITION_INCREMENTS_POS_INCR_GREATER_THAN_N = new int[] {
+    1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 1
+  };
+  public static final String[] TRI_GRAM_TYPES_POS_INCR_GREATER_THAN_N = new String[] {
+    "word", "shingle", "shingle",
+    "shingle",
+    "shingle", "shingle", 
+    "word", "shingle", "shingle",
+    "word", "shingle", "shingle",
+    "word", "shingle", "shingle",
+    "word", "shingle",
+    "word"
+  };
+  
+  public static final Token[] TRI_GRAM_TOKENS_POS_INCR_GREATER_THAN_N_WITHOUT_UNIGRAMS = new Token[] {
+    createToken("please _", 0, 57),
+    createToken("please _ _", 0, 57),
+    createToken("_ _ divide", 57, 63),
+    createToken("_ divide", 57, 63),
+    createToken("_ divide this", 57, 68),
+    createToken("divide this", 57, 68),
+    createToken("divide this sentence", 57, 77),
+    createToken("this sentence", 64, 77),
+    createToken("this sentence into", 64, 82),
+    createToken("sentence into", 69, 82),
+    createToken("sentence into shingles", 69, 89),
+    createToken("into shingles", 78, 89),
+  };
+
+  public static final int[] TRI_GRAM_POSITION_INCREMENTS_POS_INCR_GREATER_THAN_N_WITHOUT_UNIGRAMS = new int[] {
+    1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1
+  };
+
+  public static final String[] TRI_GRAM_TYPES_POS_INCR_GREATER_THAN_N_WITHOUT_UNIGRAMS = new String[] {
+    "shingle", "shingle",
+    "shingle", "shingle",
+    "shingle", "shingle",
+    "shingle", "shingle", "shingle", "shingle", "shingle",
+    "shingle",
+  };
+
   @Override
   protected void setUp() throws Exception {
     super.setUp();
     testTokenWithHoles = new Token[] {
       createToken("please", 0, 6),
       createToken("divide", 7, 13),
-      createToken("sentence", 19, 27),
-      createToken("shingles", 33, 39),
+      createToken("sentence", 19, 27, 2),
+      createToken("shingles", 33, 39, 2),
     };
-
-    testTokenWithHoles[2].setPositionIncrement(2);
-    testTokenWithHoles[3].setPositionIncrement(2);
   }
 
   /*
@@ -667,7 +809,8 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
 
   public void testBiGramFilterWithHoles() throws IOException {
     this.shingleFilterTest(2, testTokenWithHoles, BI_GRAM_TOKENS_WITH_HOLES,
-                           BI_GRAM_POSITION_INCREMENTS, BI_GRAM_TYPES,
+                           BI_GRAM_POSITION_INCREMENTS_WITH_HOLES, 
+                           BI_GRAM_TYPES_WITH_HOLES, 
                            true);
   }
 
@@ -832,7 +975,31 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
                            TRI_GRAM_POSITION_INCREMENTS_NULL_SEPARATOR, 
                            TRI_GRAM_TYPES_NULL_SEPARATOR, true);
   }
+
+  public void testPositionIncrementEqualToN() throws IOException {
+    this.shingleFilterTest(2, 3, TEST_TOKEN_POS_INCR_EQUAL_TO_N, TRI_GRAM_TOKENS_POS_INCR_EQUAL_TO_N,
+                           TRI_GRAM_POSITION_INCREMENTS_POS_INCR_EQUAL_TO_N, 
+                           TRI_GRAM_TYPES_POS_INCR_EQUAL_TO_N, true);
+  }
   
+  public void testPositionIncrementEqualToNWithoutUnigrams() throws IOException {
+    this.shingleFilterTest(2, 3, TEST_TOKEN_POS_INCR_EQUAL_TO_N, TRI_GRAM_TOKENS_POS_INCR_EQUAL_TO_N_WITHOUT_UNIGRAMS,
+                           TRI_GRAM_POSITION_INCREMENTS_POS_INCR_EQUAL_TO_N_WITHOUT_UNIGRAMS, 
+                           TRI_GRAM_TYPES_POS_INCR_EQUAL_TO_N_WITHOUT_UNIGRAMS, false);
+  }
+  
+  
+  public void testPositionIncrementGreaterThanN() throws IOException {
+    this.shingleFilterTest(2, 3, TEST_TOKEN_POS_INCR_GREATER_THAN_N, TRI_GRAM_TOKENS_POS_INCR_GREATER_THAN_N,
+                           TRI_GRAM_POSITION_INCREMENTS_POS_INCR_GREATER_THAN_N, 
+                           TRI_GRAM_TYPES_POS_INCR_GREATER_THAN_N, true);
+  }
+  
+  public void testPositionIncrementGreaterThanNWithoutUnigrams() throws IOException {
+    this.shingleFilterTest(2, 3, TEST_TOKEN_POS_INCR_GREATER_THAN_N, TRI_GRAM_TOKENS_POS_INCR_GREATER_THAN_N_WITHOUT_UNIGRAMS,
+                           TRI_GRAM_POSITION_INCREMENTS_POS_INCR_GREATER_THAN_N_WITHOUT_UNIGRAMS, 
+                           TRI_GRAM_TYPES_POS_INCR_GREATER_THAN_N_WITHOUT_UNIGRAMS, false);
+  }
   
   public void testReset() throws Exception {
     Tokenizer wsTokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("please divide this sentence"));
@@ -896,18 +1063,24 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
     int endOffsets[] = new int[tokensToCompare.length];
     
     for (int i = 0; i < tokensToCompare.length; i++) {
-      text[i] = tokensToCompare[i].term();
+      text[i] = new String(tokensToCompare[i].buffer(),0, tokensToCompare[i].length());
       startOffsets[i] = tokensToCompare[i].startOffset();
       endOffsets[i] = tokensToCompare[i].endOffset();
     }
     
     assertTokenStreamContents(filter, text, startOffsets, endOffsets, types, positionIncrements);
   }
+  
+  private static Token createToken(String term, int start, int offset) {
+    return createToken(term, start, offset, 1);
+  }
 
-  private static Token createToken(String term, int start, int offset)
+  private static Token createToken
+    (String term, int start, int offset, int positionIncrement)
   {
     Token token = new Token(start, offset);
-    token.setTermBuffer(term);
+    token.copyBuffer(term.toCharArray(), 0, term.length());
+    token.setPositionIncrement(positionIncrement);
     return token;
   }
 }

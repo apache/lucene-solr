@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.solr.analysis.CharFilterFactory;
 import org.apache.solr.analysis.TokenFilterFactory;
@@ -149,23 +149,17 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     List<Token> tokens = new ArrayList<Token>();
 
     // TODO change this API to support custom attributes
-    TermAttribute termAtt = (TermAttribute) 
-      tokenStream.addAttribute(TermAttribute.class);
-    OffsetAttribute offsetAtt = (OffsetAttribute) 
-      tokenStream.addAttribute(OffsetAttribute.class);
-    TypeAttribute typeAtt = (TypeAttribute) 
-      tokenStream.addAttribute(TypeAttribute.class);
-    FlagsAttribute flagsAtt = (FlagsAttribute) 
-      tokenStream.addAttribute(FlagsAttribute.class);
-    PayloadAttribute payloadAtt = (PayloadAttribute) 
-      tokenStream.addAttribute(PayloadAttribute.class);
-    PositionIncrementAttribute posIncAtt = (PositionIncrementAttribute) 
-      tokenStream.addAttribute(PositionIncrementAttribute.class);
+    final CharTermAttribute termAtt = tokenStream.getAttribute(CharTermAttribute.class);
+    final OffsetAttribute offsetAtt = tokenStream.addAttribute(OffsetAttribute.class);
+    final TypeAttribute typeAtt = tokenStream.addAttribute(TypeAttribute.class);
+    final PositionIncrementAttribute posIncAtt = tokenStream.addAttribute(PositionIncrementAttribute.class);
+    final FlagsAttribute flagsAtt = tokenStream.addAttribute(FlagsAttribute.class);
+    final PayloadAttribute payloadAtt = tokenStream.addAttribute(PayloadAttribute.class);
     
     try {
       while (tokenStream.incrementToken()) {
         Token token = new Token();
-        token.setTermBuffer(termAtt.termBuffer(), 0, termAtt.termLength());
+        token.setTermBuffer(termAtt.toString());
         token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
         token.setType(typeAtt.type());
         token.setFlags(flagsAtt.getFlags());
@@ -255,12 +249,12 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
    * TokenStream that iterates over a list of pre-existing Tokens
    */
   // TODO refactor to support custom attributes
-  protected static class ListBasedTokenStream extends TokenStream {
+  protected final static class ListBasedTokenStream extends TokenStream {
     private final List<Token> tokens;
     private Iterator<Token> tokenIterator;
 
-    private final TermAttribute termAtt = (TermAttribute) 
-      addAttribute(TermAttribute.class);
+    private final CharTermAttribute termAtt = (CharTermAttribute) 
+      addAttribute(CharTermAttribute.class);
     private final OffsetAttribute offsetAtt = (OffsetAttribute) 
       addAttribute(OffsetAttribute.class);
     private final TypeAttribute typeAtt = (TypeAttribute) 
@@ -288,7 +282,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     public boolean incrementToken() throws IOException {
       if (tokenIterator.hasNext()) {
         Token next = tokenIterator.next();
-        termAtt.setTermBuffer(next.termBuffer(), 0, next.termLength());
+        termAtt.copyBuffer(next.termBuffer(), 0, next.termLength());
         typeAtt.setType(next.type());
         offsetAtt.setOffset(next.startOffset(), next.endOffset());
         flagsAtt.setFlags(next.getFlags());

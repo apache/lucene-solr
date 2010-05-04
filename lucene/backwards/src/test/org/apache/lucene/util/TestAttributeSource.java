@@ -78,22 +78,22 @@ public class TestAttributeSource extends LuceneTestCase {
   
   public void testCloneAttributes() {
     final AttributeSource src = new AttributeSource();
-    final TermAttribute termAtt = src.addAttribute(TermAttribute.class);
+    final FlagsAttribute flagsAtt = src.addAttribute(FlagsAttribute.class);
     final TypeAttribute typeAtt = src.addAttribute(TypeAttribute.class);
-    termAtt.setTermBuffer("TestTerm");
+    flagsAtt.setFlags(1234);
     typeAtt.setType("TestType");
     
     final AttributeSource clone = src.cloneAttributes();
     final Iterator<Class<? extends Attribute>> it = clone.getAttributeClassesIterator();
-    assertEquals("TermAttribute must be the first attribute", TermAttribute.class, it.next());
+    assertEquals("FlagsAttribute must be the first attribute", FlagsAttribute.class, it.next());
     assertEquals("TypeAttribute must be the second attribute", TypeAttribute.class, it.next());
     assertFalse("No more attributes", it.hasNext());
     
-    final TermAttribute termAtt2 = clone.getAttribute(TermAttribute.class);
+    final FlagsAttribute flagsAtt2 = clone.getAttribute(FlagsAttribute.class);
     final TypeAttribute typeAtt2 = clone.getAttribute(TypeAttribute.class);
-    assertNotSame("TermAttribute of original and clone must be different instances", termAtt2, termAtt);
+    assertNotSame("FlagsAttribute of original and clone must be different instances", flagsAtt2, flagsAtt);
     assertNotSame("TypeAttribute of original and clone must be different instances", typeAtt2, typeAtt);
-    assertEquals("TermAttribute of original and clone must be equal", termAtt2, termAtt);
+    assertEquals("FlagsAttribute of original and clone must be equal", flagsAtt2, flagsAtt);
     assertEquals("TypeAttribute of original and clone must be equal", typeAtt2, typeAtt);
   }
   
