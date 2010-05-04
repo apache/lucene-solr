@@ -124,7 +124,7 @@ The source distribution does not contain sources of the previous Lucene Java ver
     </sequential>
   </target>	
 
-  <target name="test-backwards" depends="compile-backwards, junit-backwards-mkdir, junit-backwards-sequential, junit-backwards-parallel"/>
+  <target name="test-backwards" depends="compile-backwards, junit-backwards-mkdir, junit-backwards-sequential, junit-backwards-parallel" if="backwards.available"/>
 
   <target name="junit-backwards-mkdir">
 	<mkdir dir="${build.dir.backwards}/test"/>
@@ -143,11 +143,20 @@ The source distribution does not contain sources of the previous Lucene Java ver
   	</sequential>
   </macrodef>
 
-  <target name="junit-backwards-sequential" if="runsequential">
+  <target name="check-backwards-cond">
+    <condition property="run-backwards-sequential">
+      <and>
+        <isset property="backwards.available"/>
+        <isset property="runsequential"/>
+      </and>
+    </condition>
+  </target>
+
+  <target name="junit-backwards-sequential" depends="check-backwards-cond" if="run-backwards-sequential">
     <backwards-test-macro/>
   </target>
 
-  <target name="junit-backwards-parallel" unless="runsequential">
+  <target name="junit-backwards-parallel" unless="runsequential" if="backwards.available">
     <parallel threadsPerProcessor="2">
      <backwards-test-macro pattern="A"/>
      <backwards-test-macro pattern="B"/>
