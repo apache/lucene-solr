@@ -29,8 +29,6 @@ import org.apache.lucene.util.UnicodeUtil;
  */
 public abstract class IndexOutput implements Closeable {
 
-  private UnicodeUtil.UTF8Result utf8Result = new UnicodeUtil.UTF8Result();
-
   /** Writes a single byte.
    * @see IndexInput#readByte()
    */
@@ -101,6 +99,7 @@ public abstract class IndexOutput implements Closeable {
    * @see IndexInput#readString()
    */
   public void writeString(String s) throws IOException {
+    final UnicodeUtil.UTF8Result utf8Result = new UnicodeUtil.UTF8Result();
     UnicodeUtil.UTF16toUTF8(s, 0, s.length(), utf8Result);
     writeVInt(utf8Result.length);
     writeBytes(utf8Result.result, 0, utf8Result.length);
