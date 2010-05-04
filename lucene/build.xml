@@ -145,7 +145,16 @@ The source distribution does not contain sources of the previous Lucene Java ver
   	</sequential>
   </macrodef>
 
-  <target name="junit-backwards-sequential" if="runsequential,backwards.available">
+  <target name="check-backwards-cond">
+    <condition property="run-backwards-sequential">
+      <and>
+        <isset property="backwards.available"/>
+        <isset property="runsequential"/>
+      </and>
+    </condition>
+  </target>
+
+  <target name="junit-backwards-sequential" depends="check-backwards-cond" if="run-backwards-sequential">
     <backwards-test-macro/>
   </target>
 
