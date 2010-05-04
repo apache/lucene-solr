@@ -67,7 +67,12 @@ public abstract class Tokenizer extends TokenStream {
   /** By default, closes the input Reader. */
   @Override
   public void close() throws IOException {
-    input.close();
+    if (input != null) {
+      input.close();
+      // LUCENE-2387: don't hold onto Reader after close, so
+      // GC can reclaim
+      input = null;
+    }
   }
   
   /** Return the corrected offset. If {@link #input} is a {@link CharStream} subclass
