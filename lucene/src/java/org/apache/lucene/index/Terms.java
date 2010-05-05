@@ -57,8 +57,8 @@ public abstract class Terms {
     }
   }
 
-  /** Get DocsEnum for the specified term.  This method may
-   *  return null if the term does not exist. */
+  /** Get {@link DocsEnum} for the specified term.  This
+   *  method may return null if the term does not exist. */
   public DocsEnum docs(Bits skipDocs, BytesRef text, DocsEnum reuse) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
     if (termsEnum.seek(text) == TermsEnum.SeekStatus.FOUND) {
@@ -68,9 +68,9 @@ public abstract class Terms {
     }
   }
 
-  /** Get DocsEnum for the specified term.  This method will
-   *  may return null if the term does not exists, or
-   *  positions were not indexed. */ 
+  /** Get {@link DocsEnum} for the specified term.  This
+   *  method will may return null if the term does not
+   *  exists, or positions were not indexed. */ 
   public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, BytesRef text, DocsAndPositionsEnum reuse) throws IOException {
     final TermsEnum termsEnum = getThreadTermsEnum();
     if (termsEnum.seek(text) == TermsEnum.SeekStatus.FOUND) {

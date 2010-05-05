@@ -38,7 +38,13 @@ public abstract class DocsAndPositionsEnum extends DocsEnum {
 
   public abstract boolean hasPayload();
 
-  public final int read(int[] docs, int[] freqs) {
+  @Override
+  public final int read() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public BulkReadResult getBulkResult() {
     throw new UnsupportedOperationException();
   }
 }
