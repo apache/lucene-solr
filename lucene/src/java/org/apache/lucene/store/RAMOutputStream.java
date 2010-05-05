@@ -21,6 +21,8 @@ import java.io.IOException;
 
 /**
  * A memory-resident {@link IndexOutput} implementation.
+ *
+ * @lucene.internal
  */
 
 public class RAMOutputStream extends IndexOutput {
