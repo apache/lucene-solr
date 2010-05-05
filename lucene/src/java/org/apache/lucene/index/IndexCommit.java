@@ -70,24 +70,14 @@ public abstract class IndexCommit {
    * and therefore this should only be called by its {@link IndexDeletionPolicy#onInit onInit()} or 
    * {@link IndexDeletionPolicy#onCommit onCommit()} methods.
   */
-  public void delete() {
-    throw new UnsupportedOperationException("This IndexCommit does not support this method.");
-  }
+  public abstract void delete();
 
-  public boolean isDeleted() {
-    throw new UnsupportedOperationException("This IndexCommit does not support this method.");
-  }
+  public abstract boolean isDeleted();
 
-  /**
-   * Returns true if this commit is an optimized index.
-   */
-  public boolean isOptimized() {
-    throw new UnsupportedOperationException("This IndexCommit does not support this method.");
-  }
+  /** Returns true if this commit is an optimized index. */
+  public abstract boolean isOptimized();
 
-  /**
-   * Two IndexCommits are equal if both their Directory and versions are equal.
-   */
+  /** Two IndexCommits are equal if both their Directory and versions are equal. */
   @Override
   public boolean equals(Object other) {
     if (other instanceof IndexCommit) {
@@ -99,21 +89,17 @@ public abstract class IndexCommit {
 
   @Override
   public int hashCode() {
-    return getDirectory().hashCode() + getSegmentsFileName().hashCode();
+    return (int) (getDirectory().hashCode() + getVersion());
   }
 
   /** Returns the version for this IndexCommit.  This is the
    *  same value that {@link IndexReader#getVersion} would
    *  return if it were opened on this commit. */
-  public long getVersion() {
-    throw new UnsupportedOperationException("This IndexCommit does not support this method.");
-  }
+  public abstract long getVersion();
 
   /** Returns the generation (the _N in segments_N) for this
    *  IndexCommit */
-  public long getGeneration() {
-    throw new UnsupportedOperationException("This IndexCommit does not support this method.");
-  }
+  public abstract long getGeneration();
 
   /** Convenience method that returns the last modified time
    *  of the segments_N file corresponding to this index
@@ -126,7 +112,6 @@ public abstract class IndexCommit {
   /** Returns userData, previously passed to {@link
    *  IndexWriter#commit(Map)} for this commit.  Map is
    *  String -> String. */
-  public Map<String,String> getUserData() throws IOException {
-    throw new UnsupportedOperationException("This IndexCommit does not support this method.");
-  }
+  public abstract Map<String,String> getUserData() throws IOException;
+  
 }
