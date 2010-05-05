@@ -17,6 +17,7 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.lang.management.ManagementFactory;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.io.File;
@@ -78,12 +79,26 @@ public class NativeFSLockFactory extends FSLockFactory {
                             lockDir.getAbsolutePath());
     }
 
-    String randomLockName = "lucene-" + Long.toString(new Random().nextInt(), Character.MAX_RADIX) + "-test.lock";
+    // add the RuntimeMXBean's name to the lock file, to reduce the chance for
+    // name collisions when this code is invoked by multiple JVMs (such as in
+    // our tests). On most systems, the name includes the process Id.
+    // Also, remove any non-alphanumeric characters, so that the lock file will
+    // be created for sure on all systems.
+    String randomLockName = "lucene-"
+        + ManagementFactory.getRuntimeMXBean().getName().replaceAll("[^a..zA..Z0..9]+","") + "-"
+        + Long.toString(new Random().nextInt(), Character.MAX_RADIX)
+        + "-test.lock";
     
     Lock l = makeLock(randomLockName);
     try {
       l.obtain();
       l.release();
+      // If the test lock failed to delete after all the attempts, attempt a
+      // delete when the JVM exits.
+      File lockFile = new File(lockDir, randomLockName);
+      if (lockFile.exists()) {
+        lockFile.deleteOnExit();
+      }
     } catch (IOException e) {
       RuntimeException e2 = new RuntimeException("Failed to acquire random test lock; please verify filesystem for lock directory '" + lockDir + "' supports locking");
       e2.initCause(e);
@@ -307,8 +322,10 @@ class NativeFSLock extends Lock {
           }
         }
       }
-      if (!path.delete())
-        throw new LockReleaseFailedException("failed to delete " + path);
+      // LUCENE-2421: we don't care anymore if the file cannot be deleted
+      // because it's held up by another process (e.g. AntiVirus). NativeFSLock
+      // does not depend on the existence/absence of the lock file
+      path.delete();
     } else {
       // if we don't hold the lock, and somebody still called release(), for
       // example as a result of calling IndexWriter.unlock(), we should attempt

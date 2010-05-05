@@ -193,6 +193,22 @@ public class TestLockFactory extends LuceneTestCase {
       assertFalse(l2.isLocked());
     }
 
+    
+    // Verify: NativeFSLockFactory works correctly if the lock file exists
+    public void testNativeFSLockFactoryLockExists() throws IOException {
+      
+      File lockFile = new File(TEMP_DIR, "test.lock");
+      lockFile.createNewFile();
+      
+      Lock l = new NativeFSLockFactory(TEMP_DIR).makeLock("test.lock");
+      assertTrue("failed to obtain lock", l.obtain());
+      l.release();
+      assertFalse("failed to release lock", l.isLocked());
+      if (lockFile.exists()) {
+        lockFile.delete();
+      }
+    }
+
     public void testNativeFSLockReleaseByOtherLock() throws IOException {
 
       NativeFSLockFactory f = new NativeFSLockFactory(TEMP_DIR);
@@ -206,8 +222,8 @@ public class TestLockFactory extends LuceneTestCase {
         assertTrue(l2.isLocked());
         l2.release();
         fail("should not have reached here. LockReleaseFailedException should have been thrown");
-      } catch (IOException e) {
-        assertTrue("Unexpected exception", e instanceof LockReleaseFailedException);
+      } catch (LockReleaseFailedException e) {
+        // expected
       } finally {
         l.release();
       }
