@@ -22,6 +22,7 @@ import java.io.BufferedWriter;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -53,11 +54,12 @@ import org.apache.lucene.document.Field;
 public class WriteLineDocTask extends PerfTask {
 
   public final static char SEP = '\t';
-  private static final Matcher NORMALIZER = Pattern.compile("[\t\r\n]+").matcher("");
-
+  
   private int docSize = 0;
-  private BufferedWriter lineFileOut = null;
+  private PrintWriter lineFileOut = null;
   private DocMaker docMaker;
+  private ThreadLocal<StringBuilder> threadBuffer = new ThreadLocal<StringBuilder>();
+  private ThreadLocal<Matcher> threadNormalizer = new ThreadLocal<Matcher>();
   
   public WriteLineDocTask(PerfRunData runData) throws Exception {
     super(runData);
@@ -85,7 +87,7 @@ public class WriteLineDocTask extends PerfTask {
       out = new BufferedOutputStream(out, 1 << 16);
       out = new CompressorStreamFactory().createCompressorOutputStream("bzip2", out);
     }
-    lineFileOut = new BufferedWriter(new OutputStreamWriter(out, "UTF-8"), 1 << 16);
+    lineFileOut = new PrintWriter(new BufferedWriter(new OutputStreamWriter(out, "UTF-8"), 1 << 16));
     docMaker = runData.getDocMaker();
   }
 
@@ -98,23 +100,32 @@ public class WriteLineDocTask extends PerfTask {
   public int doLogic() throws Exception {
     Document doc = docSize > 0 ? docMaker.makeDocument(docSize) : docMaker.makeDocument();
 
+    Matcher matcher = threadNormalizer.get();
+    if (matcher == null) {
+      matcher = Pattern.compile("[\t\r\n]+").matcher("");
+      threadNormalizer.set(matcher);
+    }
+    
     Field f = doc.getField(DocMaker.BODY_FIELD);
-    String body = f != null ? NORMALIZER.reset(f.stringValue()).replaceAll(" ") : "";
+    String body = f != null ? matcher.reset(f.stringValue()).replaceAll(" ") : "";
     
     f = doc.getField(DocMaker.TITLE_FIELD);
-    String title = f != null ? NORMALIZER.reset(f.stringValue()).replaceAll(" ") : "";
+    String title = f != null ? matcher.reset(f.stringValue()).replaceAll(" ") : "";
     
     if (body.length() > 0 || title.length() > 0) {
       
       f = doc.getField(DocMaker.DATE_FIELD);
-      String date = f != null ? NORMALIZER.reset(f.stringValue()).replaceAll(" ") : "";
+      String date = f != null ? matcher.reset(f.stringValue()).replaceAll(" ") : "";
       
-      lineFileOut.write(title, 0, title.length());
-      lineFileOut.write(SEP);
-      lineFileOut.write(date, 0, date.length());
-      lineFileOut.write(SEP);
-      lineFileOut.write(body, 0, body.length());
-      lineFileOut.newLine();
+      StringBuilder sb = threadBuffer.get();
+      if (sb == null) {
+        sb = new StringBuilder();
+        threadBuffer.set(sb);
+      }
+      sb.setLength(0);
+      sb.append(title).append(SEP).append(date).append(SEP).append(body);
+      // lineFileOut is a PrintWriter, which synchronizes internally in println.
+      lineFileOut.println(sb.toString());
     }
     return 1;
   }

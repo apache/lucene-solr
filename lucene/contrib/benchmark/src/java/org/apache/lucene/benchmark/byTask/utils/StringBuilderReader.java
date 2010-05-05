@@ -21,22 +21,22 @@ import java.io.IOException;
 import java.io.Reader;
 
 /**
- * Implements a {@link Reader} over a {@link StringBuffer} instance. Although
+ * Implements a {@link Reader} over a {@link StringBuilder} instance. Although
  * one can use {@link java.io.StringReader} by passing it
- * {@link StringBuffer#toString()}, it is better to use this class, as it
- * doesn't mark the passed-in {@link StringBuffer} as shared (which will cause
+ * {@link StringBuilder#toString()}, it is better to use this class, as it
+ * doesn't mark the passed-in {@link StringBuilder} as shared (which will cause
  * inner char[] allocations at the next append() attempt).<br>
  * Notes:
  * <ul>
- * <li>This implementation assumes the underlying {@link StringBuffer} is not
+ * <li>This implementation assumes the underlying {@link StringBuilder} is not
  * changed during the use of this {@link Reader} implementation.
  * <li>This implementation is thread-safe.
  * <li>The implementation looks very much like {@link java.io.StringReader} (for
  * the right reasons).
  * <li>If one wants to reuse that instance, then the following needs to be done:
  * <pre>
- * StringBuffer sb = new StringBuffer("some text");
- * Reader reader = new StringBufferReader(sb);
+ * StringBuilder sb = new StringBuilder("some text");
+ * Reader reader = new StringBuilderReader(sb);
  * ... read from reader - don't close it ! ...
  * sb.setLength(0);
  * sb.append("some new text");
@@ -45,23 +45,21 @@ import java.io.Reader;
  * </pre>
  * </ul>
  */
-public class StringBufferReader extends Reader {
+public class StringBuilderReader extends Reader {
   
-  // TODO (3.0): change to StringBuffer (including the name of the class)
-  
-  // The StringBuffer to read from.
-  private StringBuffer sb;
+  // The StringBuilder to read from.
+  private StringBuilder sb;
 
   // The length of 'sb'.
   private int length;
 
-  // The next position to read from the StringBuffer.
+  // The next position to read from the StringBuilder.
   private int next = 0;
 
   // The mark position. The default value 0 means the start of the text.
   private int mark = 0;
 
-  public StringBufferReader(StringBuffer sb) {
+  public StringBuilderReader(StringBuilder sb) {
     set(sb);
   }
 
@@ -85,7 +83,7 @@ public class StringBufferReader extends Reader {
    * 
    * @param readAheadLimit Limit on the number of characters that may be read
    *        while still preserving the mark. Because the stream's input comes
-   *        from a StringBuffer, there is no actual limit, so this argument 
+   *        from a StringBuilder, there is no actual limit, so this argument 
    *        must not be negative, but is otherwise ignored.
    * @exception IllegalArgumentException If readAheadLimit is < 0
    * @exception IOException If an I/O error occurs
@@ -156,7 +154,7 @@ public class StringBufferReader extends Reader {
     }
   }
 
-  public void set(StringBuffer sb) {
+  public void set(StringBuilder sb) {
     synchronized (lock) {
       this.sb = sb;
       length = sb.length();

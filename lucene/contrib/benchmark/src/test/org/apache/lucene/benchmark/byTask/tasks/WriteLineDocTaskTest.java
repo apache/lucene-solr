@@ -22,7 +22,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
@@ -97,6 +99,21 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
     }
   }
   
+  // class has to be public so that Class.forName.newInstance() will work
+  public static final class ThreadingDocMaker extends DocMaker {
+  
+    @Override
+    public Document makeDocument() throws Exception {
+      Document doc = new Document();
+      String name = Thread.currentThread().getName();
+      doc.add(new Field(BODY_FIELD, "body_" + name, Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(new Field(TITLE_FIELD, "title_" + name, Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(new Field(DATE_FIELD, "date_" + name, Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      return doc;
+    }
+    
+  }
+
   private static final CompressorStreamFactory csFactory = new CompressorStreamFactory();
 
   private PerfRunData createPerfRunData(File file, boolean setBZCompress,
@@ -225,5 +242,49 @@ public class WriteLineDocTaskTest extends BenchmarkTestCase {
       br.close();
     }
   }
-  
+
+  public void testMultiThreaded() throws Exception {
+    File file = new File(getWorkDir(), "one-line");
+    PerfRunData runData = createPerfRunData(file, false, null, ThreadingDocMaker.class.getName());
+    final WriteLineDocTask wldt = new WriteLineDocTask(runData);
+    Thread[] threads = new Thread[10];
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] = new Thread("t" + i) {
+        @Override
+        public void run() {
+          try {
+            wldt.doLogic();
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        }
+      };
+    }
+    
+    for (Thread t : threads) t.start();
+    for (Thread t : threads) t.join();
+    
+    wldt.close();
+    
+    Set<String> ids = new HashSet<String>();
+    BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(file), "utf-8"));
+    try {
+      for (int i = 0; i < threads.length; i++) {
+        String line = br.readLine();
+        String[] parts = line.split(Character.toString(WriteLineDocTask.SEP));
+        assertEquals(3, parts.length);
+        // check that all thread names written are the same in the same line
+        String tname = parts[0].substring(parts[0].indexOf('_'));
+        ids.add(tname);
+        assertEquals(tname, parts[1].substring(parts[1].indexOf('_')));
+        assertEquals(tname, parts[2].substring(parts[2].indexOf('_')));
+      }
+      // only threads.length lines should exist
+      assertNull(br.readLine());
+      assertEquals(threads.length, ids.size());
+    } finally {
+      br.close();
+    }
+  }
+
 }

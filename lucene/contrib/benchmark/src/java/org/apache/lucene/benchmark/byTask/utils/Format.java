@@ -107,19 +107,4 @@ public class Format {
     return res.substring(res.length() - col.length());
   }
 
-  /**
-   * Extract simple class name 
-   * @param cls class whose simple name is required 
-   * @return simple class name
-   */
-  public static String simpleName (Class<?> cls) {
-    String c = cls.getName();
-    String p = cls.getPackage().getName();
-    int k = c.lastIndexOf(p+".");
-    if (k<0) {
-      return c;
-    }
-    return c.substring(k+1+p.length());
-  }
-  
 }
