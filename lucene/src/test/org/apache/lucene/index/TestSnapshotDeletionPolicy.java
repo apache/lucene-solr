@@ -1,4 +1,4 @@
-package org.apache.lucene;
+package org.apache.lucene.index;
 // Intentionally not in org.apache.lucene.index, to assert
 // that we do not require any package private access.
 
@@ -34,7 +34,6 @@ import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.TestIndexWriter;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.LuceneTestCase;

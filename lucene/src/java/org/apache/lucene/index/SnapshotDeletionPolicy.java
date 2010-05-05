@@ -71,6 +71,10 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
    *  consume an extra 1X of your total index size, until
    *  you release the snapshot. */
   public synchronized IndexCommit snapshot() {
+    if (lastCommit == null) {
+      throw new IllegalStateException("no index commits to snapshot !");
+    }
+    
     if (snapshot == null)
       snapshot = lastCommit.getSegmentsFileName();
     else
