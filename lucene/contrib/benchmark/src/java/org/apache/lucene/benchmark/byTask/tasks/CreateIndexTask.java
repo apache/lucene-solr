@@ -25,6 +25,8 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.NoMergePolicy;
+import org.apache.lucene.index.NoMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.util.Version;
 
@@ -70,34 +72,42 @@ public class CreateIndexTask extends PerfTask {
 
     final String mergeScheduler = config.get("merge.scheduler",
                                              "org.apache.lucene.index.ConcurrentMergeScheduler");
-    try {
-      writer.setMergeScheduler(Class.forName(mergeScheduler).asSubclass(MergeScheduler.class).newInstance());
-    } catch (Exception e) {
-      throw new RuntimeException("unable to instantiate class '" + mergeScheduler + "' as merge scheduler", e);
-    }
-
-    if (mergeScheduler.equals("org.apache.lucene.index.ConcurrentMergeScheduler")) {
-      ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) writer.getMergeScheduler();
-      int v = config.get("concurrent.merge.scheduler.max.thread.count", -1);
-      if (v != -1) {
-        cms.setMaxThreadCount(v);
+    if (mergeScheduler.equals(NoMergeScheduler.class.getName())) {
+      writer.setMergeScheduler(NoMergeScheduler.INSTANCE);
+    } else {
+      try {
+        writer.setMergeScheduler(Class.forName(mergeScheduler).asSubclass(MergeScheduler.class).newInstance());
+      } catch (Exception e) {
+        throw new RuntimeException("unable to instantiate class '" + mergeScheduler + "' as merge scheduler", e);
       }
-      v = config.get("concurrent.merge.scheduler.max.merge.count", -1);
-      if (v != -1) {
-        cms.setMaxMergeCount(v);
+      
+      if (mergeScheduler.equals("org.apache.lucene.index.ConcurrentMergeScheduler")) {
+        ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) writer.getMergeScheduler();
+        int v = config.get("concurrent.merge.scheduler.max.thread.count", -1);
+        if (v != -1) {
+          cms.setMaxThreadCount(v);
+        }
+        v = config.get("concurrent.merge.scheduler.max.merge.count", -1);
+        if (v != -1) {
+          cms.setMaxMergeCount(v);
+        }
       }
     }
 
     final String mergePolicy = config.get("merge.policy",
                                           "org.apache.lucene.index.LogByteSizeMergePolicy");
-    try {
-      writer.setMergePolicy(Class.forName(mergePolicy).asSubclass(MergePolicy.class).newInstance());
-    } catch (Exception e) {
-      throw new RuntimeException("unable to instantiate class '" + mergePolicy + "' as merge policy", e);
+    boolean isCompound = config.get("compound", true);
+    if (mergePolicy.equals(NoMergePolicy.class.getName())) {
+      writer.setMergePolicy(isCompound ? NoMergePolicy.COMPOUND_FILES : NoMergePolicy.NO_COMPOUND_FILES);
+    } else {
+      try {
+        writer.setMergePolicy(Class.forName(mergePolicy).asSubclass(MergePolicy.class).newInstance());
+      } catch (Exception e) {
+        throw new RuntimeException("unable to instantiate class '" + mergePolicy + "' as merge policy", e);
+      }
+      writer.setUseCompoundFile(isCompound);
+      writer.setMergeFactor(config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR));
     }
-
-    writer.setUseCompoundFile(config.get("compound",true));
-    writer.setMergeFactor(config.get("merge.factor",OpenIndexTask.DEFAULT_MERGE_PFACTOR));
     writer.setMaxFieldLength(config.get("max.field.length",OpenIndexTask.DEFAULT_MAX_FIELD_LENGTH));
 
     final double ramBuffer = config.get("ram.flush.mb",OpenIndexTask.DEFAULT_RAM_FLUSH_MB);
