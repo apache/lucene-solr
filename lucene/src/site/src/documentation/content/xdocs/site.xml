@@ -52,9 +52,6 @@ See http://forrest.apache.org/docs/linking.html for more info
 		 <javadoc-core label="Core" href="ext:javadocs-core"/>
 		 <javadoc-demo label="Demo" href="ext:javadocs-demo"/>
 		 <javadoc-contrib label="Contrib">
-		    <javadoc-contrib-analyzers label="Analyzers" href="ext:javadocs-contrib-analyzers"/>
-		    <javadoc-contrib-smartcn label="Smart Chinese Analyzer" href="ext:javadocs-contrib-smartcn"/>
-		    <javadoc-contrib-stempel label="Stempel Polish Analyzer" href="ext:javadocs-contrib-stempel"/>
 		    <javadoc-contrib-ant label="Ant" href="ext:javadocs-contrib-ant"/>
 		    <javadoc-contrib-bdb label="Bdb" href="ext:javadocs-contrib-bdb"/>
 		    <javadoc-contrib-bdb-je label="Bdb-je" href="ext:javadocs-contrib-bdb-je"/>
@@ -103,9 +100,6 @@ See http://forrest.apache.org/docs/linking.html for more info
     <javadocs-all href="api/all/index.html"/>
 	<javadocs-core href="api/core/index.html"/>
 	<javadocs-demo href="api/demo/index.html"/>
-	<javadocs-contrib-analyzers href="api/contrib-analyzers/index.html"/>
-	<javadocs-contrib-smartcn href="api/contrib-smartcn/index.html"/>
-	<javadocs-contrib-stempel href="api/contrib-stempel/index.html"/>
 	<javadocs-contrib-ant href="api/contrib-ant/index.html"/>
 	<javadocs-contrib-bdb href="api/contrib-bdb/index.html"/>
 	<javadocs-contrib-bdb-je href="api/contrib-bdb-je/index.html"/>

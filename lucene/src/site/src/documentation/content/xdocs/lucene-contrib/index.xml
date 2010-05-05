@@ -49,12 +49,7 @@
                 You can access the current trunk Contrib repository at
                 <a href="http://svn.apache.org/repos/asf/lucene/dev/trunk/lucene/contrib/">http://svn.apache.org/repos/asf/lucene/dev/trunk/lucene/contrib/</a>.
             </p>
-
-            <section id="analyzers"><title>analyzers</title>
-                <p>Contributed Analyzers, Tokenizers, and Filters for various uses and languages.</p>
-                <p>See <a href="../api/contrib-analyzers/index.html">analyzers javadoc</a></p>
-            </section>
-            
+          
             <section id="ant"><title>ant</title>
                 <p>Ant task to create Lucene indexes.</p>
                 <p>See <a href="../api/contrib-ant/index.html">ant javadoc</a></p>
