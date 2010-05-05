@@ -14,7 +14,7 @@
     <contrib-uptodate name="highlighter" property="highlighter.uptodate" classpath.property="highlighter.jar"/>
     <contrib-uptodate name="icu" property="icu.uptodate" classpath.property="icu.jar"/>
     <!-- analyzers common needs a hack for the jar file: -->
-    <contrib-uptodate name="analyzers/common" jarfile="${common.dir}/build/contrib/analyzers/common/lucene-analyzers-${version}.jar"
+    <module-uptodate name="analysis/common" jarfile="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"
       property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
     <contrib-uptodate name="memory" property="memory.uptodate" classpath.property="memory.jar"/>
 
@@ -244,7 +244,7 @@
     </target>
     <target name="compile-analyzers-common" unless="analyzers-common.uptodate">
       <subant target="default">
-        <fileset dir="${common.dir}/contrib/analyzers/common" includes="build.xml"/>
+        <fileset dir="${common.dir}/../modules/analysis/common" includes="build.xml"/>
       </subant>
     </target>
     <target name="compile-memory" unless="memory.uptodate">

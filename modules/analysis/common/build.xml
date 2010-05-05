@@ -17,21 +17,21 @@
     limitations under the License.
  -->
 
-<project name="analyzers" default="default">
+<project name="analyzers-common" default="default">
 
   <description>
-    Additional Analyzers
+   Analyzers
   </description>
 	
-  <property name="build.dir" location="../../../build/contrib/analyzers/common" />
-  <property name="dist.dir" location="../../../dist/contrib/analyzers/common" />
-  <property name="maven.dist.dir" location="../../../dist/maven" />
+  <property name="build.dir" location="../build/common" />
+  <property name="dist.dir" location="../dist/common" />
+  <property name="maven.dist.dir" location="../dist/maven" />
 
-  <import file="../../contrib-build.xml"/>
+  <import file="../../../lucene/contrib/contrib-build.xml"/>
 	
   <path id="test.classpath">
     <path refid="classpath"/>
-    <pathelement location="../../../build/classes/test/"/>
+    <pathelement location="../../../lucene/build/classes/test/"/>
     <path refid="junit-path"/>
     <pathelement location="${build.dir}/classes/java"/>
   </path>	

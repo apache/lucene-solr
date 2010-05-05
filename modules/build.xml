@@ -17,39 +17,27 @@
     limitations under the License.
  -->
 
-<project name="lucene-solr" default="test" basedir=".">
-  <target name="test" description="Test both Lucene and Solr">
+<project name="modules" default="test" basedir=".">
+  <target name="test" description="Test all modules">
     <sequential>
       <subant target="test" inheritall="false" failonerror="true">
-        <fileset dir="lucene" includes="build.xml" />
-      </subant>
-
-      <subant target="test" inheritall="false" failonerror="true">
-        <fileset dir="modules" includes="build.xml" />
-      </subant>
-
-      <subant target="test" inheritall="false" failonerror="true">
-        <fileset dir="solr" includes="build.xml" />
+        <fileset dir="analysis" includes="build.xml" />
       </subant>
     </sequential>
   </target>
 
-  <target name="compile" description="Compile Lucene and Solr">
+  <target name="compile" description="Compile all modules">
     <sequential>
       <subant target="compile" inheritall="false" failonerror="true">
-        <!--<fileset dir="lucene" includes="build.xml" /> -->
-        <fileset dir="modules" includes="build.xml" />
-        <fileset dir="solr" includes="build.xml" />
+        <fileset dir="analysis" includes="build.xml" />
       </subant>
     </sequential>
   </target>
 
-  <target name="clean" description="Clean Lucene and Solr">
+  <target name="clean" description="Clean all modules">
     <sequential>
       <subant target="clean" inheritall="false" failonerror="true">
-        <fileset dir="lucene" includes="build.xml" />
-        <fileset dir="modules" includes="build.xml" />
-        <fileset dir="solr" includes="build.xml" />
+        <fileset dir="analysis" includes="build.xml" />
       </subant>
     </sequential>
   </target>

@@ -4,7 +4,7 @@ Lucene Change Log
 
 Changes in backwards compatibility policy
 
-* LUCENE-2413: Consolidated all Lucene analyzers into contrib/analyzers.
+* LUCENE-2413: Consolidated all Lucene analyzers into modules/analysis.
   - o.a.l.analysis.PorterStemFilter -> o.a.l.analysis.en.PorterStemFilter
   - o.a.l.analysis.ASCIIFoldingFilter -> o.a.l.analysis.miscellaneous.ASCIIFoldingFilter
   - o.a.l.analysis.ISOLatin1AccentFilter -> o.a.l.analysis.miscellaneous.ISOLatin1AccentFilter
