@@ -35,7 +35,7 @@ content.source=org.apache.lucene.benchmark.byTask.feeds.ReutersContentSource
 
 #query.maker=org.apache.lucene.benchmark.byTask.feeds.SimpleQueryMaker
 query.maker=org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker
-deletion.policy=org.apache.lucene.benchmark.utils.NoDeletionPolicy
+deletion.policy=org.apache.lucene.index.NoDeletionPolicy
 
 # task at this depth or less would print when they start
 task.max.depth.log=2

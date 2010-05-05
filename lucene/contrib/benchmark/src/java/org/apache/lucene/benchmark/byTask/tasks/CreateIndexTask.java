@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.NoDeletionPolicy;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NoMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -135,23 +136,15 @@ public class CreateIndexTask extends PerfTask {
   
   public static IndexDeletionPolicy getIndexDeletionPolicy(Config config) {
     String deletionPolicyName = config.get("deletion.policy", "org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy");
-    IndexDeletionPolicy indexDeletionPolicy = null;
-    RuntimeException err = null;
-    try {
-      indexDeletionPolicy = Class.forName(deletionPolicyName).asSubclass(IndexDeletionPolicy.class).newInstance();
-    } catch (IllegalAccessException iae) {
-      err = new RuntimeException("unable to instantiate class '" + deletionPolicyName + "' as IndexDeletionPolicy");
-      err.initCause(iae);
-    } catch (InstantiationException ie) {
-      err = new RuntimeException("unable to instantiate class '" + deletionPolicyName + "' as IndexDeletionPolicy");
-      err.initCause(ie);
-    } catch (ClassNotFoundException cnfe) {
-      err = new RuntimeException("unable to load class '" + deletionPolicyName + "' as IndexDeletionPolicy");
-      err.initCause(cnfe);
+    if (deletionPolicyName.equals(NoDeletionPolicy.class.getName())) {
+      return NoDeletionPolicy.INSTANCE;
+    } else {
+      try {
+        return Class.forName(deletionPolicyName).asSubclass(IndexDeletionPolicy.class).newInstance();
+      } catch (Exception e) {
+        throw new RuntimeException("unable to instantiate class '" + deletionPolicyName + "' as IndexDeletionPolicy", e);
+      }
     }
-    if (err != null)
-      throw err;
-    return indexDeletionPolicy;
   }
   
   @Override

@@ -46,9 +46,9 @@ public class TestNoMergeScheduler extends LuceneTestCaseJ4 {
 
   @Test
   public void testMethodsOverridden() throws Exception {
-    // Ensures that all methods of MergePolicy are overridden. That's important
-    // to ensure that NoMergePolicy overrides everything, so that no unexpected
-    // behavior/error occurs
+    // Ensures that all methods of MergeScheduler are overridden. That's
+    // important to ensure that NoMergeScheduler overrides everything, so that
+    // no unexpected behavior/error occurs
     for (Method m : NoMergeScheduler.class.getMethods()) {
       // getDeclaredMethods() returns just those methods that are declared on
       // NoMergeScheduler. getMethods() returns those that are visible in that
