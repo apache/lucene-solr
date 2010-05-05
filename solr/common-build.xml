@@ -210,7 +210,7 @@
       </copy>
   </target>  
   
-  <target name="compile-lucene" unless="lucene-compiled">
+  <target name="compile-lucene" unless="${lucene-compiled}">
     <property name="lucene-compiled" value="true"/>
     <ant antfile="build.xml" target="compile" dir="../modules/analysis/common"/>
     <ant antfile="build.xml" target="compile" dir="../lucene/contrib/highlighter"/>
