@@ -44,6 +44,9 @@
 
   <target name="clean">
   	<delete failonerror="false" dir="target"/>
+  	<delete>
+  	  <fileset dir="src/main/solr/lib" includes="apache-solr-velocity-*.jar"/>
+  	</delete>
   </target>
 
   <target name="init">
