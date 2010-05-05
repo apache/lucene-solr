@@ -19,6 +19,7 @@ package org.apache.lucene.store.je;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -133,7 +134,7 @@ public class JEDirectory extends Directory {
         if (file.exists(this))
             return file.getLength();
 
-        throw new IOException("File does not exist: " + name);
+        throw new FileNotFoundException(name);
     }
 
     @Override

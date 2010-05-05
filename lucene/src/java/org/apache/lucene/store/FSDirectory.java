@@ -19,6 +19,7 @@ package org.apache.lucene.store;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -265,9 +266,12 @@ public abstract class FSDirectory extends Directory {
 
   /** Returns the length in bytes of a file in the directory. */
   @Override
-  public long fileLength(String name) {
+  public long fileLength(String name) throws IOException {
     ensureOpen();
     File file = new File(directory, name);
+    if (!file.exists()) {
+      throw new FileNotFoundException(name);
+    }
     return file.length();
   }
 

@@ -51,6 +51,11 @@ Changes in backwards compatibility policy
   of incrementToken(), tokenStream(), and reusableTokenStream().
   (Uwe Schindler, Robert Muir)
 
+* LUCENE-2316: Directory.fileLength contract was clarified - it returns the
+  actual file's length if the file exists, and throws FileNotFoundException
+  otherwise. Returning length=0 for a non-existent file is no longer allowed. If
+  you relied on that, make sure to catch the exception. (Shai Erera)
+  
 Changes in runtime behavior
 
 * LUCENE-1923: Made IndexReader.toString() produce something
