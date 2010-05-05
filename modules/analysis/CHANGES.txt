@@ -1,0 +1,60 @@
+Analysis Module Change Log
+
+======================= Trunk (not yet released) =======================
+
+Bug fixes
+
+ * LUCENE-2404: Fix bugs with position increment and empty tokens in ThaiWordFilter.
+   For matchVersion >= 3.1 the filter also no longer lowercases.  (Uwe Schindler)
+
+API Changes
+
+ * LUCENE-2413: Deprecated PatternAnalyzer in common/miscellaneous, in favor 
+   of the pattern package (CharFilter, Tokenizer, TokenFilter).  (Robert Muir)
+
+ * LUCENE-2413: Removed the AnalyzerUtil in common/miscellaneous.  (Robert Muir)
+
+New Features
+   
+ * LUCENE-2413: Consolidated Solr analysis components into common. 
+   New features from Solr now available to Lucene users include:
+   - o.a.l.analysis.commongrams: Constructs n-grams for frequently occurring terms
+     and phrases. 
+   - o.a.l.analysis.charfilter.HTMLStripCharFilter: CharFilter that strips HTML 
+     constructs.
+   - o.a.l.analysis.miscellaneous.WordDelimiterFilter: TokenFilter that splits words 
+     into subwords and performs optional transformations on subword groups.
+   - o.a.l.analysis.miscellaneous.RemoveDuplicatesTokenFilter: TokenFilter which 
+     filters out Tokens at the same position and Term text as the previous token.
+   - o.a.l.analysis.miscellaneous.TrimFilter: Trims leading and trailing whitespace 
+     from Tokens in the stream.
+   - o.a.l.analysis.miscellaneous.KeepWordFilter: A TokenFilter that only keeps tokens 
+     with text contained in the required words (inverse of StopFilter).
+   - o.a.l.analysis.miscellaneous.HyphenatedWordsFilter: A TokenFilter that puts 
+     hyphenated words broken into two lines back together.
+   - o.a.l.analysis.pattern: Package for pattern-based analysis, containing a 
+     CharFilter, Tokenizer, and Tokenfilter for transforming text with regexes.
+   (... in progress)
+
+  * LUCENE-2413: Consolidated all Lucene analyzers into common.
+    - o.a.l.analysis.PorterStemFilter -> o.a.l.analysis.en.PorterStemFilter
+    - o.a.l.analysis.ASCIIFoldingFilter -> o.a.l.analysis.miscellaneous.ASCIIFoldingFilter
+    - o.a.l.analysis.ISOLatin1AccentFilter -> o.a.l.analysis.miscellaneous.ISOLatin1AccentFilter
+    - o.a.l.analysis.LengthFilter -> o.a.l.analysis.miscellaneous.LengthFilter
+    - o.a.l.analysis.PerFieldAnalyzerWrapper -> o.a.l.analysis.miscellaneous.PerFieldAnalyzerWrapper
+    - o.a.l.analysis.TeeSinkTokenFilter -> o.a.l.analysis.sinks.TeeSinkTokenFilter
+    - o.a.l.analysis.BaseCharFilter -> o.a.l.analysis.charfilter.BaseCharFilter
+    - o.a.l.analysis.MappingCharFilter -> o.a.l.analysis.charfilter.MappingCharFilter
+    - o.a.l.analysis.NormalizeCharMap -> o.a.l.analysis.charfilter.NormalizeCharMap
+    ... (in progress)
+    
+ * LUCENE-2413: Consolidated all contrib analyzers into common. 
+   - o.a.l.wikipedia.analysis -> o.a.l.analysis.wikipedia
+   ... (in progress)
+
+ * LUCENE-2298: Add stempel, an algorithmic stemmer with support for
+   the Polish language.  (Andrzej Bialecki via Robert Muir)
+
+Build
+
+ * LUCENE-2413: The 'smartcn' component now depends on 'common'.  (Robert Muir)

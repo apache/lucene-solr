@@ -1,29 +1,7 @@
 Lucene contrib change Log
 
 ======================= Trunk (not yet released) =======================
-
-Changes in backwards compatibility policy
-
-   
- * LUCENE-2323: Moved contrib/wikipedia functionality into contrib/analyzers.
-   Additionally the package was changed from org.apache.lucene.wikipedia.analysis
-   to org.apache.lucene.analysis.wikipedia.  (Robert Muir)
-
- * LUCENE-2413: Consolidated all analyzers into contrib/analyzers. 
-   - contrib/analyzers/smartcn now depends on contrib/analyzers/common
-   - The "AnalyzerUtil" in wordnet was removed. 
-   ... (in progress)
-
-Bug fixes
-
- * LUCENE-2404: Fix bugs with position increment and empty tokens in ThaiWordFilter.
-   For matchVersion >= 3.1 the filter also no longer lowercases. ThaiAnalyzer
-
-API Changes
-
- * LUCENE-2413: Deprecated PatternAnalyzer in contrib/analyzers, in favor of the 
-   pattern package (CharFilter, Tokenizer, TokenFilter).  (Robert Muir)
-   
+  
 New features
 
  * LUCENE-2399: Add ICUNormalizer2Filter, which normalizes tokens with ICU's
@@ -39,33 +17,10 @@ New features
    sensitive way, either from ICU built-in rules (such as Traditional-Simplified),
    or from rules you write yourself.  (Robert Muir)
 
- * LUCENE-2298: Add analyzers/stempel, an algorithmic stemmer with support for
-   the Polish language.  (Andrzej Bialecki via Robert Muir)
-
  * LUCENE-2414: Add ICUTokenizer, a tailorable tokenizer that implements Unicode
    Text Segmentation. This tokenizer is useful for documents or collections with
    multiple languages.  The default configuration includes special support for
    Thai, Lao, Myanmar, and Khmer.  (Robert Muir, Uwe Schindler)
-
- * LUCENE-2413: Consolidated Solr analysis components into contrib/analyzers. 
-   New features from Solr now available to Lucene users include:
-   - o.a.l.analysis.commongrams: Constructs n-grams for frequently occurring terms
-     and phrases. 
-   - o.a.l.analysis.charfilter.HTMLStripCharFilter: CharFilter that strips HTML 
-     constructs.
-   - o.a.l.analysis.miscellaneous.WordDelimiterFilter: TokenFilter that splits words 
-     into subwords and performs optional transformations on subword groups.
-   - o.a.l.analysis.miscellaneous.RemoveDuplicatesTokenFilter: TokenFilter which 
-     filters out Tokens at the same position and Term text as the previous token.
-   - o.a.l.analysis.miscellaneous.TrimFilter: Trims leading and trailing whitespace 
-     from Tokens in the stream.
-   - o.a.l.analysis.miscellaneous.KeepWordFilter: A TokenFilter that only keeps tokens 
-     with text contained in the required words (inverse of StopFilter).
-   - o.a.l.analysis.miscellaneous.HyphenatedWordsFilter: A TokenFilter that puts 
-     hyphenated words broken into two lines back together.
-   - o.a.l.analysis.pattern: Package for pattern-based analysis, containing a 
-     CharFilter, Tokenizer, and Tokenfilter for transforming text with regexes.
-   (... in progress)
 
 Build
 

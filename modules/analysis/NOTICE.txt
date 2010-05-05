@@ -1,0 +1,51 @@
+Apache Lucene
+Copyright 2006 The Apache Software Foundation
+
+This product includes software developed by
+The Apache Software Foundation (http://www.apache.org/).
+
+The snowball stemmers in
+  common/src/java/net/sf/snowball
+were developed by Martin Porter and Richard Boulton.
+The snowball stopword lists in
+  common/src/resources/org/apache/lucene/analysis/snowball
+were developed by Martin Porter and Richard Boulton.
+The full snowball package is available from
+  http://snowball.tartarus.org/
+
+The Arabic stemmer (common) comes with a default
+stopword list that is BSD-licensed created by Jacques Savoy.  The file resides in 
+common/src/resources/org/apache/lucene/analysis/ar/stopwords.txt.
+See http://members.unine.ch/jacques.savoy/clef/index.html.
+
+The Persian analyzer (common) comes with a default
+stopword list that is BSD-licensed created by Jacques Savoy.  The file resides in
+common/src/resources/org/apache/lucene/analysis/fa/stopwords.txt.
+See http://members.unine.ch/jacques.savoy/clef/index.html.
+
+The Romanian analyzer (common) comes with a default
+stopword list that is BSD-licensed created by Jacques Savoy.  The file resides in
+common/src/resources/org/apache/lucene/analysis/ro/stopwords.txt.
+See http://members.unine.ch/jacques.savoy/clef/index.html.
+
+The Bulgarian analyzer (common) comes with a default
+stopword list that is BSD-licensed created by Jacques Savoy.  The file resides in
+common/src/resources/org/apache/lucene/analysis/bg/stopwords.txt.
+See http://members.unine.ch/jacques.savoy/clef/index.html.
+
+The Hindi analyzer (common) comes with a default
+stopword list that is BSD-licensed created by Jacques Savoy.  The file resides in
+common/src/resources/org/apache/lucene/analysis/hi/stopwords.txt.
+See http://members.unine.ch/jacques.savoy/clef/index.html.
+
+The Stempel analyzer (stempel) includes BSD-licensed software developed 
+by the Egothor project http://egothor.sf.net/, created by Leo Galambos, Martin Kvapil,
+and Edmond Nolan.
+
+The Polish analyzer (stempel) comes with a default
+stopword list that is BSD-licensed created by the Carrot2 project. The file resides
+in stempel/src/resources/org/apache/lucene/analysis/pl/stopwords.txt.
+See http://project.carrot2.org/license.html.
+
+The SmartChineseAnalyzer source code (smartcn) was
+provided by Xiaoping Gao and copyright 2009 by www.imdict.net.
