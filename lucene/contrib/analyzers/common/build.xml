@@ -35,4 +35,23 @@
     <path refid="junit-path"/>
     <pathelement location="${build.dir}/classes/java"/>
   </path>	
+
+  <target name="jflex" depends="clean-jflex,jflex-wiki-tokenizer"/>
+
+  <target name="jflex-wiki-tokenizer" depends="init,jflex-check" if="jflex.present">
+    <taskdef classname="JFlex.anttask.JFlexTask" name="jflex">
+      <classpath location="${jflex.home}/lib/JFlex.jar"/>
+    </taskdef>
+    <jflex file="src/java/org/apache/lucene/analysis/wikipedia/WikipediaTokenizerImpl.jflex"
+           outdir="src/java/org/apache/lucene/analysis/wikipedia"
+           nobak="on"/>
+  </target>
+
+  <target name="clean-jflex">
+    <delete>
+      <fileset dir="src/java/org/apache/lucene/analysis/wikipedia" includes="*.java">
+        <containsregexp expression="generated.*by.*JFlex"/>
+      </fileset>
+    </delete>
+  </target>
 </project>

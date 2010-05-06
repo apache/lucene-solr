@@ -1,4 +1,4 @@
-package org.apache.lucene.wikipedia.analysis;
+package org.apache.lucene.analysis.wikipedia;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more

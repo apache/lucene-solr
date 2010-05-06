@@ -19,6 +19,10 @@ Changes in backwards compatibility policy
  * LUCENE-2226: Moved contrib/snowball functionality into contrib/analyzers.
    Be sure to remove any old obselete lucene-snowball jar files from your
    classpath!  (Robert Muir)
+   
+ * LUCENE-2323: Moved contrib/wikipedia functionality into contrib/analyzers.
+   Additionally the package was changed from org.apache.lucene.wikipedia.analysis
+   to org.apache.lucene.analysis.wikipedia.  (Robert Muir)
     
 Changes in runtime behavior
 
@@ -132,8 +136,10 @@ Build
    (Steven Rowe, Robert Muir)
 
  * LUCENE-2323: Moved contrib/regex into contrib/queries. Moved the
-   queryparsers under contrib/misc into contrib/queryparser. Moved
-   contrib/fast-vector-highlighter into contrib/highlighter.  (Robert Muir)
+   queryparsers under contrib/misc and contrib/surround into contrib/queryparser. 
+   Moved contrib/fast-vector-highlighter into contrib/highlighter. 
+   Moved ChainedFilter from contrib/misc to contrib/queries. contrib/spatial now
+   depends on contrib/queries instead of contrib/misc.  (Robert Muir)
    
  * LUCENE-2333: Fix failures during contrib builds, when classes in
    core were changed without ant clean. This fix also optimizes the

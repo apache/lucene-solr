@@ -25,18 +25,18 @@
 
   <import file="../contrib-build.xml"/>
 
-  <contrib-uptodate name="misc" property="misc.uptodate" classpath.property="misc.jar"/>
+  <contrib-uptodate name="queries" property="queries.uptodate" classpath.property="queries.jar"/>
 
   <path id="classpath">
-    <pathelement path="${misc.jar}"/>
+    <pathelement path="${queries.jar}"/>
     <path refid="base.classpath"/>
   </path>
 
-  <target name="compile-core" depends="build-misc, common.compile-core" />
+  <target name="compile-core" depends="build-queries, common.compile-core" />
 
-  <target name="build-misc" unless="misc.uptodate">
-    <echo>Misc building dependency ${misc.jar}</echo>
-    <ant antfile="../misc/build.xml" target="default" inheritall="false" dir="../misc" />
+  <target name="build-queries" unless="queries.uptodate">
+    <echo>Misc building dependency ${queries.jar}</echo>
+    <ant antfile="../queries/build.xml" target="default" inheritall="false" dir="../queries" />
   </target>
   
 </project>
