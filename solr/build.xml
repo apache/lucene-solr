@@ -391,32 +391,14 @@
 
   <target name="junit-parallel" unless="runsequential">
    <parallel threadsPerProcessor="${threadsPerProcessor}">
-    <junit-macro pattern="S"/>
-    <junit-macro pattern="D"/>
-    <junit-macro pattern="A"/>
-    <junit-macro pattern="B"/>
-    <junit-macro pattern="C"/>
-    <junit-macro pattern="E"/>
-    <junit-macro pattern="F"/>
-    <junit-macro pattern="G"/>
-    <junit-macro pattern="H"/>
-    <junit-macro pattern="I"/>
-    <junit-macro pattern="J"/>
-    <junit-macro pattern="K"/>
-    <junit-macro pattern="L"/>
-    <junit-macro pattern="M"/>
-    <junit-macro pattern="N"/>
-    <junit-macro pattern="O"/>
-    <junit-macro pattern="P"/>
-    <junit-macro pattern="Q"/>
-    <junit-macro pattern="R"/>
-    <junit-macro pattern="T"/>
-    <junit-macro pattern="U"/>
-    <junit-macro pattern="V"/>
-    <junit-macro pattern="W"/>
-    <junit-macro pattern="X"/>
-    <junit-macro pattern="Y"/>
-    <junit-macro pattern="Z"/>
+    <junit-macro threadNum="1" threadTotal="8"/>
+    <junit-macro threadNum="2" threadTotal="8"/>
+    <junit-macro threadNum="3" threadTotal="8"/>
+    <junit-macro threadNum="4" threadTotal="8"/>
+    <junit-macro threadNum="5" threadTotal="8"/>
+    <junit-macro threadNum="6" threadTotal="8"/>
+    <junit-macro threadNum="7" threadTotal="8"/>
+    <junit-macro threadNum="8" threadTotal="8"/>
    </parallel>
   </target>
 
@@ -425,7 +407,8 @@
   </target>
 
   <macrodef name="junit-macro">
-  <attribute name="pattern" default=""/>
+  <attribute name="threadNum" default="1"/>
+  <attribute name="threadTotal" default="1"/>
     <sequential>
     <!-- no description so it doesn't show up in -projecthelp -->  
     <condition property="runall">
@@ -462,13 +445,28 @@
       </assertions>
       <formatter type="${junit.formatter}"/>
       <batchtest fork="yes" todir="${junit.output.dir}" if="runall">
-        <fileset dir="src/test" includes="**/Test@{pattern}*.java,**/@{pattern}*Test.java"/>
+        <fileset dir="src/test" includes="**/Test*.java,**/*Test.java">
+          <custom classname="${junit.parallel.selector}" classpathref="test.run.classpath">
+          	<param name="divisor" value="@{threadTotal}" />
+          	<param name="part" value="@{threadNum}" />
+          </custom>
+        </fileset>
       </batchtest>
       <batchtest fork="yes" todir="${junit.output.dir}" if="testpackage">
-        <fileset dir="src/test" includes="**/${testpackage}/**/Test@{pattern}*.java,**/${testpackage}/**/@{pattern}*Test.java"/>
+        <fileset dir="src/test" includes="**/${testpackage}/**/Test*.java,**/${testpackage}/**/*Test.java">
+          <custom classname="${junit.parallel.selector}" classpathref="test.run.classpath">
+      	    <param name="divisor" value="@{threadTotal}" />
+      	    <param name="part" value="@{threadNum}" />
+          </custom>
+      	</fileset>
       </batchtest>
       <batchtest fork="yes" todir="${junit.output.dir}" if="testpackageroot">
-        <fileset dir="src/test" includes="**/${testpackageroot}/Test@{pattern}*.java,**/${testpackageroot}/@{pattern}*Test.java"/>
+        <fileset dir="src/test" includes="**/${testpackageroot}/Test*.java,**/${testpackageroot}/*Test.java">
+          <custom classname="${junit.parallel.selector}" classpathref="test.run.classpath">
+        	<param name="divisor" value="@{threadTotal}" />
+        	<param name="part" value="@{threadNum}" />
+          </custom>
+        </fileset>
       </batchtest>
       <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
         <fileset dir="src/test" includes="**/${testcase}.java"/>
