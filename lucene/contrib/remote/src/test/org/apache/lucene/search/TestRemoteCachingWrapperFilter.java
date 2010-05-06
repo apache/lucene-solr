@@ -17,12 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.rmi.Naming;
-import java.rmi.registry.LocateRegistry;
-
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
-
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -30,32 +24,17 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * Tests that the index is cached on the searcher side of things.
- * NOTE: This is copied from TestRemoteSearchable since it already had a remote index set up.
  */
-public class TestRemoteCachingWrapperFilter extends LuceneTestCase {
-  public TestRemoteCachingWrapperFilter(String name) {
-    super(name);
-  }
-
-  private static Searchable getRemote() throws Exception {
-    try {
-      return lookupRemote();
-    } catch (Throwable e) {
-      startServer();
-      return lookupRemote();
-    }
-  }
-
-  private static Searchable lookupRemote() throws Exception {
-    return (Searchable)Naming.lookup("//localhost:" + port + "/Searchable");
-  }
-
-  private static int port;
-
-  private static void startServer() throws Exception {
+public class TestRemoteCachingWrapperFilter extends RemoteTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
     // construct an index
     RAMDirectory indexStore = new RAMDirectory();
     IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
@@ -74,17 +53,12 @@ public class TestRemoteCachingWrapperFilter extends LuceneTestCase {
     writer.addDocument(doc);
     writer.optimize();
     writer.close();
-
-    // publish it
-    port = _TestUtil.getRandomSocketPort();
-    LocateRegistry.createRegistry(port);
     Searchable local = new IndexSearcher(indexStore, true);
-    RemoteSearchable impl = new RemoteSearchable(local);
-    Naming.rebind("//localhost:" + port + "/Searchable", impl);
+    startServer(local);
   }
 
   private static void search(Query query, Filter filter, int hitNumber, String typeValue) throws Exception {
-    Searchable[] searchables = { getRemote() };
+    Searchable[] searchables = { lookupRemote() };
     Searcher searcher = new MultiSearcher(searchables);
     ScoreDoc[] result = searcher.search(query,filter, 1000).scoreDocs;
     assertEquals(1, result.length);
@@ -94,7 +68,7 @@ public class TestRemoteCachingWrapperFilter extends LuceneTestCase {
     assertTrue("document.getFields() Size: " + document.getFields().size() + " is not: " + 3, document.getFields().size() == 3);
   }
 
-
+  @Test
   public void testTermRemoteFilter() throws Exception {
     CachingWrapperFilterHelper cwfh = new CachingWrapperFilterHelper(new QueryWrapperFilter(new TermQuery(new Term("type", "a"))));
     

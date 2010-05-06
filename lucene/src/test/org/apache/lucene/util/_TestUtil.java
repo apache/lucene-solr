@@ -111,9 +111,4 @@ public class _TestUtil {
     buf.append("]");
     return buf.toString();
   }
-
-  public static int getRandomSocketPort() {
-    return 1024 + new Random().nextInt(64512);
-  }
-
 }
