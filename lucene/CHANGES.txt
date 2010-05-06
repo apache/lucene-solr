@@ -163,9 +163,6 @@ New features
   applications that have many unique terms, since it reduces how often
   a new segment must be flushed given a fixed RAM buffer size.
 
-* LUCENE-2398: Improve tests to work better from IDEs such as Eclipse.
-  (Paolo Castagna via Robert Muir)
-
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy
@@ -217,6 +214,17 @@ Changes in backwards compatibility policy
   of incrementToken(), tokenStream(), and reusableTokenStream().
   (Uwe Schindler, Robert Muir)
 
+* LUCENE-2316: Directory.fileLength contract was clarified - it returns the
+  actual file's length if the file exists, and throws FileNotFoundException
+  otherwise. Returning length=0 for a non-existent file is no longer allowed. If
+  you relied on that, make sure to catch the exception. (Shai Erera)
+  
+* LUCENE-2386: IndexWriter no longer performs an empty commit upon new index
+  creation. Previously, if you passed an empty Directory and set OpenMode to
+  CREATE*, IndexWriter would make a first empty commit. If you need that 
+  behavior you can call writer.commit()/close() immediately after you create it.
+  (Shai Erera, Mike McCandless)
+  
 Changes in runtime behavior
 
 * LUCENE-1923: Made IndexReader.toString() produce something
@@ -224,6 +232,10 @@ Changes in runtime behavior
 
 * LUCENE-2179: CharArraySet.clear() is now functional.
   (Robert Muir, Uwe Schindler)
+
+* LUCENE-2421: NativeFSLockFactory does not throw LockReleaseFailedException if 
+  it cannot delete the lock file, since obtaining the lock does not fail if the 
+  file is there. (Shai Erera)
 
 API Changes
 
@@ -306,6 +318,12 @@ API Changes
   expressions).
   (Uwe Schindler, Robert Muir)
 
+* LUCENE-2402: IndexWriter.deleteUnusedFiles now deletes unreferenced commit
+  points too. If you use an IndexDeletionPolicy which holds onto index commits
+  (such as SnapshotDeletionPolicy), you can call this method to remove those
+  commit points when they are not needed anymore (instead of waiting for the 
+  next commit). (Shai Erera)
+  
 Bug fixes
 
 * LUCENE-2119: Don't throw NegativeArraySizeException if you pass
@@ -360,7 +378,12 @@ Bug fixes
 * LUCENE-2387: Don't hang onto Fieldables from the last doc indexed,
   in IndexWriter, nor the Reader in Tokenizer after close is
   called.  (Ruben Laguna, Uwe Schindler, Mike McCandless)
- 
+  
+* LUCENE-2417: IndexCommit did not implement hashCode() and equals() 
+  consitently. Now they both take Directory and version into consideration. In
+  addition, all of IndexComnmit methods which threw 
+  UnsupportedOperationException are now abstract. (Shai Erera)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
@@ -428,6 +451,10 @@ New features
 * LUCENE-2074: Make StandardTokenizer fit for Unicode 4.0, if the
   matchVersion parameter is Version.LUCENE_31. (Uwe Schindler)
 
+* LUCENE-2385: Moved NoDeletionPolicy from benchmark to core. NoDeletionPolicy
+  can be used to prevent commits from ever getting deleted from the index.
+  (Shai Erera)
+  
 Optimizations
 
 * LUCENE-2075: Terms dict cache is now shared across threads instead
@@ -509,6 +536,12 @@ Build
 * LUCENE-2074: Regenerating StandardTokenizerImpl files now needs
   JFlex 1.5 (currently only available on SVN). (Uwe Schindler)
 
+* LUCENE-1709: Tests are now parallelized by default (except for benchmark). You
+  can force them to run sequentially by passing -Drunsequential=1 on the command
+  line. The number of threads that are spwaned per CPU defaults to '1'. If you 
+  wish to change that, you can run the tests with -DthreadsPerProcessor=[num].
+  (Robert Muir, Shai Erera, Peter Kofler) 
+
 Test Cases
 
 * LUCENE-2037 Allow Junit4 tests in our envrionment (Erick Erickson
@@ -542,6 +575,9 @@ Test Cases
   getClass().getResourceAsStream() to retrieve test data. Tests needing
   access to "real" files from the test folder itsself, can use
   LuceneTestCase(J4).getDataFile().  (Uwe Schindler)
+
+* LUCENE-2398: Improve tests to work better from IDEs such as Eclipse.
+  (Paolo Castagna via Robert Muir)
 
 ================== Release 2.9.2 / 3.0.1 2010-02-26 ====================
 

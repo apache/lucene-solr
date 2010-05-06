@@ -2,11 +2,6 @@ Analysis Module Change Log
 
 ======================= Trunk (not yet released) =======================
 
-Bug fixes
-
- * LUCENE-2404: Fix bugs with position increment and empty tokens in ThaiWordFilter.
-   For matchVersion >= 3.1 the filter also no longer lowercases.  (Uwe Schindler)
-
 API Changes
 
  * LUCENE-2413: Deprecated PatternAnalyzer in common/miscellaneous, in favor 
@@ -47,13 +42,6 @@ New Features
     - o.a.l.analysis.MappingCharFilter -> o.a.l.analysis.charfilter.MappingCharFilter
     - o.a.l.analysis.NormalizeCharMap -> o.a.l.analysis.charfilter.NormalizeCharMap
     ... (in progress)
-    
- * LUCENE-2413: Consolidated all contrib analyzers into common. 
-   - o.a.l.wikipedia.analysis -> o.a.l.analysis.wikipedia
-   ... (in progress)
-
- * LUCENE-2298: Add stempel, an algorithmic stemmer with support for
-   the Polish language.  (Andrzej Bialecki via Robert Muir)
 
 Build
 

@@ -2,32 +2,6 @@ Lucene contrib change Log
 
 ======================= Trunk (not yet released) =======================
   
-New features
-
- * LUCENE-2399: Add ICUNormalizer2Filter, which normalizes tokens with ICU's
-   Normalizer2. This allows for efficient combinations of normalization and custom 
-   mappings in addition to standard normalization, and normalization combined
-   with unicode case folding.  (Robert Muir)
-
- * LUCENE-1343: Add ICUFoldingFilter, a replacement for ASCIIFoldingFilter that
-   does a more thorough job of normalizing unicode text for search.
-   (Robert Haschart, Robert Muir)
-
- * LUCENE-2409: Add ICUTransformFilter, which transforms text in a context
-   sensitive way, either from ICU built-in rules (such as Traditional-Simplified),
-   or from rules you write yourself.  (Robert Muir)
-
- * LUCENE-2414: Add ICUTokenizer, a tailorable tokenizer that implements Unicode
-   Text Segmentation. This tokenizer is useful for documents or collections with
-   multiple languages.  The default configuration includes special support for
-   Thai, Lao, Myanmar, and Khmer.  (Robert Muir, Uwe Schindler)
-
-Build
-
- * LUCENE-2399: Upgrade contrib/icu's ICU jar file to ICU 4.4.  (Robert Muir)
-
-Optimizations
-
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy
@@ -47,6 +21,10 @@ Changes in backwards compatibility policy
  * LUCENE-2226: Moved contrib/snowball functionality into contrib/analyzers.
    Be sure to remove any old obselete lucene-snowball jar files from your
    classpath!  (Robert Muir)
+   
+ * LUCENE-2323: Moved contrib/wikipedia functionality into contrib/analyzers.
+   Additionally the package was changed from org.apache.lucene.wikipedia.analysis
+   to org.apache.lucene.analysis.wikipedia.  (Robert Muir)
     
 Changes in runtime behavior
 
@@ -148,6 +126,27 @@ New features
    the ability to override any stemmer with a custom dictionary map.
    (Robert Muir, Uwe Schindler, Simon Willnauer)
 
+ * LUCENE-2399: Add ICUNormalizer2Filter, which normalizes tokens with ICU's
+   Normalizer2. This allows for efficient combinations of normalization and custom
+   mappings in addition to standard normalization, and normalization combined
+   with unicode case folding.  (Robert Muir)
+
+ * LUCENE-1343: Add ICUFoldingFilter, a replacement for ASCIIFoldingFilter that
+   does a more thorough job of normalizing unicode text for search.
+   (Robert Haschart, Robert Muir)
+
+ * LUCENE-2409: Add ICUTransformFilter, which transforms text in a context
+   sensitive way, either from ICU built-in rules (such as Traditional-Simplified),
+   or from rules you write yourself.  (Robert Muir)
+
+ * LUCENE-2414: Add ICUTokenizer, a tailorable tokenizer that implements Unicode
+   Text Segmentation. This tokenizer is useful for documents or collections with
+   multiple languages.  The default configuration includes special support for
+   Thai, Lao, Myanmar, and Khmer.  (Robert Muir, Uwe Schindler)
+
+ * LUCENE-2298: Add analyzers/stempel, an algorithmic stemmer with support for
+   the Polish language.  (Andrzej Bialecki via Robert Muir)
+
  * LUCENE-2400: ShingleFilter was changed to don't output all-filler shingles and 
    unigrams, and uses a more performant algorithm to build grams using a linked list
    of AttributeSource.cloneAttributes() instances and the new copyTo() method.
@@ -160,13 +159,17 @@ Build
    (Steven Rowe, Robert Muir)
 
  * LUCENE-2323: Moved contrib/regex into contrib/queries. Moved the
-   queryparsers under contrib/misc into contrib/queryparser. Moved
-   contrib/fast-vector-highlighter into contrib/highlighter.  (Robert Muir)
+   queryparsers under contrib/misc and contrib/surround into contrib/queryparser. 
+   Moved contrib/fast-vector-highlighter into contrib/highlighter. 
+   Moved ChainedFilter from contrib/misc to contrib/queries. contrib/spatial now
+   depends on contrib/queries instead of contrib/misc.  (Robert Muir)
    
  * LUCENE-2333: Fix failures during contrib builds, when classes in
    core were changed without ant clean. This fix also optimizes the
    dependency management between contribs by a new ANT macro.
    (Uwe Schindler, Shai Erera)
+
+ * LUCENE-2399: Upgrade contrib/icu's ICU jar file to ICU 4.4.  (Robert Muir)
    
 Optimizations
 
