@@ -7,7 +7,7 @@ lucene-core.jar file.
 After branching a new Lucene major version (branch name "lucene_X_Y") do the following:
 
 * svn rm backwards/src/
-* svn cp https://svn.apache.org/repos/asf/lucene/java/branches/lucene_X_Y/src/ backwards/src/
+* svn cp https://svn.apache.org/repos/asf/lucene/dev/branches/lucene_X_Y/lucene/src/ backwards/src/
 * Check that everything is correct: The backwards folder should contain a src/ folder
   that now contains java, test, demo,.... The files should be the ones from the branch.
 * Run "ant test-backwards"

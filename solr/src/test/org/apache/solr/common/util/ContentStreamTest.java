@@ -59,7 +59,7 @@ public class ContentStreamTest extends TestCase
   public void testURLStream() throws IOException 
   {
     String content = null;
-    URL url = new URL( "http://svn.apache.org/repos/asf/lucene/solr/trunk/" );
+    URL url = new URL( "http://svn.apache.org/repos/asf/lucene/dev/trunk/" );
     InputStream in = url.openStream();
     try {
       content = IOUtils.toString( in );

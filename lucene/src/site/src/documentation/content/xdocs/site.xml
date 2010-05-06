@@ -143,7 +143,7 @@ See http://forrest.apache.org/docs/linking.html for more info
     <wiki      href="http://wiki.apache.org/lucene-java" />
     <faq       href="http://wiki.apache.org/lucene-java/LuceneFAQ" />
     <releases href="http://www.apache.org/dyn/closer.cgi/lucene/java/" />
-    <source href="http://svn.apache.org/viewcvs.cgi/lucene/java/"/>
+    <source href="http://svn.apache.org/viewcvs.cgi/lucene/dev/"/>
     <powered-by href="http://wiki.apache.org/lucene-java/PoweredBy"/>
 	
   </external-refs>

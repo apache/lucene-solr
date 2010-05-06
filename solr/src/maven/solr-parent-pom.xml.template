@@ -89,10 +89,10 @@
 
   <scm>
     <connection>
-      scm:svn:http://svn.apache.org/repos/asf/lucene/solr
+      scm:svn:http://svn.apache.org/repos/asf/lucene/dev
     </connection>
     <developerConnection>
-      scm:svn:https://svn.apache.org/repos/asf/lucene/solr
+      scm:svn:https://svn.apache.org/repos/asf/lucene/dev
     </developerConnection>
   </scm>
 

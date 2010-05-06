@@ -39,11 +39,8 @@ import static org.apache.solr.analysis.CommonGramsFilter.GRAM_TYPE;
  */
 
 /*
- * See:http://hudson.zones
- * .apache.org/hudson/job/Lucene-trunk/javadoc//all/org/apache
- * /lucene/analysis/TokenStream.html and
- * http://svn.apache.org/viewvc/lucene/java
- * /trunk/src/java/org/apache/lucene/analysis/package.html?revision=718798
+ * See:http://hudson.zones.apache.org/hudson/job/Lucene-trunk/javadoc//all/org/apache/lucene/analysis/TokenStream.html and
+ * http://svn.apache.org/viewvc/lucene/dev/trunk/lucene/src/java/org/apache/lucene/analysis/package.html?revision=718798
  */
 public final class CommonGramsQueryFilter extends TokenFilter {
 
