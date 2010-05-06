@@ -137,6 +137,9 @@ New features
    sensitive way, either from ICU built-in rules (such as Traditional-Simplified),
    or from rules you write yourself.  (Robert Muir)
 
+ * LUCENE-2298: Add analyzers/stempel, an algorithmic stemmer with support for
+   the Polish language.  (Andrzej Bialecki via Robert Muir)
+
  * LUCENE-2400: ShingleFilter was changed to don't output all-filler shingles and 
    unigrams, and uses a more performant algorithm to build grams using a linked list
    of AttributeSource.cloneAttributes() instances and the new copyTo() method.
