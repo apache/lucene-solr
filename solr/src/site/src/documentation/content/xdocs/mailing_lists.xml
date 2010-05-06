@@ -18,13 +18,13 @@
  limitations under the License.
 -->
 <document>
-  
+
   <header>
     <title>Solr Mailing Lists</title>
   </header>
-  
+
   <body>
-  
+
     <section>
       <title>Users</title>
 
@@ -33,7 +33,7 @@
       <p>
         The Solr user mailing list is :
         <a href="mailto:solr-user@lucene.apache.org">solr-user@lucene.apache.org</a>.
-      </p>      
+      </p>
       <ul>
         <li><a href="mailto:solr-user-subscribe@lucene.apache.org">Subscribe to List</a></li>
         <li><a href="mailto:solr-user-unsubscribe@lucene.apache.org">Unsubscribe from List</a></li>
@@ -42,26 +42,28 @@
       </ul>
       <note>In order to post to the list, it is necessary to first subscribe to it.</note>
     </section>
-  
+
     <section>
       <title>Developers</title>
 
       <p>If you'd like to contribute to Solr, please subscribe to the
-      Solr developer mailing list.</p>
+      Lucene/Solr developer mailing list.</p>
 
       <p>
-        The Solr developer mailing list is :
-        <a href="mailto:solr-dev@lucene.apache.org">solr-dev@lucene.apache.org</a>.
-      </p>      
+        The Lucene/Solr developer mailing list is:
+        <a href="mailto:dev@lucene.apache.org">dev@lucene.apache.org</a>.
+      </p>
       <ul>
-        <li><a href="mailto:solr-dev-subscribe@lucene.apache.org">Subscribe to List</a></li>
-        <li><a href="mailto:solr-dev-unsubscribe@lucene.apache.org">Unsubscribe from List</a></li>
-        <li><a href="http://mail-archives.apache.org/mod_mbox/lucene-solr-dev/">View List Archive</a>  (Alternate list archive providers can be found on the <a href="http://wiki.apache.org/solr/SolrResources">wiki</a>)
+        <li><a href="mailto:dev-subscribe@lucene.apache.org">Subscribe to List</a></li>
+        <li><a href="mailto:dev-unsubscribe@lucene.apache.org">Unsubscribe from List</a></li>
+        <li><a href="http://mail-archives.apache.org/mod_mbox/lucene-dev/">View List Archive</a>  (Alternate list archive providers can be found on the <a href="http://wiki.apache.org/solr/SolrResources">wiki</a>)
+        </li>
+        <li><a href="http://mail-archives.apache.org/mod_mbox/lucene-solr-dev/">View Pre Lucene/Solr Merge List Archive</a>
         </li>
       </ul>
       <note>In order to post to the list, it is necessary to first subscribe to it.</note>
     </section>
-  
+
     <section>
       <title>Commits</title>
 
@@ -70,11 +72,11 @@
       then subscribe to the Solr commit mailing list.</p>
 
       <ul>
-        <li><a href="mailto:solr-commits-subscribe@lucene.apache.org">Subscribe to List</a></li>
-        <li><a href="mailto:solr-commits-unsubscribe@lucene.apache.org">Unsubscribe from List</a></li>
+        <li><a href="mailto:commits-subscribe@lucene.apache.org">Subscribe to List</a></li>
+        <li><a href="mailto:commits-unsubscribe@lucene.apache.org">Unsubscribe from List</a></li>
       </ul>
     </section>
-  
+
   </body>
-  
+
 </document>

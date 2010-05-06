@@ -1,7 +1,8 @@
 package org.apache.solr.handler.component;
 
 import org.apache.solr.BaseDistributedSearchTestCase;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.common.params.ModifiableSolrParams;
 
 /**
  * Test for SpellCheckComponent's distributed querying
@@ -30,6 +31,22 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
       System.setProperty("solr.directoryFactory", saveProp);
   }
   
+  private void q(Object... q) throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+
+    for (int i = 0; i < q.length; i += 2) {
+      params.add(q[i].toString(), q[i + 1].toString());
+    }
+
+    controlClient.query(params);
+
+    // query a random server
+    params.set("shards", shards);
+    int which = r.nextInt(clients.size());
+    SolrServer client = clients.get(which);
+    client.query(params);
+  }
+  
   @Override
   public void doTest() throws Exception {
     index(id, "1", "lowerfilt", "toyota");
@@ -51,10 +68,11 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     handle.put("maxScore", SKIPVAL);
     // we care only about the spellcheck results
     handle.put("response", SKIP);
-
-    query("q", "*:*", "fl", "id,lowerfilt", "spellcheck.q","toyata", "spellcheck", "true", SpellCheckComponent.SPELLCHECK_BUILD, "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH");
-    query("q", "*:*", "fl", "id,lowerfilt", "spellcheck.q","toyata", "spellcheck", "true", SpellCheckComponent.SPELLCHECK_BUILD, "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true");
-    query("q", "*:*", "fl", "id,lowerfilt", "spellcheck.q","bluo", "spellcheck", "true", SpellCheckComponent.SPELLCHECK_BUILD, "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_COUNT, "4");
-    query("q", "The quick reb fox jumped over the lazy brown dogs", "fl", "id,lowerfilt", "spellcheck", "true", SpellCheckComponent.SPELLCHECK_BUILD, "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_COUNT, "4", SpellCheckComponent.SPELLCHECK_COLLATE, "true");
+    q("q", "*:*", SpellCheckComponent.SPELLCHECK_BUILD, "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH");
+    
+    query("q", "*:*", "fl", "id,lowerfilt", "spellcheck.q","toyata", "spellcheck", "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH");
+    query("q", "*:*", "fl", "id,lowerfilt", "spellcheck.q","toyata", "spellcheck", "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true");
+    query("q", "*:*", "fl", "id,lowerfilt", "spellcheck.q","bluo", "spellcheck", "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_COUNT, "4");
+    query("q", "The quick reb fox jumped over the lazy brown dogs", "fl", "id,lowerfilt", "spellcheck", "true", "qt", "spellCheckCompRH", "shards.qt", "spellCheckCompRH", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true", SpellCheckComponent.SPELLCHECK_COUNT, "4", SpellCheckComponent.SPELLCHECK_COLLATE, "true");
   }
 }

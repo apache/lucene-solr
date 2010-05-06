@@ -72,6 +72,7 @@
     <delete dir="${dest}" />
     <delete dir="${dist}" />
     <delete dir="example/solr/lib" />
+    <delete dir="${lucene-libs}" />
   </target>
 
   <target name="clean-dest"
@@ -126,7 +127,7 @@
 
   <target name="compile-solrj"
           description="Compile the java client."
-          depends="init-forrest-entities">
+          depends="init-forrest-entities, compile-lucene">
 
     <solr-javac destdir="${dest}/solrj"
                 classpathref="compile.classpath">
@@ -149,7 +150,7 @@
   <!-- Compile the project. -->
   <target name="compile"
           description="Compile the source code."
-          depends="compile-lucene, compile-solrj,init-forrest-entities">
+          depends="compile-solrj,init-forrest-entities">
 
     <solr-javac destdir="${dest}/solr"
                 classpathref="compile.classpath.solrj">
@@ -565,7 +566,7 @@
          <exclude name="*.template" />
        </lib>
       
-       <lib dir="lucene-libs"/>
+       <lib dir="${lucene-libs}"/>
          
        <lib dir="${dist}">
          <include name="${fullname}-solrj-${version}.jar" />
@@ -970,7 +971,11 @@
     <get src="http://luke.googlecode.com/files/luke-${luke.version}.jar"
         dest="luke/luke-${luke.version}.jar"/>
   </target>
-  
+  <path id="luke.classpath">
+    <pathelement location="${common-solr.dir}/../lucene/build/classes/java" />
+    <pathelement location="${common-solr.dir}/../lucene/build/contrib/xml-query-parser/classes/java" />
+
+  </path>
   <target name="luke" depends="luke-download">
     <java fork="true" 
           classname="org.getopt.luke.Luke"
@@ -981,6 +986,7 @@
           <include name="luke-${luke.version}.jar"/>
         </fileset>
         <path refid="lucene.classpath"/>
+        <path refid="luke.classpath"/>
         <path refid="test.run.classpath"/>
        </classpath>
     </java>

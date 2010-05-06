@@ -17,6 +17,8 @@
 
 package org.apache.solr;
 
+import junit.framework.TestCase;
+
 import org.apache.solr.client.solrj.SolrServerException;
 
 /**
@@ -28,13 +30,6 @@ import org.apache.solr.client.solrj.SolrServerException;
  * @since solr 1.3
  */
 public class TestDistributedSearch extends BaseDistributedSearchTestCase {
-  public String getSchemaFile() {
-    return null;
-  }
-
-  public String getSolrConfigFile() {
-    return null;
-  }
 
   String t1="a_t";
   String i1="a_si";
@@ -183,7 +178,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     try {
       // test error produced for field that is invalid for schema
       query("q","*:*", "rows",100, "facet","true", "facet.field",invalidField, "facet.mincount",2);
-      fail("SolrServerException expected for invalid field that is not in schema");
+      TestCase.fail("SolrServerException expected for invalid field that is not in schema");
     } catch (SolrServerException ex) {
       // expected
     }
