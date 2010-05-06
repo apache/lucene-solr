@@ -42,7 +42,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 
-public class CollationTestBase extends LuceneTestCase {
+public abstract class CollationTestBase extends LuceneTestCase {
 
   protected String firstRangeBeginningOriginal = "\u062F";
   protected String firstRangeEndOriginal = "\u0698";

@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker;
 import org.apache.lucene.benchmark.byTask.tasks.CountingSearchTestTask;
@@ -49,26 +50,16 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.search.FieldCache.StringIndex;
 import org.apache.lucene.search.FieldCache;
-import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Test very simply that perf tasks - simple algorithms - are doing what they should.
  */
-public class TestPerfTasksLogic extends LuceneTestCase {
+public class TestPerfTasksLogic extends BenchmarkTestCase {
 
-  static final String NEW_LINE = System.getProperty("line.separator");
-  
-  // properties in effect in all tests here
-  static final String propLines [] = {
-    "directory=RAMDirectory",
-    "print.props=false",
-  };
-  
-  /**
-   * @param name test name
-   */
-  public TestPerfTasksLogic(String name) {
-    super(name);
+  @Override
+  protected void setUp() throws Exception {
+    super.setUp();
+    copyToWorkDir("reuters.first20.lines.txt");
   }
 
   /**
@@ -526,34 +517,6 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     ir.close();
   }
 
-  // create the benchmark and execute it. 
-  public static Benchmark execBenchmark(String[] algLines) throws Exception {
-    String algText = algLinesToText(algLines);
-    logTstLogic(algText);
-    Benchmark benchmark = new Benchmark(new StringReader(algText));
-    benchmark.execute();
-    return benchmark;
-  }
-  
-  // catenate alg lines to make the alg text
-  private static String algLinesToText(String[] algLines) {
-    String indent = "  ";
-    StringBuffer sb = new StringBuffer();
-    for (int i = 0; i < propLines.length; i++) {
-      sb.append(indent).append(propLines[i]).append(NEW_LINE);
-    }
-    for (int i = 0; i < algLines.length; i++) {
-      sb.append(indent).append(algLines[i]).append(NEW_LINE);
-    }
-    return sb.toString();
-  }
-
-  private static void logTstLogic (String txt) {
-    if (!VERBOSE) 
-      return;
-    System.out.println("Test logic of:");
-    System.out.println(txt);
-  }
 
   /**
    * Test that exhaust in loop works as expected (LUCENE-1115).
@@ -846,7 +809,7 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     assertEquals("Missing some tasks to check!",3,nChecked);
   }
 
-  private static String[] disableCountingLines (boolean disable) {
+  private String[] disableCountingLines (boolean disable) {
     String dis = disable ? "-" : "";
     return new String[] {
         "# ----- properties ",
@@ -896,7 +859,7 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     assertEquals(new Locale("no", "NO", "NY"), benchmark.getRunData().getLocale());
   }
    
-  private static String[] getLocaleConfig(String localeParam) {
+  private String[] getLocaleConfig(String localeParam) {
     String algLines[] = {
         "# ----- properties ",
         "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
@@ -961,7 +924,7 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     ts2.close();
   }
   
-  private static String[] getCollatorConfig(String localeParam, 
+  private String[] getCollatorConfig(String localeParam, 
       String collationParam) {
     String algLines[] = {
         "# ----- properties ",
@@ -1043,7 +1006,7 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     stream.close();
   }
   
-  private static String[] getShingleConfig(String params) { 
+  private String[] getShingleConfig(String params) { 
     String algLines[] = {
         "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
         "docs.file=" + getReuters20LinesFile(),
@@ -1056,8 +1019,7 @@ public class TestPerfTasksLogic extends LuceneTestCase {
     return algLines;
   }
   
-  private static String getReuters20LinesFile() {
-    return System.getProperty("lucene.common.dir").replace('\\','/') +
-      "/contrib/benchmark/src/test/org/apache/lucene/benchmark/reuters.first20.lines.txt";
+  private String getReuters20LinesFile() {
+    return getWorkDirResourcePath("reuters.first20.lines.txt");
   }  
 }

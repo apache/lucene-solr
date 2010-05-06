@@ -18,548 +18,192 @@ package org.apache.lucene.index.memory;
  */
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.ByteBuffer;
-import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Random;
+import java.util.Set;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Scorer;
-import org.apache.lucene.store.Directory;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.index.TermDocs;
 
 /**
-Verifies that Lucene MemoryIndex and RAMDirectory have the same behaviour,
-returning the same results for any given query.
-Runs a set of queries against a set of files and compares results for identity.
-Can also be used as a simple benchmark.
-<p>
-Example usage:
-<pre>
-cd lucene-svn
-java -server -cp ~/unix/java/share/misc/junit/junit.jar:build/classes:build/lucene-core-2.1-dev.jar:build/contrib/memory/classes/test:build/contrib/memory/classes/java org.apache.lucene.index.memory.MemoryIndexTest 1 1 memram @contrib/memory/src/test/org/apache/lucene/index/memory/testqueries.txt *.txt *.html *.xml xdocs/*.xml src/test/org/apache/lucene/queryParser/*.java contrib/memory/src/java/org/apache/lucene/index/memory/*.java
-</pre>
-where testqueries.txt is a file with one query per line, such as:
-<pre>
-#
-# queries extracted from TestQueryParser.java
-#
-Apache
-Apach~ AND Copy*
-
-a AND b
-(a AND b)
-c OR (a AND b)
-a AND NOT b
-a AND -b
-a AND !b
-a && b
-a && ! b
-
-a OR b
-a || b
-a OR !b
-a OR ! b
-a OR -b
-
-+term -term term
-foo:term AND field:anotherTerm
-term AND "phrase phrase"
-"hello there"
-
-germ term^2.0
-(term)^2.0
-(germ term)^2.0
-term^2.0
-term^2
-"germ term"^2.0
-"term germ"^2
-
-(foo OR bar) AND (baz OR boo)
-((a OR b) AND NOT c) OR d
-+(apple "steve jobs") -(foo bar baz)
-+title:(dog OR cat) -author:"bob dole"
-
-
-a&b
-a&&b
-.NET
-
-"term germ"~2
-"term germ"~2 flork
-"term"~2
-"~2 germ"
-"term germ"~2^2
-
-3
-term 1.0 1 2
-term term1 term2
-
-term*
-term*^2
-term~
-term~0.7
-term~^2
-term^2~
-term*germ
-term*germ^3
-
-
-term*
-Term*
-TERM*
-term*
-Term*
-TERM*
-
-// Then 'full' wildcard queries:
-te?m
-Te?m
-TE?M
-Te?m*gerM
-te?m
-Te?m
-TE?M
-Te?m*gerM
-
-term term term
-term +stop term
-term -stop term
-drop AND stop AND roll
-term phrase term
-term AND NOT phrase term
-stop
-
-
-[ a TO c]
-[ a TO c ]
-{ a TO c}
-{ a TO c }
-{ a TO c }^2.0
-[ a TO c] OR bar
-[ a TO c] AND bar
-( bar blar { a TO c}) 
-gack ( bar blar { a TO c}) 
-
-
-+weltbank +worlbank
-+weltbank\n+worlbank
-weltbank \n+worlbank
-weltbank \n +worlbank
-+weltbank\r+worlbank
-weltbank \r+worlbank
-weltbank \r +worlbank
-+weltbank\r\n+worlbank
-weltbank \r\n+worlbank
-weltbank \r\n +worlbank
-weltbank \r \n +worlbank
-+weltbank\t+worlbank
-weltbank \t+worlbank
-weltbank \t +worlbank
-
-
-term term term
-term +term term
-term term +term
-term +term +term
--term term term
-
-
-on^1.0
-"hello"^2.0
-hello^2.0
-"on"^1.0
-the^3
-</pre>
-
-*/
+ * Verifies that Lucene MemoryIndex and RAMDirectory have the same behaviour,
+ * returning the same results for queries on some randomish indexes.
+ */
 public class MemoryIndexTest extends BaseTokenStreamTestCase {
+  private Set<String> queries = new HashSet<String>();
+  private Random random;
   
-  private Analyzer analyzer;
-  
-  private static final String FIELD_NAME = "content";
+  public static final int ITERATIONS = 100;
 
-  /** Runs the tests and/or benchmark */
-  public static void main(String[] args) throws Throwable {
-    new MemoryIndexTest().run(args);    
-  }
-
-  /* all files will be open relative to this */
-  public String fileDir;
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
-    fileDir = System.getProperty("lucene.common.dir", null);
+    queries.addAll(readQueries("testqueries.txt"));
+    queries.addAll(readQueries("testqueries2.txt"));
+    random = newRandom();
   }
   
-//  public void tearDown() {}
-  
-  public void testMany() throws Throwable {
-    String[] files = listFiles(new String[] {
-      "*.txt", "*.html", "*.xml", "xdocs/*.xml", 
-      "src/java/test/org/apache/lucene/queryParser/*.java",
-      "contrib/memory/src/java/org/apache/lucene/index/memory/*.java",
-    });
-    if (VERBOSE) System.out.println("files = " + java.util.Arrays.asList(files));
-    String[] xargs = new String[] {
-      "1", "1", "memram", 
-      "@contrib/memory/src/test/org/apache/lucene/index/memory/testqueries.txt",
-    };
-    String[] args = new String[xargs.length + files.length];
-    System.arraycopy(xargs, 0, args, 0, xargs.length);
-    System.arraycopy(files, 0, args, xargs.length, files.length);
-    run(args);
-  }
-  
-  private void run(String[] args) throws Throwable {
-    int k = -1;
-    
-    int iters = 1;
-    if (args.length > ++k) iters = Math.max(1, Integer.parseInt(args[k]));
-    
-    int runs = 1;
-    if (args.length > ++k) runs = Math.max(1, Integer.parseInt(args[k]));
-    
-    String cmd = "memram";
-    if (args.length > ++k) cmd = args[k];
-    boolean useMemIndex = cmd.indexOf("mem") >= 0;
-    boolean useRAMIndex = cmd.indexOf("ram") >= 0;
-    
-    String[] queries = { "term", "term*", "term~", "Apache", "Apach~ AND Copy*" };
-    if (args.length > ++k) {
-      String arg = args[k];
-      if (arg.startsWith("@")) 
-        queries = readLines(new File(fileDir, arg.substring(1)));
-      else
-        queries = new String[] { arg };
-    }
-    
-    File[] files = new File[] {new File("CHANGES.txt"), new File("LICENSE.txt") };
-    if (args.length > ++k) {
-      files = new File[args.length - k];
-      for (int i=k; i < args.length; i++) {
-        files[i-k] = new File(args[i]);
-      }
-    }
-    
-//    boolean toLowerCase = false;
-//    Set stopWords = null;
-    
-    Analyzer[] analyzers = new Analyzer[] { 
-        new SimpleAnalyzer(TEST_VERSION_CURRENT),
-        new StopAnalyzer(TEST_VERSION_CURRENT),
-        new StandardAnalyzer(TEST_VERSION_CURRENT),
-//        new WhitespaceAnalyzer(TEST_VERSION_CURRENT),
-//        new PatternAnalyzer(PatternAnalyzer.NON_WORD_PATTERN, false, null),
-//        new PatternAnalyzer(PatternAnalyzer.NON_WORD_PATTERN, true, stopWords),        
-//        new SnowballAnalyzer("English", StopAnalyzer.ENGLISH_STOP_WORDS),
-    };
-
-    boolean first = true;
-
-    for (int iter=0; iter < iters; iter++) {
-      if (VERBOSE) System.out.println("\n########### iteration=" + iter);
-      long start = System.currentTimeMillis();            
-      long bytes = 0;
-      
-      for (int anal=0; anal < analyzers.length; anal++) {
-        this.analyzer = analyzers[anal];
-        
-        for (int i=0; i < files.length; i++) {
-          File file = files[i];
-          if (!file.exists() || file.isDirectory()) continue; // ignore
-          bytes += file.length();
-          String text = toString(new FileInputStream(file), null);
-          Document doc = createDocument(text);
-          if (VERBOSE) System.out.println("\n*********** FILE=" + file);
-          
-          boolean measureIndexing = false; // toggle this to measure query performance
-          MemoryIndex memind = null;
-          IndexSearcher memsearcher = null;
-          if (useMemIndex && !measureIndexing) {
-            memind = createMemoryIndex(doc);
-            memsearcher = memind.createSearcher();
-          }
-              
-          if (first) {
-            IndexSearcher s = memind.createSearcher();
-            TermDocs td = s.getIndexReader().termDocs(null);
-            assertTrue(td.next());
-            assertEquals(0, td.doc());
-            assertEquals(1, td.freq());
-            td.close();
-            s.close();
-            first = false;
-          }
-
-          RAMDirectory ramind = null;
-          IndexSearcher ramsearcher = null;
-          if (useRAMIndex && !measureIndexing) {
-            ramind = createRAMIndex(doc);
-            ramsearcher = new IndexSearcher(ramind);
-          }
-              
-          for (int q=0; q < queries.length; q++) {
-            try {
-              Query query = parseQuery(queries[q]);
-              for (int run=0; run < runs; run++) {
-                float score1 = 0.0f; float score2 = 0.0f;
-                if (useMemIndex && measureIndexing) {
-                  memind = createMemoryIndex(doc);
-                  memsearcher = memind.createSearcher();
-                }
-                if (useMemIndex) score1 = query(memsearcher, query); 
-                if (useRAMIndex && measureIndexing) {
-                  ramind = createRAMIndex(doc);
-                  ramsearcher = new IndexSearcher(ramind);
-                }
-                if (useRAMIndex) score2 = query(ramsearcher, query);
-                if (useMemIndex && useRAMIndex) {
-                  if (VERBOSE) System.out.println("diff="+ (score1-score2) + ", query=" + queries[q] + ", s1=" + score1 + ", s2=" + score2);
-                  if (score1 != score2 || score1 < 0.0f || score2 < 0.0f || score1 > 1.0f || score2 > 1.0f) {
-                    throw new IllegalStateException("BUG DETECTED:" + (i*(q+1)) + " at query=" + queries[q] + ", file=" + file + ", anal=" + analyzer);
-                  }
-                }
-              }
-
-            } catch (Throwable t) {
-              if (t instanceof OutOfMemoryError) t.printStackTrace();
-              if (VERBOSE) System.out.println("Fatal error at query=" + queries[q] + ", file=" + file + ", anal=" + analyzer);
-              throw t;
-            }
-          }
-        }
-      }
-      long end = System.currentTimeMillis();
-      if (VERBOSE) {
-        System.out.println("\nsecs = " + ((end-start)/1000.0f));
-        System.out.println("queries/sec= " + 
-        (1.0f * runs * queries.length * analyzers.length * files.length 
-            / ((end-start)/1000.0f)));
-        float mb = (1.0f * bytes * queries.length * runs) / (1024.0f * 1024.0f);
-        System.out.println("MB/sec = " + (mb / ((end-start)/1000.0f)));
-      }
-    }
-    
-    if (!VERBOSE) return;
-    
-    if (useMemIndex && useRAMIndex) 
-      System.out.println("No bug found. done.");
-    else 
-      System.out.println("Done benchmarking (without checking correctness).");
-  }
-  
-  // returns file line by line, ignoring empty lines and comments
-  private String[] readLines(File file) throws Exception {
-    BufferedReader reader = new BufferedReader(new InputStreamReader(
-        new FileInputStream(file))); 
-    List<String> lines = new ArrayList<String>();
-    String line;  
+  /**
+   * read a set of queries from a resource file
+   */
+  private Set<String> readQueries(String resource) throws IOException {
+    Set<String> queries = new HashSet<String>();
+    InputStream stream = getClass().getResourceAsStream(resource);
+    BufferedReader reader = new BufferedReader(new InputStreamReader(stream, "UTF-8"));
+    String line = null;
     while ((line = reader.readLine()) != null) {
-      String t = line.trim(); 
-      if (t.length() > 0 && t.charAt(0) != '#' && (!t.startsWith("//"))) {
-        lines.add(line);
+      line = line.trim();
+      if (line.length() > 0 && !line.startsWith("#") && !line.startsWith("//")) {
+        queries.add(line);
       }
     }
-    reader.close();
-    
-    String[] result = new String[lines.size()];
-    lines.toArray(result);
-    return result;
+    return queries;
   }
   
-  private Document createDocument(String content) {
+  
+  /**
+   * runs random tests, up to ITERATIONS times.
+   */
+  public void testRandomQueries() throws Exception {
+    for (int i = 0; i < ITERATIONS; i++)
+      assertAgainstRAMDirectory();
+  }
+
+  /**
+   * Build a randomish document for both RAMDirectory and MemoryIndex,
+   * and run all the queries against it.
+   */
+  public void assertAgainstRAMDirectory() throws Exception {
+    StringBuilder fooField = new StringBuilder();
+    StringBuilder termField = new StringBuilder();
+ 
+    // add up to 250 terms to field "foo"
+    for (int i = 0; i < random.nextInt(250); i++) {
+      fooField.append(" ");
+      fooField.append(randomTerm());
+    }
+
+    // add up to 250 terms to field "term"
+    for (int i = 0; i < random.nextInt(250); i++) {
+      termField.append(" ");
+      termField.append(randomTerm());
+    }
+    
+    RAMDirectory ramdir = new RAMDirectory();
+    Analyzer analyzer = randomAnalyzer();
+    IndexWriter writer = new IndexWriter(ramdir, analyzer,
+        IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
-    doc.add(new Field(FIELD_NAME, content, Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
-    return doc;
-  }
-  
-  private MemoryIndex createMemoryIndex(Document doc) {
-    MemoryIndex index = new MemoryIndex();
-    Iterator<Fieldable> iter = doc.getFields().iterator();
-    while (iter.hasNext()) {
-      Fieldable field = iter.next();
-      index.addField(field.name(), field.stringValue(), analyzer);
-    }
-    return index;
-  }
-  
-  private RAMDirectory createRAMIndex(Document doc) {
-    RAMDirectory dir = new RAMDirectory();    
-    IndexWriter writer = null;
-    try {
-      writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
-      writer.addDocument(doc);
-      writer.optimize();
-      return dir;
-    } catch (IOException e) { // should never happen (RAMDirectory)
-      throw new RuntimeException(e);
-    } finally {
-      try {
-        if (writer != null) writer.close();
-      } catch (IOException e) { // should never happen (RAMDirectory)
-        throw new RuntimeException(e);
-      }
-    }
-  }
-
-  final float[] scores = new float[1]; // inits to 0.0f (no match)
+    Field field1 = new Field("foo", fooField.toString(), Field.Store.NO, Field.Index.ANALYZED);
+    Field field2 = new Field("term", termField.toString(), Field.Store.NO, Field.Index.ANALYZED);
+    doc.add(field1);
+    doc.add(field2);
+    writer.addDocument(doc);
+    writer.close();
     
-  private float query(IndexSearcher searcher, Query query) {
-//    System.out.println("MB=" + (getMemorySize(index) / (1024.0f * 1024.0f)));
-    try {
-      searcher.search(query, new Collector() {
-        private Scorer scorer;
-
-        @Override
-        public void collect(int doc) throws IOException {
-          scores[0] = scorer.score();
-        }
-
-        @Override
-        public void setScorer(Scorer scorer) throws IOException {
-          this.scorer = scorer;
-        }
-
-        @Override
-        public boolean acceptsDocsOutOfOrder() {
-          return true;
-        }
-
-        @Override
-        public void setNextReader(IndexReader reader, int docBase) { }
-      });
-      float score = scores[0];
-//      Hits hits = searcher.search(query);
-//      float score = hits.length() > 0 ? hits.score(0) : 0.0f;
-      return score;
-    } catch (IOException e) { // should never happen (RAMDirectory)
-      throw new RuntimeException(e);
+    MemoryIndex memory = new MemoryIndex();
+    memory.addField("foo", fooField.toString(), analyzer);
+    memory.addField("term", termField.toString(), analyzer);
+    assertAllQueries(memory, ramdir, analyzer);  
+  }
+  
+  /**
+   * Run all queries against both the RAMDirectory and MemoryIndex, ensuring they are the same.
+   */
+  public void assertAllQueries(MemoryIndex memory, RAMDirectory ramdir, Analyzer analyzer) throws Exception {
+    IndexSearcher ram = new IndexSearcher(ramdir);
+    IndexSearcher mem = memory.createSearcher();
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "foo", analyzer);
+    for (String query : queries) {
+      TopDocs ramDocs = ram.search(qp.parse(query), 1);
+      TopDocs memDocs = mem.search(qp.parse(query), 1);
+      assertEquals(ramDocs.totalHits, memDocs.totalHits);
     }
   }
   
-  // for debugging purposes
-  int getMemorySize(Object index) {
-    if (index instanceof Directory) {
-      try {
-        Directory dir = (Directory) index;
-        int size = 0;
-        String[] fileNames = dir.listAll();
-        for (int i=0; i < fileNames.length; i++) {
-          size += dir.fileLength(fileNames[i]);
-        }
-        return size;
+  /**
+   * Return a random analyzer (Simple, Stop, Standard) to analyze the terms.
+   */
+  private Analyzer randomAnalyzer() {
+    switch(random.nextInt(3)) {
+      case 0: return new SimpleAnalyzer(TEST_VERSION_CURRENT);
+      case 1: return new StopAnalyzer(TEST_VERSION_CURRENT);
+      default: return new StandardAnalyzer(TEST_VERSION_CURRENT);
+    }
+  }
+  
+  /**
+   * Some terms to be indexed, in addition to random words. 
+   * These terms are commonly used in the queries. 
+   */
+  private static final String[] TEST_TERMS = {"term", "Term", "tErm", "TERM",
+      "telm", "stop", "drop", "roll", "phrase", "a", "c", "bar", "blar",
+      "gack", "weltbank", "worlbank", "hello", "on", "the", "apache", "Apache",
+      "copyright", "Copyright"};
+  
+  
+  /**
+   * half of the time, returns a random term from TEST_TERMS.
+   * the other half of the time, returns a random unicode string.
+   */
+  private String randomTerm() {
+    if (random.nextBoolean()) {
+      // return a random TEST_TERM
+      return TEST_TERMS[random.nextInt(TEST_TERMS.length)];
+    } else {
+      // return a random unicode term
+      return randomString();
+    }
+  }
+  
+  /**
+   * Return a random unicode term, like TestStressIndexing.
+   */
+  private String randomString() {
+    final int end = random.nextInt(20);
+    if (buffer.length < 1 + end) {
+      char[] newBuffer = new char[(int) ((1 + end) * 1.25)];
+      System.arraycopy(buffer, 0, newBuffer, 0, buffer.length);
+      buffer = newBuffer;
+    }
+    for (int i = 0; i < end - 1; i++) {
+      int t = random.nextInt(6);
+      if (0 == t && i < end - 1) {
+        // Make a surrogate pair
+        // High surrogate
+        buffer[i++] = (char) nextInt(0xd800, 0xdc00);
+        // Low surrogate
+        buffer[i] = (char) nextInt(0xdc00, 0xe000);
+      } else if (t <= 1) buffer[i] = (char) random.nextInt(0x80);
+      else if (2 == t) buffer[i] = (char) nextInt(0x80, 0x800);
+      else if (3 == t) buffer[i] = (char) nextInt(0x800, 0xd800);
+      else if (4 == t) buffer[i] = (char) nextInt(0xe000, 0xffff);
+      else if (5 == t) {
+        // Illegal unpaired surrogate
+        if (random.nextBoolean()) buffer[i] = (char) nextInt(0xd800, 0xdc00);
+        else buffer[i] = (char) nextInt(0xdc00, 0xe000);
       }
-      catch (IOException e) { // can never happen (RAMDirectory)
-        throw new RuntimeException(e);
-      }
     }
-    else {
-      return ((MemoryIndex) index).getMemorySize();
-    }
+    return new String(buffer, 0, end);
   }
   
-  private Query parseQuery(String expression) throws ParseException {
-    QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, analyzer);
-//    parser.setPhraseSlop(0);
-    return parser.parse(expression);
+  private char buffer[] = new char[20];
+  // start is inclusive and end is exclusive
+  private int nextInt(int start, int end) {
+    return start + random.nextInt(end - start);
   }
-  
-  /** returns all files matching the given file name patterns (quick n'dirty) */
-  static String[] listFiles(String[] fileNames) {
-    LinkedHashSet<String> allFiles = new LinkedHashSet<String>();
-    for (int i=0; i < fileNames.length; i++) {
-      int k;
-      if ((k = fileNames[i].indexOf("*")) < 0) {
-        allFiles.add(fileNames[i]);
-      } else {
-        String prefix = fileNames[i].substring(0, k);
-        if (prefix.length() == 0) prefix = ".";
-        final String suffix = fileNames[i].substring(k+1);
-        File[] files = new File(prefix).listFiles(new FilenameFilter() {
-          public boolean accept(File dir, String name) {
-            return name.endsWith(suffix);
-          }
-        });
-        if (files != null) {
-          for (int j=0; j < files.length; j++) {
-            allFiles.add(files[j].getPath());
-          }
-        }
-      }      
-    }
-    
-    String[] result = new String[allFiles.size()];
-    allFiles.toArray(result);
-    return result;
-  }
-  
-  // trick to detect default platform charset
-  private static final Charset DEFAULT_PLATFORM_CHARSET = 
-    Charset.forName(new InputStreamReader(new ByteArrayInputStream(new byte[0])).getEncoding());  
-  
-  // the following utility methods below are copied from Apache style Nux library - see http://dsd.lbl.gov/nux
-  private static String toString(InputStream input, Charset charset) throws IOException {
-    if (charset == null) charset = DEFAULT_PLATFORM_CHARSET;      
-    byte[] data = toByteArray(input);
-    return charset.decode(ByteBuffer.wrap(data)).toString();
-  }
-  
-  private static byte[] toByteArray(InputStream input) throws IOException {
-    try {
-      // safe and fast even if input.available() behaves weird or buggy
-      int len = Math.max(256, input.available());
-      byte[] buffer = new byte[len];
-      byte[] output = new byte[len];
-      
-      len = 0;
-      int n;
-      while ((n = input.read(buffer)) >= 0) {
-        if (len + n > output.length) { // grow capacity
-          byte tmp[] = new byte[Math.max(output.length << 1, len + n)];
-          System.arraycopy(output, 0, tmp, 0, len);
-          System.arraycopy(buffer, 0, tmp, len, n);
-          buffer = output; // use larger buffer for future larger bulk reads
-          output = tmp;
-        } else {
-          System.arraycopy(buffer, 0, output, len, n);
-        }
-        len += n;
-      }
-
-      if (len == output.length) return output;
-      buffer = null; // help gc
-      buffer = new byte[len];
-      System.arraycopy(output, 0, buffer, 0, len);
-      return buffer;
-    } finally {
-      input.close();
-    }
-  }
-  
 }

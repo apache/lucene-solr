@@ -19,7 +19,6 @@ package org.apache.lucene.benchmark.quality;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
@@ -36,7 +35,6 @@ import org.apache.lucene.benchmark.quality.utils.SimpleQQParser;
 import org.apache.lucene.benchmark.quality.utils.SubmissionReport;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Test that quality run does its job.
@@ -47,6 +45,12 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestQualityRun extends BenchmarkTestCase {
   
+  @Override
+  protected void setUp() throws Exception {
+    super.setUp();
+    copyToWorkDir("reuters.578.lines.txt.bz2");
+  }
+
   public void testTrecQuality() throws Exception {
     // first create the partial reuters index
     createReutersIndex();
@@ -173,7 +177,7 @@ public class TestQualityRun extends BenchmarkTestCase {
     String algLines[] = {
         "# ----- properties ",
         "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
-        "docs.file=" + getReuters578LinesFile(),
+        "docs.file=" + getWorkDirResourcePath("reuters.578.lines.txt.bz2"),
         "content.source.log.step=2500",
         "doc.term.vector=false",
         "content.source.forever=false",
@@ -188,11 +192,6 @@ public class TestQualityRun extends BenchmarkTestCase {
     };
     
     // 2. execute the algorithm  (required in every "logic" test)
-    TestPerfTasksLogic.execBenchmark(algLines);
+    execBenchmark(algLines);
   }
-  
-  private static String getReuters578LinesFile() {
-    return System.getProperty("lucene.common.dir").replace('\\','/') +
-      "/contrib/benchmark/src/test/org/apache/lucene/benchmark/quality/reuters.578.lines.txt.bz2";
-  }  
 }
