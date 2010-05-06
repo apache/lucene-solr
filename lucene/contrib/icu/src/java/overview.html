@@ -38,6 +38,8 @@ APIs. This module exposes the following functionality:
   Unicode's Default Caseless Matching algorithm.</li>
   <li><a href="#searchfolding">Search Term Folding</a>: Removes distinctions
   (such as accent marks) between similar characters for a loose or fuzzy search.</li>
+  <li><a href="#transform">Text Transformation</a>: Transforms Unicode text in
+  a context-sensitive fashion: e.g. mapping Traditional to Simplified Chinese</li>
 </ul>
 <hr/>
 <h1><a name="collation">Collation</a></h1>
@@ -284,6 +286,42 @@ many character foldings recursively.
    * normalize to NFKC.
    */
   TokenStream tokenstream = new ICUFoldingFilter(tokenizer);
+</pre></code>
+<hr/>
+<h1><a name="transform">Text Transformation</a></h1>
+<p>
+ICU provides text-transformation functionality via its Transliteration API. This allows
+you to transform text in a variety of ways, taking context into account.
+</p>
+<p>
+For more information, see the 
+<a href="http://userguide.icu-project.org/transforms/general">User's Guide</a>
+and 
+<a href="http://userguide.icu-project.org/transforms/general/rules">Rule Tutorial</a>.
+</p>
+<h2>Use Cases</h2>
+<ul>
+  <li>
+    Convert Traditional to Simplified 
+  </li>
+  <li>
+    Transliterate between different writing systems: e.g. Romanization
+  </li>
+</ul>
+<h2>Example Usages</h2>
+<h3>Convert Traditional to Simplified</h3>
+<code><pre>
+  /**
+   * This filter will map Traditional Chinese to Simplified Chinese
+   */
+  TokenStream tokenstream = new ICUTransformFilter(tokenizer, Transliterator.getInstance("Traditional-Simplified"));
+</pre></code>
+<h3>Transliterate Serbian Cyrillic to Serbian Latin</h3>
+  <code><pre>
+  /**
+   * This filter will map Serbian Cyrillic to Serbian Latin according to BGN rules
+   */
+  TokenStream tokenstream = new ICUTransformFilter(tokenizer, Transliterator.getInstance("Serbian-Latin/BGN"));
 </pre></code>
 <hr/>
 <h1><a name="backcompat">Backwards Compatibility</a></h1>
