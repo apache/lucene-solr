@@ -8,6 +8,9 @@
     <import file="../contrib-build.xml"/>
     <property name="working.dir" location="work"/>
 
+    <!-- the tests have some parallel problems -->
+    <property name="runsequential" value="true"/>
+
     <contrib-uptodate name="highlighter" property="highlighter.uptodate" classpath.property="highlighter.jar"/>
     <contrib-uptodate name="icu" property="icu.uptodate" classpath.property="icu.jar"/>
     <!-- analyzers common needs a hack for the jar file: -->

@@ -135,6 +135,7 @@
            errorProperty="tests.failed"
            failureProperty="tests.failed"
            dir="src/test/resources/"
+           tempdir="${junit.output.dir}"
            >
       <formatter type="brief" usefile="false" if="junit.details"/>
       <classpath refid="test.classpath"/>

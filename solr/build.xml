@@ -390,7 +390,7 @@
   </target>
 
   <target name="junit-parallel" unless="runsequential">
-   <parallel threadsPerProcessor="2">
+   <parallel threadsPerProcessor="${threadsPerProcessor}">
     <junit-macro pattern="S"/>
     <junit-macro pattern="D"/>
     <junit-macro pattern="A"/>
@@ -447,6 +447,7 @@
            errorProperty="tests.failed"
            failureProperty="tests.failed"
            dir="src/test/test-files/"
+           tempdir="${junit.output.dir}"
            >
       <sysproperty key="java.util.logging.config.file" value="${common-solr.dir}/testlogging.properties"/>
       <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
