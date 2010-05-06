@@ -64,14 +64,18 @@ public class TestWindowsMMap extends LuceneTestCase {
     new File(System.getProperty("tempDir"),"testLuceneMmap").getAbsolutePath();
 
   public void testMmapIndex() throws Exception {
-    FSDirectory storeDirectory;
-    storeDirectory = new MMapDirectory(new File(storePathname), null);
+    // sometimes the directory is not cleaned by rmDir, because on Windows it
+    // may take some time until the files are finally dereferenced. So clean the
+    // directory up front, or otherwise new IndexWriter will fail.
+    rmDir(new File(storePathname));
+    FSDirectory storeDirectory = new MMapDirectory(new File(storePathname), null);
 
     // plan to add a set of useful stopwords, consider changing some of the
     // interior filters.
     StandardAnalyzer analyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT, Collections.emptySet());
     // TODO: something about lock timeouts and leftover locks.
     IndexWriter writer = new IndexWriter(storeDirectory, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
+    writer.commit();
     IndexSearcher searcher = new IndexSearcher(storeDirectory, true);
     
     for(int dx = 0; dx < 1000; dx ++) {
@@ -83,14 +87,16 @@ public class TestWindowsMMap extends LuceneTestCase {
     
     searcher.close();
     writer.close();
-                rmDir(new File(storePathname));
+    rmDir(new File(storePathname));
   }
 
-        private void rmDir(File dir) {
-          File[] files = dir.listFiles();
-          for (int i = 0; i < files.length; i++) {
-            files[i].delete();
-          }
-          dir.delete();
-        }
+  private void rmDir(File dir) {
+    if (!dir.exists()) {
+      return;
+    }
+    for (File file : dir.listFiles()) {
+      file.delete();
+    }
+    dir.delete();
+  }
 }

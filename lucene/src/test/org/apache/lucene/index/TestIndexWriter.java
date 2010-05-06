@@ -67,6 +67,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.lucene.util.UnicodeUtil;
@@ -775,7 +776,7 @@ public class TestIndexWriter extends LuceneTestCase {
         writer.close();
 
         long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
-        assertTrue("segment generation should be > 1 but got " + gen, gen > 1);
+        assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
 
         // Make the next segments file, with last byte
         // missing, to simulate a writer that crashed while
@@ -835,7 +836,7 @@ public class TestIndexWriter extends LuceneTestCase {
         writer.close();
 
         long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
-        assertTrue("segment generation should be > 1 but got " + gen, gen > 1);
+        assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
 
         String fileNameIn = SegmentInfos.getCurrentSegmentFileName(dir);
         String fileNameOut = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
@@ -900,7 +901,7 @@ public class TestIndexWriter extends LuceneTestCase {
         writer.close();
 
         long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
-        assertTrue("segment generation should be > 1 but got " + gen, gen > 1);
+        assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
 
         String[] files = dir.listAll();
         for(int i=0;i<files.length;i++) {
@@ -2323,7 +2324,7 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testImmediateDiskFull() throws IOException {
     MockRAMDirectory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(2));
-    dir.setMaxSizeInBytes(dir.getRecomputedActualSizeInBytes());
+    dir.setMaxSizeInBytes(Math.max(1, dir.getRecomputedActualSizeInBytes()));
     final Document doc = new Document();
     doc.add(new Field("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     try {
@@ -2641,7 +2642,7 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.close();
 
     long gen = SegmentInfos.getCurrentSegmentGeneration(dir);
-    assertTrue("segment generation should be > 1 but got " + gen, gen > 1);
+    assertTrue("segment generation should be > 0 but got " + gen, gen > 0);
 
     final String segmentsFileName = SegmentInfos.getCurrentSegmentFileName(dir);
     IndexInput in = dir.openInput(segmentsFileName);
@@ -2670,7 +2671,8 @@ public class TestIndexWriter extends LuceneTestCase {
         TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
         .setMaxBufferedDocs(2));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(5);
-
+    writer.commit();
+    
     for (int i = 0; i < 23; i++)
       addDoc(writer);
 
@@ -3531,7 +3533,8 @@ public class TestIndexWriter extends LuceneTestCase {
 
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(2));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(5);
-
+    writer.commit();
+    
     for (int i = 0; i < 23; i++)
       addDoc(writer);
 
@@ -3582,7 +3585,8 @@ public class TestIndexWriter extends LuceneTestCase {
 
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(2));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(5);
-
+    writer.commit();
+    
     for (int i = 0; i < 23; i++)
       addDoc(writer);
 
@@ -3667,6 +3671,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
       dir2 = new MockRAMDirectory();
       writer2 = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+      writer2.commit();
       cms = (ConcurrentMergeScheduler) writer2.getConfig().getMergeScheduler();
 
       readers = new IndexReader[NUM_COPY];
@@ -4820,4 +4825,62 @@ public class TestIndexWriter extends LuceneTestCase {
     w.close();
     dir.close();
   }
+  
+  public void testNoCommits() throws Exception {
+    // Tests that if we don't call commit(), the directory has 0 commits. This has
+    // changed since LUCENE-2386, where before IW would always commit on a fresh
+    // new index.
+    Directory dir = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    try {
+      IndexReader.listCommits(dir);
+      fail("listCommits should have thrown an exception over empty index");
+    } catch (IndexNotFoundException e) {
+      // that's expected !
+    }
+    // No changes still should generate a commit, because it's a new index.
+    writer.close();
+    assertEquals("expected 1 commits!", 1, IndexReader.listCommits(dir).size());
+  }
+
+  public void testEmptyFSDirWithNoLock() throws Exception {
+    // Tests that if FSDir is opened w/ a NoLockFactory (or SingleInstanceLF),
+    // then IndexWriter ctor succeeds. Previously (LUCENE-2386) it failed 
+    // when listAll() was called in IndexFileDeleter.
+    FSDirectory dir = FSDirectory.open(new File(TEMP_DIR, "emptyFSDirNoLock"), NoLockFactory.getNoLockFactory());
+    new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))).close();
+  }
+
+  public void testEmptyDirRollback() throws Exception {
+    // Tests that if IW is created over an empty Directory, some documents are
+    // indexed, flushed (but not committed) and then IW rolls back, then no 
+    // files are left in the Directory.
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        .setMaxBufferedDocs(2));
+    // Creating over empty dir should not create any files.
+    assertEquals(0, dir.listAll().length);
+    Document doc = new Document();
+    // create as many files as possible
+    doc.add(new Field("c", "val", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
+    writer.addDocument(doc);
+    // Adding just one document does not call flush yet.
+    assertEquals("only the stored and term vector files should exist in the directory", 5, dir.listAll().length);
+    
+    doc = new Document();
+    doc.add(new Field("c", "val", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
+    writer.addDocument(doc);
+    // The second document should cause a flush.
+    assertTrue("flush should have occurred and files created", dir.listAll().length > 5);
+   
+    // After rollback, IW should remove all files
+    writer.rollback();
+    assertEquals("no files should exist in the directory after rollback", 0, dir.listAll().length);
+
+    // Since we rolled-back above, that close should be a no-op
+    writer.close();
+    assertEquals("expected a no-op close after IW.rollback()", 0, dir.listAll().length);
+  }
+  
 }

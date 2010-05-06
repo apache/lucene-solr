@@ -113,7 +113,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
 
     SnapshotDeletionPolicy dp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
     final IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), dp, IndexWriter.MaxFieldLength.UNLIMITED);
-
+    writer.commit();
     // Force frequent flushes
     writer.setMaxBufferedDocs(2);
 

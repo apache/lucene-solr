@@ -138,7 +138,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     ((ConcurrentMergeScheduler) writer.getMergeScheduler()).setSuppressExceptions();
     //writer.setMaxBufferedDocs(10);
     writer.setRAMBufferSizeMB(0.1);
-
+    writer.commit();
+    
     if (DEBUG)
       writer.setInfoStream(System.out);
 
@@ -176,6 +177,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     ((ConcurrentMergeScheduler) writer.getMergeScheduler()).setSuppressExceptions();
     //writer.setMaxBufferedDocs(10);
     writer.setRAMBufferSizeMB(0.2);
+    writer.commit();
 
     if (DEBUG)
       writer.setInfoStream(System.out);
