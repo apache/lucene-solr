@@ -26,7 +26,6 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.util.cache.DoubleBarrelLRUCache;
-import org.apache.lucene.util.cache.Cache;
 
 /** This stores a monotonically increasing set of <Term, TermInfo> pairs in a
  * Directory.  Pairs are accessed either by Term or by ordinal position the
@@ -62,7 +61,7 @@ public final class TermInfosReader {
     }
   }
 
-  private final Cache<Term,TermInfoAndOrd> termsCache = new DoubleBarrelLRUCache<Term,TermInfoAndOrd>(DEFAULT_CACHE_SIZE);
+  private final DoubleBarrelLRUCache<Term,TermInfoAndOrd> termsCache = new DoubleBarrelLRUCache<Term,TermInfoAndOrd>(DEFAULT_CACHE_SIZE);
 
   /**
    * Per-thread resources managed by ThreadLocal
@@ -146,7 +145,6 @@ public final class TermInfosReader {
     if (origEnum != null)
       origEnum.close();
     threadResources.close();
-    termsCache.close();
   }
 
   /** Returns the number of term/value pairs in the set. */

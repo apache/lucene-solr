@@ -37,7 +37,6 @@ import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.cache.Cache;
 import org.apache.lucene.util.cache.DoubleBarrelLRUCache;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
@@ -68,7 +67,7 @@ public class StandardTermsDictReader extends FieldsProducer {
   private final Comparator<BytesRef> termComp;
 
   // Caches the most recently looked-up field + terms:
-  private final Cache<FieldAndTerm,TermState> termsCache;
+  private final DoubleBarrelLRUCache<FieldAndTerm,TermState> termsCache;
 
   // Reads the terms index
   private StandardTermsIndexReader indexReader;

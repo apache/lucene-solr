@@ -41,7 +41,7 @@ import java.util.Map;
  * @lucene.internal
  */
 
-final public class DoubleBarrelLRUCache<K,V> extends Cache<K,V> {
+final public class DoubleBarrelLRUCache<K,V> {
   private final Map<K,V> cache1;
   private final Map<K,V> cache2;
   private final AtomicInteger countdown;
@@ -55,17 +55,7 @@ final public class DoubleBarrelLRUCache<K,V> extends Cache<K,V> {
     cache2 = new ConcurrentHashMap<K,V>();
   }
 
-  @Override
-  public boolean containsKey(Object k) {
-    return false;
-  }
-
-  @Override
-  public void close() {
-  }
-
-  @Override @SuppressWarnings("unchecked")
-  public V get(Object key) {
+  public V get(K key) {
     final Map<K,V> primary;
     final Map<K,V> secondary;
     if (swapped) {
@@ -83,13 +73,12 @@ final public class DoubleBarrelLRUCache<K,V> extends Cache<K,V> {
       result = secondary.get(key);
       if (result != null) {
         // Promote to primary
-        put((K) key, result);
+        put(key, result);
       }
     }
     return result;
   }
 
-  @Override
   public void put(K key, V value) {
     final Map<K,V> primary;
     final Map<K,V> secondary;
