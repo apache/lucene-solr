@@ -38,7 +38,8 @@
     <ant dir="stempel" />
   </target>
 
-  <target name="default" depends="common,smartcn,stempel" />
+  <target name="default" depends="compile"/>
+  <target name="compile" depends="common,smartcn,stempel" />
 
   <target name="clean">
     <ant dir="common" target="clean" />
