@@ -17,8 +17,45 @@ package org.apache.lucene.util.cache;
 * limitations under the License.
 */
 
-public class TestDoubleBarrelLRUCache extends BaseTestLRU {
+import org.apache.lucene.util.LuceneTestCase;
 
+public class TestDoubleBarrelLRUCache extends LuceneTestCase {
+
+  private void testCache(DoubleBarrelLRUCache<Integer,Object> cache, int n) throws Exception {
+    Object dummy = new Object();
+    
+    for (int i = 0; i < n; i++) {
+      cache.put(Integer.valueOf(i), dummy);
+    }
+    
+    // access every 2nd item in cache
+    for (int i = 0; i < n; i+=2) {
+      assertNotNull(cache.get(Integer.valueOf(i)));
+    }
+    
+    // add n/2 elements to cache, the ones that weren't
+    // touched in the previous loop should now be thrown away
+    for (int i = n; i < n + (n / 2); i++) {
+      cache.put(Integer.valueOf(i), dummy);
+    }
+    
+    // access every 4th item in cache
+    for (int i = 0; i < n; i+=4) {
+      assertNotNull(cache.get(Integer.valueOf(i)));
+    }
+
+    // add 3/4n elements to cache, the ones that weren't
+    // touched in the previous loops should now be thrown away
+    for (int i = n; i < n + (n * 3 / 4); i++) {
+      cache.put(Integer.valueOf(i), dummy);
+    }
+    
+    // access every 4th item in cache
+    for (int i = 0; i < n; i+=4) {
+      assertNotNull(cache.get(Integer.valueOf(i)));
+    }
+  }
+    
   public void testLRUCache() throws Exception {
     final int n = 100;
     testCache(new DoubleBarrelLRUCache<Integer,Object>(n), n);
@@ -26,11 +63,11 @@ public class TestDoubleBarrelLRUCache extends BaseTestLRU {
 
   private class CacheThread extends Thread {
     private final Object[] objs;
-    private final Cache<Object,Object> c;
+    private final DoubleBarrelLRUCache<Object,Object> c;
     private final long endTime;
     volatile boolean failed;
 
-    public CacheThread(Cache<Object,Object> c,
+    public CacheThread(DoubleBarrelLRUCache<Object,Object> c,
                      Object[] objs, long endTime) {
       this.c = c;
       this.objs = objs;
@@ -81,7 +118,7 @@ public class TestDoubleBarrelLRUCache extends BaseTestLRU {
     final int CACHE_SIZE = 512;
     final int OBJ_COUNT = 3*CACHE_SIZE;
 
-    Cache<Object,Object> c = new DoubleBarrelLRUCache<Object,Object>(1024);
+    DoubleBarrelLRUCache<Object,Object> c = new DoubleBarrelLRUCache<Object,Object>(1024);
 
     Object[] objs = new Object[OBJ_COUNT];
     for(int i=0;i<OBJ_COUNT;i++) {

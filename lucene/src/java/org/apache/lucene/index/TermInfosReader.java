@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.cache.Cache;
 import org.apache.lucene.util.cache.DoubleBarrelLRUCache;
 import org.apache.lucene.util.CloseableThreadLocal;
 
@@ -54,7 +53,7 @@ final class TermInfosReader {
     }
   }
 
-  private final Cache<Term,TermInfoAndOrd> termsCache = new DoubleBarrelLRUCache<Term,TermInfoAndOrd>(DEFAULT_CACHE_SIZE);
+  private final DoubleBarrelLRUCache<Term,TermInfoAndOrd> termsCache = new DoubleBarrelLRUCache<Term,TermInfoAndOrd>(DEFAULT_CACHE_SIZE);
   
   /**
    * Per-thread resources managed by ThreadLocal
@@ -138,7 +137,6 @@ final class TermInfosReader {
     if (origEnum != null)
       origEnum.close();
     threadResources.close();
-    termsCache.close();
   }
 
   /** Returns the number of term/value pairs in the set. */
