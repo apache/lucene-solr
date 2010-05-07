@@ -152,6 +152,8 @@ New features
    of AttributeSource.cloneAttributes() instances and the new copyTo() method.
    (Steven Rowe via Uwe Schindler)
 
+ * LUCENE-2437: Add an Analyzer for Indonesian.  (Robert Muir)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
