@@ -309,6 +309,9 @@ public class SolrResourceLoader implements ResourceLoader
 
       lines = new ArrayList<String>();
       for (String word=null; (word=input.readLine())!=null;) {
+        // skip initial bom marker
+        if (lines.isEmpty() && word.length() > 0 && word.charAt(0) == '\uFEFF')
+          word = word.substring(1);
         // skip comments
         if (word.startsWith("#")) continue;
         word=word.trim();

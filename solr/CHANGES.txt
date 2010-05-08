@@ -347,6 +347,10 @@ Other Changes
   (Chris Male via rmuir)
 
 * SOLR-1851: luceneAutoCommit no longer has any effect - it has been remove (Mark Miller)
+
+* SOLR-1865: SolrResourceLoader.getLines ignores Byte Order Markers (BOMs) at the
+  beginning of input files, these are often created by editors such as Windows
+  Notepad.  (rmuir, hossman)
   
   
 Build

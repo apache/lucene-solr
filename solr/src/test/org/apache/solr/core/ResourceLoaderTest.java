@@ -30,6 +30,9 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 import java.io.File;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
 
 public class ResourceLoaderTest extends TestCase 
 {
@@ -87,5 +90,31 @@ public class ResourceLoaderTest extends TestCase
       }
       catch( SolrException ex ) { } // OK
     }
+  }
+  
+  public void testBOMMarkers() throws Exception {
+    final String fileWithBom = "stopwithbom.txt";
+    SolrResourceLoader loader = new SolrResourceLoader(null);
+
+    // preliminary sanity check
+    InputStream bomStream = loader.openResource(fileWithBom);
+    try {
+      final byte[] bomExpected = new byte[] { -17, -69, -65 };
+      final byte[] firstBytes = new byte[3];
+      
+      assertEquals("Should have been able to read 3 bytes from bomStream",
+                   3, bomStream.read(firstBytes));
+
+      assertTrue("This test only works if " + fileWithBom + 
+                 " contains a BOM -- it appears someone removed it.", 
+                 Arrays.equals(bomExpected, firstBytes));
+    } finally {
+      try { bomStream.close(); } catch (Exception e) { /* IGNORE */ }
+    }
+
+    // now make sure getLines skips the BOM...
+    List<String> lines = loader.getLines(fileWithBom);
+    assertEquals(1, lines.size());
+    assertEquals("BOMsAreEvil", lines.get(0));
   }
 }
