@@ -53,15 +53,12 @@ public class JmxMonitoredMap<K, V> extends
 
   private String jmxRootName;
 
-  public JmxMonitoredMap(String coreName, JmxConfiguration jmxConfig) {
-    jmxRootName = "solr" + (coreName == null ? "" : "/" + coreName);
-
-    if (jmxConfig.agentId != null && jmxConfig.serviceUrl != null) {
-      throw new SolrException(
-              SolrException.ErrorCode.SERVER_ERROR,
-              "Incorrect JMX Configuration in solrconfig.xml, both agentId and serviceUrl cannot be specified at the same time");
-    }
-
+  public JmxMonitoredMap(final String coreName, 
+                         final JmxConfiguration jmxConfig) {
+    jmxRootName = (null != jmxConfig.rootName ? 
+                   jmxConfig.rootName
+                   : ("solr" + (null != coreName ? "/" + coreName : "")));
+      
     if (jmxConfig.serviceUrl == null) {
       List<MBeanServer> servers = null;
 
@@ -78,13 +75,12 @@ public class JmxMonitoredMap<K, V> extends
       }
 
       if (servers == null || servers.isEmpty()) {
-        LOG
-                .info("No JMX servers found, not exposing Solr information with JMX.");
+        LOG.info("No JMX servers found, not exposing Solr information with JMX.");
         return;
       }
       server = servers.get(0);
       LOG.info("JMX monitoring is enabled. Adding Solr mbeans to JMX Server: "
-              + server);
+               + server);
     } else {
       try {
         // Create a new MBeanServer with the given serviceUrl

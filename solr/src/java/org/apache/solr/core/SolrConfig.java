@@ -179,10 +179,13 @@ public class SolrConfig extends Config {
     
     Node jmx = (Node) getNode("jmx", false);
     if (jmx != null) {
-      jmxConfig = new JmxConfiguration(true, get("jmx/@agentId", null), get(
-          "jmx/@serviceUrl", null));
+      jmxConfig = new JmxConfiguration(true, 
+                                       get("jmx/@agentId", null), 
+                                       get("jmx/@serviceUrl", null),
+                                       get("jmx/@rootName", null));
+                                           
     } else {
-      jmxConfig = new JmxConfiguration(false, null, null);
+      jmxConfig = new JmxConfiguration(false, null, null, null);
     }
      maxWarmingSearchers = getInt("query/maxWarmingSearchers",Integer.MAX_VALUE);
 
@@ -319,15 +322,32 @@ public class SolrConfig extends Config {
 
   public static class JmxConfiguration {
     public boolean enabled = false;
-
     public String agentId;
-
     public String serviceUrl;
+    public String rootName;
 
-    public JmxConfiguration(boolean enabled, String agentId, String serviceUrl) {
+    @Deprecated
+    public JmxConfiguration(boolean enabled, 
+                            String agentId, 
+                            String serviceUrl) {
+      this(enabled,agentId,serviceUrl,null);
+    }
+    public JmxConfiguration(boolean enabled, 
+                            String agentId, 
+                            String serviceUrl,
+                            String rootName) {
       this.enabled = enabled;
       this.agentId = agentId;
       this.serviceUrl = serviceUrl;
+      this.rootName = rootName;
+
+      if (agentId != null && serviceUrl != null) {
+        throw new SolrException
+          (SolrException.ErrorCode.SERVER_ERROR,
+           "Incorrect JMX Configuration in solrconfig.xml, "+
+           "both agentId and serviceUrl cannot be specified at the same time");
+      }
+      
     }
   }
 

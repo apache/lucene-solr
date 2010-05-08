@@ -170,6 +170,12 @@ Optimizations
 * SOLR-1904: When facet.enum.cache.minDf > 0 and the base doc set is a
   SortedIntSet, convert to HashDocSet for better performance. (yonik)
 
+* SOLR-1843: A new "rootName" attribute is now available when
+  configuring <jmx/> in solrconfig.xml.  If this attribute is set,
+  Solr will use it as the root name for all MBeans Solr exposes via
+  JMX.  The default root name is "solr" followed by the core name.
+  (Constantijn Visinescu, hossman)
+
 Bug Fixes
 ----------------------
 
