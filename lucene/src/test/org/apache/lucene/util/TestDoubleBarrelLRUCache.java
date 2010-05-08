@@ -1,4 +1,4 @@
-package org.apache.lucene.util.cache;
+package org.apache.lucene.util;
 
 /**
 * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,7 +17,6 @@ package org.apache.lucene.util.cache;
 * limitations under the License.
 */
 
-import org.apache.lucene.util.LuceneTestCase;
 
 public class TestDoubleBarrelLRUCache extends LuceneTestCase {
 

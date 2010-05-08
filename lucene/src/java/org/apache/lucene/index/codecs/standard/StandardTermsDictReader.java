@@ -37,7 +37,7 @@ import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.cache.DoubleBarrelLRUCache;
+import org.apache.lucene.util.DoubleBarrelLRUCache;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 

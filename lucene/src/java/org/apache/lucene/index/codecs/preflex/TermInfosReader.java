@@ -25,7 +25,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.CloseableThreadLocal;
-import org.apache.lucene.util.cache.DoubleBarrelLRUCache;
+import org.apache.lucene.util.DoubleBarrelLRUCache;
 
 /** This stores a monotonically increasing set of <Term, TermInfo> pairs in a
  * Directory.  Pairs are accessed either by Term or by ordinal position the
