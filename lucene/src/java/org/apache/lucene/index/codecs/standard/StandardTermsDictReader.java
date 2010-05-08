@@ -85,11 +85,13 @@ public class StandardTermsDictReader extends FieldsProducer {
       term = new BytesRef(other.term);
     }
 
+    @Override
     public boolean equals(Object _other) {
       FieldAndTerm other = (FieldAndTerm) _other;
       return other.field == field && term.bytesEquals(other.term);
     }
 
+    @Override
     public int hashCode() {
       return field.hashCode() * 31 + term.hashCode();
     }
@@ -226,14 +228,14 @@ public class StandardTermsDictReader extends FieldsProducer {
     final long numTerms;
     final FieldInfo fieldInfo;
     final long termsStartPointer;
-    final StandardTermsIndexReader.FieldReader indexReader;
+    final StandardTermsIndexReader.FieldReader fieldIndexReader;
 
     FieldReader(StandardTermsIndexReader.FieldReader fieldIndexReader, FieldInfo fieldInfo, long numTerms, long termsStartPointer) {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
       this.numTerms = numTerms;
       this.termsStartPointer = termsStartPointer;
-      this.indexReader = fieldIndexReader;
+      this.fieldIndexReader = fieldIndexReader;
     }
 
     @Override
@@ -241,6 +243,7 @@ public class StandardTermsDictReader extends FieldsProducer {
       return termComp;
     }
 
+    @Override
     public void close() {
       super.close();
     }
@@ -312,7 +315,7 @@ public class StandardTermsDictReader extends FieldsProducer {
           }
 
           if (cmp < 0 &&
-              indexReader.nextIndexTerm(state.ord, indexResult) &&
+              fieldIndexReader.nextIndexTerm(state.ord, indexResult) &&
               termComp.compare(indexResult.term, term) > 0) {
             // Optimization: requested term is within the
             // same index block we are now in; skip seeking
@@ -328,7 +331,7 @@ public class StandardTermsDictReader extends FieldsProducer {
 
           // As index to find biggest index term that's <=
           // our text:
-          indexReader.getIndexOffset(term, indexResult);
+          fieldIndexReader.getIndexOffset(term, indexResult);
 
           in.seek(indexResult.offset);
           seekPending = false;
@@ -373,7 +376,7 @@ public class StandardTermsDictReader extends FieldsProducer {
           // term we are looking for.  So, we should never
           // cross another index term (besides the first
           // one) while we are scanning:
-          assert state.ord == startOrd || !indexReader.isIndexTerm(state.ord, state.docFreq, true);
+          assert state.ord == startOrd || !fieldIndexReader.isIndexTerm(state.ord, state.docFreq, true);
         }
 
         return SeekStatus.END;
@@ -389,7 +392,7 @@ public class StandardTermsDictReader extends FieldsProducer {
           return SeekStatus.END;
         }
 
-        indexReader.getIndexOffset(ord, indexResult);
+        fieldIndexReader.getIndexOffset(ord, indexResult);
         in.seek(indexResult.offset);
         seekPending = false;
 
@@ -447,7 +450,7 @@ public class StandardTermsDictReader extends FieldsProducer {
         // lookahead work when writing the index
         postingsReader.readTerm(in,
                                 fieldInfo, state,
-                                indexReader.isIndexTerm(1+state.ord, state.docFreq, false));
+                                fieldIndexReader.isIndexTerm(1+state.ord, state.docFreq, false));
 
         state.ord++;
 
