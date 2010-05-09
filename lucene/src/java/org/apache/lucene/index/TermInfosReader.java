@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.cache.DoubleBarrelLRUCache;
+import org.apache.lucene.util.DoubleBarrelLRUCache;
 import org.apache.lucene.util.CloseableThreadLocal;
 
 /** This stores a monotonically increasing set of <Term, TermInfo> pairs in a
