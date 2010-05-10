@@ -3405,7 +3405,7 @@ public class TestIndexWriter extends LuceneTestCase {
     UnicodeUtil.UTF8Result utf8 = new UnicodeUtil.UTF8Result();
     UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
 
-    for(int iter=0;iter<100000;iter++) {
+    for(int iter=0;iter<100000*_TestUtil.getRandomMultiplier();iter++) {
       boolean hasIllegal = fillUnicode(buffer, expected, 0, 20);
 
       UnicodeUtil.UTF16toUTF8(buffer, 0, 20, utf8);
@@ -3436,7 +3436,7 @@ public class TestIndexWriter extends LuceneTestCase {
     boolean hasIllegal = false;
     byte[] last = new byte[60];
 
-    for(int iter=0;iter<100000;iter++) {
+    for(int iter=0;iter<100000*_TestUtil.getRandomMultiplier();iter++) {
 
       final int prefix;
 
@@ -4801,7 +4801,7 @@ public class TestIndexWriter extends LuceneTestCase {
     //w.setInfoStream(System.out);
     Document doc = new Document();
     doc.add(new Field("field", "go 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20", Field.Store.NO, Field.Index.ANALYZED));
-    for(int iter=0;iter<6;iter++) {
+    for(int iter=0;iter<6*_TestUtil.getRandomMultiplier();iter++) {
       int count = 0;
 
       final boolean doIndexing = r.nextBoolean();

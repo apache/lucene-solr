@@ -23,6 +23,7 @@ import java.io.StringReader;
 import java.util.Random;
 
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Testcase for {@link CharTokenizer} subclasses
@@ -38,7 +39,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     Random newRandom = newRandom();
     // create random input
     int num = 1024 + newRandom.nextInt(1024);
-    for (int i = 1; i < num; i++) {
+    for (int i = 1; i < num*_TestUtil.getRandomMultiplier(); i++) {
       builder.append("\ud801\udc1cabc");
       if((i % 10) == 0)
         builder.append(" ");

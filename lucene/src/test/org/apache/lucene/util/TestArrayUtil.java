@@ -49,7 +49,7 @@ public class TestArrayUtil extends LuceneTestCase {
 
   public void testInvalidElementSizes() {
     final Random r = newRandom();
-    for(int iter=0;iter<10000;iter++) {
+    for(int iter=0;iter<10000*_TestUtil.getRandomMultiplier();iter++) {
       final int minTargetSize = r.nextInt(Integer.MAX_VALUE);
       final int elemSize = r.nextInt(11);
       final int v = ArrayUtil.oversize(minTargetSize, elemSize);

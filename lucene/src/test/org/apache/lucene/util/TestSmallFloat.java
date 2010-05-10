@@ -72,7 +72,7 @@ public class TestSmallFloat extends LuceneTestCase {
   public void testFloatToByte() {
     Random rand = newRandom();
     // up iterations for more exhaustive test after changing something
-    for (int i=0; i<100000; i++) {
+    for (int i=0; i<100000*_TestUtil.getRandomMultiplier(); i++) {
       float f = Float.intBitsToFloat(rand.nextInt());
       if (f!=f) continue;    // skip NaN
       byte b1 = orig_floatToByte(f);

@@ -111,4 +111,10 @@ public class _TestUtil {
     buf.append("]");
     return buf.toString();
   }
+
+  /** gets a random multiplier, which you should use when writing
+   *  random tests: multiply it by the number of iterations */
+  public static int getRandomMultiplier() {
+    return Integer.parseInt(System.getProperty("random.multiplier", "1"));
+  }
 }

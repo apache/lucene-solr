@@ -27,6 +27,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestTransactions extends LuceneTestCase {
   
@@ -43,7 +44,7 @@ public class TestTransactions extends LuceneTestCase {
 
   private static abstract class TimedThread extends Thread {
     volatile boolean failed;
-    private static float RUN_TIME_SEC = 0.5f;
+    private static float RUN_TIME_SEC = 0.5f*_TestUtil.getRandomMultiplier();
     private TimedThread[] allThreads;
 
     abstract public void doWork() throws Throwable;

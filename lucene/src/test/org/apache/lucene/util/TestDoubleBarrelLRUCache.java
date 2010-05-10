@@ -17,57 +17,58 @@ package org.apache.lucene.util;
 * limitations under the License.
 */
 
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestDoubleBarrelLRUCache extends LuceneTestCase {
 
-  private void testCache(DoubleBarrelLRUCache<Integer,Object> cache, int n) throws Exception {
+  private void testCache(DoubleBarrelLRUCache<CloneableInteger,Object> cache, int n) throws Exception {
     Object dummy = new Object();
     
     for (int i = 0; i < n; i++) {
-      cache.put(Integer.valueOf(i), dummy);
+      cache.put(new CloneableInteger(i), dummy);
     }
     
     // access every 2nd item in cache
     for (int i = 0; i < n; i+=2) {
-      assertNotNull(cache.get(Integer.valueOf(i)));
+      assertNotNull(cache.get(new CloneableInteger(i)));
     }
     
     // add n/2 elements to cache, the ones that weren't
     // touched in the previous loop should now be thrown away
     for (int i = n; i < n + (n / 2); i++) {
-      cache.put(Integer.valueOf(i), dummy);
+      cache.put(new CloneableInteger(i), dummy);
     }
     
     // access every 4th item in cache
     for (int i = 0; i < n; i+=4) {
-      assertNotNull(cache.get(Integer.valueOf(i)));
+      assertNotNull(cache.get(new CloneableInteger(i)));
     }
 
     // add 3/4n elements to cache, the ones that weren't
     // touched in the previous loops should now be thrown away
     for (int i = n; i < n + (n * 3 / 4); i++) {
-      cache.put(Integer.valueOf(i), dummy);
+      cache.put(new CloneableInteger(i), dummy);
     }
     
     // access every 4th item in cache
     for (int i = 0; i < n; i+=4) {
-      assertNotNull(cache.get(Integer.valueOf(i)));
+      assertNotNull(cache.get(new CloneableInteger(i)));
     }
   }
     
   public void testLRUCache() throws Exception {
     final int n = 100;
-    testCache(new DoubleBarrelLRUCache<Integer,Object>(n), n);
+    testCache(new DoubleBarrelLRUCache<CloneableInteger,Object>(n), n);
   }
 
   private class CacheThread extends Thread {
-    private final Object[] objs;
-    private final DoubleBarrelLRUCache<Object,Object> c;
+    private final CloneableObject[] objs;
+    private final DoubleBarrelLRUCache<CloneableObject,Object> c;
     private final long endTime;
     volatile boolean failed;
 
-    public CacheThread(DoubleBarrelLRUCache<Object,Object> c,
-                     Object[] objs, long endTime) {
+    public CacheThread(DoubleBarrelLRUCache<CloneableObject,Object> c,
+                       CloneableObject[] objs, long endTime) {
       this.c = c;
       this.objs = objs;
       this.endTime = endTime;
@@ -82,10 +83,10 @@ public class TestDoubleBarrelLRUCache extends LuceneTestCase {
         final int limit = objs.length;
 
         while(true) {
-          final Object obj = objs[(int) ((count/2) % limit)];
+          final CloneableObject obj = objs[(int) ((count/2) % limit)];
           Object v = c.get(obj);
           if (v == null) {
-            c.put(obj, obj);
+            c.put(new CloneableObject(obj), obj);
             miss++;
           } else {
             assert obj == v;
@@ -117,11 +118,11 @@ public class TestDoubleBarrelLRUCache extends LuceneTestCase {
     final int CACHE_SIZE = 512;
     final int OBJ_COUNT = 3*CACHE_SIZE;
 
-    DoubleBarrelLRUCache<Object,Object> c = new DoubleBarrelLRUCache<Object,Object>(1024);
+    DoubleBarrelLRUCache<CloneableObject,Object> c = new DoubleBarrelLRUCache<CloneableObject,Object>(1024);
 
-    Object[] objs = new Object[OBJ_COUNT];
+    CloneableObject[] objs = new CloneableObject[OBJ_COUNT];
     for(int i=0;i<OBJ_COUNT;i++) {
-      objs[i] = new Object();
+      objs[i] = new CloneableObject(new Object());
     }
     
     final CacheThread[] threads = new CacheThread[NUM_THREADS];
@@ -137,4 +138,45 @@ public class TestDoubleBarrelLRUCache extends LuceneTestCase {
     //System.out.println("hits=" + totHit + " misses=" + totMiss);
   }
   
+  private static class CloneableObject extends DoubleBarrelLRUCache.CloneableKey {
+    private Object value;
+
+    public CloneableObject(Object value) {
+      this.value = value;
+    }
+
+    public boolean equals(Object other) {
+      return this.value.equals(((CloneableObject) other).value);
+    }
+
+    public int hashCode() {
+      return value.hashCode();
+    }
+
+    public Object clone() {
+      return new CloneableObject(value);
+    }
+  }
+
+  protected static class CloneableInteger extends DoubleBarrelLRUCache.CloneableKey {
+    private Integer value;
+
+    public CloneableInteger(Integer value) {
+      this.value = value;
+    }
+
+    public boolean equals(Object other) {
+      return this.value.equals(((CloneableInteger) other).value);
+    }
+
+    public int hashCode() {
+      return value.hashCode();
+    }
+
+    public Object clone() {
+      return new CloneableInteger(value);
+    }
+  }
+
+
 }

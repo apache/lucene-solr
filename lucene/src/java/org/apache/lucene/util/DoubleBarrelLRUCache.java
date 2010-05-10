@@ -42,6 +42,11 @@ import java.util.Map;
  */
 
 final public class DoubleBarrelLRUCache<K,V> {
+
+  public static abstract class CloneableKey {
+    abstract public Object clone();
+  }
+
   private final Map<K,V> cache1;
   private final Map<K,V> cache2;
   private final AtomicInteger countdown;

@@ -33,6 +33,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /** Test BooleanQuery2 against BooleanQuery by overriding the standard query parser.
  * This also tests the scoring order of BooleanQuery.
@@ -209,7 +210,7 @@ public class TestBoolean2 extends LuceneTestCase {
     try {
 
       // increase number of iterations for more complete testing
-      for (int i=0; i<50; i++) {
+      for (int i=0; i<50*_TestUtil.getRandomMultiplier(); i++) {
         int level = rnd.nextInt(3);
         q1 = randBoolQuery(new Random(rnd.nextLong()), rnd.nextBoolean(), level, field, vals, null);
         

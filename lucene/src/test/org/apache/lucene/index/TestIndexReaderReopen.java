@@ -47,6 +47,7 @@ import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BitVector;
+import org.apache.lucene.util._TestUtil;
 
 public class TestIndexReaderReopen extends LuceneTestCase {
     
@@ -702,7 +703,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   
   public void testThreadSafety() throws Exception {
     final Directory dir = new MockRAMDirectory();
-    final int n = 30;
+    final int n = 30*_TestUtil.getRandomMultiplier();
 
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));

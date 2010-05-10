@@ -99,7 +99,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   public void testMultiConfig() throws Throwable {
     // test lots of smaller different params together
     r = newRandom();
-    for (int i=0; i<20; i++) {  // increase iterations for better testing
+    for (int i=0; i<3*_TestUtil.getRandomMultiplier(); i++) {  // increase iterations for better testing
       sameFieldOrder=r.nextBoolean();
       mergeFactor=r.nextInt(3)+2;
       maxBufferedDocs=r.nextInt(3)+2;

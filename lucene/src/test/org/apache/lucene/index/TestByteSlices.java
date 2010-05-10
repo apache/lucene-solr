@@ -18,6 +18,7 @@ import java.util.Random;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestByteSlices extends LuceneTestCase {
 
@@ -73,7 +74,7 @@ public class TestByteSlices extends LuceneTestCase {
         counters[stream] = 0;
       }
       
-      for(int iter=0;iter<10000;iter++) {
+      for(int iter=0;iter<10000*_TestUtil.getRandomMultiplier();iter++) {
         int stream = r.nextInt(NUM_STREAM);
         if (VERBOSE)
           System.out.println("write stream=" + stream);
