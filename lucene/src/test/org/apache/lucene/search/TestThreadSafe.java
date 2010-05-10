@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexReader;
@@ -147,7 +148,7 @@ public class TestThreadSafe extends LuceneTestCase {
     buildDir(dir1, 15, 5, 2000);
 
     // do many small tests so the thread locals go away inbetween
-    for (int i=0; i<100; i++) {
+    for (int i=0; i<100*_TestUtil.getRandomMultiplier(); i++) {
       ir1 = IndexReader.open(dir1, false);
       doTest(10,100);
     }

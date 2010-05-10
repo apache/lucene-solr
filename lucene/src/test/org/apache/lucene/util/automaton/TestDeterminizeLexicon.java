@@ -35,19 +35,16 @@ public class TestDeterminizeLexicon extends LuceneTestCase {
   private List<String> terms = new ArrayList<String>();
   private Random random;
   
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-    random = newRandom();
-    for (int i = 0; i < 5000; i++) {
-      String randomString = _TestUtil.randomUnicodeString(random);
-      terms.add(randomString);
-      automata.add(BasicAutomata.makeString(randomString));
-    }
-  }
-
   public void testLexicon() {
-    for (int i = 0; i < 3; i++) {
+    random = newRandom();
+    for (int i = 0; i < 3*_TestUtil.getRandomMultiplier(); i++) {
+      automata.clear();
+      terms.clear();
+      for (int j = 0; j < 5000; j++) {
+        String randomString = _TestUtil.randomUnicodeString(random);
+        terms.add(randomString);
+        automata.add(BasicAutomata.makeString(randomString));
+      }
       assertLexicon();
     }
   }

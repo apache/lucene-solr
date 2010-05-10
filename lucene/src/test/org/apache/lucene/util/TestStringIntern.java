@@ -44,7 +44,7 @@ public class TestStringIntern extends LuceneTestCase {
     // makeStrings(100);  // realistic for perf testing
     int nThreads = 20;
     // final int iter=100000;
-    final int iter=1000000;
+    final int iter=1000000*_TestUtil.getRandomMultiplier();
     
     // try native intern
     // StringHelper.interner = new StringInterner();

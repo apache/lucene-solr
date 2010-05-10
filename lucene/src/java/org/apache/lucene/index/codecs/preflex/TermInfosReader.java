@@ -61,7 +61,26 @@ public final class TermInfosReader {
     }
   }
 
-  private final DoubleBarrelLRUCache<Term,TermInfoAndOrd> termsCache = new DoubleBarrelLRUCache<Term,TermInfoAndOrd>(DEFAULT_CACHE_SIZE);
+  private static class CloneableTerm extends DoubleBarrelLRUCache.CloneableKey {
+    private Term term;
+    public CloneableTerm(Term t) {
+      this.term = t;
+    }
+
+    public boolean equals(Object other) {
+      return this.term.equals(other);
+    }
+
+    public int hashCode() {
+      return term.hashCode();
+    }
+
+    public Object clone() {
+      return new CloneableTerm(term);
+    }
+  }
+
+  private final DoubleBarrelLRUCache<CloneableTerm,TermInfoAndOrd> termsCache = new DoubleBarrelLRUCache<CloneableTerm,TermInfoAndOrd>(DEFAULT_CACHE_SIZE);
 
   /**
    * Per-thread resources managed by ThreadLocal
@@ -197,8 +216,7 @@ public final class TermInfosReader {
     if (size == 0) return null;
 
     ensureIndexIsRead();
-
-    TermInfoAndOrd tiOrd = termsCache.get(term);
+    TermInfoAndOrd tiOrd = termsCache.get(new CloneableTerm(term));
     ThreadResources resources = getThreadResources();
 
     if (!mustSeekEnum && tiOrd != null) {
@@ -209,7 +227,7 @@ public final class TermInfosReader {
   }
 
   TermInfo seekEnum(SegmentTermEnum enumerator, Term term) throws IOException {
-    return seekEnum(enumerator, term, termsCache.get(term));
+    return seekEnum(enumerator, term, termsCache.get(new CloneableTerm(term)));
   }
 
   TermInfo seekEnum(SegmentTermEnum enumerator, Term term, TermInfoAndOrd tiOrd) throws IOException {
@@ -235,7 +253,7 @@ public final class TermInfosReader {
             // wipe out the cache when they iterate over a large numbers
             // of terms in order
             if (tiOrd == null) {
-              termsCache.put(term, new TermInfoAndOrd(ti, (int) enumerator.position));
+              termsCache.put(new CloneableTerm(term), new TermInfoAndOrd(ti, (int) enumerator.position));
             } else {
               assert sameTermInfo(ti, tiOrd, enumerator);
               assert (int) enumerator.position == tiOrd.termOrd;
@@ -264,7 +282,7 @@ public final class TermInfosReader {
     if (enumerator.term() != null && term.compareTo(enumerator.term()) == 0) {
       ti = enumerator.termInfo();
       if (tiOrd == null) {
-        termsCache.put(term, new TermInfoAndOrd(ti, (int) enumerator.position));
+        termsCache.put(new CloneableTerm(term), new TermInfoAndOrd(ti, (int) enumerator.position));
       } else {
         assert sameTermInfo(ti, tiOrd, enumerator);
         assert (int) enumerator.position == tiOrd.termOrd;

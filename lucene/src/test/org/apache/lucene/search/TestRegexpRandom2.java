@@ -57,7 +57,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     Field field = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);
     doc.add(field);
     
-    for (int i = 0; i < 2000; i++) {
+    for (int i = 0; i < 2000*_TestUtil.getRandomMultiplier(); i++) {
       field.setValue(_TestUtil.randomUnicodeString(random));
       writer.addDocument(doc);
     }
@@ -113,7 +113,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   
   /** test a bunch of random regular expressions */
   public void testRegexps() throws Exception {
-      for (int i = 0; i < 1000; i++)
+      for (int i = 0; i < 1000*_TestUtil.getRandomMultiplier(); i++)
         assertSame(AutomatonTestUtil.randomRegexp(random).toString());
   }
   

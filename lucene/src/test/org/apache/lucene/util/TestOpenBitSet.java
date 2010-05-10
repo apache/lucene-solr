@@ -175,8 +175,8 @@ public class TestOpenBitSet extends LuceneTestCase {
   // larger testsuite.
   public void testSmall() {
     rand = newRandom();
-    doRandomSets(1200,1000, 1);
-    doRandomSets(1200,1000, 2);
+    doRandomSets(1200*_TestUtil.getRandomMultiplier(),1000*_TestUtil.getRandomMultiplier(), 1);
+    doRandomSets(1200*_TestUtil.getRandomMultiplier(),1000*_TestUtil.getRandomMultiplier(), 2);
   }
 
   public void testBig() {

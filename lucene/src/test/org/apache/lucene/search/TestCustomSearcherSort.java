@@ -39,6 +39,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Unit test for sorting code.
@@ -52,7 +53,7 @@ implements Serializable {
     private Directory index = null;
     private Query query = null;
     // reduced from 20000 to 2000 to speed up test...
-    private final static int INDEX_SIZE = 2000;
+    private final static int INDEX_SIZE = 2000*_TestUtil.getRandomMultiplier();
 
   public TestCustomSearcherSort (String name) {
     super (name);
@@ -152,7 +153,7 @@ implements Serializable {
   private void matchHits (Searcher searcher, Sort sort)
   throws IOException {
       // make a query without sorting first
-    ScoreDoc[] hitsByRank = searcher.search(query, null, 1000).scoreDocs;
+    ScoreDoc[] hitsByRank = searcher.search(query, null, Integer.MAX_VALUE).scoreDocs;
     checkHits(hitsByRank, "Sort by rank: "); // check for duplicates
         Map<Integer,Integer> resultMap = new TreeMap<Integer,Integer>();
         // store hits in TreeMap - TreeMap does not allow duplicates; existing entries are silently overwritten
@@ -163,7 +164,7 @@ implements Serializable {
         }
         
         // now make a query using the sort criteria
-    ScoreDoc[] resultSort = searcher.search (query, null, 1000, sort).scoreDocs;
+    ScoreDoc[] resultSort = searcher.search (query, null, Integer.MAX_VALUE, sort).scoreDocs;
     checkHits(resultSort, "Sort by custom criteria: "); // check for duplicates
     
         // besides the sorting both sets of hits must be identical

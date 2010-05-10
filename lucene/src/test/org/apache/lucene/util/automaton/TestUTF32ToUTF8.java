@@ -99,8 +99,8 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
 
   public void testRandomRanges() throws Exception {
     final Random r = random;
-    int ITERS = 10;
-    int ITERS_PER_DFA = 100;
+    int ITERS = 10*_TestUtil.getRandomMultiplier();
+    int ITERS_PER_DFA = 100*_TestUtil.getRandomMultiplier();
     for(int iter=0;iter<ITERS;iter++) {
       int x1 = getCodeStart(r);
       int x2 = getCodeStart(r);
@@ -166,16 +166,16 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
   }
   
   public void testRandomRegexes() throws Exception {
-    for (int i = 0; i < 250; i++)
+    for (int i = 0; i < 250*_TestUtil.getRandomMultiplier(); i++)
       assertAutomaton(AutomatonTestUtil.randomRegexp(random).toAutomaton());
   }
   
-  private void assertAutomaton(Automaton automaton) {
+  private void assertAutomaton(Automaton automaton) throws Exception {
     CharacterRunAutomaton cra = new CharacterRunAutomaton(automaton);
     ByteRunAutomaton bra = new ByteRunAutomaton(automaton);
     final BasicOperations.RandomAcceptedStrings ras = new BasicOperations.RandomAcceptedStrings(automaton);
     
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 1000*_TestUtil.getRandomMultiplier(); i++) {
       final String string;
       if (random.nextBoolean()) {
         // likely not accepted
@@ -183,7 +183,15 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
       } else {
         // will be accepted
         int[] codepoints = ras.getRandomAcceptedString(random);
-        string = new String(codepoints, 0, codepoints.length);
+        try {
+          string = UnicodeUtil.newString(codepoints, 0, codepoints.length);
+        } catch (Exception e) {
+          System.out.println(codepoints.length + " codepoints:");
+          for(int j=0;j<codepoints.length;j++) {
+            System.out.println("  " + Integer.toHexString(codepoints[j]));
+          }
+          throw e;
+        }
       }
       BytesRef bytesRef = new BytesRef(string);
       assertEquals(cra.run(string), bra.run(bytesRef.bytes, 0, bytesRef.length));

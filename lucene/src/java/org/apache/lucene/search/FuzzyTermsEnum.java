@@ -133,7 +133,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
     if (runAutomata == null && 
         maxDistance <= LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
       LevenshteinAutomata builder = 
-        new LevenshteinAutomata(new String(termText, realPrefixLength, termText.length - realPrefixLength));
+        new LevenshteinAutomata(UnicodeUtil.newString(termText, realPrefixLength, termText.length - realPrefixLength));
 
       runAutomata = new ArrayList<ByteRunAutomaton>(maxDistance);
       for (int i = 0; i <= maxDistance; i++) {
@@ -141,7 +141,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
         // constant prefix
         if (realPrefixLength > 0) {
           Automaton prefix = BasicAutomata.makeString(
-              new String(termText, 0, realPrefixLength));
+              UnicodeUtil.newString(termText, 0, realPrefixLength));
           a = BasicOperations.concatenate(prefix, a);
         }
         runAutomata.add(new ByteRunAutomaton(a));
@@ -364,7 +364,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
 
       this.text = new int[termLength - realPrefixLength];
       System.arraycopy(termText, realPrefixLength, text, 0, text.length);
-      final String prefix = new String(termText, 0, realPrefixLength);
+      final String prefix = UnicodeUtil.newString(termText, 0, realPrefixLength);
       prefixBytesRef = new BytesRef(prefix);
       initializeMaxDistances();
       this.d = initDistanceArray();

@@ -140,4 +140,10 @@ public class _TestUtil {
     }
     return new String(buffer, 0, end);
   }
+
+  /** gets a random multiplier, which you should use when writing
+   *  random tests: multiply it by the number of iterations */
+  public static int getRandomMultiplier() {
+    return Integer.parseInt(System.getProperty("random.multiplier", "1"));
+  }
 }

@@ -30,7 +30,6 @@
 package org.apache.lucene.util.automaton;
 
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
 import java.util.ArrayList;
@@ -855,13 +854,7 @@ final public class BasicOperations {
   // "defined" in UTF32.  Don't call this on a transition
   // that only accepts UTF16 surrogate values!!
   private static int getRandomCodePoint(final Random r, final Transition t) {
-    while(true) {
-      final int v = t.min+r.nextInt(t.max-t.min+1);
-      if (v < UnicodeUtil.UNI_SUR_HIGH_START ||
-          v > UnicodeUtil.UNI_SUR_LOW_END) {
-        return v;
-      }
-    }
+    return t.min+r.nextInt(t.max-t.min+1);
   }
 
   public static class RandomAcceptedStrings {

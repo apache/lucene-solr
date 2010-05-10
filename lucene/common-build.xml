@@ -55,6 +55,7 @@
   <!-- default arguments to pass to JVM executing tests -->
   <property name="args" value=""/>
   <property name="threadsPerProcessor" value="1" />
+  <property name="random.multiplier" value="1" />
     
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
@@ -439,6 +440,7 @@
 	      <sysproperty key="tests.verbose" value="${tests.verbose}"/>
 	
 	      <!-- TODO: create propertyset for test properties, so each project can have its own set -->
+              <sysproperty key="random.multiplier" value="${random.multiplier}"/>
 	      <sysproperty key="tempDir" file="@{tempDir}/@{threadNum}"/>
 
 	      <sysproperty key="lucene.version" value="${dev.version}"/>

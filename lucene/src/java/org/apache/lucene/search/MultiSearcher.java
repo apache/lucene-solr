@@ -201,6 +201,7 @@ public class MultiSearcher extends Searcher {
   public TopDocs search(Weight weight, Filter filter, int nDocs)
       throws IOException {
 
+    nDocs = Math.min(nDocs, maxDoc());
     final HitQueue hq = new HitQueue(nDocs, false);
     int totalHits = 0;
 
@@ -221,6 +222,7 @@ public class MultiSearcher extends Searcher {
 
   @Override
   public TopFieldDocs search (Weight weight, Filter filter, int n, Sort sort) throws IOException {
+    n = Math.min(n, maxDoc());
     FieldDocSortedHitQueue hq = new FieldDocSortedHitQueue(n);
     int totalHits = 0;
 

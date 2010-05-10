@@ -73,7 +73,7 @@ public class StandardTermsDictReader extends FieldsProducer {
   private StandardTermsIndexReader indexReader;
 
   // Used as key for the terms cache
-  private static class FieldAndTerm {
+  private static class FieldAndTerm extends DoubleBarrelLRUCache.CloneableKey {
     String field;
     BytesRef term;
 
@@ -89,6 +89,11 @@ public class StandardTermsDictReader extends FieldsProducer {
     public boolean equals(Object _other) {
       FieldAndTerm other = (FieldAndTerm) _other;
       return other.field == field && term.bytesEquals(other.term);
+    }
+
+    @Override
+    public Object clone() {
+      return new FieldAndTerm(this);
     }
 
     @Override
@@ -291,7 +296,7 @@ public class StandardTermsDictReader extends FieldsProducer {
         fieldTerm.term = term;
         TermState cachedState;
         if (useCache) {
-          cachedState = termsCache.get(fieldTerm);
+          cachedState = termsCache.get(new FieldAndTerm(fieldTerm));
           if (cachedState != null) {
             state.copy(cachedState);
             seekPending = true;
@@ -370,13 +375,12 @@ public class StandardTermsDictReader extends FieldsProducer {
           } else if (cmp > 0) {
             return SeekStatus.NOT_FOUND;
           }
-
           // The purpose of the terms dict index is to seek
           // the enum to the closest index term before the
           // term we are looking for.  So, we should never
           // cross another index term (besides the first
           // one) while we are scanning:
-          assert state.ord == startOrd || !fieldIndexReader.isIndexTerm(state.ord, state.docFreq, true);
+          assert state.ord == startOrd || !fieldIndexReader.isIndexTerm(state.ord, state.docFreq, true): "state.ord=" + state.ord + " startOrd=" + startOrd + " ir.isIndexTerm=" + fieldIndexReader.isIndexTerm(state.ord, state.docFreq, true) + " state.docFreq=" + state.docFreq;
         }
 
         return SeekStatus.END;

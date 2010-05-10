@@ -428,7 +428,7 @@ public class FlexTestUtil {
   }
 
   private static void testRandomSeeks(Random rand, IndexReader r) throws Exception {
-    final int ITER = 100;
+    final int ITER = 100 * _TestUtil.getRandomMultiplier();
     List<String> allFields = new ArrayList<String>();
     Fields fields = MultiFields.getFields(r);
     if (fields == null) {

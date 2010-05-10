@@ -19,6 +19,7 @@ package org.apache.lucene.util.packed;
 
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,7 +52,7 @@ public class TestPackedInts extends LuceneTestCase {
 
   public void testPackedInts() throws IOException {
     rnd = newRandom();
-    for(int iter=0;iter<5;iter++) {
+    for(int iter=0;iter<5*_TestUtil.getRandomMultiplier();iter++) {
       long ceil = 2;
       for(int nbits=1;nbits<63;nbits++) {
         final int valueCount = 100+rnd.nextInt(500);

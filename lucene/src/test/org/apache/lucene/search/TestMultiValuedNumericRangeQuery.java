@@ -30,6 +30,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
 
@@ -47,7 +48,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
     
     DecimalFormat format = new DecimalFormat("00000000000", new DecimalFormatSymbols(Locale.US));
     
-    for (int l=0; l<5000; l++) {
+    for (int l=0; l<5000*_TestUtil.getRandomMultiplier(); l++) {
       Document doc = new Document();
       for (int m=0, c=rnd.nextInt(10); m<=c; m++) {
         int value = rnd.nextInt(Integer.MAX_VALUE);
@@ -59,7 +60,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
     writer.close();
     
     Searcher searcher=new IndexSearcher(directory, true);
-    for (int i=0; i<50; i++) {
+    for (int i=0; i<50*_TestUtil.getRandomMultiplier(); i++) {
       int lower=rnd.nextInt(Integer.MAX_VALUE);
       int upper=rnd.nextInt(Integer.MAX_VALUE);
       if (lower>upper) {

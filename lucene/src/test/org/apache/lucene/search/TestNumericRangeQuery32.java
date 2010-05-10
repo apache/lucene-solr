@@ -24,13 +24,13 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util._TestUtil;
 
 import org.junit.Test;
 import org.junit.AfterClass;
@@ -43,7 +43,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCaseJ4 {
   // shift the starting of the values to the left, to also have negative values:
   private static final int startOffset = - 1 << 15;
   // number of docs to generate for testing
-  private static final int noDocs = 10000;
+  private static final int noDocs = 10000*_TestUtil.getRandomMultiplier();
   
   private static RAMDirectory directory = null;
   private static IndexSearcher searcher = null;
@@ -327,7 +327,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCaseJ4 {
     final Random rnd=newRandom();
     String field="field"+precisionStep;
     int termCountT=0,termCountC=0;
-    for (int i=0; i<10; i++) {
+    for (int i=0; i<10*_TestUtil.getRandomMultiplier(); i++) {
       int lower=(int)(rnd.nextDouble()*noDocs*distance)+startOffset;
       int upper=(int)(rnd.nextDouble()*noDocs*distance)+startOffset;
       if (lower>upper) {
@@ -405,7 +405,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCaseJ4 {
     final Random rnd=newRandom();
     String field="ascfield"+precisionStep;
     // 10 random tests
-    for (int i=0; i<10; i++) {
+    for (int i=0; i<10*_TestUtil.getRandomMultiplier(); i++) {
       int lower=(int)(rnd.nextDouble()*noDocs - noDocs/2);
       int upper=(int)(rnd.nextDouble()*noDocs - noDocs/2);
       if (lower>upper) {
@@ -481,7 +481,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCaseJ4 {
     String field="field"+precisionStep;
     // 10 random tests, the index order is ascending,
     // so using a reverse sort field should retun descending documents
-    for (int i=0; i<10; i++) {
+    for (int i=0; i<10*_TestUtil.getRandomMultiplier(); i++) {
       int lower=(int)(rnd.nextDouble()*noDocs*distance)+startOffset;
       int upper=(int)(rnd.nextDouble()*noDocs*distance)+startOffset;
       if (lower>upper) {

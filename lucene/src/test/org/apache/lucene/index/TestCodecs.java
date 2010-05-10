@@ -44,6 +44,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MultiCodecTestCase;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util._TestUtil;
 
 // TODO: test multiple codecs here?
 
@@ -68,7 +69,7 @@ public class TestCodecs extends MultiCodecTestCase {
   private Random RANDOM;
   private static String[] fieldNames = new String[] {"one", "two", "three", "four"};
 
-  private final static int NUM_TEST_ITER = 20;
+  private final static int NUM_TEST_ITER = 20*_TestUtil.getRandomMultiplier();
   private final static int NUM_TEST_THREADS = 3;
   private final static int NUM_FIELDS = 4;
   private final static int NUM_TERMS_RAND = 50; // must be > 16 to test skipping
