@@ -37,6 +37,7 @@ import org.apache.tika.sax.xpath.Matcher;
 import org.apache.tika.sax.xpath.MatchingContentHandler;
 import org.apache.tika.sax.xpath.XPathParser;
 import org.apache.tika.exception.TikaException;
+import org.apache.tika.mime.MediaType;
 import org.apache.xml.serialize.OutputFormat;
 import org.apache.xml.serialize.BaseMarkupSerializer;
 import org.apache.xml.serialize.XMLSerializer;
@@ -134,7 +135,8 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     String streamType = req.getParams().get(ExtractingParams.STREAM_TYPE, null);
     if (streamType != null) {
       //Cache?  Parsers are lightweight to construct and thread-safe, so I'm told
-      parser = config.getParser(streamType.trim().toLowerCase());
+      MediaType mt = MediaType.parse(streamType.trim().toLowerCase());
+      parser = config.getParser(mt);
     } else {
       parser = autoDetectParser;
     }

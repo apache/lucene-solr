@@ -214,6 +214,16 @@ public class SolrResourceLoader implements ResourceLoader
     return coreProperties;
   }
 
+  /**
+   * EXPERT
+   * <p/>
+   * The underlying class loader.  Most applications will not need to use this.
+   * @return The {@link ClassLoader}
+   */
+  public ClassLoader getClassLoader() {
+    return classLoader;
+  }
+
   /** Opens a schema resource by its name.
    * Override this method to customize loading schema resources.
    *@return the stream for the named schema

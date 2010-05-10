@@ -285,6 +285,8 @@ Bug Fixes
 * SOLR-1706: fixed WordDelimiterFilter for certain combinations of options
   where it would output incorrect tokens. (Robert Muir, Chris Male)
 
+* SOLR-1902: Exposed SolrResourceLoader's class loader for use by Tika  
+
 Other Changes
 ----------------------
 

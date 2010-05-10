@@ -29,10 +29,12 @@ import org.apache.solr.handler.ContentStreamHandlerBase;
 import org.apache.solr.handler.ContentStreamLoader;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.exception.TikaException;
+import org.apache.tika.mime.MimeTypeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -77,8 +79,6 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
         } catch (Exception e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
-      } else {
-        config = TikaConfig.getDefaultConfig();
       }
       NamedList configDateFormats = (NamedList) initArgs.get(DATE_FORMATS);
       if (configDateFormats != null && configDateFormats.size() > 0) {
@@ -90,10 +90,21 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
           dateFormats.add(format);
         }
       }
-    } else {
-      config = TikaConfig.getDefaultConfig();
+    }
+    if (config == null) {
+      try {
+        config = getDefaultConfig(core.getResourceLoader().getClassLoader());
+      } catch (MimeTypeException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      } catch (IOException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
     }
     factory = createFactory();
+  }
+
+  private TikaConfig getDefaultConfig(ClassLoader classLoader) throws MimeTypeException, IOException {
+    return new TikaConfig(classLoader);
   }
 
   protected SolrContentHandlerFactory createFactory() {
