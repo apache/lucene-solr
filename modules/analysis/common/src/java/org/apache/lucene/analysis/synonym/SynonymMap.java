@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.synonym;
 
 import org.apache.lucene.analysis.CharArrayMap;
 import org.apache.lucene.analysis.Token;
@@ -23,13 +23,13 @@ import org.apache.lucene.util.Version;
 
 import java.util.*;
 
-/** Mapping rules for use with {@link org.apache.solr.analysis.SynonymFilter}
- *
- * @version $Id$
+/** Mapping rules for use with {@link SynonymFilter}
  */
 public class SynonymMap {
-  CharArrayMap<SynonymMap> submap; // recursive: Map<String, SynonymMap>
-  Token[] synonyms;
+  /** @lucene.internal */
+  public CharArrayMap<SynonymMap> submap; // recursive: Map<String, SynonymMap>
+  /** @lucene.internal */
+  public Token[] synonyms;
   int flags;
 
   static final int INCLUDE_ORIG=0x01;

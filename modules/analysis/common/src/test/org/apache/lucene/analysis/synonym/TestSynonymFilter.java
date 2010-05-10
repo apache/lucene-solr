@@ -15,8 +15,9 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.synonym;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
@@ -38,7 +39,7 @@ import java.util.List;
 /**
  * @version $Id$
  */
-public class TestSynonymFilter extends BaseTokenTestCase {
+public class TestSynonymFilter extends BaseTokenStreamTestCase {
 
   static List<String> strings(String str) {
     String[] arr = str.split(" ");
@@ -47,14 +48,14 @@ public class TestSynonymFilter extends BaseTokenTestCase {
 
   static void assertTokenizesTo(SynonymMap dict, String input,
       String expected[]) throws IOException {
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input));
+    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
     SynonymFilter stream = new SynonymFilter(tokenizer, dict);
     assertTokenStreamContents(stream, expected);
   }
   
   static void assertTokenizesTo(SynonymMap dict, String input,
       String expected[], int posIncs[]) throws IOException {
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader(input));
+    Tokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(input));
     SynonymFilter stream = new SynonymFilter(tokenizer, dict);
     assertTokenStreamContents(stream, expected, posIncs);
   }

@@ -25,6 +25,7 @@ import java.util.Map;
 import junit.framework.TestCase;
 
 import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.synonym.SynonymMap;
 
 public class TestSynonymMap extends TestCase {
 

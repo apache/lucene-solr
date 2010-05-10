@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.synonym;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenFilter;
@@ -38,8 +38,6 @@ import java.util.LinkedList;
  * to retain absolute positions after merging with the synonym tokenstream.
  * <p>
  * Generated synonyms will start at the same position as the first matched source token.
- *
- * @version $Id$
  */
 public final class SynonymFilter extends TokenFilter {
 
