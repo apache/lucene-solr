@@ -48,7 +48,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
   private Set<String> queries = new HashSet<String>();
   private Random random;
   
-  public static final int ITERATIONS = 100;
+  public static final int ITERATIONS = 100*_TestUtil.getRandomMultiplier();
 
   @Override
   public void setUp() throws Exception {
@@ -93,13 +93,15 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     StringBuilder termField = new StringBuilder();
  
     // add up to 250 terms to field "foo"
-    for (int i = 0; i < random.nextInt(250); i++) {
+    final int numFooTerms = random.nextInt(250*_TestUtil.getRandomMultiplier());
+    for (int i = 0; i < numFooTerms; i++) {
       fooField.append(" ");
       fooField.append(randomTerm());
     }
 
     // add up to 250 terms to field "term"
-    for (int i = 0; i < random.nextInt(250); i++) {
+    final int numTermTerms = random.nextInt(250*_TestUtil.getRandomMultiplier());
+    for (int i = 0; i < numTermTerms; i++) {
       termField.append(" ");
       termField.append(randomTerm());
     }
