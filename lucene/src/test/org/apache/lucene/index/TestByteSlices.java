@@ -27,7 +27,7 @@ public class TestByteSlices extends LuceneTestCase {
     
     /* Allocate another byte[] from the shared pool */
     @Override
-    synchronized byte[] getByteBlock(boolean trackAllocations) {
+    synchronized byte[] getByteBlock() {
       final int size = freeByteBlocks.size();
       final byte[] b;
       if (0 == size)
@@ -53,7 +53,7 @@ public class TestByteSlices extends LuceneTestCase {
   }
 
   public void testBasic() throws Throwable {
-    ByteBlockPool pool = new ByteBlockPool(new ByteBlockAllocator(), false);
+    ByteBlockPool pool = new ByteBlockPool(new ByteBlockAllocator());
 
     final int NUM_STREAM = 25;
 

@@ -28,11 +28,9 @@ final class IntBlockPool {
   public int intOffset = -DocumentsWriter.INT_BLOCK_SIZE;          // Current head offset
 
   final private DocumentsWriter docWriter;
-  final boolean trackAllocations;
 
-  public IntBlockPool(DocumentsWriter docWriter, boolean trackAllocations) {
+  public IntBlockPool(DocumentsWriter docWriter) {
     this.docWriter = docWriter;
-    this.trackAllocations = trackAllocations;
   }
 
   public void reset() {
@@ -55,7 +53,7 @@ final class IntBlockPool {
       System.arraycopy(buffers, 0, newBuffers, 0, buffers.length);
       buffers = newBuffers;
     }
-    buffer = buffers[1+bufferUpto] = docWriter.getIntBlock(trackAllocations);
+    buffer = buffers[1+bufferUpto] = docWriter.getIntBlock();
     bufferUpto++;
 
     intUpto = 0;

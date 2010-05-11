@@ -46,8 +46,8 @@ final class TermsHashPerThread extends InvertedDocConsumerPerThread {
       primary = false;
     }
 
-    intPool = new IntBlockPool(termsHash.docWriter, termsHash.trackAllocations);
-    bytePool = new ByteBlockPool(termsHash.docWriter.byteBlockAllocator, termsHash.trackAllocations);
+    intPool = new IntBlockPool(termsHash.docWriter);
+    bytePool = new ByteBlockPool(termsHash.docWriter.byteBlockAllocator);
 
     if (nextTermsHash != null)
       nextPerThread = nextTermsHash.addThread(docInverterPerThread, this);
