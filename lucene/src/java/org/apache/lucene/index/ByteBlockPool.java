@@ -44,7 +44,7 @@ final class ByteBlockPool {
   abstract static class Allocator {
     abstract void recycleByteBlocks(byte[][] blocks, int start, int end);
     abstract void recycleByteBlocks(List<byte[]> blocks);
-    abstract byte[] getByteBlock(boolean trackAllocations);
+    abstract byte[] getByteBlock();
   }
 
   public byte[][] buffers = new byte[10][];
@@ -55,12 +55,10 @@ final class ByteBlockPool {
   public byte[] buffer;                              // Current head buffer
   public int byteOffset = -DocumentsWriter.BYTE_BLOCK_SIZE;          // Current head offset
 
-  private final boolean trackAllocations;
   private final Allocator allocator;
 
-  public ByteBlockPool(Allocator allocator, boolean trackAllocations) {
+  public ByteBlockPool(Allocator allocator) {
     this.allocator = allocator;
-    this.trackAllocations = trackAllocations;
   }
 
   public void reset() {
@@ -93,7 +91,7 @@ final class ByteBlockPool {
       System.arraycopy(buffers, 0, newBuffers, 0, buffers.length);
       buffers = newBuffers;
     }
-    buffer = buffers[1+bufferUpto] = allocator.getByteBlock(trackAllocations);
+    buffer = buffers[1+bufferUpto] = allocator.getByteBlock();
     bufferUpto++;
 
     byteUpto = 0;

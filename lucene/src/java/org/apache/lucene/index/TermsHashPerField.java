@@ -72,7 +72,6 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
     fieldState = docInverterPerField.fieldState;
     this.consumer = perThread.consumer.addField(this, fieldInfo);
     initPostingsArray();
-    bytesUsed(postingsArray.size * postingsArray.bytesPerPosting());
 
     streamCount = consumer.getStreamCount();
     numPostingInt = 2*streamCount;
@@ -86,6 +85,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
 
   private void initPostingsArray() {
     postingsArray = consumer.createPostingsArray(2);
+    bytesUsed(postingsArray.size * postingsArray.bytesPerPosting());
   }
 
   // sugar: just forwards to DW

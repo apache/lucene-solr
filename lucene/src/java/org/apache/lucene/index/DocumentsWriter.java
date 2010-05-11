@@ -196,7 +196,7 @@ final class DocumentsWriter {
      */
     protected byte[] newBuffer(int size) {
       assert size == PER_DOC_BLOCK_SIZE;
-      return perDocAllocator.getByteBlock(false);
+      return perDocAllocator.getByteBlock();
     }
     
     /**
@@ -1300,18 +1300,12 @@ final class DocumentsWriter {
     
     /* Allocate another byte[] from the shared pool */
     @Override
-    byte[] getByteBlock(boolean trackAllocations) {
+    byte[] getByteBlock() {
       synchronized(DocumentsWriter.this) {
         final int size = freeByteBlocks.size();
         final byte[] b;
         if (0 == size) {
           b = new byte[blockSize];
-          // Always record a block allocated, even if
-          // trackAllocations is false.  This is necessary
-          // because this block will be shared between
-          // things that don't track allocations (term
-          // vectors) and things that do (freq/prox
-          // postings).
           numBytesUsed += blockSize;
         } else
           b = freeByteBlocks.remove(size-1);
@@ -1347,17 +1341,11 @@ final class DocumentsWriter {
   private ArrayList<int[]> freeIntBlocks = new ArrayList<int[]>();
 
   /* Allocate another int[] from the shared pool */
-  synchronized int[] getIntBlock(boolean trackAllocations) {
+  synchronized int[] getIntBlock() {
     final int size = freeIntBlocks.size();
     final int[] b;
     if (0 == size) {
       b = new int[INT_BLOCK_SIZE];
-      // Always record a block allocated, even if
-      // trackAllocations is false.  This is necessary
-      // because this block will be shared between
-      // things that don't track allocations (term
-      // vectors) and things that do (freq/prox
-      // postings).
       numBytesUsed += INT_BLOCK_SIZE*INT_NUM_BYTE;
     } else
       b = freeIntBlocks.remove(size-1);

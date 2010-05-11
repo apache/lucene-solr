@@ -50,19 +50,6 @@ class ParallelPostingsArray {
     return newArray;
   }
 
-  final ParallelPostingsArray shrink(int targetSize, boolean doCopy) {
-    int shrinkSize = ArrayUtil.getShrinkSize(size, targetSize, bytesPerPosting());
-    if (shrinkSize != size) {
-      ParallelPostingsArray newArray = newInstance(targetSize);
-      if (doCopy) {
-        copyTo(newArray, targetSize);
-      }
-      return newArray;
-    } else {
-      return this;
-    }
-  }
-
   void copyTo(ParallelPostingsArray toArray, int numToCopy) {
     System.arraycopy(textStarts, 0, toArray.textStarts, 0, numToCopy);
     System.arraycopy(intStarts, 0, toArray.intStarts, 0, numToCopy);

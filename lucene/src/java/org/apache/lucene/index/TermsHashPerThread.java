@@ -66,8 +66,8 @@ final class TermsHashPerThread extends InvertedDocConsumerPerThread {
     this.termsHash = termsHash;
     this.consumer = termsHash.consumer.addThread(this);
 
-    intPool = new IntBlockPool(termsHash.docWriter, termsHash.trackAllocations);
-    bytePool = new ByteBlockPool(termsHash.docWriter.byteBlockAllocator, termsHash.trackAllocations);
+    intPool = new IntBlockPool(termsHash.docWriter);
+    bytePool = new ByteBlockPool(termsHash.docWriter.byteBlockAllocator);
 
     if (nextTermsHash != null) {
       // We are primary
