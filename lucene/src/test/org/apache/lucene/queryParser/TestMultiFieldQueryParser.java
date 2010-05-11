@@ -43,9 +43,9 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestMultiFieldQueryParser extends LuceneTestCase {
 
-  /** test stop words arsing for both the non static form, and for the 
+  /** test stop words parsing for both the non static form, and for the 
    * corresponding static form (qtxt, fields[]). */
-  public void tesStopwordsParsing() throws Exception {
+  public void testStopwordsParsing() throws Exception {
     assertStopQueryEquals("one", "b:one t:one");  
     assertStopQueryEquals("one stop", "b:one t:one");  
     assertStopQueryEquals("one (stop)", "b:one t:one");  
