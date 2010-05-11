@@ -29,7 +29,7 @@ import java.util.List;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
-import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -112,7 +112,7 @@ public class TestDoc extends LuceneTestCase {
 
       Directory directory = FSDirectory.open(indexDir);
       IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
+        TEST_VERSION_CURRENT, new MockAnalyzer())
         .setOpenMode(OpenMode.CREATE));
 
       SegmentInfo si1 = indexDoc(writer, "test.txt");
@@ -142,7 +142,7 @@ public class TestDoc extends LuceneTestCase {
 
       directory = FSDirectory.open(indexDir);
       writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
+        TEST_VERSION_CURRENT, new MockAnalyzer())
         .setOpenMode(OpenMode.CREATE));
 
       si1 = indexDoc(writer, "test.txt");

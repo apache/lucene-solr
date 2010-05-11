@@ -16,7 +16,7 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.FieldCache;
@@ -46,8 +46,8 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     RAMDirectory dirA = new RAMDirectory();
     RAMDirectory dirB = new RAMDirectory();
 
-    IndexWriter wA = new IndexWriter(dirA, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-    IndexWriter wB = new IndexWriter(dirB, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter wA = new IndexWriter(dirA, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter wB = new IndexWriter(dirB, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;

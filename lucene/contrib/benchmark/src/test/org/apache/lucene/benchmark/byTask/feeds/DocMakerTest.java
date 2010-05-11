@@ -20,7 +20,7 @@ package org.apache.lucene.benchmark.byTask.feeds;
 import java.io.IOException;
 import java.util.Properties;
 
-import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.tasks.AddDocTask;
@@ -70,7 +70,7 @@ public class DocMakerTest extends BenchmarkTestCase {
     Properties props = new Properties();
     
     // Indexing configuration.
-    props.setProperty("analyzer", SimpleAnalyzer.class.getName());
+    props.setProperty("analyzer", MockAnalyzer.class.getName());
     props.setProperty("content.source", OneDocSource.class.getName());
     props.setProperty("directory", "RAMDirectory");
     if (setIndexProps) {
@@ -99,7 +99,7 @@ public class DocMakerTest extends BenchmarkTestCase {
     Properties props = new Properties();
     
     // Indexing configuration.
-    props.setProperty("analyzer", SimpleAnalyzer.class.getName());
+    props.setProperty("analyzer", MockAnalyzer.class.getName());
     props.setProperty("content.source", OneDocSource.class.getName());
     props.setProperty("directory", "RAMDirectory");
     if (setNormsProp) {

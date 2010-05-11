@@ -8,7 +8,7 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.TransformerException;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -42,7 +42,7 @@ import org.xml.sax.SAXException;
 public class TestQueryTemplateManager extends LuceneTestCase {
 
 	CoreParser builder;
-	Analyzer analyzer=new StandardAnalyzer(TEST_VERSION_CURRENT);
+	Analyzer analyzer=new MockAnalyzer();
 	private IndexSearcher searcher;
 	
 	//A collection of documents' field values for use in our tests

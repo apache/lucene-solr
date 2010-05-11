@@ -17,7 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -318,11 +318,9 @@ public class TestSimpleExplanations extends TestExplanations {
     lDoc3.add(new Field("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
 
     IndexWriter writerA = new IndexWriter(indexStoreA, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new StandardAnalyzer(
-        TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer()));
     IndexWriter writerB = new IndexWriter(indexStoreB, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new StandardAnalyzer(
-        TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     writerA.addDocument(lDoc);
     writerA.addDocument(lDoc2);
@@ -332,7 +330,7 @@ public class TestSimpleExplanations extends TestExplanations {
     writerB.addDocument(lDoc3);
     writerB.close();
 
-    QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "fulltext", new StandardAnalyzer(TEST_VERSION_CURRENT));
+    QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "fulltext", new MockAnalyzer());
     Query query = parser.parse("handle:1");
 
     Searcher[] searchers = new Searcher[2];

@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -86,7 +86,7 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
   private void checkQuery(String queryStr) throws IOException, ParseException {
     // check result hit ranking
     if(VERBOSE) System.out.println("Query: " + queryStr);
-      QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, new StandardAnalyzer(TEST_VERSION_CURRENT));
+      QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, new MockAnalyzer());
     Query query = queryParser.parse(queryStr);
     ScoreDoc[] multiSearcherHits = multiSearcher.search(query, null, 1000).scoreDocs;
     ScoreDoc[] singleSearcherHits = singleSearcher.search(query, null, 1000).scoreDocs;
@@ -113,11 +113,11 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
     super.setUp();
     // create MultiSearcher from two seperate searchers
     Directory d1 = new RAMDirectory();
-    IndexWriter iw1 = new IndexWriter(d1, new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter iw1 = new IndexWriter(d1, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     addCollection1(iw1);
     iw1.close();
     Directory d2 = new RAMDirectory();
-    IndexWriter iw2 = new IndexWriter(d2, new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter iw2 = new IndexWriter(d2, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     addCollection2(iw2);
     iw2.close();
 
@@ -128,7 +128,7 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
 
     // create IndexSearcher which contains all documents
     Directory d = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter iw = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     addCollection1(iw);
     addCollection2(iw);
     iw.close();

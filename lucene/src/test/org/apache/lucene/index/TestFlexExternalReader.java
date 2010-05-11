@@ -32,7 +32,7 @@ public class TestFlexExternalReader extends LuceneTestCase {
 
     final int DOC_COUNT = 177;
 
-    IndexWriter w = new IndexWriter(d, new WhitespaceAnalyzer(),
+    IndexWriter w = new IndexWriter(d, new MockAnalyzer(),
                                     IndexWriter.MaxFieldLength.UNLIMITED);
     w.setMaxBufferedDocs(7);
     Document doc = new Document();

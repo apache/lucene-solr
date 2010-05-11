@@ -77,7 +77,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
 
   private void doTest(PrintWriter out, boolean useCompoundFiles) throws Exception {
       Directory directory = new RAMDirectory();
-      Analyzer analyzer = new SimpleAnalyzer(TEST_VERSION_CURRENT);
+      Analyzer analyzer = new MockAnalyzer();
       IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
       LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFiles);
@@ -91,7 +91,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
         d.add(new Field(PRIORITY_FIELD, HIGH_PRIORITY, Field.Store.YES, Field.Index.ANALYZED));
 
         // NOTE: this ID_FIELD produces no tokens since
-        // SimpleAnalyzer discards numbers
+        // MockAnalyzer discards numbers
         d.add(new Field(ID_FIELD, Integer.toString(j), Field.Store.YES, Field.Index.ANALYZED));
         writer.addDocument(d);
       }

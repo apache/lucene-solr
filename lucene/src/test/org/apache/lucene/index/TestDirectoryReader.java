@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -190,7 +190,7 @@ public class TestDirectoryReader extends LuceneTestCase {
   private void addDoc(RAMDirectory ramDir1, String s, boolean create) throws IOException {
     IndexWriter iw = new IndexWriter(ramDir1, new IndexWriterConfig(
         TEST_VERSION_CURRENT, 
-        new StandardAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(
+        new MockAnalyzer()).setOpenMode(
         create ? OpenMode.CREATE : OpenMode.APPEND));
     Document doc = new Document();
     doc.add(new Field("body", s, Field.Store.YES, Field.Index.ANALYZED));

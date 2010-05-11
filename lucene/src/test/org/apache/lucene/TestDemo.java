@@ -20,7 +20,7 @@ package org.apache.lucene;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -46,7 +46,7 @@ public class TestDemo extends LuceneTestCase {
 
   public void testDemo() throws IOException, ParseException {
 
-    Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer analyzer = new MockAnalyzer();
 
     // Store the index in memory:
     Directory directory = new RAMDirectory();

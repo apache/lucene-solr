@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.HashSet;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -33,7 +33,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 	private RAMDirectory directory;
 	private IndexSearcher searcher;
-	private Analyzer analyzer=new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+	private Analyzer analyzer=new MockAnalyzer();
 
 	@Override
 	protected void setUp() throws Exception	{
@@ -112,7 +112,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 	}
 	
 	public void testFuzzyLikeThisQueryEquals() {
-	  Analyzer analyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+	  Analyzer analyzer = new MockAnalyzer();
     FuzzyLikeThisQuery fltq1 = new FuzzyLikeThisQuery(10, analyzer);
     fltq1.addTerms("javi", "subject", 0.5f, 2);
     FuzzyLikeThisQuery fltq2 = new FuzzyLikeThisQuery(10, analyzer);

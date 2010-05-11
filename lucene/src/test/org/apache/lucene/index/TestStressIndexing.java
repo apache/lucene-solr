@@ -18,7 +18,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.util.*;
 import org.apache.lucene.store.*;
-import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.*;
@@ -119,7 +119,7 @@ public class TestStressIndexing extends MultiCodecTestCase {
   */
   public void runStressTest(Directory directory, MergeScheduler mergeScheduler) throws Exception {
     IndexWriter modifier = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
+        TEST_VERSION_CURRENT, new MockAnalyzer())
         .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10).setMergeScheduler(
             mergeScheduler));
     modifier.commit();

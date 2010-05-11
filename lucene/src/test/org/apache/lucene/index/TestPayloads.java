@@ -30,7 +30,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -486,7 +486,7 @@ public class TestPayloads extends LuceneTestCase {
         
         Directory dir = new MockRAMDirectory();
         final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-            TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+            TEST_VERSION_CURRENT, new MockAnalyzer()));
         final String field = "test";
         
         Thread[] ingesters = new Thread[numThreads];

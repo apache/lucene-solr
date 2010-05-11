@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -62,8 +62,7 @@ public class TestIndicesEquals extends LuceneTestCase {
 
     // create dir data
     IndexWriter indexWriter = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new StandardAnalyzer(
-        TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < 20; i++) {
       Document document = new Document();
       assembleDocument(document, i);
@@ -88,8 +87,7 @@ public class TestIndicesEquals extends LuceneTestCase {
 
     // create dir data
     IndexWriter indexWriter = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new StandardAnalyzer(
-        TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < 500; i++) {
       Document document = new Document();
       assembleDocument(document, i);
@@ -98,7 +96,7 @@ public class TestIndicesEquals extends LuceneTestCase {
     indexWriter.close();
 
     // test ii writer
-    InstantiatedIndexWriter instantiatedIndexWriter = ii.indexWriterFactory(new StandardAnalyzer(TEST_VERSION_CURRENT), true);
+    InstantiatedIndexWriter instantiatedIndexWriter = ii.indexWriterFactory(new MockAnalyzer(), true);
     for (int i = 0; i < 500; i++) {
       Document document = new Document();
       assembleDocument(document, i);

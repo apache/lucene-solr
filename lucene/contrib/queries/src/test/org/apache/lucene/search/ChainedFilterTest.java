@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -58,7 +58,7 @@ public class ChainedFilterTest extends LuceneTestCase {
     super.setUp();
     directory = new RAMDirectory();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     Calendar cal = new GregorianCalendar();
     cal.clear();
@@ -186,7 +186,7 @@ public class ChainedFilterTest extends LuceneTestCase {
   
   public void testWithCachingFilter() throws Exception {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     writer.close();
   
     Searcher searcher = new IndexSearcher(dir, true);

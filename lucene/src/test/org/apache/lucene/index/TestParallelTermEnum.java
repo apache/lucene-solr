@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -37,7 +37,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
         Document doc;
 
         RAMDirectory rd1 = new RAMDirectory();
-        IndexWriter iw1 = new IndexWriter(rd1, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+        IndexWriter iw1 = new IndexWriter(rd1, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
 
         doc = new Document();
         doc.add(new Field("field1", "the quick brown fox jumps", Store.YES,
@@ -49,7 +49,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
 
         iw1.close();
         RAMDirectory rd2 = new RAMDirectory();
-        IndexWriter iw2 = new IndexWriter(rd2, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+        IndexWriter iw2 = new IndexWriter(rd2, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
 
         doc = new Document();
         doc.add(new Field("field0", "", Store.NO, Index.ANALYZED));

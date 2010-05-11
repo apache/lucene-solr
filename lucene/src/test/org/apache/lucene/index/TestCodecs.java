@@ -22,7 +22,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Random;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
@@ -344,7 +344,7 @@ public class TestCodecs extends MultiCodecTestCase {
   public void testSepPositionAfterMerge() throws IOException {
     final Directory dir = new RAMDirectory();
     final IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_31,
-      new WhitespaceAnalyzer(Version.LUCENE_31));
+      new MockAnalyzer());
     config.setCodecProvider(new SepCodecs());
     final IndexWriter writer = new IndexWriter(dir, config);
 

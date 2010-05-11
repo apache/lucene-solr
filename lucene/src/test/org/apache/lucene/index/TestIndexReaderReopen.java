@@ -31,8 +31,7 @@ import java.util.HashMap;
 import java.util.Set;
 
 import org.apache.lucene.analysis.KeywordAnalyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -706,7 +705,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     final int n = 30*_TestUtil.getRandomMultiplier();
 
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < n; i++) {
       writer.addDocument(createDocument(i, 3));
     }
@@ -726,7 +725,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
           modifier.close();
         } else {
           IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(
-              TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
+              TEST_VERSION_CURRENT, new MockAnalyzer()));
           modifier.addDocument(createDocument(n + i, 6));
           modifier.close();
         }
@@ -954,7 +953,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   public static void createIndex(Directory dir, boolean multiSegment) throws IOException {
     IndexWriter.unlock(dir);
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMergePolicy(new LogDocMergePolicy()));
     
     for (int i = 0; i < 100; i++) {
@@ -998,7 +997,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   static void modifyIndex(int i, Directory dir) throws IOException {
     switch (i) {
       case 0: {
-        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
         w.deleteDocuments(new Term("field2", "a11"));
         w.deleteDocuments(new Term("field2", "b30"));
         w.close();
@@ -1013,13 +1012,13 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         break;
       }
       case 2: {
-        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
         w.optimize();
         w.close();
         break;
       }
       case 3: {
-        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
         w.addDocument(createDocument(101, 4));
         w.optimize();
         w.addDocument(createDocument(102, 4));
@@ -1035,7 +1034,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
         break;
       }
       case 5: {
-        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
         w.addDocument(createDocument(101, 4));
         w.close();
         break;
@@ -1197,7 +1196,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   public void testReopenOnCommit() throws Throwable {
     Directory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(new KeepAllCommits()));
+        TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexDeletionPolicy(new KeepAllCommits()));
     for(int i=0;i<4;i++) {
       Document doc = new Document();
       doc.add(new Field("id", ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));

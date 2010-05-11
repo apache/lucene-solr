@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.document.*;
-import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 
 import java.util.Random;
 import java.io.File;
@@ -127,7 +127,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
     TimedThread[] threads = new TimedThread[4];
 
     IndexWriterConfig conf = new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
+        TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMaxBufferedDocs(7);
     ((LogMergePolicy) conf.getMergePolicy()).setMergeFactor(3);
     IndexWriter writer = new MockIndexWriter(directory, conf);

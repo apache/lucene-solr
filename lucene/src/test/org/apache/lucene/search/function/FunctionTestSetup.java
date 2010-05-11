@@ -18,7 +18,7 @@ package org.apache.lucene.search.function;
  */
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
@@ -95,7 +95,7 @@ public class FunctionTestSetup extends LuceneTestCaseJ4 {
     // prepare a small index with just a few documents.  
     super.setUp();
     dir = new RAMDirectory();
-    anlzr = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    anlzr = new MockAnalyzer();
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, anlzr));
     // add docs not exactly in natural ID order, to verify we do check the order of docs by scores
     int remaining = N_DOCS;

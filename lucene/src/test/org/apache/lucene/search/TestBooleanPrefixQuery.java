@@ -26,7 +26,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.PrefixQuery;
@@ -81,7 +81,7 @@ public class TestBooleanPrefixQuery extends LuceneTestCase {
     IndexReader reader = null;
     try {
       IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-          TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+          TEST_VERSION_CURRENT, new MockAnalyzer()));
       for (int i = 0; i < categories.length; i++) {
         Document doc = new Document();
         doc.add(new Field("category", categories[i], Field.Store.YES, Field.Index.NOT_ANALYZED));

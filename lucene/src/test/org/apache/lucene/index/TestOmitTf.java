@@ -24,7 +24,7 @@ import java.util.Random;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.*;
@@ -61,7 +61,7 @@ public class TestOmitTf extends LuceneTestCase {
   // omitTermFreqAndPositions bit in the FieldInfo
   public void testOmitTermFreqAndPositions() throws Exception {
     Directory ram = new MockRAMDirectory();
-    Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer analyzer = new MockAnalyzer();
     IndexWriter writer = new IndexWriter(ram, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document d = new Document();
         
@@ -113,7 +113,7 @@ public class TestOmitTf extends LuceneTestCase {
   // omitTermFreqAndPositions for the same field works
   public void testMixedMerge() throws Exception {
     Directory ram = new MockRAMDirectory();
-    Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer analyzer = new MockAnalyzer();
     IndexWriter writer = new IndexWriter(ram, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
@@ -170,7 +170,7 @@ public class TestOmitTf extends LuceneTestCase {
   // field, 
   public void testMixedRAM() throws Exception {
     Directory ram = new MockRAMDirectory();
-    Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer analyzer = new MockAnalyzer();
     IndexWriter writer = new IndexWriter(ram, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(10));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
@@ -218,7 +218,7 @@ public class TestOmitTf extends LuceneTestCase {
   // Verifies no *.prx exists when all fields omit term freq:
   public void testNoPrxFile() throws Throwable {
     Directory ram = new MockRAMDirectory();
-    Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer analyzer = new MockAnalyzer();
     IndexWriter writer = new IndexWriter(ram, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3));
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
@@ -251,7 +251,7 @@ public class TestOmitTf extends LuceneTestCase {
   // Test scores with one field with Term Freqs and one without, otherwise with equal content 
   public void testBasic() throws Exception {
     Directory dir = new MockRAMDirectory();  
-    Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer analyzer = new MockAnalyzer();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(2)
         .setSimilarity(new SimpleSimilarity()));

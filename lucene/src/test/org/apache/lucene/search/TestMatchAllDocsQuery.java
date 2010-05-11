@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -36,7 +36,7 @@ import org.apache.lucene.util.LuceneTestCase;
  *
  */
 public class TestMatchAllDocsQuery extends LuceneTestCase {
-  private Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+  private Analyzer analyzer = new MockAnalyzer();
   
   public void testQuery() throws Exception {
 

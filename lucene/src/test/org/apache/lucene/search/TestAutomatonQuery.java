@@ -18,9 +18,8 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Collections;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -28,7 +27,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.BasicOperations;
@@ -41,8 +39,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new StandardAnalyzer(
-        Version.LUCENE_CURRENT, Collections.emptySet()), true,
+    IndexWriter writer = new IndexWriter(directory, new MockAnalyzer(), true,
         IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     Field titleField = new Field("title", "some title", Field.Store.NO,
@@ -55,10 +52,10 @@ public class TestAutomatonQuery extends LuceneTestCase {
     doc.add(field);
     doc.add(footerField);
     writer.addDocument(doc);
-    field.setValue("some text from doc two, a short piece. 5678.91");
+    field.setValue("some text from doc two a short piece 5678.91");
     writer.addDocument(doc);
     field.setValue("doc three has some different stuff"
-        + ": with numbers 1234 5678.9 and letter b");
+        + " with numbers 1234 5678.9 and letter b");
     writer.addDocument(doc);
     writer.optimize();
     writer.close();

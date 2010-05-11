@@ -1,6 +1,6 @@
 package org.apache.lucene.document;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
@@ -155,8 +155,7 @@ public class TestDocument extends LuceneTestCase
     public void testGetValuesForIndexedDocument() throws Exception {
         RAMDirectory dir = new RAMDirectory();
         IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new StandardAnalyzer(
-        TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer()));
         writer.addDocument(makeDocumentWithFields());
         writer.close();
 
@@ -228,8 +227,7 @@ public class TestDocument extends LuceneTestCase
 
       RAMDirectory dir = new RAMDirectory();
       IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new StandardAnalyzer(
-        TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer()));
       writer.addDocument(doc);
       field.setValue("id2");
       writer.addDocument(doc);

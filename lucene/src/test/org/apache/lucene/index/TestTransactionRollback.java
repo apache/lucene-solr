@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.HashMap;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
@@ -65,7 +65,7 @@ public class TestTransactionRollback extends LuceneTestCase {
       throw new RuntimeException("Couldn't find commit point "+id);
 		
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(
+        TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexDeletionPolicy(
         new RollbackDeletionPolicy(id)).setIndexCommit(last));
     Map<String,String> data = new HashMap<String,String>();
     data.put("index", "Rolled back to 1-"+id);
@@ -127,7 +127,7 @@ public class TestTransactionRollback extends LuceneTestCase {
 		
     //Build index, of records 1 to 100, committing after each batch of 10
     IndexDeletionPolicy sdp=new KeepAllDeletionPolicy();
-    IndexWriter w=new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(sdp));
+    IndexWriter w=new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexDeletionPolicy(sdp));
     for(int currentRecordId=1;currentRecordId<=100;currentRecordId++) {
       Document doc=new Document();
       doc.add(new Field(FIELD_RECORD_ID,""+currentRecordId,Field.Store.YES,Field.Index.ANALYZED));
@@ -195,7 +195,7 @@ public class TestTransactionRollback extends LuceneTestCase {
     for(int i=0;i<2;i++) {
       // Unless you specify a prior commit point, rollback
       // should not work:
-      new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+      new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
           .setIndexDeletionPolicy(new DeleteLastCommitPolicy())).close();
       IndexReader r = IndexReader.open(dir, true);
       assertEquals(100, r.numDocs());

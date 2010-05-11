@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -64,7 +64,7 @@ public class TestNorms extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     similarityOne = new SimilarityOne();
-    anlzr = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    anlzr = new MockAnalyzer();
   }
 
   /**

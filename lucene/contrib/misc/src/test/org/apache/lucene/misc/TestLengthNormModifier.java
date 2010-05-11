@@ -19,7 +19,7 @@ package org.apache.lucene.misc;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.FieldNormModifier;
@@ -62,7 +62,7 @@ public class TestLengthNormModifier extends LuceneTestCase {
     protected void setUp() throws Exception {
       super.setUp();
 	IndexWriter writer = new IndexWriter(store, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer()));
 	
 	for (int i = 0; i < NUM_DOCS; i++) {
 	    Document d = new Document();

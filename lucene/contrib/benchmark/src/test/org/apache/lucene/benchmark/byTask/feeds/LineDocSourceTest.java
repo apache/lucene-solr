@@ -25,7 +25,7 @@ import java.io.OutputStreamWriter;
 import java.util.Properties;
 
 import org.apache.commons.compress.compressors.CompressorStreamFactory;
-import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.benchmark.byTask.tasks.AddDocTask;
@@ -77,7 +77,7 @@ public class LineDocSourceTest extends BenchmarkTestCase {
     }
     
     // Indexing configuration.
-    props.setProperty("analyzer", SimpleAnalyzer.class.getName());
+    props.setProperty("analyzer", MockAnalyzer.class.getName());
     props.setProperty("content.source", LineDocSource.class.getName());
     props.setProperty("directory", "RAMDirectory");
     

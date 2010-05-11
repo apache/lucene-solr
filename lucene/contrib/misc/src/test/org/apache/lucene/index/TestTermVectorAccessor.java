@@ -1,6 +1,6 @@
 package org.apache.lucene.index;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
@@ -28,7 +28,7 @@ public class TestTermVectorAccessor extends LuceneTestCase {
   public void test() throws Exception {
 
     Directory dir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT, Collections.emptySet())));
+    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     Document doc;
 

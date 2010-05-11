@@ -28,7 +28,7 @@ import java.util.Random;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
-import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
@@ -109,8 +109,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   throws IOException {
     RAMDirectory indexStore = new RAMDirectory();
     IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(
-        TEST_VERSION_CURRENT)).setMaxBufferedDocs(2));
+        TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(1000);
     for (int i=0; i<data.length; ++i) {
       if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
@@ -146,8 +145,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   private IndexSearcher getFullStrings() throws CorruptIndexException, LockObtainFailedException, IOException {
     RAMDirectory indexStore = new RAMDirectory ();
     IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(
-        TEST_VERSION_CURRENT)).setMaxBufferedDocs(4));
+        TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(4));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(97);
     for (int i=0; i<NUM_STRINGS; i++) {
         Document doc = new Document();

@@ -33,7 +33,7 @@ public class TestFlex extends LuceneTestCase {
 
     final int DOC_COUNT = 177;
 
-    IndexWriter w = new IndexWriter(d, new WhitespaceAnalyzer(),
+    IndexWriter w = new IndexWriter(d, new MockAnalyzer(),
                                     IndexWriter.MaxFieldLength.UNLIMITED);
 
     for(int iter=0;iter<2;iter++) {
@@ -68,7 +68,7 @@ public class TestFlex extends LuceneTestCase {
 
   public void testTermOrd() throws Exception {
     Directory d = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(d, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter w = new IndexWriter(d, new MockAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     doc.add(new Field("f", "a b c", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);

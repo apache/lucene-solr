@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.KeywordAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SetBasedFieldSelector;
@@ -82,9 +82,9 @@ public class TestMultiSearcher extends LuceneTestCase
         lDoc3.add(new Field("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
 
         // creating an index writer for the first index
-        IndexWriter writerA = new IndexWriter(indexStoreA, new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
+        IndexWriter writerA = new IndexWriter(indexStoreA, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
         // creating an index writer for the second index, but writing nothing
-        IndexWriter writerB = new IndexWriter(indexStoreB, new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
+        IndexWriter writerB = new IndexWriter(indexStoreB, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
 
         //--------------------------------------------------------------------
         // scenario 1
@@ -101,7 +101,7 @@ public class TestMultiSearcher extends LuceneTestCase
         writerB.close();
 
         // creating the query
-        QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "fulltext", new StandardAnalyzer(TEST_VERSION_CURRENT));
+        QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "fulltext", new MockAnalyzer());
         Query query = parser.parse("handle:1");
 
         // building the searchables
@@ -130,7 +130,7 @@ public class TestMultiSearcher extends LuceneTestCase
         // adding one document to the empty index
         writerB = new IndexWriter(indexStoreB, new IndexWriterConfig(
             TEST_VERSION_CURRENT, 
-                new StandardAnalyzer(TEST_VERSION_CURRENT))
+                new MockAnalyzer())
                 .setOpenMode(OpenMode.APPEND));
         writerB.addDocument(lDoc);
         writerB.optimize();
@@ -179,7 +179,7 @@ public class TestMultiSearcher extends LuceneTestCase
         // optimizing the index with the writer
         writerB = new IndexWriter(indexStoreB, new IndexWriterConfig(
             TEST_VERSION_CURRENT, 
-                new StandardAnalyzer(TEST_VERSION_CURRENT))
+                new MockAnalyzer())
                 .setOpenMode(OpenMode.APPEND));
         writerB.optimize();
         writerB.close();

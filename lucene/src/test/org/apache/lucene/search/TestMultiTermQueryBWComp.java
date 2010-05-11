@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -213,7 +213,7 @@ public class TestMultiTermQueryBWComp extends LuceneTestCaseJ4 {
   public static void beforeClass() throws Exception {
     dir = new RAMDirectory();
     IndexWriter writer = new IndexWriter(dir, 
-        new WhitespaceAnalyzer(TEST_VERSION_CURRENT), true, 
+        new MockAnalyzer(), true, 
         IndexWriter.MaxFieldLength.LIMITED);
     
     String values[] = { "old", "old2", "new", "new2" };

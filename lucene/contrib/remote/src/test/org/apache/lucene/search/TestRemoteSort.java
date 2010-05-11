@@ -25,7 +25,7 @@ import java.util.Iterator;
 import java.util.Locale;
 import java.util.Random;
 
-import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -84,7 +84,7 @@ public class TestRemoteSort extends RemoteTestCaseJ4 {
   public static void beforeClass() throws Exception {
     RAMDirectory indexStore = new RAMDirectory ();
     IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
+        TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMaxBufferedDocs(2));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(1000);
     for (int i=0; i<data.length; ++i) {

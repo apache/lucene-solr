@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.SimpleAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -99,7 +99,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
             
             /* build an index */
           IndexWriter writer = new IndexWriter(index.index, new IndexWriterConfig(
-              TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
+              TEST_VERSION_CURRENT, new MockAnalyzer())
                   .setOpenMode(OpenMode.CREATE));
 
           for (int d = minId; d <= maxId; d++) {

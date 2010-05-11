@@ -27,7 +27,7 @@ import java.util.Iterator;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
@@ -228,7 +228,7 @@ public class TestPositionIncrement extends LuceneTestCase {
 
   private static class StopWhitespaceAnalyzer extends Analyzer {
     boolean enablePositionIncrements;
-    final WhitespaceAnalyzer a = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+    final MockAnalyzer a = new MockAnalyzer();
     public StopWhitespaceAnalyzer(boolean enablePositionIncrements) {
       this.enablePositionIncrements = enablePositionIncrements;
     }

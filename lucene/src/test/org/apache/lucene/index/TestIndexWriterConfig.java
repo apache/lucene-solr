@@ -26,7 +26,7 @@ import java.lang.reflect.Modifier;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.DocumentsWriter.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -65,8 +65,8 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
   
   @Test
   public void testDefaults() throws Exception {
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
-    assertEquals(WhitespaceAnalyzer.class, conf.getAnalyzer().getClass());
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    assertEquals(MockAnalyzer.class, conf.getAnalyzer().getClass());
     assertNull(conf.getIndexCommit());
     assertEquals(KeepOnlyLastCommitDeletionPolicy.class, conf.getIndexDeletionPolicy().getClass());
     assertEquals(IndexWriterConfig.UNLIMITED_FIELD_LENGTH, conf.getMaxFieldLength());
@@ -144,7 +144,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
   
   @Test
   public void testToString() throws Exception {
-    String str = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).toString();
+    String str = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).toString();
     for (Field f : IndexWriterConfig.class.getDeclaredFields()) {
       int modifiers = f.getModifiers();
       if (Modifier.isStatic(modifiers) && Modifier.isFinal(modifiers)) {
@@ -161,7 +161,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
   
   @Test
   public void testClone() throws Exception {
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
     IndexWriterConfig clone = (IndexWriterConfig) conf.clone();
     
     // Clone is shallow since not all parameters are cloneable.
@@ -173,7 +173,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
 
   @Test
   public void testInvalidValues() throws Exception {
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
     
     // Test IndexDeletionPolicy
     assertEquals(KeepOnlyLastCommitDeletionPolicy.class, conf.getIndexDeletionPolicy().getClass());
@@ -260,7 +260,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     // whatever the user set on IW to IWC, so that if the user calls
     // iw.getConfig().getXYZ(), he'll get the same value he passed to
     // iw.setXYZ().
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
     Directory dir = new RAMDirectory();
     IndexWriter writer = new IndexWriter(dir, conf);
 

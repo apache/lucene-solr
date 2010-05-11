@@ -806,7 +806,7 @@ public class TestExternalCodecs extends LuceneTestCase {
 
     Directory dir = new MockRAMDirectory();
     IndexWriter w = new IndexWriter(dir,
-                                    new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer()).setCodecProvider(new MyCodecs()));
+                                    new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setCodecProvider(new MyCodecs()));
 
     w.setMergeFactor(3);
     Document doc = new Document();

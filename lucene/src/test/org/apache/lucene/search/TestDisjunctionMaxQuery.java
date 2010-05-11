@@ -19,7 +19,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -79,7 +79,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase{
         super.setUp();
 
         index = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(index, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setSimilarity(sim));
+        IndexWriter writer = new IndexWriter(index, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setSimilarity(sim));
 
         // hed is the most important field, dek is secondary
 

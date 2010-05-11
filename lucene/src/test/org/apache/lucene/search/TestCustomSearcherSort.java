@@ -28,7 +28,7 @@ import junit.framework.Test;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -72,7 +72,7 @@ implements Serializable {
   private Directory getIndex()
   throws IOException {
           RAMDirectory indexStore = new RAMDirectory ();
-          IndexWriter writer = new IndexWriter (indexStore, new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
+          IndexWriter writer = new IndexWriter (indexStore, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
           RandomGen random = new RandomGen(newRandom());
           for (int i=0; i<INDEX_SIZE; ++i) { // don't decrease; if to low the problem doesn't show up
           Document doc = new Document();

@@ -39,7 +39,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
   public void testCaching() throws IOException {
     Directory dir = new RAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     TokenStream stream = new TokenStream() {
       private int index = 0;

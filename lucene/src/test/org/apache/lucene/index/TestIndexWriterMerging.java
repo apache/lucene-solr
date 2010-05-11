@@ -17,7 +17,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -57,7 +57,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
     Directory merged = new MockRAMDirectory();
 
-    IndexWriter writer = new IndexWriter(merged, new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter writer = new IndexWriter(merged, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
 
     writer.addIndexesNoOptimize(new Directory[]{indexA, indexB});
@@ -95,7 +95,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, 
-        new StandardAnalyzer(TEST_VERSION_CURRENT))
+        new MockAnalyzer())
         .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(2));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
 

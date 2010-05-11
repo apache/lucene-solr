@@ -19,7 +19,7 @@ package org.apache.lucene.store.instantiated;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -62,7 +62,7 @@ public class TestEmptyIndex extends LuceneTestCase {
     // make sure a Directory acts the same
 
     Directory d = new RAMDirectory();
-    new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))).close();
+    new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())).close();
     r = IndexReader.open(d, false);
     testNorms(r);
     r.close();
@@ -95,7 +95,7 @@ public class TestEmptyIndex extends LuceneTestCase {
     // make sure a Directory acts the same
 
     Directory d = new RAMDirectory();
-    new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))).close();
+    new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())).close();
     r = IndexReader.open(d, false);
     termEnumTest(r);
     r.close();

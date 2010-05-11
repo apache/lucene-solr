@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.util.Random;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
@@ -50,7 +50,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     
     NumericField
       field8 = new NumericField("field8", 8, Field.Store.YES, true),
@@ -295,7 +295,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
   public void testInfiniteValues() throws Exception {
     RAMDirectory dir = new RAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     doc.add(new NumericField("double").setDoubleValue(Double.NEGATIVE_INFINITY));
     doc.add(new NumericField("long").setLongValue(Long.MIN_VALUE));

@@ -29,7 +29,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
@@ -72,7 +72,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
     SnapshotDeletionPolicy dp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, 
-        new StandardAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(dp)
+        new MockAnalyzer()).setIndexDeletionPolicy(dp)
         .setMaxBufferedDocs(2));
     Document doc = new Document();
     doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
@@ -88,7 +88,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
     copyFiles(dir, cp);
     
     writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT,
-        new StandardAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(dp));
+        new MockAnalyzer()).setIndexDeletionPolicy(dp));
     copyFiles(dir, cp);
     for(int i=0;i<7;i++) {
       writer.addDocument(doc);
@@ -101,7 +101,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
     copyFiles(dir, cp);
     dp.release();
     writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT,
-        new StandardAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(dp));
+        new MockAnalyzer()).setIndexDeletionPolicy(dp));
     writer.close();
     try {
       copyFiles(dir, cp);
@@ -119,7 +119,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
     SnapshotDeletionPolicy dp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
     final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, 
-        new StandardAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(dp)
+        new MockAnalyzer()).setIndexDeletionPolicy(dp)
         .setMaxBufferedDocs(2));
     writer.commit();
     
