@@ -110,6 +110,16 @@ public class PhraseQuery extends Query {
       return result;
   }
 
+  @Override
+  public Query rewrite(IndexReader reader) throws IOException {
+    if (terms.size() == 1) {
+      TermQuery tq = new TermQuery(terms.get(0));
+      tq.setBoost(getBoost());
+      return tq;
+    } else
+      return super.rewrite(reader);
+  }
+
   private class PhraseWeight extends Weight {
     private final Similarity similarity;
     private float value;
