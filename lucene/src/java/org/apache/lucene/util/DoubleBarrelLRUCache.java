@@ -28,8 +28,9 @@ import java.util.Map;
  * <p>At any given time, one hash is primary and the other
  * is secondary.  {@link #get} first checks primary, and if
  * that's a miss, checks secondary.  If secondary has the
- * entry, it's promoted to primary.  Once primary is full,
- * the secondary is cleared and the two are swapped.</p>
+ * entry, it's promoted to primary (<b>NOTE</b>: the key is
+ * cloned at this point).  Once primary is full, the
+ * secondary is cleared and the two are swapped.</p>
  *
  * <p>This is not as space efficient as other possible
  * concurrent approaches (see LUCENE-2075): to achieve
@@ -41,7 +42,7 @@ import java.util.Map;
  * @lucene.internal
  */
 
-final public class DoubleBarrelLRUCache<K,V> {
+final public class DoubleBarrelLRUCache<K extends DoubleBarrelLRUCache.CloneableKey,V> {
 
   public static abstract class CloneableKey {
     abstract public Object clone();
@@ -60,6 +61,7 @@ final public class DoubleBarrelLRUCache<K,V> {
     cache2 = new ConcurrentHashMap<K,V>();
   }
 
+  @SuppressWarnings("unchecked") 
   public V get(K key) {
     final Map<K,V> primary;
     final Map<K,V> secondary;
@@ -78,7 +80,7 @@ final public class DoubleBarrelLRUCache<K,V> {
       result = secondary.get(key);
       if (result != null) {
         // Promote to primary
-        put(key, result);
+        put((K) key.clone(), result);
       }
     }
     return result;

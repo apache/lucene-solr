@@ -296,7 +296,7 @@ public class StandardTermsDictReader extends FieldsProducer {
         fieldTerm.term = term;
         TermState cachedState;
         if (useCache) {
-          cachedState = termsCache.get(new FieldAndTerm(fieldTerm));
+          cachedState = termsCache.get(fieldTerm);
           if (cachedState != null) {
             state.copy(cachedState);
             seekPending = true;
