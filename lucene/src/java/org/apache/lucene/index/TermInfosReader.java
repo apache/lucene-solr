@@ -53,7 +53,31 @@ final class TermInfosReader {
     }
   }
 
-  private final DoubleBarrelLRUCache<Term,TermInfoAndOrd> termsCache = new DoubleBarrelLRUCache<Term,TermInfoAndOrd>(DEFAULT_CACHE_SIZE);
+  private static class CloneableTerm extends DoubleBarrelLRUCache.CloneableKey {
+    private final Term term;
+
+    public CloneableTerm(Term t) {
+      this.term = new Term(t.field(), t.text());
+    }
+
+    @Override
+    public Object clone() {
+      return new CloneableTerm(term);
+    }
+
+    @Override
+    public boolean equals(Object _other) {
+      CloneableTerm other = (CloneableTerm) _other;
+      return term.equals(other.term);
+    }
+
+    @Override
+    public int hashCode() {
+      return term.hashCode();
+    }
+  }
+
+  private final DoubleBarrelLRUCache<CloneableTerm,TermInfoAndOrd> termsCache = new DoubleBarrelLRUCache<CloneableTerm,TermInfoAndOrd>(DEFAULT_CACHE_SIZE);
   
   /**
    * Per-thread resources managed by ThreadLocal
@@ -190,7 +214,9 @@ final class TermInfosReader {
 
     ensureIndexIsRead();
 
-    TermInfoAndOrd tiOrd = termsCache.get(term);
+    final CloneableTerm cacheKey = new CloneableTerm(term);
+
+    TermInfoAndOrd tiOrd = termsCache.get(cacheKey);
     ThreadResources resources = getThreadResources();
     
     if (!mustSeekEnum && tiOrd != null) {
@@ -219,7 +245,7 @@ final class TermInfosReader {
             // wipe out the cache when they iterate over a large numbers
             // of terms in order
             if (tiOrd == null) {
-              termsCache.put(term, new TermInfoAndOrd(ti, (int) enumerator.position));
+              termsCache.put(cacheKey, new TermInfoAndOrd(ti, (int) enumerator.position));
             } else {
               assert sameTermInfo(ti, tiOrd, enumerator);
               assert (int) enumerator.position == tiOrd.termOrd;
@@ -248,7 +274,7 @@ final class TermInfosReader {
     if (enumerator.term() != null && term.compareTo(enumerator.term()) == 0) {
       ti = enumerator.termInfo();
       if (tiOrd == null) {
-        termsCache.put(term, new TermInfoAndOrd(ti, (int) enumerator.position));
+        termsCache.put(cacheKey, new TermInfoAndOrd(ti, (int) enumerator.position));
       } else {
         assert sameTermInfo(ti, tiOrd, enumerator);
         assert (int) enumerator.position == tiOrd.termOrd;
