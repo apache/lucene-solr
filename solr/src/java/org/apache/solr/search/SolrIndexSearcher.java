@@ -22,6 +22,7 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -639,7 +640,9 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
           Fields fields = sir.fields();
           Terms terms = fields.terms(t.field());
           BytesRef termBytes = new BytesRef(t.text());
-          DocsEnum docsEnum = terms==null ? null : terms.docs(null, termBytes, null);
+          
+          Bits skipDocs = sir.getDeletedDocs();
+          DocsEnum docsEnum = terms==null ? null : terms.docs(skipDocs, termBytes, null);
 
           if (docsEnum != null) {
             DocsEnum.BulkReadResult readResult = docsEnum.getBulkResult();
