@@ -154,6 +154,9 @@ New features
 
  * LUCENE-2437: Add an Analyzer for Indonesian.  (Robert Muir)
 
+ * LUCENE-2393: The HighFreqTerms tool (in misc) can now optionally
+   also include the total termFreq.  (Tom Burton-West via Mike McCandless)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
