@@ -113,7 +113,15 @@ public class TestFilterIndexReader extends LuceneTestCase {
 
     writer.close();
 
+    //IndexReader reader = new TestReader(IndexReader.open(directory, true));
+    RAMDirectory target = new MockRAMDirectory();
+    writer = new IndexWriter(target, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     IndexReader reader = new TestReader(IndexReader.open(directory, true));
+    writer.addIndexes(reader);
+    writer.close();
+    reader.close();
+    reader = IndexReader.open(target, true);
+    
 
     assertTrue(reader.isOptimized());
     

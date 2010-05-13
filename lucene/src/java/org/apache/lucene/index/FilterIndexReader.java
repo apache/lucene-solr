@@ -119,7 +119,7 @@ public class FilterIndexReader extends IndexReader {
   
   @Override
   public Bits getDeletedDocs() throws IOException {
-    return in.getDeletedDocs();
+    return MultiFields.getDeletedDocs(in);
   }
   
   @Override
@@ -291,7 +291,18 @@ public class FilterIndexReader extends IndexReader {
   
   @Override
   public IndexReader[] getSequentialSubReaders() {
-    return in.getSequentialSubReaders();
+    return null;
+  }
+
+  /* Flex API wrappers. */
+  @Override
+  public Fields fields() throws IOException {
+    return new LegacyFields(this);
+  }
+
+  @Override
+  public Terms terms(String field) throws IOException {
+    return new LegacyTerms(this, field);
   }
 
   /** If the subclass of FilteredIndexReader modifies the
