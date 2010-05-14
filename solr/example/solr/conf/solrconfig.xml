@@ -901,6 +901,9 @@
   <!-- CSV update handler, loaded on demand -->
   <requestHandler name="/update/csv" class="solr.CSVRequestHandler" startup="lazy" />
 
+  <!-- JSON update handler, loaded on demand -->
+  <requestHandler name="/update/json" class="solr.JsonUpdateRequestHandler" startup="lazy" />
+
 
   <!-- 
    Admin Handlers - This will register all the standard admin RequestHandlers.  Adding 

@@ -152,6 +152,10 @@ New Features
   the default value is the set: [lower,upper,edge], so that al ranges
   between start and ed are inclusive of their endpoints, but the
   "before" and "after" ranges are not.
+
+* SOLR-945: JSON update handler that accepts add, delete, commit
+  commands in JSON format. (Ryan McKinley, yonik)
+
    
 Optimizations
 ----------------------
