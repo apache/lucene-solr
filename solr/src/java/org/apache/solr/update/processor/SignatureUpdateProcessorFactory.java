@@ -23,6 +23,8 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.index.Term;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.SolrParams;
@@ -34,9 +36,14 @@ import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.plugin.SolrCoreAware;
 
-public class SignatureUpdateProcessorFactory extends
-    UpdateRequestProcessorFactory {
+public class SignatureUpdateProcessorFactory 
+  extends UpdateRequestProcessorFactory 
+  implements SolrCoreAware {
 
   private List<String> sigFields;
   private String signatureField;
@@ -69,6 +76,23 @@ public class SignatureUpdateProcessorFactory extends
       if (sigFields != null) {
         Collections.sort(sigFields);
       }
+    }
+  }
+
+  public void inform(SolrCore core) {
+    final SchemaField field = core.getSchema().getFieldOrNull(getSignatureField());
+    if (null == field) {
+      throw new SolrException
+        (ErrorCode.SERVER_ERROR,
+         "Can't use signatureField which does not exist in schema: "
+         + getSignatureField());
+    }
+
+    if (getOverwriteDupes() && ( ! field.indexed() ) ) {
+      throw new SolrException
+        (ErrorCode.SERVER_ERROR,
+         "Can't set overwriteDupes when signatureField is not indexed: "
+         + getSignatureField());
     }
   }
 

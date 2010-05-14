@@ -394,6 +394,7 @@
       termVectors="true" termPositions="true" termOffsets="true"/>
    <field name="highlight"  type="text" indexed="true"  stored="true" 
       termVectors="true" termPositions="true" termOffsets="true"/>
+   <field name="signatureField" type="string" indexed="true" stored="false"/>
    
 
    

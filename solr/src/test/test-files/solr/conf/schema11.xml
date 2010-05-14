@@ -292,6 +292,8 @@
 
    <field name="point_hash" type="geohash" indexed="true" stored="true" multiValued="false"/>
 
+   <field name="signatureField" type="string" indexed="true" stored="false"/>
+
    <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
         will be used if the name matches any of the patterns.
         RESTRICTION: the glob-like pattern in the name attribute must have
@@ -301,6 +303,7 @@
         both match, the first appearing in the schema will be used.  -->
    <dynamicField name="*_s"  type="string"  indexed="true"  stored="true"/>
    <dynamicField name="*_ss"  type="string"  indexed="true"  stored="true" multiValued="true"/>
+   <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
    <dynamicField name="*_ii"  type="integer"    indexed="true"  stored="true" multiValued="true"/>
    <dynamicField name="*_i"  type="sint"    indexed="true"  stored="true"/>
    <dynamicField name="*_is"  type="sint"    indexed="true"  stored="true" multiValued="true"/>

@@ -287,6 +287,11 @@ Bug Fixes
 
 * SOLR-1902: Exposed SolrResourceLoader's class loader for use by Tika  
 
+* SOLR-1908: Fixed SignatureUpdateProcessor to fail to initialize on
+  invalid config.  Specificly: a signatureField that does not exist,
+  or overwriteDupes=true with a signatureField that is not indexed.
+  (hossman)
+
 Other Changes
 ----------------------
 

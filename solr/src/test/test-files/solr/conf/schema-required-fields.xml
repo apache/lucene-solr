@@ -376,6 +376,7 @@
    <field name="timestamp" type="date" indexed="true" stored="true" default="NOW" multiValued="false"/>
    <field name="multiDefault" type="string" indexed="true" stored="true" default="muLti-Default" multiValued="true"/>
    <field name="intDefault" type="sint" indexed="true" stored="true" default="42" multiValued="false"/>
+   <field name="signatureField" type="string" indexed="true" stored="false"/>
    
 
    

@@ -17,6 +17,7 @@
 -->
 <schema name="luceneMatchVersionTest" version="1.1">
  <types>
+  <fieldtype name="string" class="solr.StrField"/>
   <fieldtype name="text20" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.StandardTokenizerFactory" luceneMatchVersion="LUCENE_20"/>
@@ -43,9 +44,11 @@
   </fieldtype>
  </types>
  <fields>
+   <field name="signatureField" type="string" indexed="true" stored="false"/>
    <field name="text20" type="text20" indexed="true" stored="false" />
    <field name="textDefault" type="textDefault" indexed="true" stored="false" />
    <field name="textStandardAnalyzer20" type="textStandardAnalyzer20" indexed="true" stored="false" />
    <field name="textStandardAnalyzerDefault" type="textStandardAnalyzerDefault" indexed="true" stored="false" />
+   <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
  </fields>
 </schema>

@@ -26,6 +26,7 @@
 
 
     <fieldtype name="integer" class="solr.IntField" />
+    <fieldtype name="string" class="solr.StrField" />
 
     <fieldtype name="text" class="solr.TextField">
       <analyzer>
@@ -71,6 +72,9 @@
    <field name="one" type="srev" indexed="true" stored="false"/>
    <field name="two" type="rev" indexed="true" stored="false"/>
    <field name="three" type="text" indexed="true" stored="false"/>
+
+   <field name="signatureField" type="string" indexed="true" stored="false"/>
+   <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
 
  </fields>
 

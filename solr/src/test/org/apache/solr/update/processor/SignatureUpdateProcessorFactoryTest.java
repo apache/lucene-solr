@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrCore;
@@ -37,6 +38,9 @@ import org.apache.solr.util.AbstractSolrTestCase;
  */
 public class SignatureUpdateProcessorFactoryTest extends AbstractSolrTestCase {
 
+  /** modified by tests as needed */
+  private String processor = "dedupe";
+
   @Override
   public String getSchemaFile() {
     return "schema12.xml";
@@ -45,6 +49,12 @@ public class SignatureUpdateProcessorFactoryTest extends AbstractSolrTestCase {
   @Override
   public String getSolrConfigFile() {
     return "solrconfig.xml";
+  }
+
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    processor = "dedupe"; // set the default that most tests expect
   }
 
   public void testDupeDetection() throws Exception {
@@ -169,10 +179,45 @@ public class SignatureUpdateProcessorFactoryTest extends AbstractSolrTestCase {
     factory.setEnabled(false);
   }
 
+  /**
+   * a non-indexed signatureField is fine as long as overwriteDupes==false
+   */
+  public void testNonIndexedSignatureField() throws Exception {
+    SolrCore core = h.getCore();
+
+    assertEquals("docs found when none are expected at start",
+                 0l, core.getSearcher().get().getReader().numDocs());
+
+    processor = "stored_sig";
+    addDoc(adoc("id", "2a", "v_t", "Hello Dude man!", "name", "ali babi'"));
+    addDoc(adoc("id", "2b", "v_t", "Hello Dude man!", "name", "ali babi'"));
+    addDoc(commit());
+
+    assertEquals("did not find exepcted docs",
+                 2l, core.getSearcher().get().getReader().numDocs());
+  }
+
+  public void testFailNonIndexedSigWithOverwriteDupes() throws Exception {
+    SolrCore core = h.getCore();
+    SignatureUpdateProcessorFactory f = new SignatureUpdateProcessorFactory();
+    NamedList<String> initArgs = new NamedList<String>();
+    initArgs.add("overwriteDupes", "true");
+    initArgs.add("signatureField", "signatureField_sS");
+    f.init(initArgs);
+    boolean exception_ok = false;
+    try {
+      f.inform(core);
+    } catch (Exception e) {
+      exception_ok = true;
+    }
+    assertTrue("Should have gotten an exception from inform(SolrCore)", 
+               exception_ok);
+  }
+
   private void addDoc(String doc) throws Exception {
     Map<String, String[]> params = new HashMap<String, String[]>();
     MultiMapSolrParams mmparams = new MultiMapSolrParams(params);
-    params.put(UpdateParams.UPDATE_PROCESSOR, new String[] { "dedupe" });
+    params.put(UpdateParams.UPDATE_PROCESSOR, new String[] { processor });
     SolrQueryRequestBase req = new SolrQueryRequestBase(h.getCore(),
         (SolrParams) mmparams) {
     };
