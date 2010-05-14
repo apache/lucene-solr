@@ -358,11 +358,6 @@ public class PulsingPostingsReaderImpl extends StandardPostingsReader {
     }
 
     @Override
-    public int getPayloadLength() {
-      return payloadRetrieved || pos.payload == null ? 0 : pos.payload.length;
-    }
-
-    @Override
     public boolean hasPayload() {
       return !payloadRetrieved && pos.payload != null && pos.payload.length > 0;
     }

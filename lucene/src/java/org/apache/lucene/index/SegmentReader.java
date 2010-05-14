@@ -1653,19 +1653,31 @@ public class SegmentReader extends IndexReader implements Cloneable {
       throw new UnsupportedOperationException("TermPositions does not support processing multiple documents in one call. Use TermDocs instead.");
     }
 
-    public int nextPosition() throws IOException {     
+    public int nextPosition() throws IOException {
+      pendingPayload = null;
       if (!any || postingsEnum == null) {
         return 0;
       } else {
         return postingsEnum.nextPosition();
       }
     }
+    
+    private BytesRef pendingPayload;
 
-    public int getPayloadLength() {
+    public int getPayloadLength() throws IOException {
       if (!any || postingsEnum == null) {
         return 0;
       } else {
-        return postingsEnum.getPayloadLength();
+        if (pendingPayload == null) {
+          if (!postingsEnum.hasPayload()) {
+            return 0;
+          }
+          pendingPayload = postingsEnum.getPayload();
+        }
+        if (pendingPayload == null) {
+          return 0;
+        }
+        return pendingPayload.length;
       }
     }
 
@@ -1673,17 +1685,26 @@ public class SegmentReader extends IndexReader implements Cloneable {
       if (!any || postingsEnum == null) {
         return null;
       }
-      final BytesRef payload = postingsEnum.getPayload();
+      if (pendingPayload == null) {
+        if (!postingsEnum.hasPayload()) {
+          return null;
+        }
+        pendingPayload = postingsEnum.getPayload();
+      }
+      if (pendingPayload == null) {
+        return null;
+      }
+
       // old API would always used passed in bytes if it
       // "fits", else allocate new:
-      if (bytes != null && payload.length <= bytes.length - offset) {
-        System.arraycopy(payload.bytes, payload.offset, bytes, offset, payload.length);
+      if (bytes != null && pendingPayload.length <= bytes.length - offset) {
+        System.arraycopy(pendingPayload.bytes, pendingPayload.offset, bytes, offset, pendingPayload.length);
         return bytes;
-      } else if (payload.offset == 0 && payload.length == payload.bytes.length) {
-        return payload.bytes;
+      } else if (pendingPayload.offset == 0 && pendingPayload.length == pendingPayload.bytes.length) {
+        return pendingPayload.bytes;
       } else {
-        final byte[] retBytes = new byte[payload.length];
-        System.arraycopy(payload.bytes, payload.offset, retBytes, 0, payload.length);
+        final byte[] retBytes = new byte[pendingPayload.length];
+        System.arraycopy(pendingPayload.bytes, pendingPayload.offset, retBytes, 0, pendingPayload.length);
         return retBytes;
       }
     }

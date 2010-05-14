@@ -112,11 +112,6 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
   }
 
   @Override
-  public int getPayloadLength() {
-    return current.getPayloadLength();
-  }
-
-  @Override
   public boolean hasPayload() {
     return current.hasPayload();
   }

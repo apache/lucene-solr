@@ -102,12 +102,6 @@ public final class MappingMultiDocsAndPositionsEnum extends DocsAndPositionsEnum
     return current.nextPosition();
   }
   
-
-  @Override
-  public int getPayloadLength() {
-    return current.getPayloadLength();
-  }
-
   @Override
   public BytesRef getPayload() throws IOException {
     BytesRef payload = current.getPayload();

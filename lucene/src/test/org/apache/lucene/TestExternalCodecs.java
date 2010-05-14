@@ -436,11 +436,6 @@ public class TestExternalCodecs extends LuceneTestCase {
       }
 
       @Override
-      public int getPayloadLength() {
-        return 0;
-      }
-
-      @Override
       public BytesRef getPayload() {
         return null;
       }

@@ -29,9 +29,6 @@ public abstract class DocsAndPositionsEnum extends DocsEnum {
    *  the behavior is not defined. */
   public abstract int nextPosition() throws IOException;
 
-  /** Returns length of payload at current position */
-  public abstract int getPayloadLength();
-
   /** Returns the payload at this position, or null if no
    *  payload was indexed. */
   public abstract BytesRef getPayload() throws IOException;

@@ -457,11 +457,6 @@ public class PreFlexFields extends FieldsProducer {
     }
 
     @Override
-    public int getPayloadLength() {
-      return pos.getPayloadLength();
-    }
-
-    @Override
     public boolean hasPayload() {
       return pos.isPayloadAvailable();
     }

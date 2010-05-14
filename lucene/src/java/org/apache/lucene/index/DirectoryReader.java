@@ -1393,7 +1393,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
       return ((TermPositions)current).nextPosition();
     }
     
-    public int getPayloadLength() {
+    public int getPayloadLength() throws IOException {
       return ((TermPositions)current).getPayloadLength();
     }
      

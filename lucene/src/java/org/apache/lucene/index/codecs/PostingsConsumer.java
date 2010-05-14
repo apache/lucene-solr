@@ -79,9 +79,8 @@ public abstract class PostingsConsumer {
         this.startDoc(doc, freq);
         for(int i=0;i<freq;i++) {
           final int position = postingsEnum.nextPosition();
-          final int payloadLength = postingsEnum.getPayloadLength();
           final BytesRef payload;
-          if (payloadLength > 0) {
+          if (postingsEnum.hasPayload()) {
             payload = postingsEnum.getPayload();
           } else {
             payload = null;

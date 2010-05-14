@@ -721,7 +721,7 @@ public class ParallelReader extends IndexReader {
       return ((TermPositions)termDocs).nextPosition();
     }
 
-    public int getPayloadLength() {
+    public int getPayloadLength() throws IOException {
       return ((TermPositions)termDocs).getPayloadLength();
     }
 

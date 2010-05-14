@@ -509,11 +509,6 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
   }
 
   @Override
-  public int getPayloadLength() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public BytesRef getPayload() {
     throw new UnsupportedOperationException();
   }

@@ -46,7 +46,7 @@ public interface TermPositions
      * the first time.<br>
      * @return length of the current payload in number of bytes
      */
-    int getPayloadLength();
+    int getPayloadLength() throws IOException;
     
     /** 
      * Returns the payload data at the current term position.

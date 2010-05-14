@@ -67,7 +67,7 @@ public class FilterIndexReader extends IndexReader {
       return ((TermPositions) this.in).nextPosition();
     }
     
-    public int getPayloadLength() {
+    public int getPayloadLength() throws IOException {
       return ((TermPositions) this.in).getPayloadLength();
     }
 

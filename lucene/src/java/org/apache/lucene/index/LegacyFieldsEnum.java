@@ -305,11 +305,6 @@ class LegacyFieldsEnum extends FieldsEnum {
       return tp.nextPosition();
     }
 
-    @Override
-    public int getPayloadLength() {
-      return tp.getPayloadLength();
-    }
-
     private BytesRef payload;
 
     @Override

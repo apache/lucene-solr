@@ -638,11 +638,6 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
       return position;
     }
 
-    @Override
-    public int getPayloadLength() {
-      return payloadLength;
-    }
-
     private BytesRef payload;
 
     @Override

@@ -685,7 +685,7 @@ public class CheckIndex {
                   throw new RuntimeException("term " + term + ": doc " + doc + ": pos " + pos + " < lastPos " + lastPos);
                 }
                 lastPos = pos;
-                if (postings.getPayloadLength() != 0) {
+                if (postings.hasPayload()) {
                   postings.getPayload();
                 }
               }

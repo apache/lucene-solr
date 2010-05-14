@@ -190,8 +190,8 @@ public class FlexTestUtil {
                   assertEquals(position, termPos.nextPosition());
                   assertEquals(postings.hasPayload(), termPos.isPayloadAvailable());
                   if (postings.hasPayload()) {
-                    assertEquals(postings.getPayloadLength(), termPos.getPayloadLength());
                     BytesRef payload = postings.getPayload();
+                    assertEquals(payload.length, termPos.getPayloadLength());
                     byte[] b2 = termPos.getPayload(null, 0);
                     assertNotNull(payload);
                     assertNotNull(b2);
@@ -337,9 +337,9 @@ public class FlexTestUtil {
                           assertEquals(position, termPos.nextPosition());
                           assertEquals(postings.hasPayload(), termPos.isPayloadAvailable());
                           if (postings.hasPayload()) {
-                            assertEquals(postings.getPayloadLength(), termPos.getPayloadLength());
                             if (rand.nextInt(3) <= 1) {
                               BytesRef payload = postings.getPayload();
+                              assertEquals(payload.length, termPos.getPayloadLength());
                               byte[] b2 = termPos.getPayload(null, 0);
                               assertNotNull(payload);
                               assertNotNull(b2);
@@ -525,8 +525,8 @@ public class FlexTestUtil {
             assertEquals(pos1, pos2);
             assertEquals(postings.hasPayload(), termPositions.isPayloadAvailable());
             if (postings.hasPayload()) {
-              assertEquals(postings.getPayloadLength(), termPositions.getPayloadLength());
               BytesRef b1 = postings.getPayload();
+              assertEquals(b1.length, termPositions.getPayloadLength());
               byte[] b2 = termPositions.getPayload(null, 0);
               assertNotNull(b1);
               assertNotNull(b2);

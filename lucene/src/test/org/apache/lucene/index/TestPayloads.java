@@ -309,14 +309,6 @@ public class TestPayloads extends LuceneTestCase {
          * Test multiple call of getPayload()
          */
         tp.getPayload(null, 0);
-        try {
-            // it is forbidden to call getPayload() more than once
-            // without calling nextPosition()
-            tp.getPayload(null, 0);
-            fail("Expected exception not thrown");
-        } catch (Exception expected) {
-            // expected exception
-        }
         
         reader.close();
         
