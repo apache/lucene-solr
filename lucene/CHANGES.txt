@@ -163,6 +163,13 @@ New features
   applications that have many unique terms, since it reduces how often
   a new segment must be flushed given a fixed RAM buffer size.
 
+* LUCENE-1585: IndexWriter now accepts a PayloadProcessorProvider which can 
+  return a DirPayloadProcessor for a given Directory, which returns a 
+  PayloadProcessor for a given Term. The PayloadProcessor will be used to 
+  process the payloads of the segments as they are merged (e.g. if one wants to
+  rewrite payloads of external indexes as they are added, or of local ones). 
+  (Shai Erera, Michael Busch, Mike McCandless)
+  
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy

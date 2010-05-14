@@ -20,6 +20,8 @@ package org.apache.lucene.index.codecs;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
+import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
 import org.apache.lucene.util.Bits;
 import java.util.List;
 
@@ -38,5 +40,10 @@ public class MergeState {
 
   // Updated per field;
   public FieldInfo fieldInfo;
+  
+  // Used to process payloads
+  public boolean hasPayloadProcessorProvider;
+  public DirPayloadProcessor[] dirPayloadProcessor;
+  public PayloadProcessor[] currentPayloadProcessor;
+  
 }
-

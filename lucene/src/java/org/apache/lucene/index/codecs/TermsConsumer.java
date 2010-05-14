@@ -85,6 +85,14 @@ public abstract class TermsConsumer {
         postingsEnumIn = (MultiDocsAndPositionsEnum) termsEnum.docsAndPositions(mergeState.multiDeletedDocs, postingsEnumIn);
         if (postingsEnumIn != null) {
           postingsEnum.reset(postingsEnumIn);
+          // set PayloadProcessor
+          if (mergeState.hasPayloadProcessorProvider) {
+            for (int i = 0; i < mergeState.readerCount; i++) {
+              if (mergeState.dirPayloadProcessor[i] != null) {
+                mergeState.currentPayloadProcessor[i] = mergeState.dirPayloadProcessor[i].getProcessor(mergeState.fieldInfo.name, term);
+              }
+            }
+          }
           final PostingsConsumer postingsConsumer = startTerm(term);
           final int numDocs = postingsConsumer.merge(mergeState, postingsEnum);
           if (numDocs > 0) {

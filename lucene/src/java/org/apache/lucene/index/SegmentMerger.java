@@ -79,7 +79,10 @@ final class SegmentMerger {
   private Codec codec;
   private SegmentWriteState segmentWriteState;
 
-  SegmentMerger(Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, CodecProvider codecs) {
+  private PayloadProcessorProvider payloadProcessorProvider;
+  
+  SegmentMerger(Directory dir, int termIndexInterval, String name, MergePolicy.OneMerge merge, CodecProvider codecs, PayloadProcessorProvider payloadProcessorProvider) {
+    this.payloadProcessorProvider = payloadProcessorProvider;
     directory = dir;
     this.codecs = codecs;
     segment = name;
@@ -597,6 +600,9 @@ final class SegmentMerger {
     mergeState.delCounts = new int[mergeState.readerCount];
     mergeState.docMaps = new int[mergeState.readerCount][];
     mergeState.docBase = new int[mergeState.readerCount];
+    mergeState.hasPayloadProcessorProvider = payloadProcessorProvider != null;
+    mergeState.dirPayloadProcessor = new PayloadProcessorProvider.DirPayloadProcessor[mergeState.readerCount];
+    mergeState.currentPayloadProcessor = new PayloadProcessorProvider.PayloadProcessor[mergeState.readerCount];
 
     docBase = 0;
     int inputDocBase = 0;
@@ -628,6 +634,10 @@ final class SegmentMerger {
           }
         }
         assert delCount == mergeState.delCounts[i]: "reader delCount=" + mergeState.delCounts[i] + " vs recomputed delCount=" + delCount;
+      }
+      
+      if (payloadProcessorProvider != null) {
+        mergeState.dirPayloadProcessor[i] = payloadProcessorProvider.getDirProcessor(reader.directory());
       }
     }
     starts[mergeState.readerCount] = inputDocBase;
