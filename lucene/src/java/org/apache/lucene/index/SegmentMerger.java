@@ -26,6 +26,7 @@ import java.util.List;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.MergePolicy.MergeAbortedException;
+import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -67,12 +68,15 @@ final class SegmentMerger {
       when merging stored fields */
   private final static int MAX_RAW_MERGE_DOCS = 4192;
 
+  private final PayloadProcessorProvider pcp;
+  
   /** This ctor used only by test code.
    * 
    * @param dir The Directory to merge the other segments into
    * @param name The name of the new segment
    */
   SegmentMerger(Directory dir, String name) {
+  	pcp = null;
     directory = dir;
     segment = name;
     checkAbort = new CheckAbort(null, null) {
@@ -84,6 +88,7 @@ final class SegmentMerger {
   }
 
   SegmentMerger(IndexWriter writer, String name, MergePolicy.OneMerge merge) {
+  	pcp = writer.getPayloadProcessorProvider();
     directory = writer.getDirectory();
     segment = name;
     if (merge != null) {
@@ -135,6 +140,7 @@ final class SegmentMerger {
    * into the directory passed to the constructor.
    * @param mergeDocStores if false, we will not merge the
    * stored fields nor vectors files
+   * payloads before they are written
    * @return The number of documents that were merged
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
@@ -558,15 +564,15 @@ final class SegmentMerger {
 
     SegmentWriteState state = new SegmentWriteState(null, directory, segment, null, mergedDocs, 0, termIndexInterval);
 
-    final FormatPostingsFieldsConsumer consumer = new FormatPostingsFieldsWriter(state, fieldInfos);
+    final FormatPostingsFieldsConsumer fieldsConsumer = new FormatPostingsFieldsWriter(state, fieldInfos);
 
     try {
       queue = new SegmentMergeQueue(readers.size());
 
-      mergeTermInfos(consumer);
+      mergeTermInfos(fieldsConsumer);
 
     } finally {
-      consumer.finish();
+      fieldsConsumer.finish();
       if (queue != null) queue.close();
     }
   }
@@ -580,6 +586,9 @@ final class SegmentMerger {
       IndexReader reader = readers.get(i);
       TermEnum termEnum = reader.terms();
       SegmentMergeInfo smi = new SegmentMergeInfo(base, termEnum, reader);
+      if (pcp != null) {
+        smi.dirPayloadProcessor = pcp.getDirProcessor(reader.directory());
+      }
       int[] docMap  = smi.getDocMap();
       if (docMap != null) {
         if (docMaps == null) {
@@ -672,6 +681,10 @@ final class SegmentMerger {
       int[] docMap = smi.getDocMap();
       postings.seek(smi.termEnum);
 
+      PayloadProcessor payloadProcessor = null;
+      if (smi.dirPayloadProcessor != null) {
+        payloadProcessor = smi.dirPayloadProcessor.getProcessor(smi.term);
+      }
       while (postings.next()) {
         df++;
         int doc = postings.doc();
@@ -685,11 +698,15 @@ final class SegmentMerger {
         if (!omitTermFreqAndPositions) {
           for (int j = 0; j < freq; j++) {
             final int position = postings.nextPosition();
-            final int payloadLength = postings.getPayloadLength();
+            int payloadLength = postings.getPayloadLength();
             if (payloadLength > 0) {
               if (payloadBuffer == null || payloadBuffer.length < payloadLength)
                 payloadBuffer = new byte[payloadLength];
               postings.getPayload(payloadBuffer, 0);
+              if (payloadProcessor != null) {
+                payloadBuffer = payloadProcessor.processPayload(payloadBuffer, 0, payloadLength);
+                payloadLength = payloadProcessor.payloadLength();
+              }
             }
             posConsumer.addPosition(position, payloadBuffer, 0, payloadLength);
           }

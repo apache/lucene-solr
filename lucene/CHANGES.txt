@@ -292,6 +292,13 @@ New features
   can be used to prevent commits from ever getting deleted from the index.
   (Shai Erera)
   
+* LUCENE-1585: IndexWriter now accepts a PayloadProcessorProvider which can 
+  return a DirPayloadProcessor for a given Directory, which returns a 
+  PayloadProcessor for a given Term. The PayloadProcessor will be used to 
+  process the payloads of the segments as they are merged (e.g. if one wants to
+  rewrite payloads of external indexes as they are added, or of local ones). 
+  (Shai Erera, Michael Busch, Mike McCandless)
+
 Optimizations
 
 * LUCENE-2075: Terms dict cache is now shared across threads instead

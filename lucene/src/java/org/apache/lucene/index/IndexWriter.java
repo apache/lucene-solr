@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
@@ -323,6 +324,9 @@ public class IndexWriter implements Closeable {
   // The instance that was passed to the constructor. It is saved only in order
   // to allow users to query an IndexWriter settings.
   private final IndexWriterConfig config;
+
+  // The PayloadProcessorProvider to use when segments are merged
+  private PayloadProcessorProvider payloadProcessorProvider;
 
   /**
    * Expert: returns a readonly reader, covering all
@@ -4954,5 +4958,35 @@ public class IndexWriter implements Closeable {
     deleter.deletePendingFiles();
     deleter.revisitPolicy();
   }
+
+  /**
+   * Sets the {@link PayloadProcessorProvider} to use when merging payloads.
+   * Note that the given <code>pcp</code> will be invoked for every segment that
+   * is merged, not only external ones that are given through
+   * {@link IndexWriter#addIndexes} or {@link IndexWriter#addIndexesNoOptimize}.
+   * If you want only the payloads of the external segments to be processed, you
+   * can return <code>null</code> whenever a {@link DirPayloadProcessor} is
+   * requested for the {@link Directory} of the {@link IndexWriter}.
+   * <p>
+   * The default is <code>null</code> which means payloads are processed
+   * normally (copied) during segment merges. You can also unset it by passing
+   * <code>null</code>.
+   * <p>
+   * <b>NOTE:</b> the set {@link PayloadProcessorProvider} will be in effect
+   * immediately, potentially for already running merges too. If you want to be
+   * sure it is used for further operations only, such as {@link #addIndexes} or
+   * {@link #optimize}, you can call {@link #waitForMerges()} before.
+   */
+  public void setPayloadProcessorProvider(PayloadProcessorProvider pcp) {
+    payloadProcessorProvider = pcp;
+  }
   
+  /**
+   * Returns the {@link PayloadProcessorProvider} that is used during segment
+   * merges to process payloads.
+   */
+  public PayloadProcessorProvider getPayloadProcessorProvider() {
+    return payloadProcessorProvider;
+  }
+
 }
