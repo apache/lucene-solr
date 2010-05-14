@@ -158,6 +158,11 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     // seek to the next possible string;
     if (nextString()) {
       // reposition
+      
+      // FIXME: this is really bad to turn off
+      // but it cannot work correctly until terms are in utf8 order.
+      linear = false;
+      
       if (linear)
         setLinear(infinitePosition);
       return seekBytesRef;
