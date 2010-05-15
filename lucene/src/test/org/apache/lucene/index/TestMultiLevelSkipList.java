@@ -21,7 +21,8 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.LowerCaseTokenizer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
@@ -100,7 +101,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
   private static class PayloadAnalyzer extends Analyzer {
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new PayloadFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, reader));
+      return new PayloadFilter(new MockTokenizer(reader, MockAnalyzer.WHITESPACE, true));
     }
 
   }

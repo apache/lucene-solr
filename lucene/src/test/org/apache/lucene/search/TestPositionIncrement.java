@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -333,7 +334,7 @@ final class TestPayloadAnalyzer extends Analyzer {
 
   @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new LowerCaseTokenizer(LuceneTestCase.TEST_VERSION_CURRENT, reader);
+    TokenStream result = new MockTokenizer(reader, MockAnalyzer.WHITESPACE, true);
     return new PayloadFilter(result, fieldName);
   }
 }

@@ -32,7 +32,8 @@ import java.util.Collections;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
-import org.apache.lucene.analysis.LowerCaseTokenizer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.StopFilter;
@@ -137,10 +138,10 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
 
   public static final class QPTestAnalyzer extends Analyzer {
 
-    /** Filters LowerCaseTokenizer with StopFilter. */
+    /** Filters MockTokenizer with StopFilter. */
     @Override
     public final TokenStream tokenStream(String fieldName, Reader reader) {
-      return new QPTestFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, reader));
+      return new QPTestFilter(new MockTokenizer(reader, MockAnalyzer.SIMPLE, true));
     }
   }
 
@@ -218,7 +219,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
 
   public QueryParserWrapper getParser(Analyzer a) throws Exception {
     if (a == null)
-      a = new SimpleAnalyzer(TEST_VERSION_CURRENT);
+      a = new MockAnalyzer(MockAnalyzer.SIMPLE, true);
     QueryParserWrapper qp = new QueryParserWrapper("field", a);
     qp.setDefaultOperator(QueryParserWrapper.OR_OPERATOR);
     return qp;
@@ -303,7 +304,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
 
   public Query getQueryDOA(String query, Analyzer a) throws Exception {
     if (a == null)
-      a = new SimpleAnalyzer(TEST_VERSION_CURRENT);
+      a = new MockAnalyzer(MockAnalyzer.SIMPLE, true);
     QueryParserWrapper qp = new QueryParserWrapper("field", a);
     qp.setDefaultOperator(QueryParserWrapper.AND_OPERATOR);
     return qp.parse(query);
@@ -553,7 +554,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     assertEquals(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT, ((TermRangeQuery)getQuery("[ a TO z]", null)).getRewriteMethod());
 
     QueryParserWrapper qp = new QueryParserWrapper("field",
-        new SimpleAnalyzer(TEST_VERSION_CURRENT));
+        new MockAnalyzer(MockAnalyzer.SIMPLE, true));
     
     qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     assertEquals(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE,((TermRangeQuery)qp.parse("[ a TO z]")).getRewriteMethod());
@@ -684,7 +685,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     final String monthField = "month";
     final String hourField = "hour";
     QueryParserWrapper qp = new QueryParserWrapper("field",
-        new SimpleAnalyzer(TEST_VERSION_CURRENT));
+        new MockAnalyzer(MockAnalyzer.SIMPLE, true));
 
     // Don't set any date resolution and verify if DateField is used
     assertDateRangeQueryEquals(qp, defaultField, startDate, endDate,

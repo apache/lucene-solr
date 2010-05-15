@@ -17,7 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.KeywordAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.RAMDirectory;
@@ -36,7 +36,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestTermEnumSurrogate extends LuceneTestCase {
   public void testSeekSurrogate() throws Exception {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new KeywordAnalyzer(),
+    IndexWriter writer = new IndexWriter(dir, new MockAnalyzer(),
         IndexWriter.MaxFieldLength.UNLIMITED);
     Document d = new Document();
     Field f = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);

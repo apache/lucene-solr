@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -616,7 +617,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     /* build an index */
     RAMDirectory farsiIndex = new RAMDirectory();
     IndexWriter writer = new IndexWriter(farsiIndex, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(MockAnalyzer.SIMPLE, true)));
     Document doc = new Document();
     doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
         Field.Index.NOT_ANALYZED));
@@ -656,7 +657,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     /* build an index */
     RAMDirectory danishIndex = new RAMDirectory();
     IndexWriter writer = new IndexWriter(danishIndex, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(MockAnalyzer.SIMPLE, true)));
 
     // Danish collation orders the words below in the given order
     // (example taken from TestSort.testInternationalSort() ).

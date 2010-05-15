@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
 
-import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -172,7 +171,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
   private void doTestReopenWithCommit (Directory dir, boolean withReopen) throws IOException {
     IndexWriter iwriter = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new KeywordAnalyzer()).setOpenMode(
+        TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(
         OpenMode.CREATE).setMergeScheduler(new SerialMergeScheduler()));
     iwriter.commit();
     IndexReader reader = IndexReader.open(dir, false);

@@ -34,7 +34,8 @@ import java.util.Collections;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
-import org.apache.lucene.analysis.LowerCaseTokenizer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.StopFilter;
@@ -140,10 +141,10 @@ public class TestQPHelper extends LocalizedTestCase {
 
   public static final class QPTestAnalyzer extends Analyzer {
 
-    /** Filters LowerCaseTokenizer with StopFilter. */
+    /** Filters MockTokenizer with StopFilter. */
     @Override
     public final TokenStream tokenStream(String fieldName, Reader reader) {
-      return new QPTestFilter(new LowerCaseTokenizer(TEST_VERSION_CURRENT, reader));
+      return new QPTestFilter(new MockTokenizer(reader, MockAnalyzer.SIMPLE, true));
     }
   }
 
@@ -203,7 +204,7 @@ public class TestQPHelper extends LocalizedTestCase {
 
   public StandardQueryParser getParser(Analyzer a) throws Exception {
     if (a == null)
-      a = new SimpleAnalyzer(TEST_VERSION_CURRENT);
+      a = new MockAnalyzer(MockAnalyzer.SIMPLE, true);
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(a);
 
@@ -293,7 +294,7 @@ public class TestQPHelper extends LocalizedTestCase {
 
   public Query getQueryDOA(String query, Analyzer a) throws Exception {
     if (a == null)
-      a = new SimpleAnalyzer(TEST_VERSION_CURRENT);
+      a = new MockAnalyzer(MockAnalyzer.SIMPLE, true);
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(a);
     qp.setDefaultOperator(Operator.AND);

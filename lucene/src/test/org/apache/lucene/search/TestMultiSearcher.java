@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -222,7 +221,7 @@ public class TestMultiSearcher extends LuceneTestCase
         
         try {
           indexWriter = new IndexWriter(directory, new IndexWriterConfig(
-              TEST_VERSION_CURRENT, new KeywordAnalyzer()).setOpenMode(
+              TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(
                   create ? OpenMode.CREATE : OpenMode.APPEND));
             
             for (int i=0; i<nDocs; i++) {

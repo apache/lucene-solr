@@ -19,6 +19,7 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -57,7 +58,7 @@ public class TestBasics extends LuceneTestCase {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(MockAnalyzer.SIMPLE, true)));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();

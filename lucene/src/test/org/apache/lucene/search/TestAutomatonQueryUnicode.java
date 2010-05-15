@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.KeywordAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -42,7 +42,7 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new KeywordAnalyzer(), true,
+    IndexWriter writer = new IndexWriter(directory, new MockAnalyzer(), true,
         IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
     Field titleField = new Field("title", "some title", Field.Store.NO,

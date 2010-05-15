@@ -21,7 +21,7 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.Random;
 
-import org.apache.lucene.analysis.KeywordAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -43,7 +43,7 @@ public class TestWildcardRandom extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new KeywordAnalyzer(),
+    IndexWriter writer = new IndexWriter(dir, new MockAnalyzer(),
         IndexWriter.MaxFieldLength.UNLIMITED);
     
     Document doc = new Document();

@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-import org.apache.lucene.analysis.KeywordAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -39,7 +39,7 @@ public class TestFieldCacheTermsFilter extends LuceneTestCase {
   public void testMissingTerms() throws Exception {
     String fieldName = "field1";
     MockRAMDirectory rd = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(rd, new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer()));
+    IndexWriter w = new IndexWriter(rd, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
       int term = i * 10; //terms are units of 10;

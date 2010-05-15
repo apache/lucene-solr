@@ -52,7 +52,7 @@ public class PayloadHelper {
 
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new LowerCaseTokenizer(TEST_VERSION_CURRENT, reader);
+      TokenStream result = new MockTokenizer(reader, MockAnalyzer.SIMPLE, true);
       result = new PayloadFilter(result, fieldName);
       return result;
     }
