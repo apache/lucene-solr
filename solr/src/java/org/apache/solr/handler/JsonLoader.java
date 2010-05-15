@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
 
 
 /**
- * @since solr 1.4
+ * @since solr 4.0
  */
 class JsonLoader extends ContentStreamLoader {
   final static Logger log = LoggerFactory.getLogger( JsonLoader.class );
