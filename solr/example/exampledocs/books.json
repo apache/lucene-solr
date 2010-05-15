@@ -1,0 +1,34 @@
+{
+
+"add": {
+  "doc": {
+    "id" : "978-0641723445",
+    "cat" : ["book","hardcover"],
+    "title" : "The Lightning Thief",
+    "author" : "Rick Riordan",
+    "series_t" : "Percy Jackson and the Olympians",
+    "sequence_i" : 1,
+    "genre_s" : "fantasy",
+    "inStock" : true,
+    "price" : 12.50,
+    "pages_i" : 384
+  }
+}
+
+,
+"add": {
+  "doc": {
+    "id" : "978-1423103349",
+    "cat" : ["book","paperback"],
+    "title" : "The Sea of Monsters",
+    "author" : "Rick Riordan",
+    "series_t" : "Percy Jackson and the Olympians",
+    "sequence_i" : 2,
+    "genre_s" : "fantasy",
+    "inStock" : true,
+    "price" : 6.49,
+    "pages_i" : 304
+  }
+}
+
+}
