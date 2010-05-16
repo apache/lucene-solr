@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -44,7 +45,7 @@ public class TestTermVectors extends LuceneTestCase {
   protected void setUp() throws Exception {                  
     super.setUp();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(MockAnalyzer.SIMPLE, true)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true)));
     //writer.setUseCompoundFile(true);
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
@@ -96,7 +97,7 @@ public class TestTermVectors extends LuceneTestCase {
   public void testTermVectorsFieldOrder() throws IOException {
     Directory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(MockAnalyzer.SIMPLE, true)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true)));
     Document doc = new Document();
     doc.add(new Field("c", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("a", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
@@ -236,7 +237,7 @@ public class TestTermVectors extends LuceneTestCase {
     try {
       IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
           TEST_VERSION_CURRENT, 
-          new MockAnalyzer(MockAnalyzer.SIMPLE, true))
+          new MockAnalyzer(MockTokenizer.SIMPLE, true))
           .setOpenMode(OpenMode.CREATE));
       writer.addDocument(testDoc1);
       writer.addDocument(testDoc2);
@@ -352,7 +353,7 @@ public class TestTermVectors extends LuceneTestCase {
   // Test only a few docs having vectors
   public void testRareVectors() throws IOException {
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(MockAnalyzer.SIMPLE, true))
+        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true))
         .setOpenMode(OpenMode.CREATE));
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
@@ -386,7 +387,7 @@ public class TestTermVectors extends LuceneTestCase {
   public void testMixedVectrosVectors() throws IOException {
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
         TEST_VERSION_CURRENT, 
-        new MockAnalyzer(MockAnalyzer.SIMPLE, true)).setOpenMode(OpenMode.CREATE));
+        new MockAnalyzer(MockTokenizer.SIMPLE, true)).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
     doc.add(new Field("field", "one",
                       Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));

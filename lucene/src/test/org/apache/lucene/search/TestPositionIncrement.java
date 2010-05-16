@@ -334,7 +334,7 @@ final class TestPayloadAnalyzer extends Analyzer {
 
   @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new MockTokenizer(reader, MockAnalyzer.WHITESPACE, true);
+    TokenStream result = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
     return new PayloadFilter(result, fieldName);
   }
 }

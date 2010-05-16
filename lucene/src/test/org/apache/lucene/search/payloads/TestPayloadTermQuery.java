@@ -30,10 +30,8 @@ import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.search.spans.TermSpans;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.LowerCaseTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -69,7 +67,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
 
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new MockTokenizer(reader, MockAnalyzer.SIMPLE, true);
+      TokenStream result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
       result = new PayloadFilter(result, fieldName);
       return result;
     }

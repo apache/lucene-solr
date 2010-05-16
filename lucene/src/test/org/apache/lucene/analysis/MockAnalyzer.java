@@ -21,52 +21,72 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
-import org.apache.lucene.util.automaton.RegExp;
 
 /**
  * Analyzer for testing
  */
-public final class MockAnalyzer extends Analyzer {
-  /** Acts Similar to WhitespaceAnalyzer */
-  public static final CharacterRunAutomaton WHITESPACE = 
-    new CharacterRunAutomaton(new RegExp("[^ \t\r\n]+").toAutomaton());
-  /** Acts Similar to KeywordAnalyzer.
-   * TODO: Keyword returns an "empty" token for an empty reader... 
-   */
-  public static final CharacterRunAutomaton KEYWORD =
-    new CharacterRunAutomaton(new RegExp(".*").toAutomaton());
-  /** Acts like SimpleAnalyzer/LetterTokenizer. */
-  // the ugly regex below is Unicode 5.2 [:Letter:]
-  public static final CharacterRunAutomaton SIMPLE =
-    new CharacterRunAutomaton(new RegExp("[A-Za-zªµºÀ-ÖØ-öø-ˁˆ-ˑˠ-ˤˬˮͰ-ʹͶͷͺ-ͽΆΈ-ΊΌΎ-ΡΣ-ϵϷ-ҁҊ-ԥԱ-Ֆՙա-ևא-תװ-ײء-يٮٯٱ-ۓەۥۦۮۯۺ-ۼۿܐܒ-ܯݍ-ޥޱߊ-ߪߴߵߺࠀ-ࠕࠚࠤࠨऄ-हऽॐक़-ॡॱॲॹ-ॿঅ-ঌএঐও-নপ-রলশ-হঽৎড়ঢ়য়-ৡৰৱਅ-ਊਏਐਓ-ਨਪ-ਰਲਲ਼ਵਸ਼ਸਹਖ਼-ੜਫ਼ੲ-ੴઅ-ઍએ-ઑઓ-નપ-રલળવ-હઽૐૠૡଅ-ଌଏଐଓ-ନପ-ରଲଳଵ-ହଽଡ଼ଢ଼ୟ-ୡୱஃஅ-ஊஎ-ஐஒ-கஙசஜஞடணதந-பம-ஹௐఅ-ఌఎ-ఐఒ-నప-ళవ-హఽౘౙౠౡಅ-ಌಎ-ಐಒ-ನಪ-ಳವ-ಹಽೞೠೡഅ-ഌഎ-ഐഒ-നപ-ഹഽൠൡൺ-ൿඅ-ඖක-නඳ-රලව-ෆก-ะาำเ-ๆກຂຄງຈຊຍດ-ທນ-ຟມ-ຣລວສຫອ-ະາຳຽເ-ໄໆໜໝༀཀ-ཇཉ-ཬྈ-ྋက-ဪဿၐ-ၕၚ-ၝၡၥၦၮ-ၰၵ-ႁႎႠ-Ⴥა-ჺჼᄀ-ቈቊ-ቍቐ-ቖቘቚ-ቝበ-ኈኊ-ኍነ-ኰኲ-ኵኸ-ኾዀዂ-ዅወ-ዖዘ-ጐጒ-ጕጘ-ፚᎀ-ᎏᎠ-Ᏼᐁ-ᙬᙯ-ᙿᚁ-ᚚᚠ-ᛪᜀ-ᜌᜎ-ᜑᜠ-ᜱᝀ-ᝑᝠ-ᝬᝮ-ᝰក-ឳៗៜᠠ-ᡷᢀ-ᢨᢪᢰ-ᣵᤀ-ᤜᥐ-ᥭᥰ-ᥴᦀ-ᦫᧁ-ᧇᨀ-ᨖᨠ-ᩔᪧᬅ-ᬳᭅ-ᭋᮃ-ᮠᮮᮯᰀ-ᰣᱍ-ᱏᱚ-ᱽᳩ-ᳬᳮ-ᳱᴀ-ᶿḀ-ἕἘ-Ἕἠ-ὅὈ-Ὅὐ-ὗὙὛὝὟ-ώᾀ-ᾴᾶ-ᾼιῂ-ῄῆ-ῌῐ-ΐῖ-Ίῠ-Ῥῲ-ῴῶ-ῼⁱⁿₐ-ₔℂℇℊ-ℓℕℙ-ℝℤΩℨK-ℭℯ-ℹℼ-ℿⅅ-ⅉⅎↃↄⰀ-Ⱞⰰ-ⱞⱠ-ⳤⳫ-ⳮⴀ-ⴥⴰ-ⵥⵯⶀ-ⶖⶠ-ⶦⶨ-ⶮⶰ-ⶶⶸ-ⶾⷀ-ⷆⷈ-ⷎⷐ-ⷖⷘ-ⷞⸯ々〆〱-〵〻〼ぁ-ゖゝ-ゟァ-ヺー-ヿㄅ-ㄭㄱ-ㆎㆠ-ㆷㇰ-ㇿ㐀-䶵一-鿋ꀀ-ꒌꓐ-ꓽꔀ-ꘌꘐ-ꘟꘪꘫꙀ-ꙟꙢ-ꙮꙿ-ꚗꚠ-ꛥꜗ-ꜟꜢ-ꞈꞋꞌꟻ-ꠁꠃ-ꠅꠇ-ꠊꠌ-ꠢꡀ-ꡳꢂ-ꢳꣲ-ꣷꣻꤊ-ꤥꤰ-ꥆꥠ-ꥼꦄ-ꦲꧏꨀ-ꨨꩀ-ꩂꩄ-ꩋꩠ-ꩶꩺꪀ-ꪯꪱꪵꪶꪹ-ꪽꫀꫂꫛ-ꫝꯀ-ꯢ가-힣ힰ-ퟆퟋ-ퟻ豈-鶴侮-舘並-龎ﬀ-ﬆﬓ-ﬗיִײַ-ﬨשׁ-זּטּ-לּמּנּסּףּפּצּ-ﮱﯓ-ﴽﵐ-ﶏﶒ-ﷇﷰ-ﷻﹰ-ﹴﹶ-ﻼＡ-Ｚａ-ｚｦ-ﾾￂ-ￇￊ-ￏￒ-ￗￚ-ￜ𐀀-𐀋𐀍-𐀦𐀨-𐀺𐀼𐀽𐀿-𐁍𐁐-𐁝𐂀-𐃺𐊀-𐊜𐊠-𐋐𐌀-𐌞𐌰-𐍀𐍂-𐍉𐎀-𐎝𐎠-𐏃𐏈-𐏏𐐀-𐒝𐠀-𐠅𐠈𐠊-𐠵𐠷𐠸𐠼𐠿-𐡕𐤀-𐤕𐤠-𐤹𐨀𐨐-𐨓𐨕-𐨗𐨙-𐨳𐩠-𐩼𐬀-𐬵𐭀-𐭕𐭠-𐭲𐰀-𐱈𑂃-𑂯𒀀-𒍮𓀀-𓐮𝐀-𝑔𝑖-𝒜𝒞𝒟𝒢𝒥𝒦𝒩-𝒬𝒮-𝒹𝒻𝒽-𝓃𝓅-𝔅𝔇-𝔊𝔍-𝔔𝔖-𝔜𝔞-𝔹𝔻-𝔾𝕀-𝕄𝕆𝕊-𝕐𝕒-𝚥𝚨-𝛀𝛂-𝛚𝛜-𝛺𝛼-𝜔𝜖-𝜴𝜶-𝝎𝝐-𝝮𝝰-𝞈𝞊-𝞨𝞪-𝟂𝟄-𝟋𠀀-𪛖𪜀-𫜴丽-𪘀]+").toAutomaton());
-
+public final class MockAnalyzer extends Analyzer { 
   private final CharacterRunAutomaton runAutomaton;
   private final boolean lowerCase;
-  
-  public MockAnalyzer(CharacterRunAutomaton runAutomaton, boolean lowerCase) {
+  private final CharacterRunAutomaton filter;
+  private final boolean enablePositionIncrements;
+
+  /**
+   * Creates a new MockAnalyzer.
+   * 
+   * @param runAutomaton DFA describing how tokenization should happen (e.g. [a-zA-Z]+)
+   * @param lowerCase true if the tokenizer should lowercase terms
+   * @param filter DFA describing how terms should be filtered (set of stopwords, etc)
+   * @param enablePositionIncrements true if position increments should reflect filtered terms.
+   */
+  public MockAnalyzer(CharacterRunAutomaton runAutomaton, boolean lowerCase, CharacterRunAutomaton filter, boolean enablePositionIncrements) {
     this.runAutomaton = runAutomaton;
     this.lowerCase = lowerCase;
+    this.filter = filter;
+    this.enablePositionIncrements = enablePositionIncrements;
+  }
+
+  /**
+   * Creates a new MockAnalyzer, with no filtering.
+   * 
+   * @param runAutomaton DFA describing how tokenization should happen (e.g. [a-zA-Z]+)
+   * @param lowerCase true if the tokenizer should lowercase terms
+   */
+  public MockAnalyzer(CharacterRunAutomaton runAutomaton, boolean lowerCase) {
+    this(runAutomaton, lowerCase, MockTokenFilter.EMPTY_STOPSET, false);
   }
   
+  /** 
+   * Create a Whitespace-lowercasing analyzer with no stopwords removal 
+   */
   public MockAnalyzer() {
-    this(WHITESPACE, true);
+    this(MockTokenizer.WHITESPACE, true);
   }
 
   @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    return new MockTokenizer(reader, runAutomaton, lowerCase);
+    MockTokenizer tokenizer = new MockTokenizer(reader, runAutomaton, lowerCase);
+    return new MockTokenFilter(tokenizer, filter, enablePositionIncrements);
+  }
+
+  private class SavedStreams {
+    MockTokenizer tokenizer;
+    MockTokenFilter filter;
   }
 
   @Override
   public TokenStream reusableTokenStream(String fieldName, Reader reader)
       throws IOException {
-    MockTokenizer t = (MockTokenizer) getPreviousTokenStream();
-    if (t == null) {
-      t = new MockTokenizer(reader, runAutomaton, lowerCase);
-      setPreviousTokenStream(t);
+    SavedStreams saved = (SavedStreams) getPreviousTokenStream();
+    if (saved == null) {
+      saved = new SavedStreams();
+      saved.tokenizer = new MockTokenizer(reader, runAutomaton, lowerCase);
+      saved.filter = new MockTokenFilter(saved.tokenizer, filter, enablePositionIncrements);
+      setPreviousTokenStream(saved);
+      return saved.filter;
     } else {
-      t.reset(reader);
+      saved.tokenizer.reset(reader);
+      return saved.filter;
     }
-    return t;
   }
 }

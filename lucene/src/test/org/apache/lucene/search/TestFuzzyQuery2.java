@@ -22,6 +22,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -77,7 +78,7 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     int terms = (int) Math.pow(2, bits);
     
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new MockAnalyzer(MockAnalyzer.KEYWORD, false),
+    IndexWriter writer = new IndexWriter(dir, new MockAnalyzer(MockTokenizer.KEYWORD, false),
         IndexWriter.MaxFieldLength.UNLIMITED);
     
     Document doc = new Document();

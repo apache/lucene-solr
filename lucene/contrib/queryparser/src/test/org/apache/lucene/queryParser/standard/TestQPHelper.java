@@ -144,7 +144,7 @@ public class TestQPHelper extends LocalizedTestCase {
     /** Filters MockTokenizer with StopFilter. */
     @Override
     public final TokenStream tokenStream(String fieldName, Reader reader) {
-      return new QPTestFilter(new MockTokenizer(reader, MockAnalyzer.SIMPLE, true));
+      return new QPTestFilter(new MockTokenizer(reader, MockTokenizer.SIMPLE, true));
     }
   }
 
@@ -204,7 +204,7 @@ public class TestQPHelper extends LocalizedTestCase {
 
   public StandardQueryParser getParser(Analyzer a) throws Exception {
     if (a == null)
-      a = new MockAnalyzer(MockAnalyzer.SIMPLE, true);
+      a = new MockAnalyzer(MockTokenizer.SIMPLE, true);
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(a);
 
@@ -294,7 +294,7 @@ public class TestQPHelper extends LocalizedTestCase {
 
   public Query getQueryDOA(String query, Analyzer a) throws Exception {
     if (a == null)
-      a = new MockAnalyzer(MockAnalyzer.SIMPLE, true);
+      a = new MockAnalyzer(MockTokenizer.SIMPLE, true);
     StandardQueryParser qp = new StandardQueryParser();
     qp.setAnalyzer(a);
     qp.setDefaultOperator(Operator.AND);

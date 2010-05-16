@@ -20,7 +20,6 @@ package org.apache.lucene.queryParser.precedence;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -100,7 +99,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     /** Filters MockTokenizer with StopFilter. */
     @Override
     public final TokenStream tokenStream(String fieldName, Reader reader) {
-      return new QPTestFilter(new MockTokenizer(reader, MockAnalyzer.SIMPLE, true));
+      return new QPTestFilter(new MockTokenizer(reader, MockTokenizer.SIMPLE, true));
     }
   }
 
@@ -130,7 +129,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
 
   public PrecedenceQueryParser getParser(Analyzer a) throws Exception {
     if (a == null)
-      a = new MockAnalyzer(MockAnalyzer.SIMPLE, true);
+      a = new MockAnalyzer(MockTokenizer.SIMPLE, true);
     PrecedenceQueryParser qp = new PrecedenceQueryParser("field", a);
     qp.setDefaultOperator(PrecedenceQueryParser.OR_OPERATOR);
     return qp;
@@ -175,7 +174,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   public Query getQueryDOA(String query, Analyzer a)
     throws Exception {
     if (a == null)
-      a = new MockAnalyzer(MockAnalyzer.SIMPLE, true);
+      a = new MockAnalyzer(MockTokenizer.SIMPLE, true);
     PrecedenceQueryParser qp = new PrecedenceQueryParser("field", a);
     qp.setDefaultOperator(PrecedenceQueryParser.AND_OPERATOR);
     return qp.parse(query);

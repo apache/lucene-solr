@@ -20,7 +20,6 @@ import java.io.Reader;
 import java.util.Collection;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -59,7 +58,7 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   private class PayloadAnalyzer extends Analyzer {
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new MockTokenizer(reader, MockAnalyzer.SIMPLE, true);
+      TokenStream result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
       result = new PayloadFilter(result, fieldName);
       return result;
     }

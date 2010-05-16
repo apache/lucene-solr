@@ -1,5 +1,13 @@
 package org.apache.lucene.analysis;
 
+import java.util.Arrays;
+
+import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.BasicAutomata;
+import org.apache.lucene.util.automaton.BasicOperations;
+import org.apache.lucene.util.automaton.CharacterRunAutomaton;
+import org.apache.lucene.util.automaton.RegExp;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -19,6 +27,7 @@ package org.apache.lucene.analysis;
 
 public class TestMockAnalyzer extends BaseTokenStreamTestCase {
 
+  /** Test a configuration that behaves a lot like WhitespaceAnalyzer */
   public void testWhitespace() throws Exception {
     Analyzer a = new MockAnalyzer();
     assertAnalyzesTo(a, "A bc defg hiJklmn opqrstuv wxy z ",
@@ -29,8 +38,9 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
         new String[] { "break", "on", "whitespace" });
   }
   
+  /** Test a configuration that behaves a lot like SimpleAnalyzer */
   public void testSimple() throws Exception {
-    Analyzer a = new MockAnalyzer(MockAnalyzer.SIMPLE, true);
+    Analyzer a = new MockAnalyzer(MockTokenizer.SIMPLE, true);
     assertAnalyzesTo(a, "a-bc123 defg+hijklmn567opqrstuv78wxy_z ",
         new String[] { "a", "bc", "defg", "hijklmn", "opqrstuv", "wxy", "z" });
     assertAnalyzesToReuse(a, "aba4cadaba-Shazam",
@@ -39,13 +49,50 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
         new String[] { "break", "on", "letters" });
   }
   
+  /** Test a configuration that behaves a lot like KeywordAnalyzer */
   public void testKeyword() throws Exception {
-    Analyzer a = new MockAnalyzer(MockAnalyzer.KEYWORD, false);
+    Analyzer a = new MockAnalyzer(MockTokenizer.KEYWORD, false);
     assertAnalyzesTo(a, "a-bc123 defg+hijklmn567opqrstuv78wxy_z ",
         new String[] { "a-bc123 defg+hijklmn567opqrstuv78wxy_z " });
     assertAnalyzesToReuse(a, "aba4cadaba-Shazam",
         new String[] { "aba4cadaba-Shazam" });
     assertAnalyzesToReuse(a, "break+on/Nothing",
         new String[] { "break+on/Nothing" });
+  }
+  
+  /** Test a configuration that behaves a lot like StopAnalyzer */
+  public void testStop() throws Exception {
+    Analyzer a = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+    assertAnalyzesTo(a, "the quick brown a fox",
+        new String[] { "quick", "brown", "fox" },
+        new int[] { 2, 1, 2 });
+    
+    // disable positions
+    a = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, false);
+    assertAnalyzesTo(a, "the quick brown a fox",
+        new String[] { "quick", "brown", "fox" },
+        new int[] { 1, 1, 1 });
+  }
+  
+  /** Test a configuration that behaves a lot like KeepWordFilter */
+  public void testKeep() throws Exception {
+    CharacterRunAutomaton keepWords = 
+      new CharacterRunAutomaton(
+          BasicOperations.complement(
+              Automaton.union(
+                  Arrays.asList(BasicAutomata.makeString("foo"), BasicAutomata.makeString("bar")))));
+    Analyzer a = new MockAnalyzer(MockTokenizer.SIMPLE, true, keepWords, true);
+    assertAnalyzesTo(a, "quick foo brown bar bar fox foo",
+        new String[] { "foo", "bar", "bar", "foo" },
+        new int[] { 2, 2, 1, 2 });
+  }
+  
+  /** Test a configuration that behaves a lot like LengthFilter */
+  public void testLength() throws Exception {
+    CharacterRunAutomaton length5 = new CharacterRunAutomaton(new RegExp(".{5,}").toAutomaton());
+    Analyzer a = new MockAnalyzer(MockTokenizer.WHITESPACE, true, length5, true);
+    assertAnalyzesTo(a, "ok toolong fine notfine",
+        new String[] { "ok", "fine" },
+        new int[] { 1, 2 });
   }
 }

@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
@@ -35,7 +36,7 @@ import java.io.File;
 
 public class TestThreadedOptimize extends LuceneTestCase {
   
-  private static final Analyzer ANALYZER = new MockAnalyzer(MockAnalyzer.SIMPLE, true);
+  private static final Analyzer ANALYZER = new MockAnalyzer(MockTokenizer.SIMPLE, true);
 
   private final static int NUM_THREADS = 3;
   //private final static int NUM_THREADS = 5;

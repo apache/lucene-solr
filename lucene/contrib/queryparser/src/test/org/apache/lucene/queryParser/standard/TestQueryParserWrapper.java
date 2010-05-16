@@ -141,7 +141,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     /** Filters MockTokenizer with StopFilter. */
     @Override
     public final TokenStream tokenStream(String fieldName, Reader reader) {
-      return new QPTestFilter(new MockTokenizer(reader, MockAnalyzer.SIMPLE, true));
+      return new QPTestFilter(new MockTokenizer(reader, MockTokenizer.SIMPLE, true));
     }
   }
 
@@ -219,7 +219,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
 
   public QueryParserWrapper getParser(Analyzer a) throws Exception {
     if (a == null)
-      a = new MockAnalyzer(MockAnalyzer.SIMPLE, true);
+      a = new MockAnalyzer(MockTokenizer.SIMPLE, true);
     QueryParserWrapper qp = new QueryParserWrapper("field", a);
     qp.setDefaultOperator(QueryParserWrapper.OR_OPERATOR);
     return qp;
@@ -304,7 +304,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
 
   public Query getQueryDOA(String query, Analyzer a) throws Exception {
     if (a == null)
-      a = new MockAnalyzer(MockAnalyzer.SIMPLE, true);
+      a = new MockAnalyzer(MockTokenizer.SIMPLE, true);
     QueryParserWrapper qp = new QueryParserWrapper("field", a);
     qp.setDefaultOperator(QueryParserWrapper.AND_OPERATOR);
     return qp.parse(query);
@@ -554,7 +554,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     assertEquals(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT, ((TermRangeQuery)getQuery("[ a TO z]", null)).getRewriteMethod());
 
     QueryParserWrapper qp = new QueryParserWrapper("field",
-        new MockAnalyzer(MockAnalyzer.SIMPLE, true));
+        new MockAnalyzer(MockTokenizer.SIMPLE, true));
     
     qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
     assertEquals(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE,((TermRangeQuery)qp.parse("[ a TO z]")).getRewriteMethod());
@@ -685,7 +685,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     final String monthField = "month";
     final String hourField = "hour";
     QueryParserWrapper qp = new QueryParserWrapper("field",
-        new MockAnalyzer(MockAnalyzer.SIMPLE, true));
+        new MockAnalyzer(MockTokenizer.SIMPLE, true));
 
     // Don't set any date resolution and verify if DateField is used
     assertDateRangeQueryEquals(qp, defaultField, startDate, endDate,
