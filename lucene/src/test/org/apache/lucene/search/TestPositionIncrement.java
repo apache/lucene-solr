@@ -54,6 +54,9 @@ import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.automaton.BasicAutomata;
+import org.apache.lucene.util.automaton.CharacterRunAutomaton;
+import org.apache.lucene.util.automaton.RegExp;
 
 /**
  * Term position unit test.
@@ -196,7 +199,7 @@ public class TestPositionIncrement extends LuceneTestCase {
 
     // should not find "1 2" because there is a gap of 1 in the index
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field",
-                                     new StopWhitespaceAnalyzer(false));
+        new MockAnalyzer(MockTokenizer.WHITESPACE, false, stopStopList, false));
     q = (PhraseQuery) qp.parse("\"1 2\"");
     hits = searcher.search(q, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
@@ -220,26 +223,16 @@ public class TestPositionIncrement extends LuceneTestCase {
       
     // when both qp qnd stopFilter propagate increments, we should find the doc.
     qp = new QueryParser(TEST_VERSION_CURRENT, "field",
-                         new StopWhitespaceAnalyzer(true));
+                         new MockAnalyzer(MockTokenizer.WHITESPACE, false, stopStopList, true));
     qp.setEnablePositionIncrements(true);
     q = (PhraseQuery) qp.parse("\"1 stop 2\"");
     hits = searcher.search(q, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
   }
 
-  private static class StopWhitespaceAnalyzer extends Analyzer {
-    boolean enablePositionIncrements;
-    final MockAnalyzer a = new MockAnalyzer();
-    public StopWhitespaceAnalyzer(boolean enablePositionIncrements) {
-      this.enablePositionIncrements = enablePositionIncrements;
-    }
-    @Override
-    public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream ts = a.tokenStream(fieldName,reader);
-      return new StopFilter(enablePositionIncrements?TEST_VERSION_CURRENT:Version.LUCENE_24, ts,
-          new CharArraySet(TEST_VERSION_CURRENT, Collections.singleton("stop"), true));
-    }
-  }
+  // stoplist that accepts case-insensitive "stop"
+  private static final CharacterRunAutomaton stopStopList = 
+    new CharacterRunAutomaton(new RegExp("[sS][tT][oO][pP]").toAutomaton());
   
   public void testPayloadsPos0() throws Exception {
     Directory dir = new MockRAMDirectory();

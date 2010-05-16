@@ -22,6 +22,7 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -108,7 +109,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
+        return new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
       }
 
       @Override
@@ -141,7 +142,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new TokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader)) {
+        return new TokenFilter(new MockTokenizer(reader, MockTokenizer.WHITESPACE, false)) {
           boolean first=true;
           AttributeSource.State state;
 

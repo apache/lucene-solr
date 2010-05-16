@@ -32,6 +32,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.StopFilter;
@@ -65,6 +66,8 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LocalizedTestCase;
+import org.apache.lucene.util.automaton.CharacterRunAutomaton;
+import org.apache.lucene.util.automaton.RegExp;
 
 /**
  * Tests QueryParser.
@@ -957,7 +960,8 @@ public class TestQueryParser extends LocalizedTestCase {
   }
 
   public void testStopwords() throws Exception {
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "a", new StopAnalyzer(TEST_VERSION_CURRENT, StopFilter.makeStopSet(TEST_VERSION_CURRENT, "the", "foo")));
+    CharacterRunAutomaton stopSet = new CharacterRunAutomaton(new RegExp("the|foo").toAutomaton());
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "a", new MockAnalyzer(MockTokenizer.SIMPLE, true, stopSet, true));
     Query result = qp.parse("a:the OR a:foo");
     assertNotNull("result is null and it shouldn't be", result);
     assertTrue("result is not a BooleanQuery", result instanceof BooleanQuery);
@@ -973,7 +977,7 @@ public class TestQueryParser extends LocalizedTestCase {
   }
 
   public void testPositionIncrement() throws Exception {
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "a", new StopAnalyzer(TEST_VERSION_CURRENT, StopFilter.makeStopSet(TEST_VERSION_CURRENT, "the", "in", "are", "this")));
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "a", new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true));
     qp.setEnablePositionIncrements(true);
     String qtxt = "\"the words in poisitions pos02578 are stopped in this phrasequery\"";
     //               0         2                      5           7  8

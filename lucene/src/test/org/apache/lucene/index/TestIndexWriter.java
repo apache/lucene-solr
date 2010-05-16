@@ -38,6 +38,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenFilter;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -1868,7 +1870,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new CrashingFilter(fieldName, new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader));
+        return new CrashingFilter(fieldName, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
       }
     };
 
@@ -1951,7 +1953,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new CrashingFilter(fieldName, new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader));
+        return new CrashingFilter(fieldName, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
       }
     };
 
@@ -3098,7 +3100,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new CrashingFilter(fieldName, new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader));
+        return new CrashingFilter(fieldName, new MockTokenizer(reader, MockTokenizer.WHITESPACE, false));
       }
     };
 
@@ -4185,7 +4187,7 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testEndOffsetPositionStopFilter() throws Exception {
     MockRAMDirectory dir = new MockRAMDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new StopAnalyzer(TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)));
     Document doc = new Document();
     Field f = new Field("field", "abcd the", Field.Store.NO, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS);
     doc.add(f);
@@ -4486,23 +4488,23 @@ public class TestIndexWriter extends LuceneTestCase {
 
     Document doc = new Document();
     Field f = new Field("binary", b, 10, 17);
-    f.setTokenStream(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("doc1field1")));
+    f.setTokenStream(new MockTokenizer(new StringReader("doc1field1"), MockTokenizer.WHITESPACE, false));
     Field f2 = new Field("string", "value", Field.Store.YES,Field.Index.ANALYZED);
-    f2.setTokenStream(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("doc1field2")));
+    f2.setTokenStream(new MockTokenizer(new StringReader("doc1field2"), MockTokenizer.WHITESPACE, false));
     doc.add(f);
     doc.add(f2);
     w.addDocument(doc);
     
     // add 2 docs to test in-memory merging
-    f.setTokenStream(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("doc2field1")));
-    f2.setTokenStream(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("doc2field2")));
+    f.setTokenStream(new MockTokenizer(new StringReader("doc2field1"), MockTokenizer.WHITESPACE, false));
+    f2.setTokenStream(new MockTokenizer(new StringReader("doc2field2"), MockTokenizer.WHITESPACE, false));
     w.addDocument(doc);
   
     // force segment flush so we can force a segment merge with doc3 later.
     w.commit();
 
-    f.setTokenStream(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("doc3field1")));
-    f2.setTokenStream(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("doc3field2")));
+    f.setTokenStream(new MockTokenizer(new StringReader("doc3field1"), MockTokenizer.WHITESPACE, false));
+    f2.setTokenStream(new MockTokenizer(new StringReader("doc3field2"), MockTokenizer.WHITESPACE, false));
 
     w.addDocument(doc);
     w.commit();

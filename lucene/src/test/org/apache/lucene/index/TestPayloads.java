@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -407,7 +408,7 @@ public class TestPayloads extends LuceneTestCase {
         @Override
         public TokenStream tokenStream(String fieldName, Reader reader) {
             PayloadData payload =  fieldToData.get(fieldName);
-            TokenStream ts = new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
+            TokenStream ts = new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
             if (payload != null) {
                 if (payload.numFieldInstancesToSkip == 0) {
                     ts = new PayloadFilter(ts, payload.data, payload.offset, payload.length);

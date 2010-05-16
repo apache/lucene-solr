@@ -53,7 +53,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new WhitespaceTokenizer(TEST_VERSION_CURRENT, reader);
+        return new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
       }
 
       @Override
@@ -207,7 +207,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   
   public void testPhraseQueryWithStopAnalyzer() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    StopAnalyzer stopAnalyzer = new StopAnalyzer(Version.LUCENE_24);
+    Analyzer stopAnalyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, false);
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
         Version.LUCENE_24, stopAnalyzer));
     Document doc = new Document();
@@ -360,7 +360,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testToString() throws Exception {
-    StopAnalyzer analyzer = new StopAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer analyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", analyzer);
     qp.setEnablePositionIncrements(true);
     PhraseQuery q = (PhraseQuery)qp.parse("\"this hi this is a test is\"");

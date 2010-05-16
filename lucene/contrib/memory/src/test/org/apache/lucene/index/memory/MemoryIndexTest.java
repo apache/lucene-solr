@@ -28,6 +28,9 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.KeywordAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenFilter;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -143,9 +146,9 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
    */
   private Analyzer randomAnalyzer() {
     switch(random.nextInt(3)) {
-      case 0: return new SimpleAnalyzer(TEST_VERSION_CURRENT);
-      case 1: return new StopAnalyzer(TEST_VERSION_CURRENT);
-      default: return new StandardAnalyzer(TEST_VERSION_CURRENT);
+      case 0: return new MockAnalyzer(MockTokenizer.SIMPLE, true);
+      case 1: return new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
+      default: return new MockAnalyzer(MockTokenizer.WHITESPACE, false);
     }
   }
   
