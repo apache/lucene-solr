@@ -19,7 +19,8 @@ package org.apache.lucene.collation;
 
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -173,7 +174,7 @@ public abstract class CollationTestBase extends LuceneTestCase {
                                    String usResult) throws Exception {
     RAMDirectory indexStore = new RAMDirectory();
     IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
 
     // document data:
     // the tracer field is used to determine which document was hit

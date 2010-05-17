@@ -20,10 +20,9 @@ package org.apache.lucene.queryParser.standard;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
@@ -146,9 +145,8 @@ public class TestMultiAnalyzerWrapper extends LuceneTestCase {
 
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+      TokenStream result = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
       result = new TestFilter(result);
-      result = new LowerCaseFilter(TEST_VERSION_CURRENT, result);
       return result;
     }
   }
@@ -216,9 +214,8 @@ public class TestMultiAnalyzerWrapper extends LuceneTestCase {
 
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
+      TokenStream result = new MockTokenizer(reader, MockTokenizer.WHITESPACE, true);
       result = new TestPosIncrementFilter(result);
-      result = new LowerCaseFilter(TEST_VERSION_CURRENT, result);
       return result;
     }
   }

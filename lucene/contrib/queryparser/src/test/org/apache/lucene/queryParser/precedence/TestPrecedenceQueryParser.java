@@ -19,11 +19,10 @@ package org.apache.lucene.queryParser.precedence;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.DateTools;
@@ -36,6 +35,8 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.LocalizedTestCase;
+import org.apache.lucene.util.automaton.BasicAutomata;
+import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -44,7 +45,6 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
-import java.util.Collections;
 
 public class TestPrecedenceQueryParser extends LocalizedTestCase {
   
@@ -240,7 +240,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     assertQueryEquals("+title:(dog OR cat) -author:\"bob dole\"", null,
                       "+(title:dog title:cat) -author:\"bob dole\"");
     
-    PrecedenceQueryParser qp = new PrecedenceQueryParser("field", new StandardAnalyzer(TEST_VERSION_CURRENT));
+    PrecedenceQueryParser qp = new PrecedenceQueryParser("field", new MockAnalyzer());
     // make sure OR is the default:
     assertEquals(PrecedenceQueryParser.OR_OPERATOR, qp.getDefaultOperator());
     qp.setDefaultOperator(PrecedenceQueryParser.AND_OPERATOR);
@@ -254,7 +254,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   }
 
   public void testPunct() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new MockAnalyzer(MockTokenizer.WHITESPACE, false);
     assertQueryEquals("a&b", a, "a&b");
     assertQueryEquals("a&&b", a, "a&&b");
     assertQueryEquals(".NET", a, ".NET");
@@ -274,7 +274,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     assertQueryEquals("term 1.0 1 2", null, "term");
     assertQueryEquals("term term1 term2", null, "term term term");
 
-    Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new MockAnalyzer(MockTokenizer.WHITESPACE, true);
     assertQueryEquals("3", a, "3");
     assertQueryEquals("term 1.0 1 2", a, "term 1.0 1 2");
     assertQueryEquals("term term1 term2", a, "term term1 term2");
@@ -412,7 +412,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   }
 
   public void testEscaped() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new MockAnalyzer(MockTokenizer.WHITESPACE, false);
     
     /*assertQueryEquals("\\[brackets", a, "\\[brackets");
     assertQueryEquals("\\[brackets", null, "brackets");
@@ -517,7 +517,8 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
 
   public void testBoost()
     throws Exception {
-    StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(TEST_VERSION_CURRENT, Collections.singleton("on"));
+    CharacterRunAutomaton stopSet = new CharacterRunAutomaton(BasicAutomata.makeString("on"));
+    Analyzer oneStopAnalyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true, stopSet, true);
     PrecedenceQueryParser qp = new PrecedenceQueryParser("field", oneStopAnalyzer);
     Query q = qp.parse("on^1.0");
     assertNotNull(q);
@@ -530,7 +531,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     q = qp.parse("\"on\"^1.0");
     assertNotNull(q);
 
-    q = getParser(new StandardAnalyzer(TEST_VERSION_CURRENT)).parse("the^3");
+    q = getParser(new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)).parse("the^3");
     assertNotNull(q);
   }
 
@@ -544,7 +545,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
 
   public void testCustomQueryParserWildcard() {
     try {
-      new QPTestParser("contents", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("a?t");
+      new QPTestParser("contents", new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("a?t");
     } catch (ParseException expected) {
       return;
     }
@@ -553,7 +554,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
 
   public void testCustomQueryParserFuzzy() throws Exception {
     try {
-      new QPTestParser("contents", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("xunit~");
+      new QPTestParser("contents", new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("xunit~");
     } catch (ParseException expected) {
       return;
     }
@@ -563,7 +564,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   public void testBooleanQuery() throws Exception {
     BooleanQuery.setMaxClauseCount(2);
     try {
-      getParser(new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("one two three");
+      getParser(new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("one two three");
       fail("ParseException expected due to too many boolean clauses");
     } catch (ParseException expected) {
       // too many boolean clauses, so ParseException is expected
@@ -577,7 +578,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   // failing tests disabled since PrecedenceQueryParser
   // is currently unmaintained
   public void _testPrecedence() throws Exception {
-    PrecedenceQueryParser parser = getParser(new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    PrecedenceQueryParser parser = getParser(new MockAnalyzer(MockTokenizer.WHITESPACE, false));
     Query query1 = parser.parse("A AND B OR C AND D");
     Query query2 = parser.parse("(A AND B) OR (C AND D)");
     assertEquals(query1, query2);

@@ -21,7 +21,9 @@ import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenFilter;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -57,7 +59,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
         // create test index
         mDirectory = new RAMDirectory();
         final IndexWriter writer = new IndexWriter(mDirectory,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)));
         addDocument(writer, "1", "I think it should work.");
         addDocument(writer, "2", "I think it should work.");
         addDocument(writer, "3", "I think it should work.");

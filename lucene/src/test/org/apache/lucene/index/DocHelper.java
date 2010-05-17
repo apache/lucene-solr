@@ -23,7 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
@@ -219,7 +220,7 @@ class DocHelper {
    */ 
   public static SegmentInfo writeDoc(Directory dir, Document doc) throws IOException
   {
-    return writeDoc(dir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT), Similarity.getDefault(), doc);
+    return writeDoc(dir, new MockAnalyzer(MockTokenizer.WHITESPACE, false), Similarity.getDefault(), doc);
   }
 
   /**

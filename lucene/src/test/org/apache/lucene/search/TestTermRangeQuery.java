@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -25,6 +24,8 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -328,7 +329,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
   }
 
   private void initializeIndex(String[] values) throws IOException {
-    initializeIndex(values, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    initializeIndex(values, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
   }
 
   private void initializeIndex(String[] values, Analyzer analyzer) throws IOException {
@@ -341,7 +342,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
   }
 
   private void addDoc(String content) throws IOException {
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setOpenMode(OpenMode.APPEND));
     insertDoc(writer, content);
     writer.close();
   }

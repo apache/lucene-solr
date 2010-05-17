@@ -7,7 +7,8 @@ import java.io.InputStreamReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockTokenFilter;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
@@ -42,8 +43,8 @@ public class TestParser extends LuceneTestCase {
 
 	CoreParser builder;
 	static Directory dir;
-  // TODO: change to CURRENT and rewrite test (this needs to set QueryParser.enablePositionIncrements, too, for work with CURRENT):
-	Analyzer analyzer=new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_24); 
+  // TODO: rewrite test (this needs to set QueryParser.enablePositionIncrements, too, for work with CURRENT):
+	Analyzer analyzer=new MockAnalyzer(MockTokenizer.WHITESPACE, true, MockTokenFilter.ENGLISH_STOPSET, false); 
 	IndexReader reader;
 	private IndexSearcher searcher;
 

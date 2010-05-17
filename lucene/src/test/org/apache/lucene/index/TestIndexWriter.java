@@ -40,13 +40,9 @@ import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
@@ -1722,7 +1718,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
-        return new TokenFilter(new StandardTokenizer(TEST_VERSION_CURRENT, reader)) {
+        return new TokenFilter(new MockTokenizer(reader, MockTokenizer.SIMPLE, true)) {
           private int count = 0;
 
           @Override

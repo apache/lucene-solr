@@ -67,7 +67,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
         "X       4 5 6" };
 
     small = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(small, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter writer = new IndexWriter(small, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
 
     for (int i = 0; i < data.length; i++) {
       Document doc = new Document();

@@ -23,7 +23,8 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
@@ -37,7 +38,7 @@ public class TestHighFreqTerms extends LuceneTestCase {
   	super.setUp();
     dir= new MockRAMDirectory();
     writer = new IndexWriter(dir, new IndexWriterConfig(
-       TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+       TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false))
        .setMaxBufferedDocs(2));
     indexDocs(writer);
     reader = IndexReader.open(dir, true);

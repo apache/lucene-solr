@@ -23,8 +23,9 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
@@ -118,8 +119,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
   private static final int NUM_DOCS = 10;
 
   private IndexWriterConfig getConfig() {
-    return new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(
-        TEST_VERSION_CURRENT));
+    return new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
   }
 
   private void populateDirs(Directory[] dirs, boolean multipleCommits)

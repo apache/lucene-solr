@@ -19,7 +19,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.IndexSearcher;
@@ -41,7 +42,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     Directory dir = new MockRAMDirectory();
     IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDeleteTerms(1));
+        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDeleteTerms(1));
 
     for (int i = 0; i < keywords.length; i++) {
       Document doc = new Document();
@@ -76,7 +77,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     Directory dir = new MockRAMDirectory();
     IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(2)
+        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDocs(2)
         .setMaxBufferedDeleteTerms(2));
 
     int id = 0;
@@ -110,7 +111,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   public void testMaxBufferedDeletes() throws IOException {
     Directory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDeleteTerms(1));
+        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDeleteTerms(1));
     writer.deleteDocuments(new Term("foobar", "1"));
     writer.deleteDocuments(new Term("foobar", "1"));
     writer.deleteDocuments(new Term("foobar", "1"));
@@ -124,7 +125,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     for(int t=0;t<2;t++) {
       Directory dir = new MockRAMDirectory();
       IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(
-          TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(4)
+          TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDocs(4)
           .setMaxBufferedDeleteTerms(4));
 
       int id = 0;
@@ -165,7 +166,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   public void testBothDeletes() throws IOException {
     Directory dir = new MockRAMDirectory();
     IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(100)
+        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDocs(100)
         .setMaxBufferedDeleteTerms(100));
 
     int id = 0;
@@ -197,7 +198,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   public void testBatchDeletes() throws IOException {
     Directory dir = new MockRAMDirectory();
     IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(2)
+        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDocs(2)
         .setMaxBufferedDeleteTerms(2));
 
     int id = 0;
@@ -240,7 +241,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   public void testDeleteAll() throws IOException {
     Directory dir = new MockRAMDirectory();
     IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(2)
+        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDocs(2)
         .setMaxBufferedDeleteTerms(2));
 
     int id = 0;
@@ -286,7 +287,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   public void testDeleteAllRollback() throws IOException {
     Directory dir = new MockRAMDirectory();
     IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(2)
+        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDocs(2)
         .setMaxBufferedDeleteTerms(2));
     
     int id = 0;
@@ -323,7 +324,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   public void testDeleteAllNRT() throws IOException {
     Directory dir = new MockRAMDirectory();
     IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(2)
+        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDocs(2)
         .setMaxBufferedDeleteTerms(2));
     
     int id = 0;
@@ -412,7 +413,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     // First build up a starting index:
     MockRAMDirectory startDir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(startDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter writer = new IndexWriter(startDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     for (int i = 0; i < 157; i++) {
       Document d = new Document();
       d.add(new Field("id", Integer.toString(i), Field.Store.YES,
@@ -435,7 +436,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
       MockRAMDirectory dir = new MockRAMDirectory(startDir);
       dir.setPreventDoubleWrite(false);
       IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(
-          TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(1000)
+          TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDocs(1000)
           .setMaxBufferedDeleteTerms(1000));
 
       // For each disk size, first try to commit against
@@ -639,7 +640,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     MockRAMDirectory dir = new MockRAMDirectory();
     IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDeleteTerms(2));
+        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDeleteTerms(2));
     LogMergePolicy lmp = (LogMergePolicy) modifier.getConfig().getMergePolicy();
     lmp.setUseCompoundFile(true);
     lmp.setUseCompoundDocStore(true);
@@ -748,7 +749,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     String[] text = { "Amsterdam", "Venice" };
 
     MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter modifier = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     modifier.commit();
     dir.failOn(failure.reset());
 
@@ -775,7 +776,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
   public void testDeleteNullQuery() throws IOException {
     Directory dir = new MockRAMDirectory();
-    IndexWriter modifier = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter modifier = new IndexWriter(dir, new MockAnalyzer(MockTokenizer.WHITESPACE, false), IndexWriter.MaxFieldLength.UNLIMITED);
 
     for (int i = 0; i < 5; i++) {
       addDoc(modifier, i, 2*i);

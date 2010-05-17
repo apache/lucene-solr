@@ -19,7 +19,9 @@ package org.apache.lucene.search.spans;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenFilter;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -44,7 +46,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
         // create test index
         final IndexWriter writer = new IndexWriter(mDirectory,
             new IndexWriterConfig(TEST_VERSION_CURRENT, 
-                new StandardAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(
+                new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)).setOpenMode(
                     OpenMode.APPEND));
         addDocument(writer, "A", "Should we, could we, would we?");
         addDocument(writer, "B", "It should.  Should it?");

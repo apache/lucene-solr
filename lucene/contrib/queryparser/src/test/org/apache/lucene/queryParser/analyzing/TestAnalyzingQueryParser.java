@@ -21,11 +21,9 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.standard.StandardFilter;
-import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.util.LuceneTestCase;
@@ -107,7 +105,6 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
 
 }
 
-// TODO: Use a TestAnalyzer instead
 final class TestFoldingFilter extends TokenFilter {
   final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
@@ -122,7 +119,6 @@ final class TestFoldingFilter extends TokenFilter {
       for (int i = 0; i < term.length; i++)
         switch(term[i]) {
           case 'ü':
-          case 'Ü':
             term[i] = 'u'; 
             break;
           case 'ö': 
@@ -148,10 +144,8 @@ final class ASCIIAnalyzer extends org.apache.lucene.analysis.Analyzer {
 
   @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
-    TokenStream result = new StandardTokenizer(LuceneTestCase.TEST_VERSION_CURRENT, reader);
-    result = new StandardFilter(result);
+    TokenStream result = new MockTokenizer(reader, MockTokenizer.SIMPLE, true);
     result = new TestFoldingFilter(result);
-    result = new LowerCaseFilter(LuceneTestCase.TEST_VERSION_CURRENT, result);
     return result;
   }
 }

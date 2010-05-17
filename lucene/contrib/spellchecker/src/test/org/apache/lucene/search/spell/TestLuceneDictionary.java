@@ -20,6 +20,8 @@ package org.apache.lucene.search.spell;
 import java.io.IOException;
 import java.util.Iterator;
 
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -47,7 +49,7 @@ public class TestLuceneDictionary extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    IndexWriter writer = new IndexWriter(store, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter writer = new IndexWriter(store, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
 
     Document doc;
 

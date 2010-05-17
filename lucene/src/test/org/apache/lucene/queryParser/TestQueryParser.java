@@ -27,19 +27,14 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.Locale;
-import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
-import org.apache.lucene.analysis.StopAnalyzer;
-import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.DateField;
@@ -66,6 +61,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LocalizedTestCase;
+import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
 
@@ -256,8 +252,8 @@ public class TestQueryParser extends LocalizedTestCase {
   
   public void testSimple() throws Exception {
     assertQueryEquals("term term term", null, "term term term");
-    assertQueryEquals("türm term term", new WhitespaceAnalyzer(TEST_VERSION_CURRENT), "türm term term");
-    assertQueryEquals("ümlaut", new WhitespaceAnalyzer(TEST_VERSION_CURRENT), "ümlaut");
+    assertQueryEquals("türm term term", new MockAnalyzer(), "türm term term");
+    assertQueryEquals("ümlaut", new MockAnalyzer(), "ümlaut");
 
     assertQueryEquals("\"\"", new KeywordAnalyzer(), "");
     assertQueryEquals("foo:\"\"", new KeywordAnalyzer(), "foo:");
@@ -304,7 +300,7 @@ public class TestQueryParser extends LocalizedTestCase {
     assertQueryEquals("+title:(dog OR cat) -author:\"bob dole\"", null,
                       "+(title:dog title:cat) -author:\"bob dole\"");
     
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new StandardAnalyzer(TEST_VERSION_CURRENT));
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer());
     // make sure OR is the default:
     assertEquals(QueryParser.OR_OPERATOR, qp.getDefaultOperator());
     qp.setDefaultOperator(QueryParser.AND_OPERATOR);
@@ -314,7 +310,7 @@ public class TestQueryParser extends LocalizedTestCase {
   }
 
   public void testPunct() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new MockAnalyzer(MockTokenizer.WHITESPACE, false);
     assertQueryEquals("a&b", a, "a&b");
     assertQueryEquals("a&&b", a, "a&&b");
     assertQueryEquals(".NET", a, ".NET");
@@ -334,7 +330,7 @@ public class TestQueryParser extends LocalizedTestCase {
     assertQueryEquals("term 1.0 1 2", null, "term");
     assertQueryEquals("term term1 term2", null, "term term term");
 
-    Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new MockAnalyzer(MockTokenizer.WHITESPACE, true);
     assertQueryEquals("3", a, "3");
     assertQueryEquals("term 1.0 1 2", a, "term 1.0 1 2");
     assertQueryEquals("term term1 term2", a, "term term1 term2");
@@ -476,7 +472,7 @@ public class TestQueryParser extends LocalizedTestCase {
   public void testFarsiRangeCollating() throws Exception {
     
     RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter iw = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     Document doc = new Document();
     doc.add(new Field("content","\u0633\u0627\u0628", 
                       Field.Store.YES, Field.Index.NOT_ANALYZED));
@@ -484,7 +480,7 @@ public class TestQueryParser extends LocalizedTestCase {
     iw.close();
     IndexSearcher is = new IndexSearcher(ramDir, true);
 
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "content", new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "content", new MockAnalyzer(MockTokenizer.WHITESPACE, false));
 
     // Neither Java 1.4.2 nor 1.5.0 has Farsi Locale collation available in
     // RuleBasedCollator.  However, the Arabic Locale seems to order the Farsi
@@ -623,7 +619,7 @@ public class TestQueryParser extends LocalizedTestCase {
   }
 
   public void testEscaped() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new MockAnalyzer(MockTokenizer.WHITESPACE, false);
     
     /*assertQueryEquals("\\[brackets", a, "\\[brackets");
     assertQueryEquals("\\[brackets", null, "brackets");
@@ -717,7 +713,7 @@ public class TestQueryParser extends LocalizedTestCase {
   }
 
   public void testQueryStringEscaping() throws Exception {
-    Analyzer a = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new MockAnalyzer(MockTokenizer.WHITESPACE, false);
 
     assertEscapedQueryEquals("a-b:c", a, "a\\-b\\:c");
     assertEscapedQueryEquals("a+b:c", a, "a\\+b\\:c");
@@ -802,9 +798,8 @@ public class TestQueryParser extends LocalizedTestCase {
 
   public void testBoost()
     throws Exception {
-    Set<Object> stopWords = new HashSet<Object>(1);
-    stopWords.add("on");
-    StandardAnalyzer oneStopAnalyzer = new StandardAnalyzer(TEST_VERSION_CURRENT, stopWords);
+    CharacterRunAutomaton stopWords = new CharacterRunAutomaton(BasicAutomata.makeString("on"));
+    Analyzer oneStopAnalyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true, stopWords, true);
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", oneStopAnalyzer);
     Query q = qp.parse("on^1.0");
     assertNotNull(q);
@@ -817,7 +812,7 @@ public class TestQueryParser extends LocalizedTestCase {
     q = qp.parse("\"on\"^1.0");
     assertNotNull(q);
 
-    QueryParser qp2 = new QueryParser(TEST_VERSION_CURRENT, "field", new StandardAnalyzer(TEST_VERSION_CURRENT));
+    QueryParser qp2 = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true));
     q = qp2.parse("the^3");
     // "the" is a stop word so the result is an empty query:
     assertNotNull(q);
@@ -846,7 +841,7 @@ public class TestQueryParser extends LocalizedTestCase {
 
   public void testCustomQueryParserWildcard() {
     try {
-      new QPTestParser("contents", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("a?t");
+      new QPTestParser("contents", new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("a?t");
       fail("Wildcard queries should not be allowed");
     } catch (ParseException expected) {
       // expected exception
@@ -855,7 +850,7 @@ public class TestQueryParser extends LocalizedTestCase {
 
   public void testCustomQueryParserFuzzy() throws Exception {
     try {
-      new QPTestParser("contents", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).parse("xunit~");
+      new QPTestParser("contents", new MockAnalyzer(MockTokenizer.WHITESPACE, false)).parse("xunit~");
       fail("Fuzzy queries should not be allowed");
     } catch (ParseException expected) {
       // expected exception
@@ -865,7 +860,7 @@ public class TestQueryParser extends LocalizedTestCase {
   public void testBooleanQuery() throws Exception {
     BooleanQuery.setMaxClauseCount(2);
     try {
-      QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+      QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(MockTokenizer.WHITESPACE, false));
       qp.parse("one two three");
       fail("ParseException expected due to too many boolean clauses");
     } catch (ParseException expected) {
@@ -877,7 +872,7 @@ public class TestQueryParser extends LocalizedTestCase {
    * This test differs from TestPrecedenceQueryParser
    */
   public void testPrecedence() throws Exception {
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(MockTokenizer.WHITESPACE, false));
     Query query1 = qp.parse("A AND B OR C AND D");
     Query query2 = qp.parse("+A +B +C +D");
     assertEquals(query1, query2);
@@ -885,7 +880,7 @@ public class TestQueryParser extends LocalizedTestCase {
 
   public void testLocalDateFormat() throws IOException, ParseException {
     RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter iw = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
     addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
     iw.close();
@@ -901,7 +896,7 @@ public class TestQueryParser extends LocalizedTestCase {
 
   public void testStarParsing() throws Exception {
     final int[] type = new int[1];
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new WhitespaceAnalyzer(TEST_VERSION_CURRENT)) {
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(MockTokenizer.WHITESPACE, false)) {
       @Override
       protected Query getWildcardQuery(String field, String termStr) throws ParseException {
         // override error checking of superclass
@@ -994,7 +989,7 @@ public class TestQueryParser extends LocalizedTestCase {
   }
 
   public void testMatchAllDocs() throws Exception {
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(MockTokenizer.WHITESPACE, false));
     assertEquals(new MatchAllDocsQuery(), qp.parse("*:*"));
     assertEquals(new MatchAllDocsQuery(), qp.parse("(*:*)"));
     BooleanQuery bq = (BooleanQuery)qp.parse("+*:* -*:*");
@@ -1003,7 +998,7 @@ public class TestQueryParser extends LocalizedTestCase {
   }
   
   private void assertHits(int expected, String query, IndexSearcher is) throws ParseException, IOException {
-    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "date", new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "date", new MockAnalyzer(MockTokenizer.WHITESPACE, false));
     qp.setLocale(Locale.ENGLISH);
     Query q = qp.parse(query);
     ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
@@ -1031,7 +1026,7 @@ public class TestQueryParser extends LocalizedTestCase {
   // "match"
   public void testPositionIncrements() throws Exception {
     Directory dir = new MockRAMDirectory();
-    Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer a = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, a));
     Document doc = new Document();
     doc.add(new Field("f", "the wizard of ozzy", Field.Store.NO, Field.Index.ANALYZED));
