@@ -17,26 +17,14 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import java.io.Reader;
-import java.io.StringReader;
-
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.el.GreekStemFilter;
 
-/**
- * Simple tests to ensure the Greek lowercase filter factory is working.
- */
-public class TestGreekLowerCaseFilterFactory extends BaseTokenTestCase {
-  /**
-   * Ensure the filter actually lowercases (and a bit more) greek text.
-   */
-  public void testNormalization() throws Exception {
-    Reader reader = new StringReader("Μάϊος ΜΆΪΟΣ");
-    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
-    GreekLowerCaseFilterFactory factory = new GreekLowerCaseFilterFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
-    TokenStream stream = factory.create(tokenizer);
-    assertTokenStreamContents(stream, new String[] { "μαιοσ", "μαιοσ" });
+/** Factory for {@link GreekStemFilter} */
+public class GreekStemFilterFactory extends BaseTokenFilterFactory {
+
+  public TokenStream create(TokenStream input) {
+    return new GreekStemFilter(input);
   }
+
 }

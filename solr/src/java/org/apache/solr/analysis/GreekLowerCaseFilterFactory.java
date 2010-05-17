@@ -33,6 +33,7 @@ public class GreekLowerCaseFilterFactory extends BaseTokenFilterFactory
   @Override
   public void init(Map<String, String> args) {
     super.init(args);
+    assureMatchVersion();
     if (args.containsKey("charset"))
       throw new SolrException(ErrorCode.SERVER_ERROR,
           "The charset parameter is no longer supported.  "

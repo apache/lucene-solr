@@ -157,6 +157,9 @@ New features
  * LUCENE-2393: The HighFreqTerms tool (in misc) can now optionally
    also include the total termFreq.  (Tom Burton-West via Mike McCandless)
 
+ * LUCENE-2463: Add a Greek inflectional stemmer. GreekAnalyzer will now stem words
+   when Version is set to 3.1 or higher.  (Robert Muir)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 

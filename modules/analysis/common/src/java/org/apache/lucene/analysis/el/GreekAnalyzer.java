@@ -16,9 +16,7 @@ package org.apache.lucene.analysis.el;
  * limitations under the License.
  */
 
-
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
@@ -28,8 +26,8 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;  // for javadoc
 import org.apache.lucene.util.Version;
 
+import java.io.IOException;
 import java.io.Reader;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 
@@ -45,7 +43,7 @@ import java.util.Set;
  * <p>You must specify the required {@link Version}
  * compatibility when creating GreekAnalyzer:
  * <ul>
- *   <li> As of 3.1, StandardFilter is used by default.
+ *   <li> As of 3.1, StandardFilter and GreekStemmer are used by default.
  *   <li> As of 2.9, StopFilter preserves position
  *        increments
  * </ul>
@@ -53,73 +51,74 @@ import java.util.Set;
  * <p><b>NOTE</b>: This class uses the same {@link Version}
  * dependent settings as {@link StandardAnalyzer}.</p>
  */
-public final class GreekAnalyzer extends StopwordAnalyzerBase
-{
-    /**
-     * List of typical Greek stopwords.
-     */
-    private static final String[] GREEK_STOP_WORDS = {
-      "ο", "η", "το", "οι", "τα", "του", "τησ", "των", "τον", "την", "και", 
-      "κι", "κ", "ειμαι", "εισαι", "ειναι", "ειμαστε", "ειστε", "στο", "στον",
-      "στη", "στην", "μα", "αλλα", "απο", "για", "προσ", "με", "σε", "ωσ",
-      "παρα", "αντι", "κατα", "μετα", "θα", "να", "δε", "δεν", "μη", "μην",
-      "επι", "ενω", "εαν", "αν", "τοτε", "που", "πωσ", "ποιοσ", "ποια", "ποιο",
-      "ποιοι", "ποιεσ", "ποιων", "ποιουσ", "αυτοσ", "αυτη", "αυτο", "αυτοι",
-      "αυτων", "αυτουσ", "αυτεσ", "αυτα", "εκεινοσ", "εκεινη", "εκεινο",
-      "εκεινοι", "εκεινεσ", "εκεινα", "εκεινων", "εκεινουσ", "οπωσ", "ομωσ",
-      "ισωσ", "οσο", "οτι"
-    };
+public final class GreekAnalyzer extends StopwordAnalyzerBase {
+  /** File containing default Greek stopwords. */
+  public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
+  
+  /**
+   * Returns a set of default Greek-stopwords 
+   * @return a set of default Greek-stopwords 
+   */
+  public static final Set<?> getDefaultStopSet(){
+    return DefaultSetHolder.DEFAULT_SET;
+  }
+  
+  private static class DefaultSetHolder {
+    private static final Set<?> DEFAULT_SET;
     
-    /**
-     * Returns a set of default Greek-stopwords 
-     * @return a set of default Greek-stopwords 
-     */
-    public static final Set<?> getDefaultStopSet(){
-      return DefaultSetHolder.DEFAULT_SET;
+    static {
+      try {
+        DEFAULT_SET = loadStopwordSet(false, GreekAnalyzer.class, DEFAULT_STOPWORD_FILE, "#");
+      } catch (IOException ex) {
+        // default set should always be present as it is part of the
+        // distribution (JAR)
+        throw new RuntimeException("Unable to load default stopword set");
+      }
     }
-    
-    private static class DefaultSetHolder {
-      private static final Set<?> DEFAULT_SET = CharArraySet.unmodifiableSet(new CharArraySet(
-          Version.LUCENE_CURRENT, Arrays.asList(GREEK_STOP_WORDS), false));
-    }
-
-    public GreekAnalyzer(Version matchVersion) {
-      this(matchVersion, DefaultSetHolder.DEFAULT_SET);
-    }
-    
-    /**
-     * Builds an analyzer with the given stop words 
-     * 
-     * @param matchVersion
-     *          lucene compatibility version
-     * @param stopwords
-     *          a stopword set
-     */
-    public GreekAnalyzer(Version matchVersion, Set<?> stopwords) {
-      super(matchVersion, stopwords);
-    }
-
-    /**
-     * Builds an analyzer with the given stop words.
-     * @param stopwords Array of stopwords to use.
-     * @deprecated use {@link #GreekAnalyzer(Version, Set)} instead
-     */
-    @Deprecated
-    public GreekAnalyzer(Version matchVersion, String... stopwords)
-    {
-      this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
-    }
-
-    /**
-     * Builds an analyzer with the given stop words.
-     * @deprecated use {@link #GreekAnalyzer(Version, Set)} instead
-     */
-    @Deprecated
-    public GreekAnalyzer(Version matchVersion, Map<?,?> stopwords)
-    {
-      this(matchVersion, stopwords.keySet());
-    }
-
+  }
+  
+  /**
+   * Builds an analyzer with the default stop words.
+   * @param matchVersion Lucene compatibility version,
+   *   See <a href="#version">above</a>
+   */
+  public GreekAnalyzer(Version matchVersion) {
+    this(matchVersion, DefaultSetHolder.DEFAULT_SET);
+  }
+  
+  /**
+   * Builds an analyzer with the given stop words. 
+   * <p>
+   * <b>NOTE:</b> The stopwords set should be pre-processed with the logic of 
+   * {@link GreekLowerCaseFilter} for best results.
+   *  
+   * @param matchVersion Lucene compatibility version,
+   *   See <a href="#version">above</a>
+   * @param stopwords a stopword set
+   */
+  public GreekAnalyzer(Version matchVersion, Set<?> stopwords) {
+    super(matchVersion, stopwords);
+  }
+  
+  /**
+   * Builds an analyzer with the given stop words.
+   * @param stopwords Array of stopwords to use.
+   * @deprecated use {@link #GreekAnalyzer(Version, Set)} instead
+   */
+  @Deprecated
+  public GreekAnalyzer(Version matchVersion, String... stopwords) {
+    this(matchVersion, StopFilter.makeStopSet(matchVersion, stopwords));
+  }
+  
+  /**
+   * Builds an analyzer with the given stop words.
+   * @deprecated use {@link #GreekAnalyzer(Version, Set)} instead
+   */
+  @Deprecated
+  public GreekAnalyzer(Version matchVersion, Map<?,?> stopwords) {
+    this(matchVersion, stopwords.keySet());
+  }
+  
   /**
    * Creates
    * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
@@ -127,16 +126,19 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase
    * 
    * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
    *         built from a {@link StandardTokenizer} filtered with
-   *         {@link GreekLowerCaseFilter}, {@link StandardFilter} and
-   *         {@link StopFilter}
+   *         {@link GreekLowerCaseFilter}, {@link StandardFilter},
+   *         {@link StopFilter}, and {@link GreekStemFilter}
    */
-    @Override
-    protected TokenStreamComponents createComponents(String fieldName,
-        Reader reader) {
-      final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-      TokenStream result = new GreekLowerCaseFilter(source);
-      if (matchVersion.onOrAfter(Version.LUCENE_31))
-        result = new StandardFilter(result);
-      return new TokenStreamComponents(source, new StopFilter(matchVersion, result, stopwords));
-    }
+  @Override
+  protected TokenStreamComponents createComponents(String fieldName,
+      Reader reader) {
+    final Tokenizer source = new StandardTokenizer(matchVersion, reader);
+    TokenStream result = new GreekLowerCaseFilter(matchVersion, source);
+    if (matchVersion.onOrAfter(Version.LUCENE_31))
+      result = new StandardFilter(result);
+    result = new StopFilter(matchVersion, result, stopwords);
+    if (matchVersion.onOrAfter(Version.LUCENE_31))
+      result = new GreekStemFilter(result);
+    return new TokenStreamComponents(source, result);
+  }
 }

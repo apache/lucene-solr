@@ -1,5 +1,13 @@
 package org.apache.solr.analysis;
 
+import java.io.Reader;
+import java.io.StringReader;
+
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.el.GreekLowerCaseFilter;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,26 +25,16 @@ package org.apache.solr.analysis;
  * limitations under the License.
  */
 
-import java.io.Reader;
-import java.io.StringReader;
-
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
-
 /**
- * Simple tests to ensure the Greek lowercase filter factory is working.
+ * Simple tests to ensure the Greek stem filter factory is working.
  */
-public class TestGreekLowerCaseFilterFactory extends BaseTokenTestCase {
-  /**
-   * Ensure the filter actually lowercases (and a bit more) greek text.
-   */
-  public void testNormalization() throws Exception {
-    Reader reader = new StringReader("Μάϊος ΜΆΪΟΣ");
+public class TestGreekStemFilterFactory extends BaseTokenTestCase {
+  public void testStemming() throws Exception {
+    Reader reader = new StringReader("άνθρωπος");
     Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
-    GreekLowerCaseFilterFactory factory = new GreekLowerCaseFilterFactory();
-    factory.init(DEFAULT_VERSION_PARAM);
-    TokenStream stream = factory.create(tokenizer);
-    assertTokenStreamContents(stream, new String[] { "μαιοσ", "μαιοσ" });
+    TokenStream normalized = new GreekLowerCaseFilter(DEFAULT_VERSION, tokenizer);
+    GreekStemFilterFactory factory = new GreekStemFilterFactory();
+    TokenStream stream = factory.create(normalized);
+    assertTokenStreamContents(stream, new String[] { "ανθρωπ" });
   }
 }
