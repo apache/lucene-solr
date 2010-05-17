@@ -26,42 +26,67 @@ import org.apache.lucene.util.Version;
  */
 public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
 
+  /**
+   * Test the analysis of various greek strings.
+   *
+   * @throws Exception in case an error occurs
+   */
+  public void testAnalyzer() throws Exception {
+    Analyzer a = new GreekAnalyzer(TEST_VERSION_CURRENT);
+    // Verify the correct analysis of capitals and small accented letters, and
+    // stemming
+    assertAnalyzesTo(a, "Μία εξαιρετικά καλή και πλούσια σειρά χαρακτήρων της Ελληνικής γλώσσας",
+        new String[] { "μια", "εξαιρετ", "καλ", "πλουσ", "σειρ", "χαρακτηρ",
+        "ελληνικ", "γλωσσ" });
+    // Verify the correct analysis of small letters with diaeresis and the elimination
+    // of punctuation marks
+    assertAnalyzesTo(a, "Προϊόντα (και)     [πολλαπλές] - ΑΝΑΓΚΕΣ",
+        new String[] { "προιοντ", "πολλαπλ", "αναγκ" });
+    // Verify the correct analysis of capital accented letters and capital letters with diaeresis,
+    // as well as the elimination of stop words
+    assertAnalyzesTo(a, "ΠΡΟΫΠΟΘΕΣΕΙΣ  Άψογος, ο μεστός και οι άλλοι",
+        new String[] { "προυποθεσ", "αψογ", "μεστ", "αλλ" });
+  }
+  
 	/**
 	 * Test the analysis of various greek strings.
 	 *
 	 * @throws Exception in case an error occurs
+	 * @deprecated Remove this test when support for 3.0 is no longer needed
 	 */
-	public void testAnalyzer() throws Exception {
-		Analyzer a = new GreekAnalyzer(TEST_VERSION_CURRENT);
+  @Deprecated
+	public void testAnalyzerBWCompat() throws Exception {
+		Analyzer a = new GreekAnalyzer(Version.LUCENE_30);
 		// Verify the correct analysis of capitals and small accented letters
-		assertAnalyzesTo(a, "\u039c\u03af\u03b1 \u03b5\u03be\u03b1\u03b9\u03c1\u03b5\u03c4\u03b9\u03ba\u03ac \u03ba\u03b1\u03bb\u03ae \u03ba\u03b1\u03b9 \u03c0\u03bb\u03bf\u03cd\u03c3\u03b9\u03b1 \u03c3\u03b5\u03b9\u03c1\u03ac \u03c7\u03b1\u03c1\u03b1\u03ba\u03c4\u03ae\u03c1\u03c9\u03bd \u03c4\u03b7\u03c2 \u0395\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03ae\u03c2 \u03b3\u03bb\u03ce\u03c3\u03c3\u03b1\u03c2",
-				new String[] { "\u03bc\u03b9\u03b1", "\u03b5\u03be\u03b1\u03b9\u03c1\u03b5\u03c4\u03b9\u03ba\u03b1", "\u03ba\u03b1\u03bb\u03b7", "\u03c0\u03bb\u03bf\u03c5\u03c3\u03b9\u03b1", "\u03c3\u03b5\u03b9\u03c1\u03b1", "\u03c7\u03b1\u03c1\u03b1\u03ba\u03c4\u03b7\u03c1\u03c9\u03bd",
-				"\u03b5\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03b7\u03c3", "\u03b3\u03bb\u03c9\u03c3\u03c3\u03b1\u03c3" });
+		assertAnalyzesTo(a, "Μία εξαιρετικά καλή και πλούσια σειρά χαρακτήρων της Ελληνικής γλώσσας",
+				new String[] { "μια", "εξαιρετικα", "καλη", "πλουσια", "σειρα", "χαρακτηρων",
+				"ελληνικησ", "γλωσσασ" });
 		// Verify the correct analysis of small letters with diaeresis and the elimination
 		// of punctuation marks
-		assertAnalyzesTo(a, "\u03a0\u03c1\u03bf\u03ca\u03cc\u03bd\u03c4\u03b1 (\u03ba\u03b1\u03b9)     [\u03c0\u03bf\u03bb\u03bb\u03b1\u03c0\u03bb\u03ad\u03c2]	-	\u0391\u039d\u0391\u0393\u039a\u0395\u03a3",
-				new String[] { "\u03c0\u03c1\u03bf\u03b9\u03bf\u03bd\u03c4\u03b1", "\u03c0\u03bf\u03bb\u03bb\u03b1\u03c0\u03bb\u03b5\u03c3", "\u03b1\u03bd\u03b1\u03b3\u03ba\u03b5\u03c3" });
-		// Verify the correct analysis of capital accented letters and capitalletters with diaeresis,
+		assertAnalyzesTo(a, "Προϊόντα (και)     [πολλαπλές] - ΑΝΑΓΚΕΣ",
+				new String[] { "προιοντα", "πολλαπλεσ", "αναγκεσ" });
+		// Verify the correct analysis of capital accented letters and capital letters with diaeresis,
 		// as well as the elimination of stop words
-		assertAnalyzesTo(a, "\u03a0\u03a1\u039f\u03ab\u03a0\u039f\u0398\u0395\u03a3\u0395\u0399\u03a3  \u0386\u03c8\u03bf\u03b3\u03bf\u03c2, \u03bf \u03bc\u03b5\u03c3\u03c4\u03cc\u03c2 \u03ba\u03b1\u03b9 \u03bf\u03b9 \u03ac\u03bb\u03bb\u03bf\u03b9",
-				new String[] { "\u03c0\u03c1\u03bf\u03c5\u03c0\u03bf\u03b8\u03b5\u03c3\u03b5\u03b9\u03c3", "\u03b1\u03c8\u03bf\u03b3\u03bf\u03c3", "\u03bc\u03b5\u03c3\u03c4\u03bf\u03c3", "\u03b1\u03bb\u03bb\u03bf\u03b9" });
+		assertAnalyzesTo(a, "ΠΡΟΫΠΟΘΕΣΕΙΣ  Άψογος, ο μεστός και οι άλλοι",
+				new String[] { "προυποθεσεισ", "αψογοσ", "μεστοσ", "αλλοι" });
 	}
 	
-	public void testReusableTokenStream() throws Exception {
-	    Analyzer a = new GreekAnalyzer(TEST_VERSION_CURRENT);
-	    // Verify the correct analysis of capitals and small accented letters
-	    assertAnalyzesToReuse(a, "\u039c\u03af\u03b1 \u03b5\u03be\u03b1\u03b9\u03c1\u03b5\u03c4\u03b9\u03ba\u03ac \u03ba\u03b1\u03bb\u03ae \u03ba\u03b1\u03b9 \u03c0\u03bb\u03bf\u03cd\u03c3\u03b9\u03b1 \u03c3\u03b5\u03b9\u03c1\u03ac \u03c7\u03b1\u03c1\u03b1\u03ba\u03c4\u03ae\u03c1\u03c9\u03bd \u03c4\u03b7\u03c2 \u0395\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03ae\u03c2 \u03b3\u03bb\u03ce\u03c3\u03c3\u03b1\u03c2",
-	            new String[] { "\u03bc\u03b9\u03b1", "\u03b5\u03be\u03b1\u03b9\u03c1\u03b5\u03c4\u03b9\u03ba\u03b1", "\u03ba\u03b1\u03bb\u03b7", "\u03c0\u03bb\u03bf\u03c5\u03c3\u03b9\u03b1", "\u03c3\u03b5\u03b9\u03c1\u03b1", "\u03c7\u03b1\u03c1\u03b1\u03ba\u03c4\u03b7\u03c1\u03c9\u03bd",
-	            "\u03b5\u03bb\u03bb\u03b7\u03bd\u03b9\u03ba\u03b7\u03c3", "\u03b3\u03bb\u03c9\u03c3\u03c3\u03b1\u03c3" });
-	    // Verify the correct analysis of small letters with diaeresis and the elimination
-	    // of punctuation marks
-	    assertAnalyzesToReuse(a, "\u03a0\u03c1\u03bf\u03ca\u03cc\u03bd\u03c4\u03b1 (\u03ba\u03b1\u03b9)     [\u03c0\u03bf\u03bb\u03bb\u03b1\u03c0\u03bb\u03ad\u03c2] -   \u0391\u039d\u0391\u0393\u039a\u0395\u03a3",
-	            new String[] { "\u03c0\u03c1\u03bf\u03b9\u03bf\u03bd\u03c4\u03b1", "\u03c0\u03bf\u03bb\u03bb\u03b1\u03c0\u03bb\u03b5\u03c3", "\u03b1\u03bd\u03b1\u03b3\u03ba\u03b5\u03c3" });
-	    // Verify the correct analysis of capital accented letters and capitalletters with diaeresis,
-	    // as well as the elimination of stop words
-	    assertAnalyzesToReuse(a, "\u03a0\u03a1\u039f\u03ab\u03a0\u039f\u0398\u0395\u03a3\u0395\u0399\u03a3  \u0386\u03c8\u03bf\u03b3\u03bf\u03c2, \u03bf \u03bc\u03b5\u03c3\u03c4\u03cc\u03c2 \u03ba\u03b1\u03b9 \u03bf\u03b9 \u03ac\u03bb\u03bb\u03bf\u03b9",
-	            new String[] { "\u03c0\u03c1\u03bf\u03c5\u03c0\u03bf\u03b8\u03b5\u03c3\u03b5\u03b9\u03c3", "\u03b1\u03c8\u03bf\u03b3\u03bf\u03c3", "\u03bc\u03b5\u03c3\u03c4\u03bf\u03c3", "\u03b1\u03bb\u03bb\u03bf\u03b9" });
-	}
+  public void testReusableTokenStream() throws Exception {
+    Analyzer a = new GreekAnalyzer(TEST_VERSION_CURRENT);
+    // Verify the correct analysis of capitals and small accented letters, and
+    // stemming
+    assertAnalyzesToReuse(a, "Μία εξαιρετικά καλή και πλούσια σειρά χαρακτήρων της Ελληνικής γλώσσας",
+        new String[] { "μια", "εξαιρετ", "καλ", "πλουσ", "σειρ", "χαρακτηρ",
+        "ελληνικ", "γλωσσ" });
+    // Verify the correct analysis of small letters with diaeresis and the elimination
+    // of punctuation marks
+    assertAnalyzesToReuse(a, "Προϊόντα (και)     [πολλαπλές] - ΑΝΑΓΚΕΣ",
+        new String[] { "προιοντ", "πολλαπλ", "αναγκ" });
+    // Verify the correct analysis of capital accented letters and capital letters with diaeresis,
+    // as well as the elimination of stop words
+    assertAnalyzesToReuse(a, "ΠΡΟΫΠΟΘΕΣΕΙΣ  Άψογος, ο μεστός και οι άλλοι",
+        new String[] { "προυποθεσ", "αψογ", "μεστ", "αλλ" });
+  }
 	
 	/**
 	 * Greek Analyzer didn't call standardFilter, so no normalization of acronyms.

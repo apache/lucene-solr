@@ -152,6 +152,9 @@ New features
 
  * LUCENE-2437: Add an Analyzer for Indonesian.  (Robert Muir)
 
+ * LUCENE-2463: Add a Greek inflectional stemmer. GreekAnalyzer will now stem words
+   when Version is set to 3.1 or higher.  (Robert Muir)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
