@@ -17,4 +17,5 @@
 
 
 WARNING: if you change StandardTokenizerImpl*.jflex and need to regenerate
-      the tokenizer, only use the trunk version of JFlex 1.5 at the moment!
+      the tokenizer, only use the trunk version of JFlex 1.5 (with a minimum
+      SVN revision 591) at the moment!
