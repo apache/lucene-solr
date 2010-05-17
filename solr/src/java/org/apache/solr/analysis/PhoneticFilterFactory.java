@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.codec.Encoder;
@@ -28,6 +29,7 @@ import org.apache.commons.codec.language.RefinedSoundex;
 import org.apache.commons.codec.language.Soundex;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.StrUtils;
 
 /**
  * Create tokens based on phonetic encoders
@@ -50,10 +52,10 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
   private static final Map<String, Class<? extends Encoder>> registry;
   static {
     registry = new HashMap<String, Class<? extends Encoder>>();
-    registry.put( "DoubleMetaphone".toUpperCase(), DoubleMetaphone.class );
-    registry.put( "Metaphone".toUpperCase(),       Metaphone.class );
-    registry.put( "Soundex".toUpperCase(),         Soundex.class );
-    registry.put( "RefinedSoundex".toUpperCase(),  RefinedSoundex.class );
+    registry.put( "DoubleMetaphone".toUpperCase(Locale.ENGLISH), DoubleMetaphone.class );
+    registry.put( "Metaphone".toUpperCase(Locale.ENGLISH),       Metaphone.class );
+    registry.put( "Soundex".toUpperCase(Locale.ENGLISH),         Soundex.class );
+    registry.put( "RefinedSoundex".toUpperCase(Locale.ENGLISH),  RefinedSoundex.class );
   }
   
   protected boolean inject = true;
@@ -71,7 +73,7 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Missing required parameter: "+ENCODER
           +" ["+registry.keySet()+"]" );
     }
-    Class<? extends Encoder> clazz = registry.get(name.toUpperCase());
+    Class<? extends Encoder> clazz = registry.get(name.toUpperCase(Locale.ENGLISH));
     if( clazz == null ) {
       throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, "Unknown encoder: "+name +" ["+registry.keySet()+"]" );
     }

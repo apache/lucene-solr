@@ -17,6 +17,7 @@
 package org.apache.solr.handler.dataimport;
 
 import com.sun.mail.imap.IMAPMessage;
+
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.utils.ParseUtils;
 import org.slf4j.Logger;
@@ -161,7 +162,7 @@ public class MailEntityProcessor extends EntityProcessorBase {
       if (!processAttachment || (disp != null && disp.equalsIgnoreCase(Part.ATTACHMENT)))        return;
       InputStream is = part.getInputStream();
       String fileName = part.getFileName();
-      String content = ParseUtils.getStringContent(is, TikaConfig.getDefaultConfig(), ctype.getBaseType().toLowerCase());
+      String content = ParseUtils.getStringContent(is, TikaConfig.getDefaultConfig(), ctype.getBaseType().toLowerCase(Locale.ENGLISH));
       if (disp != null && disp.equalsIgnoreCase(Part.ATTACHMENT)) {
         if (row.get(ATTACHMENT) == null)
           row.put(ATTACHMENT, new ArrayList<String>());

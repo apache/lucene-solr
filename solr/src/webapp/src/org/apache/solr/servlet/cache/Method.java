@@ -17,12 +17,14 @@
 
 package org.apache.solr.servlet.cache;
 
+import java.util.Locale;
+
 public enum Method {
   GET, POST, HEAD, OTHER;
 
   public static Method getMethod(String method) {
     try {
-      return Method.valueOf(method.toUpperCase());
+      return Method.valueOf(method.toUpperCase(Locale.ENGLISH));
     } catch (Exception e) {
       return OTHER;
     }

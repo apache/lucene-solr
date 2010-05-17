@@ -17,6 +17,8 @@
 
 package org.apache.solr.common.params;
 
+import java.util.Locale;
+
 
 /**
  * Parameters used across many handlers
@@ -101,7 +103,7 @@ public interface CommonParams {
     
     public static EchoParamStyle get( String v ) {
       if( v != null ) {
-        v = v.toUpperCase();
+        v = v.toUpperCase(Locale.ENGLISH);
         if( v.equals( "EXPLICIT" ) ) {
           return EXPLICIT;
         }

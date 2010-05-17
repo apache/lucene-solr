@@ -21,6 +21,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -111,7 +112,7 @@ public class TestCachedSqlEntityProcessor {
       if (r == null)
         break;
       rows.add(r);
-      Assert.assertEquals(r.get("desc").toString().toUpperCase(), r.get("desc"));
+      Assert.assertEquals(r.get("desc").toString().toUpperCase(Locale.ENGLISH), r.get("desc"));
     }
     Assert.assertEquals(2, rows.size());
     Assert.assertEquals(2, rows.get(0).size());
@@ -178,7 +179,7 @@ public class TestCachedSqlEntityProcessor {
         Object val = entry.getValue();
         if (val instanceof String) {
           String s = (String) val;
-          entry.setValue(s.toUpperCase());
+          entry.setValue(s.toUpperCase(Locale.ENGLISH));
         }
       }
       return row;

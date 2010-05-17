@@ -28,6 +28,7 @@ import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.text.DecimalFormat;
 import java.util.Date;
+import java.util.Locale;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.LucenePackage;
@@ -122,7 +123,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     addGetterIfAvaliable( os, "processCpuTime", info );
 
     try { 
-      if( !os.getName().toLowerCase().startsWith( "windows" ) ) {
+      if( !os.getName().toLowerCase(Locale.ENGLISH).startsWith( "windows" ) ) {
         // Try some command line things
         info.add( "uname",  execute( "uname -a" ) );
         info.add( "ulimit", execute( "ulimit -n" ) );

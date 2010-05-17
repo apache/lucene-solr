@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.beans;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
+
 import java.lang.reflect.*;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -178,7 +179,7 @@ public class DocumentObjectBinder {
         } else {
           String setterName = setter.getName();
           if (setterName.startsWith("set") && setterName.length() > 3) {
-            name = setterName.substring(3, 4).toLowerCase() + setterName.substring(4);
+            name = setterName.substring(3, 4).toLowerCase(Locale.ENGLISH) + setterName.substring(4);
           } else {
             name = setter.getName();
           }

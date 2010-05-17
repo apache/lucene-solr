@@ -19,6 +19,8 @@ package org.apache.solr.common.params;
 
 import org.apache.solr.common.SolrException;
 
+import java.util.Locale;
+
 
 /**
  * Facet parameters
@@ -164,10 +166,10 @@ public interface FacetParams {
    */
   public enum FacetDateOther {
     BEFORE, AFTER, BETWEEN, ALL, NONE;
-    public String toString() { return super.toString().toLowerCase(); }
+    public String toString() { return super.toString().toLowerCase(Locale.ENGLISH); }
     public static FacetDateOther get(String label) {
       try {
-        return valueOf(label.toUpperCase());
+        return valueOf(label.toUpperCase(Locale.ENGLISH));
       } catch (IllegalArgumentException e) {
         throw new SolrException
           (SolrException.ErrorCode.BAD_REQUEST,

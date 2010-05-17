@@ -22,6 +22,7 @@ import org.w3c.dom.Node;
 import org.xml.sax.SAXException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DOMUtil;
+
 import javax.xml.parsers.*;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathFactory;
@@ -31,6 +32,7 @@ import javax.xml.namespace.QName;
 import java.io.*;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.Collections;
@@ -285,7 +287,7 @@ public class Config {
   private static final AtomicBoolean versionWarningAlreadyLogged = new AtomicBoolean(false);
   
   public static final Version parseLuceneVersionString(final String matchVersion) {
-    String parsedMatchVersion = matchVersion.toUpperCase();
+    String parsedMatchVersion = matchVersion.toUpperCase(Locale.ENGLISH);
     
     // be lenient with the supplied version parameter
     parsedMatchVersion = parsedMatchVersion.replaceFirst("^(\\d)\\.(\\d)$", "LUCENE_$1$2");

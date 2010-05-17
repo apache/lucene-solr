@@ -3,6 +3,7 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
@@ -64,7 +65,7 @@ public class TestKeywordMarkerFilter extends BaseTokenStreamTestCase {
     public boolean incrementToken() throws IOException {
       if (input.incrementToken()) {
         if (!keywordAttr.isKeyword()) {
-          final String term = termAtt.toString().toLowerCase();
+          final String term = termAtt.toString().toLowerCase(Locale.ENGLISH);
           termAtt.setEmpty().append(term);
         }
         return true;

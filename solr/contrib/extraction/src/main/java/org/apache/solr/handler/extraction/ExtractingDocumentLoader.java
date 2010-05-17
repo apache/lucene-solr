@@ -47,6 +47,7 @@ import org.xml.sax.SAXException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.util.Locale;
 
 
 /**
@@ -134,7 +135,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     String streamType = req.getParams().get(ExtractingParams.STREAM_TYPE, null);
     if (streamType != null) {
       //Cache?  Parsers are lightweight to construct and thread-safe, so I'm told
-      parser = config.getParser(streamType.trim().toLowerCase());
+      parser = config.getParser(streamType.trim().toLowerCase(Locale.ENGLISH));
     } else {
       parser = autoDetectParser;
     }

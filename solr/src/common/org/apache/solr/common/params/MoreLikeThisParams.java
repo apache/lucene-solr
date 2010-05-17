@@ -17,6 +17,8 @@
 
 package org.apache.solr.common.params;
 
+import java.util.Locale;
+
 /**
  * @since solr 1.3
  */
@@ -57,7 +59,7 @@ public interface MoreLikeThisParams
     public static TermStyle get( String p )
     {
       if( p != null ) {
-        p = p.toUpperCase();
+        p = p.toUpperCase(Locale.ENGLISH);
         if( p.equals( "DETAILS" ) ) {
           return DETAILS;
         }

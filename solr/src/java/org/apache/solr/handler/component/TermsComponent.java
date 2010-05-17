@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**
@@ -186,7 +187,7 @@ public class TermsComponent extends SearchComponent {
       int flags = 0;
       for (String flagParam : flagParams) {
           try {
-            flags |= TermsParams.TermsRegexpFlag.valueOf(flagParam.toUpperCase()).getValue();
+            flags |= TermsParams.TermsRegexpFlag.valueOf(flagParam.toUpperCase(Locale.ENGLISH)).getValue();
           } catch (IllegalArgumentException iae) {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown terms regex flag '" + flagParam + "'");
           }

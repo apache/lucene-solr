@@ -20,6 +20,7 @@ package org.apache.solr.common.util;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Locale;
 import java.io.IOException;
 
 import org.apache.solr.common.SolrException;
@@ -207,7 +208,7 @@ public class StrUtils {
   public static List<String> toLower(List<String> strings) {
     ArrayList<String> ret = new ArrayList<String>(strings.size());
     for (String str : strings) {
-      ret.add(str.toLowerCase());
+      ret.add(str.toLowerCase(Locale.ENGLISH));
     }
     return ret;
   }

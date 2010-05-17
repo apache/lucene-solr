@@ -18,6 +18,7 @@ package org.apache.solr.schema;
  */
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -76,7 +77,7 @@ public class UUIDField extends FieldType {
   @Override
   public String toInternal(String val) {
     if (val == null || 0==val.length() || NEW.equals(val)) {
-      return UUID.randomUUID().toString().toLowerCase();
+      return UUID.randomUUID().toString().toLowerCase(Locale.ENGLISH);
     } else {
       // we do some basic validation if 'val' looks like an UUID
       if (val.length() != 36 || val.charAt(8) != DASH || val.charAt(13) != DASH
@@ -85,12 +86,12 @@ public class UUIDField extends FieldType {
             "Invalid UUID String: '" + val + "'");
       }
 
-      return val.toLowerCase();
+      return val.toLowerCase(Locale.ENGLISH);
     }
   }
 
   public String toInternal(UUID uuid) {
-    return uuid.toString().toLowerCase();
+    return uuid.toString().toLowerCase(Locale.ENGLISH);
   }
 
   @Override
