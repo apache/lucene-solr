@@ -1314,11 +1314,14 @@ final class DocumentsWriter {
     }
 
     /* Return byte[]'s to the pool */
+
     @Override
     void recycleByteBlocks(byte[][] blocks, int start, int end) {
       synchronized(DocumentsWriter.this) {
-        for(int i=start;i<end;i++)
+        for(int i=start;i<end;i++) {
           freeByteBlocks.add(blocks[i]);
+          blocks[i] = null;
+        }
       }
     }
 
@@ -1326,9 +1329,11 @@ final class DocumentsWriter {
     void recycleByteBlocks(List<byte[]> blocks) {
       synchronized(DocumentsWriter.this) {
         final int size = blocks.size();
-        for(int i=0;i<size;i++)
+        for(int i=0;i<size;i++) {
           freeByteBlocks.add(blocks.get(i));
-  }
+          blocks.set(i, null);
+        }
+      }
     }
   }
 
@@ -1358,8 +1363,10 @@ final class DocumentsWriter {
 
   /* Return int[]s to the pool */
   synchronized void recycleIntBlocks(int[][] blocks, int start, int end) {
-    for(int i=start;i<end;i++)
+    for(int i=start;i<end;i++) {
       freeIntBlocks.add(blocks[i]);
+      blocks[i] = null;
+    }
   }
 
   ByteBlockAllocator byteBlockAllocator = new ByteBlockAllocator(BYTE_BLOCK_SIZE);

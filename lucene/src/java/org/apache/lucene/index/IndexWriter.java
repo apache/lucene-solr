@@ -3624,7 +3624,11 @@ public class IndexWriter implements Closeable {
   // even while a flush is happening
   private synchronized final boolean doFlush(boolean flushDocStores, boolean flushDeletes) throws CorruptIndexException, IOException {
     try {
-      return doFlushInternal(flushDocStores, flushDeletes);
+      try {
+        return doFlushInternal(flushDocStores, flushDeletes);
+      } finally {
+        docWriter.balanceRAM();
+      }
     } finally {
       docWriter.clearFlushPending();
     }

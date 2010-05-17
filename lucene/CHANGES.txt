@@ -391,6 +391,9 @@ Bug fixes
   addition, all of IndexComnmit methods which threw 
   UnsupportedOperationException are now abstract. (Shai Erera)
 
+* LUCENE-2467: Fixed memory leaks in IndexWriter when large documents
+  are indexed.  (Mike McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
