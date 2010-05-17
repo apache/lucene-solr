@@ -378,6 +378,8 @@ Build
 * SOLR-1891: Make lucene-jars-to-solr fail if copying any of the jars fails, and 
   update clean to remove the jars in that directory (Mark Miller)
 
+* LUCENE-2466: Commons-Codec was upgraded from 1.3 to 1.4. (rmuir)
+
 Documentation
 ----------------------
 

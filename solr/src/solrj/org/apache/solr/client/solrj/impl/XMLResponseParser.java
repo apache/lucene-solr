@@ -22,6 +22,8 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -187,7 +189,7 @@ public class XMLResponseParser extends ResponseParser
     {
       if( v != null ) {
         try {
-          return KnownType.valueOf( v.toUpperCase() );
+          return KnownType.valueOf( v.toUpperCase(Locale.ENGLISH) );
         }
         catch( Exception ex ) {}
       }
@@ -267,7 +269,7 @@ public class XMLResponseParser extends ResponseParser
     if( XMLStreamConstants.START_ELEMENT != parser.getEventType() ) {
       throw new RuntimeException( "must be start element, not: "+parser.getEventType() );
     }
-    if( !"arr".equals( parser.getLocalName().toLowerCase() ) ) {
+    if( !"arr".equals( parser.getLocalName().toLowerCase(Locale.ENGLISH) ) ) {
       throw new RuntimeException( "must be 'arr', not: "+parser.getLocalName() );
     }
     
@@ -370,7 +372,7 @@ public class XMLResponseParser extends ResponseParser
     if( XMLStreamConstants.START_ELEMENT != parser.getEventType() ) {
       throw new RuntimeException( "must be start element, not: "+parser.getEventType() );
     }
-    if( !"doc".equals( parser.getLocalName().toLowerCase() ) ) {
+    if( !"doc".equals( parser.getLocalName().toLowerCase(Locale.ENGLISH) ) ) {
       throw new RuntimeException( "must be 'lst', not: "+parser.getLocalName() );
     }
 

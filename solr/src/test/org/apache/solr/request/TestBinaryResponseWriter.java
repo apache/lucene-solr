@@ -27,6 +27,7 @@ import org.apache.solr.util.AbstractSolrTestCase;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -49,7 +50,7 @@ public class TestBinaryResponseWriter extends AbstractSolrTestCase {
    * Tests known types implementation by asserting correct encoding/decoding of UUIDField
    */
   public void testUUID() throws Exception {
-    String s = UUID.randomUUID().toString().toLowerCase();
+    String s = UUID.randomUUID().toString().toLowerCase(Locale.ENGLISH);
     assertU(adoc("id", "101", "uuid", s));
     assertU(commit());
     LocalSolrQueryRequest req = lrf.makeRequest("q", "*:*");

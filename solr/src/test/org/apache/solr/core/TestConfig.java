@@ -35,6 +35,7 @@ import static org.junit.Assert.*;
 import javax.xml.xpath.XPathConstants;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Locale;
 
 public class TestConfig extends SolrTestCaseJ4 {
 
@@ -112,7 +113,7 @@ public class TestConfig extends SolrTestCaseJ4 {
 
     //System.out.println( handler.getHiddenFiles() );
     // should not contain: <gettableFiles>solrconfig.xml scheam.xml admin-extra.html</gettableFiles>
-    assertFalse(handler.getHiddenFiles().contains("scheam.xml".toUpperCase()));
+    assertFalse(handler.getHiddenFiles().contains("scheam.xml".toUpperCase(Locale.ENGLISH)));
     assertTrue(handler.getHiddenFiles().contains("PROTWORDS.TXT"));
   }
 

@@ -21,7 +21,6 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
 import static org.apache.solr.handler.dataimport.SolrWriter.LAST_INDEX_KEY;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.*;
-import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import org.apache.solr.schema.SchemaField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -744,7 +743,7 @@ public class DocBuilder {
         // This can be a dynamic field or a field which does not have an entry in data-config ( an implicit field)
         SchemaField sf = dataImporter.getSchema().getFieldOrNull(key);
         if (sf == null) {
-          sf = dataImporter.getConfig().lowerNameVsSchemaField.get(key.toLowerCase());
+          sf = dataImporter.getConfig().lowerNameVsSchemaField.get(key.toLowerCase(Locale.ENGLISH));
         }
         if (sf != null) {
           addFieldToDoc(entry.getValue(), sf.getName(), 1.0f, sf.multiValued(), doc);

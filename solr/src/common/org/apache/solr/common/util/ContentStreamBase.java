@@ -28,6 +28,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.net.URL;
 import java.net.URLConnection;
+import java.util.Locale;
 
 
 /**
@@ -51,7 +52,7 @@ public abstract class ContentStreamBase implements ContentStream
   public static String getCharsetFromContentType( String contentType )
   {
     if( contentType != null ) {
-      int idx = contentType.toLowerCase().indexOf( "charset=" );
+      int idx = contentType.toLowerCase(Locale.ENGLISH).indexOf( "charset=" );
       if( idx > 0 ) {
         return contentType.substring( idx + "charset=".length() ).trim();
       }

@@ -31,6 +31,7 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.*;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Date;
 
@@ -77,7 +78,7 @@ public class TrieField extends FieldType {
 
     if (t != null) {
       try {
-        type = TrieTypes.valueOf(t.toUpperCase());
+        type = TrieTypes.valueOf(t.toUpperCase(Locale.ENGLISH));
       } catch (IllegalArgumentException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                 "Invalid type specified in schema.xml for field: " + args.get("name"), e);

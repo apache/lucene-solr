@@ -36,6 +36,7 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.text.DateFormat;
 import java.util.Date;
+import java.util.Locale;
 
 /**
  * An IndexWriter that is configured via Solr config mechanisms.
@@ -121,7 +122,7 @@ public class SolrIndexWriter extends IndexWriter {
       log.warn("No lockType configured for " + path + " assuming 'simple'");
       rawLockType = "simple";
     }
-    final String lockType = rawLockType.toLowerCase().trim();
+    final String lockType = rawLockType.toLowerCase(Locale.ENGLISH).trim();
 
     if ("simple".equals(lockType)) {
       // multiple SimpleFSLockFactory instances should be OK

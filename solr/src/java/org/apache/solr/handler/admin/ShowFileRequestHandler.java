@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 import org.apache.commons.io.IOUtils;
@@ -105,7 +106,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       String[] hidden = invariants.getParams( HIDDEN );
       if( hidden != null ) {
         for( String s : hidden ) {
-          hiddenFiles.add( s.toUpperCase() );
+          hiddenFiles.add( s.toUpperCase(Locale.ENGLISH) );
         }
       }
     }
@@ -129,7 +130,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
     }
     else {
       fname = fname.replace( '\\', '/' ); // normalize slashes
-      if( hiddenFiles.contains( fname.toUpperCase() ) ) {
+      if( hiddenFiles.contains( fname.toUpperCase(Locale.ENGLISH) ) ) {
         throw new SolrException( ErrorCode.FORBIDDEN, "Can not access: "+fname );
       }
       if( fname.indexOf( ".." ) >= 0 ) {
@@ -156,7 +157,7 @@ public class ShowFileRequestHandler extends RequestHandlerBase
       for( File f : adminFile.listFiles() ) {
         String path = f.getAbsolutePath().substring( basePath );
         path = path.replace( '\\', '/' ); // normalize slashes
-        if( hiddenFiles.contains( path.toUpperCase() ) ) {
+        if( hiddenFiles.contains( path.toUpperCase(Locale.ENGLISH) ) ) {
           continue; // don't show 'hidden' files
         }
         if( f.isHidden() || f.getName().startsWith( "." ) ) {

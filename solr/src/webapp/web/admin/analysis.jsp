@@ -46,7 +46,7 @@
   // is name a field name or a type name?
   String nt = request.getParameter("nt");
   if (nt==null || nt.length()==0) nt="name"; // assume field name
-  nt = nt.toLowerCase().trim();
+  nt = nt.toLowerCase(Locale.ENGLISH).trim();
   String name = request.getParameter("name");
   if (name==null || name.length()==0) name="";
   String val = request.getParameter("val");

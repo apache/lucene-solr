@@ -22,6 +22,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.common.util.ContentStream;
+
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
 import org.slf4j.Logger;
@@ -98,7 +99,7 @@ public class DataImporter {
     loadDataConfig(dataConfig);
 
     for (Map.Entry<String, SchemaField> entry : schema.getFields().entrySet()) {
-      config.lowerNameVsSchemaField.put(entry.getKey().toLowerCase(), entry.getValue());
+      config.lowerNameVsSchemaField.put(entry.getKey().toLowerCase(Locale.ENGLISH), entry.getValue());
     }
 
     for (DataConfig.Entity e : config.document.entities) {
@@ -125,7 +126,7 @@ public class DataImporter {
       DataConfig.Field fld = entry.getValue();
       SchemaField field = schema.getFieldOrNull(fld.getName());
       if (field == null) {
-        field = config.lowerNameVsSchemaField.get(fld.getName().toLowerCase());
+        field = config.lowerNameVsSchemaField.get(fld.getName().toLowerCase(Locale.ENGLISH));
         if (field == null) {
           LOG.info("The field :" + fld.getName() + " present in DataConfig does not have a counterpart in Solr Schema");
         }
@@ -215,7 +216,7 @@ public class DataImporter {
           }
           SchemaField schemaField = schema.getFieldOrNull(f.getName());
           if (schemaField == null) {
-            schemaField = config.lowerNameVsSchemaField.get(f.getName().toLowerCase());
+            schemaField = config.lowerNameVsSchemaField.get(f.getName().toLowerCase(Locale.ENGLISH));
             if (schemaField != null) f.name = schemaField.getName();
           }
           if (schemaField != null) {

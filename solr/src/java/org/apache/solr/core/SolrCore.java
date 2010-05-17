@@ -1554,14 +1554,14 @@ public final class SolrCore implements SolrInfoMBean {
         File configdir = new File( solrConfig.getResourceLoader().getConfigDir() ); 
         if( configdir.exists() && configdir.isDirectory() ) {
           for( String file : configdir.list() ) {
-            hide.add( file.toUpperCase() );
+            hide.add( file.toUpperCase(Locale.ENGLISH) );
           }
         }
         
         // except the "gettable" list
         StringTokenizer st = new StringTokenizer( gettable );
         while( st.hasMoreTokens() ) {
-          hide.remove( st.nextToken().toUpperCase() );
+          hide.remove( st.nextToken().toUpperCase(Locale.ENGLISH) );
         }
         for( String s : hide ) {
           invariants.add( ShowFileRequestHandler.HIDDEN, s );

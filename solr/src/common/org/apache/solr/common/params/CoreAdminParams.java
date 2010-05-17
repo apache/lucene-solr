@@ -18,6 +18,8 @@
 
 package org.apache.solr.common.params;
 
+import java.util.Locale;
+
 /**
  * @since solr 1.3
  */
@@ -74,7 +76,7 @@ public interface CoreAdminParams
     {
       if( p != null ) {
         try {
-          return CoreAdminAction.valueOf( p.toUpperCase() );
+          return CoreAdminAction.valueOf( p.toUpperCase(Locale.ENGLISH) );
         }
         catch( Exception ex ) {}
       }

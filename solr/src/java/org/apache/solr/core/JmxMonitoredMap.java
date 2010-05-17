@@ -243,7 +243,7 @@ public class JmxMonitoredMap<K, V> extends
       if (staticStats.contains(attribute) && attribute != null
               && attribute.length() > 0) {
         try {
-          String getter = "get" + attribute.substring(0, 1).toUpperCase()
+          String getter = "get" + attribute.substring(0, 1).toUpperCase(Locale.ENGLISH)
                   + attribute.substring(1);
           Method meth = infoBean.getClass().getMethod(getter);
           val = meth.invoke(infoBean);
