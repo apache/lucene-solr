@@ -47,7 +47,7 @@ interface StandardTokenizerInterface {
    *
    * @param reader   the new input stream 
    */
-  void reset(Reader reader);
+  void yyreset(Reader reader);
 
   /**
    * Returns the length of the matched text region.

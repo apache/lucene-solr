@@ -67,17 +67,6 @@ public final void getText(CharTermAttribute t) {
   t.copyBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
 }
 
-/**
- * Resets the Tokenizer to a new Reader.
- */
-public final void reset(Reader r) {
-  // reset to default buffer size, if buffer has grown
-  if (zzBuffer.length > ZZ_BUFFERSIZE) {
-    zzBuffer = new char[ZZ_BUFFERSIZE];
-  }
-  yyreset(r);
-}
-
 %}
 
 THAI       = [\u0E00-\u0E59]
