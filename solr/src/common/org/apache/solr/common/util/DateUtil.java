@@ -56,7 +56,7 @@ public class DateUtil {
   private static final Date DEFAULT_TWO_DIGIT_YEAR_START;
 
   static {
-    Calendar calendar = Calendar.getInstance();
+    Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.US);
     calendar.set(2000, Calendar.JANUARY, 1, 0, 0);
     DEFAULT_TWO_DIGIT_YEAR_START = calendar.getTime();
   }
@@ -185,7 +185,7 @@ public class DateUtil {
     public ThreadLocalDateFormat() {
       super();
       //2007-04-26T08:05:04Z
-      SimpleDateFormat tmp = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+      SimpleDateFormat tmp = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
       tmp.setTimeZone(UTC);
       proto = tmp;
     }

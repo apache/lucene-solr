@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Locale;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.IndexCommit;
@@ -76,7 +77,7 @@ public class SnapShooter {
     String directoryName = null;
     Lock lock = null;
     try {
-      SimpleDateFormat fmt = new SimpleDateFormat(DATE_FMT);
+      SimpleDateFormat fmt = new SimpleDateFormat(DATE_FMT, Locale.US);
       directoryName = "snapshot." + fmt.format(new Date());
       lock = lockFactory.makeLock(directoryName + ".lock");
       if (lock.isLocked()) return;
