@@ -18,7 +18,9 @@ package org.apache.lucene.search;
  */
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
+import java.util.Locale;
 import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -50,7 +52,7 @@ public class TestWildcardRandom extends LuceneTestCase {
     Field field = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);
     doc.add(field);
     
-    NumberFormat df = new DecimalFormat("0000");
+    NumberFormat df = new DecimalFormat("0000", new DecimalFormatSymbols(Locale.ENGLISH));
     for (int i = 0; i < 10000; i++) {
       field.setValue(df.format(i));
       writer.addDocument(doc);
