@@ -481,7 +481,7 @@ public class SnapPuller {
    * All the files are copied to a temp dir first
    */
   private File createTempindexDir(SolrCore core) {
-    String tmpIdxDirName = "index." + new SimpleDateFormat(SnapShooter.DATE_FMT).format(new Date());
+    String tmpIdxDirName = "index." + new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.US).format(new Date());
     File tmpIdxDir = new File(core.getDataDir(), tmpIdxDirName);
     tmpIdxDir.mkdirs();
     return tmpIdxDir;
@@ -649,7 +649,7 @@ public class SnapPuller {
   }
 
   private String getDateAsStr(Date d) {
-    return new SimpleDateFormat(SnapShooter.DATE_FMT).format(d);
+    return new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.US).format(d);
   }
 
   /**

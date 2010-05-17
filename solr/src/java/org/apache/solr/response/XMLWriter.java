@@ -162,7 +162,7 @@ final public class XMLWriter {
   // temporary working objects...
   // be careful not to use these recursively...
   private final ArrayList tlst = new ArrayList();
-  private final Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+  private final Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.US);
   private final StringBuilder sb = new StringBuilder();
 
   public XMLWriter(Writer writer, IndexSchema schema, SolrQueryRequest req, String version) {

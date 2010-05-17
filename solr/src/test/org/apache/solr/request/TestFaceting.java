@@ -24,6 +24,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import java.util.Locale;
 import java.util.Random;
 
 /**
@@ -43,7 +44,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
   }
 
   String t(int tnum) {
-    return String.format("%08d", tnum);
+    return String.format(Locale.US, "%08d", tnum);
   }
   
   void createIndex(int nTerms) {

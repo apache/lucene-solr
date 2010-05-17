@@ -171,7 +171,7 @@ public class TestTrie extends SolrTestCaseJ4 {
     assertQ("Range filter tint:[* to *] must match 10 documents", req("q", "*:*", "fq", "tdate:[* TO *]"), "//*[@numFound='10']");
 
     // Test date math syntax
-    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
     format.setTimeZone(TimeZone.getTimeZone("UTC"));
 
     assertU(delQ("*:*"));
@@ -222,7 +222,7 @@ public class TestTrie extends SolrTestCaseJ4 {
     checkPrecisionSteps("tdate");
 
     // For tdate tests
-    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US);
     format.setTimeZone(TimeZone.getTimeZone("UTC"));
     DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.US);
 

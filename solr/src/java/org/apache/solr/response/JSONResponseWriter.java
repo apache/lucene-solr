@@ -743,7 +743,7 @@ class JSONWriter extends TextResponseWriter {
     // builder's buffer.
 
     StringBuilder sb = new StringBuilder();
-    if (cal==null) cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+    if (cal==null) cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"), Locale.US);
     cal.setTime(val);
 
     int i = cal.get(Calendar.YEAR);
