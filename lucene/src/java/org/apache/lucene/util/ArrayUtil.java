@@ -168,7 +168,7 @@ public final class ArrayUtil {
     }
 
     // asymptotic exponential growth by 1/8th, favors
-    // spending a bit more CPU to not tye up too much wasted
+    // spending a bit more CPU to not tie up too much wasted
     // RAM:
     int extra = minTargetSize >> 3;
 
