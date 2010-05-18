@@ -98,7 +98,7 @@ public final class NumericTokenStream extends TokenStream {
   
   /** <b>Expert:</b> Use this attribute to get the details of the currently generated token
    * @lucene.experimental
-   * @since 3.1
+   * @since 4.0
    */
   public interface NumericTermAttribute extends Attribute {
     /** Returns current shift value, undefined before first token */

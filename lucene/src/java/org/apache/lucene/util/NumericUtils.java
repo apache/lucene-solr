@@ -58,7 +58,7 @@ import org.apache.lucene.search.NumericRangeFilter; // for javadocs
  * types for other usages (e.g. sorting).
  *
  * @lucene.internal
- * @since 2.9, API changed non backwards-compliant in 3.1
+ * @since 2.9, API changed non backwards-compliant in 4.0
  */
 public final class NumericUtils {
 
@@ -494,7 +494,7 @@ public final class NumericUtils {
    * Callback for {@link #splitLongRange}.
    * You need to overwrite only one of the methods.
    * @lucene.internal
-   * @since 2.9, API changed non backwards-compliant in 3.1
+   * @since 2.9, API changed non backwards-compliant in 4.0
    */
   public static abstract class LongRangeBuilder {
     
@@ -523,7 +523,7 @@ public final class NumericUtils {
    * Callback for {@link #splitIntRange}.
    * You need to overwrite only one of the methods.
    * @lucene.internal
-   * @since 2.9, API changed non backwards-compliant in 3.1
+   * @since 2.9, API changed non backwards-compliant in 4.0
    */
   public static abstract class IntRangeBuilder {
     
