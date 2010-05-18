@@ -301,7 +301,7 @@
 
 
  <fields>
-   <field name="id" type="integer" indexed="true" stored="true"/> <!-- the uniqueKey is required by default -->
+   <field name="id" type="integer" multiValued="false" indexed="true" stored="true"/> <!-- the uniqueKey is required by default -->
    <field name="name" type="nametext" indexed="true" stored="true" required="true"/>
    <field name="text" type="text" indexed="true" stored="false"/>
    <field name="subject" type="text" indexed="true" stored="true" required="true" default="Stuff"/>
