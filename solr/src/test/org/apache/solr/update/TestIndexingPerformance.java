@@ -24,6 +24,9 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.common.util.StrUtils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -33,6 +36,9 @@ import java.util.Arrays;
  * $ ant test -Dtestcase=TestIndexingPerformance -Dargs="-server -Diter=100000"; grep throughput build/test-results/*TestIndexingPerformance.xml
  */
 public class TestIndexingPerformance extends AbstractSolrTestCase {
+
+  public static final Logger log 
+    = LoggerFactory.getLogger(TestIndexingPerformance.class);
 
   public String getSchemaFile() { return "schema12.xml"; }
   public String getSolrConfigFile() { return "solrconfig_perf.xml"; }
@@ -104,8 +110,8 @@ public class TestIndexingPerformance extends AbstractSolrTestCase {
       updateHandler.addDoc(add);
     }
     long end = System.currentTimeMillis();
-    System.out.println("includeDoc="+includeDoc+" doc="+ Arrays.toString(fields));
-    System.out.println("iter="+iter +" time=" + (end-start) + " throughput=" + ((long)iter*1000)/(end-start));
+    log.info("includeDoc="+includeDoc+" doc="+ Arrays.toString(fields));
+    log.info("iter="+iter +" time=" + (end-start) + " throughput=" + ((long)iter*1000)/(end-start));
 
     //discard all the changes
     updateHandler.rollback(new RollbackUpdateCommand());

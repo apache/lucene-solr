@@ -25,11 +25,18 @@ import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.ArrayList;
 import java.io.*;
 
 
 public class TestWriterPerf extends AbstractSolrTestCase {
+
+  public static final Logger log 
+    = LoggerFactory.getLogger(TestWriterPerf.class);
+
   public String getSchemaFile() { return "schema11.xml"; }
   public String getSolrConfigFile() { return "solrconfig-functionquery.xml"; }
   public String getCoreName() { return "basic"; }
@@ -131,7 +138,7 @@ public class TestWriterPerf extends AbstractSolrTestCase {
 
     long decodeTime = Math.max(System.currentTimeMillis() - start, 1);
 
-    System.out.println("writer "+writerName+", size="+out.size()+", encodeRate="+(encodeTime==1 ? "N/A":  ""+(encIter*1000L/encodeTime)) + ", decodeRate="+(decodeTime==1 ? "N/A":  ""+(decIter*1000L/decodeTime)) );
+    log.info("writer "+writerName+", size="+out.size()+", encodeRate="+(encodeTime==1 ? "N/A":  ""+(encIter*1000L/encodeTime)) + ", decodeRate="+(decodeTime==1 ? "N/A":  ""+(decIter*1000L/decodeTime)) );
 
     req.close();
   }
