@@ -16,33 +16,24 @@
  limitations under the License.
 -->
 
-<schema name="test" version="1.0">
+<schema name="bad-schema-dup-fieldType" version="1.0">
   <types>
-
+    
+    <fieldtype name="text" class="solr.TextField" />
     <fieldType name="string" class="solr.StrField"/>
     
+    <!-- BEGIN BAD STUFF -->
     <fieldType name="ftAgain" class="solr.IntField"/>
     <fieldType name="ftAgain" class="solr.IntField"/>
-
-    <!-- this ones is ok -->
-    <fieldtype name="text" class="solr.TextField" />
-
+    <!-- END BAD STUFF -->
+    
  </types>
 
 
  <fields>
-   <field name="id" type="text" indexed="true" stored="true" multiValued="false" required="false"/>
+   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
    
-   <fieldType name="string" class="solr.StrField"/>
-
    <field name="signatureField" type="string" indexed="true" stored="false"/>
-    
-   <field name="fAgain" type="text" indexed="true" stored="true"/>
-   <field name="fAgain" type="text" indexed="true" stored="true"/>
-
-   <dynamicField name="*_twice"  type="text"  indexed="true"  stored="true"/>
-   <dynamicField name="*_twice"  type="text"  indexed="true"  stored="true"/>
-
    <dynamicField name="*_sS" type="string"  indexed="false" stored="true"/>
 
  </fields>

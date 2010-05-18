@@ -512,11 +512,11 @@ public final class IndexSchema {
           SchemaField old = fields.put(f.getName(),f);
           if( old != null ) {
             String msg = "[schema.xml] Duplicate field definition for '"
-              + f.getName() + "' ignoring: "+old.toString();
-            
-            Throwable t = new SolrException( SolrException.ErrorCode.SERVER_ERROR, msg );
+              + f.getName() + "' [[["+old.toString()+"]]] and [[["+f.toString()+"]]]";
+            SolrException t = new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg );
             SolrException.logOnce(log,null,t);
             SolrConfig.severeErrors.add( t );
+            throw t;
           }
           log.debug("field defined: " + f);
           if( f.getDefaultValue() != null ) {
@@ -687,11 +687,12 @@ public final class IndexSchema {
       addDynamicFieldNoDupCheck(dFields, f);
     } else {
       String msg = "[schema.xml] Duplicate DynamicField definition for '"
-              + f.getName() + "' ignoring: " + f.toString();
+              + f.getName() + "'";
 
-      Throwable t = new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
+      SolrException t = new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg);
       SolrException.logOnce(log, null, t);
       SolrConfig.severeErrors.add(t);
+      throw t;
     }
   }
 

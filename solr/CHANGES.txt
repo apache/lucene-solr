@@ -62,6 +62,11 @@ Upgrading from Solr 1.4
 * SOLR-1876: All Analyzers and TokenStreams are now final to enforce
   the decorator pattern.  (rmuir, uschindler)
 
+* Setting abortOnConfigurationError=false is no longer supported
+  (since it has never worked properly).  Solr will now warn you if
+  you attempt to set this configuration option at all. (see SOLR-1846)
+
+
 Detailed Change List
 ----------------------
 
@@ -296,6 +301,9 @@ Bug Fixes
   or overwriteDupes=true with a signatureField that is not indexed.
   (hossman)
 
+* SOLR-1824: IndexSchema will now fail to initialize if there is a
+  problem initializing one of the fields or field types. (hossman)
+
 Other Changes
 ----------------------
 
@@ -368,7 +376,10 @@ Other Changes
 * SOLR-1865: SolrResourceLoader.getLines ignores Byte Order Markers (BOMs) at the
   beginning of input files, these are often created by editors such as Windows
   Notepad.  (rmuir, hossman)
-  
+
+* SOLR-1846: Eliminate support for the abortOnConfigurationError
+  option.  It has never worked very well, and in recent versions of
+  Solr hasn't worked at all.  (hossman)
   
 Build
 ----------------------

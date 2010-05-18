@@ -18,6 +18,7 @@
 package org.apache.solr.core;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.request.SolrQueryRequest;
@@ -167,9 +168,12 @@ final class RequestHandlers {
             log.warn("Multiple default requestHandler registered" + " ignoring: " + old.getClass().getName()); 
         }
         log.info("created "+info.name+": " + info.className);
-      } catch (Exception e) {
-          SolrConfig.severeErrors.add( e );
+      } catch (Exception ex) {
+          SolrConfig.severeErrors.add( ex );
+          SolrException e = new SolrException
+            (ErrorCode.SERVER_ERROR, "RequestHandler init failure", ex);
           SolrException.logOnce(log,null,e);
+          throw e;
       }
     }
     for (Map.Entry<PluginInfo,SolrRequestHandler> entry : handlers.entrySet()) {

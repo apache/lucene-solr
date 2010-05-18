@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.DOMUtil;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
@@ -151,33 +152,40 @@ public abstract class AbstractPluginLoader<T>
           
           T old = register( name, plugin );
           if( old != null && !( name == null && !requireName ) ) {
-            throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
+            throw new SolrException( ErrorCode.SERVER_ERROR, 
                 "Multiple "+type+" registered to the same name: "+name+" ignoring: "+old );
           }
           
           if( defaultStr != null && Boolean.parseBoolean( defaultStr ) ) {
             if( defaultPlugin != null ) {
-              throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, 
+              throw new SolrException( ErrorCode.SERVER_ERROR, 
                 "Multiple default "+type+" plugins: "+defaultPlugin + " AND " + name );
             }
             defaultPlugin = plugin;
           }
         }
-        catch (Exception e) {
+        catch (Exception ex) {
+          SolrException e = new SolrException
+            (ErrorCode.SERVER_ERROR,
+             "Plugin init failure for " + type + ":" + ex.getMessage(), ex);
           SolrConfig.severeErrors.add( e );
           SolrException.logOnce(log,null,e);
+          throw e;
         }
       }
     }
-    
+      
     // If everything needs to be registered *first*, this will initialize later
     for( PluginInitInfo pinfo : info ) {
       try {
         init( pinfo.plugin, pinfo.node );
       }
       catch( Exception ex ) {
-        SolrConfig.severeErrors.add( ex );
-        SolrException.logOnce(log,null,ex);
+        SolrException e = new SolrException
+          (ErrorCode.SERVER_ERROR, "Plugin Initializing failure for " + type, ex);
+        SolrConfig.severeErrors.add( e );
+        SolrException.logOnce(log,null,e);
+        throw e;
       }
     }
     return defaultPlugin;
@@ -222,9 +230,12 @@ public abstract class AbstractPluginLoader<T>
                 + " ignoring: " + old);
       }
 
-    } catch (Exception e) {
-      SolrConfig.severeErrors.add(e);
-      SolrException.logOnce(log, null, e);
+    } catch (Exception ex) {
+      SolrException e = new SolrException
+        (ErrorCode.SERVER_ERROR, "Plugin init failure for " + type, ex);
+      SolrConfig.severeErrors.add( e );
+      SolrException.logOnce(log,null,e);
+      throw e;
     }
 
     // If everything needs to be registered *first*, this will initialize later
@@ -232,8 +243,11 @@ public abstract class AbstractPluginLoader<T>
       try {
         init(pinfo.plugin, pinfo.node);
       } catch (Exception ex) {
-        SolrConfig.severeErrors.add(ex);
-        SolrException.logOnce(log, null, ex);
+        SolrException e = new SolrException
+          (ErrorCode.SERVER_ERROR, "Plugin init failure for " + type, ex);
+        SolrConfig.severeErrors.add( e );
+        SolrException.logOnce(log,null,e);
+        throw e;
       }
     }
     return plugin;

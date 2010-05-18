@@ -100,10 +100,6 @@ public class SolrDispatchFilter implements Filter
       PrintWriter out = new PrintWriter( sw );
       out.println( "Severe errors in solr configuration.\n" );
       out.println( "Check your log files for more detailed information on what may be wrong.\n" );
-      out.println( "If you want solr to continue after configuration errors, change: \n");
-      out.println( " <abortOnConfigurationError>false</abortOnConfigurationError>\n" );
-      out.println( "in "+init.getSolrConfigFilename()+"\n" );
-
       for( Throwable t : SolrConfig.severeErrors ) {
         out.println( "-------------------------------------------------------------" );
         t.printStackTrace( out );

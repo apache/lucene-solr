@@ -23,6 +23,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.CommonParams.EchoParamStyle;
 import org.apache.solr.common.params.SolrParams;
@@ -1583,7 +1584,16 @@ public final class SolrCore implements SolrInfoMBean {
           "solrconfig.xml uses deprecated <bool name='facet.sort'>. Please "+
           "update your config to use <string name='facet.sort'>.");
     }
-  } 
+
+    if (!solrConfig.getBool("abortOnConfigurationError",true))
+      throw new SolrException(ErrorCode.SERVER_ERROR,
+                              "Setting abortOnConfigurationError==false is no longer supported");
+    if (null != solrConfig.getVal("abortOnConfigurationError", false))
+      log.warn("The abortOnConfigurationError option is no longer supported "+
+               "in solrconfig.xml.  Setting it has no effect.");
+    
+  }
+  
 
   public CoreDescriptor getCoreDescriptor() {
     return coreDescriptor;

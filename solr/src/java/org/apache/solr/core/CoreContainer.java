@@ -71,12 +71,6 @@ public class CoreContainer
   protected String solrConfigFilenameOverride;
   private String defaultCoreName = "";
   
-  // assigned by Initializer
-  private boolean defaultAbortOnConfigError = false;
-  // number of cores that either explicitly, or because of
-  // default, said to abort on config error
-  private int numCoresAbortOnConfigError = 0;
-  
   public CoreContainer() {
     solrHome = SolrResourceLoader.locateSolrHome();
   }
@@ -88,20 +82,23 @@ public class CoreContainer
   // Helper class to initialize the CoreContainer
   public static class Initializer {
     protected String solrConfigFilename = null;
-    // default to true for legacy behavior
-    protected boolean abortOnConfigurationError = true;
 
+    /**
+     * @deprecated all cores now abort on configuration error regardless of configuration
+     */
     public boolean isAbortOnConfigurationError() {
-      return abortOnConfigurationError;
+      return true;
     }
     
-    /** Note for no good reason what so ever, this method has only ever
-     * influenced the default behavior of "single core" mode.  when using
-     * solr.xml values specified this way are ignored, and false is the default.
-     * initialize() will modify this value.
+    /**
+     * @exception generates an error if you attempt to set this value to false
+     * @deprecated all cores now abort on configuration error regardless of configuration
      */
     public void setAbortOnConfigurationError(boolean abortOnConfigurationError) {
-      this.abortOnConfigurationError = abortOnConfigurationError;
+      if (false == abortOnConfigurationError)
+        throw new SolrException
+          (SolrException.ErrorCode.SERVER_ERROR,
+           "Setting abortOnConfigurationError==false is no longer supported");
     }
 
     public String getSolrConfigFilename() {
@@ -123,15 +120,11 @@ public class CoreContainer
       cores = new CoreContainer();
       cores.solrConfigFilenameOverride = solrConfigFilename;
       if (fconf.exists()) {
-        // default abortOnConfigurationError ignored in multicore
-        cores.defaultAbortOnConfigError = false;
         cores.load(solrHome, fconf);
       } else {
-        cores.defaultAbortOnConfigError = abortOnConfigurationError;
         cores.load(solrHome, new ByteArrayInputStream(DEF_SOLR_XML.getBytes()));
         cores.configFile = fconf;
       }
-      setAbortOnConfigurationError(0 < cores.numCoresAbortOnConfigError);
       
       solrConfigFilename = cores.getConfigFile().getName();
       
@@ -413,10 +406,6 @@ public class CoreContainer
     SolrResourceLoader solrLoader = new SolrResourceLoader(instanceDir, libLoader, getCoreProps(instanceDir, dcore.getPropertiesName(),dcore.getCoreProperties()));
     SolrConfig config = new SolrConfig(solrLoader, dcore.getConfigName(), null);
 
-    if (config.getBool("abortOnConfigurationError",defaultAbortOnConfigError)) {
-      numCoresAbortOnConfigError++;
-    }
-    
     IndexSchema schema = null;
     if(indexSchemaCache != null){
       //schema sharing is enabled. so check if it already is loaded

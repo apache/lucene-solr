@@ -17,73 +17,48 @@
 
 package org.apache.solr.schema;
 
-import java.util.LinkedList;
-import java.util.List;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 
-import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.AbstractSolrTestCase;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-/**
- */
-public class BadIndexSchemaTest extends AbstractSolrTestCase {
+import org.junit.Before;
+import org.junit.Test;
 
-  @Override public String getSchemaFile() { return "bad-schema.xml"; }
-  @Override public String getSolrConfigFile() { return "solrconfig.xml"; }
+public class BadIndexSchemaTest extends SolrTestCaseJ4 {
 
-  @Override 
-  public void setUp() throws Exception {
-    ignoreException("_twice");
-    ignoreException("ftAgain");
-    ignoreException("fAgain");
+  private void doTest(final String schema, final String errString) 
+    throws Exception {
 
-    super.setUp();
-  }
-  
-  @Override 
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
+    ignoreException(errString);
+    try {
+      initCore( "solrconfig.xml", schema );
+    } catch (SolrException e) {
+      // short circut out if we found what we expected
+      if (-1 != e.getMessage().indexOf(errString)) return;
 
-  
-  private Throwable findErrorWithSubstring( List<Throwable> err, String v )
-  {
-    for( Throwable t : err ) {
-      if( t.getMessage().indexOf( v ) > 0 ) {
-        return t;
-      }
+      // otherwise, rethrow it, possibly completley unrelated
+      throw new SolrException
+        (ErrorCode.SERVER_ERROR, 
+         "Unexpected error, expected error matching: " + errString, e);
     }
-    return null;
+    fail("Did not encounter any exception from: " + schema);
   }
-  
-  
-  public void testSevereErrorsForDuplicateNames() 
-  {
-    SolrCore core = h.getCore();
-    IndexSchema schema = core.getSchema();
 
-    for( Throwable t : SolrConfig.severeErrors ) {
-      log.info( "got ex:"+t.getMessage() );
-    }
-    
-    assertEquals( 3, SolrConfig.severeErrors.size() );
+  @Test
+  public void testSevereErrorsForDuplicateFields() throws Exception {
+    doTest("bad-schema-dup-field.xml", "fAgain");
+  }
 
-    List<Throwable> err = new LinkedList<Throwable>();
-    err.addAll( SolrConfig.severeErrors );
-    
-    Throwable t = findErrorWithSubstring( err, "*_twice" );
-    assertNotNull( t );
-    err.remove( t );
-    
-    t = findErrorWithSubstring( err, "ftAgain" );
-    assertNotNull( t );
-    err.remove( t );
-    
-    t = findErrorWithSubstring( err, "fAgain" );
-    assertNotNull( t );
-    err.remove( t );
+  @Test
+  public void testSevereErrorsForDuplicateDynamicField() throws Exception {
+    doTest("bad-schema-dup-dynamicField.xml", "_twice");
+  }
 
-    // make sure thats all of them
-    assertTrue( err.isEmpty() );
+  @Test
+  public void testSevereErrorsForDuplicateFieldType() throws Exception {
+    doTest("bad-schema-dup-fieldType.xml", "ftAgain");
   }
 }
