@@ -42,19 +42,25 @@ import org.apache.lucene.util.ThreadInterruptedException;
  * or {@link #search(Query,Filter,int)} methods.
  */
 public class ParallelMultiSearcher extends MultiSearcher {
-  
   private final ExecutorService executor;
   private final Searchable[] searchables;
   private final int[] starts;
 
-  /** Creates a {@link Searchable} which searches <i>searchables</i>. */
+  /** Creates a {@link Searchable} which searches <i>searchables</i> with the default 
+   * executor service (a cached thread pool). */
   public ParallelMultiSearcher(Searchable... searchables) throws IOException {
+    this(Executors.newCachedThreadPool(new NamedThreadFactory(ParallelMultiSearcher.class.getSimpleName())), searchables);
+  }
+
+  /**
+   * Creates a {@link Searchable} which searches <i>searchables</i> with the specified ExecutorService.
+   */
+  public ParallelMultiSearcher(ExecutorService executor, Searchable... searchables) throws IOException {
     super(searchables);
     this.searchables = searchables;
     this.starts = getStarts();
-    executor = Executors.newCachedThreadPool(new NamedThreadFactory(this.getClass().getSimpleName())); 
+    this.executor = executor;
   }
-
   /**
    * Executes each {@link Searchable}'s docFreq() in its own thread and waits for each search to complete and merge
    * the results back together.

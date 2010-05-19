@@ -169,6 +169,10 @@ New features
   process the payloads of the segments as they are merged (e.g. if one wants to
   rewrite payloads of external indexes as they are added, or of local ones). 
   (Shai Erera, Michael Busch, Mike McCandless)
+
+* LUCENE-2440: Add support for custom ExecutorService in
+  ParallelMultiSearcher (Edward Drapkin via Mike McCandless)
+
   
 ======================= Lucene 3.x (not yet released) =======================
 
