@@ -70,6 +70,54 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
 
   }
 
+  /**
+   * With hyphenation-only, you can get a lot of nonsense tokens.
+   * This can be controlled with the min/max subword size.
+   */
+  public void testHyphenationOnly() throws Exception {
+    Reader reader = getHyphenationReader();
+    HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter
+      .getHyphenationTree(reader);
+    
+    HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(
+        TEST_VERSION_CURRENT,
+        new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("basketballkurv")),
+        hyphenator,
+        CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
+        2, 4);
+    
+    // min=2, max=4
+    assertTokenStreamContents(tf,
+        new String[] { "basketballkurv", "ba", "sket", "bal", "ball", "kurv" }
+    );
+    
+    tf = new HyphenationCompoundWordTokenFilter(
+        TEST_VERSION_CURRENT,
+        new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("basketballkurv")),
+        hyphenator,
+        CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
+        4, 6);
+    
+    // min=4, max=6
+    assertTokenStreamContents(tf,
+        new String[] { "basketballkurv", "basket", "sket", "ball", "lkurv", "kurv" }
+    );
+    
+    tf = new HyphenationCompoundWordTokenFilter(
+        TEST_VERSION_CURRENT,
+        new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("basketballkurv")),
+        hyphenator,
+        CompoundWordTokenFilterBase.DEFAULT_MIN_WORD_SIZE,
+        4, 10);
+    
+    // min=4, max=10
+    assertTokenStreamContents(tf,
+        new String[] { "basketballkurv", "basket", "basketbal", "basketball", "sket", 
+                       "sketbal", "sketball", "ball", "ballkurv", "lkurv", "kurv" }
+    );
+    
+  }
+
   public void testDumbCompoundWordsSE() throws Exception {
     String[] dict = { "Bil", "Dörr", "Motor", "Tak", "Borr", "Slag", "Hammar",
         "Pelar", "Glas", "Ögon", "Fodral", "Bas", "Fiol", "Makare", "Gesäll",

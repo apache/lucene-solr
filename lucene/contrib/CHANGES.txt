@@ -160,6 +160,9 @@ New features
  * LUCENE-2463: Add a Greek inflectional stemmer. GreekAnalyzer will now stem words
    when Version is set to 3.1 or higher.  (Robert Muir)
 
+ * LUCENE-1287: Allow usage of HyphenationCompoundWordTokenFilter without dictionary.
+   (Thomas Peuss via Robert Muir)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
