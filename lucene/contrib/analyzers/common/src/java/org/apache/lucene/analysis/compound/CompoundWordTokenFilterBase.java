@@ -154,7 +154,7 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     this.maxSubwordSize=maxSubwordSize;
     this.onlyLongestMatch=onlyLongestMatch;
     
-    if (dictionary instanceof CharArraySet) {
+    if (dictionary==null || dictionary instanceof CharArraySet) {
       this.dictionary = (CharArraySet) dictionary;
     } else {
       this.dictionary = new CharArraySet(matchVersion, dictionary.size(), false);
@@ -181,6 +181,9 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
   }
   
   public static final Set<?> makeDictionary(final Version matchVersion, final String[] dictionary) {
+    if (dictionary == null) {
+      return null;
+    }
     // is the below really case insensitive? 
     CharArraySet dict = new CharArraySet(matchVersion, dictionary.length, false);
     addAllLowerCase(dict, Arrays.asList(dictionary));

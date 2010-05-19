@@ -154,6 +154,33 @@ public class HyphenationCompoundWordTokenFilter extends
   }
 
   /**
+   * Create a HyphenationCompoundWordTokenFilter with no dictionary.
+   * <p>
+   * Calls {@link #HyphenationCompoundWordTokenFilter(Version, TokenStream, HyphenationTree, Set, int, int, int, boolean)
+   * HyphenationCompoundWordTokenFilter(matchVersion, input, hyphenator,
+   * null, minWordSize, minSubwordSize, maxSubwordSize }
+   */
+  public HyphenationCompoundWordTokenFilter(Version matchVersion, TokenStream input,
+      HyphenationTree hyphenator, int minWordSize, int minSubwordSize,
+      int maxSubwordSize) {
+    this(matchVersion, input, hyphenator, (Set<?>) null, minWordSize, minSubwordSize,
+        maxSubwordSize, false);
+  }
+  
+  /**
+   * Create a HyphenationCompoundWordTokenFilter with no dictionary.
+   * <p>
+   * Calls {@link #HyphenationCompoundWordTokenFilter(Version, TokenStream, HyphenationTree, int, int, int) 
+   * HyphenationCompoundWordTokenFilter(matchVersion, input, hyphenator, 
+   * DEFAULT_MIN_WORD_SIZE, DEFAULT_MIN_SUBWORD_SIZE, DEFAULT_MAX_SUBWORD_SIZE }
+   */
+  public HyphenationCompoundWordTokenFilter(Version matchVersion, TokenStream input,
+      HyphenationTree hyphenator) {
+    this(matchVersion, input, hyphenator, DEFAULT_MIN_WORD_SIZE, DEFAULT_MIN_SUBWORD_SIZE, 
+        DEFAULT_MAX_SUBWORD_SIZE);
+  }
+
+  /**
    * Creates a new {@link HyphenationCompoundWordTokenFilter} instance.
    * 
    * @param input the {@link TokenStream} to process
@@ -305,7 +332,7 @@ public class HyphenationCompoundWordTokenFilter extends
         }
 
         // check the dictionary
-        if (dictionary.contains(lowerCaseTermBuffer, start, partLength)) {
+        if (dictionary == null || dictionary.contains(lowerCaseTermBuffer, start, partLength)) {
           if (this.onlyLongestMatch) {
             if (longestMatchToken != null) {
               if (longestMatchToken.termLength() < partLength) {

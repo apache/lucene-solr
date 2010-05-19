@@ -81,8 +81,9 @@ filter available:
 The {@link
 org.apache.lucene.analysis.compound.HyphenationCompoundWordTokenFilter
 HyphenationCompoundWordTokenFilter} uses hyphenation grammars to find
-potential subwords that a worth to check against the dictionary. The
-quality of the output tokens is directly connected to the quality of the
+potential subwords that a worth to check against the dictionary. It can be used
+without a dictionary as well but then produces a lot of "nonword" tokens.
+The quality of the output tokens is directly connected to the quality of the
 grammar file you use. For languages like German they are quite good.
 <h5>Grammar file</h5>
 Unfortunately we cannot bundle the hyphenation grammar files with Lucene
@@ -157,8 +158,24 @@ This decision matrix should help you:
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, false);
         
-    Token t;
-    while ((t=tf.next())!=null) {
+    CharTermAttribute t = tf.addAttribute(CharTermAttribute.class);
+    while (tf.incrementToken()) {
+       System.out.println(t);
+    }
+  }
+
+  public void testHyphenationCompoundWordsWithoutDictionaryDE() throws Exception {
+    Reader reader = new FileReader("de_DR.xml");
+
+    HyphenationTree hyphenator = HyphenationCompoundWordTokenFilter
+        .getHyphenationTree(reader);
+
+    HyphenationCompoundWordTokenFilter tf = new HyphenationCompoundWordTokenFilter(
+        new WhitespaceTokenizer(new StringReader(
+            "Rindfleisch&uuml;berwachungsgesetz Drahtschere abba")), hyphenator);
+        
+    CharTermAttribute t = tf.addAttribute(CharTermAttribute.class);
+    while (tf.incrementToken()) {
        System.out.println(t);
     }
   }
@@ -173,8 +190,8 @@ This decision matrix should help you:
             new StringReader(
                 "Bild&ouml;rr Bilmotor Biltak Slagborr Hammarborr Pelarborr Glas&ouml;gonfodral Basfiolsfodral Basfiolsfodralmakareges&auml;ll Skomakare Vindrutetorkare Vindrutetorkarblad abba")),
         dict);
-    Token t;
-    while ((t=tf.next())!=null) {
+    CharTermAttribute t = tf.addAttribute(CharTermAttribute.class);
+    while (tf.incrementToken()) {
        System.out.println(t);
     }
   }
