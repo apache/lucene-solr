@@ -302,6 +302,9 @@ New features
   rewrite payloads of external indexes as they are added, or of local ones). 
   (Shai Erera, Michael Busch, Mike McCandless)
 
+* LUCENE-2440: Add support for custom ExecutorService in
+  ParallelMultiSearcher (Edward Drapkin via Mike McCandless)
+
 Optimizations
 
 * LUCENE-2075: Terms dict cache is now shared across threads instead
