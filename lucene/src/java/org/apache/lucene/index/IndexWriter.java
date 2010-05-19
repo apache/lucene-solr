@@ -4401,6 +4401,15 @@ public class IndexWriter implements Closeable {
       if (mergeDocStores && !merge.mergeDocStores) {
         merge.mergeDocStores = true;
         synchronized(this) {
+
+          // If 1) we must now merge doc stores, and 2) at
+          // least one of the segments we are merging uses
+          // the doc store we are now writing to, we must at
+          // this point force this doc store closed (by
+          // calling flush).  If we didn't do this then the
+          // readers will attempt to open an IndexInput
+          // on files that have still-open IndexOutputs
+          // against them:
           if (dss.contains(docWriter.getDocStoreSegment())) {
             if (infoStream != null)
               message("now flush at mergeMiddle");
