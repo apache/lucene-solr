@@ -48,7 +48,7 @@
   <target name="compile-core" depends="build-analyzers-common, common.compile-core" />
 
   <target name="build-analyzers-common" unless="analyzers-common.uptodate">
-    <echo>Misc building dependency ${analyzers-common.jar}</echo>
+    <echo>Smartcn building dependency ${analyzers-common.jar}</echo>
     <ant antfile="../common/build.xml" target="default" inheritall="false" dir="../common" />
   </target>
 </project>

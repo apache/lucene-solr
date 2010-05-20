@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.miscellaneous;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,6 +20,9 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.util.Set;
 
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Version;

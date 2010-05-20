@@ -2,7 +2,7 @@ package org.apache.lucene.analysis.cz;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.KeywordMarkerFilter;// for javadoc
+import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter; // for javadoc
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
