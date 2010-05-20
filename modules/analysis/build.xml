@@ -22,12 +22,17 @@
   <description>
     Additional Analyzers
       - common:	Additional Analyzers
+      - icu: Analyzers that use functionality from ICU
       - smartcn:	Smart Analyzer for Simplified Chinese Text
       - stempel:	Algorithmic Stemmer for Polish
   </description>
 
   <target name="common">
     <ant dir="common" />
+  </target>
+
+  <target name="icu">
+    <ant dir="icu" />
   </target>
 
   <target name="smartcn">
@@ -39,25 +44,29 @@
   </target>
 
   <target name="default" depends="compile"/>
-  <target name="compile" depends="common,smartcn,stempel" />
+  <target name="compile" depends="common,icu,smartcn,stempel" />
 
   <target name="clean">
     <ant dir="common" target="clean" />
+    <ant dir="icu" target="clean" />
     <ant dir="smartcn" target="clean" />
     <ant dir="stempel" target="clean" />
   </target>
   <target name="compile-core">
     <ant dir="common" target="compile-core" />
+    <ant dir="icu" target="compile-core" />
     <ant dir="smartcn" target="compile-core" />
     <ant dir="stempel" target="compile-core" />
   </target>
   <target name="compile-test">
     <ant dir="common" target="compile-test" />
+    <ant dir="icu" target="compile-test" />
     <ant dir="smartcn" target="compile-test" />
     <ant dir="stempel" target="compile-test" />
   </target>
   <target name="test">
     <ant dir="common" target="test" />
+    <ant dir="icu" target="test" />
     <ant dir="smartcn" target="test" />
     <ant dir="stempel" target="test" />
   </target>
@@ -66,18 +75,21 @@
 
   <target name="dist-maven" depends="default">
     <ant dir="common" target="dist-maven" />
+    <ant dir="icu" target="dist-maven" />
     <ant dir="smartcn" target="dist-maven" />
     <ant dir="stempel" target="dist-maven" />
   </target>  	
 
   <target name="javadocs">
     <ant dir="common" target="javadocs" />
+    <ant dir="icu" target="javadocs" />
     <ant dir="smartcn" target="javadocs" />
     <ant dir="stempel" target="javadocs" />
   </target>  	
 
   <target name="javadocs-index.html">
     <ant dir="common" target="javadocs-index.html" />
+    <ant dir="icu" target="javadocs-index.html" />
     <ant dir="smartcn" target="javadocs-index.html" />
     <ant dir="stempel" target="javadocs-index.html" />
   </target>

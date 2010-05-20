@@ -29,6 +29,8 @@ New Features
      hyphenated words broken into two lines back together.
    - o.a.l.analysis.pattern: Package for pattern-based analysis, containing a 
      CharFilter, Tokenizer, and Tokenfilter for transforming text with regexes.
+   - o.a.l.analysis.synonym.SynonymFilter: A synonym filter that supports multi-word
+     synonyms.
    (... in progress)
 
   * LUCENE-2413: Consolidated all Lucene analyzers into common.
@@ -45,4 +47,5 @@ New Features
 
 Build
 
- * LUCENE-2413: The 'smartcn' component now depends on 'common'.  (Robert Muir)
+ * LUCENE-2413: All analyzers in contrib/analyzers and contrib/icu were moved to the 
+   analysis module.  The 'smartcn' component now depends on 'common'.  (Robert Muir)

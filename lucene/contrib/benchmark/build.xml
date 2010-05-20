@@ -12,7 +12,8 @@
     <property name="runsequential" value="true"/>
 
     <contrib-uptodate name="highlighter" property="highlighter.uptodate" classpath.property="highlighter.jar"/>
-    <contrib-uptodate name="icu" property="icu.uptodate" classpath.property="icu.jar"/>
+    <module-uptodate name="analysis/icu" jarfile="${common.dir}/../modules/analysis/build/icu/lucene-analyzers-icu-${version}.jar"
+      property="analyzers-icu.uptodate" classpath.property="analyzers-icu.jar"/>
     <!-- analyzers common needs a hack for the jar file: -->
     <module-uptodate name="analysis/common" jarfile="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"
       property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
@@ -181,11 +182,11 @@
 	
 	<path id="collation.runtime.classpath">
 	  <path refid="run.classpath"/>
-    <pathelement path="${icu.jar}"/>
-    <fileset dir="${common.dir}/contrib/icu/lib" includes="icu4j*.jar"/>
+    <pathelement path="${analyzers-icu.jar}"/>
+    <fileset dir="${common.dir}/../modules/analysis/icu/lib" includes="icu4j*.jar"/>
 	</path>
 	
-	<target name="collation" depends="compile,compile-icu,top-100k-wiki-word-files">
+	<target name="collation" depends="compile,compile-analyzers-icu,top-100k-wiki-word-files">
 	    <echo>Running contrib/benchmark with alg file: ${collation.alg.file}</echo>
 	    <java fork="true" classname="org.apache.lucene.benchmark.byTask.Benchmark" 
 	          maxmemory="${task.mem}" output="${collation.output.file}">
@@ -237,9 +238,9 @@
          <fileset dir="${common.dir}/contrib/highlighter" includes="build.xml"/>
       </subant>
     </target>
-    <target name="compile-icu" unless="icu.uptodate">
+    <target name="compile-analyzers-icu" unless="analyzers-icu.uptodate">
       <subant target="default">
-         <fileset dir="${common.dir}/contrib/icu" includes="build.xml"/>
+         <fileset dir="${common.dir}/../modules/analysis/icu" includes="build.xml"/>
       </subant>
     </target>
     <target name="compile-analyzers-common" unless="analyzers-common.uptodate">

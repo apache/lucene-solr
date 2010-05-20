@@ -326,7 +326,6 @@ The source distribution does not contain sources of the previous Lucene Java ver
 
           <packageset dir="contrib/ant/src/java"/>
           <packageset dir="contrib/benchmark/src/java"/>
-          <packageset dir="contrib/icu/src/java"/>
           <packageset dir="contrib/db/bdb-je/src/java"/>
           <packageset dir="contrib/db/bdb/src/java"/>
           <packageset dir="contrib/highlighter/src/java"/>

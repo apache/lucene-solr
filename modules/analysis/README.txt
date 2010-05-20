@@ -16,6 +16,11 @@ FILES
 lucene-analyzers-common-XX.jar
   The primary analysis module library, containing general-purpose analysis
   components and support for various languages.
+
+lucene-analyzers-icu-XX.jar
+  An add-on analysis library that provides improved Unicode support via
+  International Components for Unicode (ICU). Note: this module depends on
+  the ICU4j jar file (version > 4.4.0)
   
 lucene-analyzers-smartcn-XX.jar
   An add-on analysis library that provides word segmentation for Simplified
@@ -26,11 +31,13 @@ lucene-analyzers-stempel-XX.jar
   including tables for the Polish language.
 
 common/src/java
+icu/src/java
 smartcn/src/java
 stempel/src/java
-  The source code for the three libraries.
+  The source code for the four libraries.
 
 common/src/test
+icu/src/test
 smartcn/src/test
 stempel/src/test
-  Unit tests for the three libraries.
+  Unit tests for the four libraries.

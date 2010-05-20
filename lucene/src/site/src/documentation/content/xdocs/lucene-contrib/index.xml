@@ -70,12 +70,6 @@
                 <p>See <a href="../api/contrib-highlighter/index.html">highlighter javadoc</a></p>
             </section>
 
-            <section id="icu"><title>icu</title>
-                <p>Provides integration with ICU (International Components for Unicode) for
-                stronger Unicode and internationalization support. </p>
-                <p>See <a href="../api/contrib-icu/index.html">icu javadoc</a></p>
-            </section>
-            
             <section id="instantiated"><title>instantiated</title>
                 <p>RAM-based index that enables much faster searching than RAMDirectory in certain situations.</p>
                 <p>See <a href="../api/contrib-instantiated/index.html">instantiated javadoc</a></p>
