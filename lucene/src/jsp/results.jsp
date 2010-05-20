@@ -114,7 +114,7 @@ public String escapeHTML(String s) {
                                                                       // searcher != null was to handle
                                                                       // a weird compilation bug 
                 thispage = maxpage;                                   // default last element to maxpage
-                hits = searcher.search(query, maxpage);                        // run the query 
+                hits = searcher.search(query, maxpage + startindex);  // run the query 
                 if (hits.totalHits == 0) {                             // if we got no results tell the user
 %>
                 <p> I'm sorry I couldn't find what you were looking for. </p>
