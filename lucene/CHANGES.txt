@@ -398,6 +398,10 @@ Bug fixes
 * LUCENE-2467: Fixed memory leaks in IndexWriter when large documents
   are indexed.  (Mike McCandless)
 
+* LUCENE-2473: Clicking on the "More Results" link in the luceneweb.war
+  demo resulted in ArrayIndexOutOfBoundsException.  
+  (Sami Siren via Robert Muir)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
