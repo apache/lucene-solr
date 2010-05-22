@@ -594,10 +594,6 @@ public class SortedIntDocSet extends DocSetBase {
               int idx = startIdx;
               int adjustedDoc = -1;
 
-              public int doc() {
-                return adjustedDoc;
-              }
-
               @Override
               public int docID() {
                 return adjustedDoc;
