@@ -18,6 +18,7 @@
     <module-uptodate name="analysis/common" jarfile="${common.dir}/../modules/analysis/build/common/lucene-analyzers-common-${version}.jar"
       property="analyzers-common.uptodate" classpath.property="analyzers-common.jar"/>
     <contrib-uptodate name="memory" property="memory.uptodate" classpath.property="memory.jar"/>
+    <contrib-uptodate name="demo" property="demo.uptodate" classpath.property="demo.jar"/>
 
     <target name="check-files">
         <available file="temp/news20.tar.gz" property="news20.exists"/>
@@ -139,8 +140,8 @@
       <pathelement path="${memory.jar}"/>
       <pathelement path="${highlighter.jar}"/>
       <pathelement path="${analyzers-common.jar}"/>
+      <pathelement path="${demo.jar}"/>
       <path refid="base.classpath"/>
-      <pathelement path="${common.dir}/build/classes/demo"/>
     	<fileset dir="lib">
     		<include name="**/*.jar"/>
     	</fileset>
@@ -228,9 +229,9 @@
       <echo>Benchmark output in JIRA table format is in file: ${shingle.jira.output.file}</echo>
     </target>
 
-    <target name="compile-demo">
-      <subant target="compile-demo">
-         <fileset dir="${common.dir}" includes="build.xml"/>
+    <target name="compile-demo" unless="demo.uptodate">
+      <subant target="default">
+         <fileset dir="${common.dir}/contrib/demo" includes="build.xml"/>
       </subant>
     </target>
     <target name="compile-highlighter" unless="highlighter.uptodate">

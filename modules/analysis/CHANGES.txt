@@ -34,6 +34,16 @@ New Features
    (... in progress)
 
   * LUCENE-2413: Consolidated all Lucene analyzers into common.
+    - o.a.l.analysis.KeywordAnalyzer -> o.a.l.analysis.core.KeywordAnalyzer
+    - o.a.l.analysis.KeywordTokenizer -> o.a.l.analysis.core.KeywordTokenizer
+    - o.a.l.analysis.LetterTokenizer -> o.a.l.analysis.core.LetterTokenizer
+    - o.a.l.analysis.LowerCaseFilter -> o.a.l.analysis.core.LowerCaseFilter
+    - o.a.l.analysis.LowerCaseTokenizer -> o.a.l.analysis.core.LowerCaseTokenizer
+    - o.a.l.analysis.SimpleAnalyzer -> o.a.l.analysis.core.SimpleAnalyzer
+    - o.a.l.analysis.StopAnalyzer -> o.a.l.analysis.core.StopAnalyzer
+    - o.a.l.analysis.StopFilter -> o.a.l.analysis.core.StopFilter
+    - o.a.l.analysis.WhitespaceAnalyzer -> o.a.l.analysis.core.WhitespaceAnalyzer
+    - o.a.l.analysis.WhitespaceTokenizer -> o.a.l.analysis.core.WhitespaceTokenizer
     - o.a.l.analysis.PorterStemFilter -> o.a.l.analysis.en.PorterStemFilter
     - o.a.l.analysis.ASCIIFoldingFilter -> o.a.l.analysis.miscellaneous.ASCIIFoldingFilter
     - o.a.l.analysis.ISOLatin1AccentFilter -> o.a.l.analysis.miscellaneous.ISOLatin1AccentFilter
@@ -44,6 +54,9 @@ New Features
     - o.a.l.analysis.BaseCharFilter -> o.a.l.analysis.charfilter.BaseCharFilter
     - o.a.l.analysis.MappingCharFilter -> o.a.l.analysis.charfilter.MappingCharFilter
     - o.a.l.analysis.NormalizeCharMap -> o.a.l.analysis.charfilter.NormalizeCharMap
+    - o.a.l.analysis.ReusableAnalyzerBase -> o.a.l.analysis.util.ReusableAnalyzerBase
+    - o.a.l.analysis.StopwordAnalyzerBase -> o.a.l.analysis.util.StopwordAnalyzerBase
+    - o.a.l.analysis.WordListLoader -> o.a.l.analysis.util.WordListLoader
     ... (in progress)
 
 Build

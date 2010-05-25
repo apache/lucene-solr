@@ -119,7 +119,7 @@
 
 
     <fieldtype name="nametext" class="solr.TextField">
-      <analyzer class="org.apache.lucene.analysis.WhitespaceAnalyzer"/>
+      <analyzer class="org.apache.lucene.analysis.core.WhitespaceAnalyzer"/>
     </fieldtype>
 
     <fieldtype name="teststop" class="solr.TextField">

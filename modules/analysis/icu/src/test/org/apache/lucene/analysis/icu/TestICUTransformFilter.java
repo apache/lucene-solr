@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.KeywordTokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 
 import com.ibm.icu.text.Transliterator;

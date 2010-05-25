@@ -18,6 +18,8 @@ package org.apache.lucene.analysis.snowball;
  */
 
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.core.LowerCaseFilter;
+import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.standard.*;
 import org.apache.lucene.analysis.tr.TurkishLowerCaseFilter;
 import org.apache.lucene.util.Version;

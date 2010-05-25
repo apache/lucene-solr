@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.ar;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.CharTokenizer;
-import org.apache.lucene.analysis.LetterTokenizer;
+import org.apache.lucene.analysis.core.LetterTokenizer;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
@@ -120,7 +120,7 @@ public class ArabicLetterTokenizer extends LetterTokenizer {
   
   /** 
    * Allows for Letter category or NonspacingMark category
-   * @see org.apache.lucene.analysis.LetterTokenizer#isTokenChar(int)
+   * @see org.apache.lucene.analysis.core.LetterTokenizer#isTokenChar(int)
    */
   @Override
   protected boolean isTokenChar(int c) {

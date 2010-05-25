@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.core;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,48 +19,40 @@ package org.apache.lucene.analysis;
 
 import java.io.Reader;
 
+import org.apache.lucene.analysis.CharTokenizer;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
 /**
- * LowerCaseTokenizer performs the function of LetterTokenizer
- * and LowerCaseFilter together.  It divides text at non-letters and converts
- * them to lower case.  While it is functionally equivalent to the combination
- * of LetterTokenizer and LowerCaseFilter, there is a performance advantage
- * to doing the two tasks at once, hence this (redundant) implementation.
- * <P>
- * Note: this does a decent job for most European languages, but does a terrible
- * job for some Asian languages, where words are not separated by spaces.
- * </p>
+ * A WhitespaceTokenizer is a tokenizer that divides text at whitespace.
+ * Adjacent sequences of non-Whitespace characters form tokens. <a
+ * name="version"/>
  * <p>
- * <a name="version"/>
  * You must specify the required {@link Version} compatibility when creating
- * {@link LowerCaseTokenizer}:
+ * {@link WhitespaceTokenizer}:
  * <ul>
  * <li>As of 3.1, {@link CharTokenizer} uses an int based API to normalize and
  * detect token characters. See {@link CharTokenizer#isTokenChar(int)} and
  * {@link CharTokenizer#normalize(int)} for details.</li>
  * </ul>
- * </p>
  */
-public final class LowerCaseTokenizer extends LetterTokenizer {
+public final class WhitespaceTokenizer extends CharTokenizer {
   
   /**
-   * Construct a new LowerCaseTokenizer.
-   * 
-   * @param matchVersion
-   *          Lucene version to match See {@link <a href="#version">above</a>}
+   * Construct a new WhitespaceTokenizer. * @param matchVersion Lucene version
+   * to match See {@link <a href="#version">above</a>}
    * 
    * @param in
    *          the input to split up into tokens
    */
-  public LowerCaseTokenizer(Version matchVersion, Reader in) {
+  public WhitespaceTokenizer(Version matchVersion, Reader in) {
     super(matchVersion, in);
   }
 
-  /** 
-   * Construct a new LowerCaseTokenizer using a given {@link AttributeSource}.
-   *
+  /**
+   * Construct a new WhitespaceTokenizer using a given {@link AttributeSource}.
+   * 
    * @param matchVersion
    *          Lucene version to match See {@link <a href="#version">above</a>}
    * @param source
@@ -68,61 +60,64 @@ public final class LowerCaseTokenizer extends LetterTokenizer {
    * @param in
    *          the input to split up into tokens
    */
-  public LowerCaseTokenizer(Version matchVersion, AttributeSource source, Reader in) {
+  public WhitespaceTokenizer(Version matchVersion, AttributeSource source, Reader in) {
     super(matchVersion, source, in);
   }
 
   /**
-   * Construct a new LowerCaseTokenizer using a given
+   * Construct a new WhitespaceTokenizer using a given
    * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
    *
-   * @param matchVersion
-   *          Lucene version to match See {@link <a href="#version">above</a>}
+   * @param
+   *          matchVersion Lucene version to match See
+   *          {@link <a href="#version">above</a>}
    * @param factory
    *          the attribute factory to use for this {@link Tokenizer}
    * @param in
    *          the input to split up into tokens
    */
-  public LowerCaseTokenizer(Version matchVersion, AttributeFactory factory, Reader in) {
+  public WhitespaceTokenizer(Version matchVersion, AttributeFactory factory, Reader in) {
     super(matchVersion, factory, in);
   }
   
   /**
-   * Construct a new LowerCaseTokenizer.
+   * Construct a new WhitespaceTokenizer.
    * 
-   * @deprecated use {@link #LowerCaseTokenizer(Reader)} instead. This will be
-   *             removed in Lucene 4.0.
+   * @deprecated use {@link #WhitespaceTokenizer(Version, Reader)} instead. This will
+   *             be removed in Lucene 4.0.
    */
   @Deprecated
-  public LowerCaseTokenizer(Reader in) {
-    super(Version.LUCENE_30, in);
+  public WhitespaceTokenizer(Reader in) {
+    super(in);
   }
 
   /**
-   * Construct a new LowerCaseTokenizer using a given {@link AttributeSource}.
+   * Construct a new WhitespaceTokenizer using a given {@link AttributeSource}.
    * 
-   * @deprecated use {@link #LowerCaseTokenizer(AttributeSource, Reader)}
+   * @deprecated use {@link #WhitespaceTokenizer(Version, AttributeSource, Reader)}
    *             instead. This will be removed in Lucene 4.0.
    */
-  public LowerCaseTokenizer(AttributeSource source, Reader in) {
-    super(Version.LUCENE_30, source, in);
+  @Deprecated
+  public WhitespaceTokenizer(AttributeSource source, Reader in) {
+    super(source, in);
   }
 
   /**
-   * Construct a new LowerCaseTokenizer using a given
+   * Construct a new WhitespaceTokenizer using a given
    * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
    * 
-   * @deprecated use {@link #LowerCaseTokenizer(AttributeSource.AttributeFactory, Reader)}
+   * @deprecated use {@link #WhitespaceTokenizer(Version, AttributeSource.AttributeFactory, Reader)}
    *             instead. This will be removed in Lucene 4.0.
    */
-  public LowerCaseTokenizer(AttributeFactory factory, Reader in) {
-    super(Version.LUCENE_30, factory, in);
+  @Deprecated
+  public WhitespaceTokenizer(AttributeFactory factory, Reader in) {
+    super(factory, in);
   }
   
-  /** Converts char to lower case
-   * {@link Character#toLowerCase(int)}.*/
+  /** Collects only characters which do not satisfy
+   * {@link Character#isWhitespace(int)}.*/
   @Override
-  protected int normalize(int c) {
-    return Character.toLowerCase(c);
+  protected boolean isTokenChar(int c) {
+    return !Character.isWhitespace(c);
   }
 }

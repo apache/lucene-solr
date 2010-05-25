@@ -28,9 +28,9 @@ import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.StopAnalyzer;
-import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.core.StopAnalyzer;
+import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.Version;
@@ -40,10 +40,10 @@ import org.apache.lucene.util.Version;
  * {@link java.io.Reader}, that can flexibly separate text into terms via a regular expression {@link Pattern}
  * (with behaviour identical to {@link String#split(String)}),
  * and that combines the functionality of
- * {@link org.apache.lucene.analysis.LetterTokenizer},
- * {@link org.apache.lucene.analysis.LowerCaseTokenizer},
- * {@link org.apache.lucene.analysis.WhitespaceTokenizer},
- * {@link org.apache.lucene.analysis.StopFilter} into a single efficient
+ * {@link org.apache.lucene.analysis.core.LetterTokenizer},
+ * {@link org.apache.lucene.analysis.core.LowerCaseTokenizer},
+ * {@link org.apache.lucene.analysis.core.WhitespaceTokenizer},
+ * {@link org.apache.lucene.analysis.core.StopFilter} into a single efficient
  * multi-purpose class.
  * <p>
  * If you are unsure how exactly a regular expression should look like, consider 
@@ -157,7 +157,7 @@ public final class PatternAnalyzer extends Analyzer {
    *            given stop set (after previously having applied toLowerCase()
    *            if applicable). For example, created via
    *            {@link StopFilter#makeStopSet(Version, String[])}and/or
-   *            {@link org.apache.lucene.analysis.WordlistLoader}as in
+   *            {@link org.apache.lucene.analysis.util.WordlistLoader}as in
    *            <code>WordlistLoader.getWordSet(new File("samples/fulltext/stopwords.txt")</code>
    *            or <a href="http://www.unine.ch/info/clef/">other stop words
    *            lists </a>.

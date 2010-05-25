@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.core;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,6 +24,12 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.List;
 
+import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
+import org.apache.lucene.analysis.util.WordlistLoader;
+import org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents;
 import org.apache.lucene.util.Version;
 
 /** Filters {@link LetterTokenizer} with {@link LowerCaseFilter} and {@link StopFilter}.
@@ -91,10 +97,10 @@ public final class StopAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * Creates
-   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
    * used to tokenize all the text in the provided {@link Reader}.
    * 
-   * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * @return {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
    *         built from a {@link LowerCaseTokenizer} filtered with
    *         {@link StopFilter}
    */

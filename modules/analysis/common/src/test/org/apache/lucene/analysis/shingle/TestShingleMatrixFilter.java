@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.miscellaneous.EmptyTokenStream;
 import org.apache.lucene.analysis.miscellaneous.PrefixAndSuffixAwareTokenFilter;
 import org.apache.lucene.analysis.miscellaneous.SingleTokenTokenStream;

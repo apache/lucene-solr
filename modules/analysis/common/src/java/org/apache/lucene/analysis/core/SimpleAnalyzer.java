@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.core;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,6 +19,10 @@ package org.apache.lucene.analysis;
 
 import java.io.Reader;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.CharTokenizer;
+import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents;
 import org.apache.lucene.util.Version;
 
 /** An {@link Analyzer} that filters {@link LetterTokenizer} 

@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.core;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,6 +18,8 @@ package org.apache.lucene.analysis;
  */
 
 import java.io.Reader;
+
+import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
 
 /**
  * "Tokenizes" the entire stream as a single token. This is useful

@@ -22,8 +22,8 @@ import java.util.Arrays;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.core.StopAnalyzer;
 
 /**
  * Verifies the behavior of PatternAnalyzer.

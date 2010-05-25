@@ -18,16 +18,16 @@ package org.apache.lucene.analysis.th;
 
 import java.io.Reader;
 
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.StopAnalyzer;
-import org.apache.lucene.analysis.StopFilter;
-import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.LowerCaseFilter;
+import org.apache.lucene.analysis.core.StopAnalyzer;
+import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
 import org.apache.lucene.util.Version;
 
 /**
@@ -46,10 +46,10 @@ public final class ThaiAnalyzer extends ReusableAnalyzerBase {
 
   /**
    * Creates
-   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
    * used to tokenize all the text in the provided {@link Reader}.
    * 
-   * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * @return {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
    *         built from a {@link StandardTokenizer} filtered with
    *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link ThaiWordFilter}, and
    *         {@link StopFilter}

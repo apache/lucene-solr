@@ -17,8 +17,8 @@
 
 package org.apache.solr.handler;
 
-import org.apache.lucene.analysis.KeywordTokenizer;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.solr.common.params.AnalysisParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -149,7 +149,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertToken(tokenList.get(7), new TokenInfo("lazy", null, "<ALPHANUM>", 34, 38, 8, null, false));
     assertToken(tokenList.get(8), new TokenInfo("brown", null, "<ALPHANUM>", 39, 44, 9, null, true));
     assertToken(tokenList.get(9), new TokenInfo("dogs", null, "<ALPHANUM>", 45, 49, 10, null, false));
-    tokenList = indexPart.get("org.apache.lucene.analysis.LowerCaseFilter");
+    tokenList = indexPart.get("org.apache.lucene.analysis.core.LowerCaseFilter");
     assertNotNull("Expcting LowerCaseFilter analysis breakdown", tokenList);
     assertEquals(tokenList.size(), 10);
     assertToken(tokenList.get(0), new TokenInfo("the", null, "<ALPHANUM>", 0, 3, 1, null, false));
@@ -162,7 +162,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertToken(tokenList.get(7), new TokenInfo("lazy", null, "<ALPHANUM>", 34, 38, 8, null, false));
     assertToken(tokenList.get(8), new TokenInfo("brown", null, "<ALPHANUM>", 39, 44, 9, null, true));
     assertToken(tokenList.get(9), new TokenInfo("dogs", null, "<ALPHANUM>", 45, 49, 10, null, false));
-    tokenList = indexPart.get("org.apache.lucene.analysis.StopFilter");
+    tokenList = indexPart.get("org.apache.lucene.analysis.core.StopFilter");
     assertNotNull("Expcting StopFilter analysis breakdown", tokenList);
     assertEquals(tokenList.size(), 8);
     assertToken(tokenList.get(0), new TokenInfo("quick", null, "<ALPHANUM>", 4, 9, 1, null, false));
@@ -198,12 +198,12 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertEquals(2, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("fox", null, "<ALPHANUM>", 0, 3, 1, null, false));
     assertToken(tokenList.get(1), new TokenInfo("brown", null, "<ALPHANUM>", 4, 9, 2, null, false));
-    tokenList = queryPart.get("org.apache.lucene.analysis.LowerCaseFilter");
+    tokenList = queryPart.get("org.apache.lucene.analysis.core.LowerCaseFilter");
     assertNotNull("Expcting LowerCaseFilter analysis breakdown", tokenList);
     assertEquals(2, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("fox", null, "<ALPHANUM>", 0, 3, 1, null, false));
     assertToken(tokenList.get(1), new TokenInfo("brown", null, "<ALPHANUM>", 4, 9, 2, null, false));
-    tokenList = queryPart.get("org.apache.lucene.analysis.StopFilter");
+    tokenList = queryPart.get("org.apache.lucene.analysis.core.StopFilter");
     assertNotNull("Expcting StopFilter analysis breakdown", tokenList);
     assertEquals(2, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("fox", null, "<ALPHANUM>", 0, 3, 1, null, false));
@@ -220,7 +220,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     indexPart = nameTextType.get("index");
     assertNotNull("expecting an index token analysis for field type 'nametext'", indexPart);
 
-    tokenList = indexPart.get("org.apache.lucene.analysis.WhitespaceTokenizer");
+    tokenList = indexPart.get("org.apache.lucene.analysis.core.WhitespaceTokenizer");
     assertNotNull("Expcting WhitespaceTokenizer analysis breakdown", tokenList);
     assertEquals(10, tokenList.size());
     assertToken(tokenList.get(0), new TokenInfo("the", null, "word", 0, 3, 1, null, false));
@@ -314,7 +314,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
     assertEquals("  whátëvêr  ", indexPart.get("org.apache.lucene.analysis.charfilter.HTMLStripCharFilter"));
     assertEquals("  whatever  ", indexPart.get("org.apache.lucene.analysis.charfilter.MappingCharFilter"));
 
-    List<NamedList> tokenList = (List<NamedList>)indexPart.get("org.apache.lucene.analysis.WhitespaceTokenizer");
+    List<NamedList> tokenList = (List<NamedList>)indexPart.get("org.apache.lucene.analysis.core.WhitespaceTokenizer");
     assertNotNull("Expecting WhitespaceTokenizer analysis breakdown", tokenList);
     assertEquals(tokenList.size(), 1);
     assertToken(tokenList.get(0), new TokenInfo("whatever", null, "word", 12, 20, 1, null, false));

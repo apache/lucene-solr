@@ -15,14 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.util;
 
 import java.io.IOException;
 import java.util.Set;
 
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
-import org.apache.lucene.analysis.WordlistLoader;
+import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.Version;
 
 /**

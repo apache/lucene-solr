@@ -18,7 +18,7 @@
 package org.apache.solr.analysis;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 import java.io.StringReader;
 import java.util.HashMap;

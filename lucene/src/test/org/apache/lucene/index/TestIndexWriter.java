@@ -42,7 +42,6 @@ import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.Document;
@@ -536,67 +535,6 @@ public class TestIndexWriter extends LuceneTestCase {
       if (!Arrays.equals(startFiles, endFiles)) {
         fail(message + ": before delete:\n    " + arrayToString(startFiles) + "\n  after delete:\n    " + arrayToString(endFiles));
       }
-    }
-
-    /**
-     * Make sure we skip wicked long terms.
-    */
-    public void testWickedLongTerm() throws IOException {
-      RAMDirectory dir = new RAMDirectory();
-      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
-
-      char[] chars = new char[DocumentsWriter.MAX_TERM_LENGTH_UTF8];
-      Arrays.fill(chars, 'x');
-      Document doc = new Document();
-      final String bigTerm = new String(chars);
-
-      // This produces a too-long term:
-      String contents = "abc xyz x" + bigTerm + " another term";
-      doc.add(new Field("content", contents, Field.Store.NO, Field.Index.ANALYZED));
-      writer.addDocument(doc);
-
-      // Make sure we can add another normal document
-      doc = new Document();
-      doc.add(new Field("content", "abc bbb ccc", Field.Store.NO, Field.Index.ANALYZED));
-      writer.addDocument(doc);
-      writer.close();
-
-      IndexReader reader = IndexReader.open(dir, true);
-
-      // Make sure all terms < max size were indexed
-      assertEquals(2, reader.docFreq(new Term("content", "abc")));
-      assertEquals(1, reader.docFreq(new Term("content", "bbb")));
-      assertEquals(1, reader.docFreq(new Term("content", "term")));
-      assertEquals(1, reader.docFreq(new Term("content", "another")));
-
-      // Make sure position is still incremented when
-      // massive term is skipped:
-      TermPositions tps = reader.termPositions(new Term("content", "another"));
-      assertTrue(tps.next());
-      assertEquals(1, tps.freq());
-      assertEquals(3, tps.nextPosition());
-
-      // Make sure the doc that has the massive term is in
-      // the index:
-      assertEquals("document with wicked long term should is not in the index!", 2, reader.numDocs());
-
-      reader.close();
-
-      // Make sure we can add a document with exactly the
-      // maximum length term, and search on that term:
-      doc = new Document();
-      doc.add(new Field("content", bigTerm, Field.Store.NO, Field.Index.ANALYZED));
-      StandardAnalyzer sa = new StandardAnalyzer(TEST_VERSION_CURRENT);
-      sa.setMaxTokenLength(100000);
-      writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, sa));
-      writer.addDocument(doc);
-      writer.close();
-      reader = IndexReader.open(dir, true);
-      assertEquals(1, reader.docFreq(new Term("content", bigTerm)));
-      reader.close();
-
-      dir.close();
     }
 
     public void testOptimizeMaxNumSegments() throws IOException {

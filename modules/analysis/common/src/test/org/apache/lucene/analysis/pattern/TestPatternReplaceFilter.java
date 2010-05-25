@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.pattern;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 import java.io.StringReader;
 import java.util.regex.Pattern;

@@ -32,7 +32,6 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
@@ -49,7 +48,6 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.Version;
 
 
 /**
@@ -158,13 +156,6 @@ public final class MoreLikeThis {
 	 */
     public static final int DEFAULT_MAX_NUM_TOKENS_PARSED=5000;
        
-
-	/**
-     * Default analyzer to parse source doc with.
-	 * @see #getAnalyzer
-     */
-    public static final Analyzer DEFAULT_ANALYZER = new StandardAnalyzer(Version.LUCENE_CURRENT);
-
     /**
      * Ignore terms with less than this frequency in the source doc.
 	 * @see #getMinTermFreq
@@ -240,7 +231,7 @@ public final class MoreLikeThis {
     /**
      * Analyzer that will be used to parse the doc.
      */
-    private Analyzer analyzer = DEFAULT_ANALYZER;
+    private Analyzer analyzer = null;
 
     /**
      * Ignore words less frequent that this.
@@ -343,10 +334,9 @@ public final class MoreLikeThis {
 
   /**
      * Returns an analyzer that will be used to parse source doc with. The default analyzer
-     * is the {@link #DEFAULT_ANALYZER}.
+     * is not set.
      *
      * @return the analyzer that will be used to parse source doc with.
-	 * @see #DEFAULT_ANALYZER
      */
     public Analyzer getAnalyzer() {
         return analyzer;
@@ -887,6 +877,10 @@ public final class MoreLikeThis {
 	private void addTermFrequencies(Reader r, Map<String,Int> termFreqMap, String fieldName)
 		throws IOException
 	{
+	  if (analyzer == null) {
+	    throw new UnsupportedOperationException("To use MoreLikeThis without " +
+	    		"term vectors, you must provide an Analyzer");
+	  }
 		   TokenStream ts = analyzer.tokenStream(fieldName, r);
 			int tokenCount=0;
 			// for every token

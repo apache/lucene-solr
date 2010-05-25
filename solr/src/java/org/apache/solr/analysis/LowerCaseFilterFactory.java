@@ -20,7 +20,7 @@ package org.apache.solr.analysis;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.core.LowerCaseFilter;
 
 /**
  * @version $Id$

@@ -20,7 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.lucene.analysis.KeywordAnalyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -50,7 +51,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     super.setUp();
     random = newRandom();
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new KeywordAnalyzer(),
+    IndexWriter writer = new IndexWriter(dir, new MockAnalyzer(MockTokenizer.KEYWORD, false),
         IndexWriter.MaxFieldLength.UNLIMITED);
     
     Document doc = new Document();

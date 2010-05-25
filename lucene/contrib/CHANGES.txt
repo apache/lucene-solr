@@ -2,6 +2,11 @@ Lucene contrib change Log
 
 ======================= Trunk (not yet released) =======================
   
+Build
+
+ * LUCENE-2413: Moved the demo out of lucene core and into contrib/demo.
+   (Robert Muir)
+
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy

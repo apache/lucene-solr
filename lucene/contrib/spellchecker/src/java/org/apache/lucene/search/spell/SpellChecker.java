@@ -20,7 +20,7 @@ package org.apache.lucene.search.spell;
 import java.io.IOException;
 import java.util.Iterator;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;

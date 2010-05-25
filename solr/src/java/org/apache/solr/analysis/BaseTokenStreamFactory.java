@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.util.Version;
 
 

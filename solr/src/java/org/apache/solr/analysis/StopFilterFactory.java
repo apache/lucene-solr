@@ -19,10 +19,10 @@ package org.apache.solr.analysis;
 
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
-import org.apache.lucene.analysis.StopFilter;
-import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.core.StopAnalyzer;
+import org.apache.lucene.analysis.core.StopFilter;
 
 import java.util.Map;
 import java.util.Set;

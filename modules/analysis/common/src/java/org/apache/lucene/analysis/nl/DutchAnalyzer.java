@@ -19,18 +19,18 @@ package org.apache.lucene.analysis.nl;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.core.LowerCaseFilter;
+import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
-import org.apache.lucene.analysis.LowerCaseFilter;
-import org.apache.lucene.analysis.ReusableAnalyzerBase;
-import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.miscellaneous.StemmerOverrideFilter;
 import org.apache.lucene.analysis.snowball.SnowballFilter;
 import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;  // for javadoc
+import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.Version;
 
 import java.io.File;
@@ -171,7 +171,7 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
   public DutchAnalyzer(Version matchVersion, File stopwords) {
     // this is completely broken!
     try {
-      stoptable = org.apache.lucene.analysis.WordlistLoader.getWordSet(stopwords);
+      stoptable = org.apache.lucene.analysis.util.WordlistLoader.getWordSet(stopwords);
     } catch (IOException e) {
       // TODO: throw IOException
       throw new RuntimeException(e);
@@ -208,7 +208,7 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
   @Deprecated
   public void setStemExclusionTable(File exclusionlist) {
     try {
-      excltable = org.apache.lucene.analysis.WordlistLoader.getWordSet(exclusionlist);
+      excltable = org.apache.lucene.analysis.util.WordlistLoader.getWordSet(exclusionlist);
       setPreviousTokenStream(null); // force a new stemmer to be created
     } catch (IOException e) {
       // TODO: throw IOException

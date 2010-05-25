@@ -25,7 +25,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.CharReader;
 import org.apache.lucene.analysis.CharStream;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 /**
  * Simple tests to ensure this factory is working

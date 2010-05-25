@@ -156,7 +156,7 @@ public abstract class TokenStream extends AttributeSource implements Closeable {
    * This method can be used to perform any end-of-stream operations, such as
    * setting the final offset of a stream. The final offset of a stream might
    * differ from the offset of the last token eg in case one or more whitespaces
-   * followed after the last token, but a {@link WhitespaceTokenizer} was used.
+   * followed after the last token, but a WhitespaceTokenizer was used.
    * 
    * @throws IOException
    */

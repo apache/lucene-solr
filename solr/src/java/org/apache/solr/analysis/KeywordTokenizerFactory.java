@@ -17,7 +17,7 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.KeywordTokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 import java.io.Reader;
 

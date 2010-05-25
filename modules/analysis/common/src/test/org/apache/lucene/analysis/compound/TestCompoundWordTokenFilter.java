@@ -25,8 +25,8 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {

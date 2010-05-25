@@ -17,7 +17,7 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.LowerCaseTokenizer;
+import org.apache.lucene.analysis.core.LowerCaseTokenizer;
 
 import java.io.Reader;
 import java.util.Map;

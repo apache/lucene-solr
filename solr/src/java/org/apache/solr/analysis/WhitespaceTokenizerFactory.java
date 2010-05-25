@@ -17,7 +17,7 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 import java.io.Reader;
 import java.util.Map;

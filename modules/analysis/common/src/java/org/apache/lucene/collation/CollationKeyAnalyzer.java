@@ -20,8 +20,8 @@ package org.apache.lucene.collation;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.KeywordTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
 
 import java.text.Collator;
 import java.io.Reader;

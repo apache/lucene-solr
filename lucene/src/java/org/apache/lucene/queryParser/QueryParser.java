@@ -1082,22 +1082,6 @@ public class QueryParser implements QueryParserConstants {
     return sb.toString();
   }
 
-  /**
-   * Command line tool to test QueryParser, using {@link org.apache.lucene.analysis.SimpleAnalyzer}.
-   * Usage:<br>
-   * <code>java org.apache.lucene.queryParser.QueryParser &lt;input&gt;</code>
-   */
-  public static void main(String[] args) throws Exception {
-    if (args.length == 0) {
-      System.out.println("Usage: java org.apache.lucene.queryParser.QueryParser <input>");
-      System.exit(0);
-    }
-    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "field",
-                           new org.apache.lucene.analysis.SimpleAnalyzer());
-    Query q = qp.parse(args[0]);
-    System.out.println(q.toString("field"));
-  }
-
 // *   Query  ::= ( Clause )*
 // *   Clause ::= ["+", "-"] [<TERM> ":"] ( <TERM> | "(" Query ")" )
   final public int Conjunction() throws ParseException {
@@ -1802,4 +1786,19 @@ public class QueryParser implements QueryParserConstants {
     JJCalls next;
   }
 
+  /**
+   * Command line tool to test QueryParser, using {@link org.apache.lucene.analysis.SimpleAnalyzer}.
+   * Usage:<br>
+   * <code>java org.apache.lucene.queryParser.QueryParser &lt;input&gt;</code>
+   */
+//  public static void main(String[] args) throws Exception {
+//    if (args.length == 0) {
+//      System.out.println("Usage: java org.apache.lucene.queryParser.QueryParser <input>");
+//      System.exit(0);
+//    }
+//    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "field",
+//                           new org.apache.lucene.analysis.SimpleAnalyzer());
+//    Query q = qp.parse(args[0]);
+//    System.out.println(q.toString("field"));
+//  }
 }

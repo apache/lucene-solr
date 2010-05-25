@@ -19,7 +19,7 @@ package org.apache.solr.spelling;
 import static org.junit.Assert.*;
 
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;

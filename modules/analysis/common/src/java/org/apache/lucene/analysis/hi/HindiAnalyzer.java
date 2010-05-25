@@ -21,13 +21,13 @@ import java.io.IOException;
 import java.io.Reader;
 import java.util.Set;
 
-import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
-import org.apache.lucene.analysis.StopFilter;
-import org.apache.lucene.analysis.StopwordAnalyzerBase;
+import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.LowerCaseFilter;
+import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.analysis.in.IndicNormalizationFilter;
 import org.apache.lucene.analysis.in.IndicTokenizer;
 import org.apache.lucene.util.Version;
@@ -106,10 +106,10 @@ public final class HindiAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * Creates
-   * {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
    * used to tokenize all the text in the provided {@link Reader}.
    * 
-   * @return {@link org.apache.lucene.analysis.ReusableAnalyzerBase.TokenStreamComponents}
+   * @return {@link org.apache.lucene.analysis.util.ReusableAnalyzerBase.TokenStreamComponents}
    *         built from a {@link IndicTokenizer} filtered with
    *         {@link LowerCaseFilter}, {@link IndicNormalizationFilter},
    *         {@link HindiNormalizationFilter}, {@link KeywordMarkerFilter}

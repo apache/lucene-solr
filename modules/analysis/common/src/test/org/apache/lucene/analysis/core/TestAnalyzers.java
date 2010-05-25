@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.core;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -21,11 +21,21 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.Reader;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.core.LowerCaseTokenizer;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.core.LowerCaseFilter;
+import org.apache.lucene.analysis.core.SimpleAnalyzer;
+import org.apache.lucene.analysis.core.StopAnalyzer;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.Payload;
+import org.apache.lucene.util.Version;
 
 public class TestAnalyzers extends BaseTokenStreamTestCase {
 
@@ -214,6 +224,38 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
         new String [] { "abac\uDC16adaba" });
   }
   
+  public void testLowerCaseTokenizer() throws IOException {
+    StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
+    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT,
+        reader);
+    assertTokenStreamContents(tokenizer, new String[] { "tokenizer",
+        "\ud801\udc44test" });
+  }
+
+  @Deprecated
+  public void testLowerCaseTokenizerBWCompat() throws IOException {
+    StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
+    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(Version.LUCENE_30,
+        reader);
+    assertTokenStreamContents(tokenizer, new String[] { "tokenizer", "test" });
+  }
+  
+  public void testWhitespaceTokenizer() throws IOException {
+    StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
+    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT,
+        reader);
+    assertTokenStreamContents(tokenizer, new String[] { "Tokenizer",
+        "\ud801\udc1ctest" });
+  }
+
+  @Deprecated
+  public void testWhitespaceTokenizerBWCompat() throws IOException {
+    StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
+    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(Version.LUCENE_30,
+        reader);
+    assertTokenStreamContents(tokenizer, new String[] { "Tokenizer",
+        "\ud801\udc1ctest" });
+  }
 }
 
 final class PayloadSetter extends TokenFilter {

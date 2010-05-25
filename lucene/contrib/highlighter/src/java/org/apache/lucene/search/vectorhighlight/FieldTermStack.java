@@ -21,24 +21,10 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Set;
 
-import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermVectorOffsetInfo;
-import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.Version;
 
 /**
  * <code>FieldTermStack</code> is a stack that keeps query terms in the specified field
@@ -49,24 +35,24 @@ public class FieldTermStack {
   private final String fieldName;
   LinkedList<TermInfo> termList = new LinkedList<TermInfo>();
   
-  public static void main( String[] args ) throws Exception {
-    Analyzer analyzer = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
-    QueryParser parser = new QueryParser(Version.LUCENE_CURRENT,  "f", analyzer );
-    Query query = parser.parse( "a x:b" );
-    FieldQuery fieldQuery = new FieldQuery( query, true, false );
+  //public static void main( String[] args ) throws Exception {
+  //  Analyzer analyzer = new WhitespaceAnalyzer(Version.LUCENE_CURRENT);
+  //  QueryParser parser = new QueryParser(Version.LUCENE_CURRENT,  "f", analyzer );
+  //  Query query = parser.parse( "a x:b" );
+  //  FieldQuery fieldQuery = new FieldQuery( query, true, false );
     
-    Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_CURRENT, analyzer));
-    Document doc = new Document();
-    doc.add( new Field( "f", "a a a b b c a b b c d e f", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
-    doc.add( new Field( "f", "b a b a f", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
-    writer.addDocument( doc );
-    writer.close();
+  //  Directory dir = new RAMDirectory();
+  //  IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_CURRENT, analyzer));
+  //  Document doc = new Document();
+  //  doc.add( new Field( "f", "a a a b b c a b b c d e f", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
+  //  doc.add( new Field( "f", "b a b a f", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
+  //  writer.addDocument( doc );
+  //  writer.close();
     
-    IndexReader reader = IndexReader.open( dir, true );
-    new FieldTermStack( reader, 0, "f", fieldQuery );
-    reader.close();
-  }
+  //  IndexReader reader = IndexReader.open( dir, true );
+  //  new FieldTermStack( reader, 0, "f", fieldQuery );
+  //  reader.close();
+  //}
 
   /**
    * a constructor.

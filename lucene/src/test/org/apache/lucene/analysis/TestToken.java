@@ -239,7 +239,7 @@ public class TestToken extends LuceneTestCase {
   }
 
   public void testTokenAttributeFactory() throws Exception {
-    TokenStream ts = new WhitespaceTokenizer(Token.TOKEN_ATTRIBUTE_FACTORY, new StringReader("foo bar"));
+    TokenStream ts = new MockTokenizer(Token.TOKEN_ATTRIBUTE_FACTORY, new StringReader("foo bar"), MockTokenizer.WHITESPACE, false);
     
     assertTrue("TypeAttribute is not implemented by SenselessAttributeImpl",
       ts.addAttribute(SenselessAttribute.class) instanceof SenselessAttributeImpl);

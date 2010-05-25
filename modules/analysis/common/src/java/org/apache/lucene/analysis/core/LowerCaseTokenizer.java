@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.core;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,21 +19,25 @@ package org.apache.lucene.analysis;
 
 import java.io.Reader;
 
+import org.apache.lucene.analysis.CharTokenizer;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Version;
 
 /**
- * A LetterTokenizer is a tokenizer that divides text at non-letters. That's to
- * say, it defines tokens as maximal strings of adjacent letters, as defined by
- * java.lang.Character.isLetter() predicate.
- * <p>
+ * LowerCaseTokenizer performs the function of LetterTokenizer
+ * and LowerCaseFilter together.  It divides text at non-letters and converts
+ * them to lower case.  While it is functionally equivalent to the combination
+ * of LetterTokenizer and LowerCaseFilter, there is a performance advantage
+ * to doing the two tasks at once, hence this (redundant) implementation.
+ * <P>
  * Note: this does a decent job for most European languages, but does a terrible
  * job for some Asian languages, where words are not separated by spaces.
  * </p>
  * <p>
  * <a name="version"/>
  * You must specify the required {@link Version} compatibility when creating
- * {@link LetterTokenizer}:
+ * {@link LowerCaseTokenizer}:
  * <ul>
  * <li>As of 3.1, {@link CharTokenizer} uses an int based API to normalize and
  * detect token characters. See {@link CharTokenizer#isTokenChar(int)} and
@@ -41,24 +45,24 @@ import org.apache.lucene.util.Version;
  * </ul>
  * </p>
  */
-
-public class LetterTokenizer extends CharTokenizer {
+public final class LowerCaseTokenizer extends LetterTokenizer {
   
   /**
-   * Construct a new LetterTokenizer.
+   * Construct a new LowerCaseTokenizer.
    * 
    * @param matchVersion
    *          Lucene version to match See {@link <a href="#version">above</a>}
+   * 
    * @param in
    *          the input to split up into tokens
    */
-  public LetterTokenizer(Version matchVersion, Reader in) {
+  public LowerCaseTokenizer(Version matchVersion, Reader in) {
     super(matchVersion, in);
   }
-  
-  /**
-   * Construct a new LetterTokenizer using a given {@link AttributeSource}.
-   * 
+
+  /** 
+   * Construct a new LowerCaseTokenizer using a given {@link AttributeSource}.
+   *
    * @param matchVersion
    *          Lucene version to match See {@link <a href="#version">above</a>}
    * @param source
@@ -66,14 +70,14 @@ public class LetterTokenizer extends CharTokenizer {
    * @param in
    *          the input to split up into tokens
    */
-  public LetterTokenizer(Version matchVersion, AttributeSource source, Reader in) {
+  public LowerCaseTokenizer(Version matchVersion, AttributeSource source, Reader in) {
     super(matchVersion, source, in);
   }
-  
+
   /**
-   * Construct a new LetterTokenizer using a given
+   * Construct a new LowerCaseTokenizer using a given
    * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
-   * 
+   *
    * @param matchVersion
    *          Lucene version to match See {@link <a href="#version">above</a>}
    * @param factory
@@ -81,45 +85,46 @@ public class LetterTokenizer extends CharTokenizer {
    * @param in
    *          the input to split up into tokens
    */
-  public LetterTokenizer(Version matchVersion, AttributeFactory factory, Reader in) {
+  public LowerCaseTokenizer(Version matchVersion, AttributeFactory factory, Reader in) {
     super(matchVersion, factory, in);
   }
   
   /**
-   * Construct a new LetterTokenizer.
+   * Construct a new LowerCaseTokenizer.
    * 
-   * @deprecated use {@link #LetterTokenizer(Version, Reader)} instead. This
-   *             will be removed in Lucene 4.0.
+   * @deprecated use {@link #LowerCaseTokenizer(Reader)} instead. This will be
+   *             removed in Lucene 4.0.
    */
-  public LetterTokenizer(Reader in) {
+  @Deprecated
+  public LowerCaseTokenizer(Reader in) {
     super(Version.LUCENE_30, in);
   }
-  
+
   /**
-   * Construct a new LetterTokenizer using a given {@link AttributeSource}. 
-   * @deprecated
-   * use {@link #LetterTokenizer(Version, AttributeSource, Reader)} instead.
-   * This will be removed in Lucene 4.0.
-   */
-  public LetterTokenizer(AttributeSource source, Reader in) {
-    super(Version.LUCENE_30, source, in);
-  }
-  
-  /**
-   * Construct a new LetterTokenizer using a given
-   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
+   * Construct a new LowerCaseTokenizer using a given {@link AttributeSource}.
    * 
-   * @deprecated use {@link #LetterTokenizer(Version, AttributeSource.AttributeFactory, Reader)}
+   * @deprecated use {@link #LowerCaseTokenizer(AttributeSource, Reader)}
    *             instead. This will be removed in Lucene 4.0.
    */
-  public LetterTokenizer(AttributeFactory factory, Reader in) {
+  public LowerCaseTokenizer(AttributeSource source, Reader in) {
+    super(Version.LUCENE_30, source, in);
+  }
+
+  /**
+   * Construct a new LowerCaseTokenizer using a given
+   * {@link org.apache.lucene.util.AttributeSource.AttributeFactory}.
+   * 
+   * @deprecated use {@link #LowerCaseTokenizer(AttributeSource.AttributeFactory, Reader)}
+   *             instead. This will be removed in Lucene 4.0.
+   */
+  public LowerCaseTokenizer(AttributeFactory factory, Reader in) {
     super(Version.LUCENE_30, factory, in);
   }
   
-  /** Collects only characters which satisfy
-   * {@link Character#isLetter(int)}.*/
+  /** Converts char to lower case
+   * {@link Character#toLowerCase(int)}.*/
   @Override
-  protected boolean isTokenChar(int c) {
-    return Character.isLetter(c);
+  protected int normalize(int c) {
+    return Character.toLowerCase(c);
   }
 }

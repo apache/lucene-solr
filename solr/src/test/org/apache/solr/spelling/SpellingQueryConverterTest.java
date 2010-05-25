@@ -18,7 +18,7 @@
 package org.apache.solr.spelling;
 
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
+import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.solr.common.util.NamedList;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;

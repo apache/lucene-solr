@@ -46,8 +46,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     }
     // internal buffer size is 1024 make sure we have a surrogate pair right at the border
     builder.insert(1023, "\ud801\udc1c");
-    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(
-        TEST_VERSION_CURRENT, new StringReader(builder.toString()));
+    MockTokenizer tokenizer = new MockTokenizer(new StringReader(builder.toString()), MockTokenizer.SIMPLE, true);
     assertTokenStreamContents(tokenizer, builder.toString().toLowerCase().split(" "));
   }
   
@@ -64,8 +63,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
         builder.append("a");
       }
       builder.append("\ud801\udc1cabc");
-      LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(
-          TEST_VERSION_CURRENT, new StringReader(builder.toString()));
+      MockTokenizer tokenizer = new MockTokenizer(new StringReader(builder.toString()), MockTokenizer.SIMPLE, true);
       assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase()});
     }
   }
@@ -79,8 +77,7 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     for (int i = 0; i < 255; i++) {
       builder.append("A");
     }
-    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(
-        TEST_VERSION_CURRENT, new StringReader(builder.toString() + builder.toString()));
+    MockTokenizer tokenizer = new MockTokenizer(new StringReader(builder.toString() + builder.toString()), MockTokenizer.SIMPLE, true);
     assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase(), builder.toString().toLowerCase()});
   }
   
@@ -94,40 +91,8 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
       builder.append("A");
     }
     builder.append("\ud801\udc1c");
-    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(
-        TEST_VERSION_CURRENT, new StringReader(builder.toString() + builder.toString()));
+    MockTokenizer tokenizer = new MockTokenizer(new StringReader(builder.toString() + builder.toString()), MockTokenizer.SIMPLE, true);
     assertTokenStreamContents(tokenizer, new String[] {builder.toString().toLowerCase(), builder.toString().toLowerCase()});
-  }
-
-  public void testLowerCaseTokenizer() throws IOException {
-    StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(TEST_VERSION_CURRENT,
-        reader);
-    assertTokenStreamContents(tokenizer, new String[] { "tokenizer",
-        "\ud801\udc44test" });
-  }
-
-  public void testLowerCaseTokenizerBWCompat() throws IOException {
-    StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    LowerCaseTokenizer tokenizer = new LowerCaseTokenizer(Version.LUCENE_30,
-        reader);
-    assertTokenStreamContents(tokenizer, new String[] { "tokenizer", "test" });
-  }
-
-  public void testWhitespaceTokenizer() throws IOException {
-    StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(TEST_VERSION_CURRENT,
-        reader);
-    assertTokenStreamContents(tokenizer, new String[] { "Tokenizer",
-        "\ud801\udc1ctest" });
-  }
-
-  public void testWhitespaceTokenizerBWCompat() throws IOException {
-    StringReader reader = new StringReader("Tokenizer \ud801\udc1ctest");
-    WhitespaceTokenizer tokenizer = new WhitespaceTokenizer(Version.LUCENE_30,
-        reader);
-    assertTokenStreamContents(tokenizer, new String[] { "Tokenizer",
-        "\ud801\udc1ctest" });
   }
 
   public void testIsTokenCharCharInSubclass() {

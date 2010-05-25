@@ -22,7 +22,7 @@ import java.text.SimpleDateFormat;
 import java.util.Locale;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 public class DateRecognizerSinkTokenizerTest extends BaseTokenStreamTestCase {
 

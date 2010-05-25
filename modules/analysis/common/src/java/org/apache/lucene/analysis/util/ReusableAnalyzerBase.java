@@ -15,10 +15,15 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.util;
 
 import java.io.IOException;
 import java.io.Reader;
+
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 
 /**
  * An convenience subclass of Analyzer that makes it easy to implement

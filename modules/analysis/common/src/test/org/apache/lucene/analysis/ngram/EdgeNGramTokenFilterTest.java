@@ -18,8 +18,8 @@ package org.apache.lucene.analysis.ngram;
  */
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 import java.io.StringReader;
 

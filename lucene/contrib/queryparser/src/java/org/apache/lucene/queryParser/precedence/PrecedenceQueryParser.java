@@ -577,22 +577,6 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     return sb.toString();
   }
 
-  /**
-   * Command line tool to test QueryParser, using {@link org.apache.lucene.analysis.SimpleAnalyzer}.
-   * Usage:<br>
-   * <code>java org.apache.lucene.queryParser.QueryParser &lt;input&gt;</code>
-   */
-  public static void main(String[] args) throws Exception {
-    if (args.length == 0) {
-      System.out.println("Usage: java org.apache.lucene.queryParser.QueryParser <input>");
-      System.exit(0);
-    }
-    PrecedenceQueryParser qp = new PrecedenceQueryParser("field",
-                           new org.apache.lucene.analysis.SimpleAnalyzer());
-    Query q = qp.parse(args[0]);
-    System.out.println(q.toString("field"));
-  }
-
 // *   Query  ::= ( Clause )*
 // *   Clause ::= ["+", "-"] [<TERM> ":"] ( <TERM> | "(" Query ")" )
   final public int Conjunction() throws ParseException {
@@ -1290,4 +1274,19 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     JJCalls next;
   }
 
+  /**
+   * Command line tool to test QueryParser, using {@link org.apache.lucene.analysis.SimpleAnalyzer}.
+   * Usage:<br>
+   * <code>java org.apache.lucene.queryParser.QueryParser &lt;input&gt;</code>
+   */
+//  public static void main(String[] args) throws Exception {
+//    if (args.length == 0) {
+//      System.out.println("Usage: java org.apache.lucene.queryParser.QueryParser <input>");
+//      System.exit(0);
+//    }
+//    PrecedenceQueryParser qp = new PrecedenceQueryParser("field",
+//                           new org.apache.lucene.analysis.SimpleAnalyzer());
+//    Query q = qp.parse(args[0]);
+//    System.out.println(q.toString("field"));
+//  }
 }

@@ -38,7 +38,7 @@
 
   <target name="compile-core" depends="jflex-notice, common.compile-core"/>
 
-  <target name="jflex" depends="jflex-check,clean-jflex,jflex-wiki-tokenizer"/>
+  <target name="jflex" depends="jflex-check,clean-jflex,jflex-StandardAnalyzer,jflex-wiki-tokenizer"/>
 
   <target name="jflex-wiki-tokenizer" depends="init,jflex-check" if="jflex.present">
     <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
@@ -49,10 +49,26 @@
            nobak="on"/>
   </target>
 
+  <target name="jflex-StandardAnalyzer" depends="init,jflex-check" if="jflex.present">
+    <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
+			<classpath refid="jflex.classpath"/>
+    </taskdef>
+
+    <jflex file="src/java/org/apache/lucene/analysis/standard/StandardTokenizerImplOrig.jflex"
+           outdir="src/java/org/apache/lucene/analysis/standard"
+           nobak="on" />
+    <jflex file="src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl31.jflex"
+           outdir="src/java/org/apache/lucene/analysis/standard"
+           nobak="on" />
+  </target>
+
   <target name="clean-jflex">
     <delete>
       <fileset dir="src/java/org/apache/lucene/analysis/wikipedia" includes="*.java">
         <containsregexp expression="generated.*by.*JFlex"/>
+      </fileset>
+      <fileset dir="src/java/org/apache/lucene/analysis/standard" includes="*.java">
+    	<containsregexp expression="generated.*by.*JFlex"/>
       </fileset>
     </delete>
   </target>

@@ -21,7 +21,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.analysis.core.StopFilter;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 

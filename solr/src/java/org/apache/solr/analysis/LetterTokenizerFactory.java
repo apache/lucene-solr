@@ -17,7 +17,7 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.LetterTokenizer;
+import org.apache.lucene.analysis.core.LetterTokenizer;
 
 import java.io.Reader;
 import java.util.Map;

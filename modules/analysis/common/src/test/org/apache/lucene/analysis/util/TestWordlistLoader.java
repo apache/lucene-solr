@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.analysis.util;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,7 +25,7 @@ import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-import org.apache.lucene.analysis.WordlistLoader;
+import org.apache.lucene.analysis.util.WordlistLoader;
 
 public class TestWordlistLoader extends LuceneTestCase {
 
