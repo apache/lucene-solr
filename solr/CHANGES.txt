@@ -139,6 +139,10 @@ New Features
 * SOLR-1740: ShingleFilterFactory supports the "minShingleSize" and "tokenSeparator"
   parameters for controlling the minimum shingle size produced by the filter, and
   the separator string that it uses, respectively.  (Steven Rowe via rmuir)
+
+* SOLR-1923: PhoneticFilterFactory now has support for the 
+  Caverphone algorithm. (rmuir)
+
    
 Optimizations
 ----------------------

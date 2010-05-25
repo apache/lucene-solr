@@ -79,6 +79,12 @@ public class TestPhoneticFilter extends BaseTokenTestCase {
         new String[] { "A0", "aaa", "B1", "bbb", "C3", "ccc", "E034034", "easgasg" });
     assertAlgorithm("RefinedSoundex", "false", "aaa bbb ccc easgasg",
         new String[] { "A0", "B1", "C3", "E034034" });
+    
+    assertAlgorithm("Caverphone", "true", "Darda Karleen Datha Carlene",
+        new String[] { "TTA1111111", "Darda", "KLN1111111", "Karleen", 
+          "TTA1111111", "Datha", "KLN1111111", "Carlene" });
+    assertAlgorithm("Caverphone", "false", "Darda Karleen Datha Carlene",
+        new String[] { "TTA1111111", "KLN1111111", "TTA1111111", "KLN1111111" });
   }
   
   static void assertAlgorithm(String algName, String inject, String input,

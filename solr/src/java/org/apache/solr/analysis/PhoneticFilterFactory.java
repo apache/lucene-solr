@@ -23,6 +23,7 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.codec.Encoder;
+import org.apache.commons.codec.language.Caverphone;
 import org.apache.commons.codec.language.DoubleMetaphone;
 import org.apache.commons.codec.language.Metaphone;
 import org.apache.commons.codec.language.RefinedSoundex;
@@ -56,6 +57,7 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
     registry.put( "Metaphone".toUpperCase(Locale.ENGLISH),       Metaphone.class );
     registry.put( "Soundex".toUpperCase(Locale.ENGLISH),         Soundex.class );
     registry.put( "RefinedSoundex".toUpperCase(Locale.ENGLISH),  RefinedSoundex.class );
+    registry.put( "Caverphone".toUpperCase(Locale.ENGLISH),      Caverphone.class );
   }
   
   protected boolean inject = true;
