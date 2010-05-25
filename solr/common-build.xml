@@ -212,13 +212,15 @@
   
   <target name="compile-lucene" unless="lucene-compiled">
     <property name="lucene-compiled" value="true"/>
-    <ant antfile="build.xml" target="compile" dir="../modules/analysis/common"/>
-    <ant antfile="build.xml" target="compile" dir="../lucene/contrib/highlighter"/>
-    <ant antfile="build.xml" target="compile" dir="../lucene/contrib/memory"/>
-    <ant antfile="build.xml" target="compile" dir="../lucene/contrib/misc"/>
-    <ant antfile="build.xml" target="compile" dir="../lucene/contrib/queries"/>
-    <ant antfile="build.xml" target="compile" dir="../lucene/contrib/spatial"/>
-    <ant antfile="build.xml" target="compile" dir="../lucene/contrib/spellchecker"/>
+    <subant target="default">
+      <fileset dir="../modules/analysis/common" includes="build.xml"/>
+      <fileset dir="../lucene/contrib/highlighter" includes="build.xml"/>
+      <fileset dir="../lucene/contrib/memory" includes="build.xml"/>
+      <fileset dir="../lucene/contrib/misc" includes="build.xml"/>
+      <fileset dir="../lucene/contrib/queries" includes="build.xml"/>
+      <fileset dir="../lucene/contrib/spatial" includes="build.xml"/>
+      <fileset dir="../lucene/contrib/spellchecker" includes="build.xml"/>
+    </subant>
   </target>
    
    
