@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.util;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Iterator;
 
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
 

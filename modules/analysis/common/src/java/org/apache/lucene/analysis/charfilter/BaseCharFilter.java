@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.charfilter;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.CharStream;
 
 /**

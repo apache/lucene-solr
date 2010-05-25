@@ -15,10 +15,13 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.charfilter;
 
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.CharReader;
+import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.charfilter.CharFilter;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestCharFilter extends LuceneTestCase {

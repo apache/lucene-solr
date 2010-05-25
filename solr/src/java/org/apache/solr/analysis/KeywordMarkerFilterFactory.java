@@ -2,8 +2,8 @@ package org.apache.solr.analysis;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.util.plugin.ResourceLoaderAware;

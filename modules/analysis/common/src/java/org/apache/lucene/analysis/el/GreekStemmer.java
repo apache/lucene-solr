@@ -1,6 +1,6 @@
 package org.apache.lucene.analysis.el;
 
-import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
 
 import java.util.Arrays;

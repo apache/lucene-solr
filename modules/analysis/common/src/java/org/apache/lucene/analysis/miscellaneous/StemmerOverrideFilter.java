@@ -20,11 +20,11 @@ package org.apache.lucene.analysis.miscellaneous;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.analysis.CharArrayMap;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.util.Version;
 
 /**

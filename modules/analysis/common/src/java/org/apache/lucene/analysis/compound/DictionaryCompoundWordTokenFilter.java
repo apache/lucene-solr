@@ -68,7 +68,7 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
    * Creates a new {@link DictionaryCompoundWordTokenFilter}
    *  
    * @param input the {@link TokenStream} to process
-   * @param dictionary the word dictionary to match against. If this is a {@link org.apache.lucene.analysis.CharArraySet CharArraySet} it must have set ignoreCase=false and only contain
+   * @param dictionary the word dictionary to match against. If this is a {@link org.apache.lucene.analysis.util.CharArraySet CharArraySet} it must have set ignoreCase=false and only contain
    *        lower case strings.
    * @deprecated use {@link #DictionaryCompoundWordTokenFilter(Version, TokenStream, Set)} instead 
    */
@@ -81,7 +81,7 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
    * Creates a new {@link DictionaryCompoundWordTokenFilter}
    *  
    * @param input the {@link TokenStream} to process
-   * @param dictionary the word dictionary to match against. If this is a {@link org.apache.lucene.analysis.CharArraySet CharArraySet} it must have set ignoreCase=false and only contain
+   * @param dictionary the word dictionary to match against. If this is a {@link org.apache.lucene.analysis.util.CharArraySet CharArraySet} it must have set ignoreCase=false and only contain
    *        lower case strings. 
    * @param minWordSize only words longer than this get processed
    * @param minSubwordSize only subwords longer than this get to the output stream
@@ -151,7 +151,7 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
    *          the {@link TokenStream} to process
    * @param dictionary
    *          the word dictionary to match against. If this is a
-   *          {@link org.apache.lucene.analysis.CharArraySet CharArraySet} it
+   *          {@link org.apache.lucene.analysis.util.CharArraySet CharArraySet} it
    *          must have set ignoreCase=false and only contain lower case
    *          strings.
    */
@@ -171,7 +171,7 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
    *          the {@link TokenStream} to process
    * @param dictionary
    *          the word dictionary to match against. If this is a
-   *          {@link org.apache.lucene.analysis.CharArraySet CharArraySet} it
+   *          {@link org.apache.lucene.analysis.util.CharArraySet CharArraySet} it
    *          must have set ignoreCase=false and only contain lower case
    *          strings.
    * @param minWordSize

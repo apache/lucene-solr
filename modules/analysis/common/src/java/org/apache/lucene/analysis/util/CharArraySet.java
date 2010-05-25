@@ -1,4 +1,4 @@
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.util;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.Set;
 
 import org.apache.lucene.util.Version;
+
 
 /**
  * A simple class that stores Strings as char[]'s in a

@@ -18,12 +18,13 @@
 
 
 package org.apache.solr.analysis;
-import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.compound.*;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.lucene.analysis.TokenStream;
+
 import java.util.Map;
 import java.io.IOException;
 

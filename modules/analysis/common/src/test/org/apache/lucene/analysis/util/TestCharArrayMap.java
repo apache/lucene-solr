@@ -15,9 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.util;
 
 import java.util.*;
+
+import org.apache.lucene.analysis.util.CharArrayMap;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 

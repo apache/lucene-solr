@@ -51,9 +51,12 @@ New Features
     - o.a.l.analysis.LengthFilter -> o.a.l.analysis.miscellaneous.LengthFilter
     - o.a.l.analysis.PerFieldAnalyzerWrapper -> o.a.l.analysis.miscellaneous.PerFieldAnalyzerWrapper
     - o.a.l.analysis.TeeSinkTokenFilter -> o.a.l.analysis.sinks.TeeSinkTokenFilter
+    - o.a.l.analysis.CharFilter -> o.a.l.analysis.charfilter.CharFilter
     - o.a.l.analysis.BaseCharFilter -> o.a.l.analysis.charfilter.BaseCharFilter
     - o.a.l.analysis.MappingCharFilter -> o.a.l.analysis.charfilter.MappingCharFilter
     - o.a.l.analysis.NormalizeCharMap -> o.a.l.analysis.charfilter.NormalizeCharMap
+    - o.a.l.analysis.CharArraySet -> o.a.l.analysis.util.CharArraySet
+    - o.a.l.analysis.CharArrayMap -> o.a.l.analysis.util.CharArrayMap
     - o.a.l.analysis.ReusableAnalyzerBase -> o.a.l.analysis.util.ReusableAnalyzerBase
     - o.a.l.analysis.StopwordAnalyzerBase -> o.a.l.analysis.util.StopwordAnalyzerBase
     - o.a.l.analysis.WordListLoader -> o.a.l.analysis.util.WordListLoader

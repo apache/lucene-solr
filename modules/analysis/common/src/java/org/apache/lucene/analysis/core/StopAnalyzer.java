@@ -24,8 +24,8 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.List;
 
-import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
 import org.apache.lucene.analysis.util.StopwordAnalyzerBase;
 import org.apache.lucene.analysis.util.WordlistLoader;

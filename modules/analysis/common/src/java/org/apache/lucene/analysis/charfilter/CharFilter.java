@@ -15,9 +15,12 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.analysis;
+package org.apache.lucene.analysis.charfilter;
 
 import java.io.IOException;
+
+import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.analysis.Tokenizer;
 
 /**
  * Subclasses of CharFilter can be chained to filter CharStream.

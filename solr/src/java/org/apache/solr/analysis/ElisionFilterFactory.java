@@ -21,8 +21,9 @@ package org.apache.solr.analysis;
 
 import org.apache.solr.common.ResourceLoader;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
-import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.fr.*;
+import org.apache.lucene.analysis.util.CharArraySet;
+
 import java.io.IOException;
 import org.apache.lucene.analysis.TokenStream;
 

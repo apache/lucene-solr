@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.util.CharArraySet;
 
 /**
  * Test the Arabic Analyzer
