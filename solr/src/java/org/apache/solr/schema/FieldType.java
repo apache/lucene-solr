@@ -28,6 +28,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.UnicodeUtil;
+import org.apache.noggit.CharArr;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.solr.search.Sorting;
@@ -39,6 +42,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.MapSolrParams;
 
+import org.apache.solr.util.ByteUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.Map;
@@ -347,6 +351,11 @@ public abstract class FieldType extends FieldProperties {
     return indexedForm;
   }
 
+  /** Given an indexed term, append the human readable representation to out */
+  public void indexedToReadable(BytesRef input, CharArr out) {
+    ByteUtils.UTF8toUTF16(input, out);
+  }
+
   /** Given the stored field, return the human readable representation */
   public String storedToReadable(Fieldable f) {
     return toExternal(f);
@@ -363,6 +372,12 @@ public abstract class FieldType extends FieldProperties {
   /** Given the readable value, return the term value that will match it. */
   public String readableToIndexed(String val) {
     return toInternal(val);
+  }
+
+  /** Given the readable value, return the term value that will match it. */
+  public void readableToIndexed(CharSequence val, BytesRef result) {
+    String internal = readableToIndexed(val.toString());
+    UnicodeUtil.UTF16toUTF8(internal, 0, internal.length(), result);
   }
 
   /**

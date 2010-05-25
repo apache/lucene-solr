@@ -16,9 +16,10 @@ package org.apache.solr.handler.component;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.*;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
+import org.apache.noggit.CharArr;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.NamedList;
@@ -27,6 +28,7 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.StrField;
 import org.apache.solr.request.SimpleFacets.CountPair;
+import org.apache.solr.search.SolrIndexReader;
 import org.apache.solr.util.BoundedTreeSet;
 
 import org.apache.solr.client.solrj.response.TermsResponse;
@@ -69,112 +71,156 @@ public class TermsComponent extends SearchComponent {
 
   public void process(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
-    if (params.getBool(TermsParams.TERMS, false)) {
-      String lowerStr = params.get(TermsParams.TERMS_LOWER, null);
-      String[] fields = params.getParams(TermsParams.TERMS_FIELD);
-      if (fields != null && fields.length > 0) {
-        NamedList terms = new SimpleOrderedMap();
-        rb.rsp.add("terms", terms);
-        int limit = params.getInt(TermsParams.TERMS_LIMIT, 10);
-        if (limit < 0) {
-          limit = Integer.MAX_VALUE;
+    if (!params.getBool(TermsParams.TERMS, false)) return;
+
+    String[] fields = params.getParams(TermsParams.TERMS_FIELD);
+
+    NamedList termsResult = new SimpleOrderedMap();
+    rb.rsp.add("terms", termsResult);
+
+    if (fields == null || fields.length==0) return;
+
+    int limit = params.getInt(TermsParams.TERMS_LIMIT, 10);
+    if (limit < 0) {
+      limit = Integer.MAX_VALUE;
+    }
+
+    String lowerStr = params.get(TermsParams.TERMS_LOWER);
+    String upperStr = params.get(TermsParams.TERMS_UPPER);
+    boolean upperIncl = params.getBool(TermsParams.TERMS_UPPER_INCLUSIVE, false);
+    boolean lowerIncl = params.getBool(TermsParams.TERMS_LOWER_INCLUSIVE, true);
+    boolean sort = !TermsParams.TERMS_SORT_INDEX.equals(
+        params.get(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_COUNT));
+    int freqmin = params.getInt(TermsParams.TERMS_MINCOUNT, 1);
+    int freqmax = params.getInt(TermsParams.TERMS_MAXCOUNT, UNLIMITED_MAX_COUNT);
+    if (freqmax<0) {
+      freqmax = Integer.MAX_VALUE;
+    }
+    String prefix = params.get(TermsParams.TERMS_PREFIX_STR);
+    String regexp = params.get(TermsParams.TERMS_REGEXP_STR);
+    Pattern pattern = regexp != null ? Pattern.compile(regexp, resolveRegexpFlags(params)) : null;
+
+    boolean raw = params.getBool(TermsParams.TERMS_RAW, false);
+
+
+    SolrIndexReader sr = rb.req.getSearcher().getReader();
+    Fields lfields = MultiFields.getFields(sr);
+
+    for (String field : fields) {
+      NamedList fieldTerms = new NamedList();
+      termsResult.add(field, fieldTerms);
+
+      Terms terms = lfields.terms(field);
+      if (terms == null) {
+        // no terms for this field
+        continue;
+      }
+
+      FieldType ft = raw ? null : rb.req.getSchema().getFieldTypeNoEx(field);
+      if (ft==null) ft = new StrField();
+
+      // prefix must currently be text
+      BytesRef prefixBytes = prefix==null ? null : new BytesRef(prefix);
+
+      BytesRef upperBytes = null;
+      if (upperStr != null) {
+        upperBytes = new BytesRef();
+        ft.readableToIndexed(upperStr, upperBytes);
+      }
+
+      BytesRef lowerBytes;
+      if (lowerStr == null) {
+        // If no lower bound was specified, use the prefix
+        lowerBytes = prefixBytes;
+      } else {
+        lowerBytes = new BytesRef();
+        if (raw) {
+          // TODO: how to handle binary? perhaps we don't for "raw"... or if the field exists
+          // perhaps we detect if the FieldType is non-character and expect hex if so?
+          lowerBytes = new BytesRef(lowerStr);
+        } else {
+          lowerBytes = new BytesRef();
+          ft.readableToIndexed(lowerStr, lowerBytes);
         }
-        String upperStr = params.get(TermsParams.TERMS_UPPER);
-        boolean upperIncl = params.getBool(TermsParams.TERMS_UPPER_INCLUSIVE, false);
-        boolean lowerIncl = params.getBool(TermsParams.TERMS_LOWER_INCLUSIVE, true);
-        boolean sort = !TermsParams.TERMS_SORT_INDEX.equals(
-                          params.get(TermsParams.TERMS_SORT, TermsParams.TERMS_SORT_COUNT));
-        int freqmin = params.getInt(TermsParams.TERMS_MINCOUNT, 1); // initialize freqmin
-        int freqmax = params.getInt(TermsParams.TERMS_MAXCOUNT, UNLIMITED_MAX_COUNT); // initialize freqmax
-        if (freqmax<0) {
-          freqmax = Integer.MAX_VALUE;
-        }
-        String prefix = params.get(TermsParams.TERMS_PREFIX_STR);
-        String regexp = params.get(TermsParams.TERMS_REGEXP_STR);
-        Pattern pattern = regexp != null ? Pattern.compile(regexp, resolveRegexpFlags(params)) : null;
+      }
 
-        boolean raw = params.getBool(TermsParams.TERMS_RAW, false);
-        for (int j = 0; j < fields.length; j++) {
-          String field = StringHelper.intern(fields[j]);
-          FieldType ft = raw ? null : rb.req.getSchema().getFieldTypeNoEx(field);
-          if (ft==null) ft = new StrField();
 
-          // If no lower bound was specified, use the prefix
-          String lower = lowerStr==null ? prefix : (raw ? lowerStr : ft.toInternal(lowerStr));
-          if (lower == null) lower="";
-          String upper = upperStr==null ? null : (raw ? upperStr : ft.toInternal(upperStr));
+     TermsEnum termsEnum = terms.iterator();
+     BytesRef term = null;
 
-          Term lowerTerm = new Term(field, lower);
-          Term upperTerm = upper==null ? null : new Term(field, upper);
-          
-          TermEnum termEnum = rb.req.getSearcher().getReader().terms(lowerTerm); //this will be positioned ready to go
-          int i = 0;
-          BoundedTreeSet<CountPair<String, Integer>> queue = (sort ? new BoundedTreeSet<CountPair<String, Integer>>(limit) : null); 
-          NamedList fieldTerms = new NamedList();
-          terms.add(field, fieldTerms);
-          Term lowerTestTerm = termEnum.term();
-
+      if (lowerBytes != null) {
+        if (termsEnum.seek(lowerBytes, true) == TermsEnum.SeekStatus.END) {
+          termsEnum = null;
+        } else {
+          term = termsEnum.term();
           //Only advance the enum if we are excluding the lower bound and the lower Term actually matches
-          if (lowerTestTerm!=null && lowerIncl == false && lowerTestTerm.field() == field  // intern'd comparison
-                  && lowerTestTerm.text().equals(lower)) {
-            termEnum.next();
-          }
-
-          while (i<limit || sort) {
-
-            Term theTerm = termEnum.term();
-
-            // check for a different field, or the end of the index.
-            if (theTerm==null || field != theTerm.field())  // intern'd comparison
-              break;
-
-            String indexedText = theTerm.text();
-
-            // stop if the prefix doesn't match
-            if (prefix != null && !indexedText.startsWith(prefix)) break;
-
-            if (pattern != null && !pattern.matcher(indexedText).matches()) {
-                termEnum.next();
-                continue;
-            }
-
-            if (upperTerm != null) {
-              int upperCmp = theTerm.compareTo(upperTerm);
-              // if we are past the upper term, or equal to it (when don't include upper) then stop.
-              if (upperCmp>0 || (upperCmp==0 && !upperIncl)) break;
-            }
-
-            // This is a good term in the range.  Check if mincount/maxcount conditions are satisfied.
-            int docFreq = termEnum.docFreq();
-            if (docFreq >= freqmin && docFreq <= freqmax) {
-              // add the term to the list
-              String label = raw ? indexedText : ft.indexedToReadable(indexedText);
-              if (sort) {
-                queue.add(new CountPair<String, Integer>(label, docFreq));
-              } else {
-                fieldTerms.add(label, docFreq);
-                i++;
-              }
-            }
-
-            termEnum.next();
-          }
-
-          termEnum.close();
-          
-          if (sort) {
-            for (CountPair<String, Integer> item : queue) {
-              if (i < limit) {
-                fieldTerms.add(item.key, item.val);
-                i++;
-              } else {
-                break;
-              }
-            }
+          if (lowerIncl == false && term.equals(lowerBytes)) {
+            term = termsEnum.next();
           }
         }
       } else {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No terms.fl parameter specified");
+        // position termsEnum on first term
+        term = termsEnum.next();
+      }
+
+      int i = 0;
+      BoundedTreeSet<CountPair<String, Integer>> queue = (sort ? new BoundedTreeSet<CountPair<String, Integer>>(limit) : null);
+      CharArr external = new CharArr();
+
+      while (term != null && (i<limit || sort)) {
+        boolean externalized = false; // did we fill in "external" yet for this term?
+
+        // stop if the prefix doesn't match
+        if (prefixBytes != null && !term.startsWith(prefixBytes)) break;
+
+        if (pattern != null) {
+          // indexed text or external text?
+          // TODO: support "raw" mode?
+          external.reset();
+          ft.indexedToReadable(term, external);
+          if (!pattern.matcher(external).matches()) {
+            term = termsEnum.next();
+            continue;
+          }
+        }
+
+        if (upperBytes != null) {
+          int upperCmp = term.compareTo(upperBytes);
+          // if we are past the upper term, or equal to it (when don't include upper) then stop.
+          if (upperCmp>0 || (upperCmp==0 && !upperIncl)) break;
+        }
+
+        // This is a good term in the range.  Check if mincount/maxcount conditions are satisfied.
+        int docFreq = termsEnum.docFreq();
+        if (docFreq >= freqmin && docFreq <= freqmax) {
+          // add the term to the list
+
+          // TODO: handle raw somehow
+          if (!externalized) {
+            external.reset();
+            ft.indexedToReadable(term, external);                        
+          }
+
+          String label = external.toString();
+          if (sort) {
+            // TODO: defer conversion to string until the end...
+            // using the label now is a bug since tiebreak will not be in index order
+            queue.add(new CountPair<String, Integer>(label, docFreq));
+          } else {
+            fieldTerms.add(label, docFreq);
+            i++;
+          }
+        }
+
+        term = termsEnum.next();
+      }
+
+      if (sort) {
+        for (CountPair<String, Integer> item : queue) {
+          if (i >= limit) break;
+          fieldTerms.add(item.key, item.val);
+          i++;
+        }
       }
     }
   }

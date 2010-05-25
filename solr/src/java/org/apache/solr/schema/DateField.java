@@ -22,6 +22,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.util.BytesRef;
+import org.apache.noggit.CharArr;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.DateUtil;
 import org.apache.solr.request.SolrQueryRequest;
@@ -29,6 +31,7 @@ import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.response.XMLWriter;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.*;
+import org.apache.solr.util.ByteUtils;
 import org.apache.solr.util.DateMathParser;
 
 import java.io.IOException;
@@ -183,6 +186,12 @@ public class DateField extends FieldType {
 
   public String indexedToReadable(String indexedForm) {
     return indexedForm + Z;
+  }
+
+  @Override
+  public void indexedToReadable(BytesRef input, CharArr out) {
+    ByteUtils.UTF8toUTF16(input, out);
+    out.write(Z);
   }
 
   public String toExternal(Fieldable f) {

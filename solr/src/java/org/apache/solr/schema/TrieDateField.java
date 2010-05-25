@@ -17,6 +17,7 @@
 
 package org.apache.solr.schema;
 
+import org.apache.noggit.CharArr;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.analysis.CharFilterFactory;
 import org.apache.solr.analysis.TokenFilterFactory;
@@ -149,6 +150,12 @@ public class TrieDateField extends DateField {
   public String indexedToReadable(String _indexedForm) {
     final BytesRef indexedForm = new BytesRef(_indexedForm);
     return super.toExternal( new Date(NumericUtils.prefixCodedToLong(indexedForm)) );
+  }
+
+  @Override
+  public void indexedToReadable(BytesRef input, CharArr out) {
+    String ext =  super.toExternal( new Date(NumericUtils.prefixCodedToLong(input)) );
+    out.write(ext);
   }
 
   @Override

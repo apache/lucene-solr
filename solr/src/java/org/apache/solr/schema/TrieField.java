@@ -23,6 +23,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.NumericTokenStream;
+import org.apache.noggit.CharArr;
 import org.apache.solr.analysis.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
@@ -326,28 +327,33 @@ public class TrieField extends FieldType {
   public String readableToIndexed(String val) {
     // TODO: Numeric should never be handled as String, that may break in future lucene versions! Change to use BytesRef for term texts!
     BytesRef bytes = new BytesRef(NumericUtils.BUF_SIZE_LONG);
+    readableToIndexed(val, bytes);
+    return bytes.utf8ToString();
+  }
+
+  @Override
+  public void readableToIndexed(CharSequence val, BytesRef result) {
+    String s = val.toString();
     switch (type) {
       case INTEGER:
-        NumericUtils.intToPrefixCoded(Integer.parseInt(val), 0, bytes);
+        NumericUtils.intToPrefixCoded(Integer.parseInt(s), 0, result);
         break;
       case FLOAT:
-        NumericUtils.intToPrefixCoded(NumericUtils.floatToSortableInt(Float.parseFloat(val)), 0, bytes);
+        NumericUtils.intToPrefixCoded(NumericUtils.floatToSortableInt(Float.parseFloat(s)), 0, result);
         break;
       case LONG:
-        NumericUtils.longToPrefixCoded(Long.parseLong(val), 0, bytes);
+        NumericUtils.longToPrefixCoded(Long.parseLong(s), 0, result);
         break;
       case DOUBLE:
-        NumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(Double.parseDouble(val)), 0, bytes);
+        NumericUtils.longToPrefixCoded(NumericUtils.doubleToSortableLong(Double.parseDouble(s)), 0, result);
         break;
       case DATE:
-        NumericUtils.longToPrefixCoded(dateField.parseMath(null, val).getTime(), 0, bytes);
+        NumericUtils.longToPrefixCoded(dateField.parseMath(null, s).getTime(), 0, result);
         break;
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
     }
-    return bytes.utf8ToString();
   }
-
 
   @Override
   public String toInternal(String val) {
@@ -397,6 +403,34 @@ public class TrieField extends FieldType {
       default:
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
     }
+  }
+
+  @Override
+  public void indexedToReadable(BytesRef input, CharArr out) {
+    BytesRef indexedForm = input;
+    String s;
+
+    switch (type) {
+      case INTEGER:
+        s = Integer.toString( NumericUtils.prefixCodedToInt(indexedForm) );
+        break;
+      case FLOAT:
+        s = Float.toString( NumericUtils.sortableIntToFloat(NumericUtils.prefixCodedToInt(indexedForm)) );
+        break;
+      case LONG:
+        s = Long.toString( NumericUtils.prefixCodedToLong(indexedForm) );
+        break;
+      case DOUBLE:
+        s = Double.toString( NumericUtils.sortableLongToDouble(NumericUtils.prefixCodedToLong(indexedForm)) );
+        break;
+      case DATE:
+        s = dateField.formatDate( new Date(NumericUtils.prefixCodedToLong(indexedForm)) );
+        break;
+      default:
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown type for trie field: " + type);
+    }
+
+    out.write(s);
   }
 
   @Override

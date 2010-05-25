@@ -18,6 +18,8 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.BytesRef;
+import org.apache.noggit.CharArr;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.OrdFieldSource;
 import org.apache.lucene.analysis.Analyzer;
@@ -110,6 +112,15 @@ public class BoolField extends FieldType {
   public String indexedToReadable(String indexedForm) {
     char ch = indexedForm.charAt(0);
     return ch=='T' ? "true" : "false";
+  }
+
+  @Override
+  public void indexedToReadable(BytesRef input, CharArr out) {
+    if (input.length > 0 && input.bytes[input.offset] == 'T') {
+      out.write("true");
+    } else {
+      out.write("false");
+    }
   }
 
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {

@@ -18,12 +18,15 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.BytesRef;
+import org.apache.noggit.CharArr;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.StringIndexDocValues;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
+import org.apache.solr.util.ByteUtils;
 import org.apache.solr.util.NumberUtils;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.response.XMLWriter;
@@ -53,6 +56,12 @@ public class SortableLongField extends FieldType {
     return NumberUtils.SortableStr2long(indexedForm);
   }
 
+  @Override
+  public void indexedToReadable(BytesRef input, CharArr out) {
+    // TODO: this could be more efficient, but the sortable types should be deprecated instead
+    out.write( indexedToReadable(ByteUtils.UTF8toUTF16(input)) );
+  }
+  
   public String toExternal(Fieldable f) {
     return indexedToReadable(f.stringValue());
   }
