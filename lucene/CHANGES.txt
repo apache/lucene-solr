@@ -402,6 +402,10 @@ Bug fixes
   demo resulted in ArrayIndexOutOfBoundsException.  
   (Sami Siren via Robert Muir)
 
+* LUCENE-2476: If any exception is hit init'ing IW, release the write
+  lock (previously we only released on IOException).  (Tamas Cservenak
+  via Mike McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
