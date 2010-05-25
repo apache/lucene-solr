@@ -177,7 +177,7 @@ public class ClientUtils
 
 
   /**
-   * See: http://lucene.apache.org/java/docs/queryparsersyntax.html#Escaping%20Special%20Characters
+   * See: <a href="http://lucene.apache.org/java/docs/nightly/queryparsersyntax.html#Escaping%20Special%20Characters">Escaping Special Characters</a>
    */
   public static String escapeQueryChars(String s) {
     StringBuilder sb = new StringBuilder();
