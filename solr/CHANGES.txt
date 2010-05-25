@@ -161,6 +161,9 @@ New Features
 * SOLR-945: JSON update handler that accepts add, delete, commit
   commands in JSON format. (Ryan McKinley, yonik)
 
+* SOLR-1923: PhoneticFilterFactory now has support for the 
+  Caverphone algorithm. (rmuir)
+
    
 Optimizations
 ----------------------
