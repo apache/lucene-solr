@@ -63,8 +63,9 @@ public final class SnowballFilter extends TokenFilter {
   public SnowballFilter(TokenStream in, String name) {
     super(in);
     try {      
-      Class<?> stemClass = Class.forName("org.tartarus.snowball.ext." + name + "Stemmer");
-      stemmer = (SnowballProgram) stemClass.newInstance();
+      Class<? extends SnowballProgram> stemClass =
+        Class.forName("org.tartarus.snowball.ext." + name + "Stemmer").asSubclass(SnowballProgram.class);
+      stemmer = stemClass.newInstance();
     } catch (Exception e) {
       throw new RuntimeException(e.toString());
     }
