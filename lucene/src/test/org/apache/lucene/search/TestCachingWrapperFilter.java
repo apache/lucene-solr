@@ -19,7 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -34,7 +34,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   public void testCachingWorks() throws Exception {
     Directory dir = new RAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
+        TEST_VERSION_CURRENT, new KeywordAnalyzer()));
     writer.close();
 
     IndexReader reader = IndexReader.open(dir, true);
@@ -57,6 +57,55 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     reader.close();
   }
   
+  public void testNullDocIdSet() throws Exception {
+    Directory dir = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new KeywordAnalyzer()));
+    writer.close();
+
+    IndexReader reader = IndexReader.open(dir, true);
+
+    final Filter filter = new Filter() {
+      @Override
+      public DocIdSet getDocIdSet(IndexReader reader) {
+        return null;
+      }
+    };
+    CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
+
+    // the caching filter should return the empty set constant
+    assertSame(DocIdSet.EMPTY_DOCIDSET, cacher.getDocIdSet(reader));
+    
+    reader.close();
+  }
+  
+  public void testNullDocIdSetIterator() throws Exception {
+    Directory dir = new RAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, new KeywordAnalyzer()));
+    writer.close();
+
+    IndexReader reader = IndexReader.open(dir, true);
+
+    final Filter filter = new Filter() {
+      @Override
+      public DocIdSet getDocIdSet(IndexReader reader) {
+        return new DocIdSet() {
+          @Override
+          public DocIdSetIterator iterator() {
+            return null;
+          }
+        };
+      }
+    };
+    CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
+
+    // the caching filter should return the empty set constant
+    assertSame(DocIdSet.EMPTY_DOCIDSET, cacher.getDocIdSet(reader));
+    
+    reader.close();
+  }
+  
   private static void assertDocIdSetCacheable(IndexReader reader, Filter filter, boolean shouldCacheable) throws IOException {
     final CachingWrapperFilter cacher = new CachingWrapperFilter(filter);
     final DocIdSet originalSet = filter.getDocIdSet(reader);
@@ -73,7 +122,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   
   public void testIsCacheAble() throws Exception {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer()));
     writer.close();
 
     IndexReader reader = IndexReader.open(dir, true);

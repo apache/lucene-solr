@@ -53,7 +53,10 @@ public class CachingWrapperFilter extends Filter {
    *  an {@link OpenBitSetDISI}.
    */
   protected DocIdSet docIdSetToCache(DocIdSet docIdSet, IndexReader reader) throws IOException {
-    if (docIdSet.isCacheable()) {
+    if (docIdSet == null) {
+      // this is better than returning null, as the nonnull result can be cached
+      return DocIdSet.EMPTY_DOCIDSET;
+    } else if (docIdSet.isCacheable()) {
       return docIdSet;
     } else {
       final DocIdSetIterator it = docIdSet.iterator();
