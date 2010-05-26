@@ -25,6 +25,7 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.VirtualMethod;
 
 /**
  * Experimental query parser variant designed to handle operator precedence
@@ -103,6 +104,18 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
   Locale locale = Locale.getDefault();
 
   static enum Operator { OR, AND }
+
+  /** @deprecated remove when getFieldQuery is removed */
+  private static final VirtualMethod<PrecedenceQueryParser> getFieldQueryMethod =
+    new VirtualMethod<PrecedenceQueryParser>(PrecedenceQueryParser.class, "getFieldQuery", String.class, String.class);
+  /** @deprecated remove when getFieldQuery is removed */
+  private static final VirtualMethod<PrecedenceQueryParser> getFieldQueryWithQuotedMethod =
+    new VirtualMethod<PrecedenceQueryParser>(PrecedenceQueryParser.class, "getFieldQuery", String.class, String.class, boolean.class);
+
+  /** @deprecated remove when getFieldQuery is removed */
+  final boolean hasNewAPI =
+    VirtualMethod.compareImplementationDistance(getClass(),
+        getFieldQueryWithQuotedMethod, getFieldQueryMethod) >= 0; // its ok for both to be overridden
 
   /** Constructs a query parser.
    *  @param f  the default field for query terms.
@@ -297,9 +310,18 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
   }
 
   /**
+   * @deprecated Use {@link #getFieldQuery(String,String,boolean} instead.
+   */
+  @Deprecated
+  protected Query getFieldQuery(String field, String queryText) throws ParseException {
+    // treat the text as if it was quoted, to drive phrase logic with old subclasses
+    return getFieldQuery(field, queryText, true);
+  }
+
+  /**
    * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getFieldQuery(String field, String queryText)  throws ParseException {
+  protected Query getFieldQuery(String field, String queryText, boolean quoted)  throws ParseException {
     // Use the analyzer to get all the tokens, and then build a TermQuery,
     // PhraseQuery, or nothing based on the term count
 
@@ -330,15 +352,19 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
       source.restoreState(list.get(0));
       return new TermQuery(new Term(field, termAtt.term()));
     } else {
-      if (severalTokensAtSamePosition) {
-        if (positionCount == 1) {
+      if (severalTokensAtSamePosition || !quoted) {
+        if (positionCount == 1 || !quoted) {
           // no phrase query:
-          BooleanQuery q = new BooleanQuery();
+          BooleanQuery q = new BooleanQuery(positionCount == 1);
+
+          BooleanClause.Occur occur = positionCount > 1 && operator == AND_OPERATOR ?
+            BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
+
           for (int i = 0; i < list.size(); i++) {
             source.restoreState(list.get(i));
             TermQuery currentQuery = new TermQuery(
                 new Term(field, termAtt.term()));
-            q.add(currentQuery, BooleanClause.Occur.SHOULD);
+            q.add(currentQuery, occur);
           }
           return q;
         }
@@ -371,7 +397,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
   }
 
   /**
-   * Base implementation delegates to {@link #getFieldQuery(String,String)}.
+   * Base implementation delegates to {@link #getFieldQuery(String,String,boolean)}.
    * This method may be overridden, for example, to return
    * a SpanNearQuery instead of a PhraseQuery.
    *
@@ -379,7 +405,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
    */
   protected Query getFieldQuery(String field, String queryText, int slop)
         throws ParseException {
-    Query query = getFieldQuery(field, queryText);
+    Query query = hasNewAPI ? getFieldQuery(field, queryText, true) : getFieldQuery(field, queryText);
 
     if (query instanceof PhraseQuery) {
       ((PhraseQuery) query).setSlop(slop);
@@ -863,7 +889,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
          }
          q = getFuzzyQuery(field, termImage, fms);
        } else {
-         q = getFieldQuery(field, termImage);
+         q = hasNewAPI ? getFieldQuery(field, termImage, false) : getFieldQuery(field, termImage);
        }
       break;
     case RANGEIN_START:

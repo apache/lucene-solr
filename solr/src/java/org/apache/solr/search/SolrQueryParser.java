@@ -128,7 +128,7 @@ public class SolrQueryParser extends QueryParser {
     }
   }
 
-  protected Query getFieldQuery(String field, String queryText) throws ParseException {
+  protected Query getFieldQuery(String field, String queryText, boolean quoted) throws ParseException {
     checkNullField(field);
     // intercept magic field name of "_" to use as a hook for our
     // own functions.
@@ -152,7 +152,7 @@ public class SolrQueryParser extends QueryParser {
     }
 
     // default to a normal field query
-    return super.getFieldQuery(field, queryText);
+    return super.getFieldQuery(field, queryText, quoted);
   }
 
   protected Query getRangeQuery(String field, String part1, String part2, boolean inclusive) throws ParseException {

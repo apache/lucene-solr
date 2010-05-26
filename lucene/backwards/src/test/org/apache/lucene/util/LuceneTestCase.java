@@ -31,6 +31,7 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 
 /** 
@@ -53,6 +54,8 @@ import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
  */
 public abstract class LuceneTestCase extends TestCase {
 
+  /** Use this constant when creating Analyzers and any other version-dependent stuff. */
+  public static final Version TEST_VERSION_CURRENT = Version.LUCENE_30;
 
   private int savedBoolMaxClauseCount;
   
