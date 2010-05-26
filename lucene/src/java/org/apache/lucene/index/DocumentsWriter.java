@@ -162,6 +162,13 @@ final class DocumentsWriter {
     public boolean testPoint(String name) {
       return docWriter.writer.testPoint(name);
     }
+
+    public void clear() {
+      // don't hold onto doc nor analyzer, in case it is
+      // largish:
+      doc = null;
+      analyzer = null;
+    }
   }
 
   /** Consumer returns this on each doc.  This holds any
@@ -824,10 +831,16 @@ final class DocumentsWriter {
     try {
       // This call is not synchronized and does all the
       // work
-      final DocWriter perDoc = state.consumer.processDocument();
-        
+      final DocWriter perDoc;
+      try {
+        perDoc = state.consumer.processDocument();
+      } finally {
+        docState.clear();
+      }
+
       // This call is synchronized but fast
       finishDocument(state, perDoc);
+
       success = true;
     } finally {
       if (!success) {
