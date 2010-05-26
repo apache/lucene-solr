@@ -238,5 +238,27 @@ public final class IndexFileNames {
     // or not, since there's only 1 '+' operator.
     return filename.endsWith("." + ext);
   }
+
+  /**
+   * Strips the segment file name out of the given one. If you used
+   * {@link #segmentFileName} or {@link #fileNameFromGeneration} to create your
+   * files, then this method simply removes whatever comes before the first '.',
+   * or the second '_' (excluding both), in case of deleted docs.
+   * 
+   * @return the filename with the segment name removed, or the given filename
+   *         if it does not contain a '.' and '_'.
+   */
+  public static final String stripSegmentName(String filename) {
+    // If it is a .del file, there's an '_' after the first character
+    int idx = filename.indexOf('_', 1);
+    if (idx == -1) {
+      // If it's not, strip everything that's before the '.'
+      idx = filename.indexOf('.');
+    }
+    if (idx != -1) {
+      filename = filename.substring(idx);
+    }
+    return filename;
+  }
   
 }

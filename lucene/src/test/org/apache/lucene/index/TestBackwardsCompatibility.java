@@ -44,6 +44,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -134,6 +135,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                              "24.nocfs",
                              "29.cfs",
                              "29.nocfs",
+                             "30.cfs",
+                             "30.nocfs",
   };
   
   private void assertCompressedFields29(Directory dir, boolean shouldStillBeCompressed) throws IOException {
@@ -231,6 +234,46 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
     
     assertEquals("test for compressed field should have run 4 times", 4, hasTested29);
+  }
+
+  public void testAddOldIndexes() throws IOException {
+    for (String name : oldNames) {
+      unzip(getDataFile("index." + name + ".zip"), name);
+      String fullPath = fullDir(name);
+      Directory dir = FSDirectory.open(new File(fullPath));
+
+      Directory targetDir = new RAMDirectory();
+      IndexWriter w = new IndexWriter(targetDir, new IndexWriterConfig(
+          TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+      w.addIndexes(new Directory[] { dir });
+      w.close();
+
+      _TestUtil.checkIndex(targetDir);
+      
+      dir.close();
+      rmDir(name);
+    }
+  }
+
+  public void testAddOldIndexesReader() throws IOException {
+    for (String name : oldNames) {
+      unzip(getDataFile("index." + name + ".zip"), name);
+      String fullPath = fullDir(name);
+      Directory dir = FSDirectory.open(new File(fullPath));
+      IndexReader reader = IndexReader.open(dir);
+      
+      Directory targetDir = new RAMDirectory();
+      IndexWriter w = new IndexWriter(targetDir, new IndexWriterConfig(
+          TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+      w.addIndexes(new IndexReader[] { reader });
+      w.close();
+      reader.close();
+      
+      _TestUtil.checkIndex(targetDir);
+      
+      dir.close();
+      rmDir(name);
+    }
   }
 
   public void testSearchOldIndex() throws IOException {

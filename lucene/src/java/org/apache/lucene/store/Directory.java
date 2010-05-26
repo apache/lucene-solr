@@ -21,13 +21,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Closeable;
 import java.util.Collection;
-import java.util.Collections;
 
-import java.util.ArrayList;
-import static java.util.Arrays.asList;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
 import org.apache.lucene.index.IndexFileNameFilter;
 import org.apache.lucene.util.IOUtils;
 
@@ -204,84 +198,89 @@ public abstract class Directory implements Closeable {
       return this.toString();
   }
 
-
   /**
-   * <p>Copy all files of this directory to destination directory. All conflicting files at destination are overwritten</p>
-   * <p><b>NOTE:</b> this method only copies files that look like index files (ie, have extensions matching the known
-   * extensions of index files).
-   * <p><b>NOTE:</b> the source directory should not change while this method is running.  Otherwise the results are
-   * undefined and you could easily hit a FileNotFoundException. </p>
-   *
-   * @param to        destination directory
+   * Copies the file <i>src</i> to {@link Directory} <i>to</i> under the new
+   * file name <i>dest</i>.
+   * <p>
+   * If you want to copy the entire source directory to the destination one, you
+   * can do so like this:
+   * 
+   * <pre>
+   * Directory to; // the directory to copy to
+   * for (String file : dir.listAll()) {
+   *   dir.copy(to, file, newFile); // newFile can be either file, or a new name
+   * }
+   * </pre>
+   * <p>
+   * <b>NOTE:</b> this method does not check whether <i>dest<i> exist and will
+   * overwrite it if it does.
    */
-  public final void copyTo(Directory to) throws IOException {
-    List<String> filenames = new ArrayList<String>();
-    IndexFileNameFilter filter = IndexFileNameFilter.getFilter();
-
-    for (String name : listAll())
-      if (filter.accept(null, name))
-        filenames.add(name);
-
-    copyTo(to, filenames);
-  }
-
-  /**
-   * <p>Copy given files of this directory to destination directory. All conflicting files at destination are overwritten</p>
-   * <p><b>NOTE:</b> the source directory should not change while this method is running.  Otherwise the results are
-   * undefined and you could easily hit a FileNotFoundException. </p>
-   * <p><b>NOTE:</b> implementations can check if destination directory is of the same type as 'this' and perform optimized copy</p>
-   *
-   * @param to        destination directory
-   * @param filenames file names to be copied
-   */
-  public void copyTo(Directory to, Collection<String> filenames) throws IOException {
-    byte[] buf = new byte[BufferedIndexOutput.BUFFER_SIZE];
-    for (String filename : filenames) {
-      IndexOutput os = null;
-      IndexInput is = null;
-      IOException priorException = null;
-      try {
-        // create file in dest directory
-        os = to.createOutput(filename);
-        // read current file
-        is = openInput(filename);
-        // and copy to dest directory
-        long len = is.length();
-        long readCount = 0;
-        while (readCount < len) {
-          int toRead = readCount + BufferedIndexOutput.BUFFER_SIZE > len ? (int) (len - readCount) : BufferedIndexOutput.BUFFER_SIZE;
-          is.readBytes(buf, 0, toRead);
-          os.writeBytes(buf, toRead);
-          readCount += toRead;
-        }
-      } catch (IOException ioe) {
-        priorException = ioe;
-      } finally {
-        IOUtils.closeSafely(priorException, os, is);
+  public void copy(Directory to, String src, String dest) throws IOException {
+    IndexOutput os = null;
+    IndexInput is = null;
+    IOException priorException = null;
+    int bufSize = BufferedIndexOutput.BUFFER_SIZE;
+    byte[] buf = new byte[bufSize];
+    try {
+      // create file in dest directory
+      os = to.createOutput(dest);
+      // read current file
+      is = openInput(src);
+      // and copy to dest directory
+      long len = is.length();
+      long numRead = 0;
+      while (numRead < len) {
+        long left = len - numRead;
+        int toRead = (int) (bufSize < left ? bufSize : left);
+        is.readBytes(buf, 0, toRead);
+        os.writeBytes(buf, toRead);
+        numRead += toRead;
       }
+    } catch (IOException ioe) {
+      priorException = ioe;
+    } finally {
+      IOUtils.closeSafely(priorException, os, is);
     }
   }
 
   /**
-   * Copy contents of a directory src to a directory dest. If a file in src already exists in dest then the one in dest
-   * will be blindly overwritten.
-   * <p/>
-   * <p><b>NOTE:</b> the source directory cannot change while this method is running.  Otherwise the results are
-   * undefined and you could easily hit a FileNotFoundException.
-   * <p/>
-   * <p><b>NOTE:</b> this method only copies files that look like index files (ie, have extensions matching the known
-   * extensions of index files).
-   *
-   * @param src         source directory
-   * @param dest        destination directory
-   * @param closeDirSrc if <code>true</code>, call {@link #close()} method on source directory
-   * @deprecated should be replaced with src.copyTo(dest); [src.close();]
+   * Copy contents of a directory src to a directory dest. If a file in src
+   * already exists in dest then the one in dest will be blindly overwritten.
+   * <p>
+   * <b>NOTE:</b> the source directory cannot change while this method is
+   * running. Otherwise the results are undefined and you could easily hit a
+   * FileNotFoundException.
+   * <p>
+   * <b>NOTE:</b> this method only copies files that look like index files (ie,
+   * have extensions matching the known extensions of index files).
+   * 
+   * @param src source directory
+   * @param dest destination directory
+   * @param closeDirSrc if <code>true</code>, call {@link #close()} method on 
+   *        source directory
+   * @deprecated should be replaced with calls to
+   *             {@link #copy(Directory, String, String)} for every file that
+   *             needs copying. You can use the the following code:
+   * 
+   * <pre>
+   * IndexFileNameFilter filter = IndexFileNameFilter.getFilter();
+   * for (String file : src.listAll()) {
+   *   if (filter.accept(null, file)) {
+   *     src.copy(dest, file, file);
+   *   }
+   * }
+   * </pre>
    */
-  @Deprecated
   public static void copy(Directory src, Directory dest, boolean closeDirSrc) throws IOException {
-    src.copyTo(dest);
-    if (closeDirSrc)
+    IndexFileNameFilter filter = IndexFileNameFilter.getFilter();
+    for (String file : src.listAll()) {
+      if (filter.accept(null, file)) {
+        src.copy(dest, file, file);
+      }
+    }
+    if (closeDirSrc) {
       src.close();
+    }
   }
 
   /**

@@ -3,6 +3,7 @@ package org.apache.solr.core;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.lucene.index.IndexFileNameFilter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -17,7 +18,13 @@ public class RefCntRamDirectory extends RAMDirectory {
 
   public RefCntRamDirectory(Directory dir) throws IOException {
     this();
-    dir.copyTo(this);
+
+    IndexFileNameFilter filter = IndexFileNameFilter.getFilter();
+    for (String file : dir.listAll()) {
+      if (filter.accept(null, file)) {
+        dir.copy(this, file, file);
+      }
+    }
   }
 
   public void incRef() {

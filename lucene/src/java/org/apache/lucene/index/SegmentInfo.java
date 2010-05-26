@@ -521,6 +521,7 @@ public final class SegmentInfo {
     docStoreOffset = offset;
     docStoreSegment = segment;
     docStoreIsCompoundFile = isCompoundFile;
+    clearFiles();
   }
   
   /**

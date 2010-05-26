@@ -35,7 +35,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Test that norms info is preserved during index life - including
- * separate norms, addDocument, addIndexesNoOptimize, optimize.
+ * separate norms, addDocument, addIndexes, optimize.
  */
 public class TestNorms extends LuceneTestCase {
 
@@ -104,7 +104,7 @@ public class TestNorms extends LuceneTestCase {
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
         .setMaxBufferedDocs(5));
     ((LogMergePolicy) iw.getConfig().getMergePolicy()).setMergeFactor(3);
-    iw.addIndexesNoOptimize(new Directory[]{dir1,dir2});
+    iw.addIndexes(new Directory[]{dir1,dir2});
     iw.optimize();
     iw.close();
     

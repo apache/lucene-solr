@@ -298,7 +298,6 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
 
     writer.addIndexesNoOptimize(new Directory[] { aux });
     assertEquals(1040, writer.maxDoc());
-    assertEquals(2, writer.getSegmentCount());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
 
@@ -322,7 +321,6 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
 
     writer.addIndexesNoOptimize(new Directory[] { aux });
     assertEquals(1032, writer.maxDoc());
-    assertEquals(2, writer.getSegmentCount());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
 
@@ -373,12 +371,9 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer.setMergeFactor(4);
 
     writer.addIndexesNoOptimize(new Directory[] { aux, new RAMDirectory(aux) });
-    assertEquals(1020, writer.maxDoc());
+    assertEquals(1060, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
-
-    // make sure the index is correct
-    verifyNumDocs(dir, 1020);
   }
 
   // case 5: tail segments, invariants not hold
@@ -418,12 +413,9 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer.setMergeFactor(4);
 
     writer.addIndexesNoOptimize(new Directory[] { aux, aux2 });
-    assertEquals(1025, writer.maxDoc());
+    assertEquals(1060, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
-
-    // make sure the index is correct
-    verifyNumDocs(dir, 1025);
   }
 
   private IndexWriter newWriter(Directory dir, boolean create)
@@ -541,20 +533,4 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     dir2.close();
   }
 
-  // LUCENE-1642: make sure CFS of destination indexwriter
-  // is respected when copying tail segments
-  public void testTargetCFS() throws IOException {
-    Directory dir = new RAMDirectory();
-    IndexWriter writer = newWriter(dir, true);
-    writer.setUseCompoundFile(false);
-    addDocs(writer, 1);
-    writer.close();
-
-    Directory other = new RAMDirectory();
-    writer = newWriter(other, true);
-    writer.setUseCompoundFile(true);
-    writer.addIndexesNoOptimize(new Directory[] {dir});
-    assertTrue(writer.newestSegment().getUseCompoundFile());
-    writer.close();
-  }
 }

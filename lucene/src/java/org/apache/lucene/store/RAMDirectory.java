@@ -23,6 +23,8 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+
+import org.apache.lucene.index.IndexFileNameFilter;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
@@ -68,7 +70,16 @@ public class RAMDirectory extends Directory implements Serializable {
   
   private RAMDirectory(Directory dir, boolean closeDir) throws IOException {
     this();
-    Directory.copy(dir, this, closeDir);
+
+    IndexFileNameFilter filter = IndexFileNameFilter.getFilter();
+    for (String file : dir.listAll()) {
+      if (filter.accept(null, file)) {
+        dir.copy(this, file, file);
+      }
+    }
+    if (closeDir) {
+      dir.close();
+    }
   }
 
   @Override

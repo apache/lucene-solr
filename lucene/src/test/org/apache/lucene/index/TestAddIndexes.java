@@ -30,7 +30,8 @@ import org.apache.lucene.store.MockRAMDirectory;
 
 import org.apache.lucene.search.PhraseQuery;
 
-public class TestAddIndexesNoOptimize extends LuceneTestCase {
+public class TestAddIndexes extends LuceneTestCase {
+  
   public void testSimpleCase() throws IOException {
     // main directory
     Directory dir = new RAMDirectory();
@@ -65,7 +66,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     // test doc count before segments are merged
     writer = newWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
     assertEquals(100, writer.maxDoc());
-    writer.addIndexesNoOptimize(new Directory[] { aux, aux2 });
+    writer.addIndexes(new Directory[] { aux, aux2 });
     assertEquals(190, writer.maxDoc());
     writer.close();
 
@@ -86,7 +87,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     // test doc count before segments are merged/index is optimized
     writer = newWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
     assertEquals(190, writer.maxDoc());
-    writer.addIndexesNoOptimize(new Directory[] { aux3 });
+    writer.addIndexes(new Directory[] { aux3 });
     assertEquals(230, writer.maxDoc());
     writer.close();
 
@@ -117,7 +118,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
 
     writer = newWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
     assertEquals(230, writer.maxDoc());
-    writer.addIndexesNoOptimize(new Directory[] { aux4 });
+    writer.addIndexes(new Directory[] { aux4 });
     assertEquals(231, writer.maxDoc());
     writer.close();
 
@@ -134,7 +135,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
 
     setUpDirs(dir, aux);
     IndexWriter writer = newWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
-    writer.addIndexesNoOptimize(new Directory[] {aux});
+    writer.addIndexes(new Directory[] {aux});
 
     // Adds 10 docs, then replaces them with another 10
     // docs, so 10 pending deletes:
@@ -177,13 +178,12 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
       doc.add(new Field("id", "" + (i % 10), Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(new Field("content", "bbb " + i, Field.Store.NO,
-                        Field.Index.ANALYZED));
+      doc.add(new Field("content", "bbb " + i, Field.Store.NO, Field.Index.ANALYZED));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
-
-    writer.addIndexesNoOptimize(new Directory[] {aux});
-
+    
+    writer.addIndexes(new Directory[] {aux});
+    
     // Deletes one of the 10 added docs, leaving 9:
     PhraseQuery q = new PhraseQuery();
     q.add(new Term("content", "bbb"));
@@ -227,7 +227,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     q.add(new Term("content", "14"));
     writer.deleteDocuments(q);
 
-    writer.addIndexesNoOptimize(new Directory[] {aux});
+    writer.addIndexes(new Directory[] {aux});
 
     writer.optimize();
     writer.commit();
@@ -271,7 +271,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer = newWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
     try {
       // cannot add self
-      writer.addIndexesNoOptimize(new Directory[] { aux, dir });
+      writer.addIndexes(new Directory[] { aux, dir });
       assertTrue(false);
     }
     catch (IllegalArgumentException e) {
@@ -284,7 +284,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
   }
 
   // in all the remaining tests, make the doc count of the oldest segment
-  // in dir large so that it is never merged in addIndexesNoOptimize()
+  // in dir large so that it is never merged in addIndexes()
   // case 1: no tail segments
   public void testNoTailSegments() throws IOException {
     // main directory
@@ -300,9 +300,8 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
     addDocs(writer, 10);
 
-    writer.addIndexesNoOptimize(new Directory[] { aux });
+    writer.addIndexes(new Directory[] { aux });
     assertEquals(1040, writer.maxDoc());
-    assertEquals(2, writer.getSegmentCount());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
 
@@ -323,9 +322,8 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
     addDocs(writer, 2);
 
-    writer.addIndexesNoOptimize(new Directory[] { aux });
+    writer.addIndexes(new Directory[] { aux });
     assertEquals(1032, writer.maxDoc());
-    assertEquals(2, writer.getSegmentCount());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
 
@@ -347,7 +345,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
         .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(10));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
 
-    writer.addIndexesNoOptimize(new Directory[] { aux, new RAMDirectory(aux) });
+    writer.addIndexes(new Directory[] { aux, new RAMDirectory(aux) });
     assertEquals(1060, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
@@ -377,13 +375,10 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
         .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(4));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
 
-    writer.addIndexesNoOptimize(new Directory[] { aux, new RAMDirectory(aux) });
-    assertEquals(1020, writer.maxDoc());
+    writer.addIndexes(new Directory[] { aux, new RAMDirectory(aux) });
+    assertEquals(1060, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
-
-    // make sure the index is correct
-    verifyNumDocs(dir, 1020);
   }
 
   // case 5: tail segments, invariants not hold
@@ -400,9 +395,8 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
         TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
         .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(100));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(10);
-    writer.addIndexesNoOptimize(new Directory[] { aux });
+    writer.addIndexes(new Directory[] { aux });
     assertEquals(30, writer.maxDoc());
-    assertEquals(3, writer.getSegmentCount());
     writer.close();
 
     IndexReader reader = IndexReader.open(aux, false);
@@ -423,13 +417,10 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
         .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(6));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
 
-    writer.addIndexesNoOptimize(new Directory[] { aux, aux2 });
-    assertEquals(1025, writer.maxDoc());
+    writer.addIndexes(new Directory[] { aux, aux2 });
+    assertEquals(1060, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
-
-    // make sure the index is correct
-    verifyNumDocs(dir, 1025);
   }
 
   private IndexWriter newWriter(Directory dir, IndexWriterConfig conf)
@@ -543,28 +534,10 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
     writer = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT,
         new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
         .setMergeScheduler(new SerialMergeScheduler()).setMergePolicy(lmp));
-    writer.addIndexesNoOptimize(new Directory[] {dir});
+    writer.addIndexes(new Directory[] {dir});
     writer.close();
     dir.close();
     dir2.close();
   }
 
-  // LUCENE-1642: make sure CFS of destination indexwriter
-  // is respected when copying tail segments
-  public void testTargetCFS() throws IOException {
-    Directory dir = new RAMDirectory();
-    IndexWriter writer = newWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false);
-    addDocs(writer, 1);
-    writer.close();
-
-    Directory other = new RAMDirectory();
-    writer = newWriter(other, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(true);
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(true);
-    writer.addIndexesNoOptimize(new Directory[] {dir});
-    assertTrue(writer.newestSegment().getUseCompoundFile());
-    writer.close();
-  }
 }
