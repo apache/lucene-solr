@@ -406,6 +406,9 @@ Bug fixes
   lock (previously we only released on IOException).  (Tamas Cservenak
   via Mike McCandless)
 
+* LUCENE-2478: Fix CachingWrapperFilter to not throw NPE when
+  Filter.getDocIdSet() returns null.  (Uwe Schindler, Daniel Noll)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
