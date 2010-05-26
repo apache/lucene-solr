@@ -164,7 +164,7 @@ public class TermsComponent extends SearchComponent {
       }
 
       int i = 0;
-      BoundedTreeSet<CountPair<String, Integer>> queue = (sort ? new BoundedTreeSet<CountPair<String, Integer>>(limit) : null);
+      BoundedTreeSet<CountPair<BytesRef, Integer>> queue = (sort ? new BoundedTreeSet<CountPair<BytesRef, Integer>>(limit) : null);
       CharArr external = new CharArr();
 
       while (term != null && (i<limit || sort)) {
@@ -194,19 +194,18 @@ public class TermsComponent extends SearchComponent {
         int docFreq = termsEnum.docFreq();
         if (docFreq >= freqmin && docFreq <= freqmax) {
           // add the term to the list
-
-          // TODO: handle raw somehow
-          if (!externalized) {
-            external.reset();
-            ft.indexedToReadable(term, external);                        
-          }
-
-          String label = external.toString();
           if (sort) {
-            // TODO: defer conversion to string until the end...
-            // using the label now is a bug since tiebreak will not be in index order
-            queue.add(new CountPair<String, Integer>(label, docFreq));
+            queue.add(new CountPair<BytesRef, Integer>(new BytesRef(term), docFreq));
           } else {
+
+            // TODO: handle raw somehow
+            if (!externalized) {
+              external.reset();
+              ft.indexedToReadable(term, external);
+            }
+            String label = external.toString();
+            
+
             fieldTerms.add(label, docFreq);
             i++;
           }
@@ -216,9 +215,11 @@ public class TermsComponent extends SearchComponent {
       }
 
       if (sort) {
-        for (CountPair<String, Integer> item : queue) {
+        for (CountPair<BytesRef, Integer> item : queue) {
           if (i >= limit) break;
-          fieldTerms.add(item.key, item.val);
+          external.reset();
+          ft.indexedToReadable(item.key, external);          
+          fieldTerms.add(external.toString(), item.val);
           i++;
         }
       }

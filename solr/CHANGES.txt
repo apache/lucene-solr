@@ -307,6 +307,10 @@ Bug Fixes
 * SOLR-1824: IndexSchema will now fail to initialize if there is a
   problem initializing one of the fields or field types. (hossman)
 
+* SOLR-1928: TermsComponent didn't correctly break ties for non-text
+  fields sorted by count. (yonik)
+
+
 Other Changes
 ----------------------
 
