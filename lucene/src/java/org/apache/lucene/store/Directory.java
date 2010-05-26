@@ -260,7 +260,7 @@ public abstract class Directory implements Closeable {
    *        source directory
    * @deprecated should be replaced with calls to
    *             {@link #copy(Directory, String, String)} for every file that
-   *             needs copying. You can use the the following code:
+   *             needs copying. You can use the following code:
    * 
    * <pre>
    * IndexFileNameFilter filter = IndexFileNameFilter.getFilter();

@@ -300,12 +300,7 @@ public class IndexWriter implements Closeable {
   private int flushCount;
   private int flushDeletesCount;
 
-  // Used to only allow one addIndexes to proceed at once
-  // TODO: use ReadWriteLock once we are on 5.0
-  private int readCount;                          // count of how many threads are holding read lock
-  private Thread writeThread;                     // non-null if any thread holds write lock
   final ReaderPool readerPool = new ReaderPool();
-  private int upgradeCount;
   
   // This is a "write once" variable (like the organic dye
   // on a DVD-R that may or may not be heated by a laser and
@@ -689,52 +684,6 @@ public class IndexWriter implements Closeable {
     }
   }
   
-  synchronized void acquireWrite() {
-    assert writeThread != Thread.currentThread();
-    while(writeThread != null || readCount > 0)
-      doWait();
-
-    // We could have been closed while we were waiting:
-    ensureOpen();
-
-    writeThread = Thread.currentThread();
-  }
-
-  synchronized void releaseWrite() {
-    assert Thread.currentThread() == writeThread;
-    writeThread = null;
-    notifyAll();
-  }
-
-  synchronized void acquireRead() {
-    final Thread current = Thread.currentThread();
-    while(writeThread != null && writeThread != current)
-      doWait();
-
-    readCount++;
-  }
-
-  // Allows one readLock to upgrade to a writeLock even if
-  // there are other readLocks as long as all other
-  // readLocks are also blocked in this method:
-  synchronized void upgradeReadToWrite() {
-    assert readCount > 0;
-    upgradeCount++;
-    while(readCount > upgradeCount || writeThread != null) {
-      doWait();
-    }
-    
-    writeThread = Thread.currentThread();
-    readCount--;
-    upgradeCount--;
-  }
-
-  synchronized void releaseRead() {
-    readCount--;
-    assert readCount >= 0;
-    notifyAll();
-  }
-
   /**
    * Used internally to throw an {@link
    * AlreadyClosedException} if this IndexWriter has been
@@ -2784,12 +2733,6 @@ public class IndexWriter implements Closeable {
         merge.abort();
       }
 
-      // Ensure any running addIndexes finishes.  It's fine
-      // if a new one attempts to start because its merges
-      // will quickly see the stopMerges == true and abort.
-      acquireRead();
-      releaseRead();
-
       // These merges periodically check whether they have
       // been aborted, and stop if so.  We wait here to make
       // sure they all stop.  It should not take very long
@@ -2826,10 +2769,6 @@ public class IndexWriter implements Closeable {
    *    will have completed once this method completes.</p>
    */
   public synchronized void waitForMerges() {
-    // Ensure any running addIndexes finishes.
-    acquireRead();
-    releaseRead();
-
     while(pendingMerges.size() > 0 || runningMerges.size() > 0) {
       doWait();
     }
@@ -2984,10 +2923,15 @@ public class IndexWriter implements Closeable {
    * <p>
    * <b>NOTE:</b> this method only copies the segments of the incomning indexes
    * and does not merge them. Therefore deleted documents are not removed and
-   * the new segments are not merged with the existing ones. Alos, the segments 
+   * the new segments are not merged with the existing ones. Also, the segments 
    * are copied as-is, meaning they are not converted to CFS if they aren't, 
    * and vice-versa. If you wish to do that, you can call {@link #maybeMerge} 
    * or {@link #optimize} afterwards.
+   * 
+   * <p>
+   * <b>NOTE:</b> if you add indexes that used different codecs that are used
+   * by this IndexWriter, make sure you update this IndexWriter to recognize
+   * them.
    * 
    * <p>This requires this index not be among those to be added.
    *
