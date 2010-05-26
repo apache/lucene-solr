@@ -150,8 +150,6 @@ public class QueryParser implements QueryParserConstants {
   // for use when constructing RangeQuerys.
   Collator rangeCollator = null;
 
-  private Version matchVersion;
-
   /** The default operator for parsing queries. 
    * Use {@link QueryParser#setDefaultOperator} to change it.
    */
@@ -164,7 +162,6 @@ public class QueryParser implements QueryParserConstants {
    */
   public QueryParser(Version matchVersion, String f, Analyzer a) {
     this(new FastCharStream(new StringReader("")));
-    this.matchVersion = matchVersion;
     analyzer = a;
     field = f;
     if (matchVersion.onOrAfter(Version.LUCENE_29)) {
@@ -509,10 +506,11 @@ public class QueryParser implements QueryParserConstants {
       throw new RuntimeException("Clause cannot be both required and prohibited");
   }
 
+
   /**
    * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getFieldQuery(String field, String queryText, boolean quoted)  throws ParseException {
+  protected Query getFieldQuery(String field, String queryText)  throws ParseException {
     // Use the analyzer to get all the tokens, and then build a TermQuery,
     // PhraseQuery, or nothing based on the term count
 
@@ -589,14 +587,10 @@ public class QueryParser implements QueryParserConstants {
       }
       return newTermQuery(new Term(field, term));
     } else {
-      if (severalTokensAtSamePosition || !quoted) {
-        if (positionCount == 1 || !quoted) {
+      if (severalTokensAtSamePosition) {
+        if (positionCount == 1) {
           // no phrase query:
-          BooleanQuery q = newBooleanQuery(positionCount == 1);
-
-          BooleanClause.Occur occur = positionCount > 1 && operator == AND_OPERATOR ?
-            BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
-
+          BooleanQuery q = newBooleanQuery(true);
           for (int i = 0; i < numTokens; i++) {
             String term = null;
             try {
@@ -609,7 +603,7 @@ public class QueryParser implements QueryParserConstants {
 
             Query currentQuery = newTermQuery(
                 new Term(field, term));
-            q.add(currentQuery, occur);
+            q.add(currentQuery, BooleanClause.Occur.SHOULD);
           }
           return q;
         }
@@ -688,7 +682,7 @@ public class QueryParser implements QueryParserConstants {
 
 
   /**
-   * Base implementation delegates to {@link #getFieldQuery(String,String,boolean)}.
+   * Base implementation delegates to {@link #getFieldQuery(String,String)}.
    * This method may be overridden, for example, to return
    * a SpanNearQuery instead of a PhraseQuery.
    *
@@ -696,7 +690,7 @@ public class QueryParser implements QueryParserConstants {
    */
   protected Query getFieldQuery(String field, String queryText, int slop)
         throws ParseException {
-    Query query = getFieldQuery(field, queryText, true);
+    Query query = getFieldQuery(field, queryText);
 
     if (query instanceof PhraseQuery) {
       ((PhraseQuery) query).setSlop(slop);
@@ -1349,7 +1343,7 @@ public class QueryParser implements QueryParserConstants {
          }
          q = getFuzzyQuery(field, termImage,fms);
        } else {
-         q = getFieldQuery(field, termImage, !matchVersion.onOrAfter(Version.LUCENE_31));
+         q = getFieldQuery(field, termImage);
        }
       break;
     case RANGEIN_START:
@@ -1518,12 +1512,6 @@ public class QueryParser implements QueryParserConstants {
     finally { jj_save(0, xla); }
   }
 
-  private boolean jj_3R_3() {
-    if (jj_scan_token(STAR)) return true;
-    if (jj_scan_token(COLON)) return true;
-    return false;
-  }
-
   private boolean jj_3R_2() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
@@ -1537,6 +1525,12 @@ public class QueryParser implements QueryParserConstants {
     jj_scanpos = xsp;
     if (jj_3R_3()) return true;
     }
+    return false;
+  }
+
+  private boolean jj_3R_3() {
+    if (jj_scan_token(STAR)) return true;
+    if (jj_scan_token(COLON)) return true;
     return false;
   }
 

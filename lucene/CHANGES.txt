@@ -406,10 +406,6 @@ Bug fixes
   lock (previously we only released on IOException).  (Tamas Cservenak
   via Mike McCandless)
 
-* LUCENE-2458: QueryParser no longer automatically forms phrase queries,
-  assuming whitespace tokenization. Previously all CJK queries, for example,
-  would be turned into phrase queries.  (Robert Muir)
-
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
