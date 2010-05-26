@@ -22,6 +22,7 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.noggit.CharArr;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.RequiredSolrParams;
@@ -36,6 +37,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.*;
 import org.apache.solr.search.*;
 import org.apache.solr.util.BoundedTreeSet;
+import org.apache.solr.util.ByteUtils;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.handler.component.ResponseBuilder;
 
@@ -545,7 +547,7 @@ public class SimpleFacets {
 
     Term template = new Term(field);
     DocsEnum docsEnum = null;
-
+    CharArr spare = new CharArr();
 
     if (docs.size() >= mincount) {
       while (term != null) {
@@ -563,9 +565,10 @@ public class SimpleFacets {
 
           if (df >= minDfFilterCache) {
             // use the filter cache
-            // TODO: not a big deal, but there are prob more efficient ways to go from utf8 to string
-            // TODO: need a term query that takes a BytesRef
-            Term t = template.createTerm(new String(term.utf8ToString()));
+            // TODO: need a term query that takes a BytesRef to handle binary terms
+            spare.reset();
+            ByteUtils.UTF8toUTF16(term, spare);
+            Term t = template.createTerm(spare.toString());
             c = searcher.numDocs(new TermQuery(t), docs);
           } else {
             // iterate over TermDocs to calculate the intersection
@@ -599,9 +602,9 @@ public class SimpleFacets {
           } else {
             if (c >= mincount && --off<0) {
               if (--lim<0) break;
-              BytesRef termCopy = new BytesRef(term);
-              String s = term.utf8ToString();
-              res.add(ft.indexedToReadable(s), c);
+              spare.reset();
+              ft.indexedToReadable(term, spare);
+              res.add(spare.toString(), c);
             }
           }
         }
@@ -614,8 +617,9 @@ public class SimpleFacets {
       for (CountPair<BytesRef,Integer> p : queue) {
         if (--off>=0) continue;
         if (--lim<0) break;
-        String s = p.key.utf8ToString();        
-        res.add(ft.indexedToReadable(s), p.val);
+        spare.reset();
+        ft.indexedToReadable(p.key, spare);
+        res.add(spare.toString(), p.val);
       }
     }
 
