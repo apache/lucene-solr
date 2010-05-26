@@ -39,9 +39,12 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.document.NumericField;
+import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
@@ -635,6 +638,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       doc.add(new Field("compressedSize", Integer.toString(BINARY_COMPRESSED_LENGTH), Field.Store.YES, Field.Index.NOT_ANALYZED));
     }
     */
+    // add numeric fields, to test if later versions preserve encoding
+    doc.add(new NumericField("trieInt", 4).setIntValue(id));
+    doc.add(new NumericField("trieLong", 4).setLongValue(id));
     writer.addDocument(doc);
   }
 
@@ -683,4 +689,51 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   /* This was used in 2.9 to generate an index with compressed field:
   static final int BINARY_COMPRESSED_LENGTH = CompressionTools.compress(BINARY_TO_COMPRESS).length;
   */
+  
+  public void testNumericFields() throws Exception {
+    for(int i=0;i<oldNames.length;i++) {
+      // only test indexes >= 3.0
+      if (oldNames[i].compareTo("30.") < 0) continue;
+      
+      unzip(getDataFile("index." + oldNames[i] + ".zip"), oldNames[i]);
+      String fullPath = fullDir(oldNames[i]);
+      Directory dir = FSDirectory.open(new File(fullPath));
+      IndexSearcher searcher = new IndexSearcher(dir, true);
+      
+      for (int id=10; id<15; id++) {
+        ScoreDoc[] hits = searcher.search(NumericRangeQuery.newIntRange("trieInt", 4, Integer.valueOf(id), Integer.valueOf(id), true, true), 100).scoreDocs;
+        assertEquals("wrong number of hits", 1, hits.length);
+        Document d = searcher.doc(hits[0].doc);
+        assertEquals(String.valueOf(id), d.get("id"));
+        
+        hits = searcher.search(NumericRangeQuery.newLongRange("trieLong", 4, Long.valueOf(id), Long.valueOf(id), true, true), 100).scoreDocs;
+        assertEquals("wrong number of hits", 1, hits.length);
+        d = searcher.doc(hits[0].doc);
+        assertEquals(String.valueOf(id), d.get("id"));
+      }
+      
+      // check that also lower-precision fields are ok
+      ScoreDoc[] hits = searcher.search(NumericRangeQuery.newIntRange("trieInt", 4, Integer.MIN_VALUE, Integer.MAX_VALUE, false, false), 100).scoreDocs;
+      assertEquals("wrong number of hits", 34, hits.length);
+      
+      hits = searcher.search(NumericRangeQuery.newLongRange("trieLong", 4, Long.MIN_VALUE, Long.MAX_VALUE, false, false), 100).scoreDocs;
+      assertEquals("wrong number of hits", 34, hits.length);
+      
+      // check decoding into field cache
+      int[] fci = FieldCache.DEFAULT.getInts(searcher.getIndexReader(), "trieInt");
+      for (int val : fci) {
+        assertTrue("value in id bounds", val >= 0 && val < 35);
+      }
+      
+      long[] fcl = FieldCache.DEFAULT.getLongs(searcher.getIndexReader(), "trieLong");
+      for (long val : fcl) {
+        assertTrue("value in id bounds", val >= 0L && val < 35L);
+      }
+      
+      searcher.close();
+      dir.close();
+      rmDir(oldNames[i]);
+    }
+  }
+
 }
