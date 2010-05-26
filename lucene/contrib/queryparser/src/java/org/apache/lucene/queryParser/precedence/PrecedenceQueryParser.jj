@@ -127,7 +127,7 @@ public class PrecedenceQueryParser {
   Locale locale = Locale.getDefault();
 
   static enum Operator { OR, AND }
-
+  
   /** Constructs a query parser.
    *  @param f  the default field for query terms.
    *  @param a   used to find terms in the query text.
@@ -323,7 +323,7 @@ public class PrecedenceQueryParser {
   /**
    * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getFieldQuery(String field, String queryText)  throws ParseException {
+  protected Query getFieldQuery(String field, String queryText, boolean quoted)  throws ParseException {
     // Use the analyzer to get all the tokens, and then build a TermQuery,
     // PhraseQuery, or nothing based on the term count
 
@@ -354,15 +354,19 @@ public class PrecedenceQueryParser {
       source.restoreState(list.get(0));
       return new TermQuery(new Term(field, termAtt.term()));
     } else {
-      if (severalTokensAtSamePosition) {
-        if (positionCount == 1) {
+      if (severalTokensAtSamePosition || !quoted) {
+        if (positionCount == 1 || !quoted) {
           // no phrase query:
-          BooleanQuery q = new BooleanQuery();
+          BooleanQuery q = new BooleanQuery(positionCount == 1);
+          
+          BooleanClause.Occur occur = positionCount > 1 && operator == AND_OPERATOR ?
+            BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
+ 
           for (int i = 0; i < list.size(); i++) {
             source.restoreState(list.get(i));
             TermQuery currentQuery = new TermQuery(
                 new Term(field, termAtt.term()));
-            q.add(currentQuery, BooleanClause.Occur.SHOULD);
+            q.add(currentQuery, occur);
           }
           return q;
         }
@@ -395,7 +399,7 @@ public class PrecedenceQueryParser {
   }
 
   /**
-   * Base implementation delegates to {@link #getFieldQuery(String,String)}.
+   * Base implementation delegates to {@link #getFieldQuery(String,String,boolean)}.
    * This method may be overridden, for example, to return
    * a SpanNearQuery instead of a PhraseQuery.
    *
@@ -403,7 +407,7 @@ public class PrecedenceQueryParser {
    */
   protected Query getFieldQuery(String field, String queryText, int slop)
         throws ParseException {
-    Query query = getFieldQuery(field, queryText);
+    Query query = getFieldQuery(field, queryText, true);
 
     if (query instanceof PhraseQuery) {
       ((PhraseQuery) query).setSlop(slop);
@@ -830,7 +834,7 @@ Query Term(String field) : {
        	 }
          q = getFuzzyQuery(field, termImage, fms);
        } else {
-         q = getFieldQuery(field, termImage);
+         q = getFieldQuery(field, termImage, false);
        }
      }
      | ( <RANGEIN_START> ( goop1=<RANGEIN_GOOP>|goop1=<RANGEIN_QUOTED> )

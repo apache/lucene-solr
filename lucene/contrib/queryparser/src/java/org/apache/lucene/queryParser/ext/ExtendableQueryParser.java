@@ -126,7 +126,7 @@ public class ExtendableQueryParser extends QueryParser {
   }
 
   @Override
-  protected Query getFieldQuery(final String field, final String queryText)
+  protected Query getFieldQuery(final String field, final String queryText, boolean quoted)
       throws ParseException {
     final Pair<String,String> splitExtensionField = this.extensions
         .splitExtensionField(defaultField, field);
@@ -136,7 +136,7 @@ public class ExtendableQueryParser extends QueryParser {
       return extension.parse(new ExtensionQuery(this, splitExtensionField.cur,
           queryText));
     }
-    return super.getFieldQuery(field, queryText);
+    return super.getFieldQuery(field, queryText, quoted);
   }
 
 }

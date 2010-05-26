@@ -104,9 +104,9 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     // direct call to (super's) getFieldQuery to demonstrate differnce
     // between phrase and multiphrase with modified default slop
     assertEquals("\"foo bar\"~99",
-                 qp.getSuperFieldQuery("","foo bar").toString());
+                 qp.getSuperFieldQuery("","foo bar", true).toString());
     assertEquals("\"(multi multi2) bar\"~99",
-                 qp.getSuperFieldQuery("","multi bar").toString());
+                 qp.getSuperFieldQuery("","multi bar", true).toString());
 
     
     // ask sublcass to parse phrase with modified default slop
@@ -243,15 +243,15 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
         }
 
         /** expose super's version */
-        public Query getSuperFieldQuery(String f, String t) 
+        public Query getSuperFieldQuery(String f, String t, boolean quoted) 
             throws ParseException {
-            return super.getFieldQuery(f,t);
+            return super.getFieldQuery(f,t,quoted);
         }
         /** wrap super's version */
         @Override
-        protected Query getFieldQuery(String f, String t)
+        protected Query getFieldQuery(String f, String t, boolean quoted)
             throws ParseException {
-            return new DumbQueryWrapper(getSuperFieldQuery(f,t));
+            return new DumbQueryWrapper(getSuperFieldQuery(f,t,quoted));
         }
     }
     

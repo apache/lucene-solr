@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.DateField;
@@ -44,6 +45,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.FuzzyQuery;
@@ -249,6 +251,90 @@ public class TestQueryParser extends LocalizedTestCase {
 	 assertQueryEquals("用語\u3000用語\u3000用語", null, "用語\u0020用語\u0020用語");
   }
   
+  //individual CJK chars as terms, like StandardAnalyzer
+  private class SimpleCJKTokenizer extends Tokenizer {
+    private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    
+    public SimpleCJKTokenizer(Reader input) {
+      super(input);
+    }
+
+    @Override
+    public boolean incrementToken() throws IOException {
+      int ch = input.read();
+      if (ch < 0)
+        return false;
+      clearAttributes();
+      termAtt.setEmpty().append((char) ch);
+      return true;
+    }
+  }
+  
+  private class SimpleCJKAnalyzer extends Analyzer {
+    @Override
+    public TokenStream tokenStream(String fieldName, Reader reader) {
+      return new SimpleCJKTokenizer(reader);
+    }
+  }
+
+  public void testCJKTerm() throws Exception {
+    // individual CJK chars as terms
+    Analyzer analyzer = new SimpleCJKAnalyzer();
+    
+    BooleanQuery expected = new BooleanQuery();
+    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
+    expected.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    
+    assertEquals(expected, getQuery("中国", analyzer));
+  }
+  
+  public void testCJKBoostedTerm() throws Exception {
+    // individual CJK chars as terms
+    Analyzer analyzer = new SimpleCJKAnalyzer();
+    
+    BooleanQuery expected = new BooleanQuery();
+    expected.setBoost(0.5f);
+    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
+    expected.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    
+    assertEquals(expected, getQuery("中国^0.5", analyzer));
+  }
+  
+  public void testCJKPhrase() throws Exception {
+    // individual CJK chars as terms
+    Analyzer analyzer = new SimpleCJKAnalyzer();
+    
+    PhraseQuery expected = new PhraseQuery();
+    expected.add(new Term("field", "中"));
+    expected.add(new Term("field", "国"));
+    
+    assertEquals(expected, getQuery("\"中国\"", analyzer));
+  }
+  
+  public void testCJKBoostedPhrase() throws Exception {
+    // individual CJK chars as terms
+    Analyzer analyzer = new SimpleCJKAnalyzer();
+    
+    PhraseQuery expected = new PhraseQuery();
+    expected.setBoost(0.5f);
+    expected.add(new Term("field", "中"));
+    expected.add(new Term("field", "国"));
+    
+    assertEquals(expected, getQuery("\"中国\"^0.5", analyzer));
+  }
+  
+  public void testCJKSloppyPhrase() throws Exception {
+    // individual CJK chars as terms
+    Analyzer analyzer = new SimpleCJKAnalyzer(); 
+    
+    PhraseQuery expected = new PhraseQuery();
+    expected.setSlop(3);
+    expected.add(new Term("field", "中"));
+    expected.add(new Term("field", "国"));
+    
+    assertEquals(expected, getQuery("\"中国\"~3", analyzer));
+  }
+
   public void testSimple() throws Exception {
     assertQueryEquals("term term term", null, "term term term");
     assertQueryEquals("türm term term", new MockAnalyzer(), "türm term term");
@@ -437,9 +523,9 @@ public class TestQueryParser extends LocalizedTestCase {
     
     assertQueryEquals("drop AND stop AND roll", qpAnalyzer, "+drop +roll");
     assertQueryEquals("term phrase term", qpAnalyzer,
-                      "term \"phrase1 phrase2\" term");
+                      "term (phrase1 phrase2) term");
     assertQueryEquals("term AND NOT phrase term", qpAnalyzer,
-                      "+term -\"phrase1 phrase2\" term");
+                      "+term -(phrase1 phrase2) term");
     assertQueryEquals("stop^3", qpAnalyzer, "");
     assertQueryEquals("stop", qpAnalyzer, "");
     assertQueryEquals("(stop)^3", qpAnalyzer, "");
@@ -912,9 +998,9 @@ public class TestQueryParser extends LocalizedTestCase {
       }
 
       @Override
-      protected Query getFieldQuery(String field, String queryText) throws ParseException {
+      protected Query getFieldQuery(String field, String queryText, boolean quoted) throws ParseException {
         type[0]=3;
-        return super.getFieldQuery(field, queryText);
+        return super.getFieldQuery(field, queryText, quoted);
       }
     };
 

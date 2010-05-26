@@ -299,7 +299,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
   /**
    * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getFieldQuery(String field, String queryText)  throws ParseException {
+  protected Query getFieldQuery(String field, String queryText, boolean quoted)  throws ParseException {
     // Use the analyzer to get all the tokens, and then build a TermQuery,
     // PhraseQuery, or nothing based on the term count
 
@@ -330,15 +330,19 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
       source.restoreState(list.get(0));
       return new TermQuery(new Term(field, termAtt.term()));
     } else {
-      if (severalTokensAtSamePosition) {
-        if (positionCount == 1) {
+      if (severalTokensAtSamePosition || !quoted) {
+        if (positionCount == 1 || !quoted) {
           // no phrase query:
-          BooleanQuery q = new BooleanQuery();
+          BooleanQuery q = new BooleanQuery(positionCount == 1);
+
+          BooleanClause.Occur occur = positionCount > 1 && operator == AND_OPERATOR ?
+            BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
+
           for (int i = 0; i < list.size(); i++) {
             source.restoreState(list.get(i));
             TermQuery currentQuery = new TermQuery(
                 new Term(field, termAtt.term()));
-            q.add(currentQuery, BooleanClause.Occur.SHOULD);
+            q.add(currentQuery, occur);
           }
           return q;
         }
@@ -371,7 +375,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
   }
 
   /**
-   * Base implementation delegates to {@link #getFieldQuery(String,String)}.
+   * Base implementation delegates to {@link #getFieldQuery(String,String,boolean)}.
    * This method may be overridden, for example, to return
    * a SpanNearQuery instead of a PhraseQuery.
    *
@@ -379,7 +383,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
    */
   protected Query getFieldQuery(String field, String queryText, int slop)
         throws ParseException {
-    Query query = getFieldQuery(field, queryText);
+    Query query = getFieldQuery(field, queryText, true);
 
     if (query instanceof PhraseQuery) {
       ((PhraseQuery) query).setSlop(slop);
@@ -847,7 +851,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
          }
          q = getFuzzyQuery(field, termImage, fms);
        } else {
-         q = getFieldQuery(field, termImage);
+         q = getFieldQuery(field, termImage, false);
        }
       break;
     case RANGEIN_START:

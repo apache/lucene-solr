@@ -451,7 +451,7 @@ public class QueryParserWrapper {
   /**
    * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getFieldQuery(String field, String queryText)
+  protected Query getFieldQuery(String field, String queryText, boolean quoted)
       throws ParseException {
     throw new UnsupportedOperationException();
   }

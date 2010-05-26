@@ -490,10 +490,6 @@ The source distribution does not contain sources of the previous Lucene Java ver
   <!-- ================================================================== -->
   <target name="clean-javacc">
     <delete>
-      <fileset dir="src/java/org/apache/lucene/analysis/standard" includes="*.java">
-        <containsregexp expression="Generated.*By.*JavaCC"/>
-        <exclude name="ParseException.java"/>
-      </fileset>
       <fileset dir="src/java/org/apache/lucene/queryParser" includes="*.java">
         <containsregexp expression="Generated.*By.*JavaCC"/>
       </fileset>
