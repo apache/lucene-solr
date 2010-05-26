@@ -448,16 +448,10 @@ public class QueryParserWrapper {
     throw new UnsupportedOperationException();
   }
 
-  /** @deprecated Use {@link #getFieldQuery(String, String, boolean)} instead */
-  @Deprecated
-  protected Query getFieldQuery(String field, String queryText) throws ParseException {
-    return getFieldQuery(field, queryText, true);
-  }
-
   /**
    * @exception ParseException throw in overridden method to disallow
    */
-  protected Query getFieldQuery(String field, String queryText, boolean quoted)
+  protected Query getFieldQuery(String field, String queryText)
       throws ParseException {
     throw new UnsupportedOperationException();
   }

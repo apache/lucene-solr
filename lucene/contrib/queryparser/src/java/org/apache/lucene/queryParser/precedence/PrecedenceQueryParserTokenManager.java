@@ -23,7 +23,6 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.VirtualMethod;
 
 /** Token Manager. */
 public class PrecedenceQueryParserTokenManager implements PrecedenceQueryParserConstants

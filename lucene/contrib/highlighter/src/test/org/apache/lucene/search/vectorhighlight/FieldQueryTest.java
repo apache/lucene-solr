@@ -55,7 +55,7 @@ public class FieldQueryTest extends AbstractTestCase {
   }
 
   public void testFlattenTermAndPhrase2gram() throws Exception {
-    Query query = paB.parse( "AA AND \"BCD\" OR \"EFGH\"" );
+    Query query = paB.parse( "AA AND BCD OR EFGH" );
     FieldQuery fq = new FieldQuery( query, true, true );
     Set<Query> flatQueries = new HashSet<Query>();
     fq.flatten( query, flatQueries );
@@ -679,7 +679,7 @@ public class FieldQueryTest extends AbstractTestCase {
   }
   
   public void testQueryPhraseMapOverlap2gram() throws Exception {
-    Query query = paB.parse( "\"abc\" AND \"bcd\"" );
+    Query query = paB.parse( "abc AND bcd" );
     
     // phraseHighlight = true, fieldMatch = true
     FieldQuery fq = new FieldQuery( query, true, true );

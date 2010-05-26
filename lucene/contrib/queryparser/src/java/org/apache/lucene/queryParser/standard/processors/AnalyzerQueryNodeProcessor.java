@@ -36,7 +36,6 @@ import org.apache.lucene.queryParser.core.nodes.GroupQueryNode;
 import org.apache.lucene.queryParser.core.nodes.NoTokenFoundQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
-import org.apache.lucene.queryParser.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryParser.core.nodes.TextableQueryNode;
 import org.apache.lucene.queryParser.core.nodes.TokenizedPhraseQueryNode;
 import org.apache.lucene.queryParser.core.processors.QueryNodeProcessorImpl;
@@ -188,8 +187,8 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
 
         return fieldNode;
 
-      } else if (severalTokensAtSamePosition || !(node instanceof QuotedFieldQueryNode)) {
-        if (positionCount == 1 || !(node instanceof QuotedFieldQueryNode)) {
+      } else if (severalTokensAtSamePosition) {
+        if (positionCount == 1) {
           // no phrase query:
           LinkedList<QueryNode> children = new LinkedList<QueryNode>();
 
@@ -207,11 +206,9 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
             children.add(new FieldQueryNode(field, term, -1, -1));
 
           }
-          if (positionCount == 1)
-            return new GroupQueryNode(
+
+          return new GroupQueryNode(
               new StandardBooleanQueryNode(children, true));
-          else
-            return new StandardBooleanQueryNode(children, false);
 
         } else {
           // phrase query:

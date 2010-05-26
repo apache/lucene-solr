@@ -101,7 +101,7 @@ public class MultiFieldQueryParser extends QueryParser
     if (field == null) {
       List<BooleanClause> clauses = new ArrayList<BooleanClause>();
       for (int i = 0; i < fields.length; i++) {
-        Query q = super.getFieldQuery(fields[i], queryText, true);
+        Query q = super.getFieldQuery(fields[i], queryText);
         if (q != null) {
           //If the user passes a map of boosts
           if (boosts != null) {
@@ -119,7 +119,7 @@ public class MultiFieldQueryParser extends QueryParser
         return null;
       return getBooleanQuery(clauses, true);
     }
-    Query q = super.getFieldQuery(field, queryText, true);
+    Query q = super.getFieldQuery(field, queryText);
     applySlop(q,slop);
     return q;
   }
@@ -134,29 +134,8 @@ public class MultiFieldQueryParser extends QueryParser
   
 
   @Override
-  protected Query getFieldQuery(String field, String queryText, boolean quoted) throws ParseException {
-    if (field == null) {
-      List<BooleanClause> clauses = new ArrayList<BooleanClause>();
-      for (int i = 0; i < fields.length; i++) {
-        Query q = super.getFieldQuery(fields[i], queryText, quoted);
-        if (q != null) {
-          //If the user passes a map of boosts
-          if (boosts != null) {
-            //Get the boost from the map and apply them
-            Float boost = boosts.get(fields[i]);
-            if (boost != null) {
-              q.setBoost(boost.floatValue());
-            }
-          }
-          clauses.add(new BooleanClause(q, BooleanClause.Occur.SHOULD));
-        }
-      }
-      if (clauses.size() == 0)  // happens for stopwords
-        return null;
-      return getBooleanQuery(clauses, true);
-    }
-    Query q = super.getFieldQuery(field, queryText, quoted);
-    return q;
+  protected Query getFieldQuery(String field, String queryText) throws ParseException {
+    return getFieldQuery(field, queryText, 0);
   }
 
 
