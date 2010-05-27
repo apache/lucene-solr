@@ -26,8 +26,9 @@ public class ByteUtils {
 
   /** Converts utf8 to utf16 and returns the number of 16 bit Java chars written.
    * Full characters are read, even if this reads past the length passed (and can result in
-   * an exception if invalid UTF8 is passed).
-   * The char[] out should probably have enough room to hold the worst case of each byte becoming a Java char. */ 
+   * an ArrayOutOfBoundsException if invalid UTF8 is passed).  Explicit checks for valid UTF8 are not performed.
+   * The char[] out should probably have enough room to hold the worst case of each byte becoming a Java char.
+   */
   public static int UTF8toUTF16(byte[] utf8, int offset, int len, char[] out, int out_offset) {
     int out_start = out_offset;
 
