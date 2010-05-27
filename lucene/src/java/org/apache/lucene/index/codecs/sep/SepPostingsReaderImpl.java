@@ -59,15 +59,15 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
     boolean success = false;
     try {
 
-      final String docFileName = IndexFileNames.segmentFileName(segmentInfo.name, SepCodec.DOC_EXTENSION);
+      final String docFileName = IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.DOC_EXTENSION);
       docIn = intFactory.openInput(dir, docFileName);
 
-      skipIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, SepCodec.SKIP_EXTENSION), readBufferSize);
+      skipIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.SKIP_EXTENSION), readBufferSize);
 
       if (segmentInfo.getHasProx()) {
-        freqIn = intFactory.openInput(dir, IndexFileNames.segmentFileName(segmentInfo.name, SepCodec.FREQ_EXTENSION));
-        posIn = intFactory.openInput(dir, IndexFileNames.segmentFileName(segmentInfo.name, SepCodec.POS_EXTENSION), readBufferSize);
-        payloadIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, SepCodec.PAYLOAD_EXTENSION), readBufferSize);
+        freqIn = intFactory.openInput(dir, IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.FREQ_EXTENSION));
+        posIn = intFactory.openInput(dir, IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.POS_EXTENSION), readBufferSize);
+        payloadIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.PAYLOAD_EXTENSION), readBufferSize);
       } else {
         posIn = null;
         payloadIn = null;
@@ -82,13 +82,13 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
   }
 
   public static void files(SegmentInfo segmentInfo, Collection<String> files) {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, SepCodec.DOC_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, SepCodec.SKIP_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.DOC_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.SKIP_EXTENSION));
 
     if (segmentInfo.getHasProx()) {
-      files.add(IndexFileNames.segmentFileName(segmentInfo.name, SepCodec.FREQ_EXTENSION));
-      files.add(IndexFileNames.segmentFileName(segmentInfo.name, SepCodec.POS_EXTENSION));
-      files.add(IndexFileNames.segmentFileName(segmentInfo.name, SepCodec.PAYLOAD_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.FREQ_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.POS_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", SepCodec.PAYLOAD_EXTENSION));
     }
   }
 

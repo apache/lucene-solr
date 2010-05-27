@@ -59,6 +59,16 @@ final class CompoundFileWriter {
         long dataOffset;
     }
 
+    // Before versioning started.
+    static final int FORMAT_PRE_VERSION = 0;
+    
+    // Segment name is not written in the file names.
+    static final int FORMAT_NO_SEGMENT_PREFIX = -1;
+
+    // NOTE: if you introduce a new format, make it 1 lower
+    // than the current one, and always change this if you
+    // switch to a new format!
+    static final int FORMAT_CURRENT = FORMAT_NO_SEGMENT_PREFIX;
 
     private Directory directory;
     private String fileName;
@@ -146,6 +156,10 @@ final class CompoundFileWriter {
         try {
             os = directory.createOutput(fileName);
 
+            // Write the Version info - must be a VInt because CFR reads a VInt
+            // in older versions!
+            os.writeVInt(FORMAT_CURRENT);
+            
             // Write the number of entries
             os.writeVInt(entries.size());
 
@@ -156,7 +170,7 @@ final class CompoundFileWriter {
             for (FileEntry fe : entries) {
                 fe.directoryOffset = os.getFilePointer();
                 os.writeLong(0);    // for now
-                os.writeString(fe.file);
+                os.writeString(IndexFileNames.stripSegmentName(fe.file));
                 totalSize += directory.fileLength(fe.file);
             }
 

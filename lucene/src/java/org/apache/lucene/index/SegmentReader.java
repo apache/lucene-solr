@@ -127,12 +127,12 @@ public class SegmentReader extends IndexReader implements Cloneable {
       try {
         Directory dir0 = dir;
         if (si.getUseCompoundFile()) {
-          cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(segment, IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
+          cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
           dir0 = cfsReader;
         }
         cfsDir = dir0;
 
-        fieldInfos = new FieldInfos(cfsDir, IndexFileNames.segmentFileName(segment, IndexFileNames.FIELD_INFOS_EXTENSION));
+        fieldInfos = new FieldInfos(cfsDir, IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELD_INFOS_EXTENSION));
 
         this.termsIndexDivisor = termsIndexDivisor;
 
@@ -216,7 +216,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
           if (si.getDocStoreIsCompoundFile()) {
             assert storeCFSReader == null;
             storeCFSReader = new CompoundFileReader(dir,
-                IndexFileNames.segmentFileName(si.getDocStoreSegment(), IndexFileNames.COMPOUND_FILE_STORE_EXTENSION),
+                IndexFileNames.segmentFileName(si.getDocStoreSegment(), "", IndexFileNames.COMPOUND_FILE_STORE_EXTENSION),
                                                     readBufferSize);
             storeDir = storeCFSReader;
             assert storeDir != null;
@@ -229,7 +229,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
           // was not used, but then we are asked to open doc
           // stores after the segment has switched to CFS
           if (cfsReader == null) {
-            cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(segment, IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
+            cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
           }
           storeDir = cfsReader;
           assert storeDir != null;

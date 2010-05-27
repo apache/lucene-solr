@@ -67,8 +67,8 @@ final class StoredFieldsWriter {
         fieldsWriter = new FieldsWriter(docWriter.directory,
                                         docStoreSegment,
                                         fieldInfos);
-        docWriter.addOpenFile(IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.FIELDS_EXTENSION));
-        docWriter.addOpenFile(IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.FIELDS_INDEX_EXTENSION));
+        docWriter.addOpenFile(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.FIELDS_EXTENSION));
+        docWriter.addOpenFile(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.FIELDS_INDEX_EXTENSION));
         lastDocID = 0;
       }
     }
@@ -88,8 +88,8 @@ final class StoredFieldsWriter {
       assert state.docStoreSegmentName != null;
       assert docStoreSegment.equals(state.docStoreSegmentName): "fieldsWriter wrote to segment=" + docStoreSegment + " vs SegmentWriteState segment=" + state.docStoreSegmentName;
       lastDocID = 0;
-      String fieldsName = IndexFileNames.segmentFileName(state.docStoreSegmentName, IndexFileNames.FIELDS_EXTENSION);
-      String fieldsIdxName = IndexFileNames.segmentFileName(state.docStoreSegmentName, IndexFileNames.FIELDS_INDEX_EXTENSION);
+      String fieldsName = IndexFileNames.segmentFileName(state.docStoreSegmentName, "", IndexFileNames.FIELDS_EXTENSION);
+      String fieldsIdxName = IndexFileNames.segmentFileName(state.docStoreSegmentName, "", IndexFileNames.FIELDS_INDEX_EXTENSION);
       state.flushedFiles.add(fieldsName);
       state.flushedFiles.add(fieldsIdxName);
 

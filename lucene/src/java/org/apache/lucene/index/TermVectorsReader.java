@@ -75,13 +75,13 @@ class TermVectorsReader implements Cloneable {
     boolean success = false;
 
     try {
-      String idxName = IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_INDEX_EXTENSION);
+      String idxName = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_INDEX_EXTENSION);
       if (d.fileExists(idxName)) {
         tvx = d.openInput(idxName, readBufferSize);
         format = checkValidFormat(tvx);
-        tvd = d.openInput(IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_DOCUMENTS_EXTENSION), readBufferSize);
+        tvd = d.openInput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION), readBufferSize);
         final int tvdFormat = checkValidFormat(tvd);
-        tvf = d.openInput(IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_FIELDS_EXTENSION), readBufferSize);
+        tvf = d.openInput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION), readBufferSize);
         final int tvfFormat = checkValidFormat(tvf);
 
         assert format == tvdFormat;

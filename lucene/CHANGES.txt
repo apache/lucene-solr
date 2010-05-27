@@ -248,6 +248,17 @@ Changes in runtime behavior
   it cannot delete the lock file, since obtaining the lock does not fail if the 
   file is there. (Shai Erera)
 
+* LUCENE-2455: IndexWriter.addIndexes no longer optimizes the target index 
+  before it adds the new ones. Also, the existing segments are not merged and so
+  the index will not end up with a single segment (unless it was empty before).
+  In addition, addIndexesNoOptimize was renamed to addIndexes and no longer
+  invokes a merge on the incoming and target segments, but instead copies the
+  segments to the target index. You can call maybeMerge or optimize after this
+  method completes, if you need to.
+  In addition, Directory.copyTo* were removed in favor of copy which takes the
+  target Directory, source and target files as arguments, and copies the source
+  file to the target Directory under the target file name. (Shai Erera)
+
 API Changes
 
 * LUCENE-2076: Rename FSDirectory.getFile -> getDirectory.  (George
@@ -334,6 +345,11 @@ API Changes
   (such as SnapshotDeletionPolicy), you can call this method to remove those
   commit points when they are not needed anymore (instead of waiting for the 
   next commit). (Shai Erera)
+
+* LUCENE-2455: IndexWriter.addIndexesNoOptimize was renamed to addIndexes.
+  IndexFileNames.segmentFileName now takes another parameter to accomodate
+  custom file names. You should use this method to name all your files.
+  (Shai Erera) 
   
 Bug fixes
 

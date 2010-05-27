@@ -935,15 +935,6 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
     lastGeneration = other.lastGeneration;
   }
 
-  // Used only for testing
-  public boolean hasExternalSegments(Directory dir) {
-    final int numSegments = size();
-    for(int i=0;i<numSegments;i++)
-      if (info(i).dir != dir)
-        return true;
-    return false;
-  }
-
   /** Returns sum of all segment's docCounts.  Note that
    *  this does not include deletions */
   public int totalDocCount() {

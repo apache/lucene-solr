@@ -670,7 +670,7 @@ final class DocumentsWriter {
   void createCompoundFile(String segment) throws IOException {
     
     CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, 
-        IndexFileNames.segmentFileName(segment, IndexFileNames.COMPOUND_FILE_EXTENSION));
+        IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
     for(String fileName : flushState.flushedFiles) {
       cfsWriter.addFile(fileName);
     }

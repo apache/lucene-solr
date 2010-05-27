@@ -172,7 +172,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
     }
   }
 
-  private void doTest(boolean addIndexesNoOptimize, boolean addToEmptyIndex,
+  private void doTest(boolean addToEmptyIndex,
       int numExpectedPayloads, boolean multipleCommits) throws IOException {
     Directory[] dirs = new Directory[2];
     populateDirs(dirs, multipleCommits);
@@ -193,20 +193,16 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
     IndexWriter writer = new IndexWriter(dir, getConfig());
     writer.setPayloadProcessorProvider(new PerDirPayloadProcessor(processors));
 
-    if (!addIndexesNoOptimize) {
-      IndexReader[] readers = new IndexReader[dirs.length];
-      for (int i = 0; i < readers.length; i++) {
-        readers[i] = IndexReader.open(dirs[i]);
+    IndexReader[] readers = new IndexReader[dirs.length];
+    for (int i = 0; i < readers.length; i++) {
+      readers[i] = IndexReader.open(dirs[i]);
+    }
+    try {
+      writer.addIndexes(readers);
+    } finally {
+      for (IndexReader r : readers) {
+        r.close();
       }
-      try {
-        writer.addIndexes(readers);
-      } finally {
-        for (IndexReader r : readers) {
-          r.close();
-        }
-      }
-    } else {
-      writer.addIndexesNoOptimize(dirs);
     }
     writer.close();
     verifyPayloadExists(dir, "p", new BytesRef("p1"), numExpectedPayloads);
@@ -219,31 +215,19 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
   @Test
   public void testAddIndexes() throws Exception {
     // addIndexes - single commit in each
-    doTest(false, true, 0, false);
+    doTest(true, 0, false);
 
     // addIndexes - multiple commits in each
-    doTest(false, true, 0, true);
-
-    // addIndexesNoOptimize - single commit in each
-    doTest(true, true, 0, false);
-
-    // addIndexesNoOptimize - multiple commits in each
-    doTest(true, true, 0, true);
+    doTest(true, 0, true);
   }
 
   @Test
   public void testAddIndexesIntoExisting() throws Exception {
     // addIndexes - single commit in each
-    doTest(false, false, NUM_DOCS, false);
+    doTest(false, NUM_DOCS, false);
 
     // addIndexes - multiple commits in each
-    doTest(false, false, NUM_DOCS, true);
-
-    // addIndexesNoOptimize - single commit in each
-    doTest(true, false, NUM_DOCS, false);
-
-    // addIndexesNoOptimize - multiple commits in each
-    doTest(true, false, NUM_DOCS, true);
+    doTest(false, NUM_DOCS, true);
   }
 
   @Test

@@ -61,7 +61,7 @@ final class FieldsWriter
         fieldInfos = fn;
 
         boolean success = false;
-        final String fieldsName = IndexFileNames.segmentFileName(segment, IndexFileNames.FIELDS_EXTENSION);
+        final String fieldsName = IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_EXTENSION);
         try {
           fieldsStream = d.createOutput(fieldsName);
           fieldsStream.writeInt(FORMAT_CURRENT);
@@ -82,7 +82,7 @@ final class FieldsWriter
         }
 
         success = false;
-        final String indexName = IndexFileNames.segmentFileName(segment, IndexFileNames.FIELDS_INDEX_EXTENSION);
+        final String indexName = IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION);
         try {
           indexStream = d.createOutput(indexName);
           indexStream.writeInt(FORMAT_CURRENT);

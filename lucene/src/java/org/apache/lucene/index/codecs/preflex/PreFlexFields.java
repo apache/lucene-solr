@@ -95,16 +95,16 @@ public class PreFlexFields extends FieldsProducer {
   }
 
   static void files(Directory dir, SegmentInfo info, Collection<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(info.name, PreFlexCodec.TERMS_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(info.name, PreFlexCodec.TERMS_INDEX_EXTENSION));
-    files.add(IndexFileNames.segmentFileName(info.name, PreFlexCodec.FREQ_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(info.name, "", PreFlexCodec.TERMS_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(info.name, "", PreFlexCodec.TERMS_INDEX_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(info.name, "", PreFlexCodec.FREQ_EXTENSION));
     if (info.getHasProx()) {
       // LUCENE-1739: for certain versions of 2.9-dev,
       // hasProx would be incorrectly computed during
       // indexing as true, and then stored into the segments
       // file, when it should have been false.  So we do the
       // extra check, here:
-      final String prx = IndexFileNames.segmentFileName(info.name, PreFlexCodec.PROX_EXTENSION);
+      final String prx = IndexFileNames.segmentFileName(info.name, "", PreFlexCodec.PROX_EXTENSION);
       if (dir.fileExists(prx)) {
         files.add(prx);
       }
@@ -145,7 +145,7 @@ public class PreFlexFields extends FieldsProducer {
         // to CFS
 
         if (!(dir instanceof CompoundFileReader)) {
-          dir0 = cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(si.name, IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
+          dir0 = cfsReader = new CompoundFileReader(dir, IndexFileNames.segmentFileName(si.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION), readBufferSize);
         } else {
           dir0 = dir;
         }

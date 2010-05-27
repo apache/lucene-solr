@@ -616,8 +616,6 @@ final class IndexFileDeleter {
       files = Collections.unmodifiableCollection(segmentInfos.files(directory, true));
       gen = segmentInfos.getGeneration();
       isOptimized = segmentInfos.size() == 1 && !segmentInfos.info(0).hasDeletions();
-
-      assert !segmentInfos.hasExternalSegments(directory);
     }
 
     @Override

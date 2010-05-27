@@ -117,7 +117,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     seg = writer.newestSegment().name;
     writer.close();
 
-    fieldInfos = new FieldInfos(dir, IndexFileNames.segmentFileName(seg, IndexFileNames.FIELD_INFOS_EXTENSION));
+    fieldInfos = new FieldInfos(dir, IndexFileNames.segmentFileName(seg, "", IndexFileNames.FIELD_INFOS_EXTENSION));
   }
 
   private class MyTokenStream extends TokenStream {
@@ -161,8 +161,8 @@ public class TestTermVectorsReader extends LuceneTestCase {
 
   public void test() {
     //Check to see the files were created properly in setup
-    assertTrue(dir.fileExists(IndexFileNames.segmentFileName(seg, IndexFileNames.VECTORS_DOCUMENTS_EXTENSION)));
-    assertTrue(dir.fileExists(IndexFileNames.segmentFileName(seg, IndexFileNames.VECTORS_INDEX_EXTENSION)));
+    assertTrue(dir.fileExists(IndexFileNames.segmentFileName(seg, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION)));
+    assertTrue(dir.fileExists(IndexFileNames.segmentFileName(seg, "", IndexFileNames.VECTORS_INDEX_EXTENSION)));
   }
 
   public void testReader() throws IOException {

@@ -64,7 +64,7 @@ public class StandardTermsDictWriter extends FieldsConsumer {
   private final Comparator<BytesRef> termComp;
 
   public StandardTermsDictWriter(StandardTermsIndexWriter indexWriter, SegmentWriteState state, StandardPostingsWriter postingsWriter, Comparator<BytesRef> termComp) throws IOException {
-    final String termsFileName = IndexFileNames.segmentFileName(state.segmentName, StandardCodec.TERMS_EXTENSION);
+    final String termsFileName = IndexFileNames.segmentFileName(state.segmentName, "", StandardCodec.TERMS_EXTENSION);
     this.indexWriter = indexWriter;
     this.termComp = termComp;
     out = state.directory.createOutput(termsFileName);

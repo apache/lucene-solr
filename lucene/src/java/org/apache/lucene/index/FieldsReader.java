@@ -105,8 +105,8 @@ final class FieldsReader implements Cloneable {
     try {
       fieldInfos = fn;
 
-      cloneableFieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, IndexFileNames.FIELDS_EXTENSION), readBufferSize);
-      cloneableIndexStream = d.openInput(IndexFileNames.segmentFileName(segment, IndexFileNames.FIELDS_INDEX_EXTENSION), readBufferSize);
+      cloneableFieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_EXTENSION), readBufferSize);
+      cloneableIndexStream = d.openInput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION), readBufferSize);
       
       // First version of fdx did not include a format
       // header, but, the first int will always be 0 in that

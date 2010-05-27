@@ -85,12 +85,12 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       tvd.close();
       tvx = null;
       assert state.docStoreSegmentName != null;
-      String idxName = IndexFileNames.segmentFileName(state.docStoreSegmentName, IndexFileNames.VECTORS_INDEX_EXTENSION);
+      String idxName = IndexFileNames.segmentFileName(state.docStoreSegmentName, "", IndexFileNames.VECTORS_INDEX_EXTENSION);
       if (4+((long) state.numDocsInStore)*16 != state.directory.fileLength(idxName))
         throw new RuntimeException("after flush: tvx size mismatch: " + state.numDocsInStore + " docs vs " + state.directory.fileLength(idxName) + " length in bytes of " + idxName + " file exists?=" + state.directory.fileExists(idxName));
 
-      String fldName = IndexFileNames.segmentFileName(state.docStoreSegmentName, IndexFileNames.VECTORS_FIELDS_EXTENSION);
-      String docName = IndexFileNames.segmentFileName(state.docStoreSegmentName, IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
+      String fldName = IndexFileNames.segmentFileName(state.docStoreSegmentName, "", IndexFileNames.VECTORS_FIELDS_EXTENSION);
+      String docName = IndexFileNames.segmentFileName(state.docStoreSegmentName, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
       state.flushedFiles.add(idxName);
       state.flushedFiles.add(fldName);
       state.flushedFiles.add(docName);
@@ -148,9 +148,9 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       // vector output files, we must abort this segment
       // because those files will be in an unknown
       // state:
-      String idxName = IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.VECTORS_INDEX_EXTENSION);
-      String docName = IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
-      String fldName = IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.VECTORS_FIELDS_EXTENSION);
+      String idxName = IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION);
+      String docName = IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
+      String fldName = IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION);
       tvx = docWriter.directory.createOutput(idxName);
       tvd = docWriter.directory.createOutput(docName);
       tvf = docWriter.directory.createOutput(fldName);

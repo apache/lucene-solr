@@ -431,29 +431,27 @@ public abstract class FSDirectory extends Directory {
   }
 
   @Override
-  public void copyTo(Directory to, Collection<String> filenames) throws IOException {
+  public void copy(Directory to, String src, String dest) throws IOException {
     if (to instanceof FSDirectory) {
       FSDirectory target = (FSDirectory) to;
-
-      for (String filename : filenames) {
-        target.ensureCanWrite(filename);
-        FileChannel input = null;
-        FileChannel output = null;
-        IOException priorException = null;
-        try {
-          input = new FileInputStream(new File(directory, filename)).getChannel();
-          output = new FileOutputStream(new File(target.directory, filename)).getChannel();
-          output.transferFrom(input, 0, input.size());
-        } catch (IOException ioe) {
-          priorException = ioe;
-        } finally {
-          IOUtils.closeSafely(priorException, input, output);
-        }
+      target.ensureCanWrite(dest);
+      FileChannel input = null;
+      FileChannel output = null;
+      IOException priorException = null;
+      try {
+        input = new FileInputStream(new File(directory, src)).getChannel();
+        output = new FileOutputStream(new File(target.directory, dest)).getChannel();
+        output.transferFrom(input, 0, input.size());
+      } catch (IOException ioe) {
+        priorException = ioe;
+      } finally {
+        IOUtils.closeSafely(priorException, input, output);
       }
-    } else
-      super.copyTo(to, filenames);
+    } else {
+      super.copy(to, src, dest);
+    }
   }
-
+  
   protected static class FSIndexOutput extends BufferedIndexOutput {
     private final FSDirectory parent;
     private final String name;

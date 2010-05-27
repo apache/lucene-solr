@@ -353,7 +353,7 @@ public class DirectUpdateHandler2 extends UpdateHandler {
       Directory[] dirs = cmd.dirs;
       if (dirs != null && dirs.length > 0) {
         openWriter();
-        writer.addIndexesNoOptimize(dirs);
+        writer.addIndexes(dirs);
         rc = 1;
       } else {
         rc = 0;

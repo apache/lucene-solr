@@ -56,9 +56,7 @@ public class CompoundFileReader extends Directory {
     this(dir, name, BufferedIndexInput.BUFFER_SIZE);
   }
 
-  public CompoundFileReader(Directory dir, String name, int readBufferSize)
-    throws IOException
-    {
+  public CompoundFileReader(Directory dir, String name, int readBufferSize) throws IOException {
         directory = dir;
         fileName = name;
         this.readBufferSize = readBufferSize;
@@ -68,13 +66,37 @@ public class CompoundFileReader extends Directory {
         try {
             stream = dir.openInput(name, readBufferSize);
 
+            // read the first VInt. If it is negative, it's the version number
+            // otherwise it's the count (pre-3.1 indexes)
+            int firstInt = stream.readVInt();
+            
+            final int count;
+            final boolean stripSegmentName;
+            if (firstInt < CompoundFileWriter.FORMAT_PRE_VERSION) {
+              if (firstInt < CompoundFileWriter.FORMAT_CURRENT) {
+                throw new CorruptIndexException("Incompatible format version: "
+                    + firstInt + " expected " + CompoundFileWriter.FORMAT_CURRENT);
+              }
+              // It's a post-3.1 index, read the count.
+              count = stream.readVInt();
+              stripSegmentName = false;
+            } else {
+              count = firstInt;
+              stripSegmentName = true;
+            }
+
             // read the directory and init files
-            int count = stream.readVInt();
             FileEntry entry = null;
             for (int i=0; i<count; i++) {
                 long offset = stream.readLong();
                 String id = stream.readString();
 
+                if (stripSegmentName) {
+                  // Fix the id to not include the segment names. This is relevant for
+                  // pre-3.1 indexes.
+                  id = IndexFileNames.stripSegmentName(id);
+                }
+                
                 if (entry != null) {
                     // set length of the previous entry
                     entry.length = offset - entry.offset;
@@ -93,7 +115,7 @@ public class CompoundFileReader extends Directory {
             success = true;
 
         } finally {
-            if (! success && (stream != null)) {
+            if (!success && (stream != null)) {
                 try {
                     stream.close();
                 } catch (IOException e) { }
@@ -133,7 +155,8 @@ public class CompoundFileReader extends Directory {
     {
         if (stream == null)
             throw new IOException("Stream closed");
-
+        
+        id = IndexFileNames.stripSegmentName(id);
         FileEntry entry = entries.get(id);
         if (entry == null)
             throw new IOException("No sub-file with id " + id + " found");
@@ -144,14 +167,19 @@ public class CompoundFileReader extends Directory {
     /** Returns an array of strings, one for each file in the directory. */
     @Override
     public String[] listAll() {
-        String res[] = new String[entries.size()];
-        return entries.keySet().toArray(res);
+        String[] res = entries.keySet().toArray(new String[entries.size()]);
+        // Add the segment name
+        String seg = fileName.substring(0, fileName.indexOf('.'));
+        for (int i = 0; i < res.length; i++) {
+          res[i] = seg + res[i];
+        }
+        return res;
     }
 
     /** Returns true iff a file with the given name exists. */
     @Override
     public boolean fileExists(String name) {
-        return entries.containsKey(name);
+        return entries.containsKey(IndexFileNames.stripSegmentName(name));
     }
 
     /** Returns the time the compound file was last modified. */
@@ -185,7 +213,7 @@ public class CompoundFileReader extends Directory {
      * @throws IOException if the file does not exist */
     @Override
     public long fileLength(String name) throws IOException {
-        FileEntry e = entries.get(name);
+        FileEntry e = entries.get(IndexFileNames.stripSegmentName(name));
         if (e == null)
             throw new FileNotFoundException(name);
         return e.length;

@@ -117,7 +117,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
         .setMaxBufferedDocs(5));
     ((LogMergePolicy) iw.getConfig().getMergePolicy()).setMergeFactor(3);
-    iw.addIndexesNoOptimize(new Directory[] { dir1, dir2 });
+    iw.addIndexes(new Directory[] { dir1, dir2 });
     iw.optimize();
     iw.close();
 

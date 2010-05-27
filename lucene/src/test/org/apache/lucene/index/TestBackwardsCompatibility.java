@@ -41,6 +41,7 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
@@ -48,6 +49,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -112,7 +114,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     zipFile.close();
   }
-
+/*
   public void testCreateCFS() throws IOException {
     String dirName = "testindex.cfs";
     createIndex(dirName, true);
@@ -125,6 +127,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     rmDir(dirName);
   }
 
+*/  
   final String[] oldNames = {"19.cfs",
                              "19.nocfs",
                              "20.cfs",
@@ -141,6 +144,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                              "29.nocfs",
                              "30.cfs",
                              "30.nocfs",
+                             "31.cfs",
+                             "31.nocfs",
   };
   
   private void assertCompressedFields29(Directory dir, boolean shouldStillBeCompressed) throws IOException {
@@ -244,6 +249,46 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     }
     
     assertEquals("test for compressed field should have run 4 times", 4, hasTested29);
+  }
+
+  public void testAddOldIndexes() throws IOException {
+    for (String name : oldNames) {
+      unzip(getDataFile("index." + name + ".zip"), name);
+      String fullPath = fullDir(name);
+      Directory dir = FSDirectory.open(new File(fullPath));
+
+      Directory targetDir = new RAMDirectory();
+      IndexWriter w = new IndexWriter(targetDir, new IndexWriterConfig(
+          TEST_VERSION_CURRENT, new MockAnalyzer()));
+      w.addIndexes(new Directory[] { dir });
+      w.close();
+
+      _TestUtil.checkIndex(targetDir);
+      
+      dir.close();
+      rmDir(name);
+    }
+  }
+
+  public void testAddOldIndexesReader() throws IOException {
+    for (String name : oldNames) {
+      unzip(getDataFile("index." + name + ".zip"), name);
+      String fullPath = fullDir(name);
+      Directory dir = FSDirectory.open(new File(fullPath));
+      IndexReader reader = IndexReader.open(dir);
+      
+      Directory targetDir = new RAMDirectory();
+      IndexWriter w = new IndexWriter(targetDir, new IndexWriterConfig(
+          TEST_VERSION_CURRENT, new MockAnalyzer()));
+      w.addIndexes(new IndexReader[] { reader });
+      w.close();
+      reader.close();
+      
+      _TestUtil.checkIndex(targetDir);
+      
+      dir.close();
+      rmDir(name);
+    }
   }
 
   public void testSearchOldIndex() throws IOException {
@@ -659,7 +704,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
   private int countDocs(DocsEnum docs) throws IOException {
     int count = 0;
-    while((docs.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+    while((docs.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
       count ++;
     }
     return count;

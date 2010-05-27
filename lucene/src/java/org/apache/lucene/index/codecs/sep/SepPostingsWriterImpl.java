@@ -76,24 +76,24 @@ public final class SepPostingsWriterImpl extends StandardPostingsWriter {
   public SepPostingsWriterImpl(SegmentWriteState state, IntStreamFactory factory) throws IOException {
     super();
 
-    final String docFileName = IndexFileNames.segmentFileName(state.segmentName, SepCodec.DOC_EXTENSION);
+    final String docFileName = IndexFileNames.segmentFileName(state.segmentName, "", SepCodec.DOC_EXTENSION);
     state.flushedFiles.add(docFileName);
     docOut = factory.createOutput(state.directory, docFileName);
     docIndex = docOut.index();
 
     if (state.fieldInfos.hasProx()) {
-      final String frqFileName = IndexFileNames.segmentFileName(state.segmentName, SepCodec.FREQ_EXTENSION);
+      final String frqFileName = IndexFileNames.segmentFileName(state.segmentName, "", SepCodec.FREQ_EXTENSION);
       state.flushedFiles.add(frqFileName);
       freqOut = factory.createOutput(state.directory, frqFileName);
       freqIndex = freqOut.index();
 
-      final String posFileName = IndexFileNames.segmentFileName(state.segmentName, SepCodec.POS_EXTENSION);
+      final String posFileName = IndexFileNames.segmentFileName(state.segmentName, "", SepCodec.POS_EXTENSION);
       posOut = factory.createOutput(state.directory, posFileName);
       state.flushedFiles.add(posFileName);
       posIndex = posOut.index();
 
       // TODO: -- only if at least one field stores payloads?
-      final String payloadFileName = IndexFileNames.segmentFileName(state.segmentName, SepCodec.PAYLOAD_EXTENSION);
+      final String payloadFileName = IndexFileNames.segmentFileName(state.segmentName, "", SepCodec.PAYLOAD_EXTENSION);
       state.flushedFiles.add(payloadFileName);
       payloadOut = state.directory.createOutput(payloadFileName);
 
@@ -105,7 +105,7 @@ public final class SepPostingsWriterImpl extends StandardPostingsWriter {
       payloadOut = null;
     }
 
-    final String skipFileName = IndexFileNames.segmentFileName(state.segmentName, SepCodec.SKIP_EXTENSION);
+    final String skipFileName = IndexFileNames.segmentFileName(state.segmentName, "", SepCodec.SKIP_EXTENSION);
     state.flushedFiles.add(skipFileName);
     skipOut = state.directory.createOutput(skipFileName);
 

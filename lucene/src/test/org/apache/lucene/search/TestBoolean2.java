@@ -70,7 +70,7 @@ public class TestBoolean2 extends LuceneTestCase {
     do {
       final Directory copy = new RAMDirectory(dir2);
       IndexWriter w = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
-      w.addIndexesNoOptimize(new Directory[] {copy});
+      w.addIndexes(new Directory[] {copy});
       docCount = w.maxDoc();
       w.close();
       mulFactor *= 2;

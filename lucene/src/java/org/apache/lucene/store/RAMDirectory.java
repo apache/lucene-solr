@@ -23,6 +23,7 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+
 import org.apache.lucene.util.ThreadInterruptedException;
 
 /**
@@ -68,7 +69,12 @@ public class RAMDirectory extends Directory implements Serializable {
   
   private RAMDirectory(Directory dir, boolean closeDir) throws IOException {
     this();
-    Directory.copy(dir, this, closeDir);
+    for (String file : dir.listAll()) {
+      dir.copy(this, file, file);
+    }
+    if (closeDir) {
+      dir.close();
+    }
   }
 
   @Override

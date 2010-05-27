@@ -181,7 +181,7 @@ final class SegmentMerger {
     for (String ext : IndexFileNames.COMPOUND_EXTENSIONS_NOT_CODEC) {
       if (mergeDocStores || (!ext.equals(IndexFileNames.FIELDS_EXTENSION) &&
                              !ext.equals(IndexFileNames.FIELDS_INDEX_EXTENSION)))
-        fileSet.add(IndexFileNames.segmentFileName(segment, ext));
+        fileSet.add(IndexFileNames.segmentFileName(segment, "", ext));
     }
 
     codec.files(directory, info, fileSet);
@@ -191,7 +191,7 @@ final class SegmentMerger {
     for (int i = 0; i < numFIs; i++) {
       FieldInfo fi = fieldInfos.fieldInfo(i);
       if (fi.isIndexed && !fi.omitNorms) {
-        fileSet.add(IndexFileNames.segmentFileName(segment, IndexFileNames.NORMS_EXTENSION));
+        fileSet.add(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION));
         break;
       }
     }
@@ -199,7 +199,7 @@ final class SegmentMerger {
     // Vector files
     if (fieldInfos.hasVectors() && mergeDocStores) {
       for (String ext : IndexFileNames.VECTOR_EXTENSIONS) {
-        fileSet.add(IndexFileNames.segmentFileName(segment, ext));
+        fileSet.add(IndexFileNames.segmentFileName(segment, "", ext));
       }
     }
 
@@ -337,7 +337,7 @@ final class SegmentMerger {
         fieldsWriter.close();
       }
 
-      final String fileName = IndexFileNames.segmentFileName(segment, IndexFileNames.FIELDS_INDEX_EXTENSION);
+      final String fileName = IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION);
       final long fdxFileLength = directory.fileLength(fileName);
 
       if (4+((long) docCount)*8 != fdxFileLength)
@@ -468,7 +468,7 @@ final class SegmentMerger {
       termVectorsWriter.close();
     }
 
-    final String fileName = IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_INDEX_EXTENSION);
+    final String fileName = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_INDEX_EXTENSION);
     final long tvxSize = directory.fileLength(fileName);
 
     if (4+((long) mergedDocs)*16 != tvxSize)
@@ -681,7 +681,7 @@ final class SegmentMerger {
         FieldInfo fi = fieldInfos.fieldInfo(i);
         if (fi.isIndexed && !fi.omitNorms) {
           if (output == null) { 
-            output = directory.createOutput(IndexFileNames.segmentFileName(segment, IndexFileNames.NORMS_EXTENSION));
+            output = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION));
             output.writeBytes(NORMS_HEADER,NORMS_HEADER.length);
           }
           for ( IndexReader reader : readers) {

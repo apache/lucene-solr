@@ -30,11 +30,10 @@ public class TestIndexWriterMerging extends LuceneTestCase
 {
 
   /**
-   * Tests that index merging (specifically addIndexesNoOptimize()) doesn't
+   * Tests that index merging (specifically addIndexes(Directory...)) doesn't
    * change the index order of documents.
    */
-  public void testLucene() throws IOException
-  {
+  public void testLucene() throws IOException {
 
     int num=100;
 
@@ -60,7 +59,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
     IndexWriter writer = new IndexWriter(merged, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
 
-    writer.addIndexesNoOptimize(new Directory[]{indexA, indexB});
+    writer.addIndexes(new Directory[]{indexA, indexB});
     writer.optimize();
     writer.close();
 

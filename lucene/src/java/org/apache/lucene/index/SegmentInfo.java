@@ -490,7 +490,7 @@ public final class SegmentInfo {
     } else if (isCompoundFile == YES) {
       return true;
     } else {
-      return dir.fileExists(IndexFileNames.segmentFileName(name, IndexFileNames.COMPOUND_FILE_EXTENSION));
+      return dir.fileExists(IndexFileNames.segmentFileName(name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
     }
   }
 
@@ -537,6 +537,7 @@ public final class SegmentInfo {
     docStoreOffset = offset;
     docStoreSegment = segment;
     docStoreIsCompoundFile = isCompoundFile;
+    clearFiles();
   }
   
   /**
@@ -615,10 +616,10 @@ public final class SegmentInfo {
     boolean useCompoundFile = getUseCompoundFile();
 
     if (useCompoundFile) {
-      fileSet.add(IndexFileNames.segmentFileName(name, IndexFileNames.COMPOUND_FILE_EXTENSION));
+      fileSet.add(IndexFileNames.segmentFileName(name, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
     } else {
       for(String ext : IndexFileNames.NON_STORE_INDEX_EXTENSIONS) {
-        addIfExists(fileSet, IndexFileNames.segmentFileName(name, ext));
+        addIfExists(fileSet, IndexFileNames.segmentFileName(name, "", ext));
       }
       codec.files(dir, this, fileSet);
     }
@@ -628,14 +629,14 @@ public final class SegmentInfo {
       // vectors) with other segments
       assert docStoreSegment != null;
       if (docStoreIsCompoundFile) {
-        fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.COMPOUND_FILE_STORE_EXTENSION));
+        fileSet.add(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.COMPOUND_FILE_STORE_EXTENSION));
       } else {
         for (String ext : IndexFileNames.STORE_INDEX_EXTENSIONS)
-          addIfExists(fileSet, IndexFileNames.segmentFileName(docStoreSegment, ext));
+          addIfExists(fileSet, IndexFileNames.segmentFileName(docStoreSegment, "", ext));
       }
     } else if (!useCompoundFile) {
       for (String ext : IndexFileNames.STORE_INDEX_EXTENSIONS)
-        addIfExists(fileSet, IndexFileNames.segmentFileName(name, ext));
+        addIfExists(fileSet, IndexFileNames.segmentFileName(name, "", ext));
     }
 
     String delFileName = IndexFileNames.fileNameFromGeneration(name, IndexFileNames.DELETES_EXTENSION, delGen);
@@ -654,7 +655,7 @@ public final class SegmentInfo {
           // No separate norms but maybe plain norms
           // in the non compound file case:
           if (!hasSingleNormFile && !useCompoundFile) {
-            String fileName = IndexFileNames.segmentFileName(name, IndexFileNames.PLAIN_NORMS_EXTENSION + i);
+            String fileName = IndexFileNames.segmentFileName(name, "", IndexFileNames.PLAIN_NORMS_EXTENSION + i);
             if (dir.fileExists(fileName)) {
               fileSet.add(fileName);
             }
@@ -663,9 +664,9 @@ public final class SegmentInfo {
           // Pre-2.1: we have to check file existence
           String fileName = null;
           if (useCompoundFile) {
-            fileName = IndexFileNames.segmentFileName(name, IndexFileNames.SEPARATE_NORMS_EXTENSION + i);
+            fileName = IndexFileNames.segmentFileName(name, "", IndexFileNames.SEPARATE_NORMS_EXTENSION + i);
           } else if (!hasSingleNormFile) {
-            fileName = IndexFileNames.segmentFileName(name, IndexFileNames.PLAIN_NORMS_EXTENSION + i);
+            fileName = IndexFileNames.segmentFileName(name, "", IndexFileNames.PLAIN_NORMS_EXTENSION + i);
           }
           if (fileName != null && dir.fileExists(fileName)) {
             fileSet.add(fileName);
@@ -677,9 +678,9 @@ public final class SegmentInfo {
       // matching _X.sN/_X.fN files for our segment:
       String prefix;
       if (useCompoundFile) {
-        prefix = IndexFileNames.segmentFileName(name, IndexFileNames.SEPARATE_NORMS_EXTENSION);
+        prefix = IndexFileNames.segmentFileName(name, "", IndexFileNames.SEPARATE_NORMS_EXTENSION);
       } else {
-        prefix = IndexFileNames.segmentFileName(name, IndexFileNames.PLAIN_NORMS_EXTENSION);
+        prefix = IndexFileNames.segmentFileName(name, "", IndexFileNames.PLAIN_NORMS_EXTENSION);
       }
       final String pattern = prefix + "\\d+";
 

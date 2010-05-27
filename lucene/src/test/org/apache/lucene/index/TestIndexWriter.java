@@ -159,7 +159,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     /*
       Test: make sure when we run out of disk space or hit
-      random IOExceptions in any of the addIndexesNoOptimize(*) calls
+      random IOExceptions in any of the addIndexes(*) calls
       that 1) index is not corrupt (searcher can open/search
       it) and 2) transactional semantics are followed:
       either all or none of the incoming documents were in
@@ -172,7 +172,7 @@ public class TestIndexWriter extends LuceneTestCase {
       int END_COUNT = START_COUNT + NUM_DIR*25;
 
       // Build up a bunch of dirs that have indexes which we
-      // will then merge together by calling addIndexesNoOptimize(*):
+      // will then merge together by calling addIndexes(*):
       Directory[] dirs = new Directory[NUM_DIR];
       long inputDiskUsage = 0;
       for(int i=0;i<NUM_DIR;i++) {
@@ -210,12 +210,12 @@ public class TestIndexWriter extends LuceneTestCase {
 
       // Iterate with larger and larger amounts of free
       // disk space.  With little free disk space,
-      // addIndexesNoOptimize will certainly run out of space &
+      // addIndexes will certainly run out of space &
       // fail.  Verify that when this happens, index is
       // not corrupt and index in fact has added no
       // documents.  Then, we increase disk space by 2000
       // bytes each iteration.  At some point there is
-      // enough free disk space and addIndexesNoOptimize should
+      // enough free disk space and addIndexes should
       // succeed and index should show all documents were
       // added.
 
@@ -247,7 +247,7 @@ public class TestIndexWriter extends LuceneTestCase {
         } else if (1 == method) {
           methodName = "addIndexes(IndexReader[])";
         } else {
-          methodName = "addIndexesNoOptimize(Directory[])";
+          methodName = "addIndexes(Directory[])";
         }
 
         while(!done) {
@@ -307,7 +307,7 @@ public class TestIndexWriter extends LuceneTestCase {
             try {
 
               if (0 == method) {
-                writer.addIndexesNoOptimize(dirs);
+                writer.addIndexes(dirs);
                 writer.optimize();
               } else if (1 == method) {
                 IndexReader readers[] = new IndexReader[dirs.length];
@@ -322,7 +322,7 @@ public class TestIndexWriter extends LuceneTestCase {
                   }
                 }
               } else {
-                writer.addIndexesNoOptimize(dirs);
+                writer.addIndexes(dirs);
               }
 
               success = true;
@@ -2732,7 +2732,7 @@ public class TestIndexWriter extends LuceneTestCase {
               new LogDocMergePolicy()));
 
       Directory[] indexDirs = {new MockRAMDirectory(dir)};
-      writer.addIndexesNoOptimize(indexDirs);
+      writer.addIndexes(indexDirs);
       writer.optimize();
       writer.close();
     }
@@ -3595,7 +3595,6 @@ public class TestIndexWriter extends LuceneTestCase {
     final int NUM_COPY;
     final static int NUM_THREADS = 5;
     final Thread[] threads = new Thread[NUM_THREADS];
-    final ConcurrentMergeScheduler cms;
 
     public RunAddIndexesThreads(int numCopy) throws Throwable {
       NUM_COPY = numCopy;
@@ -3610,7 +3609,6 @@ public class TestIndexWriter extends LuceneTestCase {
       dir2 = new MockRAMDirectory();
       writer2 = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
       writer2.commit();
-      cms = (ConcurrentMergeScheduler) writer2.getConfig().getMergeScheduler();
 
       readers = new IndexReader[NUM_COPY];
       for(int i=0;i<NUM_COPY;i++)
@@ -3683,18 +3681,22 @@ public class TestIndexWriter extends LuceneTestCase {
 
     @Override
     void doBody(int j, Directory[] dirs) throws Throwable {
-      switch(j%4) {
+      switch(j%5) {
       case 0:
-        writer2.addIndexesNoOptimize(dirs);
+        writer2.addIndexes(dirs);
         writer2.optimize();
         break;
       case 1:
-        writer2.addIndexesNoOptimize(dirs);
+        writer2.addIndexes(dirs);
         break;
       case 2:
         writer2.addIndexes(readers);
         break;
       case 3:
+        writer2.addIndexes(dirs);
+        writer2.maybeMerge();
+        break;
+      case 4:
         writer2.commit();
       }
     }
@@ -3704,7 +3706,7 @@ public class TestIndexWriter extends LuceneTestCase {
   // from multiple threads
   public void testAddIndexesWithThreads() throws Throwable {
 
-    final int NUM_ITER = 12;
+    final int NUM_ITER = 15;
     final int NUM_COPY = 3;
     CommitAndAddIndexes c = new CommitAndAddIndexes(NUM_COPY);
     c.launchThreads(NUM_ITER);
@@ -3714,7 +3716,8 @@ public class TestIndexWriter extends LuceneTestCase {
 
     c.joinThreads();
 
-    assertEquals(100+NUM_COPY*(3*NUM_ITER/4)*RunAddIndexesThreads.NUM_THREADS*RunAddIndexesThreads.NUM_INIT_DOCS, c.writer2.numDocs());
+    int expectedNumDocs = 100+NUM_COPY*(4*NUM_ITER/5)*RunAddIndexesThreads.NUM_THREADS*RunAddIndexesThreads.NUM_INIT_DOCS;
+    assertEquals(expectedNumDocs, c.writer2.numDocs());
 
     c.close(true);
 
@@ -3723,7 +3726,7 @@ public class TestIndexWriter extends LuceneTestCase {
     _TestUtil.checkIndex(c.dir2);
 
     IndexReader reader = IndexReader.open(c.dir2, true);
-    assertEquals(100+NUM_COPY*(3*NUM_ITER/4)*RunAddIndexesThreads.NUM_THREADS*RunAddIndexesThreads.NUM_INIT_DOCS, reader.numDocs());
+    assertEquals(expectedNumDocs, reader.numDocs());
     reader.close();
 
     c.closeDir();
@@ -3774,11 +3777,11 @@ public class TestIndexWriter extends LuceneTestCase {
     void doBody(int j, Directory[] dirs) throws Throwable {
       switch(j%5) {
       case 0:
-        writer2.addIndexesNoOptimize(dirs);
+        writer2.addIndexes(dirs);
         writer2.optimize();
         break;
       case 1:
-        writer2.addIndexesNoOptimize(dirs);
+        writer2.addIndexes(dirs);
         break;
       case 2:
         writer2.addIndexes(readers);

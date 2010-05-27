@@ -26,7 +26,7 @@ import org.apache.lucene.index.codecs.Codec;  // for javadocs
  * matchesExtension}), as well as generating file names from a segment name,
  * generation and extension (
  * {@link #fileNameFromGeneration(String, String, long) fileNameFromGeneration},
- * {@link #segmentFileName(String, String) segmentFileName}).
+ * {@link #segmentFileName(String, String, String) segmentFileName}).
  *
  * <p><b>NOTE</b>: extensions used by codecs are not
  * listed here.  You must interact with the {@link Codec}
@@ -150,7 +150,7 @@ public final class IndexFileNames {
     if (gen == SegmentInfo.NO) {
       return null;
     } else if (gen == SegmentInfo.WITHOUT_GEN) {
-      return segmentFileName(base, ext);
+      return segmentFileName(base, "", ext);
     } else {
       // The '6' part in the length is: 1 for '.', 1 for '_' and 4 as estimate
       // to the gen length as string (hopefully an upper limit so SB won't
@@ -179,18 +179,32 @@ public final class IndexFileNames {
   }
 
   /**
-   * Returns the file name that matches the given segment name and extension.
-   * This method takes care to return the full file name in the form
-   * &lt;segmentName&gt;.&lt;ext&gt;, therefore you don't need to prefix the
-   * extension with a '.'.<br>
+   * Returns a file name that includes the given segment name, your own custom
+   * name and extension. The format of the filename is:
+   * &lt;segmentName&gt;(_&lt;name&gt;)(.&lt;ext&gt;).
+   * <p>
    * <b>NOTE:</b> .&lt;ext&gt; is added to the result file name only if
    * <code>ext</code> is not empty.
+   * <p>
+   * <b>NOTE:</b> _&lt;name&gt; is added to the result file name only if
+   * <code>name</code> is not empty.
+   * <p>
+   * <b>NOTE:</b> all custom files should be named using this method, or
+   * otherwise some structures may fail to handle them properly (such as if they
+   * are added to compound files).
    */
-  public static final String segmentFileName(String segmentName, String ext) {
-    if (ext.length() > 0) {
+  public static final String segmentFileName(String segmentName, String name, String ext) {
+    if (ext.length() > 0 || name.length() > 0) {
       assert !ext.startsWith(".");
-      return new StringBuilder(segmentName.length() + 1 + ext.length()).append(
-          segmentName).append('.').append(ext).toString();
+      StringBuilder sb = new StringBuilder(segmentName.length() + 2 + name.length() + ext.length());
+      sb.append(segmentName);
+      if (name.length() > 0) {
+        sb.append('_').append(name);
+      }
+      if (ext.length() > 0) {
+        sb.append('.').append(ext);
+      }
+      return sb.toString();
     } else {
       return segmentName;
     }
@@ -204,6 +218,28 @@ public final class IndexFileNames {
     // It doesn't make a difference whether we allocate a StringBuilder ourself
     // or not, since there's only 1 '+' operator.
     return filename.endsWith("." + ext);
+  }
+
+  /**
+   * Strips the segment name out of the given file name. If you used
+   * {@link #segmentFileName} or {@link #fileNameFromGeneration} to create your
+   * files, then this method simply removes whatever comes before the first '.',
+   * or the second '_' (excluding both).
+   * 
+   * @return the filename with the segment name removed, or the given filename
+   *         if it does not contain a '.' and '_'.
+   */
+  public static final String stripSegmentName(String filename) {
+    // If it is a .del file, there's an '_' after the first character
+    int idx = filename.indexOf('_', 1);
+    if (idx == -1) {
+      // If it's not, strip everything that's before the '.'
+      idx = filename.indexOf('.');
+    }
+    if (idx != -1) {
+      filename = filename.substring(idx);
+    }
+    return filename;
   }
   
 }

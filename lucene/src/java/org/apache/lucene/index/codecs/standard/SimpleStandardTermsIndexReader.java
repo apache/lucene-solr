@@ -90,7 +90,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
 
     this.termComp = termComp;
 
-    IndexInput in = dir.openInput(IndexFileNames.segmentFileName(segment, StandardCodec.TERMS_INDEX_EXTENSION));
+    IndexInput in = dir.openInput(IndexFileNames.segmentFileName(segment, "", StandardCodec.TERMS_INDEX_EXTENSION));
     
     boolean success = false;
 
@@ -421,7 +421,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
   }
 
   public static void files(Directory dir, SegmentInfo info, Collection<String> files) {
-    files.add(IndexFileNames.segmentFileName(info.name, StandardCodec.TERMS_INDEX_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(info.name, "", StandardCodec.TERMS_INDEX_EXTENSION));
   }
 
   public static void getIndexExtensions(Collection<String> extensions) {

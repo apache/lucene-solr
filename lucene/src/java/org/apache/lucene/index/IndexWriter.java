@@ -271,9 +271,6 @@ public class IndexWriter implements Closeable {
   volatile SegmentInfos pendingCommit;            // set when a commit is pending (after prepareCommit() & before commit())
   volatile long pendingCommitChangeCount;
 
-  private SegmentInfos localRollbackSegmentInfos;      // segmentInfos we will fallback to if the commit fails
-  private int localFlushedDocCount;               // saved docWriter.getFlushedDocCount during local transaction
-
   private SegmentInfos segmentInfos = new SegmentInfos();       // the segments
 
   private DocumentsWriter docWriter;
@@ -305,12 +302,7 @@ public class IndexWriter implements Closeable {
   private int flushCount;
   private int flushDeletesCount;
 
-  // Used to only allow one addIndexes to proceed at once
-  // TODO: use ReadWriteLock once we are on 5.0
-  private int readCount;                          // count of how many threads are holding read lock
-  private Thread writeThread;                     // non-null if any thread holds write lock
   final ReaderPool readerPool = new ReaderPool();
-  private int upgradeCount;
   
   // This is a "write once" variable (like the organic dye
   // on a DVD-R that may or may not be heated by a laser and
@@ -694,52 +686,6 @@ public class IndexWriter implements Closeable {
     }
   }
   
-  synchronized void acquireWrite() {
-    assert writeThread != Thread.currentThread();
-    while(writeThread != null || readCount > 0)
-      doWait();
-
-    // We could have been closed while we were waiting:
-    ensureOpen();
-
-    writeThread = Thread.currentThread();
-  }
-
-  synchronized void releaseWrite() {
-    assert Thread.currentThread() == writeThread;
-    writeThread = null;
-    notifyAll();
-  }
-
-  synchronized void acquireRead() {
-    final Thread current = Thread.currentThread();
-    while(writeThread != null && writeThread != current)
-      doWait();
-
-    readCount++;
-  }
-
-  // Allows one readLock to upgrade to a writeLock even if
-  // there are other readLocks as long as all other
-  // readLocks are also blocked in this method:
-  synchronized void upgradeReadToWrite() {
-    assert readCount > 0;
-    upgradeCount++;
-    while(readCount > upgradeCount || writeThread != null) {
-      doWait();
-    }
-    
-    writeThread = Thread.currentThread();
-    readCount--;
-    upgradeCount--;
-  }
-
-  synchronized void releaseRead() {
-    readCount--;
-    assert readCount >= 0;
-    notifyAll();
-  }
-
   /**
    * Used internally to throw an {@link
    * AlreadyClosedException} if this IndexWriter has been
@@ -1201,7 +1147,6 @@ public class IndexWriter implements Closeable {
   
   private synchronized void setRollbackSegmentInfos(SegmentInfos infos) {
     rollbackSegmentInfos = (SegmentInfos) infos.clone();
-    assert !rollbackSegmentInfos.hasExternalSegments(directory);
     rollbackSegments = new HashMap<SegmentInfo,Integer>();
     final int size = rollbackSegmentInfos.size();
     for(int i=0;i<size;i++)
@@ -1863,13 +1808,13 @@ public class IndexWriter implements Closeable {
       // Now build compound doc store file
 
       if (infoStream != null) {
-        message("create compound file " + IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.COMPOUND_FILE_STORE_EXTENSION));
+        message("create compound file " + IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.COMPOUND_FILE_STORE_EXTENSION));
       }
 
       success = false;
 
       final int numSegments = segmentInfos.size();
-      final String compoundFileName = IndexFileNames.segmentFileName(docStoreSegment, IndexFileNames.COMPOUND_FILE_STORE_EXTENSION);
+      final String compoundFileName = IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.COMPOUND_FILE_STORE_EXTENSION);
 
       try {
         CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, compoundFileName);
@@ -2397,10 +2342,7 @@ public class IndexWriter implements Closeable {
 
     synchronized(this) {
       resetMergeExceptions();
-      segmentsToOptimize = new HashSet<SegmentInfo>();
-      final int numSegments = segmentInfos.size();
-      for(int i=0;i<numSegments;i++)
-        segmentsToOptimize.add(segmentInfos.info(i));
+      segmentsToOptimize = new HashSet<SegmentInfo>(segmentInfos);
       
       // Now mark all pending & running merges as optimize
       // merge:
@@ -2646,169 +2588,6 @@ public class IndexWriter implements Closeable {
     }
   }
 
-  /** Like getNextMerge() except only returns a merge if it's
-   *  external. */
-  private synchronized MergePolicy.OneMerge getNextExternalMerge() {
-    if (pendingMerges.size() == 0)
-      return null;
-    else {
-      Iterator<MergePolicy.OneMerge> it = pendingMerges.iterator();
-      while(it.hasNext()) {
-        MergePolicy.OneMerge merge = it.next();
-        if (merge.isExternal) {
-          // Advance the merge from pending to running
-          it.remove();
-          runningMerges.add(merge);
-          return merge;
-        }
-      }
-
-      // All existing merges do not involve external segments
-      return null;
-    }
-  }
-
-  /*
-   * Begin a transaction.  During a transaction, any segment
-   * merges that happen (or ram segments flushed) will not
-   * write a new segments file and will not remove any files
-   * that were present at the start of the transaction.  You
-   * must make a matched (try/finally) call to
-   * commitTransaction() or rollbackTransaction() to finish
-   * the transaction.
-   *
-   * Note that buffered documents and delete terms are not handled
-   * within the transactions, so they must be flushed before the
-   * transaction is started.
-   */
-  private synchronized void startTransaction(boolean haveReadLock) throws IOException {
-
-    boolean success = false;
-    try {
-      if (infoStream != null)
-        message("now start transaction");
-
-      assert docWriter.getNumBufferedDeleteTerms() == 0 :
-      "calling startTransaction with buffered delete terms not supported: numBufferedDeleteTerms=" + docWriter.getNumBufferedDeleteTerms();
-      assert docWriter.getNumDocsInRAM() == 0 :
-      "calling startTransaction with buffered documents not supported: numDocsInRAM=" + docWriter.getNumDocsInRAM();
-
-      ensureOpen();
-
-      // If a transaction is trying to roll back (because
-      // addIndexes hit an exception) then wait here until
-      // that's done:
-      synchronized(this) {
-        while(stopMerges)
-          doWait();
-      }
-      success = true;
-    } finally {
-      // Release the write lock if our caller held it, on
-      // hitting an exception
-      if (!success && haveReadLock)
-        releaseRead();
-    }
-
-    if (haveReadLock) {
-      upgradeReadToWrite();
-    } else {
-      acquireWrite();
-    }
-
-    success = false;
-    try {
-      localRollbackSegmentInfos = (SegmentInfos) segmentInfos.clone();
-
-      assert !hasExternalSegments();
-
-      localFlushedDocCount = docWriter.getFlushedDocCount();
-
-      // We must "protect" our files at this point from
-      // deletion in case we need to rollback:
-      deleter.incRef(segmentInfos, false);
-
-      success = true;
-    } finally {
-      if (!success)
-        finishAddIndexes();
-    }
-  }
-
-  /*
-   * Rolls back the transaction and restores state to where
-   * we were at the start.
-   */
-  private synchronized void rollbackTransaction() throws IOException {
-
-    if (infoStream != null)
-      message("now rollback transaction");
-
-    if (docWriter != null) {
-      docWriter.setFlushedDocCount(localFlushedDocCount);
-    }
-
-    // Must finish merges before rolling back segmentInfos
-    // so merges don't hit exceptions on trying to commit
-    // themselves, don't get files deleted out from under
-    // them, etc:
-    finishMerges(false);
-
-    // Keep the same segmentInfos instance but replace all
-    // of its SegmentInfo instances.  This is so the next
-    // attempt to commit using this instance of IndexWriter
-    // will always write to a new generation ("write once").
-    segmentInfos.clear();
-    segmentInfos.addAll(localRollbackSegmentInfos);
-    localRollbackSegmentInfos = null;
-
-    // This must come after we rollback segmentInfos, so
-    // that if a commit() kicks off it does not see the
-    // segmentInfos with external segments
-    finishAddIndexes();
-
-    // Ask deleter to locate unreferenced files we had
-    // created & remove them:
-    deleter.checkpoint(segmentInfos, false);
-
-    // Remove the incRef we did in startTransaction:
-    deleter.decRef(segmentInfos);
-
-    // Also ask deleter to remove any newly created files
-    // that were never incref'd; this "garbage" is created
-    // when a merge kicks off but aborts part way through
-    // before it had a chance to incRef the files it had
-    // partially created
-    deleter.refresh();
-    
-    notifyAll();
-
-    assert !hasExternalSegments();
-  }
-
-  /*
-   * Commits the transaction.  This will write the new
-   * segments file and remove and pending deletions we have
-   * accumulated during the transaction
-   */
-  private synchronized void commitTransaction() throws IOException {
-
-    if (infoStream != null)
-      message("now commit transaction");
-
-    // Give deleter a chance to remove files now:
-    checkpoint();
-
-    // Remove the incRef we did in startTransaction.
-    deleter.decRef(localRollbackSegmentInfos);
-
-    localRollbackSegmentInfos = null;
-
-    assert !hasExternalSegments();
-
-    finishAddIndexes();
-  }
-
   /**
    * Close the <code>IndexWriter</code> without committing
    * any changes that have occurred since the last commit
@@ -2860,8 +2639,6 @@ public class IndexWriter implements Closeable {
         segmentInfos.clear();
         segmentInfos.addAll(rollbackSegmentInfos);
 
-        assert !hasExternalSegments();
-        
         docWriter.abort();
 
         assert testPoint("rollback before checkpoint");
@@ -2963,12 +2740,6 @@ public class IndexWriter implements Closeable {
         merge.abort();
       }
 
-      // Ensure any running addIndexes finishes.  It's fine
-      // if a new one attempts to start because its merges
-      // will quickly see the stopMerges == true and abort.
-      acquireRead();
-      releaseRead();
-
       // These merges periodically check whether they have
       // been aborted, and stop if so.  We wait here to make
       // sure they all stop.  It should not take very long
@@ -3005,10 +2776,6 @@ public class IndexWriter implements Closeable {
    *    will have completed once this method completes.</p>
    */
   public synchronized void waitForMerges() {
-    // Ensure any running addIndexes finishes.
-    acquireRead();
-    releaseRead();
-
     while(pendingMerges.size() > 0 || runningMerges.size() > 0) {
       doWait();
     }
@@ -3017,7 +2784,7 @@ public class IndexWriter implements Closeable {
     assert 0 == mergingSegments.size();
   }
 
-  /*
+  /**
    * Called whenever the SegmentInfos has been updated and
    * the index files referenced exist (correctly) in the
    * index directory.
@@ -3025,31 +2792,6 @@ public class IndexWriter implements Closeable {
   private synchronized void checkpoint() throws IOException {
     changeCount++;
     deleter.checkpoint(segmentInfos, false);
-  }
-
-  private void finishAddIndexes() {
-    releaseWrite();
-  }
-
-  private void blockAddIndexes() {
-
-    acquireRead();
-
-    boolean success = false;
-    try {
-
-      // Make sure we are still open since we could have
-      // waited quite a while for last addIndexes to finish
-      ensureOpen(false);
-      success = true;
-    } finally {
-      if (!success)
-        releaseRead();
-    }
-  }
-
-  private void resumeAddIndexes() {
-    releaseRead();
   }
 
   private synchronized void resetMergeExceptions() {
@@ -3069,208 +2811,127 @@ public class IndexWriter implements Closeable {
   }
 
   /**
-   * Merges all segments from an array of indexes into this
-   * index.
+   * Adds all segments from an array of indexes into this index.
    *
-   * <p>This may be used to parallelize batch indexing.  A large document
-   * collection can be broken into sub-collections.  Each sub-collection can be
-   * indexed in parallel, on a different thread, process or machine.  The
+   * <p>This may be used to parallelize batch indexing. A large document
+   * collection can be broken into sub-collections. Each sub-collection can be
+   * indexed in parallel, on a different thread, process or machine. The
    * complete index can then be created by merging sub-collection indexes
    * with this method.
    *
-   * <p><b>NOTE:</b> the index in each Directory must not be
+   * <p>
+   * <b>NOTE:</b> the index in each {@link Directory} must not be
    * changed (opened by a writer) while this method is
    * running.  This method does not acquire a write lock in
    * each input Directory, so it is up to the caller to
    * enforce this.
    *
-   * <p><b>NOTE:</b> while this is running, any attempts to
-   * add or delete documents (with another thread) will be
-   * paused until this method completes.
-   *
    * <p>This method is transactional in how Exceptions are
    * handled: it does not commit a new segments_N file until
    * all indexes are added.  This means if an Exception
    * occurs (for example disk full), then either no indexes
-   * will have been added or they all will have been.</p>
+   * will have been added or they all will have been.
    *
    * <p>Note that this requires temporary free space in the
-   * Directory up to 2X the sum of all input indexes
-   * (including the starting index).  If readers/searchers
+   * {@link Directory} up to 2X the sum of all input indexes
+   * (including the starting index). If readers/searchers
    * are open against the starting index, then temporary
    * free space required will be higher by the size of the
    * starting index (see {@link #optimize()} for details).
-   * </p>
    *
-   * <p>Once this completes, the final size of the index
-   * will be less than the sum of all input index sizes
-   * (including the starting index).  It could be quite a
-   * bit smaller (if there were many pending deletes) or
-   * just slightly smaller.</p>
-   * 
    * <p>
-   * This requires this index not be among those to be added.
+   * <b>NOTE:</b> this method only copies the segments of the incomning indexes
+   * and does not merge them. Therefore deleted documents are not removed and
+   * the new segments are not merged with the existing ones. Also, the segments 
+   * are copied as-is, meaning they are not converted to CFS if they aren't, 
+   * and vice-versa. If you wish to do that, you can call {@link #maybeMerge} 
+   * or {@link #optimize} afterwards.
+   * 
+   * <p>This requires this index not be among those to be added.
    *
-   * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
-   * you should immediately close the writer.  See <a
-   * href="#OOME">above</a> for details.</p>
+   * <p>
+   * <b>NOTE</b>: if this method hits an OutOfMemoryError
+   * you should immediately close the writer. See <a
+   * href="#OOME">above</a> for details.
    *
    * @throws CorruptIndexException if the index is corrupt
    * @throws IOException if there is a low-level IO error
    */
-  public void addIndexesNoOptimize(Directory... dirs)
-      throws CorruptIndexException, IOException {
-
+  public void addIndexes(Directory... dirs) throws CorruptIndexException, IOException {
     ensureOpen();
 
     noDupDirs(dirs);
 
-    // Do not allow add docs or deletes while we are running:
-    docWriter.pauseAllThreads();
-
     try {
       if (infoStream != null)
-        message("flush at addIndexesNoOptimize");
+        message("flush at addIndexes(Directory...)");
       flush(true, false, true);
 
-      boolean success = false;
-
-      startTransaction(false);
-
-      try {
-
-        int docCount = 0;
-        synchronized(this) {
-          ensureOpen();
-
-          for (int i = 0; i < dirs.length; i++) {
-            if (directory == dirs[i]) {
-              // cannot add this index: segments may be deleted in merge before added
-              throw new IllegalArgumentException("Cannot add this index to itself");
-            }
-
-            SegmentInfos sis = new SegmentInfos(); // read infos from dir
-            sis.read(dirs[i], codecs);
-            for (int j = 0; j < sis.size(); j++) {
-              SegmentInfo info = sis.info(j);
-              assert !segmentInfos.contains(info): "dup info dir=" + info.dir + " name=" + info.name;
-              docCount += info.docCount;
-              segmentInfos.add(info); // add each info
-            }
-          }
+      int docCount = 0;
+      List<SegmentInfo> infos = new ArrayList<SegmentInfo>();
+      for (Directory dir : dirs) {
+        if (infoStream != null) {
+          message("process directory " + dir);
         }
+        SegmentInfos sis = new SegmentInfos(); // read infos from dir
+        sis.read(dir);
+        Map<String, String> dsNames = new HashMap<String, String>();
+        for (SegmentInfo info : sis) {
+          assert !infos.contains(info): "dup info dir=" + info.dir + " name=" + info.name;
 
+          if (infoStream != null) {
+            message("process segment=" + info.name);
+          }
+          docCount += info.docCount;
+          String newSegName = newSegmentName();
+          String dsName = info.getDocStoreSegment();
+
+          // Determine if the doc store of this segment needs to be copied. It's
+          // only relevant for segments who share doc store with others, because
+          // the DS might have been copied already, in which case we just want
+          // to update the DS name of this SegmentInfo.
+          // NOTE: pre-3x segments include a null DSName if they don't share doc
+          // store. So the following code ensures we don't accidentally insert
+          // 'null' to the map.
+          String newDsName = newSegName;
+          boolean docStoreCopied = false;
+          if (dsNames.containsKey(dsName)) {
+            newDsName = dsNames.get(dsName);
+            docStoreCopied = true;
+          } else if (dsName != null) {
+            dsNames.put(dsName, newSegName);
+            docStoreCopied = false;
+          }
+
+          // Copy the segment files
+          for (String file : info.files()) {
+            if (docStoreCopied && IndexFileNames.isDocStoreFile(file)) {
+              continue;
+            } 
+            dir.copy(directory, file, newSegName + IndexFileNames.stripSegmentName(file));
+          }
+
+          // Update SI appropriately
+          info.setDocStore(info.getDocStoreOffset(), newDsName, info.getDocStoreIsCompoundFile());
+          info.dir = directory;
+          info.name = newSegName;
+
+          infos.add(info);
+        }
+      }      
+
+      synchronized (this) {
+        ensureOpen();
+        segmentInfos.addAll(infos);
         // Notify DocumentsWriter that the flushed count just increased
         docWriter.updateFlushedDocCount(docCount);
 
-        maybeMerge();
-
-        ensureOpen();
-
-        // If after merging there remain segments in the index
-        // that are in a different directory, just copy these
-        // over into our index.  This is necessary (before
-        // finishing the transaction) to avoid leaving the
-        // index in an unusable (inconsistent) state.
-        resolveExternalSegments();
-
-        ensureOpen();
-
-        success = true;
-
-      } finally {
-        if (success) {
-          commitTransaction();
-        } else {
-          rollbackTransaction();
-        }
+        checkpoint();
       }
+
     } catch (OutOfMemoryError oom) {
-      handleOOM(oom, "addIndexesNoOptimize");
-    } finally {
-      if (docWriter != null) {
-        docWriter.resumeAllThreads();
-      }
+      handleOOM(oom, "addIndexes(Directory...)");
     }
-  }
-
-  private boolean hasExternalSegments() {
-    return segmentInfos.hasExternalSegments(directory);
-  }
-
-  /* If any of our segments are using a directory != ours
-   * then we have to either copy them over one by one, merge
-   * them (if merge policy has chosen to) or wait until
-   * currently running merges (in the background) complete.
-   * We don't return until the SegmentInfos has no more
-   * external segments.  Currently this is only used by
-   * addIndexesNoOptimize(). */
-  private void resolveExternalSegments() throws CorruptIndexException, IOException {
-
-    boolean any = false;
-
-    boolean done = false;
-
-    while(!done) {
-      SegmentInfo info = null;
-      MergePolicy.OneMerge merge = null;
-      synchronized(this) {
-
-        if (stopMerges)
-          throw new MergePolicy.MergeAbortedException("rollback() was called or addIndexes* hit an unhandled exception");
-
-        final int numSegments = segmentInfos.size();
-
-        done = true;
-        for(int i=0;i<numSegments;i++) {
-          info = segmentInfos.info(i);
-          if (info.dir != directory) {
-            done = false;
-            final MergePolicy.OneMerge newMerge = new MergePolicy.OneMerge(segmentInfos.range(i, 1+i), mergePolicy instanceof LogMergePolicy && getUseCompoundFile());
-
-            // Returns true if no running merge conflicts
-            // with this one (and, records this merge as
-            // pending), ie, this segment is not currently
-            // being merged:
-            if (registerMerge(newMerge)) {
-              merge = newMerge;
-
-              // If this segment is not currently being
-              // merged, then advance it to running & run
-              // the merge ourself (below):
-              pendingMerges.remove(merge);
-              runningMerges.add(merge);
-              break;
-            }
-          }
-        }
-
-        if (!done && merge == null)
-          // We are not yet done (external segments still
-          // exist in segmentInfos), yet, all such segments
-          // are currently "covered" by a pending or running
-          // merge.  We now try to grab any pending merge
-          // that involves external segments:
-          merge = getNextExternalMerge();
-
-        if (!done && merge == null)
-          // We are not yet done, and, all external segments
-          // fall under merges that the merge scheduler is
-          // currently running.  So, we now wait and check
-          // back to see if the merge has completed.
-          doWait();
-      }
-
-      if (merge != null) {
-        any = true;
-        merge(merge);
-      }
-    }
-
-    if (any)
-      // Sometimes, on copying an external segment over,
-      // more merges may become necessary:
-      mergeScheduler.merge(this);
   }
 
   /** Merges the provided indexes into this index.
@@ -3281,10 +2942,9 @@ public class IndexWriter implements Closeable {
    * add or delete documents (with another thread) will be
    * paused until this method completes.
    *
-   * <p>See {@link #addIndexesNoOptimize} for
-   * details on transactional semantics, temporary free
-   * space required in the Directory, and non-CFS segments
-   * on an Exception.</p>
+   * <p>See {@link #addIndexes} for details on transactional 
+   * semantics, temporary free space required in the Directory, 
+   * and non-CFS segments on an Exception.</p>
    *
    * <p><b>NOTE</b>: if this method hits an OutOfMemoryError
    * you should immediately close the writer.  See <a
@@ -3295,95 +2955,31 @@ public class IndexWriter implements Closeable {
    */
   public void addIndexes(IndexReader... readers)
     throws CorruptIndexException, IOException {
-
     ensureOpen();
 
-    // Do not allow add docs or deletes while we are running:
-    docWriter.pauseAllThreads();
-
-    // We must pre-acquire a read lock here (and upgrade to
-    // write lock in startTransaction below) so that no
-    // other addIndexes is allowed to start up after we have
-    // flushed & optimized but before we then start our
-    // transaction.  This is because the merging below
-    // requires that only one segment is present in the
-    // index:
-    acquireRead();
-
     try {
-
+      String mergedName = newSegmentName();
+      SegmentMerger merger = new SegmentMerger(directory, termIndexInterval,
+          mergedName, null, codecs, payloadProcessorProvider);
+      
+      for (IndexReader reader : readers)      // add new indexes
+        merger.add(reader);
+      
+      int docCount = merger.merge();                // merge 'em
+      
       SegmentInfo info = null;
-      String mergedName = null;
-      SegmentMerger merger = null;
-
-      boolean success = false;
-
-      try {
-        flush(true, false, true);
-        optimize();					  // start with zero or 1 seg
-        success = true;
-      } finally {
-        // Take care to release the read lock if we hit an
-        // exception before starting the transaction
-        if (!success)
-          releaseRead();
-      }
-
-      // true means we already have a read lock; if this
-      // call hits an exception it will release the write
-      // lock:
-      startTransaction(true);
-
-      try {
-        mergedName = newSegmentName();
-        merger = new SegmentMerger(directory, termIndexInterval, mergedName, null, codecs, payloadProcessorProvider);
-
-        SegmentReader sReader = null;
-        synchronized(this) {
-          if (segmentInfos.size() == 1) { // add existing index, if any
-            sReader = readerPool.get(segmentInfos.info(0), true, BufferedIndexInput.BUFFER_SIZE, -1);
-          }
-        }
+      synchronized(this) {
+        info = new SegmentInfo(mergedName, docCount, directory, false, true,
+            -1, null, false, merger.hasProx(), merger.getCodec());
+        setDiagnostics(info, "addIndexes(IndexReader...)");
+        segmentInfos.add(info);
+        checkpoint();
         
-        success = false;
-
-        try {
-          if (sReader != null)
-            merger.add(sReader);
-
-          for (int i = 0; i < readers.length; i++)      // add new indexes
-            merger.add(readers[i]);
-
-          int docCount = merger.merge();                // merge 'em
-
-          synchronized(this) {
-            segmentInfos.clear();                      // pop old infos & add new
-            info = new SegmentInfo(mergedName, docCount, directory, false, true,
-                                   -1, null, false, merger.hasProx(), merger.getCodec());
-            setDiagnostics(info, "addIndexes(IndexReader...)");
-            segmentInfos.add(info);
-          }
-
-          // Notify DocumentsWriter that the flushed count just increased
-          docWriter.updateFlushedDocCount(docCount);
-
-          success = true;
-
-        } finally {
-          if (sReader != null) {
-            readerPool.release(sReader);
-          }
-        }
-      } finally {
-        if (!success) {
-          if (infoStream != null)
-            message("hit exception in addIndexes during merge");
-          rollbackTransaction();
-        } else {
-          commitTransaction();
-        }
+        // Notify DocumentsWriter that the flushed count just increased
+        docWriter.updateFlushedDocCount(docCount);
       }
-    
+      
+      // Now create the compound file if needed
       if (mergePolicy instanceof LogMergePolicy && getUseCompoundFile()) {
 
         List<String> files = null;
@@ -3391,7 +2987,7 @@ public class IndexWriter implements Closeable {
         synchronized(this) {
           // Must incRef our files so that if another thread
           // is running merge/optimize, it doesn't delete our
-          // segment's files before we have a change to
+          // segment's files before we have a chance to
           // finish making the compound file.
           if (segmentInfos.contains(info)) {
             files = info.files();
@@ -3400,40 +2996,18 @@ public class IndexWriter implements Closeable {
         }
 
         if (files != null) {
-
-          success = false;
-
-          startTransaction(false);
-
           try {
             merger.createCompoundFile(mergedName + ".cfs", info);
             synchronized(this) {
               info.setUseCompoundFile(true);
             }
-          
-            success = true;
-          
           } finally {
-
             deleter.decRef(files);
-
-            if (!success) {
-              if (infoStream != null)
-                message("hit exception building compound file in addIndexes during merge");
-
-              rollbackTransaction();
-            } else {
-              commitTransaction();
-            }
           }
         }
       }
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "addIndexes(IndexReader...)");
-    } finally {
-      if (docWriter != null) {
-        docWriter.resumeAllThreads();
-      }
     }
   }
 
@@ -3787,7 +3361,7 @@ public class IndexWriter implements Closeable {
           if (!success) {
             if (infoStream != null)
               message("hit exception creating compound file for newly flushed segment " + segment);
-            deleter.deleteFile(IndexFileNames.segmentFileName(segment, IndexFileNames.COMPOUND_FILE_EXTENSION));
+            deleter.deleteFile(IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
           }
         }
 
@@ -4526,7 +4100,7 @@ public class IndexWriter implements Closeable {
     if (merge.useCompoundFile) {
 
       success = false;
-      final String compoundFileName = IndexFileNames.segmentFileName(mergedName, IndexFileNames.COMPOUND_FILE_EXTENSION);
+      final String compoundFileName = IndexFileNames.segmentFileName(mergedName, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
 
       try {
         merger.createCompoundFile(compoundFileName, merge.info);
@@ -4697,51 +4271,36 @@ public class IndexWriter implements Closeable {
 
       synchronized(this) {
 
-        // Wait for any running addIndexes to complete
-        // first, then block any from running until we've
-        // copied the segmentInfos we intend to sync:
-        blockAddIndexes();
-
-        // On commit the segmentInfos must never
-        // reference a segment in another directory:
-        assert !hasExternalSegments();
-
-        try {
-
-          assert lastCommitChangeCount <= changeCount;
-
-          if (changeCount == lastCommitChangeCount) {
-            if (infoStream != null)
-              message("  skip startCommit(): no changes pending");
-            return;
-          }
-
-          // First, we clone & incref the segmentInfos we intend
-          // to sync, then, without locking, we sync() each file
-          // referenced by toSync, in the background.  Multiple
-          // threads can be doing this at once, if say a large
-          // merge and a small merge finish at the same time:
-
+        assert lastCommitChangeCount <= changeCount;
+        
+        if (changeCount == lastCommitChangeCount) {
           if (infoStream != null)
-            message("startCommit index=" + segString(segmentInfos) + " changeCount=" + changeCount);
-          
-          readerPool.commit();
-          
-          toSync = (SegmentInfos) segmentInfos.clone();
-
-          if (commitUserData != null)
-            toSync.setUserData(commitUserData);
-
-          deleter.incRef(toSync, false);
-          myChangeCount = changeCount;
-
-          Collection<String> files = toSync.files(directory, false);
-          for(final String fileName: files) {
-            assert directory.fileExists(fileName): "file " + fileName + " does not exist";
-          }
-
-        } finally {
-          resumeAddIndexes();
+            message("  skip startCommit(): no changes pending");
+          return;
+        }
+        
+        // First, we clone & incref the segmentInfos we intend
+        // to sync, then, without locking, we sync() each file
+        // referenced by toSync, in the background.  Multiple
+        // threads can be doing this at once, if say a large
+        // merge and a small merge finish at the same time:
+        
+        if (infoStream != null)
+          message("startCommit index=" + segString(segmentInfos) + " changeCount=" + changeCount);
+        
+        readerPool.commit();
+        
+        toSync = (SegmentInfos) segmentInfos.clone();
+        
+        if (commitUserData != null)
+          toSync.setUserData(commitUserData);
+        
+        deleter.incRef(toSync, false);
+        myChangeCount = changeCount;
+        
+        Collection<String> files = toSync.files(directory, false);
+        for(final String fileName: files) {
+          assert directory.fileExists(fileName): "file " + fileName + " does not exist";
         }
       }
 
@@ -5013,10 +4572,10 @@ public class IndexWriter implements Closeable {
    * Sets the {@link PayloadProcessorProvider} to use when merging payloads.
    * Note that the given <code>pcp</code> will be invoked for every segment that
    * is merged, not only external ones that are given through
-   * {@link IndexWriter#addIndexes} or {@link IndexWriter#addIndexesNoOptimize}.
-   * If you want only the payloads of the external segments to be processed, you
-   * can return <code>null</code> whenever a {@link DirPayloadProcessor} is
-   * requested for the {@link Directory} of the {@link IndexWriter}.
+   * {@link #addIndexes}. If you want only the payloads of the external segments
+   * to be processed, you can return <code>null</code> whenever a
+   * {@link DirPayloadProcessor} is requested for the {@link Directory} of the
+   * {@link IndexWriter}.
    * <p>
    * The default is <code>null</code> which means payloads are processed
    * normally (copied) during segment merges. You can also unset it by passing

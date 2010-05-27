@@ -44,12 +44,12 @@ public class StandardPostingsReaderImpl extends StandardPostingsReader {
   int maxSkipLevels;
 
   public StandardPostingsReaderImpl(Directory dir, SegmentInfo segmentInfo, int readBufferSize) throws IOException {
-    freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, StandardCodec.FREQ_EXTENSION),
+    freqIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, "", StandardCodec.FREQ_EXTENSION),
                            readBufferSize);
     if (segmentInfo.getHasProx()) {
       boolean success = false;
       try {
-        proxIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, StandardCodec.PROX_EXTENSION),
+        proxIn = dir.openInput(IndexFileNames.segmentFileName(segmentInfo.name, "", StandardCodec.PROX_EXTENSION),
                                readBufferSize);
         success = true;
       } finally {
@@ -63,9 +63,9 @@ public class StandardPostingsReaderImpl extends StandardPostingsReader {
   }
 
   public static void files(Directory dir, SegmentInfo segmentInfo, Collection<String> files) throws IOException {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, StandardCodec.FREQ_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", StandardCodec.FREQ_EXTENSION));
     if (segmentInfo.getHasProx()) {
-      files.add(IndexFileNames.segmentFileName(segmentInfo.name, StandardCodec.PROX_EXTENSION));
+      files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", StandardCodec.PROX_EXTENSION));
     }
   }
 

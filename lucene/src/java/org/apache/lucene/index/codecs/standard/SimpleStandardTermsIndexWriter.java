@@ -46,7 +46,7 @@ public class SimpleStandardTermsIndexWriter extends StandardTermsIndexWriter {
   private IndexOutput termsOut;
 
   public SimpleStandardTermsIndexWriter(SegmentWriteState state) throws IOException {
-    final String indexFileName = IndexFileNames.segmentFileName(state.segmentName, StandardCodec.TERMS_INDEX_EXTENSION);
+    final String indexFileName = IndexFileNames.segmentFileName(state.segmentName, "", StandardCodec.TERMS_INDEX_EXTENSION);
     state.flushedFiles.add(indexFileName);
     termIndexInterval = state.termIndexInterval;
     out = state.directory.createOutput(indexFileName);

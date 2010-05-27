@@ -151,7 +151,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     IndexReader r0 = writer.getReader();
     assertTrue(r0.isCurrent());
-    writer.addIndexesNoOptimize(new Directory[] { dir2 });
+    writer.addIndexes(new Directory[] { dir2 });
     assertFalse(r0.isCurrent());
     r0.close();
 
@@ -191,11 +191,11 @@ public class TestIndexWriterReader extends LuceneTestCase {
     createIndexNoClose(!optimize, "index2", writer2);
     writer2.close();
 
-    writer.addIndexesNoOptimize(new Directory[] { dir2 });
-    writer.addIndexesNoOptimize(new Directory[] { dir2 });
-    writer.addIndexesNoOptimize(new Directory[] { dir2 });
-    writer.addIndexesNoOptimize(new Directory[] { dir2 });
-    writer.addIndexesNoOptimize(new Directory[] { dir2 });
+    writer.addIndexes(new Directory[] { dir2 });
+    writer.addIndexes(new Directory[] { dir2 });
+    writer.addIndexes(new Directory[] { dir2 });
+    writer.addIndexes(new Directory[] { dir2 });
+    writer.addIndexes(new Directory[] { dir2 });
 
     IndexReader r1 = writer.getReader();
     assertEquals(500, r1.maxDoc());
@@ -303,7 +303,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     IndexReader[] readers;
     boolean didClose = false;
     HeavyAtomicInt count = new HeavyAtomicInt(0);
-    HeavyAtomicInt numAddIndexesNoOptimize = new HeavyAtomicInt(0);
+    HeavyAtomicInt numaddIndexes = new HeavyAtomicInt(0);
     
     public AddDirectoriesThreads(int numDirs, IndexWriter mainWriter) throws Throwable {
       this.numDirs = numDirs;
@@ -363,7 +363,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
                 // System.out.println(Thread.currentThread().getName() + ": iter
                 // j=" + j);
                 for (int x=0; x < numIter; x++) {
-                  // only do addIndexesNoOptimize
+                  // only do addIndexes
                   doBody(x, dirs);
                 }
                 //if (numIter > 0 && j == numIter)
@@ -384,12 +384,12 @@ public class TestIndexWriterReader extends LuceneTestCase {
     void doBody(int j, Directory[] dirs) throws Throwable {
       switch (j % 4) {
         case 0:
-          mainWriter.addIndexesNoOptimize(dirs);
+          mainWriter.addIndexes(dirs);
           mainWriter.optimize();
           break;
         case 1:
-          mainWriter.addIndexesNoOptimize(dirs);
-          numAddIndexesNoOptimize.incrementAndGet();
+          mainWriter.addIndexes(dirs);
+          numaddIndexes.incrementAndGet();
           break;
         case 2:
           mainWriter.addIndexes(readers);
@@ -650,7 +650,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
           public void run() {
             do {
               try {
-                writer.addIndexesNoOptimize(dirs);
+                writer.addIndexes(dirs);
               } catch (Throwable t) {
                 excs.add(t);
                 throw new RuntimeException(t);

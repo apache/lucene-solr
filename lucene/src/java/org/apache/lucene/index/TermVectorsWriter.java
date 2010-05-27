@@ -35,11 +35,11 @@ final class TermVectorsWriter {
                            FieldInfos fieldInfos)
     throws IOException {
     // Open files for TermVector storage
-    tvx = directory.createOutput(IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_INDEX_EXTENSION));
+    tvx = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_INDEX_EXTENSION));
     tvx.writeInt(TermVectorsReader.FORMAT_CURRENT);
-    tvd = directory.createOutput(IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
+    tvd = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION));
     tvd.writeInt(TermVectorsReader.FORMAT_CURRENT);
-    tvf = directory.createOutput(IndexFileNames.segmentFileName(segment, IndexFileNames.VECTORS_FIELDS_EXTENSION));
+    tvf = directory.createOutput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION));
     tvf.writeInt(TermVectorsReader.FORMAT_CURRENT);
 
     this.fieldInfos = fieldInfos;

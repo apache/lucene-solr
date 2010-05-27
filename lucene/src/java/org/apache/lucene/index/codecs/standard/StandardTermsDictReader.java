@@ -111,7 +111,7 @@ public class StandardTermsDictReader extends FieldsProducer {
 
     this.termComp = termComp;
     
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, StandardCodec.TERMS_EXTENSION),
+    in = dir.openInput(IndexFileNames.segmentFileName(segment, "", StandardCodec.TERMS_EXTENSION),
                        readBufferSize);
 
     boolean success = false;
@@ -186,7 +186,7 @@ public class StandardTermsDictReader extends FieldsProducer {
   }
 
   public static void files(Directory dir, SegmentInfo segmentInfo, Collection<String> files) {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, StandardCodec.TERMS_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", StandardCodec.TERMS_EXTENSION));
   }
 
   public static void getExtensions(Collection<String> extensions) {
