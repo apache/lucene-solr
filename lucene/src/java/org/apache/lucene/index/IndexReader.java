@@ -1367,7 +1367,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   /** Expert */
-  public Object getFieldCacheKey() {
+  public Object getCoreCacheKey() {
     return this;
   }
 

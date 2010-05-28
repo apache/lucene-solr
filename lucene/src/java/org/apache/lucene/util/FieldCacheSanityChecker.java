@@ -274,7 +274,7 @@ public final class FieldCacheSanityChecker {
       if (obj instanceof IndexReader) {
         IndexReader[] subs = ((IndexReader)obj).getSequentialSubReaders();
         for (int j = 0; (null != subs) && (j < subs.length); j++) {
-          all.add(subs[j].getFieldCacheKey());
+          all.add(subs[j].getCoreCacheKey());
         }
       }
       

@@ -154,7 +154,7 @@ class FieldCacheImpl implements FieldCache {
 
     /** Remove this reader from the cache, if present. */
     public void purge(IndexReader r) {
-      Object readerKey = r.getFieldCacheKey();
+      Object readerKey = r.getCoreCacheKey();
       synchronized(readerCache) {
         readerCache.remove(readerKey);
       }
@@ -163,7 +163,7 @@ class FieldCacheImpl implements FieldCache {
     public Object get(IndexReader reader, Entry key) throws IOException {
       Map<Entry,Object> innerCache;
       Object value;
-      final Object readerKey = reader.getFieldCacheKey();
+      final Object readerKey = reader.getCoreCacheKey();
       synchronized (readerCache) {
         innerCache = readerCache.get(readerKey);
         if (innerCache == null) {

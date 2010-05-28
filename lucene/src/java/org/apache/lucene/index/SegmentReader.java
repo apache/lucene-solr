@@ -1293,7 +1293,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   // share the underlying postings data) will map to the
   // same entry in the FieldCache.  See LUCENE-1579.
   @Override
-  public final Object getFieldCacheKey() {
+  public final Object getCoreCacheKey() {
     return core;
   }
   

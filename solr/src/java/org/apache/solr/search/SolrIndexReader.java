@@ -523,8 +523,8 @@ public class SolrIndexReader extends FilterIndexReader {
   }
 
   @Override
-  public Object getFieldCacheKey() {
-    return in.getFieldCacheKey();
+  public Object getCoreCacheKey() {
+    return in.getCoreCacheKey();
   }
 
   @Override

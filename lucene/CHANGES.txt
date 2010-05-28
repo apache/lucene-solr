@@ -425,6 +425,18 @@ Bug fixes
 * LUCENE-2478: Fix CachingWrapperFilter to not throw NPE when
   Filter.getDocIdSet() returns null.  (Uwe Schindler, Daniel Noll)
 
+* LUCENE-2468: Allow specifying how new deletions should be handled in
+  CachingWrapperFilter and CachingSpanFilter.  By default, new
+  deletions are ignored in CachingWrapperFilter, since typically this
+  filter is AND'd with a query that correctly takes new deletions into
+  account.  This should be a performance gain (higher cache hit rate)
+  in apps that reopen readers, or use near-real-time reader
+  (IndexWriter.getReader()), but may introduce invalid search results
+  (allowing deleted docs to be returned) for certain cases, so a new
+  expert ctor was added to CachingWrapperFilter to enforce deletions
+  at a performance cost.  CachingSpanFilter by default recaches if
+  there are new deletions (Shay Banon via Mike McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight

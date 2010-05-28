@@ -17,13 +17,15 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.io.Serializable;
 import java.io.IOException;
 import java.util.Map;
 import java.util.WeakHashMap;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.OpenBitSetDISI;
+import org.apache.lucene.util.Bits;
 
 /**
  * Wraps another filter's result and caches it.  The purpose is to allow
@@ -33,17 +35,130 @@ public class CachingWrapperFilter extends Filter {
   Filter filter;
 
   /**
-   * A transient Filter cache (package private because of test)
+   * Expert: Specifies how new deletions against a reopened
+   * reader should be handled.
+   *
+   * <p>The default is IGNORE, which means the cache entry
+   * will be re-used for a given segment, even when that
+   * segment has been reopened due to changes in deletions.
+   * This is a big performance gain, especially with
+   * near-real-timer readers, since you don't hit a cache
+   * miss on every reopened reader for prior segments.</p>
+   *
+   * <p>However, in some cases this can cause invalid query
+   * results, allowing deleted documents to be returned.
+   * This only happens if the main query does not rule out
+   * deleted documents on its own, such as a toplevel
+   * ConstantScoreQuery.  To fix this, use RECACHE to
+   * re-create the cached filter (at a higher per-reopen
+   * cost, but at faster subsequent search performance), or
+   * use DYNAMIC to dynamically intersect deleted docs (fast
+   * reopen time but some hit to search performance).</p>
    */
-  transient Map<IndexReader,DocIdSet> cache;
-  
-  private final ReentrantLock lock = new ReentrantLock();
+  public static enum DeletesMode {IGNORE, RECACHE, DYNAMIC};
+
+  protected final FilterCache<DocIdSet> cache;
+
+  static abstract class FilterCache<T> implements Serializable {
+
+    /**
+     * A transient Filter cache (package private because of test)
+     */
+    // NOTE: not final so that we can dynamically re-init
+    // after de-serialize
+    transient Map<Object,T> cache;
+
+    private final DeletesMode deletesMode;
+
+    public FilterCache(DeletesMode deletesMode) {
+      this.deletesMode = deletesMode;
+    }
+
+    public synchronized T get(IndexReader reader, Object coreKey, Object delCoreKey) throws IOException {
+      T value;
+
+      if (cache == null) {
+        cache = new WeakHashMap<Object,T>();
+      }
+
+      if (deletesMode == DeletesMode.IGNORE) {
+        // key on core
+        value = cache.get(coreKey);
+      } else if (deletesMode == DeletesMode.RECACHE) {
+        // key on deletes, if any, else core
+        value = cache.get(delCoreKey);
+      } else {
+
+        assert deletesMode == DeletesMode.DYNAMIC;
+
+        // first try for exact match
+        value = cache.get(delCoreKey);
+
+        if (value == null) {
+          // now for core match, but dynamically AND NOT
+          // deletions
+          value = cache.get(coreKey);
+          if (value != null) {
+            final Bits delDocs = MultiFields.getDeletedDocs(reader);
+            if (delDocs != null) {
+              value = mergeDeletes(delDocs, value);
+            }
+          }
+        }
+      }
+
+      return value;
+    }
+
+    protected abstract T mergeDeletes(Bits delDocs, T value);
+
+    public synchronized void put(Object coreKey, Object delCoreKey, T value) {
+      if (deletesMode == DeletesMode.IGNORE) {
+        cache.put(coreKey, value);
+      } else if (deletesMode == DeletesMode.RECACHE) {
+        cache.put(delCoreKey, value);
+      } else {
+        cache.put(coreKey, value);
+        cache.put(delCoreKey, value);
+      }
+    }
+  }
 
   /**
+   * New deletes are ignored by default, which gives higher
+   * cache hit rate on reopened readers.  Most of the time
+   * this is safe, because the filter will be AND'd with a
+   * Query that fully enforces deletions.  If instead you
+   * need this filter to always enforce deletions, pass
+   * either {@link DeletesMode#RECACHE} or {@link
+   * DeletesMode#DYNAMIC}.
    * @param filter Filter to cache results of
    */
   public CachingWrapperFilter(Filter filter) {
+    this(filter, DeletesMode.IGNORE);
+  }
+
+  /**
+   * Expert: by default, the cached filter will be shared
+   * across reopened segments that only had changes to their
+   * deletions.  
+   *
+   * @param filter Filter to cache results of
+   * @param deletesMode See {@link DeletesMode}
+   */
+  public CachingWrapperFilter(Filter filter, DeletesMode deletesMode) {
     this.filter = filter;
+    cache = new FilterCache<DocIdSet>(deletesMode) {
+      @Override
+      public DocIdSet mergeDeletes(final Bits delDocs, final DocIdSet docIdSet) {
+        return new FilteredDocIdSet(docIdSet) {
+          @Override
+            protected boolean match(int docID) {
+            return !delDocs.get(docID);
+          }
+        };
+      }
+    };
   }
 
   /** Provide the DocIdSet to be cached, using the DocIdSet provided
@@ -66,29 +181,29 @@ public class CachingWrapperFilter extends Filter {
       return (it == null) ? DocIdSet.EMPTY_DOCIDSET : new OpenBitSetDISI(it, reader.maxDoc());
     }
   }
-  
+
+  // for testing
+  int hitCount, missCount;
+
   @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-    lock.lock();
-    try {
-      if (cache == null) {
-        cache = new WeakHashMap<IndexReader,DocIdSet>();
-      }
 
-      final DocIdSet cached = cache.get(reader);
-      if (cached != null) return cached;
-    } finally {
-      lock.unlock();
+    final Object coreKey = reader.getCoreCacheKey();
+    final Object delCoreKey = reader.hasDeletions() ? MultiFields.getDeletedDocs(reader) : coreKey;
+
+    DocIdSet docIdSet = cache.get(reader, coreKey, delCoreKey);
+    if (docIdSet != null) {
+      hitCount++;
+      return docIdSet;
     }
 
-    final DocIdSet docIdSet = docIdSetToCache(filter.getDocIdSet(reader), reader);
+    missCount++;
+
+    // cache miss
+    docIdSet = docIdSetToCache(filter.getDocIdSet(reader), reader);
+
     if (docIdSet != null) {
-      lock.lock();
-      try {
-        cache.put(reader, docIdSet);
-      } finally {
-        lock.unlock();
-      }
+      cache.put(coreKey, delCoreKey, docIdSet);
     }
     
     return docIdSet;

@@ -17,11 +17,10 @@ package org.apache.lucene.search;
 
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
-import java.util.Map;
-import java.util.WeakHashMap;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Wraps another SpanFilter's result and caches it.  The purpose is to allow
@@ -33,15 +32,32 @@ public class CachingSpanFilter extends SpanFilter {
   /**
    * A transient Filter cache (package private because of test)
    */
-  private transient Map<IndexReader,SpanFilterResult> cache;
-
-  private final ReentrantLock lock = new ReentrantLock();
+  private final CachingWrapperFilter.FilterCache<SpanFilterResult> cache;
 
   /**
+   * New deletions always result in a cache miss, by default
+   * ({@link CachingWrapperFilter.DeletesMode#RECACHE}.
    * @param filter Filter to cache results of
    */
   public CachingSpanFilter(SpanFilter filter) {
+    this(filter, CachingWrapperFilter.DeletesMode.RECACHE);
+  }
+
+  /**
+   * @param filter Filter to cache results of
+   * @param deletesMode See {@link CachingWrapperFilter.DeletesMode}
+   */
+  public CachingSpanFilter(SpanFilter filter, CachingWrapperFilter.DeletesMode deletesMode) {
     this.filter = filter;
+    if (deletesMode == CachingWrapperFilter.DeletesMode.DYNAMIC) {
+      throw new IllegalArgumentException("DeletesMode.DYNAMIC is not supported");
+    }
+    this.cache = new CachingWrapperFilter.FilterCache<SpanFilterResult>(deletesMode) {
+      @Override
+      protected SpanFilterResult mergeDeletes(final Bits delDocs, final SpanFilterResult value) {
+        throw new IllegalStateException("DeletesMode.DYNAMIC is not supported");
+      }
+    };
   }
 
   @Override
@@ -50,26 +66,24 @@ public class CachingSpanFilter extends SpanFilter {
     return result != null ? result.getDocIdSet() : null;
   }
   
+  // for testing
+  int hitCount, missCount;
+
   private SpanFilterResult getCachedResult(IndexReader reader) throws IOException {
-    lock.lock();
-    try {
-      if (cache == null) {
-        cache = new WeakHashMap<IndexReader,SpanFilterResult>();
-      }
-      final SpanFilterResult cached = cache.get(reader);
-      if (cached != null) return cached;
-    } finally {
-      lock.unlock();
+
+    final Object coreKey = reader.getCoreCacheKey();
+    final Object delCoreKey = reader.hasDeletions() ? MultiFields.getDeletedDocs(reader) : coreKey;
+
+    SpanFilterResult result = cache.get(reader, coreKey, delCoreKey);
+    if (result != null) {
+      hitCount++;
+      return result;
     }
-    
-    final SpanFilterResult result = filter.bitSpans(reader);
-    lock.lock();
-    try {
-      cache.put(reader, result);
-    } finally {
-      lock.unlock();
-    }
-    
+
+    missCount++;
+    result = filter.bitSpans(reader);
+
+    cache.put(coreKey, delCoreKey, result);
     return result;
   }
 
