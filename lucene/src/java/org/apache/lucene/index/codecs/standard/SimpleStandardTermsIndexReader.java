@@ -206,7 +206,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
     }
 
     @Override
-    public final void getIndexOffset(BytesRef term, TermsIndexResult result) throws IOException {
+    public void getIndexOffset(BytesRef term, TermsIndexResult result) throws IOException {
       // You must call loadTermsIndex if you had specified -1 for indexDivisor
       if (coreIndex == null) {
         throw new IllegalStateException("terms index was not loaded");
@@ -215,7 +215,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
     }
 
     @Override
-    public final void getIndexOffset(long ord, TermsIndexResult result) throws IOException {
+    public void getIndexOffset(long ord, TermsIndexResult result) throws IOException {
       // You must call loadTermsIndex if you had specified -1 for indexDivisor
       if (coreIndex == null) {
         throw new IllegalStateException("terms index was not loaded");
@@ -334,7 +334,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
         }
       }
 
-      public final boolean nextIndexTerm(long ord, TermsIndexResult result) throws IOException {
+      public boolean nextIndexTerm(long ord, TermsIndexResult result) throws IOException {
         int idx = 1 + (int) (ord / totalIndexInterval);
         if (idx < numIndexTerms) {
           fillResult(idx, result);
@@ -344,7 +344,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
         }
       }
 
-      private final void fillResult(int idx, TermsIndexResult result) {
+      private void fillResult(int idx, TermsIndexResult result) {
         final long offset = termOffsets.get(idx);
         final int length = (int) (termOffsets.get(1+idx) - offset);
         termBytes.fill(result.term, termBytesStart + offset, length);
@@ -352,7 +352,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
         result.offset = termsStart + termsDictOffsets.get(idx);
       }
 
-      public final void getIndexOffset(BytesRef term, TermsIndexResult result) throws IOException {
+      public void getIndexOffset(BytesRef term, TermsIndexResult result) throws IOException {
         int lo = 0;					  // binary search
         int hi = numIndexTerms - 1;
 
@@ -388,7 +388,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
         result.offset = termsStart + termsDictOffsets.get(hi);
       }
 
-      public final void getIndexOffset(long ord, TermsIndexResult result) throws IOException {
+      public void getIndexOffset(long ord, TermsIndexResult result) throws IOException {
         int idx = (int) (ord / totalIndexInterval);
         // caller must ensure ord is in bounds
         assert idx < numIndexTerms;
