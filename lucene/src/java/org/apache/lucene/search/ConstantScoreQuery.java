@@ -26,6 +26,12 @@ import java.util.Set;
 /**
  * A query that wraps a filter and simply returns a constant score equal to the
  * query boost for every document in the filter.
+ *
+ * <p><b>NOTE</b>: if the wrapped filter is an instance of
+ * {@link CachingWrapperFilter}, you'll likely want to
+ * enforce deletions in the filter (using either {@link
+ * CachingWrapperFilter.DeletesMode#RECACHE} or {@link
+ * CachingWrapperFilter.DeletesMode#DYNAMIC}).
  */
 public class ConstantScoreQuery extends Query {
   protected final Filter filter;

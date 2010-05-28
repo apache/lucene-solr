@@ -29,7 +29,13 @@ import org.apache.lucene.util.Bits;
 
 /**
  * Wraps another filter's result and caches it.  The purpose is to allow
- * filters to simply filter, and then wrap with this class to add caching.
+ * filters to simply filter, and then wrap with this class
+ * to add caching.
+ *
+ * <p><b>NOTE</b>: if you wrap this filter as a query (eg,
+ * using ConstantScoreQuery), you'll likely want to enforce
+ * deletions (using either {@link DeletesMode#RECACHE} or
+ * {@link DeletesMode#DYNAMIC}).
  */
 public class CachingWrapperFilter extends Filter {
   Filter filter;
