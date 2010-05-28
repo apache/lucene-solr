@@ -65,14 +65,14 @@
   </target>
 	
   <target name="clean-javacc">
-    <fileset dir="src/demo/org/apache/lucene/demo/html" includes="*.java">
+    <fileset dir="src/java/org/apache/lucene/demo/html" includes="*.java">
       <containsregexp expression="Generated.*By.*JavaCC"/>
     </fileset>
   </target>
 	
   <target name="javacc" depends="init,javacc-check" if="javacc.present">
-    <invoke-javacc target="src/demo/org/apache/lucene/demo/html/HTMLParser.jj"
-                     outputDir="src/demo/org/apache/lucene/demo/html"
+    <invoke-javacc target="src/java/org/apache/lucene/demo/html/HTMLParser.jj"
+                     outputDir="src/java/org/apache/lucene/demo/html"
     />
   </target>
 </project>
