@@ -285,8 +285,16 @@ public class FilterIndexReader extends IndexReader {
    *  contents of the FieldCache, you must override this
    *  method to provide a different key */
   @Override
-  public Object getFieldCacheKey() {
-    return in.getFieldCacheKey();
+  public Object getCoreCacheKey() {
+    return in.getCoreCacheKey();
+  }
+
+  /** If the subclass of FilteredIndexReader modifies the
+   *  deleted docs, you must override this method to provide
+   *  a different key */
+  @Override
+  public Object getDeletesCacheKey() {
+    return in.getDeletesCacheKey();
   }
 
   /** {@inheritDoc} */

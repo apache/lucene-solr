@@ -162,7 +162,7 @@ public class IndexSearcher extends Searcher {
       throw new IllegalArgumentException("nDocs must be > 0");
     }
 
-    nDocs = Math.min(nDocs, reader.numDocs());
+    nDocs = Math.min(nDocs, reader.maxDoc());
 
     TopScoreDocCollector collector = TopScoreDocCollector.create(nDocs, !weight.scoresDocsOutOfOrder());
     search(weight, filter, collector);
@@ -190,7 +190,7 @@ public class IndexSearcher extends Searcher {
                              Sort sort, boolean fillFields)
       throws IOException {
 
-    nDocs = Math.min(nDocs, reader.numDocs());
+    nDocs = Math.min(nDocs, reader.maxDoc());
 
     TopFieldCollector collector = TopFieldCollector.create(sort, nDocs,
         fillFields, fieldSortDoTrackScores, fieldSortDoMaxScore, !weight.scoresDocsOutOfOrder());
