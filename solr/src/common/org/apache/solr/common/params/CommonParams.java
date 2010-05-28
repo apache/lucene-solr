@@ -61,6 +61,13 @@ public interface CommonParams {
   /** whether to include debug data */
   public static final String DEBUG_QUERY = "debugQuery";
   
+  /** 
+   * whether score explanations should be in legacy plain text format 
+   * @deprecated The plain text version will be removed in a future version
+   */
+  @Deprecated
+  public static final String EXPLAIN_AS_STRING = "debug.explain.stringFormat";
+  
   /** another query to explain against */
   public static final String EXPLAIN_OTHER = "explainOther";
   
