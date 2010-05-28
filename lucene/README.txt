@@ -17,10 +17,10 @@ FILES
 lucene-core-XX.jar
   The compiled lucene library.
 
-lucene-demos-XX.jar
+contrib/demo/lucene-demo-XX.jar
   The compiled simple example code.
 
-luceneweb.war
+contrib/demo/luceneweb.war
   The compiled simple example Web Application.
 
 contrib/*
@@ -40,5 +40,5 @@ docs/api/index.html
 src/java
   The Lucene source code.
 
-src/demo
+contrib/demo/src
   Some example code.

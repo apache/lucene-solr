@@ -38,7 +38,7 @@
 	 <path refid="base.classpath"/>
   </path>
 
-  <target name="compile-core" depends="compile-analyzers-common, common.compile-core" />
+  <target name="compile-core" depends="compile-analyzers-common, common.compile-core, war-demo" />
 
   <target name="compile-analyzers-common" unless="analyzers-common.uptodate">
     <subant target="default">
@@ -46,7 +46,7 @@
     </subant>
   </target>
 
-  <target name="war-demo" depends="jar-core">
+  <target name="war-demo">
     <sequential>
       <build-manifest title="Lucene Search Engine: demos"/>
   	  <war destfile="${build.dir}/${demo.war.name}.war"
