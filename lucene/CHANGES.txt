@@ -342,6 +342,11 @@ New features
 * LUCENE-2440: Add support for custom ExecutorService in
   ParallelMultiSearcher (Edward Drapkin via Mike McCandless)
 
+* LUCENE-2295: Added a LimitTokenCountAnalyzer / LimitTokenCountFilter
+  to wrap any other Analyzer and provide the same functionality as
+  MaxFieldLength provided on IndexWriter.  This patch also fixes a bug
+  in the offset calculation in CharTokenizer. (Uwe Schindler, Shai Erera)
+  
 Optimizations
 
 * LUCENE-2075: Terms dict cache is now shared across threads instead

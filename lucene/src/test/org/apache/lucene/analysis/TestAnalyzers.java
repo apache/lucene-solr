@@ -190,6 +190,18 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
     
   }
   
+  public void testLimitTokenCountAnalyzer() throws IOException {
+    Analyzer a = new LimitTokenCountAnalyzer(new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 2);
+    // dont use assertAnalyzesTo here, as the end offset is not the end of the string!
+    assertTokenStreamContents(a.tokenStream("dummy", new StringReader("1  2     3  4  5")), new String[] { "1", "2" }, new int[] { 0, 3 }, new int[] { 1, 4 }, 4);
+    assertTokenStreamContents(a.reusableTokenStream("dummy", new StringReader("1 2 3 4 5")), new String[] { "1", "2" }, new int[] { 0, 2 }, new int[] { 1, 3 }, 3);
+    
+    a = new LimitTokenCountAnalyzer(new StandardAnalyzer(TEST_VERSION_CURRENT), 2);
+    // dont use assertAnalyzesTo here, as the end offset is not the end of the string!
+    assertTokenStreamContents(a.tokenStream("dummy", new StringReader("1 2 3 4 5")), new String[] { "1", "2" }, new int[] { 0, 2 }, new int[] { 1, 3 }, 3);
+    assertTokenStreamContents(a.reusableTokenStream("dummy", new StringReader("1 2 3 4 5")), new String[] { "1", "2" }, new int[] { 0, 2 }, new int[] { 1, 3 }, 3);
+  }
+  
   /**
    * Test that LowercaseFilter only works on BMP for back compat,
    * depending upon version
