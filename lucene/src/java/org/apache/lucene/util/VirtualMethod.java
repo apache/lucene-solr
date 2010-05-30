@@ -83,8 +83,8 @@ public final class VirtualMethod<C> {
           "VirtualMethod instances must be singletons and therefore " +
           "assigned to static final members in the same class, they use as baseClass ctor param."
         );
-    } catch (NoSuchMethodException nsme) {
-      throw new IllegalArgumentException(baseClass.getName() + " has no such method: "+nsme.getMessage());
+    } catch (NoSuchMethodException name) {
+      throw new IllegalArgumentException(baseClass.getName() + " has no such method: "+name.getMessage());
     }
   }
   
