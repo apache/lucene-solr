@@ -237,7 +237,7 @@ public abstract class CharTokenizer extends Tokenizer {
    * </p>
    */
   protected boolean isTokenChar(int c) {
-    throw new UnsupportedOperationException("since LUCENE_3_1 subclasses of CharTokenizer must implement isTokenChar(int)");
+    throw new UnsupportedOperationException("since LUCENE_31 subclasses of CharTokenizer must implement isTokenChar(int)");
   }
 
   /**
