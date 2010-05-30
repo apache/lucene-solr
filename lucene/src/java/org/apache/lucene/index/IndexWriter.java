@@ -2969,8 +2969,8 @@ public class IndexWriter implements Closeable {
       
       SegmentInfo info = null;
       synchronized(this) {
-        info = new SegmentInfo(mergedName, docCount, directory, false, true,
-            -1, null, false, merger.hasProx(), merger.getCodec());
+        info = new SegmentInfo(mergedName, docCount, directory, false, -1,
+            null, false, merger.hasProx(), merger.getCodec());
         setDiagnostics(info, "addIndexes(IndexReader...)");
         segmentInfos.add(info);
         checkpoint();
@@ -3335,10 +3335,9 @@ public class IndexWriter implements Closeable {
         // successfully.
         newSegment = new SegmentInfo(segment,
                                      flushedDocCount,
-                                     directory, false, true,
-                                     docStoreOffset, docStoreSegment,
-                                     docStoreIsCompoundFile,    
-                                     docWriter.hasProx(),
+                                     directory, false, docStoreOffset,
+                                     docStoreSegment, docStoreIsCompoundFile,
+                                     docWriter.hasProx(),    
                                      docWriter.getCodec());
 
         setDiagnostics(newSegment, "flush");
@@ -3853,8 +3852,7 @@ public class IndexWriter implements Closeable {
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
     merge.info = new SegmentInfo(newSegmentName(), 0,
-                                 directory, false, true,
-                                 docStoreOffset,
+                                 directory, false, docStoreOffset,
                                  docStoreSegment,
                                  docStoreIsCompoundFile,
                                  false,

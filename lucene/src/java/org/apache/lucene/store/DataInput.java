@@ -29,8 +29,6 @@ import org.apache.lucene.util.RamUsageEstimator;
  * data types.
  */
 public abstract class DataInput implements Cloneable {
-  private boolean preUTF8Strings;                 // true if we are reading old (modified UTF8) string format
-
   /** Reads and returns a single byte.
    * @see DataOutput#writeByte(byte)
    */
@@ -114,87 +112,14 @@ public abstract class DataInput implements Cloneable {
     return i;
   }
 
-  /** Call this if readString should read characters stored
-   *  in the old modified UTF8 format (length in java chars
-   *  and java's modified UTF8 encoding).  This is used for
-   *  indices written pre-2.4 See LUCENE-510 for details. */
-  public void setModifiedUTF8StringsMode() {
-    preUTF8Strings = true;
-  }
-
   /** Reads a string.
    * @see DataOutput#writeString(String)
    */
   public String readString() throws IOException {
-    if (preUTF8Strings)
-      return readModifiedUTF8String();
     int length = readVInt();
     final byte[] bytes = new byte[length];
     readBytes(bytes, 0, length);
     return new String(bytes, 0, length, "UTF-8");
-  }
-
-  private String readModifiedUTF8String() throws IOException {
-    int length = readVInt();
-    final char[] chars = new char[length];
-    readChars(chars, 0, length);
-    return new String(chars, 0, length);
-  }
-
-  /** Reads Lucene's old "modified UTF-8" encoded
-   *  characters into an array.
-   * @param buffer the array to read characters into
-   * @param start the offset in the array to start storing characters
-   * @param length the number of characters to read
-   * @see DataOutput#writeChars(String,int,int)
-   * @deprecated -- please use readString or readBytes
-   *                instead, and construct the string
-   *                from those utf8 bytes
-   */
-  @Deprecated
-  public void readChars(char[] buffer, int start, int length)
-       throws IOException {
-    final int end = start + length;
-    for (int i = start; i < end; i++) {
-      byte b = readByte();
-      if ((b & 0x80) == 0)
-  buffer[i] = (char)(b & 0x7F);
-      else if ((b & 0xE0) != 0xE0) {
-  buffer[i] = (char)(((b & 0x1F) << 6)
-     | (readByte() & 0x3F));
-      } else {
-  buffer[i] = (char)(((b & 0x0F) << 12)
-    | ((readByte() & 0x3F) << 6)
-          |  (readByte() & 0x3F));
-      }
-    }
-  }
-
-  /**
-   * Expert
-   *
-   * Similar to {@link #readChars(char[], int, int)} but does not do any conversion operations on the bytes it is reading in.  It still
-   * has to invoke {@link #readByte()} just as {@link #readChars(char[], int, int)} does, but it does not need a buffer to store anything
-   * and it does not have to do any of the bitwise operations, since we don't actually care what is in the byte except to determine
-   * how many more bytes to read
-   * @param length The number of chars to read
-   * @deprecated this method operates on old "modified utf8" encoded
-   *             strings
-   */
-  @Deprecated
-  public void skipChars(int length) throws IOException{
-    for (int i = 0; i < length; i++) {
-      byte b = readByte();
-      if ((b & 0x80) == 0){
-        //do nothing, we only need one byte
-      } else if ((b & 0xE0) != 0xE0) {
-        readByte();//read an additional byte
-      } else {
-        //read two additional bytes.
-        readByte();
-        readByte();
-      }
-    }
   }
 
   /** Returns a clone of this stream.

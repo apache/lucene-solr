@@ -46,10 +46,6 @@ public final class IndexFileNames {
   /** Name of the generation reference file name */
   public static final String SEGMENTS_GEN = "segments." +  GEN_EXTENSION;
   
-  /** Name of the index deletable file (only used in
-   * pre-lockless indices) */
-  public static final String DELETABLE = "deletable";
-   
   /** Extension of norms file */
   public static final String NORMS_EXTENSION = "nrm";
 
@@ -80,19 +76,15 @@ public final class IndexFileNames {
   /** Extension of field infos */
   public static final String FIELD_INFOS_EXTENSION = "fnm";
 
-  /** Extension of plain norms */
-  public static final String PLAIN_NORMS_EXTENSION = "f";
-
   /** Extension of separate norms */
   public static final String SEPARATE_NORMS_EXTENSION = "s";
 
   /**
    * This array contains all filename extensions used by
-   * Lucene's index files, with two exceptions, namely the
-   * extension made up from <code>.f</code> + a number and
-   * from <code>.s</code> + a number.  Also note that
-   * Lucene's <code>segments_N</code> files do not have any
-   * filename extension.
+   * Lucene's index files, with one exception, namely the
+   * extension made up from  <code>.s</code> + a number.
+   * Also note that Lucene's <code>segments_N</code> files
+   * do not have any filename extension.
    */
   public static final String INDEX_EXTENSIONS[] = new String[] {
     COMPOUND_FILE_EXTENSION,
@@ -146,7 +138,7 @@ public final class IndexFileNames {
    * @param ext extension of the filename
    * @param gen generation
    */
-  public static final String fileNameFromGeneration(String base, String ext, long gen) {
+  public static String fileNameFromGeneration(String base, String ext, long gen) {
     if (gen == SegmentInfo.NO) {
       return null;
     } else if (gen == SegmentInfo.WITHOUT_GEN) {
@@ -168,7 +160,7 @@ public final class IndexFileNames {
    * Returns true if the provided filename is one of the doc store files (ends
    * with an extension in {@link #STORE_INDEX_EXTENSIONS}).
    */
-  public static final boolean isDocStoreFile(String fileName) {
+  public static boolean isDocStoreFile(String fileName) {
     if (fileName.endsWith(COMPOUND_FILE_STORE_EXTENSION))
       return true;
     for (String ext : STORE_INDEX_EXTENSIONS) {
@@ -193,7 +185,7 @@ public final class IndexFileNames {
    * otherwise some structures may fail to handle them properly (such as if they
    * are added to compound files).
    */
-  public static final String segmentFileName(String segmentName, String name, String ext) {
+  public static String segmentFileName(String segmentName, String name, String ext) {
     if (ext.length() > 0 || name.length() > 0) {
       assert !ext.startsWith(".");
       StringBuilder sb = new StringBuilder(segmentName.length() + 2 + name.length() + ext.length());
@@ -214,7 +206,7 @@ public final class IndexFileNames {
    * Returns true if the given filename ends with the given extension. One
    * should provide a <i>pure</i> extension, withouth '.'.
    */
-  public static final boolean matchesExtension(String filename, String ext) {
+  public static boolean matchesExtension(String filename, String ext) {
     // It doesn't make a difference whether we allocate a StringBuilder ourself
     // or not, since there's only 1 '+' operator.
     return filename.endsWith("." + ext);
@@ -229,7 +221,7 @@ public final class IndexFileNames {
    * @return the filename with the segment name removed, or the given filename
    *         if it does not contain a '.' and '_'.
    */
-  public static final String stripSegmentName(String filename) {
+  public static String stripSegmentName(String filename) {
     // If it is a .del file, there's an '_' after the first character
     int idx = filename.indexOf('_', 1);
     if (idx == -1) {

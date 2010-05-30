@@ -29,7 +29,6 @@ final class TermBuffer implements Cloneable {
 
   private String field;
   private Term term;                            // cached
-  private boolean preUTF8Strings;                // true if strings are stored in modified UTF8 encoding (LUCENE-510)
   private boolean dirty;                          // true if text was set externally (ie not read via UTF8 bytes)
 
   private UnicodeUtil.UTF16Result text = new UnicodeUtil.UTF16Result();
@@ -42,8 +41,8 @@ final class TermBuffer implements Cloneable {
       return field.compareTo(other.field);
   }
 
-  private static final int compareChars(char[] chars1, int len1,
-                                        char[] chars2, int len2) {
+  private static int compareChars(char[] chars1, int len1,
+                                  char[] chars2, int len2) {
     final int end = len1 < len2 ? len1:len2;
     for (int k = 0; k < end; k++) {
       char c1 = chars1[k];
@@ -55,41 +54,28 @@ final class TermBuffer implements Cloneable {
     return len1 - len2;
   }
 
-  /** Call this if the IndexInput passed to {@link #read}
-   *  stores terms in the "modified UTF8" (pre LUCENE-510)
-   *  format. */
-  void setPreUTF8Strings() {
-    preUTF8Strings = true;
-  }
-
   public final void read(IndexInput input, FieldInfos fieldInfos)
     throws IOException {
     this.term = null;                           // invalidate cache
     int start = input.readVInt();
     int length = input.readVInt();
     int totalLength = start + length;
-    if (preUTF8Strings) {
-      text.setLength(totalLength);
-      input.readChars(text.result, start, length);
+    if (dirty) {
+      // Fully convert all bytes since bytes is dirty
+      UnicodeUtil.UTF16toUTF8(text.result, 0, text.length, bytes);
+      if (bytes.bytes.length < totalLength)
+        bytes.bytes = new byte[totalLength];
+      bytes.length = totalLength;
+      input.readBytes(bytes.bytes, start, length);
+      UnicodeUtil.UTF8toUTF16(bytes.bytes, 0, totalLength, text);
+      dirty = false;
     } else {
-
-      if (dirty) {
-        // Fully convert all bytes since bytes is dirty
-        UnicodeUtil.UTF16toUTF8(text.result, 0, text.length, bytes);
-        if (bytes.bytes.length < totalLength)
-          bytes.bytes = new byte[totalLength];
-        bytes.length = totalLength;
-        input.readBytes(bytes.bytes, start, length);
-        UnicodeUtil.UTF8toUTF16(bytes.bytes, 0, totalLength, text);
-        dirty = false;
-      } else {
-        // Incrementally convert only the UTF8 bytes that are new:
-        if (bytes.bytes.length < totalLength)
-          bytes.bytes = ArrayUtil.grow(bytes.bytes, totalLength);
-        bytes.length = totalLength;
-        input.readBytes(bytes.bytes, start, length);
-        UnicodeUtil.UTF8toUTF16(bytes.bytes, start, length, text);
-      }
+      // Incrementally convert only the UTF8 bytes that are new:
+      if (bytes.bytes.length < totalLength)
+        bytes.bytes = ArrayUtil.grow(bytes.bytes, totalLength);
+      bytes.length = totalLength;
+      input.readBytes(bytes.bytes, start, length);
+      UnicodeUtil.UTF8toUTF16(bytes.bytes, start, length, text);
     }
     this.field = fieldInfos.fieldName(input.readVInt());
   }

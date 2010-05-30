@@ -45,59 +45,30 @@ import java.util.Map;
  */
 public final class SegmentInfos extends Vector<SegmentInfo> {
 
-  /** The file format version, a negative number. */
-  /* Works since counter, the old 1st entry, is always >= 0 */
-  public static final int FORMAT = -1;
-
-  /** This format adds details used for lockless commits.  It differs
-   * slightly from the previous format in that file names
-   * are never re-used (write once).  Instead, each file is
-   * written to the next generation.  For example,
-   * segments_1, segments_2, etc.  This allows us to not use
-   * a commit lock.  See <a
-   * href="http://lucene.apache.org/java/docs/fileformats.html">file
-   * formats</a> for details.
+  /* 
+   * The file format version, a negative number.
+   *  
+   * NOTE: future format numbers must always be one smaller 
+   * than the latest. With time, support for old formats will
+   * be removed, however the numbers should continue to decrease. 
    */
-  public static final int FORMAT_LOCKLESS = -2;
 
-  /** This format adds a "hasSingleNormFile" flag into each segment info.
-   * See <a href="http://issues.apache.org/jira/browse/LUCENE-756">LUCENE-756</a>
-   * for details.
-   */
-  public static final int FORMAT_SINGLE_NORM_FILE = -3;
-
-  /** This format allows multiple segments to share a single
-   * vectors and stored fields file. */
-  public static final int FORMAT_SHARED_DOC_STORE = -4;
-
-  /** This format adds a checksum at the end of the file to
-   *  ensure all bytes were successfully written. */
-  public static final int FORMAT_CHECKSUM = -5;
-
-  /** This format adds the deletion count for each segment.
-   *  This way IndexWriter can efficiently report numDocs(). */
-  public static final int FORMAT_DEL_COUNT = -6;
-
-  /** This format adds the boolean hasProx to record if any
-   *  fields in the segment store prox information (ie, have
-   *  omitTermFreqAndPositions==false) */
-  public static final int FORMAT_HAS_PROX = -7;
-
-  /** This format adds optional commit userData (String) storage. */
-  public static final int FORMAT_USER_DATA = -8;
-
+  /** Used for the segments.gen file only! */
+  public static final int FORMAT_SEGMENTS_GEN_CURRENT = -2;
+  
   /** This format adds optional per-segment String
    *  diagnostics storage, and switches userData to Map */
   public static final int FORMAT_DIAGNOSTICS = -9;
-  
+
   /** Each segment records whether its postings are written
    *  in the new flex format */
-  public static final int FORMAT_FLEX_POSTINGS = -10;
+  public static final int FORMAT_4_0 = -10;
 
   /* This must always point to the most recent file format. */
-  static final int CURRENT_FORMAT = FORMAT_FLEX_POSTINGS;
+  static final int CURRENT_FORMAT = FORMAT_4_0;
   
   public int counter = 0;    // used to name new segments
+  
   /**
    * counts how often the index has been changed by adding or deleting docs.
    * starting with the current time in milliseconds forces to create unique version numbers.
@@ -132,8 +103,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
       return -1;
     }
     long max = -1;
-    for (int i = 0; i < files.length; i++) {
-      String file = files[i];
+    for (String file : files) {
       if (file.startsWith(IndexFileNames.SEGMENTS) && !file.equals(IndexFileNames.SEGMENTS_GEN)) {
         long gen = generationFromSegmentsFileName(file);
         if (gen > max) {
@@ -248,46 +218,25 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
 
     try {
       int format = input.readInt();
-      if(format < 0){     // file contains explicit format info
-        // check that it is a format we can understand
-        if (format < CURRENT_FORMAT)
-          throw new CorruptIndexException("Unknown format version: " + format);
-        version = input.readLong(); // read version
-        counter = input.readInt(); // read counter
-      }
-      else{     // file is in old format without explicit format info
-        counter = format;
-      }
+
+      // check that it is a format we can understand
+      if (format < CURRENT_FORMAT)
+        throw new CorruptIndexException("Unknown (newer than us?) format version: " + format);
+
+      version = input.readLong(); // read version
+      counter = input.readInt(); // read counter
       
       for (int i = input.readInt(); i > 0; i--) { // read segmentInfos
         add(new SegmentInfo(directory, format, input, codecs));
       }
       
-      if(format >= 0){    // in old format the version number may be at the end of the file
-        if (input.getFilePointer() >= input.length())
-          version = System.currentTimeMillis(); // old file format without version number
-        else
-          version = input.readLong(); // read version
-      }
+      userData = input.readStringStringMap();
 
-      if (format <= FORMAT_USER_DATA) {
-        if (format <= FORMAT_DIAGNOSTICS) {
-          userData = input.readStringStringMap();
-        } else if (0 != input.readByte()) {
-          userData = Collections.singletonMap("userData", input.readString());
-        } else {
-          userData = Collections.<String,String>emptyMap();
-        }
-      } else {
-        userData = Collections.<String,String>emptyMap();
-      }
+      final long checksumNow = input.getChecksum();
+      final long checksumThen = input.readLong();
+      if (checksumNow != checksumThen)
+        throw new CorruptIndexException("checksum mismatch in segments file");
 
-      if (format <= FORMAT_CHECKSUM) {
-        final long checksumNow = input.getChecksum();
-        final long checksumThen = input.readLong();
-        if (checksumNow != checksumThen)
-          throw new CorruptIndexException("checksum mismatch in segments file");
-      }
       success = true;
     }
     finally {
@@ -327,7 +276,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
   // before finishCommit is called
   ChecksumIndexOutput pendingSegnOutput;
 
-  private final void write(Directory directory) throws IOException {
+  private void write(Directory directory) throws IOException {
 
     String segmentFileName = getNextSegmentFileName();
 
@@ -348,8 +297,8 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
                                    // the index
       segnOutput.writeInt(counter); // write counter
       segnOutput.writeInt(size()); // write infos
-      for (int i = 0; i < size(); i++) {
-        info(i).write(segnOutput);
+      for (SegmentInfo si : this) {
+        si.write(segnOutput);
       }
       segnOutput.writeStringStringMap(userData);
       segnOutput.prepareCommit();
@@ -612,7 +561,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
             if (genInput != null) {
               try {
                 int version = genInput.readInt();
-                if (version == FORMAT_LOCKLESS) {
+                if (version == FORMAT_SEGMENTS_GEN_CURRENT) {
                   long gen0 = genInput.readLong();
                   long gen1 = genInput.readLong();
                   if (infoStream != null) {
@@ -642,10 +591,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
           }
 
           // Pick the larger of the two gen's:
-          if (genA > genB)
-            gen = genA;
-          else
-            gen = genB;
+          gen = Math.max(genA, genB);
           
           if (gen == -1) {
             // Neither approach found a generation
@@ -858,9 +804,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
     // logic in SegmentInfos to kick in and load the last
     // good (previous) segments_N-1 file.
 
-    final String fileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
-                                                                  "",
-                                                                  generation);
+    final String fileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS, "", generation);
     success = false;
     try {
       dir.sync(Collections.singleton(fileName));
@@ -880,7 +824,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
     try {
       IndexOutput genOutput = dir.createOutput(IndexFileNames.SEGMENTS_GEN);
       try {
-        genOutput.writeInt(FORMAT_LOCKLESS);
+        genOutput.writeInt(FORMAT_SEGMENTS_GEN_CURRENT);
         genOutput.writeLong(generation);
         genOutput.writeLong(generation);
       } finally {

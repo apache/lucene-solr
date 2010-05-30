@@ -29,10 +29,6 @@ class TermVectorsReader implements Cloneable {
 
   // NOTE: if you make a new format, it must be larger than
   // the current format
-  static final int FORMAT_VERSION = 2;
-
-  // Changes to speed up bulk merging of term vectors:
-  static final int FORMAT_VERSION2 = 3;
 
   // Changed strings to UTF8 with length-in-bytes not length-in-chars
   static final int FORMAT_UTF8_LENGTH_IN_BYTES = 4;
@@ -87,13 +83,8 @@ class TermVectorsReader implements Cloneable {
         assert format == tvdFormat;
         assert format == tvfFormat;
 
-        if (format >= FORMAT_VERSION2) {
-          assert (tvx.length()-FORMAT_SIZE) % 16 == 0;
-          numTotalDocs = (int) (tvx.length() >> 4);
-        } else {
-          assert (tvx.length()-FORMAT_SIZE) % 8 == 0;
-          numTotalDocs = (int) (tvx.length() >> 3);
-        }
+        assert (tvx.length()-FORMAT_SIZE) % 16 == 0;
+        numTotalDocs = (int) (tvx.length() >> 4);
 
         if (-1 == docStoreOffset) {
           this.docStoreOffset = 0;
@@ -133,11 +124,8 @@ class TermVectorsReader implements Cloneable {
     return tvf;
   }
 
-  final private void seekTvx(final int docNum) throws IOException {
-    if (format < FORMAT_VERSION2)
-      tvx.seek((docNum + docStoreOffset) * 8L + FORMAT_SIZE);
-    else
-      tvx.seek((docNum + docStoreOffset) * 16L + FORMAT_SIZE);
+  private void seekTvx(final int docNum) throws IOException {
+    tvx.seek((docNum + docStoreOffset) * 16L + FORMAT_SIZE);
   }
 
   boolean canReadRawDocs() {
@@ -160,7 +148,7 @@ class TermVectorsReader implements Cloneable {
 
     // SegmentMerger calls canReadRawDocs() first and should
     // not call us if that returns false.
-    if (format < FORMAT_VERSION2)
+    if (format < FORMAT_UTF8_LENGTH_IN_BYTES)
       throw new IllegalStateException("cannot read raw docs with older term vector formats");
 
     seekTvx(startDocID);
@@ -242,11 +230,7 @@ class TermVectorsReader implements Cloneable {
       int number = 0;
       int found = -1;
       for (int i = 0; i < fieldCount; i++) {
-        if (format >= FORMAT_VERSION)
-          number = tvd.readVInt();
-        else
-          number += tvd.readVInt();
-
+        number = tvd.readVInt();
         if (number == fieldNumber)
           found = i;
       }
@@ -255,11 +239,7 @@ class TermVectorsReader implements Cloneable {
       // document
       if (found != -1) {
         // Compute position in the tvf file
-        long position;
-        if (format >= FORMAT_VERSION2)
-          position = tvx.readLong();
-        else
-          position = tvd.readVLong();
+        long position = tvx.readLong();
         for (int i = 1; i <= found; i++)
           position += tvd.readVLong();
 
@@ -292,16 +272,12 @@ class TermVectorsReader implements Cloneable {
 
   // Reads the String[] fields; you have to pre-seek tvd to
   // the right point
-  final private String[] readFields(int fieldCount) throws IOException {
+  private String[] readFields(int fieldCount) throws IOException {
     int number = 0;
     String[] fields = new String[fieldCount];
 
     for (int i = 0; i < fieldCount; i++) {
-      if (format >= FORMAT_VERSION)
-        number = tvd.readVInt();
-      else
-        number += tvd.readVInt();
-
+      number = tvd.readVInt();
       fields[i] = fieldInfos.fieldName(number);
     }
 
@@ -310,13 +286,9 @@ class TermVectorsReader implements Cloneable {
 
   // Reads the long[] offsets into TVF; you have to pre-seek
   // tvx/tvd to the right point
-  final private long[] readTvfPointers(int fieldCount) throws IOException {
+  private long[] readTvfPointers(int fieldCount) throws IOException {
     // Compute position in the tvf file
-    long position;
-    if (format >= FORMAT_VERSION2)
-      position = tvx.readLong();
-    else
-      position = tvd.readVLong();
+    long position = tvx.readLong();
 
     long[] tvfPointers = new long[fieldCount];
     tvfPointers[0] = position;
@@ -425,32 +397,18 @@ class TermVectorsReader implements Cloneable {
     boolean storePositions;
     boolean storeOffsets;
     
-    if (format >= FORMAT_VERSION){
-      byte bits = tvf.readByte();
-      storePositions = (bits & STORE_POSITIONS_WITH_TERMVECTOR) != 0;
-      storeOffsets = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
-    }
-    else{
-      tvf.readVInt();
-      storePositions = false;
-      storeOffsets = false;
-    }
+    byte bits = tvf.readByte();
+    storePositions = (bits & STORE_POSITIONS_WITH_TERMVECTOR) != 0;
+    storeOffsets = (bits & STORE_OFFSET_WITH_TERMVECTOR) != 0;
+
     mapper.setExpectations(field, numTerms, storeOffsets, storePositions);
     int start = 0;
     int deltaLength = 0;
     int totalLength = 0;
     byte[] byteBuffer;
-    char[] charBuffer;
-    final boolean preUTF8 = format < FORMAT_UTF8_LENGTH_IN_BYTES;
 
-    // init the buffers
-    if (preUTF8) {
-      charBuffer = new char[10];
-      byteBuffer = null;
-    } else {
-      charBuffer = null;
-      byteBuffer = new byte[20];
-    }
+    // init the buffer
+    byteBuffer = new byte[20];
 
     for (int i = 0; i < numTerms; i++) {
       start = tvf.readVInt();
@@ -459,26 +417,17 @@ class TermVectorsReader implements Cloneable {
 
       final String term;
       
-      if (preUTF8) {
-        // Term stored as java chars
-        if (charBuffer.length < totalLength) {
-          charBuffer = ArrayUtil.grow(charBuffer, totalLength);
-        }
-        tvf.readChars(charBuffer, start, deltaLength);
-        term = new String(charBuffer, 0, totalLength);
-      } else {
-        // Term stored as utf8 bytes
-        if (byteBuffer.length < totalLength) {
-          byteBuffer = ArrayUtil.grow(byteBuffer, totalLength);
-        }
-        tvf.readBytes(byteBuffer, start, deltaLength);
-        term = new String(byteBuffer, 0, totalLength, "UTF-8");
+      // Term stored as utf8 bytes
+      if (byteBuffer.length < totalLength) {
+        byteBuffer = ArrayUtil.grow(byteBuffer, totalLength);
       }
+      tvf.readBytes(byteBuffer, start, deltaLength);
+      term = new String(byteBuffer, 0, totalLength, "UTF-8");
       int freq = tvf.readVInt();
       int [] positions = null;
       if (storePositions) { //read in the positions
         //does the mapper even care about positions?
-        if (mapper.isIgnoringPositions() == false) {
+        if (!mapper.isIgnoringPositions()) {
           positions = new int[freq];
           int prevPosition = 0;
           for (int j = 0; j < freq; j++)
@@ -498,7 +447,7 @@ class TermVectorsReader implements Cloneable {
       TermVectorOffsetInfo[] offsets = null;
       if (storeOffsets) {
         //does the mapper even care about offsets?
-        if (mapper.isIgnoringOffsets() == false) {
+        if (!mapper.isIgnoringOffsets()) {
           offsets = new TermVectorOffsetInfo[freq];
           int prevOffset = 0;
           for (int j = 0; j < freq; j++) {

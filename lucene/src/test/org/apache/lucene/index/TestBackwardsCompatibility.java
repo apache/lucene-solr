@@ -22,14 +22,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.Enumeration;
 import java.util.List;
-import java.util.ArrayList;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -37,8 +34,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -50,13 +45,12 @@ import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.BytesRef;
 
 /*
-  Verify we can read the pre-2.1 file format, do searches
+  Verify we can read the pre-4.0 file format, do searches
   against it, and add documents to it.
 */
 
@@ -128,94 +122,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
 */  
-  final String[] oldNames = {"19.cfs",
-                             "19.nocfs",
-                             "20.cfs",
-                             "20.nocfs",
-                             "21.cfs",
-                             "21.nocfs",
-                             "22.cfs",
-                             "22.nocfs",
-                             "23.cfs",
-                             "23.nocfs",
-                             "24.cfs",
-                             "24.nocfs",
-                             "29.cfs",
-                             "29.nocfs",
-                             "30.cfs",
+  final String[] oldNames = {"30.cfs",
                              "30.nocfs",
                              "31.cfs",
                              "31.nocfs",
   };
   
-  private void assertCompressedFields29(Directory dir, boolean shouldStillBeCompressed) throws IOException {
-    int count = 0;
-    final int TEXT_PLAIN_LENGTH = TEXT_TO_COMPRESS.length() * 2;
-    // FieldSelectorResult.SIZE returns 2*number_of_chars for String fields:
-    final int BINARY_PLAIN_LENGTH = BINARY_TO_COMPRESS.length;
-    
-    IndexReader reader = IndexReader.open(dir, true);
-    try {
-      // look into sub readers and check if raw merge is on/off
-      List<IndexReader> readers = new ArrayList<IndexReader>();
-      ReaderUtil.gatherSubReaders(readers, reader);
-      for (IndexReader ir : readers) {
-        final FieldsReader fr = ((SegmentReader) ir).getFieldsReader();
-        assertTrue("for a 2.9 index, FieldsReader.canReadRawDocs() must be false and other way round for a trunk index",
-          shouldStillBeCompressed != fr.canReadRawDocs());
-      }
-    
-      // test that decompression works correctly
-      for(int i=0; i<reader.maxDoc(); i++) {
-        if (!reader.isDeleted(i)) {
-          Document d = reader.document(i);
-          if (d.get("content3") != null) continue;
-          count++;
-          Fieldable compressed = d.getFieldable("compressed");
-          if (Integer.parseInt(d.get("id")) % 2 == 0) {
-            assertFalse(compressed.isBinary());
-            assertEquals("incorrectly decompressed string", TEXT_TO_COMPRESS, compressed.stringValue());
-          } else {
-            assertTrue(compressed.isBinary());
-            assertTrue("incorrectly decompressed binary", Arrays.equals(BINARY_TO_COMPRESS, compressed.getBinaryValue()));
-          }
-        }
-      }
-      
-      // check if field was decompressed after optimize
-      for(int i=0; i<reader.maxDoc(); i++) {
-        if (!reader.isDeleted(i)) {
-          Document d = reader.document(i, new FieldSelector() {
-            public FieldSelectorResult accept(String fieldName) {
-              return ("compressed".equals(fieldName)) ? FieldSelectorResult.SIZE : FieldSelectorResult.LOAD;
-            }
-          });
-          if (d.get("content3") != null) continue;
-          count++;
-          // read the size from the binary value using DataInputStream (this prevents us from doing the shift ops ourselves):
-          final DataInputStream ds = new DataInputStream(new ByteArrayInputStream(d.getFieldable("compressed").getBinaryValue()));
-          final int actualSize = ds.readInt();
-          ds.close();
-          final int compressedSize = Integer.parseInt(d.get("compressedSize"));
-          final boolean binary = Integer.parseInt(d.get("id")) % 2 > 0;
-          final int shouldSize = shouldStillBeCompressed ?
-            compressedSize :
-            (binary ? BINARY_PLAIN_LENGTH : TEXT_PLAIN_LENGTH);
-          assertEquals("size incorrect", shouldSize, actualSize);
-          if (!shouldStillBeCompressed) {
-            assertFalse("uncompressed field should have another size than recorded in index", compressedSize == actualSize);
-          }
-        }
-      }
-      assertEquals("correct number of tests", 34 * 2, count);
-    } finally {
-      reader.close();
-    }
-  }
-
   public void testOptimizeOldIndex() throws Exception {
-    int hasTested29 = 0;
-
     Random rand = newRandom();
     
     for(int i=0;i<oldNames.length;i++) {
@@ -226,11 +139,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       FlexTestUtil.verifyFlexVsPreFlex(rand, dir);
 
-      if (oldNames[i].startsWith("29.")) {
-        assertCompressedFields29(dir, true);
-        hasTested29++;
-      }
-
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer()));
       w.optimize();
@@ -239,16 +147,9 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
       _TestUtil.checkIndex(dir);
       
-      if (oldNames[i].startsWith("29.")) {
-        assertCompressedFields29(dir, false);
-        hasTested29++;
-      }
-
       dir.close();
       rmDir(oldNames[i]);
     }
-    
-    assertEquals("test for compressed field should have run 4 times", 4, hasTested29);
   }
 
   public void testAddOldIndexes() throws IOException {
@@ -346,7 +247,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
             !oldName.startsWith("22.")) {
 
           if (d.getField("content3") == null) {
-            final int numFields = oldName.startsWith("29.") ? 7 : 5;
+            final int numFields = 5;
             assertEquals(numFields, fields.size());
             Field f =  d.getField("id");
             assertEquals(""+i, f.stringValue());
@@ -401,8 +302,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     return v0 - v1;
   }
 
-  /* Open pre-lockless index, add docs, do a delete &
-   * setNorm, and search */
   public void changeIndexWithAdds(String dirName) throws IOException {
     String origDirName = dirName;
     dirName = fullDir(dirName);
@@ -435,8 +334,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     doTestHits(hits, 44, searcher.getIndexReader());
     searcher.close();
 
-    // make sure we can do delete & setNorm against this
-    // pre-lockless segment:
+    // make sure we can do delete & setNorm against this segment:
     IndexReader reader = IndexReader.open(dir, false);
     Term searchTerm = new Term("id", "6");
     int delCount = reader.deleteDocuments(searchTerm);
@@ -469,8 +367,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dir.close();
   }
 
-  /* Open pre-lockless index, add docs, do a delete &
-   * setNorm, and search */
   public void changeIndexNoAdds(String dirName) throws IOException {
 
     dirName = fullDir(dirName);
@@ -485,8 +381,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     assertEquals("wrong first document", "21", d.get("id"));
     searcher.close();
 
-    // make sure we can do a delete & setNorm against this
-    // pre-lockless segment:
+    // make sure we can do a delete & setNorm against this segment:
     IndexReader reader = IndexReader.open(dir, false);
     Term searchTerm = new Term("id", "6");
     int delCount = reader.deleteDocuments(searchTerm);
@@ -641,15 +536,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     doc.add(new Field("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("content2", "here is more content with aaa aaa aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("fie\u2C77ld", "field with non-ascii name", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    /* This was used in 2.9 to generate an index with compressed field:
-    if (id % 2 == 0) {
-      doc.add(new Field("compressed", TEXT_TO_COMPRESS, Field.Store.COMPRESS, Field.Index.NOT_ANALYZED));
-      doc.add(new Field("compressedSize", Integer.toString(TEXT_COMPRESSED_LENGTH), Field.Store.YES, Field.Index.NOT_ANALYZED));
-    } else {
-      doc.add(new Field("compressed", BINARY_TO_COMPRESS, Field.Store.COMPRESS));    
-      doc.add(new Field("compressedSize", Integer.toString(BINARY_COMPRESSED_LENGTH), Field.Store.YES, Field.Index.NOT_ANALYZED));
-    }
-    */
     // add numeric fields, to test if flex preserves encoding
     doc.add(new NumericField("trieInt", 4).setIntValue(id));
     doc.add(new NumericField("trieLong", 4).setLongValue(id));
@@ -685,22 +571,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   static final String TEXT_TO_COMPRESS = "this is a compressed field and should appear in 3.0 as an uncompressed field after merge";
+
   // FieldSelectorResult.SIZE returns compressed size for compressed fields, which are internally handled as binary;
   // do it in the same way like FieldsWriter, do not use CompressionTools.compressString() for compressed fields:
-  /* This was used in 2.9 to generate an index with compressed field:
-  static final int TEXT_COMPRESSED_LENGTH;
-  static {
-    try {
-      TEXT_COMPRESSED_LENGTH = CompressionTools.compress(TEXT_TO_COMPRESS.getBytes("UTF-8")).length;
-    } catch (Exception e) {
-      throw new RuntimeException();
-    }
-  }
-  */
   static final byte[] BINARY_TO_COMPRESS = new byte[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20};
-  /* This was used in 2.9 to generate an index with compressed field:
-  static final int BINARY_COMPRESSED_LENGTH = CompressionTools.compress(BINARY_TO_COMPRESS).length;
-  */
 
   private int countDocs(DocsEnum docs) throws IOException {
     int count = 0;
@@ -758,8 +632,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   
   public void testNumericFields() throws Exception {
     for(int i=0;i<oldNames.length;i++) {
-      // only test indexes >= 3.0
-      if (oldNames[i].compareTo("30.") < 0) continue;
       
       unzip(getDataFile("index." + oldNames[i] + ".zip"), oldNames[i]);
       String fullPath = fullDir(oldNames[i]);

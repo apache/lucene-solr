@@ -31,16 +31,6 @@ final class FieldsWriter
   static final byte FIELD_IS_TOKENIZED = 0x1;
   static final byte FIELD_IS_BINARY = 0x2;
   
-  /** @deprecated Kept for backwards-compatibility with <3.0 indexes; will be removed in 4.0 */
-  @Deprecated
-  static final byte FIELD_IS_COMPRESSED = 0x4;
-
-  // Original format
-  static final int FORMAT = 0;
-
-  // Changed strings to UTF8
-  static final int FORMAT_VERSION_UTF8_LENGTH_IN_BYTES = 1;
-  
   // Lucene 3.0: Removal of compressed fields
   static final int FORMAT_LUCENE_3_0_NO_COMPRESSED_FIELDS = 2;
 

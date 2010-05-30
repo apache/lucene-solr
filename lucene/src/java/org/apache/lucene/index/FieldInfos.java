@@ -36,9 +36,6 @@ import java.util.*;
  */
 public final class FieldInfos {
 
-  // Used internally (ie not written to *.fnm files) for pre-2.9 files
-  public static final int FORMAT_PRE = -1;
-
   // First used in 2.9; prior to 2.9 there was no format header
   public static final int FORMAT_START = -2;
 
@@ -68,29 +65,7 @@ public final class FieldInfos {
   FieldInfos(Directory d, String name) throws IOException {
     IndexInput input = d.openInput(name);
     try {
-      try {
-        read(input, name);
-      } catch (IOException ioe) {
-        if (format == FORMAT_PRE) {
-          // LUCENE-1623: FORMAT_PRE (before there was a
-          // format) may be 2.3.2 (pre-utf8) or 2.4.x (utf8)
-          // encoding; retry with input set to pre-utf8
-          input.seek(0);
-          input.setModifiedUTF8StringsMode();
-          byNumber.clear();
-          byName.clear();
-          try {
-            read(input, name);
-          } catch (Throwable t) {
-            // Ignore any new exception & throw original IOE
-            throw ioe;
-          }
-        } else {
-          // The IOException cannot be caused by
-          // LUCENE-1623, so re-throw it
-          throw ioe;
-        }
-      }
+      read(input, name);
     } finally {
       input.close();
     }
@@ -330,25 +305,13 @@ public final class FieldInfos {
   }
 
   private void read(IndexInput input, String fileName) throws IOException {
-    int firstInt = input.readVInt();
+    format = input.readVInt();
 
-    if (firstInt < 0) {
-      // This is a real format
-      format = firstInt;
-    } else {
-      format = FORMAT_PRE;
-    }
-
-    if (format != FORMAT_PRE & format != FORMAT_START) {
+    if (format > FORMAT_START) {
       throw new CorruptIndexException("unrecognized format " + format + " in file \"" + fileName + "\"");
     }
 
-    int size;
-    if (format == FORMAT_PRE) {
-      size = firstInt;
-    } else {
-      size = input.readVInt(); //read in the size
-    }
+    final int size = input.readVInt(); //read in the size
 
     for (int i = 0; i < size; i++) {
       String name = StringHelper.intern(input.readString());

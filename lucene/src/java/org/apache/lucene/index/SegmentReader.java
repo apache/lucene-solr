@@ -728,7 +728,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
       }
 
       if (normsDirty) {               // re-write norms
-        si.setNumFields(core.fieldInfos.size());
+        si.initNormGen(core.fieldInfos.size());
         for (final Norm norm : norms.values()) {
           if (norm.dirty) {
             norm.reWrite(si);

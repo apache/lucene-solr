@@ -639,10 +639,11 @@ final class DocumentsWriter {
       consumer.flush(threads, flushState);
 
       if (infoStream != null) {
-        SegmentInfo si = new SegmentInfo(flushState.segmentName, flushState.numDocs, directory, flushState.codec);
-        si.setHasProx(hasProx());
+        SegmentInfo si = new SegmentInfo(flushState.segmentName,
+            flushState.numDocs, directory, false, -1, flushState.segmentName,
+            false, hasProx(), flushState.codec);
         final long newSegmentSize = si.sizeInBytes();
-        String message = "  ramUsed=" + nf.format(((double) numBytesUsed)/1024./1024.) + " MB" +
+        String message = "  ramUsed=" + nf.format(numBytesUsed/1024./1024.) + " MB" +
           " newFlushedSize=" + newSegmentSize +
           " docs/MB=" + nf.format(numDocsInRAM/(newSegmentSize/1024./1024.)) +
           " new/old=" + nf.format(100.0*newSegmentSize/numBytesUsed) + "%";

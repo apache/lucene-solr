@@ -17,6 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -342,33 +343,13 @@ public class CheckIndex {
     String sFormat = "";
     boolean skip = false;
 
-    if (format == SegmentInfos.FORMAT)
-      sFormat = "FORMAT [Lucene Pre-2.1]";
-    if (format == SegmentInfos.FORMAT_LOCKLESS)
-      sFormat = "FORMAT_LOCKLESS [Lucene 2.1]";
-    else if (format == SegmentInfos.FORMAT_SINGLE_NORM_FILE)
-      sFormat = "FORMAT_SINGLE_NORM_FILE [Lucene 2.2]";
-    else if (format == SegmentInfos.FORMAT_SHARED_DOC_STORE)
-      sFormat = "FORMAT_SHARED_DOC_STORE [Lucene 2.3]";
-    else {
-      if (format == SegmentInfos.FORMAT_CHECKSUM)
-        sFormat = "FORMAT_CHECKSUM [Lucene 2.4]";
-      else if (format == SegmentInfos.FORMAT_DEL_COUNT)
-        sFormat = "FORMAT_DEL_COUNT [Lucene 2.4]";
-      else if (format == SegmentInfos.FORMAT_HAS_PROX)
-        sFormat = "FORMAT_HAS_PROX [Lucene 2.4]";
-      else if (format == SegmentInfos.FORMAT_USER_DATA)
-        sFormat = "FORMAT_USER_DATA [Lucene 2.9]";
-      else if (format == SegmentInfos.FORMAT_DIAGNOSTICS)
-        sFormat = "FORMAT_DIAGNOSTICS [Lucene 2.9]";
-      else if (format == SegmentInfos.FORMAT_FLEX_POSTINGS)
-        sFormat = "FORMAT_FLEX_POSTINGS [Lucene 3.1]";
-      else if (format < SegmentInfos.CURRENT_FORMAT) {
-        sFormat = "int=" + format + " [newer version of Lucene than this tool]";
-        skip = true;
-      } else {
-        sFormat = format + " [Lucene 1.3 or prior]";
-      }
+    if (format == SegmentInfos.FORMAT_DIAGNOSTICS)
+      sFormat = "FORMAT_DIAGNOSTICS [Lucene 2.9]";
+    else if (format == SegmentInfos.FORMAT_4_0)
+      sFormat = "FORMAT_FLEX_POSTINGS [Lucene 4.0]";
+    else if (format < SegmentInfos.CURRENT_FORMAT) {
+      sFormat = "int=" + format + " [newer version of Lucene than this tool]";
+      skip = true;
     }
 
     result.segmentsFileName = segmentsFileName;
@@ -656,7 +637,7 @@ public class CheckIndex {
           int lastDoc = -1;
           while(true) {
             final int doc = docs2.nextDoc();
-            if (doc == DocsEnum.NO_MORE_DOCS) {
+            if (doc == DocIdSetIterator.NO_MORE_DOCS) {
               break;
             }
             final int freq = docs2.freq();
@@ -698,7 +679,7 @@ public class CheckIndex {
           if (reader.hasDeletions()) {
             final DocsEnum docsNoDel = terms.docs(null, docs);
             int count = 0;
-            while(docsNoDel.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+            while(docsNoDel.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
               count++;
             }
             if (count != docFreq) {

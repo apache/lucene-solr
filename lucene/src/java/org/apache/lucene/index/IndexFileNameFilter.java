@@ -62,8 +62,7 @@ public class IndexFileNameFilter implements FilenameFilter {
         return true;
       }
     } else {
-      if (name.equals(IndexFileNames.DELETABLE)) return true;
-      else if (name.startsWith(IndexFileNames.SEGMENTS)) return true;
+      if (name.startsWith(IndexFileNames.SEGMENTS)) return true;
     }
     return false;
   }

@@ -36,9 +36,6 @@ public final class SegmentTermEnum extends TermEnum implements Cloneable {
   long size;
   long position = -1;
 
-  /** The file format version, a negative number. */
-  public static final int FORMAT = -3;
-
   // Changed strings to true utf8 with length-in-bytes not
   // length-in-chars
   public static final int FORMAT_VERSION_UTF8_LENGTH_IN_BYTES = -4;
@@ -97,18 +94,10 @@ public final class SegmentTermEnum extends TermEnum implements Cloneable {
       } else {
         indexInterval = input.readInt();
         skipInterval = input.readInt();
-        if (format <= FORMAT) {
-          // this new format introduces multi-level skipping
-          maxSkipLevels = input.readInt();
-        }
+        maxSkipLevels = input.readInt();
       }
       assert indexInterval > 0: "indexInterval=" + indexInterval + " is negative; must be > 0";
       assert skipInterval > 0: "skipInterval=" + skipInterval + " is negative; must be > 0";
-    }
-    if (format > FORMAT_VERSION_UTF8_LENGTH_IN_BYTES) {
-      termBuffer.setPreUTF8Strings();
-      scanBuffer.setPreUTF8Strings();
-      prevBuffer.setPreUTF8Strings();
     }
   }
 

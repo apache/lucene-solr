@@ -134,9 +134,6 @@ public class TestIndexFileDeleter extends LuceneTestCase {
     // Create a bogus fnm file when the CFS already exists:
     copyFile(dir, "_0.cfs", "_0.fnm");
 
-    // Create a deletable file:
-    copyFile(dir, "_0.cfs", "deletable");
-
     // Create some old segments file:
     copyFile(dir, "segments_2", "segments");
     copyFile(dir, "segments_2", "segments_1");

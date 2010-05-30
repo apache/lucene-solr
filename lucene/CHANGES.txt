@@ -74,6 +74,10 @@ Changes in backwards compatibility policy
   character. Furthermore, the rest of the automaton package and RegexpQuery use 
   true Unicode codepoint representation.  (Robert Muir, Mike McCandless)
  
+* LUCENE-2480: Though not a change in backwards compatibility policy, pre-3.0 
+  indexes are no longer supported. You should upgrade to 3.x first, then run
+  optimize(), or reindex. (Shai Erera, Earwin Burrfoot)
+
 Changes in runtime behavior
 
 * LUCENE-2421: NativeFSLockFactory does not throw LockReleaseFailedException if 
