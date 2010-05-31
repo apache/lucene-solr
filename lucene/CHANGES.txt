@@ -355,6 +355,11 @@ API Changes
   custom file names. You should use this method to name all your files.
   (Shai Erera) 
   
+* LUCENE-2481: SnapshotDeletionPolicy.snapshot() and release() were replaced
+  with equivalent ones that take a String (id) as argument. You can pass
+  whatever ID you want, as long as you use the same one when calling both. 
+  (Shai Erera)
+  
 Bug fixes
 
 * LUCENE-2119: Don't throw NegativeArraySizeException if you pass

@@ -4838,7 +4838,7 @@ public class TestIndexWriter extends LuceneTestCase {
     assertEquals(1, IndexReader.listCommits(dir).size());
 
     // Keep that commit
-    sdp.snapshot();
+    sdp.snapshot("id");
     
     // Second commit - now KeepOnlyLastCommit cannot delete the prev commit.
     doc = new Document();
@@ -4848,7 +4848,7 @@ public class TestIndexWriter extends LuceneTestCase {
     assertEquals(2, IndexReader.listCommits(dir).size());
 
     // Should delete the unreferenced commit
-    sdp.release();
+    sdp.release("id");
     writer.deleteUnusedFiles();
     assertEquals(1, IndexReader.listCommits(dir).size());
     
