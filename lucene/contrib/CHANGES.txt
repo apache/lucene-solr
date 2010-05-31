@@ -86,6 +86,9 @@ API Changes
    such as stopword lists and any language-specific processing in addition to
    stemming. Add Turkish and Romanian stopwords lists to support this.
    (Robert Muir, Uwe Schindler, Simon Willnauer)
+
+ * LUCENE-2477: Deprecate MoreLikeThis's DEFAULT_ANALYZER. If you are not using term 
+   vectors, explicitly set your analyzer instead.  (Robert Muir)
    
 New features
 

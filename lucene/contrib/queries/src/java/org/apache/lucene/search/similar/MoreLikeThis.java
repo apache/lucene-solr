@@ -162,7 +162,10 @@ public final class MoreLikeThis {
 	/**
      * Default analyzer to parse source doc with.
 	 * @see #getAnalyzer
+	 * @deprecated This default will be removed in Lucene 4.0 (with the default being null).
+	 * If you are not using term vectors, explicitly set your analyzer instead.
      */
+    @Deprecated
     public static final Analyzer DEFAULT_ANALYZER = new StandardAnalyzer(Version.LUCENE_CURRENT);
 
     /**
