@@ -64,49 +64,6 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
     dir2.close();
   }
 
-  public void testReuseAcrossWriters() throws Exception {
-    Directory dir = new MockRAMDirectory();
-
-    SnapshotDeletionPolicy dp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
-    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), dp, IndexWriter.MaxFieldLength.UNLIMITED);
-    // Force frequent flushes
-    writer.setMaxBufferedDocs(2);
-    Document doc = new Document();
-    doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    for(int i=0;i<7;i++) {
-      writer.addDocument(doc);
-      if (i % 2 == 0) {
-        writer.commit();
-      }
-    }
-    IndexCommit cp = (IndexCommit) dp.snapshot();
-    copyFiles(dir, cp);
-    writer.close();
-    copyFiles(dir, cp);
-    
-    writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), dp, IndexWriter.MaxFieldLength.UNLIMITED);
-    copyFiles(dir, cp);
-    for(int i=0;i<7;i++) {
-      writer.addDocument(doc);
-      if (i % 2 == 0) {
-        writer.commit();
-      }
-    }
-    copyFiles(dir, cp);
-    writer.close();
-    copyFiles(dir, cp);
-    dp.release();
-    writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), dp, IndexWriter.MaxFieldLength.UNLIMITED);
-    writer.close();
-    try {
-      copyFiles(dir, cp);
-      fail("did not hit expected IOException");
-    } catch (IOException ioe) {
-      // expected
-    }
-    dir.close();
-  }
-
   private void runTest(Directory dir) throws Exception {
     // Run for ~1 seconds
     final long stopTime = System.currentTimeMillis() + 1000;
@@ -179,12 +136,12 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase
   public void backupIndex(Directory dir, SnapshotDeletionPolicy dp) throws Exception {
     // To backup an index we first take a snapshot:
     try {
-      copyFiles(dir, (IndexCommit) dp.snapshot());
+      copyFiles(dir, (IndexCommit) dp.snapshot("id"));
     } finally {
       // Make sure to release the snapshot, otherwise these
       // files will never be deleted during this IndexWriter
       // session:
-      dp.release();
+      dp.release("id");
     }
   }
 

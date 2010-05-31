@@ -172,6 +172,11 @@ API Changes
   commit points when they are not needed anymore (instead of waiting for the 
   next commit). (Shai Erera)
   
+* LUCENE-2481: SnapshotDeletionPolicy.snapshot() and release() were replaced
+  with equivalent ones that take a String (id) as argument. You can pass
+  whatever ID you want, as long as you use the same one when calling both. 
+  (Shai Erera)
+  
 Bug fixes
 
 * LUCENE-2119: Don't throw NegativeArraySizeException if you pass

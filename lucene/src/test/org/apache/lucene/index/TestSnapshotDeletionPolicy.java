@@ -1,6 +1,9 @@
 package org.apache.lucene.index;
 
+import static org.junit.Assert.*;
+
 import java.util.Collection;
+import java.util.Map;
 import java.io.File;
 import java.io.IOException;
 
@@ -10,25 +13,77 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
+import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Test;
 
 //
 // This was developed for Lucene In Action,
 // http://lucenebook.com
 //
 
-public class TestSnapshotDeletionPolicy extends LuceneTestCase {
+public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
 	
   public static final String INDEX_PATH = "test.snapshots";
 
+  protected IndexWriterConfig getConfig(IndexDeletionPolicy dp) {
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer());
+    if (dp != null) {
+      conf.setIndexDeletionPolicy(dp);
+    }
+    return conf;
+  }
+
+  protected void checkSnapshotExists(Directory dir, IndexCommit c) throws Exception {
+    String segFileName = c.getSegmentsFileName();
+    assertTrue("segments file not found in directory: " + segFileName, dir.fileExists(segFileName));
+  }
+
+  protected void checkMaxDoc(IndexCommit commit, int expectedMaxDoc) throws Exception {
+    IndexReader reader = IndexReader.open(commit, true);
+    try {
+      assertEquals(expectedMaxDoc, reader.maxDoc());
+    } finally {
+      reader.close();
+    }
+  }
+
+  protected void prepareIndexAndSnapshots(SnapshotDeletionPolicy sdp,
+      IndexWriter writer, int numSnapshots, String snapshotPrefix)
+      throws RuntimeException, IOException {
+    for (int i = 0; i < numSnapshots; i++) {
+      // create dummy document to trigger commit.
+      writer.addDocument(new Document());
+      writer.commit();
+      sdp.snapshot(snapshotPrefix + i);
+    }
+  }
+
+  protected SnapshotDeletionPolicy getDeletionPolicy() throws IOException {
+    return getDeletionPolicy(null);
+  }
+
+  protected SnapshotDeletionPolicy getDeletionPolicy(Map<String, String> snapshots) throws IOException {
+    return new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy(), snapshots);
+  }
+
+  protected void assertSnapshotExists(Directory dir, SnapshotDeletionPolicy sdp, int numSnapshots) throws Exception {
+    for (int i = 0; i < numSnapshots; i++) {
+      IndexCommit snapshot = sdp.getSnapshot("snapshot" + i);
+      checkMaxDoc(snapshot, i + 1);
+      checkSnapshotExists(dir, snapshot);
+    }
+  }
+  
+  @Test
   public void testSnapshotDeletionPolicy() throws Exception {
     File dir = _TestUtil.getTempDir(INDEX_PATH);
     try {
@@ -44,57 +99,11 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     dir2.close();
   }
 
-  public void testReuseAcrossWriters() throws Exception {
-    Directory dir = new MockRAMDirectory();
-
-    SnapshotDeletionPolicy dp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, 
-        new StandardAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(dp)
-        .setMaxBufferedDocs(2));
-    Document doc = new Document();
-    doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
-    for(int i=0;i<7;i++) {
-      writer.addDocument(doc);
-      if (i % 2 == 0) {
-        writer.commit();
-      }
-    }
-    IndexCommit cp = dp.snapshot();
-    copyFiles(dir, cp);
-    writer.close();
-    copyFiles(dir, cp);
-    
-    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT,
-        new StandardAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(dp));
-    copyFiles(dir, cp);
-    for(int i=0;i<7;i++) {
-      writer.addDocument(doc);
-      if (i % 2 == 0) {
-        writer.commit();
-      }
-    }
-    copyFiles(dir, cp);
-    writer.close();
-    copyFiles(dir, cp);
-    dp.release();
-    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT,
-        new StandardAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(dp));
-    writer.close();
-    try {
-      copyFiles(dir, cp);
-      fail("did not hit expected IOException");
-    } catch (IOException ioe) {
-      // expected
-    }
-    dir.close();
-  }
-
   private void runTest(Directory dir) throws Exception {
     // Run for ~1 seconds
     final long stopTime = System.currentTimeMillis() + 1000;
 
-    SnapshotDeletionPolicy dp = new SnapshotDeletionPolicy(new KeepOnlyLastCommitDeletionPolicy());
+    SnapshotDeletionPolicy dp = getDeletionPolicy();
     final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, 
         new StandardAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(dp)
@@ -155,20 +164,21 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
     TestIndexWriter.assertNoUnreferencedFiles(dir, "some files were not deleted but should have been");
   }
 
-  /** Example showing how to use the SnapshotDeletionPolicy
-   *  to take a backup.  This method does not really do a
-   *  backup; instead, it reads every byte of every file
-   *  just to test that the files indeed exist and are
-   *  readable even while the index is changing. */
+  /**
+   * Example showing how to use the SnapshotDeletionPolicy to take a backup.
+   * This method does not really do a backup; instead, it reads every byte of
+   * every file just to test that the files indeed exist and are readable even
+   * while the index is changing.
+   */
   public void backupIndex(Directory dir, SnapshotDeletionPolicy dp) throws Exception {
     // To backup an index we first take a snapshot:
     try {
-      copyFiles(dir,  dp.snapshot());
+      copyFiles(dir,  dp.snapshot("id"));
     } finally {
       // Make sure to release the snapshot, otherwise these
       // files will never be deleted during this IndexWriter
       // session:
-      dp.release();
+      dp.release("id");
     }
   }
 
@@ -215,5 +225,210 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCase {
       input.close();
     }
   }
-}
 
+  
+  @Test
+  public void testBasicSnapshots() throws Exception {
+    int numSnapshots = 3;
+    SnapshotDeletionPolicy sdp = getDeletionPolicy();
+
+    // Create 3 snapshots: snapshot0, snapshot1, snapshot2
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(dir, getConfig(sdp));
+    prepareIndexAndSnapshots(sdp, writer, numSnapshots, "snapshot");
+    writer.close();
+    
+    assertSnapshotExists(dir, sdp, numSnapshots);
+
+    // open a reader on a snapshot - should succeed.
+    IndexReader.open(sdp.getSnapshot("snapshot0"), true).close();
+
+    // open a new IndexWriter w/ no snapshots to keep and assert that all snapshots are gone.
+    sdp = getDeletionPolicy();
+    writer = new IndexWriter(dir, getConfig(sdp));
+    writer.deleteUnusedFiles();
+    writer.close();
+    assertEquals("no snapshots should exist", 1, IndexReader.listCommits(dir).size());
+    
+    for (int i = 0; i < numSnapshots; i++) {
+      try {
+        sdp.getSnapshot("snapshot" + i);
+        fail("snapshot shouldn't have existed, but did: snapshot" + i);
+      } catch (IllegalStateException e) {
+        // expected - snapshot should not exist
+      }
+    }
+  }
+
+  @Test
+  public void testMultiThreadedSnapshotting() throws Exception {
+    Directory dir = new MockRAMDirectory();
+    final SnapshotDeletionPolicy sdp = getDeletionPolicy();
+    final IndexWriter writer = new IndexWriter(dir, getConfig(sdp));
+
+    Thread[] threads = new Thread[10];
+    for (int i = 0; i < threads.length; i++) {
+      threads[i] = new Thread() {
+        @Override
+        public void run() {
+          try {
+            writer.addDocument(new Document());
+            writer.commit();
+            sdp.snapshot(getName());
+          } catch (Exception e) {
+            throw new RuntimeException(e);
+          }
+        }
+      };
+      threads[i].setName("t" + i);
+    }
+    
+    for (Thread t : threads) {
+      t.start();
+    }
+    
+    for (Thread t : threads) {
+      t.join();
+    }
+
+    // Do one last commit, so that after we release all snapshots, we stay w/ one commit
+    writer.addDocument(new Document());
+    writer.commit();
+    
+    for (Thread t : threads) {
+      sdp.release(t.getName());
+      writer.deleteUnusedFiles();
+    }
+    assertEquals(1, IndexReader.listCommits(dir).size());
+    writer.close();
+  }
+
+  @Test
+  public void testRollbackToOldSnapshot() throws Exception {
+    int numSnapshots = 2;
+    Directory dir = new MockRAMDirectory();
+    SnapshotDeletionPolicy sdp = getDeletionPolicy();
+    IndexWriter writer = new IndexWriter(dir, getConfig(sdp));
+    prepareIndexAndSnapshots(sdp, writer, numSnapshots, "snapshot");
+    writer.close();
+
+    // now open the writer on "snapshot0" - make sure it succeeds
+    writer = new IndexWriter(dir, getConfig(sdp).setIndexCommit(sdp.getSnapshot("snapshot0")));
+    // this does the actual rollback
+    writer.commit();
+    writer.deleteUnusedFiles();
+    assertSnapshotExists(dir, sdp, numSnapshots - 1);
+    
+    // but 'snapshot1' files will still exist (need to release snapshot before they can be deleted).
+    String segFileName = sdp.getSnapshot("snapshot1").getSegmentsFileName();
+    assertTrue("snapshot files should exist in the directory: " + segFileName, dir.fileExists(segFileName));
+  }
+
+  @Test
+  public void testReleaseSnapshot() throws Exception {
+    Directory dir = new MockRAMDirectory();
+    SnapshotDeletionPolicy sdp = getDeletionPolicy();
+    IndexWriter writer = new IndexWriter(dir, getConfig(sdp));
+    prepareIndexAndSnapshots(sdp, writer, 1, "snapshot");
+    
+    // Create another commit - we must do that, because otherwise the "snapshot"
+    // files will still remain in the index, since it's the last commit.
+    writer.addDocument(new Document());
+    writer.commit();
+    
+    // Release
+    String snapId = "snapshot0";
+    String segFileName = sdp.getSnapshot(snapId).getSegmentsFileName();
+    sdp.release(snapId);
+    try {
+      sdp.getSnapshot(snapId);
+      fail("should not have succeeded to get an unsnapshotted id");
+    } catch (IllegalStateException e) {
+      // expected
+    }
+    assertNull(sdp.getSnapshots().get(snapId));
+    writer.deleteUnusedFiles();
+    assertFalse("segments file should not be found in dirctory: " + segFileName, dir.fileExists(segFileName));
+  }
+
+  @Test
+  public void testExistingSnapshots() throws Exception {
+    // Tests the ability to construct a SDP from existing snapshots, and
+    // asserts that those snapshots/commit points are protected.
+    int numSnapshots = 3;
+    Directory dir = new MockRAMDirectory();
+    SnapshotDeletionPolicy sdp = getDeletionPolicy();
+    IndexWriter writer = new IndexWriter(dir, getConfig(sdp));
+    prepareIndexAndSnapshots(sdp, writer, numSnapshots, "snapshot");
+    writer.close();
+
+    // Make a new policy and initialize with snapshots.
+    sdp = getDeletionPolicy(sdp.getSnapshots());
+    writer = new IndexWriter(dir, getConfig(sdp));
+    // attempt to delete unused files - the snapshotted files should not be deleted
+    writer.deleteUnusedFiles();
+    writer.close();
+    assertSnapshotExists(dir, sdp, numSnapshots);
+  }
+
+  @Test
+  public void testSnapshotLastCommitTwice() throws Exception {
+    Directory dir = new MockRAMDirectory();
+    SnapshotDeletionPolicy sdp = getDeletionPolicy();
+    IndexWriter writer = new IndexWriter(dir, getConfig(sdp));
+    writer.addDocument(new Document());
+    writer.commit();
+    
+    String s1 = "s1";
+    String s2 = "s2";
+    IndexCommit ic1 = sdp.snapshot(s1);
+    IndexCommit ic2 = sdp.snapshot(s2);
+    assertTrue(ic1 == ic2); // should be the same instance
+    
+    // create another commit
+    writer.addDocument(new Document());
+    writer.commit();
+    
+    // release "s1" should not delete "s2"
+    sdp.release(s1);
+    writer.deleteUnusedFiles();
+    checkSnapshotExists(dir, ic2);
+    
+    writer.close();
+  }
+  
+  @Test
+  public void testMissingCommits() throws Exception {
+    // Tests the behavior of SDP when commits that are given at ctor are missing
+    // on onInit().
+    Directory dir = new MockRAMDirectory();
+    SnapshotDeletionPolicy sdp = getDeletionPolicy();
+    IndexWriter writer = new IndexWriter(dir, getConfig(sdp));
+    writer.addDocument(new Document());
+    writer.commit();
+    IndexCommit ic = sdp.snapshot("s1");
+
+    // create another commit, not snapshotted.
+    writer.addDocument(new Document());
+    writer.close();
+
+    // open a new writer w/ KeepOnlyLastCommit policy, so it will delete "s1"
+    // commit.
+    new IndexWriter(dir, getConfig(null)).close();
+    
+    assertFalse("snapshotted commit should not exist", dir.fileExists(ic.getSegmentsFileName()));
+    
+    // Now reinit SDP from the commits in the index - the snapshot id should not
+    // exist anymore.
+    sdp = getDeletionPolicy(sdp.getSnapshots());
+    new IndexWriter(dir, getConfig(sdp)).close();
+    
+    try {
+      sdp.getSnapshot("s1");
+      fail("snapshot s1 should not exist");
+    } catch (IllegalStateException e) {
+      // expected.
+    }
+  }
+
+}

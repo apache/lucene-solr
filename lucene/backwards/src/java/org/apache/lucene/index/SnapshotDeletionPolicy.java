@@ -71,7 +71,7 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
    *  you call optimize()) then in the worst case this could
    *  consume an extra 1X of your total index size, until
    *  you release the snapshot. */
-  public synchronized IndexCommit snapshot() {
+  public synchronized IndexCommit snapshot(String id) {
     if (snapshot == null)
       snapshot = lastCommit.getSegmentsFileName();
     else
@@ -80,7 +80,7 @@ public class SnapshotDeletionPolicy implements IndexDeletionPolicy {
   }
 
   /** Release the currently held snapshot. */
-  public synchronized void release() {
+  public synchronized void release(String id) {
     if (snapshot != null)
       snapshot = null;
     else
