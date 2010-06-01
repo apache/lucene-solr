@@ -318,6 +318,9 @@ Bug Fixes
 * SOLR-1928: TermsComponent didn't correctly break ties for non-text
   fields sorted by count. (yonik)
 
+* SOLR-1936: The JSON response format needed to escape unicode code point
+  U+2028 - 'LINE SEPARATOR' (Robert Hofstra, yonik)
+
 
 Other Changes
 ----------------------
