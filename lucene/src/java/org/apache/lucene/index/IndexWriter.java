@@ -650,7 +650,7 @@ public class IndexWriter implements Closeable {
 
       // Return a ref to our caller
       if (info.dir == directory) {
-        // Only incRef if we pooledd (reader is not external)
+        // Only incRef if we pooled (reader is not external)
         sr.incRef();
       }
       return sr;
