@@ -449,6 +449,9 @@ Bug fixes
 * LUCENE-2299: If you open an NRT reader while addIndexes* is running,
   it may miss some segments (Earwin Burrfoot via Mike McCandless)
 
+* LUCENE-2397: Don't throw NPE from SnapshotDeletionPolicy.snapshot if
+  there are no commits yet (Shai Erera)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
@@ -592,6 +595,8 @@ Optimizations
   because then it will make sense to make the RAM buffers as large as 
   possible. (Mike McCandless, Michael Busch)
 
+* LUCENE-2360: Small speedup to recycling of reused per-doc RAM in
+  IndexWriter (Robert Muir, Mike McCandless)
 
 Build
 
