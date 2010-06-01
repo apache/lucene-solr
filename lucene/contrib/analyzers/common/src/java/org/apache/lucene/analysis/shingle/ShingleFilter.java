@@ -137,10 +137,10 @@ public final class ShingleFilter extends TokenFilter {
    */
   private boolean isOutputHere = false;
   
-  private final CharTermAttribute termAtt;
-  private final OffsetAttribute offsetAtt;
-  private final PositionIncrementAttribute posIncrAtt;
-  private final TypeAttribute typeAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
 
 
   /**
@@ -155,10 +155,6 @@ public final class ShingleFilter extends TokenFilter {
     super(input);
     setMaxShingleSize(maxShingleSize);
     setMinShingleSize(minShingleSize);
-    this.termAtt = addAttribute(CharTermAttribute.class);
-    this.offsetAtt = addAttribute(OffsetAttribute.class);
-    this.posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-    this.typeAtt = addAttribute(TypeAttribute.class);
   }
 
   /**

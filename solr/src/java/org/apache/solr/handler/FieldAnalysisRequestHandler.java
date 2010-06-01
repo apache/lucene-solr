@@ -227,7 +227,7 @@ public class FieldAnalysisRequestHandler extends AnalysisRequestHandlerBase {
     if (queryValue != null && analysisRequest.isShowMatch()) {
       List<Token> tokens = analyzeValue(queryValue, fieldType.getQueryAnalyzer());
       for (Token token : tokens) {
-        termsToMatch.add(token.term());
+        termsToMatch.add(token.toString());
       }
     }
 

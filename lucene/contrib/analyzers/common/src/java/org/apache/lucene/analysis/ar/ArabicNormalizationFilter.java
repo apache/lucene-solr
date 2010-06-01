@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * A {@link TokenFilter} that applies {@link ArabicNormalizer} to normalize the orthography.
@@ -29,21 +29,18 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  */
 
 public final class ArabicNormalizationFilter extends TokenFilter {
-
-  private final ArabicNormalizer normalizer;
-  private final TermAttribute termAtt;
+  private final ArabicNormalizer normalizer = new ArabicNormalizer();
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   
   public ArabicNormalizationFilter(TokenStream input) {
     super(input);
-    normalizer = new ArabicNormalizer();
-    termAtt = addAttribute(TermAttribute.class);
   }
 
   @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      int newlen = normalizer.normalize(termAtt.termBuffer(), termAtt.termLength());
-      termAtt.setTermLength(newlen);
+      int newlen = normalizer.normalize(termAtt.buffer(), termAtt.length());
+      termAtt.setLength(newlen);
       return true;
     }
     return false;

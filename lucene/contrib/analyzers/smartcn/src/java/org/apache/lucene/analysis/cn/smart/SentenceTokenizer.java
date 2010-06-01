@@ -21,8 +21,8 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
 
@@ -44,29 +44,20 @@ public final class SentenceTokenizer extends Tokenizer {
 
   private int tokenStart = 0, tokenEnd = 0;
   
-  private TermAttribute termAtt;
-  private OffsetAttribute offsetAtt;
-  private TypeAttribute typeAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+  private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
 
   public SentenceTokenizer(Reader reader) {
     super(reader);
-    init();
   }
 
   public SentenceTokenizer(AttributeSource source, Reader reader) {
     super(source, reader);
-    init();
   }
 
   public SentenceTokenizer(AttributeFactory factory, Reader reader) {
     super(factory, reader);
-    init();
-  }
-  
-  private void init() {
-    termAtt = addAttribute(TermAttribute.class);
-    offsetAtt = addAttribute(OffsetAttribute.class);
-    typeAtt = addAttribute(TypeAttribute.class);    
   }
   
   @Override
@@ -112,7 +103,7 @@ public final class SentenceTokenizer extends Tokenizer {
     if (buffer.length() == 0)
       return false;
     else {
-      termAtt.setTermBuffer(buffer.toString());
+      termAtt.setEmpty().append(buffer);
       offsetAtt.setOffset(correctOffset(tokenStart), correctOffset(tokenEnd));
       typeAtt.setType("sentence");
       return true;

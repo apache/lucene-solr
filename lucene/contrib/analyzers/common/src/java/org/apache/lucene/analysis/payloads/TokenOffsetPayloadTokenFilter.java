@@ -33,13 +33,11 @@ import org.apache.lucene.index.Payload;
  *
  **/
 public class TokenOffsetPayloadTokenFilter extends TokenFilter {
-  protected OffsetAttribute offsetAtt;
-  protected PayloadAttribute payAtt;
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+  private final PayloadAttribute payAtt = addAttribute(PayloadAttribute.class);
 
   public TokenOffsetPayloadTokenFilter(TokenStream input) {
     super(input);
-    offsetAtt = addAttribute(OffsetAttribute.class);
-    payAtt = addAttribute(PayloadAttribute.class);
   }
 
   @Override

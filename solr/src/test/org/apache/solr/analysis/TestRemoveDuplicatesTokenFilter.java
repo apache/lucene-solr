@@ -51,7 +51,7 @@ public class TestRemoveDuplicatesTokenFilter extends BaseTokenTestCase {
             if (toks.hasNext()) {
               clearAttributes();
               Token tok = toks.next();
-              termAtt.setEmpty().append(tok.term());
+              termAtt.setEmpty().append(tok);
               offsetAtt.setOffset(tok.startOffset(), tok.endOffset());
               posIncAtt.setPositionIncrement(tok.getPositionIncrement());
               return true;

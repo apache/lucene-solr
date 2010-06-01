@@ -21,7 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * Normalizes Turkish token text to lower case.
@@ -37,7 +37,7 @@ public final class TurkishLowerCaseFilter extends TokenFilter {
   private static final int LATIN_SMALL_LETTER_I = '\u0069';
   private static final int LATIN_SMALL_LETTER_DOTLESS_I = '\u0131';
   private static final int COMBINING_DOT_ABOVE = '\u0307';
-  private final TermAttribute termAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   
   /**
    * Create a new TurkishLowerCaseFilter, that normalizes Turkish token text 
@@ -47,7 +47,6 @@ public final class TurkishLowerCaseFilter extends TokenFilter {
    */
   public TurkishLowerCaseFilter(TokenStream in) {
     super(in);
-    termAtt = addAttribute(TermAttribute.class);
   }
   
   @Override
@@ -55,8 +54,8 @@ public final class TurkishLowerCaseFilter extends TokenFilter {
     boolean iOrAfter = false;
     
     if (input.incrementToken()) {
-      final char[] buffer = termAtt.termBuffer();
-      int length = termAtt.termLength();
+      final char[] buffer = termAtt.buffer();
+      int length = termAtt.length();
       for (int i = 0; i < length;) {
         final int ch = Character.codePointAt(buffer, i);
     
@@ -88,7 +87,7 @@ public final class TurkishLowerCaseFilter extends TokenFilter {
         i += Character.toChars(Character.toLowerCase(ch), buffer, i);
       }
       
-      termAtt.setTermLength(length);
+      termAtt.setLength(length);
       return true;
     } else
       return false;

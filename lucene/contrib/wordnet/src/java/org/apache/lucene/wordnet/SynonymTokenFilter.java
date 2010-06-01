@@ -21,8 +21,8 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
 
@@ -45,9 +45,9 @@ public class SynonymTokenFilter extends TokenFilter {
   private AttributeSource.State current = null;
   private int todo = 0;
   
-  private TermAttribute termAtt;
-  private TypeAttribute typeAtt;
-  private PositionIncrementAttribute posIncrAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   
   /**
    * Creates an instance for the given underlying stream and synonym table.
@@ -71,10 +71,6 @@ public class SynonymTokenFilter extends TokenFilter {
     
     this.synonyms = synonyms;
     this.maxSynonyms = maxSynonyms;
-    
-    this.termAtt = addAttribute(TermAttribute.class);
-    this.typeAtt = addAttribute(TypeAttribute.class);
-    this.posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   }
   
   /** Returns the next token in the stream, or null at EOS. */
@@ -89,7 +85,7 @@ public class SynonymTokenFilter extends TokenFilter {
     
     if (!input.incrementToken()) return false; // EOS; iterator exhausted 
     
-    stack = synonyms.getSynonyms(termAtt.term()); // push onto stack
+    stack = synonyms.getSynonyms(termAtt.toString()); // push onto stack
     if (stack.length > maxSynonyms) randomize(stack);
     index = 0;
     current = captureState();
@@ -110,7 +106,7 @@ public class SynonymTokenFilter extends TokenFilter {
    */
   protected boolean createToken(String synonym, AttributeSource.State current) {
     restoreState(current);
-    termAtt.setTermBuffer(synonym);
+    termAtt.setEmpty().append(synonym);
     typeAtt.setType(SYNONYM_TOKEN_TYPE);
     posIncrAtt.setPositionIncrement(0);
     return true;

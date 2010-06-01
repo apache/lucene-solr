@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * A {@link TokenStream} containing a single token.
@@ -41,7 +41,7 @@ public final class SingleTokenTokenStream extends TokenStream {
     assert token != null;
     this.singleToken = (Token) token.clone();
     
-    tokenAtt = (AttributeImpl) addAttribute(TermAttribute.class);
+    tokenAtt = (AttributeImpl) addAttribute(CharTermAttribute.class);
     assert (tokenAtt instanceof Token);
   }
 

@@ -307,7 +307,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     List<AttributeSource.State> list = new ArrayList<AttributeSource.State>();
     int positionCount = 0;
     boolean severalTokensAtSamePosition = false;
-    TermAttribute termAtt = source.addAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = source.addAttribute(CharTermAttribute.class);
     PositionIncrementAttribute posincrAtt = source.addAttribute(PositionIncrementAttribute.class);
 
     try {
@@ -328,7 +328,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
       return null;
     else if (list.size() == 1) {
       source.restoreState(list.get(0));
-      return new TermQuery(new Term(field, termAtt.term()));
+      return new TermQuery(new Term(field, termAtt.toString()));
     } else {
       if (severalTokensAtSamePosition) {
         if (positionCount == 1) {
@@ -337,7 +337,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
           for (int i = 0; i < list.size(); i++) {
             source.restoreState(list.get(i));
             TermQuery currentQuery = new TermQuery(
-                new Term(field, termAtt.term()));
+                new Term(field, termAtt.toString()));
             q.add(currentQuery, BooleanClause.Occur.SHOULD);
           }
           return q;
@@ -352,7 +352,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
               mpq.add(multiTerms.toArray(new Term[0]));
               multiTerms.clear();
             }
-            multiTerms.add(new Term(field, termAtt.term()));
+            multiTerms.add(new Term(field, termAtt.toString()));
           }
           mpq.add(multiTerms.toArray(new Term[0]));
           return mpq;
@@ -363,7 +363,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
         q.setSlop(phraseSlop);
         for (int i = 0; i < list.size(); i++) {
           source.restoreState(list.get(i));
-          q.add(new Term(field, termAtt.term()));
+          q.add(new Term(field, termAtt.toString()));
         }
         return q;
       }

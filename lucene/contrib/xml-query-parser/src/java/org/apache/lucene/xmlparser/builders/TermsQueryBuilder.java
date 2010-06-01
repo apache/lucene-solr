@@ -5,7 +5,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -57,16 +57,16 @@ public class TermsQueryBuilder implements QueryBuilder {
 		TokenStream ts = analyzer.tokenStream(fieldName, new StringReader(text));
 		try
 		{
-		  TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
+		  CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
 			Term term = null;
 			while (ts.incrementToken()) {
 				if (term == null)
 				{
-					term = new Term(fieldName, termAtt.term());
+					term = new Term(fieldName, termAtt.toString());
 				} else
 				{
 //					 create from previous to save fieldName.intern overhead
-					term = term.createTerm(termAtt.term()); 
+					term = term.createTerm(termAtt.toString()); 
 				}
 				bq.add(new BooleanClause(new TermQuery(term),BooleanClause.Occur.SHOULD));
 			}

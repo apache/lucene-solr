@@ -6,7 +6,7 @@ import java.util.ArrayList;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -56,10 +56,10 @@ public class SpanOrTermsBuilder extends SpanBuilderBase
 		{
 			ArrayList<SpanQuery> clausesList=new ArrayList<SpanQuery>();
 			TokenStream ts=analyzer.tokenStream(fieldName,new StringReader(value));
-			TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
+			CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
 			
 	    while (ts.incrementToken()) {
-			    SpanTermQuery stq=new SpanTermQuery(new Term(fieldName, termAtt.term()));
+			    SpanTermQuery stq=new SpanTermQuery(new Term(fieldName, termAtt.toString()));
 			    clausesList.add(stq);
 			}
 			SpanOrQuery soq=new SpanOrQuery(clausesList.toArray(new SpanQuery[clausesList.size()]));

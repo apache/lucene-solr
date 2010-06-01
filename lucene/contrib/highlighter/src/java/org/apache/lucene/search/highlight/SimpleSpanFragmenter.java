@@ -20,9 +20,9 @@ package org.apache.lucene.search.highlight;
 import java.util.List;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.search.spans.Spans;
 
 
@@ -38,7 +38,7 @@ public class SimpleSpanFragmenter implements Fragmenter {
   private QueryScorer queryScorer;
   private int waitForPos = -1;
   private int textSize;
-  private TermAttribute termAtt;
+  private CharTermAttribute termAtt;
   private PositionIncrementAttribute posIncAtt;
   private OffsetAttribute offsetAtt;
 
@@ -70,7 +70,7 @@ public class SimpleSpanFragmenter implements Fragmenter {
       return false;
     }
 
-    WeightedSpanTerm wSpanTerm = queryScorer.getWeightedSpanTerm(termAtt.term());
+    WeightedSpanTerm wSpanTerm = queryScorer.getWeightedSpanTerm(termAtt.toString());
 
     if (wSpanTerm != null) {
       List<PositionSpan> positionSpans = wSpanTerm.getPositionSpans();
@@ -101,7 +101,7 @@ public class SimpleSpanFragmenter implements Fragmenter {
     position = -1;
     currentNumFrags = 1;
     textSize = originalText.length();
-    termAtt = tokenStream.addAttribute(TermAttribute.class);
+    termAtt = tokenStream.addAttribute(CharTermAttribute.class);
     posIncAtt = tokenStream.addAttribute(PositionIncrementAttribute.class);
     offsetAtt = tokenStream.addAttribute(OffsetAttribute.class);
   }

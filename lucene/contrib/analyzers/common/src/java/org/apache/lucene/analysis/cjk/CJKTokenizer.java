@@ -22,7 +22,7 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
 
@@ -98,9 +98,9 @@ public final class CJKTokenizer extends Tokenizer {
      */
     private boolean preIsTokened = false;
 
-    private TermAttribute termAtt;
-    private OffsetAttribute offsetAtt;
-    private TypeAttribute typeAtt;
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+    private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
     
     //~ Constructors -----------------------------------------------------------
 
@@ -111,23 +111,14 @@ public final class CJKTokenizer extends Tokenizer {
      */
     public CJKTokenizer(Reader in) {
       super(in);
-      init();
     }
 
     public CJKTokenizer(AttributeSource source, Reader in) {
       super(source, in);
-      init();
     }
 
     public CJKTokenizer(AttributeFactory factory, Reader in) {
       super(factory, in);
-      init();
-    }
-    
-    private void init() {
-      termAtt = addAttribute(TermAttribute.class);
-      offsetAtt = addAttribute(OffsetAttribute.class);
-      typeAtt = addAttribute(TypeAttribute.class);
     }
     
     //~ Methods ----------------------------------------------------------------
@@ -287,7 +278,7 @@ public final class CJKTokenizer extends Tokenizer {
         }
       
         if (length > 0) {
-          termAtt.setTermBuffer(buffer, 0, length);
+          termAtt.copyBuffer(buffer, 0, length);
           offsetAtt.setOffset(correctOffset(start), correctOffset(start+length));
           typeAtt.setType(TOKEN_TYPE_NAMES[tokenType]);
           return true;

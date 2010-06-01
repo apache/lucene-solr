@@ -29,8 +29,8 @@ import java.util.Comparator;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermFreqVector;
@@ -153,13 +153,13 @@ public class TokenSources {
 
       int currentToken = 0;
 
-      TermAttribute termAtt;
+      CharTermAttribute termAtt;
 
       OffsetAttribute offsetAtt;
 
       StoredTokenStream(Token tokens[]) {
         this.tokens = tokens;
-        termAtt = addAttribute(TermAttribute.class);
+        termAtt = addAttribute(CharTermAttribute.class);
         offsetAtt = addAttribute(OffsetAttribute.class);
       }
 
@@ -170,7 +170,7 @@ public class TokenSources {
         }
         Token token = tokens[currentToken++];
         clearAttributes();
-        termAtt.setTermBuffer(token.term());
+        termAtt.setEmpty().append(token);
         offsetAtt.setOffset(token.startOffset(), token.endOffset());
         return true;
       }
@@ -204,9 +204,8 @@ public class TokenSources {
           unsortedTokens = new ArrayList<Token>();
         }
         for (int tp = 0; tp < offsets.length; tp++) {
-          Token token = new Token(offsets[tp].getStartOffset(), offsets[tp]
+          Token token = new Token(terms[t], offsets[tp].getStartOffset(), offsets[tp]
               .getEndOffset());
-          token.setTermBuffer(terms[t]);
           unsortedTokens.add(token);
         }
       } else {

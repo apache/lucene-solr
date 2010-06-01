@@ -24,8 +24,8 @@ import java.util.List;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.cn.smart.hhmm.SegToken;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 /**
@@ -40,9 +40,9 @@ public final class WordTokenFilter extends TokenFilter {
 
   private List<SegToken> tokenBuffer;
   
-  private TermAttribute termAtt;
-  private OffsetAttribute offsetAtt;
-  private TypeAttribute typeAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+  private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
 
   /**
    * Construct a new WordTokenizer.
@@ -52,9 +52,6 @@ public final class WordTokenFilter extends TokenFilter {
   public WordTokenFilter(TokenStream in) {
     super(in);
     this.wordSegmenter = new WordSegmenter();
-    termAtt = addAttribute(TermAttribute.class);
-    offsetAtt = addAttribute(OffsetAttribute.class);
-    typeAtt = addAttribute(TypeAttribute.class);
   }
   
   @Override
@@ -63,7 +60,7 @@ public final class WordTokenFilter extends TokenFilter {
       // there are no remaining tokens from the current sentence... are there more sentences?
       if (input.incrementToken()) {
         // a new sentence is available: process it.
-        tokenBuffer = wordSegmenter.segmentSentence(termAtt.term(), offsetAtt.startOffset());
+        tokenBuffer = wordSegmenter.segmentSentence(termAtt.toString(), offsetAtt.startOffset());
         tokenIter = tokenBuffer.iterator();
         /* 
          * it should not be possible to have a sentence with 0 words, check just in case.
@@ -79,7 +76,7 @@ public final class WordTokenFilter extends TokenFilter {
     clearAttributes();
     // There are remaining tokens from the current sentence, return the next one. 
     SegToken nextWord = tokenIter.next();
-    termAtt.setTermBuffer(nextWord.charArray, 0, nextWord.charArray.length);
+    termAtt.copyBuffer(nextWord.charArray, 0, nextWord.charArray.length);
     offsetAtt.setOffset(nextWord.startOffset, nextWord.endOffset);
     typeAtt.setType("word");
     return true;

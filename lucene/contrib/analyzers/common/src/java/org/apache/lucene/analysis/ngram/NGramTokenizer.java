@@ -18,8 +18,8 @@ package org.apache.lucene.analysis.ngram;
  */
 
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.AttributeSource;
 
 import java.io.IOException;
@@ -39,8 +39,8 @@ public final class NGramTokenizer extends Tokenizer {
   private String inStr;
   private boolean started = false;
   
-  private TermAttribute termAtt;
-  private OffsetAttribute offsetAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
   /**
    * Creates NGramTokenizer with given min and max n-grams.
@@ -94,9 +94,6 @@ public final class NGramTokenizer extends Tokenizer {
     }
     this.minGram = minGram;
     this.maxGram = maxGram;
-    
-    this.termAtt = addAttribute(TermAttribute.class);
-    this.offsetAtt = addAttribute(OffsetAttribute.class);    
   }
 
   /** Returns the next token in the stream, or null at EOS. */
@@ -123,7 +120,7 @@ public final class NGramTokenizer extends Tokenizer {
 
     int oldPos = pos;
     pos++;
-    termAtt.setTermBuffer(inStr, oldPos, gramSize);
+    termAtt.setEmpty().append(inStr, oldPos, oldPos+gramSize);
     offsetAtt.setOffset(correctOffset(oldPos), correctOffset(oldPos+gramSize));
     return true;
   }

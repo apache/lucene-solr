@@ -25,9 +25,9 @@ import java.util.List;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermVectorOffsetInfo;
 
@@ -37,7 +37,7 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
 
   private Iterator<Token> tokensAtCurrentPosition;
 
-  private TermAttribute termAttribute;
+  private CharTermAttribute termAttribute;
 
   private PositionIncrementAttribute positionIncrementAttribute;
 
@@ -51,7 +51,7 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
    */
   public TokenStreamFromTermPositionVector(
       final TermPositionVector termPositionVector) {
-    termAttribute = addAttribute(TermAttribute.class);
+    termAttribute = addAttribute(CharTermAttribute.class);
     positionIncrementAttribute = addAttribute(PositionIncrementAttribute.class);
     offsetAttribute = addAttribute(OffsetAttribute.class);
     final String[] terms = termPositionVector.getTerms();
@@ -65,7 +65,7 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
               offsets[j].getStartOffset(), offsets[j].getEndOffset());
         } else {
           token = new Token();
-          token.setTermBuffer(terms[i]);
+          token.setEmpty().append(terms[i]);
         }
         // Yes - this is the position, not the increment! This is for
         // sorting. This value
@@ -100,7 +100,7 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
     if (this.tokensAtCurrentPosition.hasNext()) {
       final Token next = this.tokensAtCurrentPosition.next();
       clearAttributes();
-      termAttribute.setTermBuffer(next.term());
+      termAttribute.setEmpty().append(next);
       positionIncrementAttribute.setPositionIncrement(next
           .getPositionIncrement());
       offsetAttribute.setOffset(next.startOffset(), next.endOffset());

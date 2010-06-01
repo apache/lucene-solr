@@ -35,16 +35,14 @@ public class NumericPayloadTokenFilter extends TokenFilter {
   private String typeMatch;
   private Payload thePayload;
 
-  private PayloadAttribute payloadAtt;
-  private TypeAttribute typeAtt;
+  private final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
+  private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
 
   public NumericPayloadTokenFilter(TokenStream input, float payload, String typeMatch) {
     super(input);
     //Need to encode the payload
     thePayload = new Payload(PayloadHelper.encodeFloat(payload));
     this.typeMatch = typeMatch;
-    payloadAtt = addAttribute(PayloadAttribute.class);
-    typeAtt = addAttribute(TypeAttribute.class);
   }
 
   @Override

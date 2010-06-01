@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.reverse;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.util.Version;
 
 import java.io.IOException;
@@ -42,7 +42,7 @@ import java.io.IOException;
  */
 public final class ReverseStringFilter extends TokenFilter {
 
-  private TermAttribute termAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final char marker;
   private final Version matchVersion;
   private static final char NOMARKER = '\uFFFF';
@@ -131,20 +131,19 @@ public final class ReverseStringFilter extends TokenFilter {
     super(in);
     this.matchVersion = matchVersion;
     this.marker = marker;
-    termAtt = addAttribute(TermAttribute.class);
   }
 
   @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      int len = termAtt.termLength();
+      int len = termAtt.length();
       if (marker != NOMARKER) {
         len++;
-        termAtt.resizeTermBuffer(len);
-        termAtt.termBuffer()[len - 1] = marker;
+        termAtt.resizeBuffer(len);
+        termAtt.buffer()[len - 1] = marker;
       }
-      reverse( matchVersion, termAtt.termBuffer(), 0, len );
-      termAtt.setTermLength(len);
+      reverse( matchVersion, termAtt.buffer(), 0, len );
+      termAtt.setLength(len);
       return true;
     } else {
       return false;

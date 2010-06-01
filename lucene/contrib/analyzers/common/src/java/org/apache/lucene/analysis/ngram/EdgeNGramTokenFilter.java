@@ -20,7 +20,7 @@ package org.apache.lucene.analysis.ngram;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 import java.io.IOException;
 
@@ -72,8 +72,8 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
   private int curGramSize;
   private int tokStart;
   
-  private final TermAttribute termAtt;
-  private final OffsetAttribute offsetAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
   /**
    * Creates EdgeNGramTokenFilter that can generate n-grams in the sizes of the given range
@@ -101,8 +101,6 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
     this.minGram = minGram;
     this.maxGram = maxGram;
     this.side = side;
-    this.termAtt = addAttribute(TermAttribute.class);
-    this.offsetAtt = addAttribute(OffsetAttribute.class);
   }
 
   /**
@@ -124,8 +122,8 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
         if (!input.incrementToken()) {
           return false;
         } else {
-          curTermBuffer = termAtt.termBuffer().clone();
-          curTermLength = termAtt.termLength();
+          curTermBuffer = termAtt.buffer().clone();
+          curTermLength = termAtt.length();
           curGramSize = minGram;
           tokStart = offsetAtt.startOffset();
         }
@@ -138,7 +136,7 @@ public final class EdgeNGramTokenFilter extends TokenFilter {
           int end = start + curGramSize;
           clearAttributes();
           offsetAtt.setOffset(tokStart + start, tokStart + end);
-          termAtt.setTermBuffer(curTermBuffer, start, curGramSize);
+          termAtt.copyBuffer(curTermBuffer, start, curGramSize);
           curGramSize++;
           return true;
         }

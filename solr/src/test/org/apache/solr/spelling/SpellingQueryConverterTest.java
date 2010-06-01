@@ -88,7 +88,7 @@ public class SpellingQueryConverterTest {
     for (Token token : tokens) {
       int start = token.startOffset();
       int end = token.endOffset();
-      if (!s.substring(start, end).equals(token.term()))  return false;
+      if (!s.substring(start, end).equals(token.toString()))  return false;
     }
     return true;
   }

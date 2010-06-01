@@ -136,7 +136,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     reader = determineReader(reader);
     Term term = field != null ? new Term(field, "") : null;
     for (Token token : tokens) {
-      String tokenText = new String(token.termBuffer(), 0, token.termLength());
+      String tokenText = new String(token.buffer(), 0, token.length());
       String[] suggestions = spellChecker.suggestSimilar(tokenText, (int) Math.max(count, AbstractLuceneSpellChecker.DEFAULT_SUGGESTION_COUNT),
             field != null ? reader : null, //workaround LUCENE-1295
             field,

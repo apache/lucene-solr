@@ -5,7 +5,7 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.TermsFilter;
@@ -57,7 +57,7 @@ public class TermsFilterBuilder implements FilterBuilder
 		String text = DOMUtils.getNonBlankTextOrFail(e);
 		String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
 		TokenStream ts = analyzer.tokenStream(fieldName, new StringReader(text));
-    TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
     
 		try
 		{
@@ -65,11 +65,11 @@ public class TermsFilterBuilder implements FilterBuilder
 	      while (ts.incrementToken()) {
 				if (term == null)
 				{
-					term = new Term(fieldName, termAtt.term());
+					term = new Term(fieldName, termAtt.toString());
 				} else
 				{
 //					 create from previous to save fieldName.intern overhead
-					term = term.createTerm(termAtt.term()); 
+					term = term.createTerm(termAtt.toString()); 
 				}
 				tf.addTerm(term);
 			}

@@ -31,11 +31,11 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.miscellaneous.EmptyTokenStream;
 import org.apache.lucene.analysis.payloads.PayloadHelper;
 import org.apache.lucene.analysis.shingle.ShingleMatrixFilter.Matrix.Column.Row;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.Payload;
 
@@ -193,14 +193,14 @@ public final class ShingleMatrixFilter extends TokenStream {
 
   private TokenStream input;
 
-  private TermAttribute termAtt;
+  private CharTermAttribute termAtt;
   private PositionIncrementAttribute posIncrAtt;
   private PayloadAttribute payloadAtt;
   private OffsetAttribute offsetAtt;
   private TypeAttribute typeAtt;
   private FlagsAttribute flagsAtt;
 
-  private TermAttribute in_termAtt;
+  private CharTermAttribute in_termAtt;
   private PositionIncrementAttribute in_posIncrAtt;
   private PayloadAttribute in_payloadAtt;
   private OffsetAttribute in_offsetAtt;
@@ -229,7 +229,7 @@ public final class ShingleMatrixFilter extends TokenStream {
     this.ignoringSinglePrefixOrSuffixShingle = ignoringSinglePrefixOrSuffixShingle;
     this.settingsCodec = settingsCodec;
 
-    termAtt = addAttribute(TermAttribute.class);
+    termAtt = addAttribute(CharTermAttribute.class);
     posIncrAtt = addAttribute(PositionIncrementAttribute.class);
     payloadAtt = addAttribute(PayloadAttribute.class);
     offsetAtt = addAttribute(OffsetAttribute.class);
@@ -239,7 +239,7 @@ public final class ShingleMatrixFilter extends TokenStream {
     // set the input to be an empty token stream, we already have the data.
     this.input = new EmptyTokenStream();
 
-    in_termAtt = input.addAttribute(TermAttribute.class);
+    in_termAtt = input.addAttribute(CharTermAttribute.class);
     in_posIncrAtt = input.addAttribute(PositionIncrementAttribute.class);
     in_payloadAtt = input.addAttribute(PayloadAttribute.class);
     in_offsetAtt = input.addAttribute(OffsetAttribute.class);
@@ -311,14 +311,14 @@ public final class ShingleMatrixFilter extends TokenStream {
     this.spacerCharacter = spacerCharacter;
     this.ignoringSinglePrefixOrSuffixShingle = ignoringSinglePrefixOrSuffixShingle;
     this.settingsCodec = settingsCodec;
-    termAtt = addAttribute(TermAttribute.class);
+    termAtt = addAttribute(CharTermAttribute.class);
     posIncrAtt = addAttribute(PositionIncrementAttribute.class);
     payloadAtt = addAttribute(PayloadAttribute.class);
     offsetAtt = addAttribute(OffsetAttribute.class);
     typeAtt = addAttribute(TypeAttribute.class);
     flagsAtt = addAttribute(FlagsAttribute.class);
 
-    in_termAtt = input.addAttribute(TermAttribute.class);
+    in_termAtt = input.addAttribute(CharTermAttribute.class);
     in_posIncrAtt = input.addAttribute(PositionIncrementAttribute.class);
     in_payloadAtt = input.addAttribute(PayloadAttribute.class);
     in_offsetAtt = input.addAttribute(OffsetAttribute.class);
@@ -377,7 +377,7 @@ public final class ShingleMatrixFilter extends TokenStream {
     if (token == null) return false;
 
     clearAttributes();
-    termAtt.setTermBuffer(token.termBuffer(), 0, token.termLength());
+    termAtt.copyBuffer(token.buffer(), 0, token.length());
     posIncrAtt.setPositionIncrement(token.getPositionIncrement());
     flagsAtt.setFlags(token.getFlags());
     offsetAtt.setOffset(token.startOffset(), token.endOffset());
@@ -388,7 +388,7 @@ public final class ShingleMatrixFilter extends TokenStream {
 
   private Token getNextInputToken(Token token) throws IOException {
     if (!input.incrementToken()) return null;
-    token.setTermBuffer(in_termAtt.termBuffer(), 0, in_termAtt.termLength());
+    token.copyBuffer(in_termAtt.buffer(), 0, in_termAtt.length());
     token.setPositionIncrement(in_posIncrAtt.getPositionIncrement());
     token.setFlags(in_flagsAtt.getFlags());
     token.setOffset(in_offsetAtt.startOffset(), in_offsetAtt.endOffset());
@@ -399,7 +399,7 @@ public final class ShingleMatrixFilter extends TokenStream {
 
   private Token getNextToken(Token token) throws IOException {
     if (!this.incrementToken()) return null;
-    token.setTermBuffer(termAtt.termBuffer(), 0, termAtt.termLength());
+    token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
     token.setPositionIncrement(posIncrAtt.getPositionIncrement());
     token.setFlags(flagsAtt.getFlags());
     token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
@@ -441,7 +441,7 @@ public final class ShingleMatrixFilter extends TokenStream {
 
         for (int i = 0; i < currentShingleLength; i++) {
           Token shingleToken = currentPermuationTokens.get(i + currentPermutationTokensStartOffset);
-          termLength += shingleToken.termLength();
+          termLength += shingleToken.length();
           shingle.add(shingleToken);
         }
         if (spacerCharacter != null) {
@@ -459,9 +459,9 @@ public final class ShingleMatrixFilter extends TokenStream {
           if (spacerCharacter != null && sb.length() > 0) {
             sb.append(spacerCharacter);
           }
-          sb.append(shingleToken.termBuffer(), 0, shingleToken.termLength());
+          sb.append(shingleToken.buffer(), 0, shingleToken.length());
         }
-        reusableToken.setTermBuffer(sb.toString());
+        reusableToken.setEmpty().append(sb);
         updateToken(reusableToken, shingle, currentPermutationTokensStartOffset, currentPermutationRows, currentPermuationTokens);
 
         return reusableToken;

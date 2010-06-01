@@ -103,8 +103,7 @@ public class SynonymMap {
     List<Token> ret = new ArrayList<Token>(strings.size());
     for (String str : strings) {
       //Token newTok = new Token(str,0,0,"SYNONYM");
-      Token newTok = new Token(0,0,"SYNONYM");
-      newTok.setTermBuffer(str.toCharArray(), 0, str.length());
+      Token newTok = new Token(str, 0,0,"SYNONYM");
       ret.add(newTok);
     }
     return ret;
@@ -137,7 +136,7 @@ public class SynonymMap {
     while(tok1!=null || tok2!=null) {
       while (tok1 != null && (pos1 <= pos2 || tok2==null)) {
         Token tok = new Token(tok1.startOffset(), tok1.endOffset(), tok1.type());
-        tok.setTermBuffer(tok1.termBuffer(), 0, tok1.termLength());
+        tok.copyBuffer(tok1.buffer(), 0, tok1.length());
         tok.setPositionIncrement(pos1-pos);
         result.add(tok);
         pos=pos1;
@@ -146,7 +145,7 @@ public class SynonymMap {
       }
       while (tok2 != null && (pos2 <= pos1 || tok1==null)) {
         Token tok = new Token(tok2.startOffset(), tok2.endOffset(), tok2.type());
-        tok.setTermBuffer(tok2.termBuffer(), 0, tok2.termLength());
+        tok.copyBuffer(tok2.buffer(), 0, tok2.length());
         tok.setPositionIncrement(pos2-pos);
         result.add(tok);
         pos=pos2;

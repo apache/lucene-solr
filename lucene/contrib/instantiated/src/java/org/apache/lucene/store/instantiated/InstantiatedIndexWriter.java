@@ -561,7 +561,7 @@ public class InstantiatedIndexWriter implements Closeable {
           // untokenized
           String fieldVal = field.stringValue();
           Token token = new Token(0, fieldVal.length(), "untokenized");
-          token.setTermBuffer(fieldVal);
+          token.setEmpty().append(fieldVal);
           tokens.add(token);
           fieldSetting.fieldLength++;
         }
@@ -596,10 +596,10 @@ public class InstantiatedIndexWriter implements Closeable {
 
       for (Token token : eField_Tokens.getValue()) {
 
-        TermDocumentInformationFactory termDocumentInformationFactory = termDocumentInformationFactoryByTermText.get(token.term());
+        TermDocumentInformationFactory termDocumentInformationFactory = termDocumentInformationFactoryByTermText.get(token.toString());
         if (termDocumentInformationFactory == null) {
           termDocumentInformationFactory = new TermDocumentInformationFactory();
-          termDocumentInformationFactoryByTermText.put(token.term(), termDocumentInformationFactory);
+          termDocumentInformationFactoryByTermText.put(token.toString(), termDocumentInformationFactory);
         }
         //termDocumentInformationFactory.termFrequency++;
 

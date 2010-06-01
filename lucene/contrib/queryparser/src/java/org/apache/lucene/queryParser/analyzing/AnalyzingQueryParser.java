@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.Version;
@@ -107,7 +107,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
 
     // get Analyzer from superclass and tokenize the term
     TokenStream source = getAnalyzer().tokenStream(field, new StringReader(termStr));
-    TermAttribute termAtt = source.addAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = source.addAttribute(CharTermAttribute.class);
     
     int countTokens = 0;
     while (true) {
@@ -116,7 +116,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
       } catch (IOException e) {
         break;
       }
-      String term = termAtt.term();
+      String term = termAtt.toString();
       if (!"".equals(term)) {
         try {
           tlist.set(countTokens++, term);
@@ -190,7 +190,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
     // get Analyzer from superclass and tokenize the term
     TokenStream source = getAnalyzer().tokenStream(field, new StringReader(termStr));
     List<String> tlist = new ArrayList<String>();
-    TermAttribute termAtt = source.addAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = source.addAttribute(CharTermAttribute.class);
     
     while (true) {
       try {
@@ -198,7 +198,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
       } catch (IOException e) {
         break;
       }
-      tlist.add(termAtt.term());
+      tlist.add(termAtt.toString());
     }
 
     try {
@@ -237,13 +237,13 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
       throws ParseException {
     // get Analyzer from superclass and tokenize the term
     TokenStream source = getAnalyzer().tokenStream(field, new StringReader(termStr));
-    TermAttribute termAtt = source.addAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = source.addAttribute(CharTermAttribute.class);
     String nextToken = null;
     boolean multipleTokens = false;
     
     try {
       if (source.incrementToken()) {
-        nextToken = termAtt.term();
+        nextToken = termAtt.toString();
       }
       multipleTokens = source.incrementToken();
     } catch (IOException e) {
@@ -273,13 +273,13 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
       throws ParseException {
     // get Analyzer from superclass and tokenize the terms
     TokenStream source = getAnalyzer().tokenStream(field, new StringReader(part1));
-    TermAttribute termAtt = source.addAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = source.addAttribute(CharTermAttribute.class);
     boolean multipleTokens = false;
 
     // part1
     try {
       if (source.incrementToken()) {
-        part1 = termAtt.term();
+        part1 = termAtt.toString();
       }
       multipleTokens = source.incrementToken();
     } catch (IOException e) {
@@ -297,11 +297,11 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
 
     // part2
     source = getAnalyzer().tokenStream(field, new StringReader(part2));
-    termAtt = source.addAttribute(TermAttribute.class);
+    termAtt = source.addAttribute(CharTermAttribute.class);
     
     try {
       if (source.incrementToken()) {
-        part2 = termAtt.term();
+        part2 = termAtt.toString();
       }
       multipleTokens = source.incrementToken();
     } catch (IOException e) {

@@ -25,8 +25,8 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.search.Query;
@@ -46,7 +46,7 @@ public class QueryScorer implements Scorer {
   private float maxTermWeight;
   private int position = -1;
   private String defaultField;
-  private TermAttribute termAtt;
+  private CharTermAttribute termAtt;
   private PositionIncrementAttribute posIncAtt;
   private boolean expandMultiTermQuery = true;
   private Query query;
@@ -145,7 +145,7 @@ public class QueryScorer implements Scorer {
    */
   public float getTokenScore() {
     position += posIncAtt.getPositionIncrement();
-    String termText = termAtt.term();
+    String termText = termAtt.toString();
 
     WeightedSpanTerm weightedSpanTerm;
 
@@ -175,7 +175,7 @@ public class QueryScorer implements Scorer {
    */
   public TokenStream init(TokenStream tokenStream) throws IOException {
     position = -1;
-    termAtt = tokenStream.addAttribute(TermAttribute.class);
+    termAtt = tokenStream.addAttribute(CharTermAttribute.class);
     posIncAtt = tokenStream.addAttribute(PositionIncrementAttribute.class);
     if(!skipInitExtractor) {
       if(fieldWeightedSpanTerms != null) {

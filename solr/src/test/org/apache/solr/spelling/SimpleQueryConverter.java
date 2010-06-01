@@ -54,7 +54,7 @@ class SimpleQueryConverter extends SpellingQueryConverter{
       ts.reset();
       while (ts.incrementToken()){
         Token tok = new Token();
-        tok.setTermBuffer(termAtt.buffer(), 0, termAtt.length());
+        tok.copyBuffer(termAtt.buffer(), 0, termAtt.length());
         tok.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
         tok.setFlags(flagsAtt.getFlags());
         tok.setPayload(payloadAtt.getPayload());

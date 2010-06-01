@@ -10,7 +10,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.search.similar.MoreLikeThisQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.xmlparser.DOMUtils;
@@ -77,11 +77,11 @@ public class LikeThisQueryBuilder implements QueryBuilder {
 		    for (int i = 0; i < fields.length; i++)
             {
                 TokenStream ts = analyzer.tokenStream(fields[i],new StringReader(stopWords));
-                TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
+                CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
                 try
                 {
 	                while(ts.incrementToken()) {
-	                    stopWordsSet.add(termAtt.term());
+	                    stopWordsSet.add(termAtt.toString());
 	                }
                 }
                 catch(IOException ioe)

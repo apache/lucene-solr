@@ -17,7 +17,7 @@ package org.apache.lucene.analysis.wikipedia;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 %%
 
@@ -81,8 +81,8 @@ public final int getPositionIncrement(){
 /**
  * Fills Lucene token with the current token text.
  */
-final void getText(TermAttribute t) {
-  t.setTermBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
+final void getText(CharTermAttribute t) {
+  t.copyBuffer(zzBuffer, zzStartRead, zzMarkedPos-zzStartRead);
 }
 
 final int setText(StringBuilder buffer){

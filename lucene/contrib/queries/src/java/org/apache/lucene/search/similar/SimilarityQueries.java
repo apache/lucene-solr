@@ -22,7 +22,7 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -86,12 +86,12 @@ public final class SimilarityQueries
 										  throws IOException
 	{	
 		TokenStream ts = a.tokenStream( field, new StringReader( body));
-		TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
+		CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
 		
 		BooleanQuery tmp = new BooleanQuery();
 		Set<String> already = new HashSet<String>(); // ignore dups
 		while (ts.incrementToken()) {
-		  String word = termAtt.term();
+		  String word = termAtt.toString();
 			// ignore opt stop words
 			if ( stop != null &&
 				 stop.contains( word)) continue;

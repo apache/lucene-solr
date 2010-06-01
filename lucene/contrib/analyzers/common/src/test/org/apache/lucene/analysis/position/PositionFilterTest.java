@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.shingle.ShingleFilter;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 public class PositionFilterTest extends BaseTokenStreamTestCase {
 
@@ -30,19 +30,18 @@ public class PositionFilterTest extends BaseTokenStreamTestCase {
 
     protected int index = 0;
     protected String[] testToken;
-    protected TermAttribute termAtt;
+    protected final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
 
     public TestTokenStream(String[] testToken) {
       super();
       this.testToken = testToken;
-      termAtt = addAttribute(TermAttribute.class);
     }
 
     @Override
     public final boolean incrementToken() throws IOException {
       clearAttributes();
       if (index < testToken.length) {
-        termAtt.setTermBuffer(testToken[index++]);
+        termAtt.setEmpty().append(testToken[index++]);
         return true;
       } else {
         return false;
