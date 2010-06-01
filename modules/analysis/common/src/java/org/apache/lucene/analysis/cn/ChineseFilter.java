@@ -23,7 +23,7 @@ import java.util.Arrays;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
 
@@ -61,21 +61,20 @@ public final class ChineseFilter extends TokenFilter {
 
     private CharArraySet stopTable;
 
-    private TermAttribute termAtt;
+    private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     
     public ChineseFilter(TokenStream in) {
         super(in);
 
         stopTable = new CharArraySet(Version.LUCENE_CURRENT, Arrays.asList(STOP_WORDS), false);
-        termAtt = addAttribute(TermAttribute.class);
     }
 
     @Override
     public boolean incrementToken() throws IOException {
 
         while (input.incrementToken()) {
-            char text[] = termAtt.termBuffer();
-            int termLength = termAtt.termLength();
+            char text[] = termAtt.buffer();
+            int termLength = termAtt.length();
 
           // why not key off token type here assuming ChineseTokenizer comes first?
             if (!stopTable.contains(text, 0, termLength)) {

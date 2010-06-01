@@ -22,7 +22,7 @@ import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter; // for java
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.ru.RussianStemmer;//javadoc @link
 import org.apache.lucene.analysis.snowball.SnowballFilter; // javadoc @link
 
@@ -51,17 +51,14 @@ public final class RussianStemFilter extends TokenFilter
     /**
      * The actual token in the input stream.
      */
-    private RussianStemmer stemmer = null;
+    private RussianStemmer stemmer = new RussianStemmer();
 
-    private final TermAttribute termAtt;
-    private final KeywordAttribute keywordAttr;
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
 
     public RussianStemFilter(TokenStream in)
     {
         super(in);
-        stemmer = new RussianStemmer();
-        termAtt = addAttribute(TermAttribute.class);
-        keywordAttr = addAttribute(KeywordAttribute.class);
     }
     /**
      * Returns the next token in the stream, or null at EOS
@@ -71,10 +68,10 @@ public final class RussianStemFilter extends TokenFilter
     {
       if (input.incrementToken()) {
         if(!keywordAttr.isKeyword()) {
-          final String term = termAtt.term();
+          final String term = termAtt.toString();
           final String s = stemmer.stem(term);
           if (s != null && !s.equals(term))
-            termAtt.setTermBuffer(s);
+            termAtt.setEmpty().append(s);
         }
         return true;
       } else {

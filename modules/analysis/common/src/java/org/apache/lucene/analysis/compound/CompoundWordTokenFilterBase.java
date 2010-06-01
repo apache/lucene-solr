@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
@@ -69,12 +69,12 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
   protected final int maxSubwordSize;
   protected final boolean onlyLongestMatch;
   
-  private TermAttribute termAtt;
-  private OffsetAttribute offsetAtt;
-  private FlagsAttribute flagsAtt;
-  private PositionIncrementAttribute posIncAtt;
-  private TypeAttribute typeAtt;
-  private PayloadAttribute payloadAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+  private final FlagsAttribute flagsAtt = addAttribute(FlagsAttribute.class);
+  private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+  private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
+  private final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
   
   private final Token wrapper = new Token();
   /**
@@ -160,13 +160,6 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
       this.dictionary = new CharArraySet(matchVersion, dictionary.size(), false);
       addAllLowerCase(this.dictionary, dictionary);
     }
-    
-    termAtt = addAttribute(TermAttribute.class);
-    offsetAtt = addAttribute(OffsetAttribute.class);
-    flagsAtt = addAttribute(FlagsAttribute.class);
-    posIncAtt = addAttribute(PositionIncrementAttribute.class);
-    typeAtt = addAttribute(TypeAttribute.class);
-    payloadAtt = addAttribute(PayloadAttribute.class);
   }
 
   /**
@@ -192,7 +185,7 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
   
   private final void setToken(final Token token) throws IOException {
     clearAttributes();
-    termAtt.setTermBuffer(token.termBuffer(), 0, token.termLength());
+    termAtt.copyBuffer(token.buffer(), 0, token.length());
     flagsAtt.setFlags(token.getFlags());
     typeAtt.setType(token.type());
     offsetAtt.setOffset(token.startOffset(), token.endOffset());
@@ -210,7 +203,7 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     if (!input.incrementToken())
       return false;
     
-    wrapper.setTermBuffer(termAtt.termBuffer(), 0, termAtt.termLength());
+    wrapper.copyBuffer(termAtt.buffer(), 0, termAtt.length());
     wrapper.setStartOffset(offsetAtt.startOffset());
     wrapper.setEndOffset(offsetAtt.endOffset());
     wrapper.setFlags(flagsAtt.getFlags());
@@ -248,7 +241,7 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
   protected final Token createToken(final int offset, final int length,
       final Token prototype) {
     int newStart = prototype.startOffset() + offset;
-    Token t = prototype.clone(prototype.termBuffer(), offset, length, newStart, newStart+length);
+    Token t = prototype.clone(prototype.buffer(), offset, length, newStart, newStart+length);
     t.setPositionIncrement(0);
     return t;
   }
@@ -258,7 +251,7 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     tokens.add((Token) token.clone());
 
     // Only words longer than minWordSize get processed
-    if (token.termLength() < this.minWordSize) {
+    if (token.length() < this.minWordSize) {
       return;
     }
     

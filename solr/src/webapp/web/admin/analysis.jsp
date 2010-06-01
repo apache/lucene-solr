@@ -223,7 +223,7 @@
            public boolean incrementToken() throws IOException {
              if (iter.hasNext()) {
                Token token = iter.next();
-               termAtt.copyBuffer(token.termBuffer(), 0, token.termLength());
+               termAtt.copyBuffer(token.buffer(), 0, token.length());
                offsetAtt.setOffset(token.startOffset(), token.endOffset());
                typeAtt.setType(token.type());
                flagsAtt.setFlags(token.getFlags());
@@ -267,7 +267,7 @@
         break;
       else {
       	Token token = new Token();
-      	token.setTermBuffer(termAtt.buffer(), 0, termAtt.length());
+      	token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
       	token.setType(typeAtt.type());
       	token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
       	token.setPayload(payloadAtt.getPayload());
@@ -289,13 +289,13 @@
     }
 
     public boolean equals(Object o) {
-      return ((Tok)o).token.term().equals(token.term());
+      return ((Tok)o).token.toString().equals(token.toString());
     }
     public int hashCode() {
-      return token.term().hashCode();
+      return token.toString().hashCode();
     }
     public String toString() {
-      return token.term();
+      return token.toString();
     }
   }
 
@@ -377,7 +377,7 @@
     boolean needRaw=false;
     int pos=0;
     for (Token t : tokens) {
-      if (!t.term().equals(ft.indexedToReadable(t.term()))) {
+      if (!t.toString().equals(ft.indexedToReadable(t.toString()))) {
         needRaw=true;
       }
 
@@ -426,7 +426,7 @@
 
     printRow(out,"term text", arr, new ToStr() {
       public String toStr(Object o) {
-        return ft.indexedToReadable( ((Tok)o).token.term() );
+        return ft.indexedToReadable( ((Tok)o).token.toString() );
       }
     }
             ,true
@@ -438,7 +438,7 @@
       printRow(out,"raw text", arr, new ToStr() {
         public String toStr(Object o) {
           // page is UTF-8, so anything goes.
-          return ((Tok)o).token.term();
+          return ((Tok)o).token.toString();
         }
       }
               ,true

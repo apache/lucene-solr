@@ -30,9 +30,10 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.IndexReader;
@@ -51,6 +52,7 @@ import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.RAMDirectory; // for javadocs
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Constants; // for javadocs
 
 /**
@@ -276,8 +278,8 @@ public class MemoryIndex implements Serializable {
     return new TokenStream() {
       private Iterator<T> iter = keywords.iterator();
       private int start = 0;
-      private TermAttribute termAtt = addAttribute(TermAttribute.class);
-      private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+      private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+      private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
       
       @Override
       public boolean incrementToken() {
@@ -289,8 +291,8 @@ public class MemoryIndex implements Serializable {
         
         String term = obj.toString();
         clearAttributes();
-        termAtt.setTermBuffer(term);
-        offsetAtt.setOffset(start, start+termAtt.termLength());
+        termAtt.setEmpty().append(term);
+        offsetAtt.setOffset(start, start+termAtt.length());
         start += term.length() + 1; // separate words by 1 (blank) character
         return true;
       }
@@ -340,13 +342,15 @@ public class MemoryIndex implements Serializable {
       int numOverlapTokens = 0;
       int pos = -1;
       
-      TermAttribute termAtt = stream.addAttribute(TermAttribute.class);
+      TermToBytesRefAttribute termAtt = stream.addAttribute(TermToBytesRefAttribute.class);
       PositionIncrementAttribute posIncrAttribute = stream.addAttribute(PositionIncrementAttribute.class);
       OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
-      
+      BytesRef ref = new BytesRef(10);
       stream.reset();
       while (stream.incrementToken()) {
-        String term = termAtt.term();
+        termAtt.toBytesRef(ref);
+        // TODO: support non-UTF8 strings (like numerics) here
+        String term = ref.utf8ToString();
         if (term.length() == 0) continue; // nothing to do
 //        if (DEBUG) System.err.println("token='" + term + "'");
         numTokens++;

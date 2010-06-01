@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.Payload;
 
@@ -44,14 +44,14 @@ public class PrefixAwareTokenFilter extends TokenStream {
   private TokenStream prefix;
   private TokenStream suffix;
   
-  private TermAttribute termAtt;
+  private CharTermAttribute termAtt;
   private PositionIncrementAttribute posIncrAtt;
   private PayloadAttribute payloadAtt;
   private OffsetAttribute offsetAtt;
   private TypeAttribute typeAtt;
   private FlagsAttribute flagsAtt;
 
-  private TermAttribute p_termAtt;
+  private CharTermAttribute p_termAtt;
   private PositionIncrementAttribute p_posIncrAtt;
   private PayloadAttribute p_payloadAtt;
   private OffsetAttribute p_offsetAtt;
@@ -64,14 +64,14 @@ public class PrefixAwareTokenFilter extends TokenStream {
     this.prefix = prefix;
     prefixExhausted = false;
     
-    termAtt = addAttribute(TermAttribute.class);
+    termAtt = addAttribute(CharTermAttribute.class);
     posIncrAtt = addAttribute(PositionIncrementAttribute.class);
     payloadAtt = addAttribute(PayloadAttribute.class);
     offsetAtt = addAttribute(OffsetAttribute.class);
     typeAtt = addAttribute(TypeAttribute.class);
     flagsAtt = addAttribute(FlagsAttribute.class);
 
-    p_termAtt = prefix.addAttribute(TermAttribute.class);
+    p_termAtt = prefix.addAttribute(CharTermAttribute.class);
     p_posIncrAtt = prefix.addAttribute(PositionIncrementAttribute.class);
     p_payloadAtt = prefix.addAttribute(PayloadAttribute.class);
     p_offsetAtt = prefix.addAttribute(OffsetAttribute.class);
@@ -115,7 +115,7 @@ public class PrefixAwareTokenFilter extends TokenStream {
   private void setCurrentToken(Token token) {
     if (token == null) return;
     clearAttributes();
-    termAtt.setTermBuffer(token.termBuffer(), 0, token.termLength());
+    termAtt.copyBuffer(token.buffer(), 0, token.length());
     posIncrAtt.setPositionIncrement(token.getPositionIncrement());
     flagsAtt.setFlags(token.getFlags());
     offsetAtt.setOffset(token.startOffset(), token.endOffset());
@@ -125,7 +125,7 @@ public class PrefixAwareTokenFilter extends TokenStream {
   
   private Token getNextPrefixInputToken(Token token) throws IOException {
     if (!prefix.incrementToken()) return null;
-    token.setTermBuffer(p_termAtt.termBuffer(), 0, p_termAtt.termLength());
+    token.copyBuffer(p_termAtt.buffer(), 0, p_termAtt.length());
     token.setPositionIncrement(p_posIncrAtt.getPositionIncrement());
     token.setFlags(p_flagsAtt.getFlags());
     token.setOffset(p_offsetAtt.startOffset(), p_offsetAtt.endOffset());
@@ -136,7 +136,7 @@ public class PrefixAwareTokenFilter extends TokenStream {
 
   private Token getNextSuffixInputToken(Token token) throws IOException {
     if (!suffix.incrementToken()) return null;
-    token.setTermBuffer(termAtt.termBuffer(), 0, termAtt.termLength());
+    token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
     token.setPositionIncrement(posIncrAtt.getPositionIncrement());
     token.setFlags(flagsAtt.getFlags());
     token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());

@@ -23,9 +23,9 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.standard.config.DefaultOperatorAttribute.Operator;
@@ -163,24 +163,19 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
     private int prevStartOffset;
     private int prevEndOffset;
 
-    TermAttribute termAtt;
-    PositionIncrementAttribute posIncrAtt;
-    OffsetAttribute offsetAtt;
-    TypeAttribute typeAtt;
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+    private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+    private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
 
     public TestFilter(TokenStream in) {
       super(in);
-      termAtt = addAttribute(TermAttribute.class);
-      posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-      offsetAtt = addAttribute(OffsetAttribute.class);
-      typeAtt = addAttribute(TypeAttribute.class);
-
     }
 
     @Override
     public final boolean incrementToken() throws java.io.IOException {
       if (multiToken > 0) {
-        termAtt.setTermBuffer("multi" + (multiToken + 1));
+        termAtt.setEmpty().append("multi" + (multiToken + 1));
         offsetAtt.setOffset(prevStartOffset, prevEndOffset);
         typeAtt.setType(prevType);
         posIncrAtt.setPositionIncrement(0);
@@ -194,7 +189,7 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
         prevType = typeAtt.type();
         prevStartOffset = offsetAtt.startOffset();
         prevEndOffset = offsetAtt.endOffset();
-        String text = termAtt.term();
+        String text = termAtt.toString();
         if (text.equals("triplemulti")) {
           multiToken = 2;
           return true;
@@ -228,21 +223,19 @@ public class TestMultiAnalyzerQPHelper extends LuceneTestCase {
 
   private class TestPosIncrementFilter extends TokenFilter {
 
-    TermAttribute termAtt;
-    PositionIncrementAttribute posIncrAtt;
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
 
     public TestPosIncrementFilter(TokenStream in) {
       super(in);
-      termAtt = addAttribute(TermAttribute.class);
-      posIncrAtt = addAttribute(PositionIncrementAttribute.class);
     }
 
     @Override
     public final boolean incrementToken() throws java.io.IOException {
       while (input.incrementToken()) {
-        if (termAtt.term().equals("the")) {
+        if (termAtt.toString().equals("the")) {
           // stopword, do nothing
-        } else if (termAtt.term().equals("quick")) {
+        } else if (termAtt.toString().equals("quick")) {
           posIncrAtt.setPositionIncrement(2);
           return true;
         } else {

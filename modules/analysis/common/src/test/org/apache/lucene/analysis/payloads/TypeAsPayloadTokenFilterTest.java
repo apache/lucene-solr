@@ -21,7 +21,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 import java.io.IOException;
@@ -39,12 +39,12 @@ public class TypeAsPayloadTokenFilterTest extends BaseTokenStreamTestCase {
 
     TypeAsPayloadTokenFilter nptf = new TypeAsPayloadTokenFilter(new WordTokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(test))));
     int count = 0;
-    TermAttribute termAtt = nptf.getAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = nptf.getAttribute(CharTermAttribute.class);
     TypeAttribute typeAtt = nptf.getAttribute(TypeAttribute.class);
     PayloadAttribute payloadAtt = nptf.getAttribute(PayloadAttribute.class);
     
     while (nptf.incrementToken()) {
-      assertTrue(typeAtt.type() + " is not null and it should be", typeAtt.type().equals(String.valueOf(Character.toUpperCase(termAtt.termBuffer()[0]))));
+      assertTrue(typeAtt.type() + " is not null and it should be", typeAtt.type().equals(String.valueOf(Character.toUpperCase(termAtt.buffer()[0]))));
       assertTrue("nextToken.getPayload() is null and it shouldn't be", payloadAtt.getPayload() != null);
       String type = new String(payloadAtt.getPayload().getData(), "UTF-8");
       assertTrue(type + " is not equal to " + typeAtt.type(), type.equals(typeAtt.type()) == true);
@@ -55,19 +55,17 @@ public class TypeAsPayloadTokenFilterTest extends BaseTokenStreamTestCase {
   }
 
   private final class WordTokenFilter extends TokenFilter {
-    private TermAttribute termAtt;
-    private TypeAttribute typeAtt;
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
     
     private WordTokenFilter(TokenStream input) {
       super(input);
-      termAtt = addAttribute(TermAttribute.class);
-      typeAtt = addAttribute(TypeAttribute.class);
     }
 
     @Override
     public boolean incrementToken() throws IOException {
       if (input.incrementToken()) {
-        typeAtt.setType(String.valueOf(Character.toUpperCase(termAtt.termBuffer()[0])));
+        typeAtt.setType(String.valueOf(Character.toUpperCase(termAtt.buffer()[0])));
         return true;
       } else {
         return false;

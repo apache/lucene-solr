@@ -23,8 +23,8 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.AttributeSource;
 
 
@@ -62,24 +62,16 @@ public final class ChineseTokenizer extends Tokenizer {
 
     public ChineseTokenizer(Reader in) {
       super(in);
-      init();
     }
 
     public ChineseTokenizer(AttributeSource source, Reader in) {
       super(source, in);
-      init();
     }
 
     public ChineseTokenizer(AttributeFactory factory, Reader in) {
       super(factory, in);
-      init();
     }
-    
-    private void init() {
-      termAtt = addAttribute(TermAttribute.class);
-      offsetAtt = addAttribute(OffsetAttribute.class);
-    }
-    
+       
     private int offset = 0, bufferIndex=0, dataLen=0;
     private final static int MAX_WORD_LEN = 255;
     private final static int IO_BUFFER_SIZE = 1024;
@@ -90,8 +82,8 @@ public final class ChineseTokenizer extends Tokenizer {
     private int length;
     private int start;
 
-    private TermAttribute termAtt;
-    private OffsetAttribute offsetAtt;
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
     private final void push(char c) {
 
@@ -105,7 +97,7 @@ public final class ChineseTokenizer extends Tokenizer {
         if (length>0) {
             //System.out.println(new String(buffer, 0,
             //length));
-          termAtt.setTermBuffer(buffer, 0, length);
+          termAtt.copyBuffer(buffer, 0, length);
           offsetAtt.setOffset(correctOffset(start), correctOffset(start+length));
           return true;
         }

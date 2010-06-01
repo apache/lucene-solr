@@ -28,6 +28,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
@@ -50,9 +51,9 @@ public class TestElision extends BaseTokenStreamTestCase {
 
   private List<String> filter(TokenFilter filter) throws IOException {
     List<String> tas = new ArrayList<String>();
-    TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     while (filter.incrementToken()) {
-      tas.add(termAtt.term());
+      tas.add(termAtt.toString());
     }
     return tas;
   }

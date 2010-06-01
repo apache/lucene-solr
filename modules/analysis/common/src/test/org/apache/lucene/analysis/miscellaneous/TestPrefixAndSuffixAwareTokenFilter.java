@@ -41,8 +41,6 @@ public class TestPrefixAndSuffixAwareTokenFilter extends BaseTokenStreamTestCase
 
   private static Token createToken(String term, int start, int offset)
   {
-    Token token = new Token(start, offset);
-    token.setTermBuffer(term);
-    return token;
+    return new Token(term, start, offset);
   }
 }

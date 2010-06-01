@@ -150,7 +150,7 @@ public abstract class BufferedTokenStream extends TokenFilter {
       return null;
     } else {
       Token token = new Token();
-      token.setTermBuffer(termAtt.buffer(), 0, termAtt.length());
+      token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
       token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
       token.setType(typeAtt.type());
       token.setFlags(flagsAtt.getFlags());
@@ -163,7 +163,7 @@ public abstract class BufferedTokenStream extends TokenFilter {
   /** old api emulation for back compat */
   private boolean writeToken(Token token) throws IOException {
     clearAttributes();
-    termAtt.copyBuffer(token.termBuffer(), 0, token.termLength());
+    termAtt.copyBuffer(token.buffer(), 0, token.length());
     offsetAtt.setOffset(token.startOffset(), token.endOffset());
     typeAtt.setType(token.type());
     flagsAtt.setFlags(token.getFlags());

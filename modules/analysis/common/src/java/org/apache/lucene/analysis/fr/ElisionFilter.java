@@ -23,7 +23,7 @@ import java.util.Arrays;
 import org.apache.lucene.analysis.standard.StandardTokenizer; // for javadocs
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilter;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
 
@@ -37,7 +37,7 @@ import org.apache.lucene.util.Version;
  */
 public final class ElisionFilter extends TokenFilter {
   private CharArraySet articles = CharArraySet.EMPTY_SET;
-  private final TermAttribute termAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private static final CharArraySet DEFAULT_ARTICLES = CharArraySet.unmodifiableSet(
       new CharArraySet(Version.LUCENE_CURRENT, Arrays.asList(
           "l", "m", "t", "qu", "n", "s", "j"), true));
@@ -100,7 +100,6 @@ public final class ElisionFilter extends TokenFilter {
     super(input);
     this.articles = CharArraySet.unmodifiableSet(
         new CharArraySet(matchVersion, articles, true));
-    termAtt = addAttribute(TermAttribute.class);
   }
 
   /**
@@ -115,13 +114,13 @@ public final class ElisionFilter extends TokenFilter {
   }
 
   /**
-   * Increments the {@link TokenStream} with a {@link TermAttribute} without elisioned start
+   * Increments the {@link TokenStream} with a {@link CharTermAttribute} without elisioned start
    */
   @Override
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      char[] termBuffer = termAtt.termBuffer();
-      int termLength = termAtt.termLength();
+      char[] termBuffer = termAtt.buffer();
+      int termLength = termAtt.length();
 
       int minPoz = Integer.MAX_VALUE;
       for (int i = 0; i < apostrophes.length; i++) {
@@ -137,8 +136,8 @@ public final class ElisionFilter extends TokenFilter {
 
       // An apostrophe has been found. If the prefix is an article strip it off.
       if (minPoz != Integer.MAX_VALUE
-          && articles.contains(termAtt.termBuffer(), 0, minPoz)) {
-        termAtt.setTermBuffer(termAtt.termBuffer(), minPoz + 1, termAtt.termLength() - (minPoz + 1));
+          && articles.contains(termAtt.buffer(), 0, minPoz)) {
+        termAtt.copyBuffer(termAtt.buffer(), minPoz + 1, termAtt.length() - (minPoz + 1));
       }
 
       return true;

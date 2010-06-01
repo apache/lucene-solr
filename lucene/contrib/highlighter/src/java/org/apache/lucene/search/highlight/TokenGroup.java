@@ -19,8 +19,8 @@ package org.apache.lucene.search.highlight;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 
 /**
  * One, or several overlapping tokens, along with the score(s) and the scope of
@@ -38,11 +38,11 @@ public class TokenGroup {
   int matchStartOffset, matchEndOffset;
 
   private OffsetAttribute offsetAtt;
-  private TermAttribute termAtt;
+  private CharTermAttribute termAtt;
 
   public TokenGroup(TokenStream tokenStream) {
     offsetAtt = tokenStream.addAttribute(OffsetAttribute.class);
-    termAtt = tokenStream.addAttribute(TermAttribute.class);
+    termAtt = tokenStream.addAttribute(CharTermAttribute.class);
   }
 
   void addToken(float score) {
@@ -68,7 +68,7 @@ public class TokenGroup {
         }
       }
       Token token = new Token(termStartOffset, termEndOffset);
-      token.setTermBuffer(termAtt.term());
+      token.setEmpty().append(termAtt);
       tokens[numTokens] = token;
       scores[numTokens] = score;
       numTokens++;

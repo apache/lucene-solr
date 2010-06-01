@@ -26,8 +26,8 @@ import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.queryParser.core.QueryNodeException;
 import org.apache.lucene.queryParser.core.config.QueryConfigHandler;
 import org.apache.lucene.queryParser.core.nodes.FieldQueryNode;
@@ -162,11 +162,11 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
         // ignore
       }
 
-      if (!buffer.hasAttribute(TermAttribute.class)) {
+      if (!buffer.hasAttribute(CharTermAttribute.class)) {
         return new NoTokenFoundQueryNode();
       }
 
-      TermAttribute termAtt = buffer.getAttribute(TermAttribute.class);
+      CharTermAttribute termAtt = buffer.getAttribute(CharTermAttribute.class);
 
       if (numTokens == 0) {
         return new NoTokenFoundQueryNode();
@@ -177,7 +177,7 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
           boolean hasNext;
           hasNext = buffer.incrementToken();
           assert hasNext == true;
-          term = termAtt.term();
+          term = termAtt.toString();
 
         } catch (IOException e) {
           // safe to ignore, because we know the number of tokens
@@ -197,7 +197,7 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
             try {
               boolean hasNext = buffer.incrementToken();
               assert hasNext == true;
-              term = termAtt.term();
+              term = termAtt.toString();
 
             } catch (IOException e) {
               // safe to ignore, because we know the number of tokens
@@ -224,7 +224,7 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
             try {
               boolean hasNext = buffer.incrementToken();
               assert hasNext == true;
-              term = termAtt.term();
+              term = termAtt.toString();
               if (posIncrAtt != null) {
                 positionIncrement = posIncrAtt.getPositionIncrement();
               }
@@ -290,7 +290,7 @@ public class AnalyzerQueryNodeProcessor extends QueryNodeProcessorImpl {
           try {
             boolean hasNext = buffer.incrementToken();
             assert hasNext == true;
-            term = termAtt.term();
+            term = termAtt.toString();
 
             if (posIncrAtt != null) {
               positionIncrement = posIncrAtt.getPositionIncrement();

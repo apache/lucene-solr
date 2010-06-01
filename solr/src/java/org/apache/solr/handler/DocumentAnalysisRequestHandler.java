@@ -221,7 +221,7 @@ public class DocumentAnalysisRequestHandler extends AnalysisRequestHandlerBase {
           try {
             List<Token> tokens = analyzeValue(request.getQuery(), fieldType.getQueryAnalyzer());
             for (Token token : tokens) {
-              termsToMatch.add(token.term());
+              termsToMatch.add(token.toString());
             }
           } catch (Exception e) {
             // ignore analysis exceptions since we are applying arbitrary text to all fields

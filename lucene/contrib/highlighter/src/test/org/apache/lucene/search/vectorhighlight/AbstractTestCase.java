@@ -26,8 +26,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -221,14 +221,14 @@ public abstract class AbstractTestCase extends LuceneTestCase {
       ch = 0;
     }
 
-    TermAttribute termAtt = addAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     @Override
     public boolean incrementToken() throws IOException {
       if( !getNextPartialSnippet() )
         return false;
       clearAttributes();
-      termAtt.setTermBuffer(snippet, startTerm, lenTerm);
+      termAtt.setEmpty().append(snippet, startTerm, startTerm + lenTerm);
       offsetAtt.setOffset(correctOffset(startOffset), correctOffset(startOffset + lenTerm));
       return true;
     }

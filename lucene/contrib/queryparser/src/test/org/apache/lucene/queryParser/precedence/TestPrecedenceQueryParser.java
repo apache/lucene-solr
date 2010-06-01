@@ -23,8 +23,8 @@ import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
@@ -68,7 +68,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     boolean inPhrase = false;
     int savedStart = 0, savedEnd = 0;
 
-    TermAttribute termAtt = addAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
     OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
     @Override
@@ -76,19 +76,19 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
       clearAttributes();
       if (inPhrase) {
         inPhrase = false;
-        termAtt.setTermBuffer("phrase2");
+        termAtt.setEmpty().append("phrase2");
         offsetAtt.setOffset(savedStart, savedEnd);
         return true;
       } else
         while(input.incrementToken())
-          if (termAtt.term().equals("phrase")) {
+          if (termAtt.toString().equals("phrase")) {
             inPhrase = true;
             savedStart = offsetAtt.startOffset();
             savedEnd = offsetAtt.endOffset();
-            termAtt.setTermBuffer("phrase1");
+            termAtt.setEmpty().append("phrase1");
             offsetAtt.setOffset(savedStart, savedEnd);
             return true;
-          } else if (!termAtt.term().equals("stop"))
+          } else if (!termAtt.toString().equals("stop"))
             return true;
       return false;
     }

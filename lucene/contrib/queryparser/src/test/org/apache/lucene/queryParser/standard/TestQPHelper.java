@@ -37,8 +37,8 @@ import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.DateTools;
@@ -96,8 +96,8 @@ public class TestQPHelper extends LocalizedTestCase {
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 
   public static final class QPTestFilter extends TokenFilter {
-    TermAttribute termAtt;
-    OffsetAttribute offsetAtt;
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
     /**
      * Filter which discards the token 'stop' and which expands the token
@@ -105,8 +105,6 @@ public class TestQPHelper extends LocalizedTestCase {
      */
     public QPTestFilter(TokenStream in) {
       super(in);
-      termAtt = addAttribute(TermAttribute.class);
-      offsetAtt = addAttribute(OffsetAttribute.class);
     }
 
     boolean inPhrase = false;
@@ -117,19 +115,19 @@ public class TestQPHelper extends LocalizedTestCase {
       if (inPhrase) {
         inPhrase = false;
         clearAttributes();
-        termAtt.setTermBuffer("phrase2");
+        termAtt.setEmpty().append("phrase2");
         offsetAtt.setOffset(savedStart, savedEnd);
         return true;
       } else
         while (input.incrementToken()) {
-          if (termAtt.term().equals("phrase")) {
+          if (termAtt.toString().equals("phrase")) {
             inPhrase = true;
             savedStart = offsetAtt.startOffset();
             savedEnd = offsetAtt.endOffset();
-            termAtt.setTermBuffer("phrase1");
+            termAtt.setEmpty().append("phrase1");
             offsetAtt.setOffset(savedStart, savedEnd);
             return true;
-          } else if (!termAtt.term().equals("stop"))
+          } else if (!termAtt.toString().equals("stop"))
             return true;
         }
       return false;
@@ -1158,7 +1156,7 @@ public class TestQPHelper extends LocalizedTestCase {
   private class CannedTokenStream extends TokenStream {
     private int upto = 0;
     final PositionIncrementAttribute posIncr = addAttribute(PositionIncrementAttribute.class);
-    final TermAttribute term = addAttribute(TermAttribute.class);
+    final CharTermAttribute term = addAttribute(CharTermAttribute.class);
     @Override
     public boolean incrementToken() {
       clearAttributes();
@@ -1167,16 +1165,16 @@ public class TestQPHelper extends LocalizedTestCase {
       }
       if (upto == 0) {
         posIncr.setPositionIncrement(1);
-        term.setTermBuffer("a");
+        term.setEmpty().append("a");
       } else if (upto == 1) {
         posIncr.setPositionIncrement(1);
-        term.setTermBuffer("b");
+        term.setEmpty().append("b");
       } else if (upto == 2) {
         posIncr.setPositionIncrement(0);
-        term.setTermBuffer("c");
+        term.setEmpty().append("c");
       } else {
         posIncr.setPositionIncrement(0);
-        term.setTermBuffer("d");
+        term.setEmpty().append("d");
       }
       upto++;
       return true;

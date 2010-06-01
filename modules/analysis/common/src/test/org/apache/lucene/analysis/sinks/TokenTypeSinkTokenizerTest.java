@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 public class TokenTypeSinkTokenizerTest extends BaseTokenStreamTestCase {
@@ -41,11 +41,11 @@ public class TokenTypeSinkTokenizerTest extends BaseTokenStreamTestCase {
     
     boolean seenDogs = false;
 
-    TermAttribute termAtt = ttf.addAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = ttf.addAttribute(CharTermAttribute.class);
     TypeAttribute typeAtt = ttf.addAttribute(TypeAttribute.class);
     ttf.reset();
     while (ttf.incrementToken()) {
-      if (termAtt.term().equals("dogs")) {
+      if (termAtt.toString().equals("dogs")) {
         seenDogs = true;
         assertTrue(typeAtt.type() + " is not equal to " + "D", typeAtt.type().equals("D") == true);
       } else {
@@ -64,20 +64,18 @@ public class TokenTypeSinkTokenizerTest extends BaseTokenStreamTestCase {
   }
 
   private class WordTokenFilter extends TokenFilter {
-    private TermAttribute termAtt;
-    private TypeAttribute typeAtt;
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
     
     private WordTokenFilter(TokenStream input) {
       super(input);
-      termAtt = addAttribute(TermAttribute.class);
-      typeAtt = addAttribute(TypeAttribute.class);
     }
 
     @Override
     public final boolean incrementToken() throws IOException {
       if (!input.incrementToken()) return false;
       
-      if (termAtt.term().equals("dogs")) {
+      if (termAtt.toString().equals("dogs")) {
         typeAtt.setType("D");
       }
       return true;

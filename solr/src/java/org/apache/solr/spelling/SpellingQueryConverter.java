@@ -113,7 +113,7 @@ public class SpellingQueryConverter extends QueryConverter  {
           stream.reset();
           while (stream.incrementToken()) {
             Token token = new Token();
-            token.setTermBuffer(termAtt.buffer(), 0, termAtt.length());
+            token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
             token.setStartOffset(matcher.start());
             token.setEndOffset(matcher.end());
             token.setFlags(flagsAtt.getFlags());

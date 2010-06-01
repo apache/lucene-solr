@@ -262,7 +262,7 @@ public class TestSynonymMap extends TestCase {
     Token[] tokens = ((SynonymMap)map.submap.get( src )).synonyms;
     boolean inc = false;
     for( Token token : tokens ){
-      if( exp.equals( new String(token.termBuffer(), 0, token.termLength()) ) )
+      if( exp.equals( new String(token.buffer(), 0, token.length()) ) )
         inc = true;
     }
     assertTrue( inc );

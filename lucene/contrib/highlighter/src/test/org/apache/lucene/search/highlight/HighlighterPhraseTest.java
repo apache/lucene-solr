@@ -25,7 +25,7 @@ import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -296,16 +296,11 @@ public class HighlighterPhraseTest extends LuceneTestCase {
 
     private int i = -1;
 
-    private TermAttribute termAttribute;
-
-    private OffsetAttribute offsetAttribute;
-
-    private PositionIncrementAttribute positionIncrementAttribute;
+    private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
+    private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
+    private final PositionIncrementAttribute positionIncrementAttribute = addAttribute(PositionIncrementAttribute.class);
 
     public TokenStreamSparse() {
-      termAttribute = addAttribute(TermAttribute.class);
-      offsetAttribute = addAttribute(OffsetAttribute.class);
-      positionIncrementAttribute = addAttribute(PositionIncrementAttribute.class);
       reset();
     }
 
@@ -316,8 +311,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         return false;
       }
       clearAttributes();
-      termAttribute.setTermBuffer(this.tokens[i].term(), 0, this.tokens[i]
-          .term().length());
+      termAttribute.setEmpty().append(this.tokens[i]);
       offsetAttribute.setOffset(this.tokens[i].startOffset(), this.tokens[i]
           .endOffset());
       positionIncrementAttribute.setPositionIncrement(this.tokens[i]
@@ -342,16 +336,11 @@ public class HighlighterPhraseTest extends LuceneTestCase {
 
     private int i = -1;
 
-    private TermAttribute termAttribute;
-
-    private OffsetAttribute offsetAttribute;
-
-    private PositionIncrementAttribute positionIncrementAttribute;
+    private final CharTermAttribute termAttribute = addAttribute(CharTermAttribute.class);
+    private final OffsetAttribute offsetAttribute = addAttribute(OffsetAttribute.class);
+    private final PositionIncrementAttribute positionIncrementAttribute = addAttribute(PositionIncrementAttribute.class);
 
     public TokenStreamConcurrent() {
-      termAttribute = addAttribute(TermAttribute.class);
-      offsetAttribute = addAttribute(OffsetAttribute.class);
-      positionIncrementAttribute = addAttribute(PositionIncrementAttribute.class);
       reset();
     }
 
@@ -362,8 +351,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
         return false;
       }
       clearAttributes();
-      termAttribute.setTermBuffer(this.tokens[i].term(), 0, this.tokens[i]
-          .term().length());
+      termAttribute.setEmpty().append(this.tokens[i]);
       offsetAttribute.setOffset(this.tokens[i].startOffset(), this.tokens[i]
           .endOffset());
       positionIncrementAttribute.setPositionIncrement(this.tokens[i]

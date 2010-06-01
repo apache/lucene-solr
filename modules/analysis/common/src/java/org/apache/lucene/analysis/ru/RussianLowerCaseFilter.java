@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * Normalizes token text to lower case.
@@ -32,20 +32,19 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 @Deprecated
 public final class RussianLowerCaseFilter extends TokenFilter
 {
-    private TermAttribute termAtt;
+    private CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
    
     public RussianLowerCaseFilter(TokenStream in)
     {
         super(in);
-        termAtt = addAttribute(TermAttribute.class);
     }
 
     @Override
     public final boolean incrementToken() throws IOException
     {
       if (input.incrementToken()) {
-        char[] chArray = termAtt.termBuffer();
-        int chLen = termAtt.termLength();
+        char[] chArray = termAtt.buffer();
+        int chLen = termAtt.length();
         for (int i = 0; i < chLen; i++)
         {
           chArray[i] = Character.toLowerCase(chArray[i]);

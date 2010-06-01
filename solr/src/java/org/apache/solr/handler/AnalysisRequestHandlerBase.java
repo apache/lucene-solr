@@ -163,12 +163,12 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       while (tokenStream.incrementToken()) {
         Token token = new Token();
         if (termAtt != null) {
-          token.setTermBuffer(termAtt.toString());
+          token.setEmpty().append(termAtt);
         }
         if (bytesAtt != null) {
           bytesAtt.toBytesRef(bytes);
           // TODO: This is incorrect when numeric fields change in later lucene versions. It should use BytesRef directly!
-          token.setTermBuffer(bytes.utf8ToString());
+          token.setEmpty().append(bytes.utf8ToString());
         }
         token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
         token.setType(typeAtt.type());
@@ -208,10 +208,10 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     for (Token token : tokens) {
       NamedList<Object> tokenNamedList = new SimpleOrderedMap<Object>();
 
-      String text = fieldType.indexedToReadable(token.term());
+      String text = fieldType.indexedToReadable(token.toString());
       tokenNamedList.add("text", text);
-      if (!text.equals(token.term())) {
-        tokenNamedList.add("raw_text", token.term());
+      if (!text.equals(token.toString())) {
+        tokenNamedList.add("raw_text", token.toString());
       }
       tokenNamedList.add("type", token.type());
       tokenNamedList.add("start", token.startOffset());
@@ -220,7 +220,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
       position += token.getPositionIncrement();
       tokenNamedList.add("position", position);
 
-      if (context.getTermsToMatch().contains(token.term())) {
+      if (context.getTermsToMatch().contains(token.toString())) {
         tokenNamedList.add("match", true);
       }
 
@@ -292,7 +292,7 @@ public abstract class AnalysisRequestHandlerBase extends RequestHandlerBase {
     public boolean incrementToken() throws IOException {
       if (tokenIterator.hasNext()) {
         Token next = tokenIterator.next();
-        termAtt.copyBuffer(next.termBuffer(), 0, next.termLength());
+        termAtt.copyBuffer(next.buffer(), 0, next.length());
         typeAtt.setType(next.type());
         offsetAtt.setOffset(next.startOffset(), next.endOffset());
         flagsAtt.setFlags(next.getFlags());

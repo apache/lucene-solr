@@ -17,17 +17,13 @@ package org.apache.lucene.analysis.ru;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.Reader;
-import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
 
@@ -65,8 +61,8 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
             new RussianLetterTokenizer(TEST_VERSION_CURRENT,
                 sampleUnicode);
 
-        TermAttribute text = in.getAttribute(TermAttribute.class);
-        TermAttribute sampleText = sample.getAttribute(TermAttribute.class);
+        CharTermAttribute text = in.getAttribute(CharTermAttribute.class);
+        CharTermAttribute sampleText = sample.getAttribute(CharTermAttribute.class);
 
         for (;;)
         {
@@ -76,34 +72,21 @@ public class TestRussianAnalyzer extends BaseTokenStreamTestCase
             boolean nextSampleToken = sample.incrementToken();
             assertEquals(
                 "Unicode",
-                text.term(),
+                text.toString(),
                 nextSampleToken == false
                 ? null
-                : sampleText.term());
+                : sampleText.toString());
         }
 
         inWords.close();
         sampleUnicode.close();
     }
     
-    public void testDigitsInRussianCharset() 
+    /** Check that RussianAnalyzer doesnt discard any numbers */
+    public void testDigitsInRussianCharset() throws IOException
     {
-        Reader reader = new StringReader("text 1000");
-        RussianAnalyzer ra = new RussianAnalyzer(TEST_VERSION_CURRENT);
-        TokenStream stream = ra.tokenStream("", reader);
-
-        TermAttribute termText = stream.getAttribute(TermAttribute.class);
-        try {
-            assertTrue(stream.incrementToken());
-            assertEquals("text", termText.term());
-            assertTrue(stream.incrementToken());
-            assertEquals("RussianAnalyzer's tokenizer skips numbers from input text", "1000", termText.term());
-            assertFalse(stream.incrementToken());
-        }
-        catch (IOException e)
-        {
-            fail("unexpected IOException");
-        }
+      RussianAnalyzer ra = new RussianAnalyzer(TEST_VERSION_CURRENT);
+      assertAnalyzesTo(ra, "text 1000", new String[] { "text", "1000" });
     }
     
     /** @deprecated remove this test in Lucene 4.0: stopwords changed */

@@ -23,7 +23,7 @@ import java.util.Map;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.util.Version;
 
@@ -34,7 +34,7 @@ import org.apache.lucene.util.Version;
 public final class StemmerOverrideFilter extends TokenFilter {
   private final CharArrayMap<String> dictionary;
   
-  private final TermAttribute termAtt = addAttribute(TermAttribute.class);
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final KeywordAttribute keywordAtt = addAttribute(KeywordAttribute.class);
   
   /**
@@ -56,9 +56,9 @@ public final class StemmerOverrideFilter extends TokenFilter {
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       if (!keywordAtt.isKeyword()) { // don't muck with already-keyworded terms
-        String stem = dictionary.get(termAtt.termBuffer(), 0, termAtt.termLength());
+        String stem = dictionary.get(termAtt.buffer(), 0, termAtt.length());
         if (stem != null) {
-          termAtt.setTermBuffer(stem);
+          termAtt.setEmpty().append(stem);
           keywordAtt.setKeyword(true);
         }
       }

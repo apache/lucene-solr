@@ -20,8 +20,8 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 import java.io.IOException;
@@ -39,11 +39,11 @@ public class NumericPayloadTokenFilterTest extends BaseTokenStreamTestCase {
 
     NumericPayloadTokenFilter nptf = new NumericPayloadTokenFilter(new WordTokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(test))), 3, "D");
     boolean seenDogs = false;
-    TermAttribute termAtt = nptf.getAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = nptf.getAttribute(CharTermAttribute.class);
     TypeAttribute typeAtt = nptf.getAttribute(TypeAttribute.class);
     PayloadAttribute payloadAtt = nptf.getAttribute(PayloadAttribute.class);
     while (nptf.incrementToken()) {
-      if (termAtt.term().equals("dogs")) {
+      if (termAtt.toString().equals("dogs")) {
         seenDogs = true;
         assertTrue(typeAtt.type() + " is not equal to " + "D", typeAtt.type().equals("D") == true);
         assertTrue("payloadAtt.getPayload() is null and it shouldn't be", payloadAtt.getPayload() != null);
@@ -60,19 +60,17 @@ public class NumericPayloadTokenFilterTest extends BaseTokenStreamTestCase {
   }
 
   private final class WordTokenFilter extends TokenFilter {
-    private TermAttribute termAtt;
-    private TypeAttribute typeAtt;
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
     
     private WordTokenFilter(TokenStream input) {
       super(input);
-      termAtt = addAttribute(TermAttribute.class);
-      typeAtt = addAttribute(TypeAttribute.class);
     }
     
     @Override
     public boolean incrementToken() throws IOException {
       if (input.incrementToken()) {
-        if (termAtt.term().equals("dogs"))
+        if (termAtt.toString().equals("dogs"))
           typeAtt.setType("D");
         return true;
       } else {

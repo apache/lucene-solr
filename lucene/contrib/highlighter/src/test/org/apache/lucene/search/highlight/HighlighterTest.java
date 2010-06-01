@@ -41,7 +41,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
@@ -1424,13 +1424,10 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     return new TokenStream() {
       Iterator<Token> iter;
       List<Token> lst;
-      private TermAttribute termAtt;
-      private PositionIncrementAttribute posIncrAtt;
-      private OffsetAttribute offsetAtt;
+      private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+      private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+      private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
       {
-        termAtt = addAttribute(TermAttribute.class);
-        posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-        offsetAtt = addAttribute(OffsetAttribute.class);
         lst = new ArrayList<Token>();
         Token t;
         t = createToken("hi", 0, 2);
@@ -1456,7 +1453,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         if(iter.hasNext()) {
           Token token =  iter.next();
           clearAttributes();
-          termAtt.setTermBuffer(token.term());
+          termAtt.setEmpty().append(token);
           posIncrAtt.setPositionIncrement(token.getPositionIncrement());
           offsetAtt.setOffset(token.startOffset(), token.endOffset());
           return true;
@@ -1473,13 +1470,10 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     return new TokenStream() {
       Iterator<Token> iter;
       List<Token> lst;
-      private TermAttribute termAtt;
-      private PositionIncrementAttribute posIncrAtt;
-      private OffsetAttribute offsetAtt;
+      private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+      private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+      private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
       {
-        termAtt = addAttribute(TermAttribute.class);
-        posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-        offsetAtt = addAttribute(OffsetAttribute.class);
         lst = new ArrayList<Token>();
         Token t;
         t = createToken("hispeed", 0, 8);
@@ -1505,7 +1499,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
         if(iter.hasNext()) {
           Token token = iter.next();
           clearAttributes();
-          termAtt.setTermBuffer(token.term());
+          termAtt.setEmpty().append(token);
           posIncrAtt.setPositionIncrement(token.getPositionIncrement());
           offsetAtt.setOffset(token.startOffset(), token.endOffset());
           return true;
@@ -1762,9 +1756,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
   private static Token createToken(String term, int start, int offset)
   {
-    Token token = new Token(start, offset);
-    token.setTermBuffer(term);
-    return token;
+    return new Token(term, start, offset);
   }
 
 }
@@ -1795,7 +1787,7 @@ final class SynonymAnalyzer extends Analyzer {
   @Override
   public TokenStream tokenStream(String arg0, Reader arg1) {
     Tokenizer stream = new MockTokenizer(arg1, MockTokenizer.SIMPLE, true);
-    stream.addAttribute(TermAttribute.class);
+    stream.addAttribute(CharTermAttribute.class);
     stream.addAttribute(PositionIncrementAttribute.class);
     stream.addAttribute(OffsetAttribute.class);
     return new SynonymTokenizer(stream, synonyms);
@@ -1811,21 +1803,21 @@ final class SynonymTokenizer extends TokenStream {
   private Token currentRealToken = null;
   private Map<String,String> synonyms;
   StringTokenizer st = null;
-  private TermAttribute realTermAtt;
+  private CharTermAttribute realTermAtt;
   private PositionIncrementAttribute realPosIncrAtt;
   private OffsetAttribute realOffsetAtt;
-  private TermAttribute termAtt;
+  private CharTermAttribute termAtt;
   private PositionIncrementAttribute posIncrAtt;
   private OffsetAttribute offsetAtt;
 
   public SynonymTokenizer(TokenStream realStream, Map<String,String> synonyms) {
     this.realStream = realStream;
     this.synonyms = synonyms;
-    realTermAtt = realStream.addAttribute(TermAttribute.class);
+    realTermAtt = realStream.addAttribute(CharTermAttribute.class);
     realPosIncrAtt = realStream.addAttribute(PositionIncrementAttribute.class);
     realOffsetAtt = realStream.addAttribute(OffsetAttribute.class);
 
-    termAtt = addAttribute(TermAttribute.class);
+    termAtt = addAttribute(CharTermAttribute.class);
     posIncrAtt = addAttribute(PositionIncrementAttribute.class);
     offsetAtt = addAttribute(OffsetAttribute.class);
   }
@@ -1840,25 +1832,25 @@ final class SynonymTokenizer extends TokenStream {
       }
       //Token nextRealToken = new Token(, offsetAtt.startOffset(), offsetAtt.endOffset());
       clearAttributes();
-      termAtt.setTermBuffer(realTermAtt.term());
+      termAtt.copyBuffer(realTermAtt.buffer(), 0, realTermAtt.length());
       offsetAtt.setOffset(realOffsetAtt.startOffset(), realOffsetAtt.endOffset());
       posIncrAtt.setPositionIncrement(realPosIncrAtt.getPositionIncrement());
 
-      String expansions =  synonyms.get(realTermAtt.term());
+      String expansions =  synonyms.get(realTermAtt.toString());
       if (expansions == null) {
         return true;
       }
       st = new StringTokenizer(expansions, ",");
       if (st.hasMoreTokens()) {
         currentRealToken = new Token(realOffsetAtt.startOffset(), realOffsetAtt.endOffset());
-        currentRealToken.setTermBuffer(realTermAtt.term());
+        currentRealToken.copyBuffer(realTermAtt.buffer(), 0, realTermAtt.length());
       }
       
       return true;
     } else {
       String tok = st.nextToken();
       clearAttributes();
-      termAtt.setTermBuffer(tok);
+      termAtt.setEmpty().append(tok);
       offsetAtt.setOffset(currentRealToken.startOffset(), currentRealToken.endOffset());
       posIncrAtt.setPositionIncrement(0);
       if (!st.hasMoreTokens()) {

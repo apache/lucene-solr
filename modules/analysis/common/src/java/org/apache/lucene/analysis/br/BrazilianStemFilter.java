@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter; // for java
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * A {@link TokenFilter} that applies {@link BrazilianStemmer}.
@@ -41,10 +41,10 @@ public final class BrazilianStemFilter extends TokenFilter {
   /**
    * {@link BrazilianStemmer} in use by this filter.
    */
-  private BrazilianStemmer stemmer = null;
+  private BrazilianStemmer stemmer = new BrazilianStemmer();
   private Set<?> exclusions = null;
-  private final TermAttribute termAtt;
-  private final KeywordAttribute keywordAttr;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
 
   /**
    * Creates a new BrazilianStemFilter 
@@ -53,9 +53,6 @@ public final class BrazilianStemFilter extends TokenFilter {
    */
   public BrazilianStemFilter(TokenStream in) {
     super(in);
-    stemmer = new BrazilianStemmer();
-    termAtt = addAttribute(TermAttribute.class);
-    keywordAttr = addAttribute(KeywordAttribute.class);
   }
   
   /**
@@ -74,13 +71,13 @@ public final class BrazilianStemFilter extends TokenFilter {
   @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
-      final String term = termAtt.term();
+      final String term = termAtt.toString();
       // Check the exclusion table.
       if (!keywordAttr.isKeyword() && (exclusions == null || !exclusions.contains(term))) {
         final String s = stemmer.stem(term);
         // If not stemmed, don't waste the time adjusting the token.
         if ((s != null) && !s.equals(term))
-          termAtt.setTermBuffer(s);
+          termAtt.setEmpty().append(s);
       }
       return true;
     } else {

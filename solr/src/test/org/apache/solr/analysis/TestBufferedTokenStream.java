@@ -35,9 +35,9 @@ public class TestBufferedTokenStream extends BaseTokenTestCase {
   public static class AB_Q_Stream extends BufferedTokenStream {
     public AB_Q_Stream(TokenStream input) {super(input);}
     protected Token process(Token t) throws IOException {
-      if ("A".equals(new String(t.termBuffer(), 0, t.termLength()))) {
+      if ("A".equals(new String(t.buffer(), 0, t.length()))) {
         Token t2 = read();
-        if (t2!=null && "B".equals(new String(t2.termBuffer(), 0, t2.termLength()))) t.setTermBuffer("Q");
+        if (t2!=null && "B".equals(new String(t2.buffer(), 0, t2.length()))) t.setEmpty().append("Q");
         if (t2!=null) pushBack(t2);
       }
       return t;
@@ -48,8 +48,8 @@ public class TestBufferedTokenStream extends BaseTokenTestCase {
   public static class AB_AAB_Stream extends BufferedTokenStream {
     public AB_AAB_Stream(TokenStream input) {super(input);}
     protected Token process(Token t) throws IOException {
-      if ("A".equals(new String(t.termBuffer(), 0, t.termLength())) && 
-          "B".equals(new String(peek(1).termBuffer(), 0, peek(1).termLength())))
+      if ("A".equals(new String(t.buffer(), 0, t.length())) && 
+          "B".equals(new String(peek(1).buffer(), 0, peek(1).length())))
         write((Token)t.clone());
       return t;
     }

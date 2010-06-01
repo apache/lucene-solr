@@ -21,46 +21,22 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.util.Version;
 
 public class TestReverseStringFilter extends BaseTokenStreamTestCase {
   public void testFilter() throws Exception {
     TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, 
         new StringReader("Do have a nice day"));     // 1-4 length string
     ReverseStringFilter filter = new ReverseStringFilter(TEST_VERSION_CURRENT, stream);
-    TermAttribute text = filter.getAttribute(TermAttribute.class);
-    assertTrue(filter.incrementToken());
-    assertEquals("oD", text.term());
-    assertTrue(filter.incrementToken());
-    assertEquals("evah", text.term());
-    assertTrue(filter.incrementToken());
-    assertEquals("a", text.term());
-    assertTrue(filter.incrementToken());
-    assertEquals("ecin", text.term());
-    assertTrue(filter.incrementToken());
-    assertEquals("yad", text.term());
-    assertFalse(filter.incrementToken());
+    assertTokenStreamContents(filter, new String[] { "oD", "evah", "a", "ecin", "yad" });
   }
   
   public void testFilterWithMark() throws Exception {
     TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(
         "Do have a nice day")); // 1-4 length string
     ReverseStringFilter filter = new ReverseStringFilter(TEST_VERSION_CURRENT, stream, '\u0001');
-    TermAttribute text = filter
-        .getAttribute(TermAttribute.class);
-    assertTrue(filter.incrementToken());
-    assertEquals("\u0001oD", text.term());
-    assertTrue(filter.incrementToken());
-    assertEquals("\u0001evah", text.term());
-    assertTrue(filter.incrementToken());
-    assertEquals("\u0001a", text.term());
-    assertTrue(filter.incrementToken());
-    assertEquals("\u0001ecin", text.term());
-    assertTrue(filter.incrementToken());
-    assertEquals("\u0001yad", text.term());
-    assertFalse(filter.incrementToken());
+    assertTokenStreamContents(filter, 
+        new String[] { "\u0001oD", "\u0001evah", "\u0001a", "\u0001ecin", "\u0001yad" });
   }
 
   public void testReverseString() throws Exception {

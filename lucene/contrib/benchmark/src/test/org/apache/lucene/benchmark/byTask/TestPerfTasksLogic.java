@@ -26,9 +26,10 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.benchmark.BenchmarkTestCase;
 import org.apache.lucene.benchmark.byTask.feeds.DocMaker;
 import org.apache.lucene.benchmark.byTask.feeds.ReutersQueryMaker;
@@ -918,11 +919,11 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     TokenStream ts2 = a2.tokenStream("bogus", new StringReader(text));
     ts1.reset();
     ts2.reset();
-    TermAttribute termAtt1 = ts1.addAttribute(TermAttribute.class);
-    TermAttribute termAtt2 = ts2.addAttribute(TermAttribute.class);
+    CharTermAttribute termAtt1 = ts1.addAttribute(CharTermAttribute.class);
+    CharTermAttribute termAtt2 = ts2.addAttribute(CharTermAttribute.class);
     assertTrue(ts1.incrementToken());
     assertTrue(ts2.incrementToken());
-    assertEquals(termAtt1.term(), termAtt2.term());
+    assertEquals(termAtt1.toString(), termAtt2.toString());
     assertFalse(ts1.incrementToken());
     assertFalse(ts2.incrementToken());
     ts1.close();
@@ -994,21 +995,7 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
   
   private void assertEqualShingle
     (Analyzer analyzer, String text, String[] expected) throws Exception {
-    TokenStream stream = analyzer.tokenStream("bogus", new StringReader(text));
-    stream.reset();
-    TermAttribute termAtt = stream.addAttribute(TermAttribute.class);
-    int termNum = 0;
-    while (stream.incrementToken()) {
-      assertTrue("Extra output term(s), starting with '"
-                 + new String(termAtt.termBuffer(), 0, termAtt.termLength()) + "'",
-                 termNum < expected.length);
-      assertEquals("Mismatch in output term # " + termNum + " - ", 
-                   expected[termNum],
-                   new String(termAtt.termBuffer(), 0, termAtt.termLength()));
-      ++termNum;
-    }
-    assertEquals("Too few output terms", expected.length, termNum);
-    stream.close();
+    BaseTokenStreamTestCase.assertAnalyzesTo(analyzer, text, expected);
   }
   
   private String[] getShingleConfig(String params) { 

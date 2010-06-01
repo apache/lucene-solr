@@ -302,15 +302,15 @@ public class HyphenationCompoundWordTokenFilter extends
   @Override
   protected void decomposeInternal(final Token token) {
     // get the hyphenation points
-    Hyphenation hyphens = hyphenator.hyphenate(token.termBuffer(), 0, token
-        .termLength(), 1, 1);
+    Hyphenation hyphens = hyphenator.hyphenate(token.buffer(), 0, token
+        .length(), 1, 1);
     // No hyphen points found -> exit
     if (hyphens == null) {
       return;
     }
 
     final int[] hyp = hyphens.getHyphenationPoints();
-    char[] lowerCaseTermBuffer=makeLowerCaseCopy(token.termBuffer());
+    char[] lowerCaseTermBuffer=makeLowerCaseCopy(token.buffer());
 
     for (int i = 0; i < hyp.length; ++i) {
       int remaining = hyp.length - i;
@@ -335,7 +335,7 @@ public class HyphenationCompoundWordTokenFilter extends
         if (dictionary == null || dictionary.contains(lowerCaseTermBuffer, start, partLength)) {
           if (this.onlyLongestMatch) {
             if (longestMatchToken != null) {
-              if (longestMatchToken.termLength() < partLength) {
+              if (longestMatchToken.length() < partLength) {
                 longestMatchToken = createToken(start, partLength, token);
               }
             } else {
@@ -352,7 +352,7 @@ public class HyphenationCompoundWordTokenFilter extends
           // characters
           if (this.onlyLongestMatch) {
             if (longestMatchToken != null) {
-              if (longestMatchToken.termLength() < partLength - 1) {
+              if (longestMatchToken.length() < partLength - 1) {
                 longestMatchToken = createToken(start, partLength - 1, token);
               }
             } else {

@@ -6,7 +6,7 @@ import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter; // for java
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -37,23 +37,20 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
  * @see KeywordMarkerFilter
  */
 public final class CzechStemFilter extends TokenFilter {
-  private final CzechStemmer stemmer;
-  private final TermAttribute termAtt;
-  private final KeywordAttribute keywordAttr;
+  private final CzechStemmer stemmer = new CzechStemmer();
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
   
   public CzechStemFilter(TokenStream input) {
     super(input);
-    stemmer = new CzechStemmer();
-    termAtt = addAttribute(TermAttribute.class);
-    keywordAttr = addAttribute(KeywordAttribute.class);
   }
 
   @Override
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       if(!keywordAttr.isKeyword()) {
-        final int newlen = stemmer.stem(termAtt.termBuffer(), termAtt.termLength());
-        termAtt.setTermLength(newlen);
+        final int newlen = stemmer.stem(termAtt.buffer(), termAtt.length());
+        termAtt.setLength(newlen);
       }
       return true;
     } else {

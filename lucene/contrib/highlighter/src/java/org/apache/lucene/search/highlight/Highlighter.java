@@ -23,9 +23,9 @@ import java.util.Iterator;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -191,7 +191,7 @@ public class Highlighter
 		ArrayList<TextFragment> docFrags = new ArrayList<TextFragment>();
 		StringBuilder newText=new StringBuilder();
 		
-	    TermAttribute termAtt = tokenStream.addAttribute(TermAttribute.class);
+	    CharTermAttribute termAtt = tokenStream.addAttribute(CharTermAttribute.class);
 	    OffsetAttribute offsetAtt = tokenStream.addAttribute(OffsetAttribute.class);
 	    tokenStream.addAttribute(PositionIncrementAttribute.class);
 	    tokenStream.reset();
@@ -225,7 +225,7 @@ public class Highlighter
 					(offsetAtt.startOffset()>text.length())
 					)						
 				{
-					throw new InvalidTokenOffsetsException("Token "+ termAtt.term()
+					throw new InvalidTokenOffsetsException("Token "+ termAtt.toString()
 							+" exceeds length of provided text sized "+text.length());
 				}
 				if((tokenGroup.numTokens>0)&&(tokenGroup.isDistinct()))

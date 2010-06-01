@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * Tokenizes the input into n-grams of the given size(s).
@@ -39,8 +39,8 @@ public final class NGramTokenFilter extends TokenFilter {
   private int curPos;
   private int tokStart;
   
-  private TermAttribute termAtt;
-  private OffsetAttribute offsetAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
   /**
    * Creates NGramTokenFilter with given min and max n-grams.
@@ -58,9 +58,6 @@ public final class NGramTokenFilter extends TokenFilter {
     }
     this.minGram = minGram;
     this.maxGram = maxGram;
-    
-    this.termAtt = addAttribute(TermAttribute.class);
-    this.offsetAtt = addAttribute(OffsetAttribute.class);
   }
 
   /**
@@ -79,8 +76,8 @@ public final class NGramTokenFilter extends TokenFilter {
         if (!input.incrementToken()) {
           return false;
         } else {
-          curTermBuffer = termAtt.termBuffer().clone();
-          curTermLength = termAtt.termLength();
+          curTermBuffer = termAtt.buffer().clone();
+          curTermLength = termAtt.length();
           curGramSize = minGram;
           curPos = 0;
           tokStart = offsetAtt.startOffset();
@@ -89,7 +86,7 @@ public final class NGramTokenFilter extends TokenFilter {
       while (curGramSize <= maxGram) {
         while (curPos+curGramSize <= curTermLength) {     // while there is input
           clearAttributes();
-          termAtt.setTermBuffer(curTermBuffer, curPos, curGramSize);
+          termAtt.copyBuffer(curTermBuffer, curPos, curGramSize);
           offsetAtt.setOffset(tokStart + curPos, tokStart + curPos + curGramSize);
           curPos++;
           return true;

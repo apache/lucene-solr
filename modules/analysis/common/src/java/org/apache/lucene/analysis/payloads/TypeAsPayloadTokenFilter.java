@@ -33,13 +33,11 @@ import java.io.IOException;
  *
  **/
 public class TypeAsPayloadTokenFilter extends TokenFilter {
-  private PayloadAttribute payloadAtt;
-  private TypeAttribute typeAtt;
+  private final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
+  private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
 
   public TypeAsPayloadTokenFilter(TokenStream input) {
     super(input);
-    payloadAtt = addAttribute(PayloadAttribute.class);
-    typeAtt = addAttribute(TypeAttribute.class);
   }
 
 

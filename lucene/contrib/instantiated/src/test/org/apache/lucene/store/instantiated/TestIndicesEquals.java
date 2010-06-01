@@ -25,7 +25,7 @@ import java.util.List;
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -278,7 +278,7 @@ public class TestIndicesEquals extends LuceneTestCase {
               tokens.add(t);
               tokens.add(createToken("fin", 7, 9));
               TokenStream ts = new TokenStream(Token.TOKEN_ATTRIBUTE_FACTORY) {
-                final AttributeImpl reusableToken = (AttributeImpl) addAttribute(TermAttribute.class);
+                final AttributeImpl reusableToken = (AttributeImpl) addAttribute(CharTermAttribute.class);
                 Iterator<Token> it = tokens.iterator();
                 
                 @Override
@@ -601,16 +601,12 @@ public class TestIndicesEquals extends LuceneTestCase {
 
   private static Token createToken(String term, int start, int offset)
   {
-    Token token = new Token(start, offset);
-    token.setTermBuffer(term);
-    return token;
+    return new Token(term, start, offset);
   }
 
   private static Token createToken(String term, int start, int offset, String type)
   {
-    Token token = new Token(start, offset, type);
-    token.setTermBuffer(term);
-    return token;
+    return new Token(term, start, offset, type);
   }
 
 

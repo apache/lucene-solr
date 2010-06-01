@@ -30,8 +30,8 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.StopAnalyzer;
 import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.Version;
 
@@ -332,8 +332,8 @@ public final class PatternAnalyzer extends Analyzer {
     private Matcher matcher;
     private int pos = 0;
     private static final Locale locale = Locale.getDefault();
-    private TermAttribute termAtt = addAttribute(TermAttribute.class);
-    private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
     public PatternTokenizer(String str, Pattern pattern, boolean toLowerCase) {
       this.str = str;
@@ -360,7 +360,7 @@ public final class PatternAnalyzer extends Analyzer {
         if (start != end) { // non-empty match (header/trailer)
           String text = str.substring(start, end);
           if (toLowerCase) text = text.toLowerCase(locale);
-          termAtt.setTermBuffer(text);
+          termAtt.setEmpty().append(text);
           offsetAtt.setOffset(start, end);
           return true;
         }
@@ -392,8 +392,8 @@ public final class PatternAnalyzer extends Analyzer {
     private final boolean toLowerCase;
     private final Set<?> stopWords;
     private static final Locale locale = Locale.getDefault();
-    private TermAttribute termAtt = addAttribute(TermAttribute.class);
-    private OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
     
     public FastStringTokenizer(String str, boolean isLetter, boolean toLowerCase, Set<?> stopWords) {
       this.str = str;
@@ -446,7 +446,7 @@ public final class PatternAnalyzer extends Analyzer {
       {
         return false;
       }
-      termAtt.setTermBuffer(text);
+      termAtt.setEmpty().append(text);
       offsetAtt.setOffset(start, i);
       return true;
     }

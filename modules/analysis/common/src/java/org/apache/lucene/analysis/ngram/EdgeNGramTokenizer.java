@@ -18,8 +18,8 @@ package org.apache.lucene.analysis.ngram;
  */
 
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.util.AttributeSource;
 
 import java.io.IOException;
@@ -37,8 +37,8 @@ public final class EdgeNGramTokenizer extends Tokenizer {
   public static final int DEFAULT_MAX_GRAM_SIZE = 1;
   public static final int DEFAULT_MIN_GRAM_SIZE = 1;
   
-  private TermAttribute termAtt;
-  private OffsetAttribute offsetAtt;
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
   /** Specifies which side of the input the n-gram should be generated from */
   public static enum Side {
@@ -173,10 +173,6 @@ public final class EdgeNGramTokenizer extends Tokenizer {
     this.minGram = minGram;
     this.maxGram = maxGram;
     this.side = side;
-    
-    this.termAtt = addAttribute(TermAttribute.class);
-    this.offsetAtt = addAttribute(OffsetAttribute.class);
-
   }
 
   /** Returns the next token in the stream, or null at EOS. */
@@ -206,7 +202,7 @@ public final class EdgeNGramTokenizer extends Tokenizer {
     // grab gramSize chars from front or back
     int start = side == Side.FRONT ? 0 : inLen - gramSize;
     int end = start + gramSize;
-    termAtt.setTermBuffer(inStr, start, gramSize);
+    termAtt.setEmpty().append(inStr, start, end);
     offsetAtt.setOffset(correctOffset(start), correctOffset(end));
     gramSize++;
     return true;

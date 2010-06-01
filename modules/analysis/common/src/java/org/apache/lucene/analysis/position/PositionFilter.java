@@ -35,7 +35,7 @@ public final class PositionFilter extends TokenFilter {
   /** The first token must have non-zero positionIncrement **/
   private boolean firstTokenPositioned = false;
   
-  private PositionIncrementAttribute posIncrAtt;
+  private PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
 
   /**
    * Constructs a PositionFilter that assigns a position increment of zero to
@@ -45,7 +45,6 @@ public final class PositionFilter extends TokenFilter {
    */
   public PositionFilter(final TokenStream input) {
     super(input);
-    posIncrAtt = addAttribute(PositionIncrementAttribute.class);
   }
 
   /**

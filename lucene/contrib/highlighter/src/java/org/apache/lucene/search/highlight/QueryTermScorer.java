@@ -21,7 +21,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Query;
 
@@ -41,7 +41,7 @@ public class QueryTermScorer implements Scorer {
   float maxTermWeight = 0;
   private HashMap<String,WeightedTerm> termsToFind;
 
-  private TermAttribute termAtt;
+  private CharTermAttribute termAtt;
 
   /**
    * 
@@ -95,7 +95,7 @@ public class QueryTermScorer implements Scorer {
    * @see org.apache.lucene.search.highlight.Scorer#init(org.apache.lucene.analysis.TokenStream)
    */
   public TokenStream init(TokenStream tokenStream) {
-    termAtt = tokenStream.addAttribute(TermAttribute.class);
+    termAtt = tokenStream.addAttribute(CharTermAttribute.class);
     return null;
   }
 
@@ -118,7 +118,7 @@ public class QueryTermScorer implements Scorer {
    * @see org.apache.lucene.search.highlight.Scorer#getTokenScore()
    */
   public float getTokenScore() {
-    String termText = termAtt.term();
+    String termText = termAtt.toString();
 
     WeightedTerm queryTerm = termsToFind.get(termText);
     if (queryTerm == null) {

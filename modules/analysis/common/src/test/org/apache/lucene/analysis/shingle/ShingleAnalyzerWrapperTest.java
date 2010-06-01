@@ -26,8 +26,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.LetterTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
@@ -159,11 +159,11 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
     int j = -1;
     
     PositionIncrementAttribute posIncrAtt = ts.addAttribute(PositionIncrementAttribute.class);
-    TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
     
     while (ts.incrementToken()) {
       j += posIncrAtt.getPositionIncrement();
-      String termText = termAtt.term();
+      String termText = termAtt.toString();
       q.add(new Term("content", termText), j);
     }
 
@@ -186,10 +186,10 @@ public class ShingleAnalyzerWrapperTest extends BaseTokenStreamTestCase {
     TokenStream ts = analyzer.tokenStream("content",
                                           new StringReader("test sentence"));
     
-    TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
     
     while (ts.incrementToken()) {
-      String termText =  termAtt.term();
+      String termText =  termAtt.toString();
       q.add(new TermQuery(new Term("content", termText)),
             BooleanClause.Occur.SHOULD);
     }

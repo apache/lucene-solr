@@ -133,7 +133,7 @@ public final class SynonymFilter extends TokenFilter {
         OffsetAttribute lastOffsetAtt = lastTok.addAttribute(OffsetAttribute.class);
 
         newOffsetAtt.setOffset(newOffsetAtt.startOffset(), lastOffsetAtt.endOffset());
-        newTermAtt.copyBuffer(repTok.termBuffer(), 0, repTok.termLength());
+        newTermAtt.copyBuffer(repTok.buffer(), 0, repTok.length());
         repPos += repTok.getPositionIncrement();
         if (i==0) repPos=origPos;  // make position of first token equal to original
 

@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tr.TurkishLowerCaseFilter; // javadoc @link
 import org.tartarus.snowball.SnowballProgram;
 
@@ -42,7 +42,7 @@ public final class SnowballFilter extends TokenFilter {
 
   private final SnowballProgram stemmer;
 
-  private final TermAttribute termAtt = addAttribute(TermAttribute.class);
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
   
   public SnowballFilter(TokenStream input, SnowballProgram stemmer) {
@@ -76,16 +76,16 @@ public final class SnowballFilter extends TokenFilter {
   public final boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       if (!keywordAttr.isKeyword()) {
-        char termBuffer[] = termAtt.termBuffer();
-        final int length = termAtt.termLength();
+        char termBuffer[] = termAtt.buffer();
+        final int length = termAtt.length();
         stemmer.setCurrent(termBuffer, length);
         stemmer.stem();
         final char finalTerm[] = stemmer.getCurrentBuffer();
         final int newLength = stemmer.getCurrentBufferLength();
         if (finalTerm != termBuffer)
-          termAtt.setTermBuffer(finalTerm, 0, newLength);
+          termAtt.copyBuffer(finalTerm, 0, newLength);
         else
-          termAtt.setTermLength(newLength);
+          termAtt.setLength(newLength);
       }
       return true;
     } else {

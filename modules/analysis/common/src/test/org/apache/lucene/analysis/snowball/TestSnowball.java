@@ -22,11 +22,11 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.Version;
 
@@ -93,7 +93,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
   
   public void testFilterTokens() throws Exception {
     SnowballFilter filter = new SnowballFilter(new TestTokenStream(), "English");
-    TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     OffsetAttribute offsetAtt = filter.getAttribute(OffsetAttribute.class);
     TypeAttribute typeAtt = filter.getAttribute(TypeAttribute.class);
     PayloadAttribute payloadAtt = filter.getAttribute(PayloadAttribute.class);
@@ -102,7 +102,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
     
     filter.incrementToken();
 
-    assertEquals("accent", termAtt.term());
+    assertEquals("accent", termAtt.toString());
     assertEquals(2, offsetAtt.startOffset());
     assertEquals(7, offsetAtt.endOffset());
     assertEquals("wrd", typeAtt.type());
@@ -112,27 +112,21 @@ public class TestSnowball extends BaseTokenStreamTestCase {
   }
   
   private final class TestTokenStream extends TokenStream {
-    private TermAttribute termAtt;
-    private OffsetAttribute offsetAtt;
-    private TypeAttribute typeAtt;
-    private PayloadAttribute payloadAtt;
-    private PositionIncrementAttribute posIncAtt;
-    private FlagsAttribute flagsAtt;
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+    private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
+    private final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
+    private final PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
+    private final FlagsAttribute flagsAtt = addAttribute(FlagsAttribute.class);
     
     TestTokenStream() {
       super();
-      termAtt = addAttribute(TermAttribute.class);
-      offsetAtt = addAttribute(OffsetAttribute.class);
-      typeAtt = addAttribute(TypeAttribute.class);
-      payloadAtt = addAttribute(PayloadAttribute.class);
-      posIncAtt = addAttribute(PositionIncrementAttribute.class);
-      flagsAtt = addAttribute(FlagsAttribute.class);
     }
     
     @Override
     public boolean incrementToken() {
       clearAttributes();
-      termAtt.setTermBuffer("accents");
+      termAtt.setEmpty().append("accents");
       offsetAtt.setOffset(2, 7);
       typeAtt.setType("wrd");
       posIncAtt.setPositionIncrement(3);

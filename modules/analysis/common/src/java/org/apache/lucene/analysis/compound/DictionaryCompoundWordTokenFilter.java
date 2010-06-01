@@ -191,22 +191,22 @@ public class DictionaryCompoundWordTokenFilter extends CompoundWordTokenFilterBa
   @Override
   protected void decomposeInternal(final Token token) {
     // Only words longer than minWordSize get processed
-    if (token.termLength() < this.minWordSize) {
+    if (token.length() < this.minWordSize) {
       return;
     }
     
-    char[] lowerCaseTermBuffer=makeLowerCaseCopy(token.termBuffer());
+    char[] lowerCaseTermBuffer=makeLowerCaseCopy(token.buffer());
     
-    for (int i=0;i<token.termLength()-this.minSubwordSize;++i) {
+    for (int i=0;i<token.length()-this.minSubwordSize;++i) {
         Token longestMatchToken=null;
         for (int j=this.minSubwordSize-1;j<this.maxSubwordSize;++j) {
-            if(i+j>token.termLength()) {
+            if(i+j>token.length()) {
                 break;
             }
             if(dictionary.contains(lowerCaseTermBuffer, i, j)) {
                 if (this.onlyLongestMatch) {
                    if (longestMatchToken!=null) {
-                     if (longestMatchToken.termLength()<j) {
+                     if (longestMatchToken.length()<j) {
                        longestMatchToken=createToken(i,j,token);
                      }
                    } else {

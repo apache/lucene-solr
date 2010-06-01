@@ -31,7 +31,12 @@ import org.apache.lucene.analysis.miscellaneous.SingleTokenTokenStream;
 import org.apache.lucene.analysis.payloads.PayloadHelper;
 import org.apache.lucene.analysis.shingle.ShingleMatrixFilter.Matrix;
 import org.apache.lucene.analysis.shingle.ShingleMatrixFilter.Matrix.Column;
-import org.apache.lucene.analysis.tokenattributes.*;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
+import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 
 public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
@@ -415,7 +420,7 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
   private Token tokenFactory(String text, int posIncr, int startOffset, int endOffset) {
     Token token = new Token(startOffset, endOffset);
-    token.setTermBuffer(text);
+    token.setEmpty().append(text);
     token.setPositionIncrement(posIncr);
     return token;
   }
@@ -427,7 +432,7 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
   private Token tokenFactory(String text, int posIncr, float weight, int startOffset, int endOffset) {
     Token token = new Token(startOffset, endOffset);
-    token.setTermBuffer(text);
+    token.setEmpty().append(text);
     token.setPositionIncrement(posIncr);
     ShingleMatrixFilter.defaultSettingsCodec.setWeight(token, weight);
     return token;
@@ -435,7 +440,7 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
 
   private Token tokenFactory(String text, int posIncr, float weight, int startOffset, int endOffset, ShingleMatrixFilter.TokenPositioner positioner) {
     Token token = new Token(startOffset, endOffset);
-    token.setTermBuffer(text);
+    token.setEmpty().append(text);
     token.setPositionIncrement(posIncr);
     ShingleMatrixFilter.defaultSettingsCodec.setWeight(token, weight);
     ShingleMatrixFilter.defaultSettingsCodec.setTokenPositioner(token, positioner);
@@ -445,20 +450,20 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
   // assert-methods start here
 
   private void assertNext(TokenStream ts, String text) throws IOException {
-    TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
 
     assertTrue(ts.incrementToken());
-    assertEquals(text, termAtt.term());
+    assertEquals(text, termAtt.toString());
   }
 
   private void assertNext(TokenStream ts, String text, int positionIncrement, float boost, int startOffset, int endOffset) throws IOException {
-    TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
     PositionIncrementAttribute posIncrAtt = ts.addAttribute(PositionIncrementAttribute.class);
     PayloadAttribute payloadAtt = ts.addAttribute(PayloadAttribute.class);
     OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
     
     assertTrue(ts.incrementToken());
-    assertEquals(text, termAtt.term());
+    assertEquals(text, termAtt.toString());
     assertEquals(positionIncrement, posIncrAtt.getPositionIncrement());
     assertEquals(boost, payloadAtt.getPayload() == null ? 1f : PayloadHelper.decodeFloat(payloadAtt.getPayload().getData()), 0);
     assertEquals(startOffset, offsetAtt.startOffset());
@@ -466,11 +471,11 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
   }
   
   private void assertNext(TokenStream ts, String text, int startOffset, int endOffset) throws IOException {
-    TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
     OffsetAttribute offsetAtt = ts.addAttribute(OffsetAttribute.class);
 
     assertTrue(ts.incrementToken());
-    assertEquals(text, termAtt.term());
+    assertEquals(text, termAtt.toString());
     assertEquals(startOffset, offsetAtt.startOffset());
     assertEquals(endOffset, offsetAtt.endOffset());
   }
@@ -478,7 +483,7 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
   private static Token createToken(String term, int start, int offset)
   {
     Token token = new Token(start, offset);
-    token.setTermBuffer(term);
+    token.setEmpty().append(term);
     return token;
   }
 
@@ -486,21 +491,15 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
   public final static class TokenListStream extends TokenStream {
 
     private Collection<Token> tokens;
-    TermAttribute termAtt;
-    PositionIncrementAttribute posIncrAtt;
-    PayloadAttribute payloadAtt;
-    OffsetAttribute offsetAtt;
-    TypeAttribute typeAtt;
-    FlagsAttribute flagsAtt;
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+    private final PayloadAttribute payloadAtt = addAttribute(PayloadAttribute.class);
+    private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+    private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
+    private final FlagsAttribute flagsAtt = addAttribute(FlagsAttribute.class);
     
     public TokenListStream(Collection<Token> tokens) {
       this.tokens = tokens;
-      termAtt = addAttribute(TermAttribute.class);
-      posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-      payloadAtt = addAttribute(PayloadAttribute.class);
-      offsetAtt = addAttribute(OffsetAttribute.class);
-      typeAtt = addAttribute(TypeAttribute.class);
-      flagsAtt = addAttribute(FlagsAttribute.class);
     }
 
     private Iterator<Token> iterator;
@@ -515,7 +514,7 @@ public class TestShingleMatrixFilter extends BaseTokenStreamTestCase {
       }
       Token prototype = iterator.next();
       clearAttributes();
-      termAtt.setTermBuffer(prototype.termBuffer(), 0, prototype.termLength());
+      termAtt.copyBuffer(prototype.buffer(), 0, prototype.length());
       posIncrAtt.setPositionIncrement(prototype.getPositionIncrement());
       flagsAtt.setFlags(prototype.getFlags());
       offsetAtt.setOffset(prototype.startOffset(), prototype.endOffset());

@@ -337,10 +337,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
 
       // create token
       SpellCheckResponse.Suggestion suggestion = origVsSuggestion.get(original);
-      Token token = new Token();
-      token.setTermBuffer(original);
-      token.setStartOffset(suggestion.getStartOffset());
-      token.setEndOffset(suggestion.getEndOffset());
+      Token token = new Token(original, suggestion.getStartOffset(), suggestion.getEndOffset());
 
       // get top 'count' suggestions out of 'sugQueue.size()' candidates
       SuggestWord[] suggestions = new SuggestWord[Math.min(count, sugQueue.size())];
@@ -382,7 +379,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     
     while (ts.incrementToken()){
       Token token = new Token();
-      token.setTermBuffer(termAtt.buffer(), 0, termAtt.length());
+      token.copyBuffer(termAtt.buffer(), 0, termAtt.length());
       token.setOffset(offsetAtt.startOffset(), offsetAtt.endOffset());
       token.setType(typeAtt.type());
       token.setFlags(flagsAtt.getFlags());
@@ -461,7 +458,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         if (hasFreqInfo) {
           isCorrectlySpelled = isCorrectlySpelled && spellingResult.getTokenFrequency(inputToken) > 0;
         }
-        result.add(new String(inputToken.termBuffer(), 0, inputToken.termLength()), suggestionList);
+        result.add(new String(inputToken.buffer(), 0, inputToken.length()), suggestionList);
       }
     }
     if (hasFreqInfo) {

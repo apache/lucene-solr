@@ -18,8 +18,8 @@ package org.apache.lucene.analysis.payloads;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -32,7 +32,7 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
     DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter
       (new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(test)), 
        DelimitedPayloadTokenFilter.DEFAULT_DELIMITER, new IdentityEncoder());
-    TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     PayloadAttribute payAtt = filter.getAttribute(PayloadAttribute.class);
     assertTermEquals("The", filter, termAtt, payAtt, null);
     assertTermEquals("quick", filter, termAtt, payAtt, "JJ".getBytes("UTF-8"));
@@ -70,7 +70,7 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
   public void testFloatEncoding() throws Exception {
     String test = "The quick|1.0 red|2.0 fox|3.5 jumped|0.5 over the lazy|5 brown|99.3 dogs|83.7";
     DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(test)), '|', new FloatEncoder());
-    TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     PayloadAttribute payAtt = filter.getAttribute(PayloadAttribute.class);
     assertTermEquals("The", filter, termAtt, payAtt, null);
     assertTermEquals("quick", filter, termAtt, payAtt, PayloadHelper.encodeFloat(1.0f));
@@ -88,7 +88,7 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
   public void testIntEncoding() throws Exception {
     String test = "The quick|1 red|2 fox|3 jumped over the lazy|5 brown|99 dogs|83";
     DelimitedPayloadTokenFilter filter = new DelimitedPayloadTokenFilter(new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader(test)), '|', new IntegerEncoder());
-    TermAttribute termAtt = filter.getAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = filter.getAttribute(CharTermAttribute.class);
     PayloadAttribute payAtt = filter.getAttribute(PayloadAttribute.class);
     assertTermEquals("The", filter, termAtt, payAtt, null);
     assertTermEquals("quick", filter, termAtt, payAtt, PayloadHelper.encodeInt(1));
@@ -104,10 +104,10 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
   }
 
   void assertTermEquals(String expected, TokenStream stream, byte[] expectPay) throws Exception {
-    TermAttribute termAtt = stream.getAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = stream.getAttribute(CharTermAttribute.class);
     PayloadAttribute payloadAtt = stream.getAttribute(PayloadAttribute.class);
     assertTrue(stream.incrementToken());
-    assertEquals(expected, termAtt.term());
+    assertEquals(expected, termAtt.toString());
     Payload payload = payloadAtt.getPayload();
     if (payload != null) {
       assertTrue(payload.length() + " does not equal: " + expectPay.length, payload.length() == expectPay.length);
@@ -121,9 +121,9 @@ public class DelimitedPayloadTokenFilterTest extends LuceneTestCase {
   }
 
 
-  void assertTermEquals(String expected, TokenStream stream, TermAttribute termAtt, PayloadAttribute payAtt, byte[] expectPay) throws Exception {
+  void assertTermEquals(String expected, TokenStream stream, CharTermAttribute termAtt, PayloadAttribute payAtt, byte[] expectPay) throws Exception {
     assertTrue(stream.incrementToken());
-    assertEquals(expected, termAtt.term());
+    assertEquals(expected, termAtt.toString());
     Payload payload = payAtt.getPayload();
     if (payload != null) {
       assertTrue(payload.length() + " does not equal: " + expectPay.length, payload.length() == expectPay.length);

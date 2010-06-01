@@ -17,8 +17,6 @@ package org.apache.lucene.analysis.compound;
  * limitations under the License.
  */
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
@@ -27,7 +25,7 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
   public void testHyphenationCompoundWordsDA() throws Exception {
@@ -176,15 +174,15 @@ public class TestCompoundWordTokenFilter extends BaseTokenStreamTestCase {
         CompoundWordTokenFilterBase.DEFAULT_MIN_SUBWORD_SIZE,
         CompoundWordTokenFilterBase.DEFAULT_MAX_SUBWORD_SIZE, false);
     
-    TermAttribute termAtt = tf.getAttribute(TermAttribute.class);
+    CharTermAttribute termAtt = tf.getAttribute(CharTermAttribute.class);
     assertTrue(tf.incrementToken());
-    assertEquals("Rindfleischüberwachungsgesetz", termAtt.term());
+    assertEquals("Rindfleischüberwachungsgesetz", termAtt.toString());
     assertTrue(tf.incrementToken());
-    assertEquals("Rind", termAtt.term());
+    assertEquals("Rind", termAtt.toString());
     wsTokenizer.reset(new StringReader("Rindfleischüberwachungsgesetz"));
     tf.reset();
     assertTrue(tf.incrementToken());
-    assertEquals("Rindfleischüberwachungsgesetz", termAtt.term());
+    assertEquals("Rindfleischüberwachungsgesetz", termAtt.toString());
   }
 
   private Reader getHyphenationReader() throws Exception {

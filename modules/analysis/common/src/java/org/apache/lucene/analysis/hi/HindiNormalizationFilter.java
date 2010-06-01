@@ -23,7 +23,7 @@ import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter; // javadoc 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * A {@link TokenFilter} that applies {@link HindiNormalizer} to normalize the
@@ -39,7 +39,7 @@ import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 public final class HindiNormalizationFilter extends TokenFilter {
 
   private final HindiNormalizer normalizer = new HindiNormalizer();
-  private final TermAttribute termAtt = addAttribute(TermAttribute.class);
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final KeywordAttribute keywordAtt = addAttribute(KeywordAttribute.class);
   
   public HindiNormalizationFilter(TokenStream input) {
@@ -50,8 +50,8 @@ public final class HindiNormalizationFilter extends TokenFilter {
   public boolean incrementToken() throws IOException {
     if (input.incrementToken()) {
       if (!keywordAtt.isKeyword())
-        termAtt.setTermLength(normalizer.normalize(termAtt.termBuffer(), 
-            termAtt.termLength()));
+        termAtt.setLength(normalizer.normalize(termAtt.buffer(), 
+            termAtt.length()));
       return true;
     } 
     return false;

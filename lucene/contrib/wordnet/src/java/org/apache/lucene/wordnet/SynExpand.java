@@ -29,7 +29,7 @@ import java.util.Set;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
@@ -117,10 +117,10 @@ public final class SynExpand {
 
 		// [1] Parse query into separate words so that when we expand we can avoid dups
 		TokenStream ts = a.tokenStream( field, new StringReader( query));
-		TermAttribute termAtt = ts.addAttribute(TermAttribute.class);
+		CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
 		
 		while (ts.incrementToken()) {
-		  String word = termAtt.term();
+		  String word = termAtt.toString();
 			if ( already.add( word))
 				top.add( word);
 		}

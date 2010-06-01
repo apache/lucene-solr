@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter; // for java
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.KeywordAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * A {@link TokenFilter} that stems German words. 
@@ -45,11 +45,11 @@ public final class GermanStemFilter extends TokenFilter
     /**
      * The actual token in the input stream.
      */
-    private GermanStemmer stemmer = null;
+    private GermanStemmer stemmer = new GermanStemmer();
     private Set<?> exclusionSet = null;
 
-    private final TermAttribute termAtt;
-    private final KeywordAttribute keywordAttr;
+    private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+    private final KeywordAttribute keywordAttr = addAttribute(KeywordAttribute.class);
 
     /**
      * Creates a {@link GermanStemFilter} instance
@@ -58,9 +58,6 @@ public final class GermanStemFilter extends TokenFilter
     public GermanStemFilter( TokenStream in )
     {
       super(in);
-      stemmer = new GermanStemmer();
-      termAtt = addAttribute(TermAttribute.class);
-      keywordAttr = addAttribute(KeywordAttribute.class);
     }
 
     /**
@@ -80,13 +77,13 @@ public final class GermanStemFilter extends TokenFilter
     @Override
     public boolean incrementToken() throws IOException {
       if (input.incrementToken()) {
-        String term = termAtt.term();
+        String term = termAtt.toString();
         // Check the exclusion table.
         if (!keywordAttr.isKeyword() && (exclusionSet == null || !exclusionSet.contains(term))) {
           String s = stemmer.stem(term);
           // If not stemmed, don't waste the time adjusting the token.
           if ((s != null) && !s.equals(term))
-            termAtt.setTermBuffer(s);
+            termAtt.setEmpty().append(s);
         }
         return true;
       } else {

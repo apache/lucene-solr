@@ -26,7 +26,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.LetterTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -176,9 +175,6 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
     QueryAutoStopWordAnalyzer a = new QueryAutoStopWordAnalyzer(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     a.addStopWords(reader, 10);
     TokenStream ts = a.tokenStream("repetitiveField", new StringReader("this boring"));
-    TermAttribute termAtt = ts.getAttribute(TermAttribute.class);
-    assertTrue(ts.incrementToken());
-    assertEquals("this", termAtt.term());
-    assertFalse(ts.incrementToken());
+    assertTokenStreamContents(ts, new String[] { "this" });
   }
 }

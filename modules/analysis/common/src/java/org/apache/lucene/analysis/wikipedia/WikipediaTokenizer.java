@@ -18,10 +18,10 @@
 package org.apache.lucene.analysis.wikipedia;
 
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
 
@@ -116,11 +116,11 @@ public final class WikipediaTokenizer extends Tokenizer {
   private Set<String> untokenizedTypes = Collections.emptySet();
   private Iterator<AttributeSource.State> tokens = null;
   
-  private OffsetAttribute offsetAtt;
-  private TypeAttribute typeAtt;
-  private PositionIncrementAttribute posIncrAtt;
-  private TermAttribute termAtt;
-  private FlagsAttribute flagsAtt;
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
+  private final TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
+  private final PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
+  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
+  private final FlagsAttribute flagsAtt = addAttribute(FlagsAttribute.class);
 
   /**
    * Creates a new instance of the {@link WikipediaTokenizer}. Attaches the
@@ -176,12 +176,7 @@ public final class WikipediaTokenizer extends Tokenizer {
   
   private void init(int tokenOutput, Set<String> untokenizedTypes) {
     this.tokenOutput = tokenOutput;
-    this.untokenizedTypes = untokenizedTypes;
-    this.offsetAtt = addAttribute(OffsetAttribute.class);
-    this.typeAtt = addAttribute(TypeAttribute.class);
-    this.posIncrAtt = addAttribute(PositionIncrementAttribute.class);
-    this.termAtt = addAttribute(TermAttribute.class);
-    this.flagsAtt = addAttribute(FlagsAttribute.class);    
+    this.untokenizedTypes = untokenizedTypes;    
   }
   
   /*
@@ -245,8 +240,9 @@ public final class WikipediaTokenizer extends Tokenizer {
       lastPos = currPos + numAdded;
     }
     //trim the buffer
+    // TODO: this is inefficient
     String s = buffer.toString().trim();
-    termAtt.setTermBuffer(s.toCharArray(), 0, s.length());
+    termAtt.setEmpty().append(s);
     offsetAtt.setOffset(correctOffset(theStart), correctOffset(theStart + s.length()));
     flagsAtt.setFlags(UNTOKENIZED_TOKEN_FLAG);
     //The way the loop is written, we will have proceeded to the next token.  We need to pushback the scanner to lastPos
@@ -283,8 +279,9 @@ public final class WikipediaTokenizer extends Tokenizer {
       lastPos = currPos + numAdded;
     }
     //trim the buffer
+    // TODO: this is inefficient
     String s = buffer.toString().trim();
-    termAtt.setTermBuffer(s.toCharArray(), 0, s.length());
+    termAtt.setEmpty().append(s);
     offsetAtt.setOffset(correctOffset(theStart), correctOffset(theStart + s.length()));
     flagsAtt.setFlags(UNTOKENIZED_TOKEN_FLAG);
     //The way the loop is written, we will have proceeded to the next token.  We need to pushback the scanner to lastPos
@@ -298,7 +295,7 @@ public final class WikipediaTokenizer extends Tokenizer {
   private void setupToken() {
     scanner.getText(termAtt);
     final int start = scanner.yychar();
-    offsetAtt.setOffset(correctOffset(start), correctOffset(start + termAtt.termLength()));
+    offsetAtt.setOffset(correctOffset(start), correctOffset(start + termAtt.length()));
   }
 
   /*

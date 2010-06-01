@@ -97,7 +97,7 @@ public class TestTrimFilter extends BaseTokenStreamTestCase {
       else {
         clearAttributes();
         Token token = tokens[index++];
-        termAtt.setEmpty().append(token.term());
+        termAtt.setEmpty().append(token);
         offsetAtt.setOffset(token.startOffset(), token.endOffset());
         posIncAtt.setPositionIncrement(token.getPositionIncrement());
         flagsAtt.setFlags(token.getFlags());

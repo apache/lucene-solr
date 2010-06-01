@@ -22,14 +22,14 @@ import java.io.IOException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.analysis.Token;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 public class TestSingleTokenTokenFilter extends LuceneTestCase {
 
   public void test() throws IOException {
     Token token = new Token();
     SingleTokenTokenStream ts = new SingleTokenTokenStream(token);
-    AttributeImpl tokenAtt = (AttributeImpl) ts.addAttribute(TermAttribute.class);
+    AttributeImpl tokenAtt = (AttributeImpl) ts.addAttribute(CharTermAttribute.class);
     assertTrue(tokenAtt instanceof Token);
     ts.reset();
 
