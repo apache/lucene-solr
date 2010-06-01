@@ -283,24 +283,20 @@ final public class XMLWriter {
     }
   }
 
-  private static final String[] indentArr = new String[] {
-    "\n",
-    "\n ",
-    "\n  ",
-    "\n\t",
-    "\n\t ",
-    "\n\t  ",  // could skip this one (the only 3 char seq)
-    "\n\t\t" };
+
+  // indent up to 40 spaces
+  static final char[] indentChars = new char[81];
+  static {
+    Arrays.fill(indentChars,' ');
+    indentChars[0] = '\n';  // start with a newline
+  }
 
   public void indent() throws IOException {
      indent(level);
   }
 
   public void indent(int lev) throws IOException {
-    int arrsz = indentArr.length-1;
-    // another option would be lev % arrsz (wrap around)
-    String istr = indentArr[ lev > arrsz ? arrsz : lev ];
-    writer.write(istr);
+    writer.write(indentChars, 0, Math.min((lev<<1)+1, indentChars.length));
   }
 
   private static final Comparator fieldnameComparator = new Comparator() {

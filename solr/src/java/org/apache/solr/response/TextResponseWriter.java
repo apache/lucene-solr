@@ -71,27 +71,15 @@ public abstract class TextResponseWriter {
   /** returns the Writer that the response is being written to */
   public Writer getWriter() { return writer; }
 
-  // use a combination of tabs and spaces to minimize the size of an indented response.
-  private static final String[] indentArr = new String[] {
-    "\n",
-    "\n ",
-    "\n  ",
-    "\n\t",
-    "\n\t ",
-    "\n\t  ",  // could skip this one (the only 3 char seq)
-    "\n\t\t",
-    "\n\t\t "};
 
   public void indent() throws IOException {
      if (doIndent) indent(level);
   }
 
   public void indent(int lev) throws IOException {
-    int arrsz = indentArr.length-1;
-    // power-of-two intent array (gratuitous optimization :-)
-    String istr = indentArr[lev & (indentArr.length-1)];
-    writer.write(istr);
+    writer.write(XMLWriter.indentChars, 0, Math.min((lev<<1)+1, XMLWriter.indentChars.length));
   }
+
 
   //
   // Functions to manipulate the current logical nesting level.
