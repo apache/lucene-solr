@@ -262,6 +262,10 @@ Bug Fixes
 * SOLR-1706: fixed WordDelimiterFilter for certain combinations of options
   where it would output incorrect tokens. (Robert Muir, Chris Male)
 
+* SOLR-1936: The JSON response format needed to escape unicode code point
+  U+2028 - 'LINE SEPARATOR' (Robert Hofstra, yonik)
+
+
 Other Changes
 ----------------------
 
