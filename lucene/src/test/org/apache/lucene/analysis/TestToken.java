@@ -241,7 +241,7 @@ public class TestToken extends LuceneTestCase {
   public void testTokenAttributeFactory() throws Exception {
     TokenStream ts = new WhitespaceTokenizer(Token.TOKEN_ATTRIBUTE_FACTORY, new StringReader("foo bar"));
     
-    assertTrue("TypeAttribute is not implemented by SenselessAttributeImpl",
+    assertTrue("SenselessAttribute is not implemented by SenselessAttributeImpl",
       ts.addAttribute(SenselessAttribute.class) instanceof SenselessAttributeImpl);
     
     assertTrue("CharTermAttribute is not implemented by Token",
