@@ -416,7 +416,7 @@ Bug fixes
   called.  (Ruben Laguna, Uwe Schindler, Mike McCandless)
   
 * LUCENE-2417: IndexCommit did not implement hashCode() and equals() 
-  consitently. Now they both take Directory and version into consideration. In
+  consistently. Now they both take Directory and version into consideration. In
   addition, all of IndexComnmit methods which threw 
   UnsupportedOperationException are now abstract. (Shai Erera)
 
