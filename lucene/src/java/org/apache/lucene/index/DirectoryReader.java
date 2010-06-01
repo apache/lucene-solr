@@ -163,22 +163,20 @@ class DirectoryReader extends IndexReader implements Cloneable {
     final int numSegments = infos.size();
     SegmentReader[] readers = new SegmentReader[numSegments];
     final Directory dir = writer.getDirectory();
-    int upto = 0;
 
     for (int i=0;i<numSegments;i++) {
       boolean success = false;
       try {
-        final SegmentInfo info = infos.info(upto);
-        if (info.dir == dir) {
-          readers[upto++] = writer.readerPool.getReadOnlyClone(info, true, termInfosIndexDivisor);
-        }
+        final SegmentInfo info = infos.info(i);
+        assert info.dir == dir;
+        readers[i] = writer.readerPool.getReadOnlyClone(info, true, termInfosIndexDivisor);
         success = true;
       } finally {
         if (!success) {
           // Close all readers we had opened:
-          for(upto--;upto>=0;upto--) {
+          for(i--;i>=0;i--) {
             try {
-              readers[upto].close();
+              readers[i].close();
             } catch (Throwable ignore) {
               // keep going - we want to clean up as much as possible
             }
@@ -188,13 +186,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
     }
 
     this.writer = writer;
-
-    if (upto < readers.length) {
-      // This means some segments were in a foreign Directory
-      SegmentReader[] newReaders = new SegmentReader[upto];
-      System.arraycopy(readers, 0, newReaders, 0, upto);
-      readers = newReaders;
-    }
 
     initialize(readers);
   }
