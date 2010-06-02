@@ -4034,7 +4034,21 @@ public class IndexWriter implements Closeable {
       // keep deletes (it's costly to open entire reader
       // when we just need deletes)
 
-      final SegmentReader mergedReader = readerPool.get(merge.info, false, BufferedIndexInput.BUFFER_SIZE, -1);
+      final int termsIndexDivisor;
+      final boolean loadDocStores;
+
+      if (poolReaders && mergedSegmentWarmer != null) {
+        // Load terms index & doc stores so the segment
+        // warmer can run searches, load documents/term
+        // vectors
+        termsIndexDivisor = config.getReaderTermsIndexDivisor();
+        loadDocStores = true;
+      } else {
+        termsIndexDivisor = -1;
+        loadDocStores = false;
+      }
+
+      final SegmentReader mergedReader = readerPool.get(merge.info, loadDocStores, BufferedIndexInput.BUFFER_SIZE, termsIndexDivisor);
       try {
         if (poolReaders && mergedSegmentWarmer != null) {
           mergedSegmentWarmer.warm(mergedReader);

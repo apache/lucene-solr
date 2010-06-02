@@ -460,6 +460,11 @@ Bug fixes
 * LUCENE-2424: Fix FieldDoc.toString to not just fallback to
   super.toString() (Stephen Green via Mike McCandless)
 
+* LUCENE-2311: Always pass a "fully loaded" (terms index & doc stores)
+  SegmentsReader to IndexWriter's mergedSegmentWarmer (if set), so
+  that warming is free to do whatever it needs to.  (Earwin Burrfoot
+  via Mike McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
