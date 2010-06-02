@@ -457,8 +457,8 @@ Bug fixes
 * LUCENE-2397: Don't throw NPE from SnapshotDeletionPolicy.snapshot if
   there are no commits yet (Shai Erera)
 
-* LUCENE-2424: Fix FieldDoc.toString to not just fallback to
-  super.toString() (Stephen Green via Mike McCandless)
+* LUCENE-2424: Fix FieldDoc.toString to actually return its fields
+  (Stephen Green via Mike McCandless)
 
 * LUCENE-2311: Always pass a "fully loaded" (terms index & doc stores)
   SegmentsReader to IndexWriter's mergedSegmentWarmer (if set), so
