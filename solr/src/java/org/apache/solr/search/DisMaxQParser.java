@@ -17,9 +17,11 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.DisMaxParams;
@@ -47,6 +49,21 @@ public class DisMaxQParser extends QParser {
    */
   private static String IMPOSSIBLE_FIELD_NAME = "\uFFFC\uFFFC\uFFFC";
 
+  /**
+   * Applies the appropriate default rules for the "mm" param based on the 
+   * effective value of the "q.op" param
+   *
+   * @see QueryParsing#getQueryParserDefaultOperator
+   * @see QueryParsing#OP
+   * @see DisMaxParams#MM
+   */
+  public static String parseMinShouldMatch(final IndexSchema schema, 
+                                           final SolrParams params) {
+    Operator op = QueryParsing.getQueryParserDefaultOperator
+      (schema, params.get(QueryParsing.OP));
+    return params.get(DisMaxParams.MM, 
+                      op.equals(Operator.AND) ? "100%" : "0%");
+  }
 
   public DisMaxQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
@@ -194,7 +211,7 @@ public class DisMaxQParser extends QParser {
 
   protected Query getUserQuery(String userQuery, SolrPluginUtils.DisjunctionMaxQueryParser up, SolrParams solrParams)
           throws ParseException {
-    String minShouldMatch = solrParams.get(DisMaxParams.MM, "100%");
+    String minShouldMatch = parseMinShouldMatch(req.getSchema(), solrParams);
     Query dis = up.parse(userQuery);
     Query query = dis;
 

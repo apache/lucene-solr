@@ -103,6 +103,9 @@ class ExtendedDismaxQParser extends QParser {
     
     SolrParams solrParams = localParams == null ? params : new DefaultSolrParams(localParams, params);
 
+    final String minShouldMatch = 
+      DisMaxQParser.parseMinShouldMatch(req.getSchema(), solrParams);
+
     queryFields = U.parseFieldBoosts(solrParams.getParams(DMP.QF));
     if (0 == queryFields.size()) {
       queryFields.put(req.getSchema().getDefaultSearchFieldName(), 1.0f);
@@ -244,7 +247,6 @@ class ExtendedDismaxQParser extends QParser {
       }
 
       if (parsedUserQuery != null && doMinMatched) {
-        String minShouldMatch = solrParams.get(DMP.MM, "100%");
         if (parsedUserQuery instanceof BooleanQuery) {
           U.setMinShouldMatch((BooleanQuery)parsedUserQuery, minShouldMatch);
         }
@@ -280,9 +282,6 @@ class ExtendedDismaxQParser extends QParser {
         }
         String escapedUserQuery = sb.toString();
         parsedUserQuery = up.parse(escapedUserQuery);
-
-        // Only do minimum-match logic
-        String minShouldMatch = solrParams.get(DMP.MM, "100%");
 
         if (parsedUserQuery instanceof BooleanQuery) {
           BooleanQuery t = new BooleanQuery();

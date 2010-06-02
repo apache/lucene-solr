@@ -66,6 +66,16 @@ Upgrading from Solr 1.4
   (since it has never worked properly).  Solr will now warn you if
   you attempt to set this configuration option at all. (see SOLR-1846)
 
+* The default logic for the 'mm' param of the 'dismax' QParser has
+  been changed.  If no 'mm' param is specified (either in the query,
+  or as a default in solrconfig.xml) then the effective value of the
+  'q.op' param (either in the query or as a default in solrconfig.xml
+  or from the 'defaultOperator' option in schema.xml) is used to
+  influence the behavior.  If q.op is effectively "AND" then mm=100%.
+  If q.op is effectively "OR" then mm=0%.  Users who wish to force the
+  legacy behavior should set a default value for the 'mm' param in
+  their solrconfig.xml file.
+
 Detailed Change List
 ----------------------
 
@@ -392,6 +402,10 @@ Other Changes
 * SOLR-1846: Eliminate support for the abortOnConfigurationError
   option.  It has never worked very well, and in recent versions of
   Solr hasn't worked at all.  (hossman)
+
+* SOLR-1889: The default logic for the 'mm' param of DismaxQParser and
+  ExtendedDismaxQParser has been changed to be determined based on the
+  effective value of the 'q.op' param (hossman)
 
 Build
 ----------------------

@@ -106,8 +106,15 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
    assertQ(req("defType", "edismax", "qf", "name title subject text",
                "q","op"), twor
     );
-   assertQ(req("defType", "edismax", "qf", "name title subject text",
+   assertQ(req("defType", "edismax", 
+               "qf", "name title subject text",
+               "q.op", "AND",
                "q","Order op"), oner
+    );
+   assertQ(req("defType", "edismax", 
+               "qf", "name title subject text",
+               "q.op", "OR",
+               "q","Order op"), twor
     );
    assertQ(req("defType", "edismax", "qf", "name title subject text",
                "q","Order AND op"), oner
@@ -146,8 +153,11 @@ public class TestExtendedDismaxParser extends AbstractSolrTestCase {
     );
 
     // test for stopwords not removed   
-    assertQ(req("defType", "edismax", "qf", "text_sw", "stopwords","false",
-           "q","the big"), oner
+    assertQ(req("defType", "edismax", 
+                "qf", "text_sw", 
+                "stopwords","false",
+                "q.op","AND",
+                "q","the big"), oner
     );
 
     /** stopword removal in conjunction with multi-word synonyms at query time

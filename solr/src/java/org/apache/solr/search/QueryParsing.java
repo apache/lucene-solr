@@ -20,6 +20,7 @@ package org.apache.solr.search;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.queryParser.QueryParser.Operator;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
@@ -66,6 +67,23 @@ public class QueryParsing {
   public static final String DOCID = "_docid_";
 
   /**
+   * Returns the "prefered" default operator for use by Query Parsers, 
+   * based on the settings in the IndexSchema which may be overridden using 
+   * an optional String override value.
+   *
+   * @see IndexSchema#getQueryParserDefaultOperator()
+   * @see #OP
+   */
+  public static Operator getQueryParserDefaultOperator(final IndexSchema sch, 
+                                                       final String override) {
+    String val = override;
+    if (null == val) val = sch.getQueryParserDefaultOperator();
+    return "AND".equals(val) ? Operator.AND : Operator.OR;
+  }
+   
+
+
+  /**
    * Helper utility for parsing a query using the Lucene QueryParser syntax.
    *
    * @param qs     query expression in standard Lucene syntax
@@ -109,10 +127,8 @@ public class QueryParsing {
   public static Query parseQuery(String qs, String defaultField, SolrParams params, IndexSchema schema) {
     try {
       SolrQueryParser parser = schema.getSolrQueryParser(defaultField);
-      String opParam = params.get(OP);
-      if (opParam != null) {
-        parser.setDefaultOperator("AND".equals(opParam) ? QueryParser.Operator.AND : QueryParser.Operator.OR);
-      }
+      parser.setDefaultOperator(getQueryParserDefaultOperator
+                                (schema, params.get(QueryParsing.OP)));
       Query query = parser.parse(qs);
 
       if (SolrCore.log.isTraceEnabled()) {
