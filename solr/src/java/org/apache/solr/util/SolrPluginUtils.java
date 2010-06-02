@@ -399,9 +399,9 @@ public class SolrPluginUtils {
       SolrIndexSearcher searcher = req.getSearcher();
       IndexSchema schema = req.getSchema();
 
-      boolean legacyExplainStyle 
-        = req.getParams().getBool(CommonParams.EXPLAIN_AS_STRING,false);
-
+      boolean explainStruct
+        = req.getParams().getBool(CommonParams.EXPLAIN_STRUCT,false);
+      
       /* userQuery may have been pre-processes .. expose that */
       dbg.add("rawquerystring", req.getParams().get(CommonParams.Q));
       dbg.add("querystring", userQuery);
@@ -413,18 +413,22 @@ public class SolrPluginUtils {
       dbg.add("parsedquery",QueryParsing.toString(query, schema));
       dbg.add("parsedquery_toString", query.toString());
 
-      dbg.add("explain", legacyExplainStyle ?
-              getExplainList(query, results, searcher, schema) :
-              explanationsToNamedLists(getExplanations(query, results, searcher, schema)));
+      NamedList<Explanation> explain 
+        = getExplanations(query, results, searcher, schema);
+      dbg.add("explain", explainStruct ?
+              explanationsToNamedLists(explain) : 
+              explanationsToStrings(explain));
 
       String otherQueryS = req.getParams().get(CommonParams.EXPLAIN_OTHER);
       if (otherQueryS != null && otherQueryS.length() > 0) {
         DocList otherResults = doSimpleQuery
           (otherQueryS,req.getSearcher(), req.getSchema(),0,10);
         dbg.add("otherQuery",otherQueryS);
-        dbg.add("explainOther", legacyExplainStyle ?
-                getExplainList(query, otherResults, searcher, schema) :
-                explanationsToNamedLists(getExplanations(query, otherResults, searcher, schema)));
+        NamedList<Explanation> explainO
+          = getExplanations(query, otherResults, searcher, schema);
+        dbg.add("explainOther", explainStruct ?
+                explanationsToNamedLists(explainO) : 
+                explanationsToStrings(explainO));
       }
     }
 
@@ -489,6 +493,15 @@ public class SolrPluginUtils {
     return explainList;
   }
 
+  private static NamedList<String> explanationsToStrings
+    (NamedList<Explanation> explanations) {
+
+    NamedList<String> out = new SimpleOrderedMap<String>();
+    for (Map.Entry<String,Explanation> entry : explanations) {
+      out.add(entry.getKey(), "\n"+entry.getValue().toString());
+    }
+    return out;
+  }
 
   /**
    * Generates an list of Explanations for each item in a list of docs.
@@ -504,15 +517,8 @@ public class SolrPluginUtils {
                                          SolrIndexSearcher searcher,
                                          IndexSchema schema)
     throws IOException {
-        
-    NamedList<String> outList = new SimpleOrderedMap<String>();
-    NamedList<Explanation> explainList = 
-      getExplanations(query,docs,searcher,schema);
 
-    for (Map.Entry<String,Explanation> entry : explainList) {
-      outList.add(entry.getKey(), "\n"+entry.getValue().toString());
-    }
-    return outList;
+    return explanationsToStrings(getExplanations(query,docs,searcher,schema));
   }
 
   /**

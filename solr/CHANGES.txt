@@ -66,15 +66,6 @@ Upgrading from Solr 1.4
   (since it has never worked properly).  Solr will now warn you if
   you attempt to set this configuration option at all. (see SOLR-1846)
 
-* The format of score explanations in the debug section has been
-  changed to represent the structure of the Explanation object in the
-  approprate format based on the ResponseWriter.  In the unlikely
-  event that client code was previously depending on the previous
-  "white space indented plaintext string" format, a
-  "debug.explain.stringFormat=true" param can be added to the request
-  to force the old behavior -- but support for this will be removed in
-  the next release.
-
 Detailed Change List
 ----------------------
 
@@ -171,7 +162,10 @@ New Features
 
 * SOLR-1923: PhoneticFilterFactory now has support for the 
   Caverphone algorithm. (rmuir)
-
+  
+* SOLR-1915: DebugComponent now supports using a NamedList to model
+  Explanation objects in it's responses instead of
+  Explanation.toString  (hossman) 
    
 Optimizations
 ----------------------
@@ -398,9 +392,6 @@ Other Changes
 * SOLR-1846: Eliminate support for the abortOnConfigurationError
   option.  It has never worked very well, and in recent versions of
   Solr hasn't worked at all.  (hossman)
-  
-* SOLR-1915: DebugComponent now uses a NamedList to model Explanation
-  objects in it's responses instead of Explanation.toString  (hossman)
 
 Build
 ----------------------
