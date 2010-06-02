@@ -204,14 +204,28 @@ public abstract class TextResponseWriter {
   public abstract void writeFloat(String name, String val) throws IOException;
 
   public void writeFloat(String name, float val) throws IOException {
-    writeFloat(name,Float.toString(val));
+    String s = Float.toString(val);
+    // If it's not a normal number, write the value as a string instead.
+    // The following test also handles NaN since comparisons are always false.
+    if (val > Float.NEGATIVE_INFINITY && val < Float.POSITIVE_INFINITY) {
+      writeFloat(name,s);
+    } else {
+      writeStr(name,s,false);
+    }
   }
 
   /** if this form of the method is called, val is the Java string form of a double */
   public abstract void writeDouble(String name, String val) throws IOException;
 
   public void writeDouble(String name, double val) throws IOException {
-    writeDouble(name,Double.toString(val));
+    String s = Double.toString(val);
+    // If it's not a normal number, write the value as a string instead.
+    // The following test also handles NaN since comparisons are always false.
+    if (val > Double.NEGATIVE_INFINITY && val < Double.POSITIVE_INFINITY) {
+      writeDouble(name,s);
+    } else {
+      writeStr(name,s,false);
+    }
   }
 
   public abstract void writeDate(String name, Date val) throws IOException;
