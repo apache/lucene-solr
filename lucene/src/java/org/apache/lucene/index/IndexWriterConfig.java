@@ -589,9 +589,9 @@ public final class IndexWriterConfig implements Cloneable {
     return indexingChain;
   }
 
-  /** Sets the term index divisor passed to any readers that
-   *  IndexWriter opens, for example when apply deletes or
-   *  creating a near-real-time reader in {@link
+  /** Sets the termsIndexDivisor passed to any readers that
+   *  IndexWriter opens, for example when applying deletes
+   *  or creating a near-real-time reader in {@link
    *  IndexWriter#getReader}. */
   public IndexWriterConfig setReaderTermsIndexDivisor(int divisor) {
     if (divisor <= 0) {
