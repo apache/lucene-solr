@@ -106,10 +106,10 @@ API Changes
   commit points when they are not needed anymore (instead of waiting for the 
   next commit). (Shai Erera)
 
-* LUCENE-2356: Add IndexWriterConfig.set/getReaderTermIndexDivisor, to
-  set what IndexWriter passes for termsaIndexDivisor to the readers it
-  opens internally when apply deletions or creating a near-real-time
-  reader.  (Earwin Burrfoot via Mike McCandless)
+* LUCENE-2356: Add IndexWriterConfig.set/getReaderTermsIndexDivisor,
+  to set what IndexWriter passes for termsIndexDivisor to the readers
+  it opens internally when applying deletions or creating a
+  near-real-time reader.  (Earwin Burrfoot via Mike McCandless)
 
 New features
 
