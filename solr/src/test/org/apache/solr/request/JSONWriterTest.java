@@ -61,6 +61,11 @@ public class JSONWriterTest extends SolrTestCaseJ4 {
     w.write(buf, req, rsp);
     assertEquals(buf.toString(), "{'data1'=>(0.0/0.0),'data2'=>-(1.0/0.0),'data3'=>(1.0/0.0)}");
 
+    w = new JSONResponseWriter();
+    buf = new StringWriter();
+    w.write(buf, req, rsp);
+    assertEquals(buf.toString(), "{\"data1\":\"NaN\",\"data2\":\"-Infinity\",\"data3\":\"Infinity\"}");
+
   }
 
   @Test

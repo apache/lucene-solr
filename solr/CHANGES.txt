@@ -325,6 +325,9 @@ Bug Fixes
 * SOLR-1936: The JSON response format needed to escape unicode code point
   U+2028 - 'LINE SEPARATOR' (Robert Hofstra, yonik)
 
+* SOLR-1914: Change the JSON response format to output float/double
+  values of NaN,Infinity,-Infinity as strings. (yonik)
+
 
 Other Changes
 ----------------------
