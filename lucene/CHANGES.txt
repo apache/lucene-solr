@@ -277,6 +277,11 @@ Bug fixes
 * LUCENE-2397: Don't throw NPE from SnapshotDeletionPolicy.snapshot if
   there are no commits yet (Shai Erera)
 
+* LUCENE-2311: Always pass a "fully loaded" (terms index & doc stores)
+  SegmentsReader to IndexWriter's mergedSegmentWarmer (if set), so
+  that warming is free to do whatever it needs to.  (Earwin Burrfoot
+  via Mike McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
