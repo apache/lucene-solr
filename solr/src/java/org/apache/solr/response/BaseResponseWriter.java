@@ -124,6 +124,7 @@ public abstract class BaseResponseWriter {
             if (idxInfo.includeScore && docList.hasScores()) {
               sdoc.addField(SCORE_FIELD, iterator.score());
             }
+            list.add(sdoc);
           }
           responseWriter.writeAllDocs(info, list);
         }
