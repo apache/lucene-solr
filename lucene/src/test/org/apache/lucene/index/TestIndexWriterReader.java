@@ -214,7 +214,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     boolean optimize = true;
 
     Directory dir1 = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir1, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(dir1, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setReaderTermsIndexDivisor(2));
     writer.setInfoStream(infoStream);
     // create the index
     createIndexNoClose(!optimize, "index1", writer);

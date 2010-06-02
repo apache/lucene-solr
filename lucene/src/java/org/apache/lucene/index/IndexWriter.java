@@ -382,7 +382,7 @@ public class IndexWriter implements Closeable {
    * @throws IOException
    */
   public IndexReader getReader() throws IOException {
-    return getReader(IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+    return getReader(config.getReaderTermsIndexDivisor());
   }
 
   /** Expert: like {@link #getReader}, except you can
@@ -603,8 +603,9 @@ public class IndexWriter implements Closeable {
      * @throws IOException
      */
     public synchronized SegmentReader get(SegmentInfo info, boolean doOpenStores) throws IOException {
-      return get(info, doOpenStores, BufferedIndexInput.BUFFER_SIZE, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+      return get(info, doOpenStores, BufferedIndexInput.BUFFER_SIZE, config.getReaderTermsIndexDivisor());
     }
+
     /**
      * Obtain a SegmentReader from the readerPool.  The reader
      * must be returned by calling {@link #release(SegmentReader)}

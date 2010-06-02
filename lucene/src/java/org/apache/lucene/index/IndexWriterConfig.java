@@ -91,6 +91,9 @@ public final class IndexWriterConfig implements Cloneable {
   /** Default setting for {@link #setReaderPooling}. */
   public final static boolean DEFAULT_READER_POOLING = false;
 
+  /** Default value is 1. Change using {@link #setReaderTermsIndexDivisor(int)}. */
+  public static final int DEFAULT_READER_TERMS_INDEX_DIVISOR = IndexReader.DEFAULT_TERMS_INDEX_DIVISOR;
+
   /**
    * Sets the default (for any instance) maximum time to wait for a write lock
    * (in milliseconds).
@@ -127,6 +130,7 @@ public final class IndexWriterConfig implements Cloneable {
   private MergePolicy mergePolicy;
   private int maxThreadStates;
   private boolean readerPooling;
+  private int readerTermsIndexDivisor;
   
   // required for clone
   private Version matchVersion;
@@ -158,6 +162,7 @@ public final class IndexWriterConfig implements Cloneable {
     mergePolicy = new LogByteSizeMergePolicy();
     maxThreadStates = DEFAULT_MAX_THREAD_STATES;
     readerPooling = DEFAULT_READER_POOLING;
+    readerTermsIndexDivisor = DEFAULT_READER_TERMS_INDEX_DIVISOR;
   }
   
   @Override
@@ -583,6 +588,23 @@ public final class IndexWriterConfig implements Cloneable {
   IndexingChain getIndexingChain() {
     return indexingChain;
   }
+
+  /** Sets the term index divisor passed to any readers that
+   *  IndexWriter opens, for example when apply deletes or
+   *  creating a near-real-time reader in {@link
+   *  IndexWriter#getReader}. */
+  public IndexWriterConfig setReaderTermsIndexDivisor(int divisor) {
+    if (divisor <= 0) {
+      throw new IllegalArgumentException("divisor must be >= 1 (got " + divisor + ")");
+    }
+    readerTermsIndexDivisor = divisor;
+    return this;
+  }
+
+  /** @see #setReaderTermsIndexDivisor() */
+  public int getReaderTermsIndexDivisor() {
+    return readerTermsIndexDivisor;
+  }
   
   @Override
   public String toString() {
@@ -606,6 +628,7 @@ public final class IndexWriterConfig implements Cloneable {
     sb.append("mergePolicy=").append(mergePolicy).append("\n");
     sb.append("maxThreadStates=").append(maxThreadStates).append("\n");
     sb.append("readerPooling=").append(readerPooling).append("\n");
+    sb.append("readerTermsIndexDivisor=").append(readerTermsIndexDivisor).append("\n");
     return sb.toString();
   }
 }

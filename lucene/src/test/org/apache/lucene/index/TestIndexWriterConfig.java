@@ -84,6 +84,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     assertNull(conf.getMergedSegmentWarmer());
     assertEquals(IndexWriterConfig.DEFAULT_CODEC_PROVIDER, CodecProvider.getDefault());
     assertEquals(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES, conf.getMaxThreadStates());
+    assertEquals(IndexWriterConfig.DEFAULT_READER_TERMS_INDEX_DIVISOR, conf.getReaderTermsIndexDivisor());
     assertEquals(LogByteSizeMergePolicy.class, conf.getMergePolicy().getClass());
     
     // Sanity check - validate that all getters are covered.
@@ -107,6 +108,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     getters.add("getMergePolicy");
     getters.add("getMaxThreadStates");
     getters.add("getReaderPooling");
+    getters.add("getReaderTermsIndexDivisor");
     for (Method m : IndexWriterConfig.class.getDeclaredMethods()) {
       if (m.getDeclaringClass() == IndexWriterConfig.class && m.getName().startsWith("get")) {
         assertTrue("method " + m.getName() + " is not tested for defaults", getters.contains(m.getName()));
@@ -140,6 +142,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     assertEquals(16.0, IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB, 0.0);
     assertEquals(false, IndexWriterConfig.DEFAULT_READER_POOLING);
     assertEquals(8, IndexWriterConfig.DEFAULT_MAX_THREAD_STATES);
+    assertEquals(IndexReader.DEFAULT_TERMS_INDEX_DIVISOR, IndexWriterConfig.DEFAULT_READER_TERMS_INDEX_DIVISOR);
   }
   
   @Test
