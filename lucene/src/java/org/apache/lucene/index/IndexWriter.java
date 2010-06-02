@@ -380,7 +380,7 @@ public class IndexWriter implements Closeable {
    * @throws IOException
    */
   public IndexReader getReader() throws IOException {
-    return getReader(IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+    return getReader(config.getReaderTermsIndexDivisor());
   }
 
   /** Expert: like {@link #getReader}, except you can
@@ -601,8 +601,9 @@ public class IndexWriter implements Closeable {
      * @throws IOException
      */
     public synchronized SegmentReader get(SegmentInfo info, boolean doOpenStores) throws IOException {
-      return get(info, doOpenStores, BufferedIndexInput.BUFFER_SIZE, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+      return get(info, doOpenStores, BufferedIndexInput.BUFFER_SIZE, config.getReaderTermsIndexDivisor());
     }
+
     /**
      * Obtain a SegmentReader from the readerPool.  The reader
      * must be returned by calling {@link #release(SegmentReader)}
@@ -1300,6 +1301,27 @@ public class IndexWriter implements Closeable {
   public int getMaxFieldLength() {
     ensureOpen();
     return maxFieldLength;
+  }
+
+  /**
+   * @deprecated use {@link
+   *  IndexWriterConfig#setReaderTermsIndexDivisor} instead.
+   */
+  public void setReaderTermsIndexDivisor(int divisor) {
+    ensureOpen();
+    config.setReaderTermsIndexDivisor(divisor);
+    if (infoStream != null) {
+      message("setReaderTermsIndexDivisor " + divisor);
+    }
+  }
+
+  /**
+   * @deprecated use {@link
+   *  IndexWriterConfig#getReaderTermsIndexDivisor} instead.
+   */
+  public int getReaderTermsIndexDivisor() {
+    ensureOpen();
+    return config.getReaderTermsIndexDivisor();
   }
 
   /** Determines the minimal number of documents required

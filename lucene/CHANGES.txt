@@ -177,6 +177,11 @@ API Changes
   whatever ID you want, as long as you use the same one when calling both. 
   (Shai Erera)
   
+* LUCENE-2356: Add IndexWriterConfig.set/getReaderTermIndexDivisor, to
+  set what IndexWriter passes for termsaIndexDivisor to the readers it
+  opens internally when apply deletions or creating a near-real-time
+  reader.  (Earwin Burrfoot via Mike McCandless)
+
 Bug fixes
 
 * LUCENE-2119: Don't throw NegativeArraySizeException if you pass
