@@ -41,14 +41,13 @@ public class ElisionFilterFactory extends BaseTokenFilterFactory implements Reso
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
-    } else {
-      throw new RuntimeException("No articles specified for ElisionFilterFactory");
     }
   }
 
   public ElisionFilter create(TokenStream input) {
     assureMatchVersion();
-    return new ElisionFilter(luceneMatchVersion,input,articles);
+    return articles == null ? new ElisionFilter(luceneMatchVersion,input) : 
+        new ElisionFilter(luceneMatchVersion,input,articles);
   }
 }
 

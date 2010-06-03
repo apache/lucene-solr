@@ -49,4 +49,19 @@ public class TestElisionFilterFactory extends BaseTokenTestCase {
     assertTokenStreamContents(stream, new String[] { "avion" });
   }
   
+  /**
+   * Test creating an elision filter without specifying any articles
+   */
+  public void testDefaultArticles() throws Exception {
+    Reader reader = new StringReader("l'avion");
+    Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
+    ElisionFilterFactory factory = new ElisionFilterFactory();
+    factory.init(DEFAULT_VERSION_PARAM);
+    ResourceLoader loader = new SolrResourceLoader(null, null);
+    factory.init(new HashMap<String,String>());
+    factory.inform(loader);
+    TokenStream stream = factory.create(tokenizer);
+    assertTokenStreamContents(stream, new String[] { "avion" });
+  }
+  
 }

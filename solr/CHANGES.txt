@@ -410,6 +410,9 @@ Other Changes
   option.  It has never worked very well, and in recent versions of
   Solr hasn't worked at all.  (hossman)
 
+* SOLR-1938: ElisionFilterFactory will use a default set of French contractions
+  if you do not supply a custom articles file.  (rmuir)
+
 * SOLR-1889: The default logic for the 'mm' param of DismaxQParser and
   ExtendedDismaxQParser has been changed to be determined based on the
   effective value of the 'q.op' param (hossman)
