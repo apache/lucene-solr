@@ -539,12 +539,6 @@ public class QueryParsing {
       FieldType ft = writeFieldName(prefix.field(), schema, out, flags);
       out.append(prefix.text());
       out.append('*');
-    } else if (query instanceof ConstantScorePrefixQuery) {
-      ConstantScorePrefixQuery q = (ConstantScorePrefixQuery) query;
-      Term prefix = q.getPrefix();
-      FieldType ft = writeFieldName(prefix.field(), schema, out, flags);
-      out.append(prefix.text());
-      out.append('*');
     } else if (query instanceof WildcardQuery) {
       out.append(query.toString());
       writeBoost = false;
