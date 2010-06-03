@@ -332,6 +332,10 @@ Bug Fixes
 Other Changes
 ----------------------
 
+* SOLR-1602: Refactor SOLR package structure to include o.a.solr.response 
+  and move QueryResponseWriters in there
+  (Chris A. Mattmann, ryan, hoss)
+
 * SOLR-1516: Addition of an abstract BaseResponseWriter class to simplify the
   development of QueryResponseWriter implementations.
   (Chris A. Mattmann via noble)
