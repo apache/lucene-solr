@@ -99,7 +99,7 @@ class PerSegmentSingleValuedFaceting {
       }
       @Override
       protected boolean lessThan(SegFacet a, SegFacet b) {
-        return a.si.lookup(a.pos, a.tempBR).compareTo(b.si.lookup(b.pos, b.tempBR)) < 0;
+        return a.tempBR.compareTo(b.tempBR) < 0;
       }
     };
 
@@ -137,6 +137,7 @@ class PerSegmentSingleValuedFaceting {
           seg.pos = seg.startTermIndex;
         }
         if (seg.pos < seg.endTermIndex) {
+          seg.si.lookup(seg.pos, seg.tempBR);
           queue.add(seg);
         }
       }
@@ -149,11 +150,17 @@ class PerSegmentSingleValuedFaceting {
       collector = new IndexSortedFacetCollector(offset, limit, mincount);
     }
 
-    final BytesRef tempBR = new BytesRef();
+    BytesRef val = new BytesRef();
 
     while (queue.size() > 0) {
       SegFacet seg = queue.top();
-      BytesRef val = seg.si.lookup(seg.pos, tempBR);
+
+      // make a shallow copy
+      // Is this always safe? Or could the byte[] be changed?
+      val.bytes = seg.tempBR.bytes;
+      val.offset = seg.tempBR.offset;
+      val.length = seg.tempBR.length;
+
       int count = 0;
 
       do {
@@ -166,9 +173,10 @@ class PerSegmentSingleValuedFaceting {
           queue.pop();
           seg = queue.top();
         }  else {
+          seg.si.lookup(seg.pos, seg.tempBR);          
           seg = queue.updateTop();
         }
-      } while (seg != null && val.compareTo(seg.si.lookup(seg.pos, seg.tempBR)) == 0);
+      } while (seg != null && val.compareTo(seg.tempBR) == 0);
 
       boolean stop = collector.collect(val, count);
       if (stop) break;
