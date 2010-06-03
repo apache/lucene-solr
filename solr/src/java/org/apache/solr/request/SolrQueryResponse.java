@@ -16,11 +16,19 @@
  */
 package org.apache.solr.request;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * @deprecated use org.apache.solr.response.SolrQueryResponse
  */
 public class SolrQueryResponse extends org.apache.solr.response.SolrQueryResponse 
 {
-	
+  private static Logger log = LoggerFactory.getLogger(SolrQueryResponse.class.getName());
+  
+  public SolrQueryResponse() {
+    super();
+    log.warn(SolrQueryResponse.class.getName()+" is deprecated. Please use the corresponding class in org.apache.solr.response");    
+  }
 }

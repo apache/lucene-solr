@@ -16,11 +16,20 @@
  */
 package org.apache.solr.request;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * @deprecated use org.apache.solr.response.PHPSerializedResponseWriter
  */
 public class PHPSerializedResponseWriter extends org.apache.solr.response.PHPSerializedResponseWriter 
 {
-	
+  private static Logger log = LoggerFactory.getLogger(PHPSerializedResponseWriter.class.getName());
+
+  public PHPSerializedResponseWriter(){
+    super();
+    log.warn(PHPSerializedResponseWriter.class.getName()+" is deprecated. Please use the corresponding class in org.apache.solr.response");
+
+  }
 }

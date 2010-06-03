@@ -16,11 +16,21 @@
  */
 package org.apache.solr.request;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * @deprecated use org.apache.solr.response.XSLTResponseWriter
  */
 public class XSLTResponseWriter extends org.apache.solr.response.XSLTResponseWriter 
 {
-	
+  private static Logger log = LoggerFactory.getLogger(XSLTResponseWriter.class.getName());
+
+  
+  public XSLTResponseWriter(){
+    super();
+    log.warn(XSLTResponseWriter.class.getName()+" is deprecated. Please use the corresponding class in org.apache.solr.response");
+
+  } 	
 }

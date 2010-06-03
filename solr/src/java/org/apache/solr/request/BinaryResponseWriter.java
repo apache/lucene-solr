@@ -16,11 +16,19 @@
  */
 package org.apache.solr.request;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * @deprecated use org.apache.solr.response.BinaryResponseWriter
  */
 public class BinaryResponseWriter extends org.apache.solr.response.BinaryResponseWriter 
 {
-	
+  private static Logger log =  LoggerFactory.getLogger(BinaryResponseWriter.class.getName());
+  
+	 public BinaryResponseWriter(){
+	   super();
+	   log.warn(BinaryResponseWriter.class.getName()+" is deprecated. Please use the corresponding class in org.apache.solr.response");
+	 }
 }

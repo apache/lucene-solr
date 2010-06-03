@@ -16,11 +16,21 @@
  */
 package org.apache.solr.request;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * @deprecated use org.apache.solr.response.RubyResponseWriter
  */
 public class RubyResponseWriter extends org.apache.solr.response.RubyResponseWriter 
 {
-	
+  private static Logger log = LoggerFactory.getLogger(RubyResponseWriter.class.getName());
+
+  
+  public RubyResponseWriter(){
+    super();
+    log.warn(RubyResponseWriter.class.getName()+" is deprecated. Please use the corresponding class in org.apache.solr.response");
+
+  } 	
 }

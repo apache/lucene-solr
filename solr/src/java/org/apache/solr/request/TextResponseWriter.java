@@ -19,6 +19,8 @@ package org.apache.solr.request;
 import java.io.Writer;
 
 import org.apache.solr.response.SolrQueryResponse;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 /**
@@ -26,7 +28,10 @@ import org.apache.solr.response.SolrQueryResponse;
  */
 public abstract class TextResponseWriter extends org.apache.solr.response.TextResponseWriter 
 {
+  private static Logger log = LoggerFactory.getLogger(TextResponseWriter.class.getName());
+
   public TextResponseWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
     super(writer, req, rsp);
+    log.warn(TextResponseWriter.class.getName()+" is deprecated. Please use the corresponding class in org.apache.solr.response");    
   }
 }

@@ -16,11 +16,20 @@
  */
 package org.apache.solr.request;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * @deprecated use org.apache.solr.response.PythonResponseWriter
  */
 public class PythonResponseWriter extends org.apache.solr.response.PythonResponseWriter 
 {
-	
+  private static Logger log = LoggerFactory.getLogger(PythonResponseWriter.class.getName());
+
+  public PythonResponseWriter(){
+    super();
+    log.warn(PythonResponseWriter.class.getName()+" is deprecated. Please use the corresponding class in org.apache.solr.response");
+
+  }	
 }
