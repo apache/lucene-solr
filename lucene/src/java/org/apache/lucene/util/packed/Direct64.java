@@ -29,51 +29,51 @@ import java.util.Arrays;
 
 class Direct64 extends PackedInts.ReaderImpl
         implements PackedInts.Mutable {
-  private long[] blocks;
+  private long[] values;
   private static final int BITS_PER_VALUE = 64;
 
   public Direct64(int valueCount) {
     super(valueCount, BITS_PER_VALUE);
-    blocks = new long[valueCount];
+    values = new long[valueCount];
   }
 
   public Direct64(IndexInput in, int valueCount) throws IOException {
     super(valueCount, BITS_PER_VALUE);
-    long[] blocks = new long[valueCount];
+    long[] values = new long[valueCount];
     for(int i=0;i<valueCount;i++) {
-      blocks[i] = in.readLong();
+      values[i] = in.readLong();
     }
 
-    this.blocks = blocks;
+    this.values = values;
   }
 
 
   /**
-   * Creates an array backed by the given blocks.
+   * Creates an array backed by the given values.
    * </p><p>
-   * Note: The blocks are used directly, so changes to the given block will
+   * Note: The values are used directly, so changes to the given values will
    * affect the structure.
-   * @param blocks   used as the internal backing array.
+   * @param values   used as the internal backing array.
    */
-  public Direct64(long[] blocks) {
-    super(blocks.length, BITS_PER_VALUE);
-    this.blocks = blocks;
+  public Direct64(long[] values) {
+    super(values.length, BITS_PER_VALUE);
+    this.values = values;
   }
 
   public long get(final int index) {
-    return blocks[index];
+    return values[index];
   }
 
   public void set(final int index, final long value) {
-    blocks[index] = value;
+    values[index] = value;
   }
 
   public long ramBytesUsed() {
     return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER +
-            blocks.length * RamUsageEstimator.NUM_BYTES_LONG;
+            values.length * RamUsageEstimator.NUM_BYTES_LONG;
   }
 
   public void clear() {
-    Arrays.fill(blocks, 0L);
+    Arrays.fill(values, 0L);
   }
 }

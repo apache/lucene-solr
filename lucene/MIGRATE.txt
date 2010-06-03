@@ -1,0 +1,45 @@
+
+LUCENE-2380
+
+  * The field values returned when sorting by SortField.STRING are now
+    BytesRef.  You can call value.utf8ToString() to convert back to
+    string, if necessary.
+
+  * In FieldCache, getStrings (returning String[]) has been replaced
+    with getTerms (returning a FieldCache.DocTerms instance).
+    DocTerms provides a getTerm method, taking a docID and a BytesRef
+    to fill (which must not be null), and it fills it in with the
+    reference to the bytes for that term.
+
+    If you had code like this before:
+
+      String[] values = FieldCache.DEFAULT.getStrings(reader, field);
+      ...
+      String aValue = values[docID];
+
+    you can do this instead:
+
+      DocTerms values = FieldCache.DEFAULT.getTerms(reader, field);
+      ...
+      BytesRef term = new BytesRef();
+      String aValue = values.get(docID, term).utf8ToString();
+
+    Note however that it can be costly to convert to String, so it's
+    better to work directly with the BytesRef.
+
+  * StringComparatorLocale is now more CPU costly than it was before
+    (it was already very CPU costly since it does not compare using
+    indexed collation keys; use CollationKeyFilter for better
+    performance), since it converts BytesRef -> String on the fly.
+    Also, the field values returned when sorting by SortField.STRING
+    are now BytesRef.
+
+  * FieldComparator.StringOrdValComparator has been renamed to
+    TermOrdValComparator, and now uses BytesRef for its values.
+    Likewise for StringValComparator, renamed to TermValComparator.
+    This means when sorting by SortField.STRING or
+    SortField.STRING_VAL (or directly invoking these comparators) the
+    values returned in the FieldDoc.fields array will be BytesRef not
+    String.  You can call the .utf8ToString() method on the BytesRef
+    instances, if necessary.
+

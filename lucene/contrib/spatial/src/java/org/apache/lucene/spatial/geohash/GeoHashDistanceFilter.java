@@ -21,9 +21,11 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.FilteredDocIdSet;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.spatial.tier.DistanceFilter;
 import org.apache.lucene.spatial.tier.DistanceUtils;
 
@@ -62,7 +64,8 @@ public class GeoHashDistanceFilter extends DistanceFilter {
   @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
 
-    final String[] geoHashValues = FieldCache.DEFAULT.getStrings(reader, geoHashField);
+    final DocTerms geoHashValues = FieldCache.DEFAULT.getTerms(reader, geoHashField);
+    final BytesRef br = new BytesRef();
 
     final int docBase = nextDocBase;
     nextDocBase += reader.maxDoc();
@@ -70,8 +73,10 @@ public class GeoHashDistanceFilter extends DistanceFilter {
     return new FilteredDocIdSet(startingFilter.getDocIdSet(reader)) {
       @Override
       public boolean match(int doc) {
-        
-        String geoHash = geoHashValues[doc];
+
+        // TODO: cutover to BytesRef so we don't have to
+        // make String here
+        String geoHash = geoHashValues.getTerm(doc, br).utf8ToString();
         double[] coords = GeoHashUtils.decode(geoHash);
         double x = coords[0];
         double y = coords[1];

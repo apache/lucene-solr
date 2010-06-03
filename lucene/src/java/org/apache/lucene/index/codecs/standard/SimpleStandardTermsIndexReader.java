@@ -24,6 +24,7 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.PackedInts;
 
 import java.util.HashMap;
@@ -82,6 +83,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
 
   // all fields share this single logical byte[]
   private final PagedBytes termBytes = new PagedBytes(PAGED_BYTES_BITS);
+  private PagedBytes.Reader termBytesReader;
 
   final HashMap<FieldInfo,FieldIndexReader> fields = new HashMap<FieldInfo,FieldIndexReader>();
 
@@ -135,7 +137,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
         if (success) {
           indexLoaded = true;
         }
-        termBytes.finish();
+        termBytesReader = termBytes.freeze();
       } else {
         this.in = in;
       }
@@ -347,7 +349,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
       private void fillResult(int idx, TermsIndexResult result) {
         final long offset = termOffsets.get(idx);
         final int length = (int) (termOffsets.get(1+idx) - offset);
-        termBytes.fill(result.term, termBytesStart + offset, length);
+        termBytesReader.fill(result.term, termBytesStart + offset, length);
         result.position = idx * totalIndexInterval;
         result.offset = termsStart + termsDictOffsets.get(idx);
       }
@@ -361,7 +363,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
 
           final long offset = termOffsets.get(mid);
           final int length = (int) (termOffsets.get(1+mid) - offset);
-          termBytes.fill(result.term, termBytesStart + offset, length);
+          termBytesReader.fill(result.term, termBytesStart + offset, length);
 
           int delta = termComp.compare(term, result.term);
           if (delta < 0) {
@@ -382,7 +384,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
 
         final long offset = termOffsets.get(hi);
         final int length = (int) (termOffsets.get(1+hi) - offset);
-        termBytes.fill(result.term, termBytesStart + offset, length);
+        termBytesReader.fill(result.term, termBytesStart + offset, length);
 
         result.position = hi*totalIndexInterval;
         result.offset = termsStart + termsDictOffsets.get(hi);
@@ -411,7 +413,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
 
       indexLoaded = true;
       in.close();
-      termBytes.finish();
+      termBytesReader = termBytes.freeze();
     }
   }
 
@@ -437,6 +439,9 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
   public void close() throws IOException {
     if (in != null && !indexLoaded) {
       in.close();
+    }
+    if (termBytesReader != null) {
+      termBytesReader.close();
     }
   }
 }

@@ -29,54 +29,54 @@ import java.util.Arrays;
 
 class Direct32 extends PackedInts.ReaderImpl
         implements PackedInts.Mutable {
-  private int[] blocks;
+  private int[] values;
   private static final int BITS_PER_VALUE = 32;
 
   public Direct32(int valueCount) {
     super(valueCount, BITS_PER_VALUE);
-    blocks = new int[valueCount];
+    values = new int[valueCount];
   }
 
   public Direct32(IndexInput in, int valueCount) throws IOException {
     super(valueCount, BITS_PER_VALUE);
-    int[] blocks = new int[valueCount];
+    int[] values = new int[valueCount];
     for(int i=0;i<valueCount;i++) {
-      blocks[i] = in.readInt();
+      values[i] = in.readInt();
     }
     final int mod = valueCount % 2;
     if (mod != 0) {
       in.readInt();
     }
 
-    this.blocks = blocks;
+    this.values = values;
   }
 
   /**
-   * Creates an array backed by the given blocks.
+   * Creates an array backed by the given values.
    * </p><p>
-   * Note: The blocks are used directly, so changes to the given block will
+   * Note: The values are used directly, so changes to the given values will
    * affect the structure.
-   * @param blocks   used as the internal backing array.
+   * @param values   used as the internal backing array.
    */
-  public Direct32(int[] blocks) {
-    super(blocks.length, BITS_PER_VALUE);
-    this.blocks = blocks;
+  public Direct32(int[] values) {
+    super(values.length, BITS_PER_VALUE);
+    this.values = values;
   }
 
   public long get(final int index) {
-    return 0xFFFFFFFFL & blocks[index];
+    return 0xFFFFFFFFL & values[index];
   }
 
   public void set(final int index, final long value) {
-    blocks[index] = (int)(value & 0xFFFFFFFF);
+    values[index] = (int)(value & 0xFFFFFFFF);
   }
 
   public long ramBytesUsed() {
     return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER +
-            blocks.length * RamUsageEstimator.NUM_BYTES_INT;
+            values.length * RamUsageEstimator.NUM_BYTES_INT;
   }
 
   public void clear() {
-    Arrays.fill(blocks, 0);
+    Arrays.fill(values, 0);
   }
 }

@@ -17,6 +17,8 @@
 
 package org.apache.solr.util;
 
+import org.apache.lucene.util.BytesRef;
+
 /**
  * @version $Id$
  */
@@ -41,6 +43,11 @@ public class NumberUtils {
     return Integer.toString(ival);
   }
 
+  public static String SortableStr2int(BytesRef val) {
+    // TODO: operate directly on BytesRef
+    return SortableStr2int(val.utf8ToString());
+  }
+
 
   public static String long2sortableStr(long val) {
     char[] arr = new char[5];
@@ -55,6 +62,11 @@ public class NumberUtils {
   public static String SortableStr2long(String val) {
     long ival = SortableStr2long(val,0,5);
     return Long.toString(ival);
+  }
+
+  public static String SortableStr2long(BytesRef val) {
+    // TODO: operate directly on BytesRef
+    return SortableStr2long(val.utf8ToString());
   }
 
   //
@@ -85,6 +97,11 @@ public class NumberUtils {
     return Float.intBitsToFloat(f);
   }
 
+  public static float SortableStr2float(BytesRef val) {
+    // TODO: operate directly on BytesRef
+    return SortableStr2float(val.utf8ToString());
+  }
+
   public static String SortableStr2floatStr(String val) {
     return Float.toString(SortableStr2float(val));
   }
@@ -104,6 +121,11 @@ public class NumberUtils {
     long f = SortableStr2long(val,0,6);
     if (f<0) f ^= 0x7fffffffffffffffL;
     return Double.longBitsToDouble(f);
+  }
+
+  public static double SortableStr2double(BytesRef val) {
+    // TODO: operate directly on BytesRef
+    return SortableStr2double(val.utf8ToString());
   }
 
   public static String SortableStr2doubleStr(String val) {
@@ -131,6 +153,11 @@ public class NumberUtils {
     return val;
   }
 
+  public static int SortableStr2int(BytesRef sval, int offset, int len) {
+    // TODO: operate directly on BytesRef
+    return SortableStr2int(sval.utf8ToString(), offset, len);
+  }
+
   // uses binary representation of an int to build a string of
   // chars that will sort correctly.  Only char ranges
   // less than 0xd800 will be used to avoid UCS-16 surrogates.
@@ -155,5 +182,8 @@ public class NumberUtils {
     return val;
   }
 
-
+  public static long SortableStr2long(BytesRef sval, int offset, int len) {
+    // TODO: operate directly on BytesRef
+    return SortableStr2long(sval.utf8ToString(), offset, len);
+  }
 }

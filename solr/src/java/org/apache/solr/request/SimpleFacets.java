@@ -21,7 +21,6 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.noggit.CharArr;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
@@ -356,15 +355,6 @@ public class SimpleFacets {
   }
 
 
-  // first element of the fieldcache is null, so we need this comparator.
-  private static final Comparator nullStrComparator = new Comparator() {
-        public int compare(Object o1, Object o2) {
-          if (o1==null) return (o2==null) ? 0 : -1;
-          else if (o2==null) return 1;
-          return ((String)o1).compareTo((String)o2);
-        }
-      }; 
-
   /**
    * Use the Lucene FieldCache to get counts for each unique field value in <code>docs</code>.
    * The field must have at most one indexed token per document.
@@ -386,26 +376,37 @@ public class SimpleFacets {
     FieldType ft = searcher.getSchema().getFieldType(fieldName);
     NamedList res = new NamedList();
 
-    FieldCache.StringIndex si = FieldCache.DEFAULT.getStringIndex(searcher.getReader(), fieldName);
-    final String[] terms = si.lookup;
-    final int[] termNum = si.order;
+    FieldCache.DocTermsIndex si = FieldCache.DEFAULT.getTermsIndex(searcher.getReader(), fieldName);
 
-    if (prefix!=null && prefix.length()==0) prefix=null;
+    final BytesRef prefixRef;
+    if (prefix == null) {
+      prefixRef = null;
+    } else if (prefix.length()==0) {
+      prefix = null;
+      prefixRef = null;
+    } else {
+      prefixRef = new BytesRef(prefix);
+    }
+
+    final BytesRef br = new BytesRef();
 
     int startTermIndex, endTermIndex;
     if (prefix!=null) {
-      startTermIndex = Arrays.binarySearch(terms,prefix,nullStrComparator);
+      startTermIndex = si.binarySearchLookup(prefixRef, br);
       if (startTermIndex<0) startTermIndex=-startTermIndex-1;
       // find the end term.  \uffff isn't a legal unicode char, but only compareTo
       // is used, so it should be fine, and is guaranteed to be bigger than legal chars.
-      endTermIndex = Arrays.binarySearch(terms,prefix+"\uffff\uffff\uffff\uffff",nullStrComparator);
+      endTermIndex = si.binarySearchLookup(new BytesRef(prefix+"\uffff\uffff\uffff\uffff"), br);
+      assert endTermIndex < 0;
       endTermIndex = -endTermIndex-1;
     } else {
       startTermIndex=1;
-      endTermIndex=terms.length;
+      endTermIndex=si.numOrd();
     }
 
     final int nTerms=endTermIndex-startTermIndex;
+
+    CharArr spare = new CharArr();
 
     if (nTerms>0 && docs.size() >= mincount) {
 
@@ -415,7 +416,7 @@ public class SimpleFacets {
 
       DocIterator iter = docs.iterator();
       while (iter.hasNext()) {
-        int term = termNum[iter.nextDoc()];
+        int term = si.getOrd(iter.nextDoc());
         int arrIdx = term-startTermIndex;
         if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
       }
@@ -429,7 +430,7 @@ public class SimpleFacets {
       if (sort.equals(FacetParams.FACET_SORT_COUNT) || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY)) {
         int maxsize = limit>0 ? offset+limit : Integer.MAX_VALUE-1;
         maxsize = Math.min(maxsize, nTerms);
-        final BoundedTreeSet<CountPair<String,Integer>> queue = new BoundedTreeSet<CountPair<String,Integer>>(maxsize);
+        final BoundedTreeSet<CountPair<BytesRef,Integer>> queue = new BoundedTreeSet<CountPair<BytesRef,Integer>>(maxsize);
         int min=mincount-1;  // the smallest value in the top 'N' values
         for (int i=0; i<nTerms; i++) {
           int c = counts[i];
@@ -437,15 +438,17 @@ public class SimpleFacets {
             // NOTE: we use c>min rather than c>=min as an optimization because we are going in
             // index order, so we already know that the keys are ordered.  This can be very
             // important if a lot of the counts are repeated (like zero counts would be).
-            queue.add(new CountPair<String,Integer>(terms[startTermIndex+i], c));
+            queue.add(new CountPair<BytesRef,Integer>(si.lookup(startTermIndex+i, new BytesRef()), c));
             if (queue.size()>=maxsize) min=queue.last().val;
           }
         }
         // now select the right page from the results
-        for (CountPair<String,Integer> p : queue) {
+        for (CountPair<BytesRef,Integer> p : queue) {
           if (--off>=0) continue;
           if (--lim<0) break;
-          res.add(ft.indexedToReadable(p.key), p.val);
+          spare.reset();
+          ft.indexedToReadable(p.key, spare);
+          res.add(spare.toString(), p.val);
         }
       } else {
         // add results in index order
@@ -461,7 +464,9 @@ public class SimpleFacets {
           int c = counts[i];
           if (c<mincount || --off>=0) continue;
           if (--lim<0) break;
-          res.add(ft.indexedToReadable(terms[startTermIndex+i]), c);
+          spare.reset();
+          ft.indexedToReadable(si.lookup(startTermIndex+i, br), spare);
+          res.add(spare.toString(), c);
         }
       }
     }

@@ -18,15 +18,13 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.solr.search.function.DocValues;
-import org.apache.solr.search.function.ValueSource;
 import org.apache.lucene.search.FieldCache;
 
 import java.io.IOException;
 import java.util.Map;
 
 /**
- * Obtains the ordinal of the field value from the default Lucene {@link org.apache.lucene.search.FieldCache} using getStringIndex()
+ * Obtains the ordinal of the field value from the default Lucene {@link org.apache.lucene.search.FieldCache} using getTermsIndex()
  * and reverses the order.
  * <br>
  * The native lucene index order is used to assign an ordinal value for each field value.
@@ -58,31 +56,30 @@ public class ReverseOrdFieldSource extends ValueSource {
   }
 
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final FieldCache.StringIndex sindex = FieldCache.DEFAULT.getStringIndex(reader, field);
+    final FieldCache.DocTermsIndex sindex = FieldCache.DEFAULT.getTermsIndex(reader, field);
 
-    final int arr[] = sindex.order;
-    final int end = sindex.lookup.length;
+    final int end = sindex.numOrd();
 
     return new DocValues() {
       public float floatVal(int doc) {
-        return (float)(end - arr[doc]);
+        return (float)(end - sindex.getOrd(doc));
       }
 
       public int intVal(int doc) {
-        return (int)(end - arr[doc]);
+        return (int)(end - sindex.getOrd(doc));
       }
 
       public long longVal(int doc) {
-        return (long)(end - arr[doc]);
+        return (long)(end - sindex.getOrd(doc));
       }
 
       public double doubleVal(int doc) {
-        return (double)(end - arr[doc]);
+        return (double)(end - sindex.getOrd(doc));
       }
 
       public String strVal(int doc) {
         // the string value of the ordinal, not the string itself
-        return Integer.toString((end - arr[doc]));
+        return Integer.toString((end - sindex.getOrd(doc)));
       }
 
       public String toString(int doc) {

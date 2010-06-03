@@ -22,6 +22,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.document.NumericField; // for javadocs
 
 /**
@@ -83,10 +84,11 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
     return new FieldCacheRangeFilter<String>(field, null, lowerVal, upperVal, includeLower, includeUpper) {
       @Override
       public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-        final FieldCache.StringIndex fcsi = FieldCache.DEFAULT.getStringIndex(reader, field);
-        final int lowerPoint = fcsi.binarySearchLookup(lowerVal);
-        final int upperPoint = fcsi.binarySearchLookup(upperVal);
-        
+        final FieldCache.DocTermsIndex fcsi = FieldCache.DEFAULT.getTermsIndex(reader, field);
+        final BytesRef spare = new BytesRef();
+        final int lowerPoint = fcsi.binarySearchLookup(lowerVal == null ? null : new BytesRef(lowerVal), spare);
+        final int upperPoint = fcsi.binarySearchLookup(upperVal == null ? null : new BytesRef(upperVal), spare);
+
         final int inclusiveLowerPoint, inclusiveUpperPoint;
 
         // Hints:
@@ -125,7 +127,8 @@ public abstract class FieldCacheRangeFilter<T> extends Filter {
         return new FieldCacheDocIdSet(reader, true) {
           @Override
           final boolean matchDoc(int doc) {
-            return fcsi.order[doc] >= inclusiveLowerPoint && fcsi.order[doc] <= inclusiveUpperPoint;
+            final int docOrd = fcsi.getOrd(doc);
+            return docOrd >= inclusiveLowerPoint && docOrd <= inclusiveUpperPoint;
           }
         };
       }

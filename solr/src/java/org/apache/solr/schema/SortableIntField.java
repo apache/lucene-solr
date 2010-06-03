@@ -118,8 +118,8 @@ class SortableIntFieldSource extends FieldCacheSource {
       }
 
       public int intVal(int doc) {
-        int ord=order[doc];
-        return ord==0 ? def  : NumberUtils.SortableStr2int(lookup[ord],0,3);
+        int ord=termsIndex.getOrd(doc);
+        return ord==0 ? def  : NumberUtils.SortableStr2int(termsIndex.lookup(ord, new BytesRef()),0,3);
       }
 
       public long longVal(int doc) {

@@ -209,7 +209,7 @@ public class PackedInts {
    * @lucene.internal
    */
   public static Mutable getMutable(
-         int valueCount, int bitsPerValue) throws IOException {
+         int valueCount, int bitsPerValue) {
     switch (bitsPerValue) {
     case 8:
       return new Direct8(valueCount);

@@ -119,8 +119,8 @@ class SortableLongFieldSource extends FieldCacheSource {
       }
 
       public long longVal(int doc) {
-        int ord=order[doc];
-        return ord==0 ? def  : NumberUtils.SortableStr2long(lookup[ord],0,5);
+        int ord=termsIndex.getOrd(doc);
+        return ord==0 ? def  : NumberUtils.SortableStr2long(termsIndex.lookup(ord, new BytesRef()),0,5);
       }
 
       public double doubleVal(int doc) {

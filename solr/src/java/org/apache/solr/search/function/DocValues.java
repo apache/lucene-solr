@@ -19,9 +19,6 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.search.*;
 import org.apache.lucene.index.IndexReader;
-import org.apache.solr.util.NumberUtils;
-
-import java.io.IOException;
 
 /**
  * Represents field values as different types.
@@ -45,6 +42,7 @@ public abstract class DocValues {
   public int intVal(int doc) { throw new UnsupportedOperationException(); }
   public long longVal(int doc) { throw new UnsupportedOperationException(); }
   public double doubleVal(int doc) { throw new UnsupportedOperationException(); }
+  // TODO: should we make a termVal, returns BytesRef?
   public String strVal(int doc) { throw new UnsupportedOperationException(); }
   public abstract String toString(int doc);
 
@@ -56,6 +54,8 @@ public abstract class DocValues {
   public void intVal(int doc, int [] vals) { throw new UnsupportedOperationException(); }
   public void longVal(int doc, long [] vals) { throw new UnsupportedOperationException(); }
   public void doubleVal(int doc, double [] vals) { throw new UnsupportedOperationException(); }
+
+  // TODO: should we make a termVal, fills BytesRef[]?
   public void strVal(int doc, String [] vals) { throw new UnsupportedOperationException(); }
 
   public Explanation explain(int doc) {

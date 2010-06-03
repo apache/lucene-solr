@@ -18,8 +18,6 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.solr.search.function.DocValues;
-import org.apache.solr.search.function.ValueSource;
 
 import java.io.IOException;
 import java.util.Map;
@@ -61,24 +59,24 @@ public class OrdFieldSource extends ValueSource {
       }
       
       public float floatVal(int doc) {
-        return (float)order[doc];
+        return (float)termsIndex.getOrd(doc);
       }
 
       public int intVal(int doc) {
-        return order[doc];
+        return termsIndex.getOrd(doc);
       }
 
       public long longVal(int doc) {
-        return (long)order[doc];
+        return (long)termsIndex.getOrd(doc);
       }
 
       public double doubleVal(int doc) {
-        return (double)order[doc];
+        return (double)termsIndex.getOrd(doc);
       }
 
       public String strVal(int doc) {
         // the string value of the ordinal, not the string itself
-        return Integer.toString(order[doc]);
+        return Integer.toString(termsIndex.getOrd(doc));
       }
 
       public String toString(int doc) {

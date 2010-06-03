@@ -207,7 +207,7 @@ public class TestOrdValues extends FunctionTestSetup {
         log("compare (should differ): " + innerArray + " to "
                 + q.valSrc.getValues(reader).getInnerArray());
         assertNotSame(
-                "different values shuold be loaded for a different field!",
+                "different values should be loaded for a different field!",
                 innerArray, q.valSrc.getValues(reader).getInnerArray());
       } catch (UnsupportedOperationException e) {
         if (!warned) {

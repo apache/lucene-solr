@@ -18,7 +18,6 @@
 package org.apache.solr.handler.component;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -26,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -34,7 +34,6 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.QueryElevationComponent.ElevationObj;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -247,7 +246,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     
     IndexReader reader = core.getSearcher().get().getReader();
     Map<String, ElevationObj> map = comp.getElevationMap(reader, core);
-    assertTrue( map.get( "aaa" ).priority.containsKey( "A" ) );
+    assertTrue( map.get( "aaa" ).priority.containsKey( new BytesRef("A") ) );
     assertNull( map.get( "bbb" ) );
     
     // now change the file
@@ -258,6 +257,6 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     reader = core.getSearcher().get().getReader();
     map = comp.getElevationMap(reader, core);
     assertNull( map.get( "aaa" ) );
-    assertTrue( map.get( "bbb" ).priority.containsKey( "B" ) );
+    assertTrue( map.get( "bbb" ).priority.containsKey( new BytesRef("B") ) );
   }
 }

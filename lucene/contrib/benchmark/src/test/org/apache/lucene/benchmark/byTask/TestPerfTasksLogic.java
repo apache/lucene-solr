@@ -48,9 +48,10 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.LogDocMergePolicy;
 import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.search.FieldCache.StringIndex;
+import org.apache.lucene.search.FieldCache.DocTermsIndex;
 import org.apache.lucene.search.FieldCache;
 
 /**
@@ -326,11 +327,12 @@ public class TestPerfTasksLogic extends BenchmarkTestCase {
     Benchmark benchmark = execBenchmark(algLines);
 
     IndexReader r = IndexReader.open(benchmark.getRunData().getDirectory(), true);
-    StringIndex idx = FieldCache.DEFAULT.getStringIndex(r, "country");
+    DocTermsIndex idx = FieldCache.DEFAULT.getTermsIndex(r, "country");
     final int maxDoc = r.maxDoc();
     assertEquals(1000, maxDoc);
+    BytesRef br = new BytesRef();
     for(int i=0;i<1000;i++) {
-      assertNotNull("doc " + i + " has null country", idx.lookup[idx.order[i]]);
+      assertNotNull("doc " + i + " has null country", idx.getTerm(i, br));
     }
     r.close();
   }

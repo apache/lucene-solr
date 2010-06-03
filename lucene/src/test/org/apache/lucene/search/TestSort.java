@@ -43,6 +43,8 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -1010,6 +1012,31 @@ public class TestSort extends LuceneTestCase implements Serializable {
         assertEquals (m1.get(key), m2.get(key));
       }
     }
+  }
+
+  public void testEmptyStringVsNullStringSort() throws Exception {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
+                        TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Document doc = new Document();
+    doc.add(new Field("f", "", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    doc.add(new Field("t", "1", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    w.addDocument(doc);
+    w.commit();
+    doc = new Document();
+    doc.add(new Field("t", "1", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    w.addDocument(doc);
+
+    IndexReader r = w.getReader();
+    w.close();
+    IndexSearcher s = new IndexSearcher(r);
+    TopDocs hits = s.search(new TermQuery(new Term("t", "1")), null, 10, new Sort(new SortField("f", SortField.STRING)));
+    assertEquals(2, hits.totalHits);
+    // null sorts first
+    assertEquals(1, hits.scoreDocs[0].doc);
+    assertEquals(0, hits.scoreDocs[1].doc);
+    r.close();
+    dir.close();
   }
 
 }

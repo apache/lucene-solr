@@ -22,15 +22,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.search.FieldCache;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.lucene.util.BytesRef;
+import org.apache.noggit.CharArr;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.StatsParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.handler.component.StatsValues;
-import org.apache.solr.handler.component.FieldFacetStats;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -39,7 +37,6 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.request.UnInvertedField;
-import org.apache.solr.core.SolrCore;
 
 /**
  * Stats component calculates simple statistics on numeric field values
@@ -249,9 +246,9 @@ class SimpleStats {
   public NamedList getFieldCacheStats(String fieldName, String[] facet ) {
     FieldType ft = searcher.getSchema().getFieldType(fieldName);
 
-    FieldCache.StringIndex si = null;
+    FieldCache.DocTermsIndex si = null;
     try {
-      si = FieldCache.DEFAULT.getStringIndex(searcher.getReader(), fieldName);
+      si = FieldCache.DEFAULT.getTermsIndex(searcher.getReader(), fieldName);
     } 
     catch (IOException e) {
       throw new RuntimeException( "failed to open field cache for: "+fieldName, e );
@@ -266,23 +263,27 @@ class SimpleStats {
     for( String f : facet ) {
       ft = searcher.getSchema().getFieldType(f);
       try {
-        si = FieldCache.DEFAULT.getStringIndex(searcher.getReader(), f);
+        si = FieldCache.DEFAULT.getTermsIndex(searcher.getReader(), f);
       } 
       catch (IOException e) {
         throw new RuntimeException( "failed to open field cache for: "+f, e );
       }
       finfo[i++] = new FieldFacetStats( f, si, ft, 0 );
     }
-    
-    
+
+    final BytesRef tempBR = new BytesRef();
+    final CharArr spare = new CharArr();
+
     DocIterator iter = docs.iterator();
     while (iter.hasNext()) {
       int docID = iter.nextDoc();
-      String raw = all.getTermText(docID);
+      BytesRef raw = all.getTermText(docID, tempBR);
       Double v = null;
       if( raw != null ) {
-        v = Double.parseDouble( all.ft.indexedToReadable(raw) );
-        allstats.accumulate( v );
+        spare.reset();
+        all.ft.indexedToReadable(raw, spare);
+        v = Double.parseDouble(spare.toString());
+        allstats.accumulate(v);
       }
       else {
         allstats.missing++;

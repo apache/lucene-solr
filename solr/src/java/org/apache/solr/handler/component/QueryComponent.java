@@ -24,6 +24,7 @@ import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
@@ -33,7 +34,6 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
@@ -256,6 +256,14 @@ public class QueryComponent extends SearchComponent
           // thus be harmless anyway (for all current ways anyway)
           if (val instanceof String) {
             field.setValue((String)val);
+            val = ft.toObject(field);
+          }
+
+          // Must do the same conversion when sorting by a
+          // String field in Lucene, which returns the terms
+          // data as BytesRef:
+          if (val instanceof BytesRef) {
+            field.setValue(((BytesRef)val).utf8ToString());
             val = ft.toObject(field);
           }
 

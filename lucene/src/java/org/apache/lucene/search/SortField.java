@@ -83,10 +83,6 @@ implements Serializable {
    * uses ordinals to do the sorting. */
   public static final int STRING_VAL = 11;
   
-  // IMPLEMENTATION NOTE: the FieldCache.STRING_INDEX is in the same "namespace"
-  // as the above static int values.  Any new values must not have the same value
-  // as FieldCache.STRING_INDEX.
-
   /** Represents sorting by document score (relevancy). */
   public static final SortField FIELD_SCORE = new SortField (null, SCORE);
 
@@ -413,10 +409,10 @@ implements Serializable {
       return comparatorSource.newComparator(field, numHits, sortPos, reverse);
 
     case SortField.STRING:
-      return new FieldComparator.StringOrdValComparator(numHits, field, sortPos, reverse);
+      return new FieldComparator.TermOrdValComparator(numHits, field, sortPos, reverse);
 
     case SortField.STRING_VAL:
-      return new FieldComparator.StringValComparator(numHits, field);
+      return new FieldComparator.TermValComparator(numHits, field);
         
     default:
       throw new IllegalStateException("Illegal sort type: " + type);

@@ -19,6 +19,7 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 
@@ -26,49 +27,47 @@ import java.io.IOException;
  *  Serves as base class for DocValues based on StringIndex 
  **/
 public abstract class StringIndexDocValues extends DocValues {
-    protected final FieldCache.StringIndex index;
-    protected final int[] order;
-    protected final String[] lookup;
+    protected final FieldCache.DocTermsIndex termsIndex;
     protected final ValueSource vs;
 
     public StringIndexDocValues(ValueSource vs, IndexReader reader, String field) throws IOException {
       try {
-        index = FieldCache.DEFAULT.getStringIndex(reader, field);
+        termsIndex = FieldCache.DEFAULT.getTermsIndex(reader, field);
       } catch (RuntimeException e) {
         throw new StringIndexException(field, e);
       }
-      order = index.order;
-      lookup = index.lookup;
       this.vs = vs;
     }
   
     protected abstract String toTerm(String readableValue);
 
-   @Override
+    @Override
     public ValueSourceScorer getRangeScorer(IndexReader reader, String lowerVal, String upperVal, boolean includeLower, boolean includeUpper) {
       // TODO: are lowerVal and upperVal in indexed form or not?
       lowerVal = lowerVal == null ? null : toTerm(lowerVal);
       upperVal = upperVal == null ? null : toTerm(upperVal);
 
-     int lower = Integer.MIN_VALUE;
-     if (lowerVal != null) {
-       lower = index.binarySearchLookup(lowerVal);
-       if (lower < 0) {
-         lower = -lower-1;
-       } else if (!includeLower) {
-         lower++;
-       }
-     }
+      final BytesRef spare = new BytesRef();
 
-     int upper = Integer.MAX_VALUE;
-     if (upperVal != null) {
-       upper = index.binarySearchLookup(upperVal);
-       if (upper < 0) {
-         upper = -upper-2;
-       } else if (!includeUpper) {
-         upper--;
-       }
-     }
+      int lower = Integer.MIN_VALUE;
+      if (lowerVal != null) {
+        lower = termsIndex.binarySearchLookup(new BytesRef(lowerVal), spare);
+        if (lower < 0) {
+          lower = -lower-1;
+        } else if (!includeLower) {
+          lower++;
+        }
+      }
+      
+      int upper = Integer.MAX_VALUE;
+      if (upperVal != null) {
+        upper = termsIndex.binarySearchLookup(new BytesRef(upperVal), spare);
+        if (upper < 0) {
+          upper = -upper-2;
+        } else if (!includeUpper) {
+          upper--;
+        }
+      }
 
       final int ll = lower;
       final int uu = upper;
@@ -76,7 +75,7 @@ public abstract class StringIndexDocValues extends DocValues {
       return new ValueSourceScorer(reader, this) {
         @Override
         public boolean matchesValue(int doc) {
-          int ord = order[doc];
+          int ord = termsIndex.getOrd(doc);
           return ord >= ll && ord <= uu;
         }
       };

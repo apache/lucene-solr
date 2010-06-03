@@ -653,11 +653,11 @@ public class UnInvertedField {
     int i = 0;
     final FieldFacetStats[] finfo = new FieldFacetStats[facet.length];
     //Initialize facetstats, if facets have been passed in
-    FieldCache.StringIndex si;
+    FieldCache.DocTermsIndex si;
     for (String f : facet) {
       FieldType facet_ft = searcher.getSchema().getFieldType(f);
       try {
-        si = FieldCache.DEFAULT.getStringIndex(searcher.getReader(), f);
+        si = FieldCache.DEFAULT.getTermsIndex(searcher.getReader(), f);
       }
       catch (IOException e) {
         throw new RuntimeException("failed to open field cache for: " + f, e);

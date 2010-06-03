@@ -820,7 +820,7 @@ final class DocumentsWriter {
 
   boolean updateDocument(Document doc, Analyzer analyzer, Term delTerm)
     throws CorruptIndexException, IOException {
-
+    
     // This call is synchronized but fast
     final DocumentsWriterThreadState state = getThreadState(doc, delTerm);
 
@@ -1301,6 +1301,8 @@ final class DocumentsWriter {
   final static int BYTE_BLOCK_MASK = BYTE_BLOCK_SIZE - 1;
   final static int BYTE_BLOCK_NOT_MASK = ~BYTE_BLOCK_MASK;
 
+  /* if you increase this, you must fix field cache impl for
+   * getTerms/getTermsIndex requires <= 32768 */
   final static int MAX_TERM_LENGTH_UTF8 = BYTE_BLOCK_SIZE-2;
 
   private class ByteBlockAllocator extends ByteBlockPool.Allocator {

@@ -115,7 +115,6 @@ public class TestSort extends AbstractSolrTestCase {
         if (r.nextBoolean()) sfields.add( new SortField(null, SortField.SCORE));
         // hit both use-cases of sort-missing-last
         sfields.add( Sorting.getStringSortField("f", reverse, sortMissingLast, !sortMissingLast) );
-        int sortIdx = sfields.size() - 1;
         if (r.nextBoolean()) sfields.add( new SortField(null, SortField.SCORE));
 
         Sort sort = new Sort(sfields.toArray(new SortField[sfields.size()]));
@@ -174,7 +173,6 @@ public class TestSort extends AbstractSolrTestCase {
         ScoreDoc[] sdocs = topDocs.scoreDocs;
         for (int j=0; j<sdocs.length; j++) {
           int id = sdocs[j].doc;
-          String s = (String)((FieldDoc)sdocs[j]).fields[sortIdx];
           if (id != collectedDocs.get(j).doc) {
             log.error("Error at pos " + j);
           }

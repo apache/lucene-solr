@@ -23,14 +23,20 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.BytesRef;
 import java.io.IOException;
+import java.util.Random;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
 public class TestFieldCache extends LuceneTestCase {
   protected IndexReader reader;
-  private static final int NUM_DOCS = 1000;
+  private int NUM_DOCS;
+  private String[] unicodeStrings;
 
   public TestFieldCache(String s) {
     super(s);
@@ -39,14 +45,17 @@ public class TestFieldCache extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
+    Random r = newRandom();
+    NUM_DOCS = 1000 * _TestUtil.getRandomMultiplier();
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer= new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer= new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(500));
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;
     byte theByte = Byte.MAX_VALUE;
     short theShort = Short.MAX_VALUE;
     int theInt = Integer.MAX_VALUE;
     float theFloat = Float.MAX_VALUE;
+    unicodeStrings = new String[NUM_DOCS];
     for (int i = 0; i < NUM_DOCS; i++){
       Document doc = new Document();
       doc.add(new Field("theLong", String.valueOf(theLong--), Field.Store.NO, Field.Index.NOT_ANALYZED));
@@ -55,10 +64,28 @@ public class TestFieldCache extends LuceneTestCase {
       doc.add(new Field("theShort", String.valueOf(theShort--), Field.Store.NO, Field.Index.NOT_ANALYZED));
       doc.add(new Field("theInt", String.valueOf(theInt--), Field.Store.NO, Field.Index.NOT_ANALYZED));
       doc.add(new Field("theFloat", String.valueOf(theFloat--), Field.Store.NO, Field.Index.NOT_ANALYZED));
+
+      // sometimes skip the field:
+      if (r.nextInt(40) != 17) {
+        String s = null;
+        if (i > 0 && r.nextInt(3) == 1) {
+          // reuse past string -- try to find one that's not null
+          for(int iter=0;iter<10 && s==null;iter++) {
+            s = unicodeStrings[r.nextInt(i)];
+          }
+          if (s == null) {
+            s = _TestUtil.randomUnicodeString(r, 250);
+          }
+        } else {
+          s = _TestUtil.randomUnicodeString(r, 250);
+        }
+        unicodeStrings[i] = s;
+        doc.add(new Field("theRandomUnicodeString", unicodeStrings[i], Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+      }
       writer.addDocument(doc);
     }
+    reader = writer.getReader();
     writer.close();
-    reader = IndexReader.open(directory, true);
   }
 
   public void testInfoStream() throws Exception {
@@ -129,5 +156,43 @@ public class TestFieldCache extends LuceneTestCase {
       assertTrue(floats[i] + " does not equal: " + (Float.MAX_VALUE - i), floats[i] == (Float.MAX_VALUE - i));
 
     }
+
+    // getTermsIndex
+    FieldCache.DocTermsIndex termsIndex = cache.getTermsIndex(reader, "theRandomUnicodeString");
+    assertSame("Second request to cache return same array", termsIndex, cache.getTermsIndex(reader, "theRandomUnicodeString"));
+    assertTrue("doubles Size: " + termsIndex.size() + " is not: " + NUM_DOCS, termsIndex.size() == NUM_DOCS);
+    final BytesRef br = new BytesRef();
+    for (int i = 0; i < NUM_DOCS; i++) {
+      final BytesRef term = termsIndex.getTerm(i, br);
+      final String s = term == null ? null : term.utf8ToString();
+      assertTrue("for doc " + i + ": " + s + " does not equal: " + unicodeStrings[i], unicodeStrings[i] == null || unicodeStrings[i].equals(s));
+    }
+    // test bad field
+    termsIndex = cache.getTermsIndex(reader, "bogusfield");
+
+    // getTerms
+    FieldCache.DocTerms terms = cache.getTerms(reader, "theRandomUnicodeString");
+    assertSame("Second request to cache return same array", terms, cache.getTerms(reader, "theRandomUnicodeString"));
+    assertTrue("doubles Size: " + terms.size() + " is not: " + NUM_DOCS, terms.size() == NUM_DOCS);
+    for (int i = 0; i < NUM_DOCS; i++) {
+      final BytesRef term = terms.getTerm(i, br);
+      final String s = term == null ? null : term.utf8ToString();
+      assertTrue("for doc " + i + ": " + s + " does not equal: " + unicodeStrings[i], unicodeStrings[i] == null || unicodeStrings[i].equals(s));
+    }
+
+    // test bad field
+    terms = cache.getTerms(reader, "bogusfield");
+
+    FieldCache.DEFAULT.purge(reader);
+  }
+
+  public void testEmptyIndex() throws Exception {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter writer= new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(500));
+    IndexReader r = writer.getReader();
+    FieldCache.DocTerms terms = FieldCache.DEFAULT.getTerms(r, "foobar");
+    FieldCache.DocTermsIndex termsIndex = FieldCache.DEFAULT.getTermsIndex(r, "foobar");
+    r.close();
+    dir.close();
   }
 }

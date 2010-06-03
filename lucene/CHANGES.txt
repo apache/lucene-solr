@@ -73,6 +73,13 @@ Changes in backwards compatibility policy
   not unicode code units. For example, a Wildcard "?" represents any unicode
   character. Furthermore, the rest of the automaton package and RegexpQuery use 
   true Unicode codepoint representation.  (Robert Muir, Mike McCandless)
+
+* LUCENE-2380: The String-based FieldCache methods (getStrings,
+  getStringIndex) have been replaced with BytesRef-based equivalents
+  (getTerms, getTermsIndex).  Also, the sort values (returned in
+  FieldDoc.fields) when sorting by SortField.STRING or
+  SortField.STRING_VAL are now BytesRef instances.  See MIGRATE.txt
+  for more details. (Mike McCandless)
  
 * LUCENE-2480: Though not a change in backwards compatibility policy, pre-3.0 
   indexes are no longer supported. You should upgrade to 3.x first, then run
@@ -610,6 +617,11 @@ Optimizations
 
 * LUCENE-2360: Small speedup to recycling of reused per-doc RAM in
   IndexWriter (Robert Muir, Mike McCandless)
+
+* LUCENE-2380: The terms field cache methods (getTerms,
+  getTermsIndex), which replace the older String equivalents
+  (getStrings, getStringIndex), consume quite a bit less RAM in most
+  cases.  (Mike McCandless)
 
 Build
 

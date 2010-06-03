@@ -24,13 +24,14 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.BytesRef;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 public class TestElevationComparator extends LuceneTestCase {
 
-  private final Map<String,Integer> priority = new HashMap<String,Integer>();
+  private final Map<BytesRef,Integer> priority = new HashMap<BytesRef,Integer>();
 
   //@Test
   public void testSorting() throws Throwable {
@@ -109,7 +110,7 @@ public class TestElevationComparator extends LuceneTestCase {
    int max = (vals.length / 2) + 5;
    for (int i = 0; i < vals.length - 1; i += 2) {
      q.add(new TermQuery(new Term(vals[i], vals[i + 1])), BooleanClause.Occur.SHOULD);
-     priority.put(vals[i + 1], Integer.valueOf(max--));
+     priority.put(new BytesRef(vals[i + 1]), Integer.valueOf(max--));
      // System.out.println(" pri doc=" + vals[i+1] + " pri=" + (1+max));
    }
    return q;
@@ -125,9 +126,9 @@ public class TestElevationComparator extends LuceneTestCase {
 }
 
 class ElevationComparatorSource extends FieldComparatorSource {
-  private final Map<String,Integer> priority;
+  private final Map<BytesRef,Integer> priority;
 
-  public ElevationComparatorSource(final Map<String,Integer> boosts) {
+  public ElevationComparatorSource(final Map<BytesRef,Integer> boosts) {
    this.priority = boosts;
   }
 
@@ -135,8 +136,9 @@ class ElevationComparatorSource extends FieldComparatorSource {
   public FieldComparator newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
    return new FieldComparator() {
 
-     FieldCache.StringIndex idIndex;
+     FieldCache.DocTermsIndex idIndex;
      private final int[] values = new int[numHits];
+     private final BytesRef tempBR = new BytesRef();
      int bottomVal;
 
      @Override
@@ -150,9 +152,14 @@ class ElevationComparatorSource extends FieldComparatorSource {
      }
 
      private int docVal(int doc) throws IOException {
-       String id = idIndex.lookup[idIndex.order[doc]];
-       Integer prio = priority.get(id);
-       return prio == null ? 0 : prio.intValue();
+       int ord = idIndex.getOrd(doc);
+       if (ord == 0) {
+         return 0;
+       } else {
+         BytesRef id = idIndex.lookup(ord, tempBR);
+         Integer prio = priority.get(id);
+         return prio == null ? 0 : prio.intValue();
+       }
      }
 
      @Override
@@ -167,7 +174,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
 
      @Override
      public void setNextReader(IndexReader reader, int docBase) throws IOException {
-       idIndex = FieldCache.DEFAULT.getStringIndex(reader, fieldname);
+       idIndex = FieldCache.DEFAULT.getTermsIndex(reader, fieldname);
      }
 
      @Override

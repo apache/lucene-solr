@@ -28,7 +28,9 @@ import org.apache.lucene.search.FieldCache.ByteParser;
 import org.apache.lucene.search.FieldCache.FloatParser;
 import org.apache.lucene.search.FieldCache.IntParser;
 import org.apache.lucene.search.FieldCache.ShortParser;
-import org.apache.lucene.search.FieldCache.StringIndex;
+import org.apache.lucene.search.FieldCache.DocTermsIndex;
+import org.apache.lucene.search.FieldCache.DocTerms;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Expert: a FieldComparator compares hits so as to determine their
@@ -616,14 +618,19 @@ public abstract class FieldComparator {
   }
 
   /** Sorts by a field's value using the Collator for a
-   *  given Locale.*/
+   *  given Locale.
+   *
+   * <p><b>WARNING</b>: this is likely very slow; you'll
+   * get much better performance using the
+   * CollationKeyAnalyzer or ICUCollationKeyAnalyzer. */
   public static final class StringComparatorLocale extends FieldComparator {
 
     private final String[] values;
-    private String[] currentReaderValues;
+    private DocTerms currentDocTerms;
     private final String field;
     final Collator collator;
     private String bottom;
+    private final BytesRef tempBR = new BytesRef();
 
     StringComparatorLocale(int numHits, String field, Locale locale) {
       values = new String[numHits];
@@ -648,7 +655,7 @@ public abstract class FieldComparator {
 
     @Override
     public int compareBottom(int doc) {
-      final String val2 = currentReaderValues[doc];
+      final String val2 = currentDocTerms.getTerm(doc, tempBR).utf8ToString();
       if (bottom == null) {
         if (val2 == null) {
           return 0;
@@ -662,12 +669,17 @@ public abstract class FieldComparator {
 
     @Override
     public void copy(int slot, int doc) {
-      values[slot] = currentReaderValues[doc];
+      final BytesRef br = currentDocTerms.getTerm(doc, tempBR);
+      if (br == null) {
+        values[slot] = null;
+      } else {
+        values[slot] = br.utf8ToString();
+      }
     }
 
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
-      currentReaderValues = FieldCache.DEFAULT.getStrings(reader, field);
+      currentDocTerms = FieldCache.DEFAULT.getTerms(reader, field);
     }
     
     @Override
@@ -677,39 +689,40 @@ public abstract class FieldComparator {
 
     @Override
     public Comparable<?> value(int slot) {
-      return values[slot];
+      final String s = values[slot];
+      return s == null ? null : new BytesRef(values[slot]);
     }
   }
 
-  /** Sorts by field's natural String sort order, using
+  /** Sorts by field's natural Term sort order, using
    *  ordinals.  This is functionally equivalent to {@link
-   *  StringValComparator}, but it first resolves the string
+   *  TermValComparator}, but it first resolves the string
    *  to their relative ordinal positions (using the index
    *  returned by {@link FieldCache#getStringIndex}), and
    *  does most comparisons using the ordinals.  For medium
    *  to large results, this comparator will be much faster
-   *  than {@link StringValComparator}.  For very small
+   *  than {@link TermValComparator}.  For very small
    *  result sets it may be slower. */
-  public static final class StringOrdValComparator extends FieldComparator {
+  public static final class TermOrdValComparator extends FieldComparator {
 
     private final int[] ords;
-    private final String[] values;
+    private final BytesRef[] values;
     private final int[] readerGen;
 
     private int currentReaderGen = -1;
-    private String[] lookup;
-    private int[] order;
+    private DocTermsIndex termsIndex;
     private final String field;
 
     private int bottomSlot = -1;
     private int bottomOrd;
-    private String bottomValue;
+    private BytesRef bottomValue;
     private final boolean reversed;
     private final int sortPos;
+    private final BytesRef tempBR = new BytesRef();
 
-    public StringOrdValComparator(int numHits, String field, int sortPos, boolean reversed) {
+    public TermOrdValComparator(int numHits, String field, int sortPos, boolean reversed) {
       ords = new int[numHits];
-      values = new String[numHits];
+      values = new BytesRef[numHits];
       readerGen = new int[numHits];
       this.sortPos = sortPos;
       this.reversed = reversed;
@@ -725,8 +738,8 @@ public abstract class FieldComparator {
         }
       }
 
-      final String val1 = values[slot1];
-      final String val2 = values[slot2];
+      final BytesRef val1 = values[slot1];
+      final BytesRef val2 = values[slot2];
       if (val1 == null) {
         if (val2 == null) {
           return 0;
@@ -741,47 +754,48 @@ public abstract class FieldComparator {
     @Override
     public int compareBottom(int doc) {
       assert bottomSlot != -1;
-      int order = this.order[doc];
+      int order = termsIndex.getOrd(doc);
       final int cmp = bottomOrd - order;
       if (cmp != 0) {
         return cmp;
       }
 
-      final String val2 = lookup[order];
       if (bottomValue == null) {
-        if (val2 == null) {
+        if (order == 0) {
+          // unset
           return 0;
         }
         // bottom wins
         return -1;
-      } else if (val2 == null) {
+      } else if (order == 0) {
         // doc wins
         return 1;
       }
-      return bottomValue.compareTo(val2);
+      termsIndex.lookup(order, tempBR);
+      return bottomValue.compareTo(tempBR);
     }
 
     private void convert(int slot) {
       readerGen[slot] = currentReaderGen;
       int index = 0;
-      String value = values[slot];
+      BytesRef value = values[slot];
       if (value == null) {
-        ords[slot] = 0;
+        // 0 ord is null for all segments
+        assert ords[slot] == 0;
         return;
       }
 
       if (sortPos == 0 && bottomSlot != -1 && bottomSlot != slot) {
         // Since we are the primary sort, the entries in the
         // queue are bounded by bottomOrd:
-        assert bottomOrd < lookup.length;
         if (reversed) {
-          index = binarySearch(lookup, value, bottomOrd, lookup.length-1);
+          index = binarySearch(tempBR, termsIndex, value, bottomOrd, termsIndex.numOrd()-1);
         } else {
-          index = binarySearch(lookup, value, 0, bottomOrd);
+          index = binarySearch(tempBR, termsIndex, value, 0, bottomOrd);
         }
       } else {
         // Full binary search
-        index = binarySearch(lookup, value);
+        index = binarySearch(tempBR, termsIndex, value);
       }
 
       if (index < 0) {
@@ -792,20 +806,24 @@ public abstract class FieldComparator {
 
     @Override
     public void copy(int slot, int doc) {
-      final int ord = order[doc];
-      ords[slot] = ord;
-      assert ord >= 0;
-      values[slot] = lookup[ord];
+      final int ord = termsIndex.getOrd(doc);
+      if (ord == 0) {
+        values[slot] = null;
+      } else {
+        ords[slot] = ord;
+        assert ord >= 0;
+        if (values[slot] == null) {
+          values[slot] = new BytesRef();
+        }
+        termsIndex.lookup(ord, values[slot]);
+      }
       readerGen[slot] = currentReaderGen;
     }
 
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
-      StringIndex currentReaderValues = FieldCache.DEFAULT.getStringIndex(reader, field);
+      termsIndex = FieldCache.DEFAULT.getTermsIndex(reader, field);
       currentReaderGen++;
-      order = currentReaderValues.order;
-      lookup = currentReaderValues.lookup;
-      assert lookup.length > 0;
       if (bottomSlot != -1) {
         convert(bottomSlot);
         bottomOrd = ords[bottomSlot];
@@ -819,18 +837,12 @@ public abstract class FieldComparator {
         convert(bottomSlot);
       }
       bottomOrd = ords[bottom];
-      assert bottomOrd >= 0;
-      assert bottomOrd < lookup.length;
       bottomValue = values[bottom];
     }
 
     @Override
     public Comparable<?> value(int slot) {
       return values[slot];
-    }
-
-    public String[] getValues() {
-      return values;
     }
 
     public int getBottomSlot() {
@@ -842,26 +854,27 @@ public abstract class FieldComparator {
     }
   }
 
-  /** Sorts by field's natural String sort order.  All
-   *  comparisons are done using String.compareTo, which is
+  /** Sorts by field's natural Term sort order.  All
+   *  comparisons are done using BytesRef.compareTo, which is
    *  slow for medium to large result sets but possibly
    *  very fast for very small results sets. */
-  public static final class StringValComparator extends FieldComparator {
+  public static final class TermValComparator extends FieldComparator {
 
-    private String[] values;
-    private String[] currentReaderValues;
+    private BytesRef[] values;
+    private DocTerms docTerms;
     private final String field;
-    private String bottom;
+    private BytesRef bottom;
+    private final BytesRef tempBR = new BytesRef();
 
-    StringValComparator(int numHits, String field) {
-      values = new String[numHits];
+    TermValComparator(int numHits, String field) {
+      values = new BytesRef[numHits];
       this.field = field;
     }
 
     @Override
     public int compare(int slot1, int slot2) {
-      final String val1 = values[slot1];
-      final String val2 = values[slot2];
+      final BytesRef val1 = values[slot1];
+      final BytesRef val2 = values[slot2];
       if (val1 == null) {
         if (val2 == null) {
           return 0;
@@ -876,7 +889,7 @@ public abstract class FieldComparator {
 
     @Override
     public int compareBottom(int doc) {
-      final String val2 = currentReaderValues[doc];
+      BytesRef val2 = docTerms.getTerm(doc, tempBR);
       if (bottom == null) {
         if (val2 == null) {
           return 0;
@@ -890,12 +903,15 @@ public abstract class FieldComparator {
 
     @Override
     public void copy(int slot, int doc) {
-      values[slot] = currentReaderValues[doc];
+      if (values[slot] == null) {
+        values[slot] = new BytesRef();
+      }
+      docTerms.getTerm(doc, values[slot]);
     }
 
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
-      currentReaderValues = FieldCache.DEFAULT.getStrings(reader, field);
+      docTerms = FieldCache.DEFAULT.getTerms(reader, field);
     }
     
     @Override
@@ -909,15 +925,15 @@ public abstract class FieldComparator {
     }
   }
 
-  final protected static int binarySearch(String[] a, String key) {
-    return binarySearch(a, key, 0, a.length-1);
+  final protected static int binarySearch(BytesRef br, DocTermsIndex a, BytesRef key) {
+    return binarySearch(br, a, key, 1, a.numOrd()-1);
   }
 
-  final protected static int binarySearch(String[] a, String key, int low, int high) {
+  final protected static int binarySearch(BytesRef br, DocTermsIndex a, BytesRef key, int low, int high) {
 
     while (low <= high) {
       int mid = (low + high) >>> 1;
-      String midVal = a[mid];
+      BytesRef midVal = a.lookup(mid, br);
       int cmp;
       if (midVal != null) {
         cmp = midVal.compareTo(key);

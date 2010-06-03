@@ -118,7 +118,11 @@ public class _TestUtil {
 
   /** Returns random string, including full unicode range. */
   public static String randomUnicodeString(Random r) {
-    final int end = r.nextInt(20);
+    return randomUnicodeString(r, 20);
+  }
+
+  public static String randomUnicodeString(Random r, int maxLength) {
+    final int end = r.nextInt(maxLength);
     if (end == 0) {
       // allow 0 length
       return "";
@@ -126,6 +130,7 @@ public class _TestUtil {
     final char[] buffer = new char[end];
     for (int i = 0; i < end; i++) {
       int t = r.nextInt(5);
+      //buffer[i] = (char) (97 + r.nextInt(26));
       if (0 == t && i < end - 1) {
         // Make a surrogate pair
         // High surrogate

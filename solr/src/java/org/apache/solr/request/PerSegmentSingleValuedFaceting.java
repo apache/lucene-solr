@@ -5,12 +5,11 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexReader;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -100,7 +99,7 @@ class PerSegmentSingleValuedFaceting {
       }
       @Override
       protected boolean lessThan(SegFacet a, SegFacet b) {
-        return a.terms[a.pos].compareTo(b.terms[b.pos]) < 0;
+        return a.si.lookup(a.pos, a.tempBR).compareTo(b.si.lookup(b.pos, b.tempBR)) < 0;
       }
     };
 
@@ -150,9 +149,11 @@ class PerSegmentSingleValuedFaceting {
       collector = new IndexSortedFacetCollector(offset, limit, mincount);
     }
 
+    final BytesRef tempBR = new BytesRef();
+
     while (queue.size() > 0) {
       SegFacet seg = queue.top();
-      String val = seg.terms[seg.pos];
+      BytesRef val = seg.si.lookup(seg.pos, tempBR);
       int count = 0;
 
       do {
@@ -167,7 +168,7 @@ class PerSegmentSingleValuedFaceting {
         }  else {
           seg = queue.updateTop();
         }
-      } while (seg != null && val.compareTo(seg.terms[seg.pos]) == 0);
+      } while (seg != null && val.compareTo(seg.si.lookup(seg.pos, seg.tempBR)) == 0);
 
       boolean stop = collector.collect(val, count);
       if (stop) break;
@@ -192,20 +193,6 @@ class PerSegmentSingleValuedFaceting {
     return res;
   }
 
-
-
-
-
-    // first element of the fieldcache is null, so we need this comparator.
-  private static final Comparator nullStrComparator = new Comparator() {
-        public int compare(Object o1, Object o2) {
-          if (o1==null) return (o2==null) ? 0 : -1;
-          else if (o2==null) return 1;
-          return ((String)o1).compareTo((String)o2);
-        }
-      };
-  
-
   class SegFacet {
     SolrIndexReader reader;
     int readerOffset;
@@ -215,32 +202,31 @@ class PerSegmentSingleValuedFaceting {
       this.readerOffset = readerOffset;
     }
     
-    int[] ords;
-    String[] terms;
-
+    FieldCache.DocTermsIndex si;
     int startTermIndex;
     int endTermIndex;
     int[] counts;
 
     int pos; // only used during merge with other segments
 
+    final BytesRef tempBR = new BytesRef();
+
     void countTerms() throws IOException {
-      FieldCache.StringIndex si = FieldCache.DEFAULT.getStringIndex(reader, fieldName);
-      final String[] terms = this.terms = si.lookup;
-      final int[] termNum = this.ords = si.order;
+      si = FieldCache.DEFAULT.getTermsIndex(reader, fieldName);
       // SolrCore.log.info("reader= " + reader + "  FC=" + System.identityHashCode(si));
 
       if (prefix!=null) {
-        startTermIndex = Arrays.binarySearch(terms,prefix,nullStrComparator);
+        startTermIndex = si.binarySearchLookup(new BytesRef(prefix), tempBR);
         if (startTermIndex<0) startTermIndex=-startTermIndex-1;
         // find the end term.  \uffff isn't a legal unicode char, but only compareTo
         // is used, so it should be fine, and is guaranteed to be bigger than legal chars.
         // TODO: switch to binarySearch version that takes start/end in Java6
-        endTermIndex = Arrays.binarySearch(terms,prefix+"\uffff\uffff\uffff\uffff",nullStrComparator);
+        endTermIndex = si.binarySearchLookup(new BytesRef(prefix+"\uffff\uffff\uffff\uffff"), tempBR);
+        assert endTermIndex < 0;
         endTermIndex = -endTermIndex-1;
       } else {
         startTermIndex=0;
-        endTermIndex=terms.length;
+        endTermIndex=si.numOrd();
       }
 
       final int nTerms=endTermIndex-startTermIndex;
@@ -251,17 +237,17 @@ class PerSegmentSingleValuedFaceting {
         DocIdSet idSet = baseSet.getDocIdSet(reader);
         DocIdSetIterator iter = idSet.iterator();
 
-        if (startTermIndex==0 && endTermIndex==terms.length) {
+        if (startTermIndex==0 && endTermIndex==si.numOrd()) {
           // specialized version when collecting counts for all terms
           int doc;
           while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-            counts[termNum[doc]]++;
+            counts[si.getOrd(doc)]++;
           }
         } else {
           // version that adjusts term numbers because we aren't collecting the full range
           int doc;
           while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-            int term = termNum[doc];
+            int term = si.getOrd(doc);
             int arrIdx = term-startTermIndex;
             if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
           }
@@ -276,7 +262,7 @@ class PerSegmentSingleValuedFaceting {
 
 abstract class FacetCollector {
   /*** return true to stop collection */
-  public abstract boolean collect(String term, int count);
+  public abstract boolean collect(BytesRef term, int count);
   public abstract NamedList getFacetCounts();
 }
 
@@ -299,12 +285,12 @@ class CountSortedFacetCollector extends FacetCollector {
   }
 
   @Override
-  public boolean collect(String term, int count) {
+  public boolean collect(BytesRef term, int count) {
     if (count > min) {
       // NOTE: we use c>min rather than c>=min as an optimization because we are going in
       // index order, so we already know that the keys are ordered.  This can be very
       // important if a lot of the counts are repeated (like zero counts would be).
-      queue.add(new SimpleFacets.CountPair<String,Integer>(term, count));
+      queue.add(new SimpleFacets.CountPair<String,Integer>(term.utf8ToString(), count));
       if (queue.size()>=maxsize) min=queue.last().val;
     }
     return false;
@@ -340,7 +326,7 @@ class IndexSortedFacetCollector extends FacetCollector {
   }
 
   @Override
-  public boolean collect(String term, int count) {
+  public boolean collect(BytesRef term, int count) {
     if (count < mincount) {
       return false;
     }
@@ -351,7 +337,7 @@ class IndexSortedFacetCollector extends FacetCollector {
     }
 
     if (limit > 0) {
-      res.add(term, count);
+      res.add(term.utf8ToString(), count);
       limit--;
     }
 

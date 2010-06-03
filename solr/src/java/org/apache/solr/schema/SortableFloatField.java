@@ -110,8 +110,8 @@ class SortableFloatFieldSource extends FieldCacheSource {
       }
 
       public float floatVal(int doc) {
-        int ord=order[doc];
-        return ord==0 ? def  : NumberUtils.SortableStr2float(lookup[ord]);
+        int ord=termsIndex.getOrd(doc);
+        return ord==0 ? def  : NumberUtils.SortableStr2float(termsIndex.lookup(ord, new BytesRef()));
       }
 
       public int intVal(int doc) {

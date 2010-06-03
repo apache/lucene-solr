@@ -20,6 +20,7 @@ package org.apache.solr.schema;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.response.XMLWriter;
 import org.apache.solr.search.function.ValueSource;
@@ -77,7 +78,7 @@ class StrFieldSource extends FieldCacheSource {
       }
 
       public int intVal(int doc) {
-        int ord=order[doc];
+        int ord=termsIndex.getOrd(doc);
         return ord;
       }
 
@@ -90,8 +91,12 @@ class StrFieldSource extends FieldCacheSource {
       }
 
       public String strVal(int doc) {
-        int ord=order[doc];
-        return lookup[ord];
+        int ord=termsIndex.getOrd(doc);
+        if (ord == 0) {
+          return null;
+        } else {
+          return termsIndex.lookup(ord, new BytesRef()).utf8ToString();
+        }
       }
 
       public String toString(int doc) {

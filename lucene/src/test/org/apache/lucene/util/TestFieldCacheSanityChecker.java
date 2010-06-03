@@ -25,7 +25,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.apache.lucene.util.FieldCacheSanityChecker.InsanityType;
 
@@ -112,7 +111,7 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     cache.purgeAllCaches();
 
     cache.getInts(readerX, "theInt", FieldCache.DEFAULT_INT_PARSER);
-    cache.getStrings(readerX, "theInt");
+    cache.getTerms(readerX, "theInt");
     cache.getBytes(readerX, "theByte");
 
     // // // 
@@ -135,9 +134,9 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     FieldCache cache = FieldCache.DEFAULT;
     cache.purgeAllCaches();
 
-    cache.getStrings(readerA, "theString");
-    cache.getStrings(readerB, "theString");
-    cache.getStrings(readerX, "theString");
+    cache.getTerms(readerA, "theString");
+    cache.getTerms(readerB, "theString");
+    cache.getTerms(readerX, "theString");
 
     cache.getBytes(readerX, "theByte");
 

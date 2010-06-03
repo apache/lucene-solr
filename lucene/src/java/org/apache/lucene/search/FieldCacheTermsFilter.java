@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.TermDocs;  // for javadocs
 
 /**
@@ -108,19 +109,20 @@ public class FieldCacheTermsFilter extends Filter {
 
   @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-    return new FieldCacheTermsFilterDocIdSet(getFieldCache().getStringIndex(reader, field));
+    return new FieldCacheTermsFilterDocIdSet(getFieldCache().getTermsIndex(reader, field));
   }
 
   protected class FieldCacheTermsFilterDocIdSet extends DocIdSet {
-    private FieldCache.StringIndex fcsi;
+    private FieldCache.DocTermsIndex fcsi;
 
     private OpenBitSet openBitSet;
 
-    public FieldCacheTermsFilterDocIdSet(FieldCache.StringIndex fcsi) {
+    public FieldCacheTermsFilterDocIdSet(FieldCache.DocTermsIndex fcsi) {
       this.fcsi = fcsi;
-      openBitSet = new OpenBitSet(this.fcsi.lookup.length);
+      openBitSet = new OpenBitSet(this.fcsi.size());
+      final BytesRef spare = new BytesRef();
       for (int i=0;i<terms.length;i++) {
-        int termNumber = this.fcsi.binarySearchLookup(terms[i]);
+        int termNumber = this.fcsi.binarySearchLookup(new BytesRef(terms[i]), spare);
         if (termNumber > 0) {
           openBitSet.fastSet(termNumber);
         }
@@ -149,7 +151,7 @@ public class FieldCacheTermsFilter extends Filter {
       @Override
       public int nextDoc() {
         try {
-          while (!openBitSet.fastGet(fcsi.order[++doc])) {}
+          while (!openBitSet.fastGet(fcsi.getOrd(++doc))) {}
         } catch (ArrayIndexOutOfBoundsException e) {
           doc = NO_MORE_DOCS;
         }
@@ -160,7 +162,7 @@ public class FieldCacheTermsFilter extends Filter {
       public int advance(int target) {
         try {
           doc = target;
-          while (!openBitSet.fastGet(fcsi.order[doc])) {
+          while (!openBitSet.fastGet(fcsi.getOrd(doc))) {
             doc++;
           }
         } catch (ArrayIndexOutOfBoundsException e) {

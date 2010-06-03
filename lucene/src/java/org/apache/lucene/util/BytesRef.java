@@ -19,12 +19,17 @@ package org.apache.lucene.util;
 
 import java.util.Comparator;
 import java.io.UnsupportedEncodingException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
+import java.io.Externalizable;
+import java.io.IOException;
 
 /** Represents byte[], as a slice (offset + length) into an
  *  existing byte[].
  *
  *  @lucene.experimental */
-public final class BytesRef implements Comparable<BytesRef> {
+public final class BytesRef implements Comparable<BytesRef>, Externalizable {
+
   public static final byte[] EMPTY_BYTES = new byte[0]; 
 
   /** The contents of the BytesRef. Should never be {@code null}. */
@@ -77,6 +82,19 @@ public final class BytesRef implements Comparable<BytesRef> {
     this();
     copy(other);
   }
+
+  /* // maybe?
+  public BytesRef(BytesRef other, boolean shallow) {
+    this();
+    if (shallow) {
+      offset = other.offset;
+      length = other.length;
+      bytes = other.bytes;
+    } else {
+      copy(other);
+    }
+  }
+  */
 
   /**
    * Copies the UTF8 bytes for this string.
@@ -314,6 +332,27 @@ public final class BytesRef implements Comparable<BytesRef> {
 
     public boolean equals(Object other) {
       return this == other;
+    }
+  }
+
+  public void writeExternal(ObjectOutput out)
+    throws IOException
+  {
+    out.writeInt(length);
+    if (length > 0) {
+      out.write(bytes, offset, length);
+    }
+  }
+
+  public void readExternal( ObjectInput in ) throws
+      IOException, ClassNotFoundException {
+    length = in.readInt();
+    offset = 0;
+    if (length > 0) {
+      bytes = new byte[length];
+      in.read(bytes, 0, length);
+    } else {
+      bytes = null;
     }
   }
 }

@@ -44,6 +44,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.DOMUtil;
@@ -99,7 +100,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     final String analyzed;
     final BooleanClause[] exclude;
     final BooleanQuery include;
-    final Map<String,Integer> priority;
+    final Map<BytesRef,Integer> priority;
     
     // use singletons so hashCode/equals on Sort will just work
     final FieldComparatorSource comparatorSource;
@@ -111,12 +112,12 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       
       this.include = new BooleanQuery();
       this.include.setBoost( 0 );
-      this.priority = new HashMap<String, Integer>();
+      this.priority = new HashMap<BytesRef, Integer>();
       int max = elevate.size()+5;
       for( String id : elevate ) {
         TermQuery tq = new TermQuery( new Term( idField, id ) );
         include.add( tq, BooleanClause.Occur.SHOULD );
-        this.priority.put( id, max-- );
+        this.priority.put( new BytesRef(id), max-- );
       }
       
       if( exclude == null || exclude.isEmpty() ) {
@@ -445,18 +446,19 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
 }
 
 class ElevationComparatorSource extends FieldComparatorSource {
-  private final Map<String,Integer> priority;
+  private final Map<BytesRef,Integer> priority;
 
-  public ElevationComparatorSource( final Map<String,Integer> boosts) {
+  public ElevationComparatorSource( final Map<BytesRef,Integer> boosts) {
     this.priority = boosts;
   }
 
   public FieldComparator newComparator(final String fieldname, final int numHits, int sortPos, boolean reversed) throws IOException {
     return new FieldComparator() {
       
-      FieldCache.StringIndex idIndex;
+      FieldCache.DocTermsIndex idIndex;
       private final int[] values = new int[numHits];
       int bottomVal;
+      private final BytesRef tempBR = new BytesRef();
 
       public int compare(int slot1, int slot2) {
         return values[slot2] - values[slot1];  // values will be small enough that there is no overflow concern
@@ -467,7 +469,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
       }
 
       private int docVal(int doc) throws IOException {
-        String id = idIndex.lookup[idIndex.order[doc]];
+        BytesRef id = idIndex.getTerm(doc, tempBR);
         Integer prio = priority.get(id);
         return prio == null ? 0 : prio.intValue();
       }
@@ -481,7 +483,7 @@ class ElevationComparatorSource extends FieldComparatorSource {
       }
 
       public void setNextReader(IndexReader reader, int docBase) throws IOException {
-        idIndex = FieldCache.DEFAULT.getStringIndex(reader, fieldname);
+        idIndex = FieldCache.DEFAULT.getTermsIndex(reader, fieldname);
       }
 
       public Comparable value(int slot) {

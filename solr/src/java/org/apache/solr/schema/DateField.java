@@ -443,7 +443,7 @@ class DateFieldSource extends FieldCacheSource {
       }
 
       public int intVal(int doc) {
-        int ord=order[doc];
+        int ord=termsIndex.getOrd(doc);
         return ord;
       }
 
@@ -456,8 +456,15 @@ class DateFieldSource extends FieldCacheSource {
       }
 
       public String strVal(int doc) {
-        int ord=order[doc];
-        return ft.indexedToReadable(lookup[ord]);
+        int ord=termsIndex.getOrd(doc);
+        if (ord == 0) {
+          return null;
+        } else {
+          BytesRef br = termsIndex.lookup(ord, new BytesRef());
+          CharArr spare = new CharArr();
+          ft.indexedToReadable(br, spare);
+          return spare.toString();
+        }
       }
 
       public String toString(int doc) {

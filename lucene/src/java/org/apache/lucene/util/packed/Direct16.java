@@ -29,19 +29,19 @@ import java.util.Arrays;
 
 class Direct16 extends PackedInts.ReaderImpl
         implements PackedInts.Mutable {
-  private short[] blocks;
+  private short[] values;
   private static final int BITS_PER_VALUE = 16;
 
   public Direct16(int valueCount) {
     super(valueCount, BITS_PER_VALUE);
-    blocks = new short[valueCount];
+    values = new short[valueCount];
   }
 
   public Direct16(IndexInput in, int valueCount) throws IOException {
     super(valueCount, BITS_PER_VALUE);
-    short[] blocks = new short[valueCount];
+    short[] values = new short[valueCount];
     for(int i=0;i<valueCount;i++) {
-      blocks[i] = in.readShort();
+      values[i] = in.readShort();
     }
     final int mod = valueCount % 4;
     if (mod != 0) {
@@ -52,35 +52,35 @@ class Direct16 extends PackedInts.ReaderImpl
       }
     }
 
-    this.blocks = blocks;
+    this.values = values;
   }
 
   /**
-   * Creates an array backed by the given blocks.
+   * Creates an array backed by the given values.
    * </p><p>
-   * Note: The blocks are used directly, so changes to the given block will
+   * Note: The values are used directly, so changes to the values will
    * affect the structure.
-   * @param blocks   used as the internal backing array.
+   * @param values   used as the internal backing array.
    */
-  public Direct16(short[] blocks) {
-    super(blocks.length, BITS_PER_VALUE);
-    this.blocks = blocks;
+  public Direct16(short[] values) {
+    super(values.length, BITS_PER_VALUE);
+    this.values = values;
   }
 
   public long get(final int index) {
-    return 0xFFFFL & blocks[index];
+    return 0xFFFFL & values[index];
   }
 
   public void set(final int index, final long value) {
-    blocks[index] = (short)(value & 0xFFFF);
+    values[index] = (short)(value & 0xFFFF);
   }
 
   public long ramBytesUsed() {
     return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER +
-            blocks.length * RamUsageEstimator.NUM_BYTES_SHORT;
+            values.length * RamUsageEstimator.NUM_BYTES_SHORT;
   }
 
   public void clear() {
-    Arrays.fill(blocks, (short)0);
+    Arrays.fill(values, (short)0);
   }
 }

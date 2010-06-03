@@ -17,7 +17,6 @@
 
 package org.apache.solr.util;
 
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.noggit.CharArr;
 
@@ -31,8 +30,8 @@ public class ByteUtils {
    */
   public static int UTF8toUTF16(byte[] utf8, int offset, int len, char[] out, int out_offset) {
     int out_start = out_offset;
-
-    while (offset < len) {
+    final int limit = offset + len;
+    while (offset < limit) {
       int b = utf8[offset++]&0xff;
 
       if (b < 0xc0) {

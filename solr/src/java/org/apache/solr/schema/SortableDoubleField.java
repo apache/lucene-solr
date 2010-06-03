@@ -122,8 +122,8 @@ class SortableDoubleFieldSource extends FieldCacheSource {
       }
 
       public double doubleVal(int doc) {
-        int ord=order[doc];
-        return ord==0 ? def  : NumberUtils.SortableStr2double(lookup[ord]);
+        int ord=termsIndex.getOrd(doc);
+        return ord==0 ? def  : NumberUtils.SortableStr2double(termsIndex.lookup(ord, new BytesRef()));
       }
 
       public String strVal(int doc) {

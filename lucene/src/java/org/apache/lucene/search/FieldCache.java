@@ -44,50 +44,6 @@ public interface FieldCache {
     Object value;
   }
 
-  /** Indicator for StringIndex values in the cache. */
-  // NOTE: the value assigned to this constant must not be
-  // the same as any of those in SortField!!
-  public static final int STRING_INDEX = -1;
-
-
-  /** Expert: Stores term text values and document ordering data. */
-  public static class StringIndex {
-	  
-    public int binarySearchLookup(String key) {
-      // this special case is the reason that Arrays.binarySearch() isn't useful.
-      if (key == null)
-        return 0;
-	  
-      int low = 1;
-      int high = lookup.length-1;
-
-      while (low <= high) {
-        int mid = (low + high) >>> 1;
-        int cmp = lookup[mid].compareTo(key);
-
-        if (cmp < 0)
-          low = mid + 1;
-        else if (cmp > 0)
-          high = mid - 1;
-        else
-          return mid; // key found
-      }
-      return -(low + 1);  // key not found.
-    }
-	
-    /** All the term values, in natural order. */
-    public final String[] lookup;
-
-    /** For each document, an index into the lookup array. */
-    public final int[] order;
-
-    /** Creates one of these objects */
-    public StringIndex (int[] values, String[] lookup) {
-      this.order = values;
-      this.lookup = lookup;
-    }
-  }
-
   /**
    * Marker interface as super-interface to all parsers. It
    * is used to specify a custom parser to {@link
@@ -490,28 +446,112 @@ public interface FieldCache {
   public double[] getDoubles(IndexReader reader, String field, DoubleParser parser)
           throws IOException;
 
+  /** Returned by {@link #getTerms} */
+  public abstract static class DocTerms {
+    /** The BytesRef argument must not be null; the method
+     *  returns the same BytesRef, or an empty (length=0)
+     *  BytesRef if the doc did not have this field or was
+     *  deleted. */
+    public abstract BytesRef getTerm(int docID, BytesRef ret);
+
+    /** Returns true if this doc has this field and is not
+     *  deleted. */
+    public abstract boolean exists(int docID);
+
+    /** Number of documents */
+    public abstract int size();
+  }
+
   /** Checks the internal cache for an appropriate entry, and if none
-   * is found, reads the term values in <code>field</code> and returns an array
-   * of size <code>reader.maxDoc()</code> containing the value each document
-   * has in the given field.
+   * is found, reads the term values in <code>field</code>
+   * and returns a {@link DocTerms} instance, providing a
+   * method to retrieve the term (as a BytesRef) per document.
    * @param reader  Used to get field values.
    * @param field   Which field contains the strings.
    * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public String[] getStrings (IndexReader reader, String field)
+  public DocTerms getTerms (IndexReader reader, String field)
   throws IOException;
 
+  /** Expert: just like {@link #getTerms(IndexReader,String)},
+   *  but you can specify whether more RAM should be consumed in exchange for
+   *  faster lookups (default is "true").  Note that the
+   *  first call for a given reader and field "wins",
+   *  subsequent calls will share the same cache entry. */
+  public DocTerms getTerms (IndexReader reader, String field, boolean fasterButMoreRAM)
+  throws IOException;
+
+  /** Returned by {@link #getTermsIndex} */
+  public abstract static class DocTermsIndex {
+
+    public int binarySearchLookup(BytesRef key, BytesRef spare) {
+      // this special case is the reason that Arrays.binarySearch() isn't useful.
+      if (key == null)
+        return 0;
+	  
+      int low = 1;
+      int high = numOrd()-1;
+
+      while (low <= high) {
+        int mid = (low + high) >>> 1;
+        int cmp = lookup(mid, spare).compareTo(key);
+
+        if (cmp < 0)
+          low = mid + 1;
+        else if (cmp > 0)
+          high = mid - 1;
+        else
+          return mid; // key found
+      }
+      return -(low + 1);  // key not found.
+    }
+
+    /** The BytesRef argument must not be null; the method
+     *  returns the same BytesRef, or an empty (length=0)
+     *  BytesRef if this ord is the null ord (0). */
+    public abstract BytesRef lookup(int ord, BytesRef reuse);
+
+    /** Convenience method, to lookup the Term for a doc.
+     *  If this doc is deleted or did not have this field,
+     *  this will return an empty (length=0) BytesRef. */
+    public BytesRef getTerm(int docID, BytesRef reuse) {
+      return lookup(getOrd(docID), reuse);
+    }
+
+    /** Returns sort ord for this document.  Ord 0 is
+     *  reserved for docs that are deleted or did not have
+     *  this field.  */
+    public abstract int getOrd(int docID);
+
+    /** Returns total unique ord count; this includes +1 for
+     *  the null ord (always 0). */
+    public abstract int numOrd();
+
+    /** Number of documents */
+    public abstract int size();
+  }
+
   /** Checks the internal cache for an appropriate entry, and if none
-   * is found reads the term values in <code>field</code> and returns
-   * an array of them in natural order, along with an array telling
-   * which element in the term array each document uses.
+   * is found, reads the term values in <code>field</code>
+   * and returns a {@link DocTerms} instance, providing a
+   * method to retrieve the term (as a BytesRef) per document.
    * @param reader  Used to get field values.
    * @param field   Which field contains the strings.
-   * @return Array of terms and index into the array for each document.
+   * @return The values in the given field for each document.
    * @throws IOException  If any error occurs.
    */
-  public StringIndex getStringIndex (IndexReader reader, String field)
+  public DocTermsIndex getTermsIndex (IndexReader reader, String field)
+  throws IOException;
+
+
+  /** Expert: just like {@link
+   *  #getTermsIndex(IndexReader,String)}, but you can specify
+   *  whether more RAM should be consumed in exchange for
+   *  faster lookups (default is "true").  Note that the
+   *  first call for a given reader and field "wins",
+   *  subsequent calls will share the same cache entry. */
+  public DocTermsIndex getTermsIndex (IndexReader reader, String field, boolean fasterButMoreRAM)
   throws IOException;
 
   /**

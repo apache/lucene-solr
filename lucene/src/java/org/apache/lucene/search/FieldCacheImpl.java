@@ -30,7 +30,11 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.PagedBytes;
+import org.apache.lucene.util.packed.PackedInts;
+import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.FieldCacheSanityChecker;
@@ -57,8 +61,8 @@ class FieldCacheImpl implements FieldCache {
     caches.put(Float.TYPE, new FloatCache(this));
     caches.put(Long.TYPE, new LongCache(this));
     caches.put(Double.TYPE, new DoubleCache(this));
-    caches.put(String.class, new StringCache(this));
-    caches.put(StringIndex.class, new StringIndexCache(this));
+    caches.put(DocTermsIndex.class, new DocTermsIndexCache(this));
+    caches.put(DocTerms.class, new DocTermsCache(this));
   }
 
   public synchronized void purgeAllCaches() {
@@ -638,24 +642,223 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  // inherit javadocs
-  public String[] getStrings(IndexReader reader, String field)
-      throws IOException {
-    return (String[]) caches.get(String.class).get(reader, new Entry(field, (Parser)null));
+  private static class DocTermsIndexImpl extends DocTermsIndex {
+    private final PagedBytes.Reader bytes;
+    private final PackedInts.Reader termOrdToBytesOffset;
+    private final PackedInts.Reader docToTermOrd;
+    private final int numOrd;
+
+    public DocTermsIndexImpl(PagedBytes.Reader bytes, PackedInts.Reader termOrdToBytesOffset, PackedInts.Reader docToTermOrd, int numOrd) {
+      this.bytes = bytes;
+      this.docToTermOrd = docToTermOrd;
+      this.termOrdToBytesOffset = termOrdToBytesOffset;
+      this.numOrd = numOrd;
+    }
+
+    @Override
+    public int numOrd() {
+      return numOrd;
+    }
+
+    @Override
+    public int getOrd(int docID) {
+      return (int) docToTermOrd.get(docID);
+    }
+
+    @Override
+    public int size() {
+      return docToTermOrd.size();
+    }
+
+    @Override
+    public BytesRef lookup(int ord, BytesRef ret) {
+      return bytes.fillUsingLengthPrefix(ret, termOrdToBytesOffset.get(ord));
+    }
   }
 
-  static final class StringCache extends Cache {
-    StringCache(FieldCache wrapper) {
+  private static boolean DEFAULT_FASTER_BUT_MORE_RAM = true;
+
+  public DocTermsIndex getTermsIndex(IndexReader reader, String field) throws IOException {
+    return getTermsIndex(reader, field, DEFAULT_FASTER_BUT_MORE_RAM);
+  }
+
+  public DocTermsIndex getTermsIndex(IndexReader reader, String field, boolean fasterButMoreRAM) throws IOException {
+    return (DocTermsIndex) caches.get(DocTermsIndex.class).get(reader, new Entry(field, Boolean.valueOf(fasterButMoreRAM)));
+  }
+
+  static class DocTermsIndexCache extends Cache {
+    DocTermsIndexCache(FieldCache wrapper) {
       super(wrapper);
     }
 
     @Override
     protected Object createValue(IndexReader reader, Entry entryKey)
         throws IOException {
-      String field = StringHelper.intern(entryKey.field);
-      final String[] retArray = new String[reader.maxDoc()];
 
+      String field = StringHelper.intern(entryKey.field);
       Terms terms = MultiFields.getTerms(reader, field);
+
+      final boolean fasterButMoreRAM = ((Boolean) entryKey.custom).booleanValue();
+
+      final PagedBytes bytes = new PagedBytes(15);
+
+      int startBytesBPV;
+      int startTermsBPV;
+      int startNumUniqueTerms;
+
+      if (terms != null) {
+        // Try for coarse estimate for number of bits; this
+        // should be an underestimate most of the time, which
+        // is fine -- GrowableWriter will reallocate as needed
+        long numUniqueTerms = 0;
+        try {
+          numUniqueTerms = terms.getUniqueTermCount();
+        } catch (UnsupportedOperationException uoe) {
+          numUniqueTerms = -1;
+        }
+        if (numUniqueTerms != -1) {
+          startBytesBPV = PackedInts.bitsRequired(numUniqueTerms*4);
+          startTermsBPV = PackedInts.bitsRequired(numUniqueTerms);
+          if (numUniqueTerms > Integer.MAX_VALUE-1) {
+            throw new IllegalStateException("this field has too many (" + numUniqueTerms + ") unique terms");
+          }
+          startNumUniqueTerms = (int) numUniqueTerms;
+        } else {
+          startBytesBPV = 1;
+          startTermsBPV = 1;
+          startNumUniqueTerms = 1;
+        }
+      } else {
+        startBytesBPV = 1;
+        startTermsBPV = 1;
+        startNumUniqueTerms = 1;
+      }
+
+      GrowableWriter termOrdToBytesOffset = new GrowableWriter(startBytesBPV, 1+startNumUniqueTerms, fasterButMoreRAM);
+      final GrowableWriter docToTermOrd = new GrowableWriter(startTermsBPV, reader.maxDoc(), false);
+
+      // 0 is reserved for "unset"
+      bytes.copyUsingLengthPrefix(new BytesRef());
+      int termOrd = 1;
+
+      if (terms != null) {
+        final TermsEnum termsEnum = terms.iterator();
+        final Bits delDocs = MultiFields.getDeletedDocs(reader);
+        DocsEnum docs = null;
+
+        while(true) {
+          final BytesRef term = termsEnum.next();
+          if (term == null) {
+            break;
+          }
+          if (termOrd == termOrdToBytesOffset.size()) {
+            // NOTE: this code only runs if the incoming
+            // reader impl doesn't implement
+            // getUniqueTermCount (which should be uncommon)
+            termOrdToBytesOffset = termOrdToBytesOffset.resize(ArrayUtil.oversize(1+termOrd, 1));
+          }
+          termOrdToBytesOffset.set(termOrd, bytes.copyUsingLengthPrefix(term));
+          bytes.copyUsingLengthPrefix(term);
+          docs = termsEnum.docs(delDocs, docs);
+          while (true) {
+            final int docID = docs.nextDoc();
+            if (docID == DocsEnum.NO_MORE_DOCS) {
+              break;
+            }
+            docToTermOrd.set(docID, termOrd);
+          }
+          termOrd++;
+        }
+
+        if (termOrdToBytesOffset.size() > termOrd) {
+          termOrdToBytesOffset = termOrdToBytesOffset.resize(termOrd);
+        }
+      }
+
+      // maybe an int-only impl?
+      return new DocTermsIndexImpl(bytes.freeze(), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd);
+    }
+  }
+
+  private static class DocTermsImpl extends DocTerms {
+    private final PagedBytes.Reader bytes;
+    private final PackedInts.Reader docToOffset;
+
+    public DocTermsImpl(PagedBytes.Reader bytes, PackedInts.Reader docToOffset) {
+      this.bytes = bytes;
+      this.docToOffset = docToOffset;
+    }
+
+    @Override
+    public int size() {
+      return docToOffset.size();
+    }
+
+    @Override
+    public boolean exists(int docID) {
+      return docToOffset.get(docID) == 0;
+    }
+
+    @Override
+    public BytesRef getTerm(int docID, BytesRef ret) {
+      final int pointer = (int) docToOffset.get(docID);
+      return bytes.fillUsingLengthPrefix(ret, pointer);
+    }      
+  }
+
+  // TODO: this if DocTermsIndex was already created, we
+  // should share it...
+  public DocTerms getTerms(IndexReader reader, String field) throws IOException {
+    return getTerms(reader, field, DEFAULT_FASTER_BUT_MORE_RAM);
+  }
+
+  public DocTerms getTerms(IndexReader reader, String field, boolean fasterButMoreRAM) throws IOException {
+    return (DocTerms) caches.get(DocTerms.class).get(reader, new Entry(field, Boolean.valueOf(fasterButMoreRAM)));
+  }
+
+  static final class DocTermsCache extends Cache {
+    DocTermsCache(FieldCache wrapper) {
+      super(wrapper);
+    }
+
+    @Override
+    protected Object createValue(IndexReader reader, Entry entryKey)
+        throws IOException {
+
+      String field = StringHelper.intern(entryKey.field);
+      Terms terms = MultiFields.getTerms(reader, field);
+
+      final boolean fasterButMoreRAM = ((Boolean) entryKey.custom).booleanValue();
+
+      // Holds the actual term data, expanded.
+      final PagedBytes bytes = new PagedBytes(15);
+
+      int startBPV;
+
+      if (terms != null) {
+        // Try for coarse estimate for number of bits; this
+        // should be an underestimate most of the time, which
+        // is fine -- GrowableWriter will reallocate as needed
+        long numUniqueTerms = 0;
+        try {
+          numUniqueTerms = terms.getUniqueTermCount();
+        } catch (UnsupportedOperationException uoe) {
+          numUniqueTerms = -1;
+        }
+        if (numUniqueTerms != -1) {
+          startBPV = PackedInts.bitsRequired(numUniqueTerms*4);
+        } else {
+          startBPV = 1;
+        }
+      } else {
+        startBPV = 1;
+      }
+
+      final GrowableWriter docToOffset = new GrowableWriter(startBPV, reader.maxDoc(), fasterButMoreRAM);
+      
+      // pointer==0 means not set
+      bytes.copyUsingLengthPrefix(new BytesRef());
+
       if (terms != null) {
         final TermsEnum termsEnum = terms.iterator();
         final Bits delDocs = MultiFields.getDeletedDocs(reader);
@@ -665,95 +868,22 @@ class FieldCacheImpl implements FieldCache {
           if (term == null) {
             break;
           }
-          docs = termsEnum.docs(delDocs, docs);
-          final String termval = term.utf8ToString();
-          while (true) {
-            final int docID = docs.nextDoc();
-            if (docID == DocsEnum.NO_MORE_DOCS) {
-              break;
-            }
-            retArray[docID] = termval;
-          }
-        }
-      }
-      return retArray;
-    }
-  }
-
-  // inherit javadocs
-  public StringIndex getStringIndex(IndexReader reader, String field)
-      throws IOException {
-    return (StringIndex) caches.get(StringIndex.class).get(reader, new Entry(field, (Parser)null));
-  }
-
-  static final class StringIndexCache extends Cache {
-    StringIndexCache(FieldCache wrapper) {
-      super(wrapper);
-    }
-
-    @Override
-    protected Object createValue(IndexReader reader, Entry entryKey)
-        throws IOException {
-      String field = StringHelper.intern(entryKey.field);
-      final int[] retArray = new int[reader.maxDoc()];
-      String[] mterms = new String[reader.maxDoc()+1];
-
-      //System.out.println("FC: getStringIndex field=" + field);
-      Terms terms = MultiFields.getTerms(reader, field);
-
-      int t = 0;  // current term number
-
-      // an entry for documents that have no terms in this field
-      // should a document with no terms be at top or bottom?
-      // this puts them at the top - if it is changed, FieldDocSortedHitQueue
-      // needs to change as well.
-      mterms[t++] = null;
-
-      if (terms != null) {
-        final TermsEnum termsEnum = terms.iterator();
-        final Bits delDocs = MultiFields.getDeletedDocs(reader);
-        DocsEnum docs = null;
-        while(true) {
-          final BytesRef term = termsEnum.next();
-          if (term == null) {
-            break;
-          }
-
-          // store term text
-          mterms[t] = term.utf8ToString();
-          //System.out.println("FC:  ord=" + t + " term=" + term.toBytesString());
-
+          final long pointer = bytes.copyUsingLengthPrefix(term);
           docs = termsEnum.docs(delDocs, docs);
           while (true) {
             final int docID = docs.nextDoc();
             if (docID == DocsEnum.NO_MORE_DOCS) {
               break;
             }
-            //System.out.println("FC:    docID=" + docID);
-            retArray[docID] = t;
+            docToOffset.set(docID, pointer);
           }
-          t++;
         }
       }
 
-      if (t == 0) {
-        // if there are no terms, make the term array
-        // have a single null entry
-        mterms = new String[1];
-      } else if (t < mterms.length) {
-        // if there are less terms than documents,
-        // trim off the dead array space
-        String[] newTerms = new String[t];
-        System.arraycopy (mterms, 0, newTerms, 0, t);
-        mterms = newTerms;
-      }
-
-      StringIndex value = new StringIndex (retArray, mterms);
-      //System.out.println("FC: done\n");
-      return value;
+      // maybe an int-only impl?
+      return new DocTermsImpl(bytes.freeze(), docToOffset.getMutable());
     }
   }
-  
   private volatile PrintStream infoStream;
 
   public void setInfoStream(PrintStream stream) {

@@ -70,21 +70,20 @@ public class ReverseOrdFieldSource extends ValueSource {
   /*(non-Javadoc) @see org.apache.lucene.search.function.ValueSource#getValues(org.apache.lucene.index.IndexReader) */
   @Override
   public DocValues getValues(IndexReader reader) throws IOException {
-    final FieldCache.StringIndex sindex = FieldCache.DEFAULT.getStringIndex(reader, field);
+    final FieldCache.DocTermsIndex termsIndex = FieldCache.DEFAULT.getTermsIndex(reader, field);
 
-    final int arr[] = sindex.order;
-    final int end = sindex.lookup.length;
+    final int end = termsIndex.numOrd();
 
     return new DocValues() {
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#floatVal(int) */
       @Override
       public float floatVal(int doc) {
-        return (end - arr[doc]);
+        return (end - termsIndex.getOrd(doc));
       }
       /* (non-Javadoc) @see org.apache.lucene.search.function.DocValues#intVal(int) */
       @Override
       public int intVal(int doc) {
-        return end - arr[doc];
+        return end - termsIndex.getOrd(doc);
       }
       /* (non-Javadoc) @see org.apache.lucene.search.function.DocValues#strVal(int) */
       @Override
@@ -100,7 +99,7 @@ public class ReverseOrdFieldSource extends ValueSource {
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#getInnerArray() */
       @Override
       Object getInnerArray() {
-        return arr;
+        return termsIndex;
       }
     };
   }

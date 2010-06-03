@@ -19,6 +19,7 @@ package org.apache.lucene.search.function;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.FieldCache.DocTermsIndex;
 
 import java.io.IOException;
 
@@ -69,18 +70,18 @@ public class OrdFieldSource extends ValueSource {
   /*(non-Javadoc) @see org.apache.lucene.search.function.ValueSource#getValues(org.apache.lucene.index.IndexReader) */
   @Override
   public DocValues getValues(IndexReader reader) throws IOException {
-    final int[] arr = FieldCache.DEFAULT.getStringIndex(reader, field).order;
+    final DocTermsIndex termsIndex = FieldCache.DEFAULT.getTermsIndex(reader, field);
     return new DocValues() {
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#floatVal(int) */
       @Override
       public float floatVal(int doc) {
-        return arr[doc];
+        return termsIndex.getOrd(doc);
       }
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#strVal(int) */
       @Override
       public String strVal(int doc) {
         // the string value of the ordinal, not the string itself
-        return Integer.toString(arr[doc]);
+        return Integer.toString(termsIndex.getOrd(doc));
       }
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#toString(int) */
       @Override
@@ -90,7 +91,7 @@ public class OrdFieldSource extends ValueSource {
       /*(non-Javadoc) @see org.apache.lucene.search.function.DocValues#getInnerArray() */
       @Override
       Object getInnerArray() {
-        return arr;
+        return termsIndex;
       }
     };
   }

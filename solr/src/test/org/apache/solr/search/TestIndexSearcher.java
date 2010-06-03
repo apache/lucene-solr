@@ -21,7 +21,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.DocValues;
-import org.apache.lucene.search.FieldCache;
 
 import java.util.Map;
 import java.io.IOException;
@@ -31,18 +30,6 @@ public class TestIndexSearcher extends AbstractSolrTestCase {
   public String getSchemaFile() { return "schema11.xml"; }
   public String getSolrConfigFile() { return "solrconfig.xml"; }
   public String getCoreName() { return "basic"; }
-
-
-  public void setUp() throws Exception {
-    // if you override setUp or tearDown, you better call
-    // the super classes version
-    super.setUp();
-  }
-  public void tearDown() throws Exception {
-    // if you override setUp or tearDown, you better call
-    // the super classes version
-    super.tearDown();
-  }
 
   private String getStringVal(SolrQueryRequest sqr, String field, int doc) throws IOException {
     SchemaField sf = sqr.getSchema().getField(field);
@@ -79,9 +66,6 @@ public class TestIndexSearcher extends AbstractSolrTestCase {
     // make sure the readers share the first segment
     // Didn't work w/ older versions of lucene2.9 going from segment -> multi
     assertEquals(r1.getLeafReaders()[0], r2.getLeafReaders()[0]);
-
-    // make sure the String returned is the exact same instance (i.e. same FieldCache instance)
-    assertTrue(sval1 == getStringVal(sr2,"v_s",0));
 
     assertU(adoc("id","5", "v_f","3.14159"));
     assertU(adoc("id","6", "v_f","8983", "v_s","string6"));
@@ -121,7 +105,6 @@ public class TestIndexSearcher extends AbstractSolrTestCase {
 
     SolrQueryRequest sr5 = req("q","foo");
     SolrIndexReader r5 = sr5.getSearcher().getReader();
-    String beforeDelete = getStringVal(sr5, "v_s",1);
 
     assertU(delI("1"));
     assertU(commit());
@@ -129,8 +112,6 @@ public class TestIndexSearcher extends AbstractSolrTestCase {
     SolrIndexReader r6 = sr4.getSearcher().getReader();
     assertEquals(1, r6.getLeafReaders()[0].numDocs()); // only a single doc left in the first segment
     assertTrue( !r5.getLeafReaders()[0].equals(r6.getLeafReaders()[0]) );  // readers now different
-    String afterDelete = getStringVal(sr6, "v_s",1);
-    assertTrue( beforeDelete == afterDelete );  // same field cache is used even though deletions are different
 
     sr5.close();
     sr6.close();

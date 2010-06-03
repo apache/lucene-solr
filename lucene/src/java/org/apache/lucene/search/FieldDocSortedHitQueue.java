@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.BytesRef;
 
 import java.text.Collator;
 import java.util.Locale;
@@ -99,8 +100,8 @@ class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
     for (int i=0; i<n && c==0; ++i) {
       final int type = fields[i].getType();
       if (type == SortField.STRING) {
-        final String s1 = (String) docA.fields[i];
-        final String s2 = (String) docB.fields[i];
+        final BytesRef s1 = (BytesRef) docA.fields[i];
+        final BytesRef s2 = (BytesRef) docB.fields[i];
         // null values need to be sorted first, because of how FieldCache.getStringIndex()
         // works - in that routine, any documents without a value in the given field are
         // put first.  If both are null, the next SortField is used
@@ -111,7 +112,7 @@ class FieldDocSortedHitQueue extends PriorityQueue<FieldDoc> {
         } else if (fields[i].getLocale() == null) {
           c = s1.compareTo(s2);
         } else {
-          c = collators[i].compare(s1, s2);
+          c = collators[i].compare(s1.utf8ToString(), s2.utf8ToString());
         }
       } else {
         c = docA.fields[i].compareTo(docB.fields[i]);

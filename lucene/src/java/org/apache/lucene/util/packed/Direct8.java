@@ -29,20 +29,20 @@ import java.util.Arrays;
 
 class Direct8 extends PackedInts.ReaderImpl
         implements PackedInts.Mutable {
-  private byte[] blocks;
+  private byte[] values;
   private static final int BITS_PER_VALUE = 8;
 
   public Direct8(int valueCount) {
     super(valueCount, BITS_PER_VALUE);
-    blocks = new byte[valueCount];
+    values = new byte[valueCount];
   }
 
   public Direct8(IndexInput in, int valueCount)
           throws IOException {
     super(valueCount, BITS_PER_VALUE);
-    byte[] blocks = new byte[valueCount];
+    byte[] values = new byte[valueCount];
     for(int i=0;i<valueCount;i++) {
-      blocks[i] = in.readByte();
+      values[i] = in.readByte();
     }
     final int mod = valueCount % 8;
     if (mod != 0) {
@@ -53,34 +53,34 @@ class Direct8 extends PackedInts.ReaderImpl
       }
     }
 
-    this.blocks = blocks;
+    this.values = values;
   }
 
   /**
-   * Creates an array backed by the given blocks.
+   * Creates an array backed by the given values.
    * </p><p>
-   * Note: The blocks are used directly, so changes to the given block will
+   * Note: The values are used directly, so changes to the given values will
    * affect the structure.
-   * @param blocks used as the internal backing array.
+   * @param values used as the internal backing array.
    */
-  public Direct8(byte[] blocks) {
-    super(blocks.length, BITS_PER_VALUE);
-    this.blocks = blocks;
+  public Direct8(byte[] values) {
+    super(values.length, BITS_PER_VALUE);
+    this.values = values;
   }
 
   public long get(final int index) {
-    return 0xFFL & blocks[index];
+    return 0xFFL & values[index];
   }
 
   public void set(final int index, final long value) {
-    blocks[index] = (byte)(value & 0xFF);
+    values[index] = (byte)(value & 0xFF);
   }
 
   public long ramBytesUsed() {
-    return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + blocks.length;
+    return RamUsageEstimator.NUM_BYTES_ARRAY_HEADER + values.length;
   }
 
   public void clear() {
-    Arrays.fill(blocks, (byte)0);
+    Arrays.fill(values, (byte)0);
   }
 }

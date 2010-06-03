@@ -17,11 +17,11 @@ package org.apache.solr.handler.component;
  */
 
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.schema.FieldType;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -37,11 +37,8 @@ import java.util.Map;
 
 public class FieldFacetStats {
   public final String name;
-  final FieldCache.StringIndex si;
+  final FieldCache.DocTermsIndex si;
   final FieldType ft;
-
-  final String[] terms;
-  final int[] termNum;
 
   final int startTermIndex;
   final int endTermIndex;
@@ -53,16 +50,16 @@ public class FieldFacetStats {
 
   final List<HashMap<String, Integer>> facetStatsTerms;
 
-  public FieldFacetStats(String name, FieldCache.StringIndex si, FieldType ft, int numStatsTerms) {
+  private final BytesRef tempBR = new BytesRef();
+
+  public FieldFacetStats(String name, FieldCache.DocTermsIndex si, FieldType ft, int numStatsTerms) {
     this.name = name;
     this.si = si;
     this.ft = ft;
     this.numStatsTerms = numStatsTerms;
 
-    terms = si.lookup;
-    termNum = si.order;
     startTermIndex = 1;
-    endTermIndex = terms.length;
+    endTermIndex = si.numOrd();
     nTerms = endTermIndex - startTermIndex;
 
     facetStatsValues = new HashMap<String, StatsValues>();
@@ -76,21 +73,27 @@ public class FieldFacetStats {
     }
   }
 
-  String getTermText(int docID) {
-    return terms[termNum[docID]];
+  BytesRef getTermText(int docID, BytesRef ret) {
+    final int ord = si.getOrd(docID);
+    if (ord == 0) {
+      return null;
+    } else {
+      return si.lookup(ord, ret);
+    }
   }
 
-
   public boolean facet(int docID, Double v) {
-    int term = termNum[docID];
+    int term = si.getOrd(docID);
     int arrIdx = term - startTermIndex;
     if (arrIdx >= 0 && arrIdx < nTerms) {
-      String key = ft.indexedToReadable(terms[term]);
+      final BytesRef br = si.lookup(term, tempBR);
+      String key = ft.indexedToReadable(br == null ? null : br.utf8ToString());
       StatsValues stats = facetStatsValues.get(key);
       if (stats == null) {
         stats = new StatsValues();
         facetStatsValues.put(key, stats);
       }
+
       if (v != null) {
         stats.accumulate(v);
       } else {
@@ -107,10 +110,11 @@ public class FieldFacetStats {
   // Currently only used by UnInvertedField stats
   public boolean facetTermNum(int docID, int statsTermNum) {
 
-    int term = termNum[docID];
+    int term = si.getOrd(docID);
     int arrIdx = term - startTermIndex;
     if (arrIdx >= 0 && arrIdx < nTerms) {
-      String key = ft.indexedToReadable(terms[term]);
+      final BytesRef br = si.lookup(term, tempBR);
+      String key = br == null ? null : br.utf8ToString();
       HashMap<String, Integer> statsTermCounts = facetStatsTerms.get(statsTermNum);
       Integer statsTermCount = statsTermCounts.get(key);
       if (statsTermCount == null) {
