@@ -542,7 +542,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
 
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 100*_TestUtil.getRandomMultiplier(); i++) {
       writer.addDocument(createDocument(i, "test", 4));
     }
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).sync();
