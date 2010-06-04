@@ -24,7 +24,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrConfig;
@@ -478,13 +477,13 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
    */
   public int getFirstMatch(Term t) throws IOException {
     Fields fields = MultiFields.getFields(reader);
+    if (fields == null) return -1;
     Terms terms = fields.terms(t.field());
     if (terms == null) return -1;
-    BytesRef termBytes = new BytesRef();
-    UnicodeUtil.UTF16toUTF8(t.text(), 0, t.text().length(), termBytes);
-    DocsEnum docs = terms.docs(reader.getDeletedDocs(), termBytes, null);
+    BytesRef termBytes = new BytesRef(t.text());
+    DocsEnum docs = terms.docs(MultiFields.getDeletedDocs(reader), termBytes, null);
     if (docs == null) return -1;
-    int id = docs.docID();
+    int id = docs.nextDoc();
     return id == DocIdSetIterator.NO_MORE_DOCS ? -1 : id;
   }
 
