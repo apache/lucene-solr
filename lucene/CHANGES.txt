@@ -472,6 +472,10 @@ Bug fixes
   that warming is free to do whatever it needs to.  (Earwin Burrfoot
   via Mike McCandless)
 
+* LUCENE-2486: Fixed intermittent FileNotFoundException on doc store
+  files when a mergedSegmentWarmer is set on IndexWriter.  (Mike
+  McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight

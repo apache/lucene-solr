@@ -76,6 +76,7 @@ public abstract class MergePolicy implements java.io.Closeable {
     int maxNumSegmentsOptimize;     // used by IndexWriter
     SegmentReader[] readers;        // used by IndexWriter
     SegmentReader[] readersClone;   // used by IndexWriter
+    List<String> mergeFiles;            // used by IndexWriter
     final SegmentInfos segments;
     final boolean useCompoundFile;
     boolean aborted;

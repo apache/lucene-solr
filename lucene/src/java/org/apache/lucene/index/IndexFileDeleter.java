@@ -465,7 +465,7 @@ final class IndexFileDeleter {
     }
   }
 
-  void incRef(List<String> files) throws IOException {
+  void incRef(Collection<String> files) throws IOException {
     for(final String file : files) {
       incRef(file);
     }

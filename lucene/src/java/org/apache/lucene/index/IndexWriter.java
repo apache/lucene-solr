@@ -3537,25 +3537,7 @@ public class IndexWriter implements Closeable {
     commitMergedDeletes(merge, mergedReader);
     docWriter.remapDeletes(segmentInfos, merger.getDocMaps(), merger.getDelCounts(), merge, mergedDocCount);
       
-    // Simple optimization: if the doc store we are using
-    // has been closed and is in now compound format (but
-    // wasn't when we started), then we will switch to the
-    // compound format as well:
-    final String mergeDocStoreSegment = merge.info.getDocStoreSegment(); 
-    if (mergeDocStoreSegment != null && !merge.info.getDocStoreIsCompoundFile()) {
-      final int size = segmentInfos.size();
-      for(int i=0;i<size;i++) {
-        final SegmentInfo info = segmentInfos.info(i);
-        final String docStoreSegment = info.getDocStoreSegment();
-        if (docStoreSegment != null &&
-            docStoreSegment.equals(mergeDocStoreSegment) && 
-            info.getDocStoreIsCompoundFile()) {
-          merge.info.setDocStoreIsCompoundFile(true);
-          break;
-        }
-      }
-    }
-    
+    setMergeDocStoreIsCompoundFile(merge);
     merge.info.setHasProx(merger.hasProx());
 
     segmentInfos.subList(start, start + merge.segments.size()).clear();
@@ -3903,6 +3885,11 @@ public class IndexWriter implements Closeable {
     if (merge.increfDone)
       decrefMergeSegments(merge);
 
+    if (merge.mergeFiles != null) {
+      deleter.decRef(merge.mergeFiles);
+      merge.mergeFiles = null;
+    }
+
     // It's possible we are called twice, eg if there was an
     // exception inside mergeInit
     if (merge.registerDone) {
@@ -3916,6 +3903,23 @@ public class IndexWriter implements Closeable {
 
     runningMerges.remove(merge);
   }
+
+  private synchronized void setMergeDocStoreIsCompoundFile(MergePolicy.OneMerge merge) {
+    final String mergeDocStoreSegment = merge.info.getDocStoreSegment(); 
+    if (mergeDocStoreSegment != null && !merge.info.getDocStoreIsCompoundFile()) {
+      final int size = segmentInfos.size();
+      for(int i=0;i<size;i++) {
+        final SegmentInfo info = segmentInfos.info(i);
+        final String docStoreSegment = info.getDocStoreSegment();
+        if (docStoreSegment != null &&
+            docStoreSegment.equals(mergeDocStoreSegment) && 
+            info.getDocStoreIsCompoundFile()) {
+          merge.info.setDocStoreIsCompoundFile(true);
+          break;
+        }
+      }
+    }
+  }        
 
   /** Does the actual (time-consuming) work of the merge,
    *  but without holding synchronized lock on IndexWriter
@@ -4036,6 +4040,17 @@ public class IndexWriter implements Closeable {
 
       final int termsIndexDivisor;
       final boolean loadDocStores;
+
+      synchronized(this) {
+        // If the doc store we are using has been closed and
+        // is in now compound format (but wasn't when we
+        // started), then we will switch to the compound
+        // format as well:
+        setMergeDocStoreIsCompoundFile(merge);
+        assert merge.mergeFiles == null;
+        merge.mergeFiles = merge.info.files();
+        deleter.incRef(merge.mergeFiles);
+      }
 
       if (poolReaders && mergedSegmentWarmer != null) {
         // Load terms index & doc stores so the segment
