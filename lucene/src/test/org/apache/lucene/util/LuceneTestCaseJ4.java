@@ -193,7 +193,17 @@ public class LuceneTestCaseJ4 {
   public void tearDown() throws Exception {
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
     try {
-      // this isn't as useful as calling directly from the scope where the
+
+      if (!uncaughtExceptions.isEmpty()) {
+        System.err.println("The following exceptions were thrown by threads:");
+        for (UncaughtExceptionEntry entry : uncaughtExceptions) {
+          System.err.println("*** Thread: " + entry.thread.getName() + " ***");
+          entry.exception.printStackTrace(System.err);
+        }
+        fail("Some threads threw uncaught exceptions!");
+      }
+
+      // this isn't as useful as calling directly from the scope where the 
       // index readers are used, because they could be gc'ed just before
       // tearDown is called.
       // But it's better then nothing.
@@ -210,14 +220,6 @@ public class LuceneTestCaseJ4 {
     }
     
     Thread.setDefaultUncaughtExceptionHandler(savedUncaughtExceptionHandler);
-    if (!uncaughtExceptions.isEmpty()) {
-      System.err.println("The following exceptions were thrown by threads:");
-      for (UncaughtExceptionEntry entry : uncaughtExceptions) {
-        System.err.println("*** Thread: " + entry.thread.getName() + " ***");
-        entry.exception.printStackTrace(System.err);
-      }
-      fail("Some threads throwed uncaught exceptions!");
-    }
   }
 
   /**
