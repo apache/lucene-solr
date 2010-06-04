@@ -735,7 +735,7 @@ class FieldCacheImpl implements FieldCache {
       }
 
       GrowableWriter termOrdToBytesOffset = new GrowableWriter(startBytesBPV, 1+startNumUniqueTerms, fasterButMoreRAM);
-      final GrowableWriter docToTermOrd = new GrowableWriter(startTermsBPV, reader.maxDoc(), false);
+      final GrowableWriter docToTermOrd = new GrowableWriter(startTermsBPV, reader.maxDoc(), fasterButMoreRAM);
 
       // 0 is reserved for "unset"
       bytes.copyUsingLengthPrefix(new BytesRef());
