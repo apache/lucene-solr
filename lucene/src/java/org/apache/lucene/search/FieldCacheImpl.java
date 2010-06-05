@@ -758,7 +758,6 @@ class FieldCacheImpl implements FieldCache {
             termOrdToBytesOffset = termOrdToBytesOffset.resize(ArrayUtil.oversize(1+termOrd, 1));
           }
           termOrdToBytesOffset.set(termOrd, bytes.copyUsingLengthPrefix(term));
-          bytes.copyUsingLengthPrefix(term);
           docs = termsEnum.docs(delDocs, docs);
           while (true) {
             final int docID = docs.nextDoc();
