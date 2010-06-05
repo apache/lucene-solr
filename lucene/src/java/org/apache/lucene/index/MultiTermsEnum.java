@@ -143,7 +143,7 @@ public final class MultiTermsEnum extends TermsEnum {
       final SeekStatus status = currentSubs[i].terms.seek(term, useCache);
       if (status == SeekStatus.FOUND) {
         top[numTop++] = currentSubs[i];
-        currentSubs[i].current = term;
+        current = currentSubs[i].current = currentSubs[i].terms.term();
       } else if (status == SeekStatus.NOT_FOUND) {
         currentSubs[i].current = currentSubs[i].terms.term();
         assert currentSubs[i].current != null;
@@ -155,7 +155,6 @@ public final class MultiTermsEnum extends TermsEnum {
 
     if (numTop > 0) {
       // at least one sub had exact match to the requested term
-      current = term;
       return SeekStatus.FOUND;
     } else if (queue.size() > 0) {
       // no sub had exact match, but at least one sub found
@@ -258,26 +257,26 @@ public final class MultiTermsEnum extends TermsEnum {
         // just pull the skipDocs from the sub reader, rather
         // than making the inefficient
         // Slice(Multi(sub-readers)):
-        final MultiBits.SubResult sub = multiSkipDocs.getMatchingSub(top[i].subSlice);
+        final MultiBits.SubResult sub = multiSkipDocs.getMatchingSub(entry.subSlice);
         if (sub.matches) {
           b = sub.result;
         } else {
           // custom case: requested skip docs is foreign:
           // must slice it on every access
-          b = new BitsSlice(skipDocs, top[i].subSlice);
+          b = new BitsSlice(skipDocs, entry.subSlice);
         }
       } else if (skipDocs != null) {
-        b = new BitsSlice(skipDocs, top[i].subSlice);
+        b = new BitsSlice(skipDocs, entry.subSlice);
       } else {
         // no deletions
         b = null;
       }
 
       final DocsEnum subDocsEnum = entry.terms.docs(b, entry.reuseDocs);
-
       if (subDocsEnum != null) {
         entry.reuseDocs = subDocs[upto].docsEnum = subDocsEnum;
         subDocs[upto].slice = entry.subSlice;
+
         upto++;
       }
     }
@@ -373,6 +372,7 @@ public final class MultiTermsEnum extends TermsEnum {
     public void reset(TermsEnum terms, BytesRef term) {
       this.terms = terms;
       current = term;
+      // TODO: can we not null these?
       reuseDocs = null;
       reusePostings = null;
     }

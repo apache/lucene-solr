@@ -60,18 +60,35 @@ public final class MultiBits implements Bits {
       return bits.get(doc-starts[reader]);
     }
   }
+  
+  @Override
+  public String toString() {
+    StringBuilder b = new StringBuilder();
+    b.append(subs.length + " subs: ");
+    for(int i=0;i<subs.length;i++) {
+      if (i != 0) {
+        b.append("; ");
+      }
+      if (subs[i] == null) {
+        b.append("s=" + starts[i] + " l=null");
+      } else {
+        b.append("s=" + starts[i] + " l=" + subs[i].length() + " b=" + subs[i]);
+      }
+    }
+    b.append(" end=" + starts[subs.length]);
+    return b.toString();
+  }
 
   public final static class SubResult {
     public boolean matches;
     public Bits result;
   }
 
-  private final SubResult subResult = new SubResult();
-
   public SubResult getMatchingSub(ReaderUtil.Slice slice) {
     int reader = ReaderUtil.subIndex(slice.start, starts);
     assert reader != -1;
     assert reader < subs.length: "slice=" + slice + " starts[-1]=" + starts[starts.length-1];
+    final SubResult subResult = new SubResult();
     if (starts[reader] == slice.start && starts[1+reader] == slice.start+slice.length) {
       subResult.matches = true;
       subResult.result = subs[reader];

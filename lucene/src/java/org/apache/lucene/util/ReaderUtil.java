@@ -43,7 +43,7 @@ public class ReaderUtil {
     }
 
     public String toString() {
-      return "slice start=" + start + " length=" + length;
+      return "slice start=" + start + " length=" + length + " readerIndex=" + readerIndex;
     }
   }
 
@@ -129,7 +129,7 @@ public class ReaderUtil {
       docStarts[i] = maxDoc;
       maxDoc += subReaders[i].maxDoc();
     }
-    return subReaders[ReaderUtil.subIndex(doc, docStarts)];
+    return subReaders[subIndex(doc, docStarts)];
   }
   
   /**
