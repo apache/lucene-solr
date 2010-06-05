@@ -189,6 +189,8 @@ New features
 * LUCENE-2440: Add support for custom ExecutorService in
   ParallelMultiSearcher (Edward Drapkin via Mike McCandless)
 
+* LUCENE-2489: Added PerFieldCodecWrapper (in oal.index.codecs) which
+  lets you set the Codec per field (Mike McCandless)
   
 ======================= Lucene 3.x (not yet released) =======================
 
