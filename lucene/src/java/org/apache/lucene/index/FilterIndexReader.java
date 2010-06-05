@@ -27,6 +27,7 @@ import org.apache.lucene.util.BytesRef;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Comparator;
 
 /**  A <code>FilterIndexReader</code> contains another IndexReader, which it
  * uses as its basic source of data, possibly transforming the data along the
@@ -39,63 +40,217 @@ import java.util.Map;
  */
 public class FilterIndexReader extends IndexReader {
 
-  /** Base class for filtering {@link TermDocs} implementations. */
-  public static class FilterTermDocs implements TermDocs {
-    protected TermDocs in;
+  /** Base class for filtering {@link Fields}
+   *  implementations. */
+  public static class FilterFields extends Fields {
+    protected Fields in;
 
-    public FilterTermDocs(TermDocs in) { this.in = in; }
-
-    public void seek(Term term) throws IOException { in.seek(term); }
-    public void seek(TermEnum termEnum) throws IOException { in.seek(termEnum); }
-    public int doc() { return in.doc(); }
-    public int freq() { return in.freq(); }
-    public boolean next() throws IOException { return in.next(); }
-    public int read(int[] docs, int[] freqs) throws IOException {
-      return in.read(docs, freqs);
+    public FilterFields(Fields in) {
+      this.in = in;
     }
-    public boolean skipTo(int i) throws IOException { return in.skipTo(i); }
-    public void close() throws IOException { in.close(); }
+
+    @Override
+    public FieldsEnum iterator() throws IOException {
+      return in.iterator();
+    }
+
+    @Override
+    public Terms terms(String field) throws IOException {
+      return in.terms(field);
+    }
   }
 
-  /** Base class for filtering {@link TermPositions} implementations. */
-  public static class FilterTermPositions
-          extends FilterTermDocs implements TermPositions {
+  /** Base class for filtering {@link Terms}
+   *  implementations. */
+  public static class FilterTerms extends Terms {
+    protected Terms in;
 
-    public FilterTermPositions(TermPositions in) { super(in); }
+    public FilterTerms(Terms in) {
+      this.in = in;
+    }
 
+    @Override
+    public TermsEnum iterator() throws IOException {
+      return in.iterator();
+    }
+
+    @Override
+    public Comparator<BytesRef> getComparator() throws IOException {
+      return in.getComparator();
+    }
+
+    @Override
+    public int docFreq(BytesRef text) throws IOException {
+      return in.docFreq(text);
+    }
+
+    @Override
+    public DocsEnum docs(Bits skipDocs, BytesRef text, DocsEnum reuse) throws IOException {
+      return in.docs(skipDocs, text, reuse);
+    }
+
+    @Override
+    public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, BytesRef text, DocsAndPositionsEnum reuse) throws IOException {
+      return in.docsAndPositions(skipDocs, text, reuse);
+    }
+
+    @Override
+    public long getUniqueTermCount() throws IOException {
+      return in.getUniqueTermCount();
+    }
+  }
+
+  /** Base class for filtering {@link TermsEnum} implementations. */
+  public static class FilterFieldsEnum extends FieldsEnum {
+    protected FieldsEnum in;
+    public FilterFieldsEnum(FieldsEnum in) {
+      this.in = in;
+    }
+
+    @Override
+    public String next() throws IOException {
+      return in.next();
+    }
+
+    @Override
+    public TermsEnum terms() throws IOException {
+      return in.terms();
+    }
+  }
+
+  /** Base class for filtering {@link TermsEnum} implementations. */
+  public static class FilterTermsEnum extends TermsEnum {
+    protected TermsEnum in;
+
+    public FilterTermsEnum(TermsEnum in) { this.in = in; }
+
+    @Override
+    public SeekStatus seek(BytesRef text, boolean useCache) throws IOException {
+      return in.seek(text, useCache);
+    }
+
+    @Override
+    public SeekStatus seek(long ord) throws IOException {
+      return in.seek(ord);
+    }
+
+    @Override
+    public BytesRef next() throws IOException {
+      return in.next();
+    }
+
+    @Override
+    public BytesRef term() throws IOException {
+      return in.term();
+    }
+
+    @Override
+    public long ord() throws IOException {
+      return in.ord();
+    }
+
+    @Override
+    public int docFreq() {
+      return in.docFreq();
+    }
+
+    @Override
+      public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
+      return in.docs(skipDocs, reuse);
+    }
+
+    @Override
+    public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+      return in.docsAndPositions(skipDocs, reuse);
+    }
+
+    @Override
+    public Comparator<BytesRef> getComparator() throws IOException {
+      return in.getComparator();
+    }
+  }
+
+  /** Base class for filtering {@link DocsEnum} implementations. */
+  public static class FilterDocsEnum extends DocsEnum {
+    protected DocsEnum in;
+
+    public FilterDocsEnum(DocsEnum in) {
+      this.in = in;
+    }
+
+    @Override
+    public int docID() {
+      return in.docID();
+    }
+
+    @Override
+    public int freq() {
+      return in.freq();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return in.nextDoc();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      return in.advance(target);
+    }
+
+    @Override
+    public BulkReadResult getBulkResult() {
+      return in.getBulkResult();
+    }
+
+    @Override
+    public int read() throws IOException {
+      return in.read();
+    }
+  }
+
+  /** Base class for filtering {@link DocsAndPositionsEnum} implementations. */
+  public static class FilterDocsAndPositionsEnum extends DocsAndPositionsEnum {
+    protected DocsAndPositionsEnum in;
+
+    public FilterDocsAndPositionsEnum(DocsAndPositionsEnum in) {
+      this.in = in;
+    }
+
+    @Override
+    public int docID() {
+      return in.docID();
+    }
+
+    @Override
+    public int freq() {
+      return in.freq();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return in.nextDoc();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      return in.advance(target);
+    }
+
+    @Override
     public int nextPosition() throws IOException {
-      return ((TermPositions) this.in).nextPosition();
-    }
-    
-    public int getPayloadLength() throws IOException {
-      return ((TermPositions) this.in).getPayloadLength();
+      return in.nextPosition();
     }
 
-    public byte[] getPayload(byte[] data, int offset) throws IOException {
-      return ((TermPositions) this.in).getPayload(data, offset);
+    @Override
+    public BytesRef getPayload() throws IOException {
+      return in.getPayload();
     }
 
-
-    // TODO: Remove warning after API has been finalized
-    public boolean isPayloadAvailable() {
-      return ((TermPositions)this.in).isPayloadAvailable();
+    @Override
+    public boolean hasPayload() {
+      return in.hasPayload();
     }
-  }
-
-  /** Base class for filtering {@link TermEnum} implementations. */
-  public static class FilterTermEnum extends TermEnum {
-    protected TermEnum in;
-
-    public FilterTermEnum(TermEnum in) { this.in = in; }
-
-    @Override
-    public boolean next() throws IOException { return in.next(); }
-    @Override
-    public Term term() { return in.term(); }
-    @Override
-    public int docFreq() { return in.docFreq(); }
-    @Override
-    public void close() throws IOException { in.close(); }
   }
 
   protected IndexReader in;
@@ -206,14 +361,16 @@ public class FilterIndexReader extends IndexReader {
     in.setNorm(d, f, b);
   }
 
+  // final to force subclass to impl flex APIs, instead
   @Override
-  public TermEnum terms() throws IOException {
+  public final TermEnum terms() throws IOException {
     ensureOpen();
     return in.terms();
   }
 
+  // final to force subclass to impl flex APIs, instead
   @Override
-  public TermEnum terms(Term t) throws IOException {
+  public final TermEnum terms(Term t) throws IOException {
     ensureOpen();
     return in.terms(t);
   }
@@ -229,21 +386,24 @@ public class FilterIndexReader extends IndexReader {
     ensureOpen();
     return in.docFreq(field, t);
   }
-  
+
+  // final to force subclass to impl flex APIs, instead
   @Override
-  public TermDocs termDocs() throws IOException {
+  public final TermDocs termDocs() throws IOException {
     ensureOpen();
     return in.termDocs();
   }
 
+  // final to force subclass to impl flex APIs, instead
   @Override
-  public TermDocs termDocs(Term term) throws IOException {
+  public final TermDocs termDocs(Term term) throws IOException {
     ensureOpen();
     return in.termDocs(term);
   }
 
+  // final to force subclass to impl flex APIs, instead
   @Override
-  public TermPositions termPositions() throws IOException {
+  public final TermPositions termPositions() throws IOException {
     ensureOpen();
     return in.termPositions();
   }
@@ -294,15 +454,9 @@ public class FilterIndexReader extends IndexReader {
     return null;
   }
 
-  /* Flex API wrappers. */
   @Override
   public Fields fields() throws IOException {
-    return new LegacyFields(this);
-  }
-
-  @Override
-  public Terms terms(String field) throws IOException {
-    return new LegacyTerms(this, field);
+    return MultiFields.getFields(in);
   }
 
   /** If the subclass of FilteredIndexReader modifies the

@@ -28,10 +28,8 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.index.FilterIndexReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.spans.FieldMaskingSpanQuery;
@@ -153,7 +151,10 @@ public class WeightedSpanTermExtractor {
       if (mtq.getField() != null) {
         IndexReader ir = getReaderForField(mtq.getField());
         extract(query.rewrite(ir), terms);
-      } else {
+      }
+      // nocommit is this needed anymore?
+      /*
+      else {
         FakeReader fReader = new FakeReader();
         MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE.rewrite(fReader, mtq);
         if (fReader.field != null) {
@@ -161,6 +162,7 @@ public class WeightedSpanTermExtractor {
           extract(query.rewrite(ir), terms);
         }
       }
+      */
     } else if (query instanceof MultiPhraseQuery) {
       final MultiPhraseQuery mpq = (MultiPhraseQuery) query;
       final List<Term[]> termArrays = mpq.getTermArrays();
@@ -554,32 +556,4 @@ public class WeightedSpanTermExtractor {
   public void setWrapIfNotCachingTokenFilter(boolean wrap) {
     this.wrapToCaching = wrap;
   }
-  
-  /**
-   * 
-   * A fake IndexReader class to extract the field from a MultiTermQuery
-   * 
-   */
-  static final class FakeReader extends FilterIndexReader {
-
-    private static final IndexReader EMPTY_MEMORY_INDEX_READER =
-      new MemoryIndex().createSearcher().getIndexReader();
-    
-    String field;
-
-    FakeReader() {
-      super(EMPTY_MEMORY_INDEX_READER);
-    }
-
-    @Override
-    public TermEnum terms(final Term t) throws IOException {
-      // only set first fieldname, maybe use a Set?
-      if (t != null && field == null)
-        field = t.field();
-      return super.terms(t);
-    }
-
-
-  }
-
 }

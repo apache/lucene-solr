@@ -892,9 +892,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * performance reasons, it's best to get all sub-readers
    * using {@link ReaderUtil#gatherSubReaders} and iterate
    * through them yourself. */
-  public Fields fields() throws IOException {
-    return new LegacyFields(this);
-  }
+  public abstract Fields fields() throws IOException;
   
   /** Returns an enumeration of all terms starting at a given term. If
    * the given term does not exist, the enumeration is positioned at the
@@ -1211,6 +1209,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   // Only used by external subclasses of IndexReader; all
   // internal classes should implement Bits more
   // efficiently:
+  /*
   private final class DeletedDocsBits implements Bits {
     public boolean get(int docID) {
       return isDeleted(docID);
@@ -1221,6 +1220,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   private Bits deletedDocsBits;
+  */
 
   /** Returns the {@link Bits} representing deleted docs.  A
    *  set bit indicates the doc ID has been deleted.  This
@@ -1228,12 +1228,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  docs.
    *
    * @lucene.experimental */
-  public Bits getDeletedDocs() throws IOException {
-    if (deletedDocsBits == null) {
-      deletedDocsBits = new DeletedDocsBits();
-    }
-    return deletedDocsBits;
-  }
+  public abstract Bits getDeletedDocs() throws IOException;
 
   /**
    * Expert: return the IndexCommit that this reader has

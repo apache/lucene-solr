@@ -26,12 +26,15 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Comparator;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Bits;
 
 /**
  * An InstantiatedIndexReader is not a snapshot in time, it is completely in
@@ -96,6 +99,22 @@ public class InstantiatedIndexReader extends IndexReader {
 
   public InstantiatedIndex getIndex() {
     return index;
+  }
+
+  @Override
+  public Bits getDeletedDocs() {
+    return new Bits() {
+      @Override
+      public boolean get(int n) {
+        return (index.getDeletedDocuments() != null && index.getDeletedDocuments().get(n))
+          || (uncommittedDeletedDocuments != null && uncommittedDeletedDocuments.get(n));
+      }
+
+      @Override
+      public int length() {
+        return maxDoc();
+      }
+    };
   }
 
   private BitVector uncommittedDeletedDocuments;
@@ -392,6 +411,66 @@ public class InstantiatedIndexReader extends IndexReader {
   @Override
   public TermPositions termPositions() throws IOException {
     return new InstantiatedTermPositions(this);
+  }
+
+  @Override
+  public Fields fields() {
+
+    return new Fields() {
+      @Override
+      public FieldsEnum iterator() {
+        final InstantiatedTerm[] orderedTerms = getIndex().getOrderedTerms();
+
+        return new FieldsEnum() {
+          int upto = -1;
+          String currentField;
+
+          @Override
+          public String next() {
+            do {
+              upto++;
+              if (upto >= orderedTerms.length) {
+                return null;
+              }
+            } while(orderedTerms[upto].field() == currentField);
+            
+            currentField = orderedTerms[upto].field();
+            return currentField;
+          }
+
+          @Override
+          public TermsEnum terms() {
+            return new InstantiatedTermsEnum(orderedTerms, upto, currentField);
+          }
+        };
+      }
+
+      @Override
+      public Terms terms(final String field) {
+        final InstantiatedTerm[] orderedTerms = getIndex().getOrderedTerms();
+        int i = Arrays.binarySearch(orderedTerms, new Term(field), InstantiatedTerm.termComparator);
+        if (i < 0) {
+          i = -i - 1;
+        }
+        if (i >= orderedTerms.length || !orderedTerms[i].field().equals(field)) {
+          // field does not exist
+          return null;
+        }
+        final int startLoc = i;
+
+        return new Terms() {
+          @Override 
+          public TermsEnum iterator() {
+            return new InstantiatedTermsEnum(orderedTerms, startLoc, field);
+          }
+
+          @Override
+          public Comparator<BytesRef> getComparator() {
+            return BytesRef.getUTF8SortedAsUTF16Comparator();
+          }
+        };
+      }
+    };
   }
 
   @Override

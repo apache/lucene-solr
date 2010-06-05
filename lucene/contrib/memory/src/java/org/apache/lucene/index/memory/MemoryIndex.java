@@ -37,6 +37,12 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.FieldsEnum;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.TermEnum;
@@ -53,6 +59,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.RAMDirectory; // for javadocs
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Constants; // for javadocs
 
 /**
@@ -746,6 +753,11 @@ public class MemoryIndex implements Serializable {
     private Info getInfo(int pos) {
       return sortedFields[pos].getValue();
     }
+
+    @Override
+    public Bits getDeletedDocs() {
+      return null;
+    }
     
     @Override
     public int docFreq(Term term) {
@@ -760,6 +772,242 @@ public class MemoryIndex implements Serializable {
     public TermEnum terms() {
       if (DEBUG) System.err.println("MemoryIndexReader.terms()");
       return terms(MATCH_ALL_TERM);
+    }
+
+    @Override
+    public Fields fields() {
+
+      sortFields();
+
+      return new Fields() {
+        @Override
+        public FieldsEnum iterator() {
+          return new FieldsEnum() {
+            int upto = -1;
+
+            @Override
+            public String next() {
+              upto++;
+              if (upto >= sortedFields.length) {
+                return null;
+              }
+              return sortedFields[upto].getKey();
+            }
+
+            @Override
+            public TermsEnum terms() {
+              return new MemoryTermsEnum(sortedFields[upto].getValue());
+            }
+          };
+        }
+
+        @Override
+        public Terms terms(final String field) {
+          int i = Arrays.binarySearch(sortedFields, field, termComparator);
+          if (i < 0) {
+            return null;
+          } else {
+            final Info info = getInfo(i);
+            info.sortTerms();
+
+            return new Terms() {
+              @Override 
+              public TermsEnum iterator() {
+                return new MemoryTermsEnum(info);
+              }
+
+              @Override
+              public Comparator<BytesRef> getComparator() {
+                return BytesRef.getUTF8SortedAsUTF16Comparator();
+              }
+
+              @Override
+              public long getUniqueTermCount() {
+                return info.sortedTerms.length;
+              }
+            };
+          }
+        }
+      };
+    }
+
+    private class MemoryTermsEnum extends TermsEnum {
+      private final Info info;
+      private final BytesRef br = new BytesRef();
+      int termUpto = -1;
+
+      public MemoryTermsEnum(Info info) {
+        this.info = info;
+        info.sortTerms();
+      }
+
+      @Override
+      public SeekStatus seek(BytesRef text, boolean useCache) {
+        final String s = text.utf8ToString();
+        termUpto = Arrays.binarySearch(info.sortedTerms, s, termComparator);
+        if (termUpto < 0) { // not found; choose successor
+          termUpto = -termUpto -1;
+          if (termUpto >= info.sortedTerms.length) {
+            return SeekStatus.END;
+          } else {
+            br.copy(info.sortedTerms[termUpto].getKey());
+            return SeekStatus.NOT_FOUND;
+          }
+        } else {
+          br.copy(info.sortedTerms[termUpto].getKey());
+          return SeekStatus.FOUND;
+        }
+      }
+
+      @Override
+      public SeekStatus seek(long ord) {
+        termUpto = (int) ord;
+        if (ord < info.sortedTerms.length) {
+          return SeekStatus.FOUND;
+        } else {
+          return SeekStatus.END;
+        }
+      }
+      
+      @Override
+      public BytesRef next() {
+        termUpto++;
+        if (termUpto >= info.sortedTerms.length) {
+          return null;
+        } else {
+          br.copy(info.sortedTerms[termUpto].getKey());
+          return br;
+        }
+      }
+
+      @Override
+      public BytesRef term() {
+        return br;
+      }
+
+      @Override
+      public long ord() {
+        return termUpto;
+      }
+
+      @Override
+      public int docFreq() {
+        return info.sortedTerms[termUpto].getValue().size();
+      }
+
+      @Override
+      public DocsEnum docs(Bits skipDocs, DocsEnum reuse) {
+        if (reuse == null || !(reuse instanceof MemoryDocsEnum)) {
+          reuse = new MemoryDocsEnum();
+        }
+        return ((MemoryDocsEnum) reuse).reset(skipDocs, info.sortedTerms[termUpto].getValue());
+      }
+
+      @Override
+      public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) {
+        if (reuse == null || !(reuse instanceof MemoryDocsAndPositionsEnum)) {
+          reuse = new MemoryDocsAndPositionsEnum();
+        }
+        return ((MemoryDocsAndPositionsEnum) reuse).reset(skipDocs, info.sortedTerms[termUpto].getValue());
+      }
+
+      @Override
+      public Comparator<BytesRef> getComparator() {
+        return BytesRef.getUTF8SortedAsUTF16Comparator();
+      }
+    }
+
+    private class MemoryDocsEnum extends DocsEnum {
+      private ArrayIntList positions;
+      private boolean hasNext;
+      private Bits skipDocs;
+
+      public DocsEnum reset(Bits skipDocs, ArrayIntList positions) {
+        this.skipDocs = skipDocs;
+        this.positions = positions;
+        hasNext = true;
+        return this;
+      }
+
+      @Override
+      public int docID() {
+        return 0;
+      }
+
+      @Override
+      public int nextDoc() {
+        if (hasNext && (skipDocs == null || !skipDocs.get(0))) {
+          hasNext = false;
+          return 0;
+        } else {
+          return NO_MORE_DOCS;
+        }
+      }
+
+      @Override
+      public int advance(int target) {
+        return nextDoc();
+      }
+
+      @Override
+      public int freq() {
+        return positions.size();
+      }
+    }
+    
+    private class MemoryDocsAndPositionsEnum extends DocsAndPositionsEnum {
+      private ArrayIntList positions;
+      private int posUpto;
+      private boolean hasNext;
+      private Bits skipDocs;
+
+      public DocsAndPositionsEnum reset(Bits skipDocs, ArrayIntList positions) {
+        this.skipDocs = skipDocs;
+        this.positions = positions;
+        posUpto = 0;
+        hasNext = true;
+        return this;
+      }
+
+      @Override
+      public int docID() {
+        return 0;
+      }
+
+      @Override
+      public int nextDoc() {
+        if (hasNext && (skipDocs == null || !skipDocs.get(0))) {
+          hasNext = false;
+          return 0;
+        } else {
+          return NO_MORE_DOCS;
+        }
+      }
+
+      @Override
+      public int advance(int target) {
+        return nextDoc();
+      }
+
+      @Override
+      public int freq() {
+        return positions.size();
+      }
+
+      @Override
+      public int nextPosition() {
+        return positions.get(posUpto++);
+      }
+
+      @Override
+      public boolean hasPayload() {
+        return false;
+      }
+
+      @Override
+      public BytesRef getPayload() {
+        return null;
+      }
     }
     
     @Override

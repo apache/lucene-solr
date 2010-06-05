@@ -300,18 +300,8 @@ public class SolrIndexReader extends FilterIndexReader {
   }
 
   @Override
-  public TermEnum terms() throws IOException {
-    return in.terms();
-  }
-
-  @Override
   public Fields fields() throws IOException {
     return in.fields();
-  }
-
-  @Override
-  public TermEnum terms(Term t) throws IOException {
-    return in.terms(t);
   }
 
   @Override
@@ -323,18 +313,6 @@ public class SolrIndexReader extends FilterIndexReader {
   @Override
   public int docFreq(String field, BytesRef t) throws IOException {
     return in.docFreq(field, t);
-  }
-
-  @Override
-  public TermDocs termDocs() throws IOException {
-    ensureOpen();
-    return in.termDocs();
-  }
-
-  @Override
-  public TermDocs termDocs(Term term) throws IOException {
-    ensureOpen();
-    return in.termDocs(term);
   }
 
   @Override
@@ -350,12 +328,6 @@ public class SolrIndexReader extends FilterIndexReader {
   @Override
   public DocsAndPositionsEnum termPositionsEnum(Bits skipDocs, String field, BytesRef term) throws IOException {
     return in.termPositionsEnum(skipDocs, field, term);
-  }
-
-  @Override
-  public TermPositions termPositions() throws IOException {
-    ensureOpen();
-    return in.termPositions();
   }
 
   @Override

@@ -27,6 +27,8 @@ import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 
@@ -34,37 +36,76 @@ public class TestFilterIndexReader extends LuceneTestCase {
 
   private static class TestReader extends FilterIndexReader {
 
-     /** Filter that only permits terms containing 'e'.*/
-    private static class TestTermEnum extends FilterTermEnum {
-      public TestTermEnum(TermEnum termEnum) {
-        super(termEnum);
+    /** Filter that only permits terms containing 'e'.*/
+    private static class TestFields extends FilterFields {
+      TestFields(Fields in) {
+        super(in);
+      }
+      public FieldsEnum iterator() throws IOException {
+        return new TestFieldsEnum(super.iterator());
+      }
+      public Terms terms(String field) throws IOException {
+        return new TestTerms(super.terms(field));
+      }
+    }
+
+    private static class TestTerms extends FilterTerms {
+      TestTerms(Terms in) {
+        super(in);
+      }
+
+      public TermsEnum iterator() throws IOException {
+        return new TestTermsEnum(super.iterator());
+      }
+    }
+
+    private static class TestFieldsEnum extends FilterFieldsEnum {
+      TestFieldsEnum(FieldsEnum in) {
+        super(in);
+      }
+
+      public TermsEnum terms() throws IOException {
+        return new TestTermsEnum(super.terms());
+      }
+    }
+
+    private static class TestTermsEnum extends FilterTermsEnum {
+      public TestTermsEnum(TermsEnum in) {
+        super(in);
       }
 
       /** Scan for terms containing the letter 'e'.*/
       @Override
-      public boolean next() throws IOException {
-        while (in.next()) {
-          if (in.term().text().indexOf('e') != -1)
-            return true;
+      public BytesRef next() throws IOException {
+        BytesRef text;
+        while ((text = in.next()) != null) {
+          if (text.utf8ToString().indexOf('e') != -1)
+            return text;
         }
-        return false;
+        return null;
+      }
+
+      @Override
+      public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+        return new TestPositions(super.docsAndPositions(skipDocs, reuse == null ? null : ((FilterDocsAndPositionsEnum) reuse).in));
       }
     }
-    
+
     /** Filter that only returns odd numbered documents. */
-    private static class TestTermPositions extends FilterTermPositions {
-      public TestTermPositions(TermPositions in) {
+    private static class TestPositions extends FilterDocsAndPositionsEnum {
+      public TestPositions(DocsAndPositionsEnum in) {
         super(in);
       }
 
       /** Scan for odd numbered documents. */
       @Override
-      public boolean next() throws IOException {
-        while (in.next()) {
-          if ((in.doc() % 2) == 1)
-            return true;
+      public int nextDoc() throws IOException {
+        int doc;
+        while ((doc = in.nextDoc()) != NO_MORE_DOCS) {
+          if ((doc % 2) == 1)
+            return doc;
         }
-        return false;
+        return NO_MORE_DOCS;
       }
     }
     
@@ -72,16 +113,9 @@ public class TestFilterIndexReader extends LuceneTestCase {
       super(reader);
     }
 
-    /** Filter terms with TestTermEnum. */
     @Override
-    public TermEnum terms() throws IOException {
-      return new TestTermEnum(in.terms());
-    }
-
-    /** Filter positions with TestTermPositions. */
-    @Override
-    public TermPositions termPositions() throws IOException {
-      return new TestTermPositions(in.termPositions());
+    public Fields fields() throws IOException {
+      return new TestFields(super.fields());
     }
   }
 
