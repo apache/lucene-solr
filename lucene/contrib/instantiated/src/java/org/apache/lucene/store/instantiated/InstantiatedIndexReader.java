@@ -104,13 +104,11 @@ public class InstantiatedIndexReader extends IndexReader {
   @Override
   public Bits getDeletedDocs() {
     return new Bits() {
-      @Override
       public boolean get(int n) {
         return (index.getDeletedDocuments() != null && index.getDeletedDocuments().get(n))
           || (uncommittedDeletedDocuments != null && uncommittedDeletedDocuments.get(n));
       }
 
-      @Override
       public int length() {
         return maxDoc();
       }
