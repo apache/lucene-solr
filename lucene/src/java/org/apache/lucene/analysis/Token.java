@@ -17,12 +17,11 @@ package org.apache.lucene.analysis;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.tokenattributes.TermAttributeImpl;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.FlagsAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.TermPositions;     // for javadoc
@@ -119,8 +118,7 @@ import org.apache.lucene.util.AttributeImpl;
   </p>
   @see org.apache.lucene.index.Payload
 */
-// TODO: change superclass to CharTermAttribute in 4.0! Maybe deprecate the whole class?
-public class Token extends TermAttributeImpl 
+public class Token extends CharTermAttributeImpl 
                    implements TypeAttribute, PositionIncrementAttribute,
                               FlagsAttribute, OffsetAttribute, PayloadAttribute {
 

@@ -21,6 +21,8 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.CharTermAttributeImpl;
 
 public class TestNumericTokenStream extends BaseTokenStreamTestCase {
 
@@ -88,6 +90,25 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
       fail("incrementToken() should not succeed.");
     } catch (IllegalStateException e) {
       // pass
+    }
+  }
+  
+  public static interface TestAttribute extends CharTermAttribute {}
+  public static class TestAttributeImpl extends CharTermAttributeImpl implements TestAttribute {}
+  
+  public void testCTA() throws Exception {
+    final NumericTokenStream stream=new NumericTokenStream();
+    try {
+      stream.addAttribute(CharTermAttribute.class);
+      fail("Succeeded to add CharTermAttribute.");
+    } catch (IllegalArgumentException iae) {
+      assertTrue(iae.getMessage().startsWith("NumericTokenStream does not support"));
+    }
+    try {
+      stream.addAttribute(TestAttribute.class);
+      fail("Succeeded to add TestAttribute.");
+    } catch (IllegalArgumentException iae) {
+      assertTrue(iae.getMessage().startsWith("NumericTokenStream does not support"));
     }
   }
   

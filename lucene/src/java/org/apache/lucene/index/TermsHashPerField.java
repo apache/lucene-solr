@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.util.BytesRef;
@@ -290,14 +289,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
 
   @Override
   void start(Fieldable f) {
-    if (fieldState.attributeSource.hasAttribute(TermToBytesRefAttribute.class)) {
-      termAtt = fieldState.attributeSource.getAttribute(TermToBytesRefAttribute.class);
-    } else if (fieldState.attributeSource.hasAttribute(TermAttribute.class)) {
-      perThread.legacyTermAttributeWrapper.setTermAttribute(fieldState.attributeSource.getAttribute(TermAttribute.class));
-      termAtt = perThread.legacyTermAttributeWrapper;
-    } else {
-      throw new IllegalArgumentException("Could not find a term attribute (that implements TermToBytesRefAttribute) in the TokenStream");
-    }
+    termAtt = fieldState.attributeSource.getAttribute(TermToBytesRefAttribute.class);
     consumer.start(f);
     if (nextPerField != null) {
       nextPerField.start(f);

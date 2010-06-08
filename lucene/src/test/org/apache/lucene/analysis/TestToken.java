@@ -34,17 +34,17 @@ public class TestToken extends LuceneTestCase {
   public void testCtor() throws Exception {
     Token t = new Token();
     char[] content = "hello".toCharArray();
-    t.setTermBuffer(content, 0, content.length);
-    assertNotSame(t.termBuffer(), content);
+    t.copyBuffer(content, 0, content.length);
+    assertNotSame(t.buffer(), content);
     assertEquals(0, t.startOffset());
     assertEquals(0, t.endOffset());
-    assertEquals("hello", t.term());
+    assertEquals("hello", t.toString());
     assertEquals("word", t.type());
     assertEquals(0, t.getFlags());
 
     t = new Token(6, 22);
-    t.setTermBuffer(content, 0, content.length);
-    assertEquals("hello", t.term());
+    t.copyBuffer(content, 0, content.length);
+    assertEquals("hello", t.toString());
     assertEquals("hello", t.toString());
     assertEquals(6, t.startOffset());
     assertEquals(22, t.endOffset());
@@ -52,8 +52,8 @@ public class TestToken extends LuceneTestCase {
     assertEquals(0, t.getFlags());
 
     t = new Token(6, 22, 7);
-    t.setTermBuffer(content, 0, content.length);
-    assertEquals("hello", t.term());
+    t.copyBuffer(content, 0, content.length);
+    assertEquals("hello", t.toString());
     assertEquals("hello", t.toString());
     assertEquals(6, t.startOffset());
     assertEquals(22, t.endOffset());
@@ -61,8 +61,8 @@ public class TestToken extends LuceneTestCase {
     assertEquals(7, t.getFlags());
 
     t = new Token(6, 22, "junk");
-    t.setTermBuffer(content, 0, content.length);
-    assertEquals("hello", t.term());
+    t.copyBuffer(content, 0, content.length);
+    assertEquals("hello", t.toString());
     assertEquals("hello", t.toString());
     assertEquals(6, t.startOffset());
     assertEquals(22, t.endOffset());
@@ -73,12 +73,12 @@ public class TestToken extends LuceneTestCase {
   public void testResize() {
     Token t = new Token();
     char[] content = "hello".toCharArray();
-    t.setTermBuffer(content, 0, content.length);
+    t.copyBuffer(content, 0, content.length);
     for (int i = 0; i < 2000; i++)
     {
-      t.resizeTermBuffer(i);
-      assertTrue(i <= t.termBuffer().length);
-      assertEquals("hello", t.term());
+      t.resizeBuffer(i);
+      assertTrue(i <= t.buffer().length);
+      assertEquals("hello", t.toString());
     }
   }
 
@@ -88,86 +88,73 @@ public class TestToken extends LuceneTestCase {
     for (int i = 0; i < 20; i++)
     {
       char[] content = buf.toString().toCharArray();
-      t.setTermBuffer(content, 0, content.length);
-      assertEquals(buf.length(), t.termLength());
-      assertEquals(buf.toString(), t.term());
+      t.copyBuffer(content, 0, content.length);
+      assertEquals(buf.length(), t.length());
+      assertEquals(buf.toString(), t.toString());
       buf.append(buf.toString());
     }
-    assertEquals(1048576, t.termLength());
-
-    // now as a string, first variant
-    t = new Token();
-    buf = new StringBuilder("ab");
-    for (int i = 0; i < 20; i++)
-    {
-      String content = buf.toString();
-      t.setTermBuffer(content, 0, content.length());
-      assertEquals(content.length(), t.termLength());
-      assertEquals(content, t.term());
-      buf.append(content);
-    }
-    assertEquals(1048576, t.termLength());
+    assertEquals(1048576, t.length());
 
     // now as a string, second variant
     t = new Token();
     buf = new StringBuilder("ab");
     for (int i = 0; i < 20; i++)
     {
+      t.setEmpty().append(buf);
       String content = buf.toString();
-      t.setTermBuffer(content);
-      assertEquals(content.length(), t.termLength());
-      assertEquals(content, t.term());
+      assertEquals(content.length(), t.length());
+      assertEquals(content, t.toString());
       buf.append(content);
     }
-    assertEquals(1048576, t.termLength());
+    assertEquals(1048576, t.length());
 
     // Test for slow growth to a long term
     t = new Token();
     buf = new StringBuilder("a");
     for (int i = 0; i < 20000; i++)
     {
+      t.setEmpty().append(buf);
       String content = buf.toString();
-      t.setTermBuffer(content);
-      assertEquals(content.length(), t.termLength());
-      assertEquals(content, t.term());
+      assertEquals(content.length(), t.length());
+      assertEquals(content, t.toString());
       buf.append("a");
     }
-    assertEquals(20000, t.termLength());
+    assertEquals(20000, t.length());
 
     // Test for slow growth to a long term
     t = new Token();
     buf = new StringBuilder("a");
     for (int i = 0; i < 20000; i++)
     {
+      t.setEmpty().append(buf);
       String content = buf.toString();
-      t.setTermBuffer(content);
-      assertEquals(content.length(), t.termLength());
-      assertEquals(content, t.term());
+      assertEquals(content.length(), t.length());
+      assertEquals(content, t.toString());
       buf.append("a");
     }
-    assertEquals(20000, t.termLength());
+    assertEquals(20000, t.length());
   }
 
   public void testToString() throws Exception {
     char[] b = {'a', 'l', 'o', 'h', 'a'};
     Token t = new Token("", 0, 5);
-    t.setTermBuffer(b, 0, 5);
+    t.copyBuffer(b, 0, 5);
     assertEquals("aloha", t.toString());
 
-    t.setTermBuffer("hi there");
+    t.setEmpty().append("hi there");
     assertEquals("hi there", t.toString());
   }
 
   public void testTermBufferEquals() throws Exception {
     Token t1a = new Token();
     char[] content1a = "hello".toCharArray();
-    t1a.setTermBuffer(content1a, 0, 5);
+    t1a.copyBuffer(content1a, 0, 5);
     Token t1b = new Token();
     char[] content1b = "hello".toCharArray();
-    t1b.setTermBuffer(content1b, 0, 5);
+    t1b.copyBuffer(content1b, 0, 5);
     Token t2 = new Token();
     char[] content2 = "hello2".toCharArray();
-    t2.setTermBuffer(content2, 0, 6);
+    t2.copyBuffer(content2, 0, 6);
     assertTrue(t1a.equals(t1b));
     assertFalse(t1a.equals(t2));
     assertFalse(t2.equals(t1b));
@@ -175,27 +162,27 @@ public class TestToken extends LuceneTestCase {
   
   public void testMixedStringArray() throws Exception {
     Token t = new Token("hello", 0, 5);
-    assertEquals(t.termLength(), 5);
-    assertEquals(t.term(), "hello");
-    t.setTermBuffer("hello2");
-    assertEquals(t.termLength(), 6);
-    assertEquals(t.term(), "hello2");
-    t.setTermBuffer("hello3".toCharArray(), 0, 6);
-    assertEquals(t.term(), "hello3");
+    assertEquals(t.length(), 5);
+    assertEquals(t.toString(), "hello");
+    t.setEmpty().append("hello2");
+    assertEquals(t.length(), 6);
+    assertEquals(t.toString(), "hello2");
+    t.copyBuffer("hello3".toCharArray(), 0, 6);
+    assertEquals(t.toString(), "hello3");
 
-    char[] buffer = t.termBuffer();
+    char[] buffer = t.buffer();
     buffer[1] = 'o';
-    assertEquals(t.term(), "hollo3");
+    assertEquals(t.toString(), "hollo3");
   }
   
   public void testClone() throws Exception {
     Token t = new Token(0, 5);
     char[] content = "hello".toCharArray();
-    t.setTermBuffer(content, 0, 5);
-    char[] buf = t.termBuffer();
+    t.copyBuffer(content, 0, 5);
+    char[] buf = t.buffer();
     Token copy = (Token) TestSimpleAttributeImpls.assertCloneIsEqual(t);
-    assertEquals(t.term(), copy.term());
-    assertNotSame(buf, copy.termBuffer());
+    assertEquals(t.toString(), copy.toString());
+    assertNotSame(buf, copy.buffer());
 
     Payload pl = new Payload(new byte[]{1,2,3,4});
     t.setPayload(pl);
@@ -207,16 +194,16 @@ public class TestToken extends LuceneTestCase {
   public void testCopyTo() throws Exception {
     Token t = new Token();
     Token copy = (Token) TestSimpleAttributeImpls.assertCopyIsEqual(t);
-    assertEquals("", t.term());
-    assertEquals("", copy.term());
+    assertEquals("", t.toString());
+    assertEquals("", copy.toString());
 
     t = new Token(0, 5);
     char[] content = "hello".toCharArray();
-    t.setTermBuffer(content, 0, 5);
-    char[] buf = t.termBuffer();
+    t.copyBuffer(content, 0, 5);
+    char[] buf = t.buffer();
     copy = (Token) TestSimpleAttributeImpls.assertCopyIsEqual(t);
-    assertEquals(t.term(), copy.term());
-    assertNotSame(buf, copy.termBuffer());
+    assertEquals(t.toString(), copy.toString());
+    assertNotSame(buf, copy.buffer());
 
     Payload pl = new Payload(new byte[]{1,2,3,4});
     t.setPayload(pl);
@@ -241,7 +228,7 @@ public class TestToken extends LuceneTestCase {
   public void testTokenAttributeFactory() throws Exception {
     TokenStream ts = new MockTokenizer(Token.TOKEN_ATTRIBUTE_FACTORY, new StringReader("foo bar"), MockTokenizer.WHITESPACE, false);
     
-    assertTrue("TypeAttribute is not implemented by SenselessAttributeImpl",
+    assertTrue("SenselessAttribute is not implemented by SenselessAttributeImpl",
       ts.addAttribute(SenselessAttribute.class) instanceof SenselessAttributeImpl);
     
     assertTrue("CharTermAttribute is not implemented by Token",

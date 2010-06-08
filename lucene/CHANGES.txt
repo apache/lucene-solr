@@ -84,6 +84,9 @@ Changes in backwards compatibility policy
 * LUCENE-2480: Though not a change in backwards compatibility policy, pre-3.0 
   indexes are no longer supported. You should upgrade to 3.x first, then run
   optimize(), or reindex. (Shai Erera, Earwin Burrfoot)
+  
+* LUCENE-2484: Removed deprecated TermAttribute. Use CharTermAttribute
+  and TermToBytesRefAttribute instead.  (Uwe Schindler)
 
 Changes in runtime behavior
 

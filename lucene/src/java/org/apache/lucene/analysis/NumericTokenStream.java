@@ -117,15 +117,12 @@ public final class NumericTokenStream extends TokenStream {
       this.delegate = delegate;
     }
   
-    @Override @SuppressWarnings("deprecation")
+    @Override
     public AttributeImpl createAttributeInstance(Class<? extends Attribute> attClass) {
       if (attClass == NumericTermAttribute.class)
         return new NumericTermAttributeImpl(ts);
-      if (attClass.isAssignableFrom(CharTermAttribute.class) ||
-          // TODO: remove in 4.0 (deprecated class, also remove the suppress above):
-          attClass.isAssignableFrom(org.apache.lucene.analysis.tokenattributes.TermAttribute.class)
-      )
-        throw new IllegalArgumentException("NumericTokenStream does not support CharTermAttribute/TermAttribute.");
+      if (CharTermAttribute.class.isAssignableFrom(attClass))
+        throw new IllegalArgumentException("NumericTokenStream does not support CharTermAttribute.");
       return delegate.createAttributeInstance(attClass);
     }
   }

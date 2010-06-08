@@ -19,8 +19,6 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.analysis.tokenattributes.TermAttribute;
-import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 
 import java.io.IOException;
 
@@ -42,23 +40,6 @@ final class TermsHashPerThread extends InvertedDocConsumerPerThread {
 
   // Used by perField:
   final BytesRef utf8 = new BytesRef(10);
-  
-  final LegacyTermAttributeWrapper legacyTermAttributeWrapper = new LegacyTermAttributeWrapper();
-  
-  /** This class is used to wrap a legacy TermAttribute without support for {@link TermToBytesRefAttribute}. */
-  @Deprecated
-  static class LegacyTermAttributeWrapper implements TermToBytesRefAttribute {
-    private TermAttribute termAtt = null;
-  
-    void setTermAttribute(TermAttribute termAtt) {
-      this.termAtt = termAtt;
-    }
-  
-    public int toBytesRef(BytesRef target) {
-      assert target.bytes != null : "target byteref must be != null, because utf8 is used here";
-      return UnicodeUtil.UTF16toUTF8WithHash(termAtt.termBuffer(), 0, termAtt.termLength(), target);
-    }
-  }
 
   public TermsHashPerThread(DocInverterPerThread docInverterPerThread, final TermsHash termsHash, final TermsHash nextTermsHash, final TermsHashPerThread primaryPerThread) {
     docState = docInverterPerThread.docState;
