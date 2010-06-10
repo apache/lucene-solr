@@ -763,6 +763,8 @@ API Changes
    (Robert Muir)
 
 Optimizations
+ * LUCENE-2494: Use CompletionService in ParallelMultiSearcher instead of
+   simple polling for resutls. (Edward Drapkin, Simon Willnauer) 
 
  * LUCENE-2086: When resolving deleted terms, do so in term sort order
    for better performance (Bogdan Ghidireac via Mike McCandless)
