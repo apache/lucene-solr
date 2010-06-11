@@ -378,6 +378,9 @@ New features
   
 Optimizations
 
+* LUCENE-2494: Use CompletionService in ParallelMultiSearcher instead of
+  simple polling for resutls. (Edward Drapkin, Simon Willnauer)
+
 * LUCENE-2075: Terms dict cache is now shared across threads instead
   of being stored separately in thread local storage.  Also fixed
   terms dict so that the cache is used when seeking the thread local
