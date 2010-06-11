@@ -481,6 +481,10 @@ Bug fixes
   files when a mergedSegmentWarmer is set on IndexWriter.  (Mike
   McCandless)
 
+* LUCENE-2496: Don't throw NPE if IndexWriter is opened with CREATE on
+  a prior (corrupt) index missing its segments_N file.  (Mike
+  McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
