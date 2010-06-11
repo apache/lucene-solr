@@ -130,8 +130,10 @@ final class IndexFileDeleter {
     this.docWriter = docWriter;
     this.infoStream = infoStream;
 
+    final String currentSegmentsFile = segmentInfos.getCurrentSegmentFileName();
+
     if (infoStream != null)
-      message("init: current segments file is \"" + segmentInfos.getCurrentSegmentFileName() + "\"; deletionPolicy=" + policy);
+      message("init: current segments file is \"" + currentSegmentsFile + "\"; deletionPolicy=" + policy);
 
     this.policy = policy;
     this.directory = directory;
@@ -142,7 +144,6 @@ final class IndexFileDeleter {
     IndexFileNameFilter filter = IndexFileNameFilter.getFilter();
 
     CommitPoint currentCommitPoint = null;
-    boolean seenIndexFiles = false;
     String[] files = null;
     try {
       files = directory.listAll();
@@ -154,7 +155,6 @@ final class IndexFileDeleter {
     for (String fileName : files) {
 
       if (filter.accept(null, fileName) && !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
-        seenIndexFiles = true;
         
         // Add this file to refCounts with initial count 0:
         getRefCount(fileName);
@@ -197,10 +197,7 @@ final class IndexFileDeleter {
       }
     }
 
-    // If we haven't seen any Lucene files, then currentCommitPoint is expected
-    // to be null, because it means it's a fresh Directory. Therefore it cannot
-    // be any NFS cache issues - so just ignore.
-    if (currentCommitPoint == null && seenIndexFiles) {
+    if (currentCommitPoint == null && currentSegmentsFile != null) {
       // We did not in fact see the segments_N file
       // corresponding to the segmentInfos that was passed
       // in.  Yet, it must exist, because our caller holds
@@ -210,7 +207,7 @@ final class IndexFileDeleter {
       // try now to explicitly open this commit point:
       SegmentInfos sis = new SegmentInfos();
       try {
-        sis.read(directory, segmentInfos.getCurrentSegmentFileName());
+        sis.read(directory, currentSegmentsFile);
       } catch (IOException e) {
         throw new CorruptIndexException("failed to locate current segments_N file");
       }
@@ -240,7 +237,7 @@ final class IndexFileDeleter {
 
     // Finally, give policy a chance to remove things on
     // startup:
-    if (seenIndexFiles) {
+    if (currentSegmentsFile != null) {
       policy.onInit(commits);
     }
 
