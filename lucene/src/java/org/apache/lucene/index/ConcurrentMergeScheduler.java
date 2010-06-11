@@ -457,7 +457,6 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   /** Called when an exception is hit in a background merge
    *  thread */
   protected void handleMergeException(Throwable exc) {
-    System.out.println("HANDLE " + exc);
     try {
       // When an exception is hit during merge, IndexWriter
       // removes any partial files and then allows another
