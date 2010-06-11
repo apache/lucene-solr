@@ -1,5 +1,6 @@
-package org.apache.solr.handler;
+package org.apache.solr.handler.admin;
 
+import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.core.SolrCore;
@@ -7,10 +8,6 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.response.SolrQueryResponse;
 
-import org.apache.lucene.LucenePackage;
-
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Date;
 import java.util.Set;
 import java.util.Map;
@@ -18,20 +15,10 @@ import java.util.HashSet;
 import java.util.HashMap;
 
 /**
- * A request handler that provides System Information about the
- * current running instance and all registered SolrMBeans.
+ * A request handler that provides info about all 
+ * registered SolrInfoMBeans.
  */
-public class SystemInfoRequestHandler extends RequestHandlerBase {
-  static InetAddress addr = null;
-  static String hostname = "unknown";
-  static {
-    try {
-      addr = InetAddress.getLocalHost();
-      hostname = addr.getCanonicalHostName();
-    } catch (UnknownHostException e) {
-      //default to unknown
-    }
-  }
+public class SolrInfoMBeanHandler extends RequestHandlerBase {
 
   /**
    * Take an array of any type and generate a Set containing the toString.
@@ -41,7 +28,7 @@ public class SystemInfoRequestHandler extends RequestHandlerBase {
     HashSet<String> r = new HashSet<String>();
     if (null == arr) return r;
     for (Object o : arr) {
-      r.add(o.toString());
+      if (null != o) r.add(o.toString());
     }
     return r;
   }
@@ -49,35 +36,19 @@ public class SystemInfoRequestHandler extends RequestHandlerBase {
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     SolrCore core = req.getCore();
-    rsp.add("core", core.getName());
-    rsp.add("schema", req.getSchema().getSchemaName());
-    rsp.add("start", new Date(core.getStartTime()));
-    rsp.add("now", new Date().toString());
-    rsp.add("host", hostname);
-    rsp.add("cwd", System.getProperty("user.dir"));
-    rsp.add("instanceDir", core.getSolrConfig().getInstanceDir());
-
-    Package solrP = SolrCore.class.getPackage();
-    Package luceneP = LucenePackage.class.getPackage();
-    NamedList version = new NamedList();
-    version.add("solrSpecVersion", solrP.getSpecificationVersion());
-    version.add("solrImplVersion", solrP.getImplementationVersion());
-    version.add("luceneSpecVersion", luceneP.getSpecificationVersion());
-    version.add("luceneImplVersion", luceneP.getImplementationVersion());
-
-    rsp.add("version", version);
     
     NamedList cats = new NamedList();
-    rsp.add("objects", cats);
+    rsp.add("solr-mbeans", cats);
     
-    Set<String> requestedCats = arrayToSet(req.getParams().getParams("cat"));
-    if (requestedCats.isEmpty()) {
+    String[] requestedCats = req.getParams().getParams("cat");
+    if (null == requestedCats || 0 == requestedCats.length) {
       for (SolrInfoMBean.Category cat : SolrInfoMBean.Category.values()) {
-        requestedCats.add(cat.name());
+        cats.add(cat.name(), new SimpleOrderedMap());
       }
-    }
-    for (String catName : requestedCats) {
-      cats.add(catName,new SimpleOrderedMap());
+    } else {
+      for (String catName : requestedCats) {
+        cats.add(catName,new SimpleOrderedMap());
+      }
     }
          
     Set<String> requestedKeys = arrayToSet(req.getParams().getParams("key"));
@@ -98,7 +69,7 @@ public class SystemInfoRequestHandler extends RequestHandlerBase {
       mBeanInfo.add("description", m.getDescription());
       mBeanInfo.add("srcId", m.getSourceId());
       mBeanInfo.add("src", m.getSource());
-      mBeanInfo.add("docs", arrayToSet(m.getDocs()));
+      mBeanInfo.add("docs", m.getDocs());
       
       if (req.getParams().getFieldBool(key, "stats", false))
         mBeanInfo.add("stats", m.getStatistics());
@@ -109,7 +80,7 @@ public class SystemInfoRequestHandler extends RequestHandlerBase {
   }
 
   public String getDescription() {
-    return "Get Solr component statistics";
+    return "Get Info (and statistics) about all registered SolrInfoMBeans";
   }
 
   public String getSourceId() {

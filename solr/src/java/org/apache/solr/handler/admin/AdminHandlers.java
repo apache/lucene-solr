@@ -82,6 +82,7 @@ public class AdminHandlers implements SolrCoreAware, SolrRequestHandler
     StandardHandler[] list = new StandardHandler[] {
       new StandardHandler( "luke", new LukeRequestHandler() ),
       new StandardHandler( "system", new SystemInfoHandler() ),
+      new StandardHandler( "mbeans", new SolrInfoMBeanHandler() ),
       new StandardHandler( "plugins", new PluginInfoHandler() ),
       new StandardHandler( "threads", new ThreadDumpHandler() ),
       new StandardHandler( "properties", new PropertiesRequestHandler() ),
