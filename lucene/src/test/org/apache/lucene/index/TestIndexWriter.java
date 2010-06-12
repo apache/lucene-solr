@@ -4959,24 +4959,21 @@ public class TestIndexWriter extends LuceneTestCase {
     File tempDir = _TestUtil.getTempDir("noSegmentFile");
     try {
       Directory dir = FSDirectory.open(tempDir);
-      dir.setLockFactory(new NoLockFactory());
+      dir.setLockFactory(NoLockFactory.getNoLockFactory());
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
-                                                                 TEST_VERSION_CURRENT, new MockAnalyzer())
-                                      .setMaxBufferedDocs(2));
+          TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
 
       Document doc = new Document();
       doc.add(new Field("c", "val", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
       w.addDocument(doc);
       w.addDocument(doc);
-      String[] files = dir.listAll();
-      for(String file : files) {
-        System.out.println("file=" + file);
-      }
       IndexWriter w2 = new IndexWriter(dir, new IndexWriterConfig(
-                                                                  TEST_VERSION_CURRENT, new MockAnalyzer())
-                                       .setMaxBufferedDocs(2).setOpenMode(OpenMode.CREATE));
+          TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2)
+          .setOpenMode(OpenMode.CREATE));
 
       w2.close();
+      // If we don't do that, the test fails on Windows
+      w.rollback();
       dir.close();
     } finally {
       _TestUtil.rmDir(tempDir);
