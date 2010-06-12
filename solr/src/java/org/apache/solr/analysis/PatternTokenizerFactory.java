@@ -64,7 +64,6 @@ public class PatternTokenizerFactory extends BaseTokenizerFactory
   public static final String PATTERN = "pattern";
   public static final String GROUP = "group";
  
-  protected Map<String,String> args;
   protected Pattern pattern;
   protected int group;
   
