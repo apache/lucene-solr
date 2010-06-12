@@ -154,7 +154,8 @@ public final class SegmentInfo {
     }
     if (format > SegmentInfos.FORMAT_4_0) {
       // pre-4.0 indexes write a byte if there is a single norms file
-      assert 1 == input.readByte();
+      byte b = input.readByte();
+      assert 1 == b;
     }
     int numNormGen = input.readInt();
     if (numNormGen == NO) {
