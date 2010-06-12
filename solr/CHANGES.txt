@@ -328,6 +328,8 @@ Bug Fixes
 * SOLR-1914: Change the JSON response format to output float/double
   values of NaN,Infinity,-Infinity as strings. (yonik)
 
+* SOLR-1948: PatternTokenizerFactory should use parent's args (koji)
+
 
 Other Changes
 ----------------------
