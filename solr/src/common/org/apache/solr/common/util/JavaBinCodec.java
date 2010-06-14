@@ -225,8 +225,8 @@ public class JavaBinCodec {
       writeSolrDocumentList((SolrDocumentList) val);
       return true;
     }
-    if (val instanceof List) {
-      writeArray((List) val);
+    if (val instanceof Collection) {
+      writeArray((Collection) val);
       return true;
     }
     if (val instanceof Object[]) {
@@ -388,6 +388,14 @@ public class JavaBinCodec {
     for (int i = 0; i < l.size(); i++) {
       writeVal(l.get(i));
     }
+  }
+
+  public void writeArray(Collection coll) throws IOException {
+    writeTag(ARR, coll.size());
+    for (Object o : coll) {
+      writeVal(o);
+    }
+
   }
 
   public void writeArray(Object[] arr) throws IOException {

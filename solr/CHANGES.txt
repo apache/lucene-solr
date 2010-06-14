@@ -330,6 +330,11 @@ Bug Fixes
 
 * SOLR-1948: PatternTokenizerFactory should use parent's args (koji)
 
+* SOLR-1870: Indexing documents using the 'javabin' format no longer
+  fails with a ClassCastException whenSolrInputDocuments contain field
+  values which are Collections or other classes that implement
+  Iterable. (noble, hossman)
+
 
 Other Changes
 ----------------------
