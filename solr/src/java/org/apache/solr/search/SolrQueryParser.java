@@ -54,8 +54,6 @@ import org.apache.solr.schema.TextField;
  * </p>
  *
  * @see QueryParsing#parseFunction
- * @see ConstantScoreRangeQuery
- * @see ConstantScorePrefixQuery
  */
 public class SolrQueryParser extends QueryParser {
   protected final IndexSchema schema;

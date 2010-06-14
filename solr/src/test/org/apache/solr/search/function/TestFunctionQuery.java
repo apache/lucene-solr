@@ -17,7 +17,9 @@
 
 package org.apache.solr.search.function;
 
+import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.Similarity;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -274,14 +276,29 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     clearIndex();
     
     assertU(adoc("id","1", "a_tdt","2009-08-31T12:10:10.123Z", "b_tdt","2009-08-31T12:10:10.124Z"));
-    assertU(adoc("id","2"));
+    assertU(adoc("id","2", "a_t","how now brown cow"));
     assertU(commit()); // create more than one segment
-    assertU(adoc("id","3"));
+    assertU(adoc("id","3", "a_t","brown cow"));
     assertU(adoc("id","4"));
     assertU(commit()); // create more than one segment
     assertU(adoc("id","5"));
-    assertU(adoc("id","6"));
+    assertU(adoc("id","6", "a_t","cow cow cow cow cow"));
     assertU(commit());
+
+    // test relevancy functions
+    assertQ(req("fl","*,score","q", "{!func}numdocs()", "fq","id:6"), "//float[@name='score']='6.0'");
+    assertQ(req("fl","*,score","q", "{!func}maxdoc()", "fq","id:6"), "//float[@name='score']='6.0'");
+    assertQ(req("fl","*,score","q", "{!func}docfreq(a_t,cow)", "fq","id:6"), "//float[@name='score']='3.0'");
+    assertQ(req("fl","*,score","q", "{!func}docfreq('a_t','cow')", "fq","id:6"), "//float[@name='score']='3.0'");
+    assertQ(req("fl","*,score","q", "{!func}docfreq($field,$value)", "fq","id:6", "field","a_t", "value","cow"), "//float[@name='score']='3.0'");
+    assertQ(req("fl","*,score","q", "{!func}termfreq(a_t,cow)", "fq","id:6"), "//float[@name='score']='5.0'");
+    Similarity similarity = new DefaultSimilarity();
+    assertQ(req("fl","*,score","q", "{!func}idf(a_t,cow)", "fq","id:6"),
+        "//float[@name='score']='" + similarity.idf(3,6)  + "'");
+    assertQ(req("fl","*,score","q", "{!func}tf(a_t,cow)", "fq","id:6"),
+        "//float[@name='score']='" + similarity.tf(5)  + "'");
+    assertQ(req("fl","*,score","q", "{!func}norm(a_t)", "fq","id:2"),
+        "//float[@name='score']='" + similarity.lengthNorm("a_t",4)  + "'");  // sqrt(4)==2 and is exactly representable when quantized to a byte
 
     // test that ord and rord are working on a global index basis, not just
     // at the segment level (since Lucene 2.9 has switched to per-segment searching)

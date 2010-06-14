@@ -176,6 +176,11 @@ New Features
 * SOLR-1915: DebugComponent now supports using a NamedList to model
   Explanation objects in it's responses instead of
   Explanation.toString  (hossman) 
+
+* SOLR-1932: New relevancy function queries: termfreq, tf, docfreq, idf
+  norm, maxdoc, numdocs. (yonik)
+
+
    
 Optimizations
 ----------------------

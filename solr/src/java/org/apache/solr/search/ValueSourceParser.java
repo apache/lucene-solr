@@ -17,22 +17,24 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Searcher;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.spell.JaroWinklerDistance;
 import org.apache.lucene.search.spell.LevensteinDistance;
 import org.apache.lucene.search.spell.NGramDistance;
 import org.apache.lucene.search.spell.StringDistance;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.schema.DateField;
-import org.apache.solr.schema.LegacyDateField;
-import org.apache.solr.schema.SchemaField;
-import org.apache.solr.schema.TrieDateField;
+import org.apache.solr.schema.*;
 import org.apache.solr.search.function.*;
 
 import org.apache.solr.search.function.distance.*;
+import org.apache.solr.util.ByteUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 import java.io.IOException;
@@ -451,6 +453,81 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return new DoubleConstValueSource(Math.E);
       }
     });
+
+
+    addParser("docfreq", new ValueSourceParser() {
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        TInfo tinfo = parseTerm(fp);
+        return new DocFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
+      }
+    });
+
+    addParser("idf", new ValueSourceParser() {
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        TInfo tinfo = parseTerm(fp);
+        return new IDFValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
+      }
+    });
+
+    addParser("termfreq", new ValueSourceParser() {
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        TInfo tinfo = parseTerm(fp);
+        return new TermFreqValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
+      }
+    });
+
+    addParser("tf", new ValueSourceParser() {
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        TInfo tinfo = parseTerm(fp);
+        return new TFValueSource(tinfo.field, tinfo.val, tinfo.indexedField, tinfo.indexedBytes);
+      }
+    });
+
+    addParser("norm", new ValueSourceParser() {
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        String field = fp.parseArg();
+        return new NormValueSource(field);
+      }
+    });
+
+    addParser("maxdoc", new ValueSourceParser() {
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        return new MaxDocValueSource();
+      }
+    });
+
+    addParser("numdocs", new ValueSourceParser() {
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        return new NumDocsValueSource();
+      }
+    });
+  }
+
+  private static TInfo parseTerm(FunctionQParser fp) throws ParseException {
+    TInfo tinfo = new TInfo();
+
+    tinfo.indexedField = tinfo.field = fp.parseArg();
+    tinfo.val = fp.parseArg();
+    tinfo.indexedBytes = new BytesRef();
+
+    FieldType ft = fp.getReq().getSchema().getFieldTypeNoEx(tinfo.field);
+    if (ft == null) ft = new StrField();
+
+    if (ft instanceof TextField) {
+      // need to do analyisis on the term
+      String indexedVal = tinfo.val;
+      Query q = ft.getFieldQuery(fp, fp.getReq().getSchema().getFieldOrNull(tinfo.field), tinfo.val);
+      if (q instanceof TermQuery) {
+        Term term = ((TermQuery)q).getTerm();
+        tinfo.indexedField = term.field();
+        indexedVal = term.text();
+      }
+      UnicodeUtil.UTF16toUTF8(indexedVal, 0, indexedVal.length(), tinfo.indexedBytes);
+    } else {
+      ft.readableToIndexed(tinfo.val, tinfo.indexedBytes);
+    }
+
+    return tinfo;
   }
 
   private static void splitSources(int dim, List<ValueSource> sources, List<ValueSource> dest1, List<ValueSource> dest2) {
@@ -502,6 +579,14 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     MultiValueSource mv1;
     MultiValueSource mv2;
   }
+
+  private static class TInfo {
+    String field;
+    String val;
+    String indexedField;
+    BytesRef indexedBytes;
+  }
+
 }
 
 
