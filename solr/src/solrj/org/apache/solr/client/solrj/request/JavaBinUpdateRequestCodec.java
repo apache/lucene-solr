@@ -96,6 +96,11 @@ public class JavaBinUpdateRequestCodec {
     final NamedList[] namedList = new NamedList[1];
     JavaBinCodec codec = new JavaBinCodec() {
 
+      // NOTE: this only works because this is an anonymous inner class 
+      // which will only ever be used on a single stream -- if this class 
+      // is ever refactored, this will not work.
+      private boolean seenOuterMostDocIterator = false;
+        
       public NamedList readNamedList(FastInputStream dis) throws IOException {
         int sz = readSize(dis);
         NamedList nl = new NamedList();
@@ -110,8 +115,18 @@ public class JavaBinUpdateRequestCodec {
         return nl;
       }
 
-
       public List readIterator(FastInputStream fis) throws IOException {
+
+        // default behavior for reading any regular Iterator in the stream
+        if (seenOuterMostDocIterator) return super.readIterator(fis);
+
+        // special treatment for first outermost Iterator 
+        // (the list of documents)
+        seenOuterMostDocIterator = true;
+        return readOuterMostDocIterator(fis);
+      }
+
+      private List readOuterMostDocIterator(FastInputStream fis) throws IOException {
         NamedList params = (NamedList) namedList[0].getVal(0);
         updateRequest.setParams(namedListToSolrParams(params));
         if (handler == null) return super.readIterator(fis);
