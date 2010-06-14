@@ -17,53 +17,37 @@
 
 package org.apache.solr.search.function;
 
-import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.search.Query;
-import org.apache.solr.search.ValueSourceParser;
-import org.apache.solr.search.FunctionQParser;
-import org.apache.solr.search.function.DocValues;
-import org.apache.solr.search.function.QueryValueSource;
-import org.apache.solr.search.function.SimpleFloatFunction;
-import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.util.AbstractSolrTestCase;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.SolrCore;
+import org.apache.lucene.search.FieldCache;
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.Arrays;
-import java.io.File;
-import java.io.Writer;
-import java.io.OutputStreamWriter;
-import java.io.FileOutputStream;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests some basic functionality of Solr while demonstrating good
  * Best Practices for using AbstractSolrTestCase
  */
-public class TestFunctionQuery extends AbstractSolrTestCase {
-
-  public String getSchemaFile() { return "schema11.xml"; }
-  public String getSolrConfigFile() { return "solrconfig-functionquery.xml"; }
-  public String getCoreName() { return "basic"; }
-
-  public void setUp() throws Exception {
-    // if you override setUp or tearDown, you better call
-    // the super classes version
-    super.setUp();
-  }
-  public void tearDown() throws Exception {
-    // if you override setUp or tearDown, you better call
-    // the super classes version
-    super.tearDown();
+public class TestFunctionQuery extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-functionquery.xml","schema11.xml");
   }
 
+  
   String base = "external_foo_extf";
+  static long start = System.currentTimeMillis();
   void makeExternalFile(String field, String contents, String charset) {
     String dir = h.getCore().getDataDir();
-    String filename = dir + "/external_" + field + "." + System.currentTimeMillis();
+    String filename = dir + "/external_" + field + "." + (start++);
     try {
       Writer out = new OutputStreamWriter(new FileOutputStream(filename), charset);
       out.write(contents);
@@ -196,14 +180,18 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     singleTest(field,"sum(query($v1,5),query($v1,7))",
             Arrays.asList("v1","\0:[* TO *]"),  88,12
             );
+
+    purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity
   }
 
+  @Test
   public void testFunctions() {
     doTest("foo_pf");  // a plain float field
     doTest("foo_f");  // a sortable float field
     doTest("foo_tf");  // a trie float field
   }
 
+  @Test
   public void testExternalField() {
     String field = "foo_extf";
 
@@ -224,7 +212,8 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
 
     makeExternalFile(field, "0=1","UTF-8");
     assertU(adoc("id", "10000")); // will get same reader if no index change
-    assertU(commit());
+    assertU(commit());   
+    singleTest(field, "sqrt(\0)");
     assertTrue(orig != FileFloatSource.onlyForTesting);
 
 
@@ -276,9 +265,14 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
       singleTest(field, "\0", answers);
       // System.out.println("Done test "+i);
     }
+
+    purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity    
   }
 
+  @Test
   public void testGeneral() throws Exception {
+    clearIndex();
+    
     assertU(adoc("id","1", "a_tdt","2009-08-31T12:10:10.123Z", "b_tdt","2009-08-31T12:10:10.124Z"));
     assertU(adoc("id","2"));
     assertU(commit()); // create more than one segment
@@ -327,11 +321,12 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     assertQ(req("fl","*,score","q", q, "qq","text:batman", "fq",fq), "//float[@name='score']<'1.0'");
     assertQ(req("fl","*,score","q", q, "qq","text:superman", "fq",fq), "//float[@name='score']>'1.0'");
 
-    doTestDegreeRads();
-    doTestFuncs();
+
+    purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity
   }
 
-  public void doTestDegreeRads() throws Exception {
+  @Test
+  public void testDegreeRads() throws Exception {    
     assertU(adoc("id", "1", "x_td", "0", "y_td", "0"));
     assertU(adoc("id", "2", "x_td", "90", "y_td", String.valueOf(Math.PI / 2)));
     assertU(adoc("id", "3", "x_td", "45", "y_td", String.valueOf(Math.PI / 4)));
@@ -347,6 +342,7 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
     assertQ(req("fl", "*,score", "q", "{!func}deg(y_td)", "fq", "id:3"), "//float[@name='score']='45.0'");
   }
 
+  @Test
   public void testStrDistance() throws Exception {
     assertU(adoc("id", "1", "x_s", "foil"));
     assertU(commit());
@@ -363,7 +359,8 @@ public class TestFunctionQuery extends AbstractSolrTestCase {
             "//float[@name='score']='" + sval + "'");
   }
 
-  public void doTestFuncs() throws Exception {
+  @Test
+  public void testFuncs() throws Exception {
     assertU(adoc("id", "1", "foo_d", "9"));
     assertU(commit());    
 
