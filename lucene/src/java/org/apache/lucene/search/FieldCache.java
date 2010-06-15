@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.BytesRef;
@@ -530,6 +531,9 @@ public interface FieldCache {
 
     /** Number of documents */
     public abstract int size();
+
+    /** Returns a TermsEnum that can iterate over the values in this index entry */
+    public abstract TermsEnum getTermsEnum();
   }
 
   /** Checks the internal cache for an appropriate entry, and if none

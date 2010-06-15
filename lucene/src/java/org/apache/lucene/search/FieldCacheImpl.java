@@ -19,17 +19,9 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.*;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.*;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.GrowableWriter;
@@ -673,6 +665,105 @@ class FieldCacheImpl implements FieldCache {
     @Override
     public BytesRef lookup(int ord, BytesRef ret) {
       return bytes.fillUsingLengthPrefix(ret, termOrdToBytesOffset.get(ord));
+    }
+
+    @Override
+    public TermsEnum getTermsEnum() {
+      return this.new DocTermsIndexEnum();
+    }
+
+    class DocTermsIndexEnum extends TermsEnum {
+      int currentOrd;
+      int currentBlockNumber;
+      int end;  // end position in the current block
+      final byte[][] blocks;
+      final int[] blockEnds;
+
+      final BytesRef term = new BytesRef();
+
+      public DocTermsIndexEnum() {
+        currentOrd = 0;
+        currentBlockNumber = 0;
+        blocks = bytes.getBlocks();
+        blockEnds = bytes.getBlockEnds();
+        currentBlockNumber = bytes.fillUsingLengthPrefix2(term, termOrdToBytesOffset.get(0));
+        end = blockEnds[currentBlockNumber];
+      }
+
+      @Override
+      public SeekStatus seek(BytesRef text, boolean useCache) throws IOException {
+        // TODO - we can support with binary search
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public SeekStatus seek(long ord) throws IOException {
+        assert(ord >= 0 && ord <= numOrd);
+        // TODO: if gap is small, could iterate from current position?  Or let user decide that?
+        currentBlockNumber = bytes.fillUsingLengthPrefix2(term, termOrdToBytesOffset.get((int)ord));
+        end = blockEnds[currentBlockNumber];
+        currentOrd = (int)ord;
+        return SeekStatus.FOUND;
+      }
+
+      @Override
+      public BytesRef next() throws IOException {
+        int start = term.offset + term.length;
+        if (start >= end) {
+          // switch byte blocks
+          if (currentBlockNumber +1 >= blocks.length) {
+            return null;
+          }
+          currentBlockNumber++;
+          term.bytes = blocks[currentBlockNumber];
+          end = blockEnds[currentBlockNumber];
+          start = 0;
+          if (end<=0) return null;  // special case of empty last array
+        }
+
+        currentOrd++;
+
+        byte[] block = term.bytes;
+        if ((block[start] & 128) == 0) {
+          term.length = block[start];
+          term.offset = start+1;
+        } else {
+          term.length = (((int) (block[start] & 0x7f)) << 8) | (block[1+start] & 0xff);
+          term.offset = start+2;
+        }
+
+        return term;
+      }
+
+      @Override
+      public BytesRef term() throws IOException {
+        return term;
+      }
+
+      @Override
+      public long ord() throws IOException {
+        return currentOrd;
+      }
+
+      @Override
+      public int docFreq() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public Comparator<BytesRef> getComparator() throws IOException {
+        throw new UnsupportedOperationException();
+      }
     }
   }
 

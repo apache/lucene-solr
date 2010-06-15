@@ -1,5 +1,6 @@
 package org.apache.solr.request;
 
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
@@ -137,7 +138,9 @@ class PerSegmentSingleValuedFaceting {
           seg.pos = seg.startTermIndex;
         }
         if (seg.pos < seg.endTermIndex) {
-          seg.si.lookup(seg.pos, seg.tempBR);
+          seg.tenum = seg.si.getTermsEnum();          
+          seg.tenum.seek(seg.pos);
+          seg.tempBR = seg.tenum.term();
           queue.add(seg);
         }
       }
@@ -156,7 +159,6 @@ class PerSegmentSingleValuedFaceting {
       SegFacet seg = queue.top();
 
       // make a shallow copy
-      // Is this always safe? Or could the byte[] be changed?
       val.bytes = seg.tempBR.bytes;
       val.offset = seg.tempBR.offset;
       val.length = seg.tempBR.length;
@@ -173,7 +175,7 @@ class PerSegmentSingleValuedFaceting {
           queue.pop();
           seg = queue.top();
         }  else {
-          seg.si.lookup(seg.pos, seg.tempBR);          
+          seg.tempBR = seg.tenum.next();
           seg = queue.updateTop();
         }
       } while (seg != null && val.compareTo(seg.tempBR) == 0);
@@ -215,9 +217,10 @@ class PerSegmentSingleValuedFaceting {
     int endTermIndex;
     int[] counts;
 
-    int pos; // only used during merge with other segments
+    int pos; // only used when merging
+    TermsEnum tenum; // only used when merging
 
-    final BytesRef tempBR = new BytesRef();
+    BytesRef tempBR = new BytesRef();
 
     void countTerms() throws IOException {
       si = FieldCache.DEFAULT.getTermsIndex(reader, fieldName);

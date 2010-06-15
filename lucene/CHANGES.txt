@@ -79,7 +79,7 @@ Changes in backwards compatibility policy
   (getTerms, getTermsIndex).  Also, the sort values (returned in
   FieldDoc.fields) when sorting by SortField.STRING or
   SortField.STRING_VAL are now BytesRef instances.  See MIGRATE.txt
-  for more details. (Mike McCandless)
+  for more details. (yonik, Mike McCandless)
  
 * LUCENE-2480: Though not a change in backwards compatibility policy, pre-3.0 
   indexes are no longer supported. You should upgrade to 3.x first, then run
