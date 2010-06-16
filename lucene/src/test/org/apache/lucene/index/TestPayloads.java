@@ -41,6 +41,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
@@ -141,8 +142,6 @@ public class TestPayloads extends LuceneTestCase {
         analyzer.setPayloadData("f3", "somedata".getBytes(), 0, 3);
         writer.addDocument(d);
 
-        FlexTestUtil.verifyFlexVsPreFlex(rnd, writer);
-
         // force merge
         writer.optimize();
         // flush
@@ -154,7 +153,6 @@ public class TestPayloads extends LuceneTestCase {
         assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").storePayloads);
         assertTrue("Payload field bit should be set.", fi.fieldInfo("f3").storePayloads);
         reader.close();
-        FlexTestUtil.verifyFlexVsPreFlex(rnd, ram);
     }
 
     // Tests if payloads are correctly stored and loaded using both RamDirectory and FSDirectory
@@ -220,9 +218,7 @@ public class TestPayloads extends LuceneTestCase {
             writer.addDocument(d);
         }
         
-        FlexTestUtil.verifyFlexVsPreFlex(rnd, writer);
         writer.optimize();
-        FlexTestUtil.verifyFlexVsPreFlex(rnd, writer);
         // flush
         writer.close();
         
@@ -232,31 +228,31 @@ public class TestPayloads extends LuceneTestCase {
          * first we test if all payloads are stored correctly
          */        
         IndexReader reader = IndexReader.open(dir, true);
-        
+
         byte[] verifyPayloadData = new byte[payloadDataLength];
         offset = 0;
-        TermPositions[] tps = new TermPositions[numTerms];
+        DocsAndPositionsEnum[] tps = new DocsAndPositionsEnum[numTerms];
         for (int i = 0; i < numTerms; i++) {
-            tps[i] = reader.termPositions(terms[i]);
+          tps[i] = MultiFields.getTermPositionsEnum(reader,
+                                                    MultiFields.getDeletedDocs(reader),
+                                                    terms[i].field(),
+                                                    new BytesRef(terms[i].text()));
         }
         
-        while (tps[0].next()) {
+        while (tps[0].nextDoc() != DocsEnum.NO_MORE_DOCS) {
             for (int i = 1; i < numTerms; i++) {
-                tps[i].next();
+                tps[i].nextDoc();
             }
             int freq = tps[0].freq();
 
             for (int i = 0; i < freq; i++) {
                 for (int j = 0; j < numTerms; j++) {
                     tps[j].nextPosition();
-                    tps[j].getPayload(verifyPayloadData, offset);
-                    offset += tps[j].getPayloadLength();
+                    BytesRef br = tps[j].getPayload();
+                    System.arraycopy(br.bytes, br.offset, verifyPayloadData, offset, br.length);
+                    offset += br.length;
                 }
             }
-        }
-        
-        for (int i = 0; i < numTerms; i++) {
-            tps[i].close();
         }
         
         assertByteArrayEquals(payloadData, verifyPayloadData);
@@ -264,51 +260,55 @@ public class TestPayloads extends LuceneTestCase {
         /*
          *  test lazy skipping
          */        
-        TermPositions tp = reader.termPositions(terms[0]);
-        tp.next();
+        DocsAndPositionsEnum tp = MultiFields.getTermPositionsEnum(reader,
+                                                                   MultiFields.getDeletedDocs(reader),
+                                                                   terms[0].field(),
+                                                                   new BytesRef(terms[0].text()));
+        tp.nextDoc();
         tp.nextPosition();
         // NOTE: prior rev of this test was failing to first
         // call next here:
-        tp.next();
+        tp.nextDoc();
         // now we don't read this payload
         tp.nextPosition();
-        assertEquals("Wrong payload length.", 1, tp.getPayloadLength());
-        byte[] payload = tp.getPayload(null, 0);
-        assertEquals(payload[0], payloadData[numTerms]);
-        // NOTE: prior rev of this test was failing to first
-        // call next here:
-        tp.next();
+        BytesRef payload = tp.getPayload();
+        assertEquals("Wrong payload length.", 1, payload.length);
+        assertEquals(payload.bytes[payload.offset], payloadData[numTerms]);
+        tp.nextDoc();
         tp.nextPosition();
         
         // we don't read this payload and skip to a different document
-        tp.skipTo(5);
+        tp.advance(5);
         tp.nextPosition();
-        assertEquals("Wrong payload length.", 1, tp.getPayloadLength());
-        payload = tp.getPayload(null, 0);
-        assertEquals(payload[0], payloadData[5 * numTerms]);
+        payload = tp.getPayload();
+        assertEquals("Wrong payload length.", 1, payload.length);
+        assertEquals(payload.bytes[payload.offset], payloadData[5 * numTerms]);
                 
         
         /*
          * Test different lengths at skip points
          */
-        tp.seek(terms[1]);
-        tp.next();
+        tp = MultiFields.getTermPositionsEnum(reader,
+                                              MultiFields.getDeletedDocs(reader),
+                                              terms[1].field(),
+                                              new BytesRef(terms[1].text()));
+        tp.nextDoc();
         tp.nextPosition();
-        assertEquals("Wrong payload length.", 1, tp.getPayloadLength());
-        tp.skipTo(skipInterval - 1);
+        assertEquals("Wrong payload length.", 1, tp.getPayload().length);
+        tp.advance(skipInterval - 1);
         tp.nextPosition();
-        assertEquals("Wrong payload length.", 1, tp.getPayloadLength());
-        tp.skipTo(2 * skipInterval - 1);
+        assertEquals("Wrong payload length.", 1, tp.getPayload().length);
+        tp.advance(2 * skipInterval - 1);
         tp.nextPosition();
-        assertEquals("Wrong payload length.", 1, tp.getPayloadLength());
-        tp.skipTo(3 * skipInterval - 1);
+        assertEquals("Wrong payload length.", 1, tp.getPayload().length);
+        tp.advance(3 * skipInterval - 1);
         tp.nextPosition();
-        assertEquals("Wrong payload length.", 3 * skipInterval - 2 * numDocs - 1, tp.getPayloadLength());
+        assertEquals("Wrong payload length.", 3 * skipInterval - 2 * numDocs - 1, tp.getPayload().length);
         
         /*
          * Test multiple call of getPayload()
          */
-        tp.getPayload(null, 0);
+        assertFalse(tp.hasPayload());
         
         reader.close();
         
@@ -326,23 +326,24 @@ public class TestPayloads extends LuceneTestCase {
         writer.addDocument(d);
 
         
-        FlexTestUtil.verifyFlexVsPreFlex(rnd, writer);
         writer.optimize();
-        FlexTestUtil.verifyFlexVsPreFlex(rnd, writer);
         // flush
         writer.close();
         
         reader = IndexReader.open(dir, true);
-        tp = reader.termPositions(new Term(fieldName, singleTerm));
-        tp.next();
+        tp = MultiFields.getTermPositionsEnum(reader,
+                                              MultiFields.getDeletedDocs(reader),
+                                              fieldName,
+                                              new BytesRef(singleTerm));
+        tp.nextDoc();
         tp.nextPosition();
-
-        verifyPayloadData = new byte[tp.getPayloadLength()];
-        tp.getPayload(verifyPayloadData, 0);
+        
+        BytesRef br = tp.getPayload();
+        verifyPayloadData = new byte[br.length];
         byte[] portion = new byte[1500];
         System.arraycopy(payloadData, 100, portion, 0, 1500);
         
-        assertByteArrayEquals(portion, verifyPayloadData);
+        assertByteArrayEquals(portion, br.bytes, br.offset, br.length);
         reader.close();
         
     }
@@ -385,6 +386,18 @@ public class TestPayloads extends LuceneTestCase {
         for (int i = 0; i < b1.length; i++) {
           if (b1[i] != b2[i]) {
             fail("Byte arrays different at index " + i + ": " + b1[i] + ", " + b2[i]);
+          }
+        }
+      }    
+    
+  void assertByteArrayEquals(byte[] b1, byte[] b2, int b2offset, int b2length) {
+        if (b1.length != b2length) {
+          fail("Byte arrays have different lengths: " + b1.length + ", " + b2length);
+        }
+        
+        for (int i = 0; i < b1.length; i++) {
+          if (b1[i] != b2[b2offset+i]) {
+            fail("Byte arrays different at index " + i + ": " + b1[i] + ", " + b2[b2offset+i]);
           }
         }
       }    
@@ -506,19 +519,20 @@ public class TestPayloads extends LuceneTestCase {
         }
         writer.close();
         IndexReader reader = IndexReader.open(dir, true);
-        TermEnum terms = reader.terms();
-        while (terms.next()) {
-            TermPositions tp = reader.termPositions(terms.term());
-            while(tp.next()) {
-                int freq = tp.freq();
-                for (int i = 0; i < freq; i++) {
-                    tp.nextPosition();
-                    assertEquals(pool.bytesToString(tp.getPayload(new byte[5], 0)), terms.term().text);
-                }
+        TermsEnum terms = MultiFields.getFields(reader).terms(field).iterator();
+        Bits delDocs = MultiFields.getDeletedDocs(reader);
+        DocsAndPositionsEnum tp = null;
+        while (terms.next() != null) {
+          String termText = terms.term().utf8ToString();
+          tp = terms.docsAndPositions(delDocs, tp);
+          while(tp.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+            int freq = tp.freq();
+            for (int i = 0; i < freq; i++) {
+              tp.nextPosition();
+              assertEquals(tp.getPayload().utf8ToString(), termText);
             }
-            tp.close();
+          }
         }
-        terms.close();
         reader.close();
         
         assertEquals(pool.size(), numThreads);

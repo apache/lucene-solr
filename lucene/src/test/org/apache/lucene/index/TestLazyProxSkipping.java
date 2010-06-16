@@ -30,6 +30,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Tests lazy skipping on the proximity file.
@@ -127,17 +128,26 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         
         writer.close();
         IndexReader reader = IndexReader.open(directory, true);
-        TermPositions tp = reader.termPositions();
-        tp.seek(new Term(this.field, "b"));
+
+        DocsAndPositionsEnum tp = MultiFields.getTermPositionsEnum(reader,
+                                                                   MultiFields.getDeletedDocs(reader),
+                                                                   this.field,
+                                                                   new BytesRef("b"));
+
         for (int i = 0; i < 10; i++) {
-            tp.next();
-            assertEquals(tp.doc(), i);
+            tp.nextDoc();
+            assertEquals(tp.docID(), i);
             assertEquals(tp.nextPosition(), 1);
         }
-        tp.seek(new Term(this.field, "a"));
+
+        tp = MultiFields.getTermPositionsEnum(reader,
+                                              MultiFields.getDeletedDocs(reader),
+                                              this.field,
+                                              new BytesRef("a"));
+
         for (int i = 0; i < 10; i++) {
-            tp.next();
-            assertEquals(tp.doc(), i);
+            tp.nextDoc();
+            assertEquals(tp.docID(), i);
             assertEquals(tp.nextPosition(), 0);
         }
         

@@ -17,10 +17,12 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.FieldType;
@@ -220,29 +222,22 @@ public class FileFloatSource extends ValueSource {
     int notFoundCount=0;
     int otherErrors=0;
 
-    TermDocs termDocs = null;
-    Term protoTerm = new Term(idName, "");
-    TermEnum termEnum = null;
     // Number of times to try termEnum.next() before resorting to skip
     int numTimesNext = 10;
 
     char delimiter='=';
-    String termVal;
-    boolean hasNext=true;
-    String prevKey="";
 
-    String lastVal="\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF";
+    BytesRef lastVal=new BytesRef("\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF\uFFFF");
+    BytesRef internalKey = new BytesRef();
+    BytesRef prevKey=new BytesRef();
+    BytesRef tmp;
 
     try {
-      termDocs = reader.termDocs();
-      termEnum = reader.terms(protoTerm);
-      Term t = termEnum.term();
-      if (t != null && t.field() == idName) { // intern'd comparison
-        termVal = t.text();
-      } else {
-        termVal = lastVal;
-      }
-
+      TermsEnum termsEnum = MultiFields.getTerms(reader, idName).iterator();
+      DocsEnum docsEnum = null;
+      BytesRef t = termsEnum.next();
+      if (t==null) t=lastVal;
+      final Bits delDocs = MultiFields.getDeletedDocs(reader);
 
       for (String line; (line=r.readLine())!=null;) {
         int delimIndex = line.indexOf(delimiter);
@@ -258,7 +253,9 @@ public class FileFloatSource extends ValueSource {
         String key = line.substring(0, delimIndex);
         String val = line.substring(delimIndex+1, endIndex);
 
-        String internalKey = idType.toInternal(key);
+        tmp = prevKey; prevKey=internalKey; internalKey=tmp;
+        idType.readableToIndexed(key, internalKey);
+
         float fval;
         try {
           fval=Float.parseFloat(val);
@@ -274,16 +271,16 @@ public class FileFloatSource extends ValueSource {
         if (sorted) {
           // make sure this key is greater than the previous key
           sorted = internalKey.compareTo(prevKey) >= 0;
-          prevKey = internalKey;
 
           if (sorted) {
             int countNext = 0;
             for(;;) {
-              int cmp = internalKey.compareTo(termVal);
+              int cmp = internalKey.compareTo(t);
               if (cmp == 0) {
-                termDocs.seek(termEnum);
-                while (termDocs.next()) {
-                  vals[termDocs.doc()] = fval;
+                docsEnum = termsEnum.docs(delDocs, docsEnum);
+                int doc;
+                while ((doc = docsEnum.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+                  vals[doc] = fval;
                 }
                 break;
               } else if (cmp < 0) {
@@ -301,32 +298,26 @@ public class FileFloatSource extends ValueSource {
                 // so the best thing is to simply ask the reader for a new termEnum(target)
                 // if we really need to skip.
                 if (++countNext > numTimesNext) {
-                  termEnum = reader.terms(protoTerm.createTerm(internalKey));
-                  t = termEnum.term();
+                  termsEnum.seek(internalKey);
+                  t = termsEnum.term();
                 } else {
-                  hasNext = termEnum.next();
-                  t = hasNext ? termEnum.term() : null;
+                  t = termsEnum.next();
                 }
 
-                if (t != null && t.field() == idName) { // intern'd comparison
-                  termVal = t.text();
-                } else {
-                  termVal = lastVal;
-                }
+                if (t==null) t = lastVal;
               }
             } // end for(;;)
           }
         }
 
         if (!sorted) {
-          termEnum = reader.terms(protoTerm.createTerm(internalKey));
-          t = termEnum.term();
-          if (t != null && t.field() == idName  // intern'd comparison
-                  && internalKey.equals(t.text()))
-          {
-            termDocs.seek (termEnum);
-            while (termDocs.next()) {
-              vals[termDocs.doc()] = fval;
+          TermsEnum.SeekStatus result = termsEnum.seek(internalKey);
+          t = termsEnum.term();
+          if (result == TermsEnum.SeekStatus.FOUND) {
+            docsEnum = termsEnum.docs(delDocs, docsEnum);
+            int doc;
+            while ((doc = docsEnum.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+              vals[doc] = fval;
             }
           } else {
             if (notFoundCount<10) {  // collect first 10 not found for logging
@@ -342,8 +333,6 @@ public class FileFloatSource extends ValueSource {
     } finally {
       // swallow exceptions on close so we don't override any
       // exceptions that happened in the loop
-      if (termDocs!=null) try{termDocs.close();}catch(Exception e){}
-      if (termEnum!=null) try{termEnum.close();}catch(Exception e){}
       try{r.close();}catch(Exception e){}
     }
 

@@ -30,7 +30,8 @@ public abstract class DocsAndPositionsEnum extends DocsEnum {
   public abstract int nextPosition() throws IOException;
 
   /** Returns the payload at this position, or null if no
-   *  payload was indexed. */
+   *  payload was indexed.  Only call this once per
+   *  position. */
   public abstract BytesRef getPayload() throws IOException;
 
   public abstract boolean hasPayload();

@@ -22,6 +22,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.BytesRef;
 
 public class TestMultiPassIndexSplitter extends LuceneTestCase {
   IndexReader input;
@@ -62,30 +63,30 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1); // rounding error
     Document doc = ir.document(0);
     assertEquals("0", doc.get("id"));
-    Term t;
-    TermEnum te;
-    t = new Term("id", "1");
-    te = ir.terms(t);
-    assertNotSame(t, te.term());
+    TermsEnum te = MultiFields.getTerms(ir, "id").iterator();
+    assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seek(new BytesRef("1")));
+    assertNotSame("1", te.term().utf8ToString());
     ir.close();
     ir = IndexReader.open(dirs[1], true);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1);
     doc = ir.document(0);
     assertEquals("1", doc.get("id"));
-    t = new Term("id", "0");
-    te = ir.terms(t);
-    assertNotSame(t, te.term());
+    te = MultiFields.getTerms(ir, "id").iterator();
+    assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seek(new BytesRef("0")));
+
+    assertNotSame("0", te.term().utf8ToString());
     ir.close();
     ir = IndexReader.open(dirs[2], true);
     assertTrue(ir.numDocs() - NUM_DOCS / 3 <= 1);
     doc = ir.document(0);
     assertEquals("2", doc.get("id"));
-    t = new Term("id", "1");
-    te = ir.terms(t);
-    assertNotSame(t, te.term());
-    t = new Term("id", "0");
-    te = ir.terms(t);
-    assertNotSame(t, te.term());    
+
+    te = MultiFields.getTerms(ir, "id").iterator();
+    assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seek(new BytesRef("1")));
+    assertNotSame("1", te.term());
+
+    assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seek(new BytesRef("0")));
+    assertNotSame("0", te.term().utf8ToString());    
   }
   
   /**
@@ -117,10 +118,9 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     doc = ir.document(0);
     assertEquals(start + "", doc.get("id"));
     // make sure the deleted doc is not here
-    Term t;
-    TermEnum te;
-    t = new Term("id", (NUM_DOCS - 1) + "");
-    te = ir.terms(t);
-    assertNotSame(t, te.term());    
+    TermsEnum te = MultiFields.getTerms(ir, "id").iterator();
+    Term t = new Term("id", (NUM_DOCS - 1) + "");
+    assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seek(new BytesRef(t.text())));
+    assertNotSame(t.text(), te.term().utf8ToString());
   }
 }

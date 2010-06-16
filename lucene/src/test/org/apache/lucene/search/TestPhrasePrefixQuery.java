@@ -21,11 +21,13 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
@@ -79,13 +81,16 @@ public class TestPhrasePrefixQuery extends LuceneTestCase {
 
         // this TermEnum gives "piccadilly", "pie" and "pizza".
         String prefix = "pi";
-        TermEnum te = ir.terms(new Term("body", prefix + "*"));
+        TermsEnum te = MultiFields.getFields(ir).terms("body").iterator();
+        te.seek(new BytesRef(prefix));
         do {
-            if (te.term().text().startsWith(prefix))
-            {
-                termsWithPrefix.add(te.term());
+            String s = te.term().utf8ToString();
+            if (s.startsWith(prefix)) {
+              termsWithPrefix.add(new Term("body", s));
+            } else {
+              break;
             }
-        } while (te.next());
+        } while (te.next() != null);
 
         query1.add(termsWithPrefix.toArray(new Term[0]));
         query2.add(termsWithPrefix.toArray(new Term[0]));

@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.BytesRef;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
@@ -113,33 +114,40 @@ public class TestSegmentReader extends LuceneTestCase {
   } 
   
   public void testTerms() throws IOException {
-    TermEnum terms = reader.terms();
-    assertTrue(terms != null);
-    while (terms.next() == true)
-    {
-      Term term = terms.term();
-      assertTrue(term != null);
-      //System.out.println("Term: " + term);
-      String fieldValue = (String)DocHelper.nameValues.get(term.field());
-      assertTrue(fieldValue.indexOf(term.text()) != -1);
+    FieldsEnum fields = MultiFields.getFields(reader).iterator();
+    String field;
+    while((field = fields.next()) != null) {
+      TermsEnum terms = fields.terms();
+      while(terms.next() != null) {
+        BytesRef term = terms.term();
+        assertTrue(term != null);
+        String fieldValue = (String) DocHelper.nameValues.get(field);
+        assertTrue(fieldValue.indexOf(term.utf8ToString()) != -1);
+      }
     }
     
-    TermDocs termDocs = reader.termDocs();
-    assertTrue(termDocs != null);
-    termDocs.seek(new Term(DocHelper.TEXT_FIELD_1_KEY, "field"));
-    assertTrue(termDocs.next() == true);
+    DocsEnum termDocs = MultiFields.getTermDocsEnum(reader,
+                                                    MultiFields.getDeletedDocs(reader),
+                                                    DocHelper.TEXT_FIELD_1_KEY,
+                                                    new BytesRef("field"));
+    assertTrue(termDocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
 
-    termDocs.seek(new Term(DocHelper.NO_NORMS_KEY,  DocHelper.NO_NORMS_TEXT));
-    assertTrue(termDocs.next() == true);
+    termDocs = MultiFields.getTermDocsEnum(reader,
+                                           MultiFields.getDeletedDocs(reader),
+                                           DocHelper.NO_NORMS_KEY,
+                                           new BytesRef(DocHelper.NO_NORMS_TEXT));
+
+    assertTrue(termDocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
 
     
-    TermPositions positions = reader.termPositions();
-    assertTrue(positions != null);
-    positions.seek(new Term(DocHelper.TEXT_FIELD_1_KEY, "field"));
+    DocsAndPositionsEnum positions = MultiFields.getTermPositionsEnum(reader,
+                                                                      MultiFields.getDeletedDocs(reader),
+                                                                      DocHelper.TEXT_FIELD_1_KEY,
+                                                                      new BytesRef("field"));
     // NOTE: prior rev of this test was failing to first
     // call next here:
-    assertTrue(positions.next());
-    assertTrue(positions.doc() == 0);
+    assertTrue(positions.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(positions.docID() == 0);
     assertTrue(positions.nextPosition() >= 0);
   }    
   

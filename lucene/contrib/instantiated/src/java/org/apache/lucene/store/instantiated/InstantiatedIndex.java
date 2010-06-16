@@ -31,10 +31,15 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FieldsEnum;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.TermPositionVector;
-import org.apache.lucene.index.TermPositions;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.util.BitVector;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Represented as a coupled graph of class instances, this
@@ -220,34 +225,46 @@ public class InstantiatedIndex
       }
     }
     List<InstantiatedTerm> terms = new ArrayList<InstantiatedTerm>(5000 * getTermsByFieldAndText().size());
-    TermEnum termEnum = sourceIndexReader.terms();
-    while (termEnum.next()) {
-      if (fields == null || fields.contains(termEnum.term().field())) { // todo skipto if not using field
-        InstantiatedTerm instantiatedTerm = new InstantiatedTerm(termEnum.term().field(), termEnum.term().text());
-        getTermsByFieldAndText().get(termEnum.term().field()).put(termEnum.term().text(), instantiatedTerm);
-        instantiatedTerm.setTermIndex(terms.size());
-        terms.add(instantiatedTerm);
-        instantiatedTerm.setAssociatedDocuments(new InstantiatedTermDocumentInformation[termEnum.docFreq()]);
+    Fields fieldsC = MultiFields.getFields(sourceIndexReader);
+    if (fieldsC != null) {
+      FieldsEnum fieldsEnum = fieldsC.iterator();
+      String field;
+      while((field = fieldsEnum.next()) != null) {
+        if (fields == null || fields.contains(field)) {
+          TermsEnum termsEnum = fieldsEnum.terms();
+          BytesRef text;
+          while((text = termsEnum.next()) != null) {
+            String termText = text.utf8ToString();
+            InstantiatedTerm instantiatedTerm = new InstantiatedTerm(field, termText);
+            getTermsByFieldAndText().get(field).put(termText, instantiatedTerm);
+            instantiatedTerm.setTermIndex(terms.size());
+            terms.add(instantiatedTerm);
+            instantiatedTerm.setAssociatedDocuments(new InstantiatedTermDocumentInformation[termsEnum.docFreq()]);
+          }
+        }
       }
     }
-    termEnum.close();
     orderedTerms = terms.toArray(new InstantiatedTerm[terms.size()]);
 
     // create term-document informations
     for (InstantiatedTerm term : orderedTerms) {
-      TermPositions termPositions = sourceIndexReader.termPositions(term.getTerm());
+      DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(sourceIndexReader,
+                                                                            MultiFields.getDeletedDocs(sourceIndexReader),
+                                                                            term.getTerm().field(),
+                                                                            new BytesRef(term.getTerm().text()));
       int position = 0;
-      while (termPositions.next()) {
-        InstantiatedDocument document = documentsByNumber[termPositions.doc()];
+      while (termPositions.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+        InstantiatedDocument document = documentsByNumber[termPositions.docID()];
 
         byte[][] payloads = new byte[termPositions.freq()][];
         int[] positions = new int[termPositions.freq()];
         for (int i = 0; i < termPositions.freq(); i++) {
           positions[i] = termPositions.nextPosition();
 
-          if (termPositions.isPayloadAvailable()) {
-            payloads[i] = new byte[termPositions.getPayloadLength()];
-            termPositions.getPayload(payloads[i], 0);
+          if (termPositions.hasPayload()) {
+            BytesRef br = termPositions.getPayload();
+            payloads[i] = new byte[br.length];
+            System.arraycopy(br.bytes, br.offset, payloads[i], 0, br.length);
           }
         }
 

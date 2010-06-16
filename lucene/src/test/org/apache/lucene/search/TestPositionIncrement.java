@@ -32,11 +32,12 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
@@ -50,6 +51,7 @@ import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Term position unit test.
@@ -99,13 +101,19 @@ public class TestPositionIncrement extends LuceneTestCase {
 
     IndexSearcher searcher = new IndexSearcher(store, true);
     
-    TermPositions pos = searcher.getIndexReader().termPositions(new Term("field", "1"));
-    pos.next();
+    DocsAndPositionsEnum pos = MultiFields.getTermPositionsEnum(searcher.getIndexReader(),
+                                                                MultiFields.getDeletedDocs(searcher.getIndexReader()),
+                                                                "field",
+                                                                new BytesRef("1"));
+    pos.nextDoc();
     // first token should be at position 0
     assertEquals(0, pos.nextPosition());
     
-    pos = searcher.getIndexReader().termPositions(new Term("field", "2"));
-    pos.next();
+    pos = MultiFields.getTermPositionsEnum(searcher.getIndexReader(),
+                                           MultiFields.getDeletedDocs(searcher.getIndexReader()),
+                                           "field",
+                                           new BytesRef("2"));
+    pos.nextDoc();
     // second token should be at position 2
     assertEquals(2, pos.nextPosition());
     
@@ -238,9 +246,13 @@ public class TestPositionIncrement extends LuceneTestCase {
 
     IndexReader r = writer.getReader();
 
-    TermPositions tp = r.termPositions(new Term("content", "a"));
+    DocsAndPositionsEnum tp = MultiFields.getTermPositionsEnum(r,
+                                                               MultiFields.getDeletedDocs(r),
+                                                               "content",
+                                                               new BytesRef("a"));
+    
     int count = 0;
-    assertTrue(tp.next());
+    assertTrue(tp.nextDoc() != tp.NO_MORE_DOCS);
     // "a" occurs 4 times
     assertEquals(4, tp.freq());
     int expected = 0;
@@ -250,7 +262,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     assertEquals(6, tp.nextPosition());
 
     // only one doc has "a"
-    assertFalse(tp.next());
+    assertEquals(tp.NO_MORE_DOCS, tp.nextDoc());
 
     IndexSearcher is = new IndexSearcher(r);
   

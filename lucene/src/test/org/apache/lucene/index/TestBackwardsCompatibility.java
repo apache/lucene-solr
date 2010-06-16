@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Arrays;
-import java.util.Random;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.zip.ZipEntry;
@@ -129,20 +128,15 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   };
   
   public void testOptimizeOldIndex() throws Exception {
-    Random rand = newRandom();
-    
     for(int i=0;i<oldNames.length;i++) {
       unzip(getDataFile("index." + oldNames[i] + ".zip"), oldNames[i]);
 
       String fullPath = fullDir(oldNames[i]);
       Directory dir = FSDirectory.open(new File(fullPath));
 
-      FlexTestUtil.verifyFlexVsPreFlex(rand, dir);
-
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer()));
       w.optimize();
-      FlexTestUtil.verifyFlexVsPreFlex(rand, w);
       w.close();
 
       _TestUtil.checkIndex(dir);

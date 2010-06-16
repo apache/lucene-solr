@@ -1,5 +1,5 @@
 
-LUCENE-2380
+LUCENE-2380: FieldCache.getStrings/Index --> FieldCache.getDocTerms/Index
 
   * The field values returned when sorting by SortField.STRING are now
     BytesRef.  You can call value.utf8ToString() to convert back to
@@ -43,3 +43,171 @@ LUCENE-2380
     String.  You can call the .utf8ToString() method on the BytesRef
     instances, if necessary.
 
+
+
+LUCENE-1458, LUCENE-2111: Flexible Indexing
+
+  Flexible indexing changed the low level fields/terms/docs/positions
+  enumeration APIs.  Here are the major changes:
+
+    * Terms are now binary in nature (arbitrary byte[]), represented
+      by the BytesRef class (which provides an offset + length "slice"
+      into an existing byte[]).
+
+    * Fields are separately enumerated (FieldsEnum) from the terms
+      within each field (TermEnum).  So instead of this:
+
+        TermEnum termsEnum = ...;
+	while(termsEnum.next()) {
+	  Term t = termsEnum.term();
+	  System.out.println("field=" + t.field() + "; text=" + t.text());
+        }
+
+      Do this:
+ 
+        FieldsEnum fieldsEnum = ...;
+	String field;
+	while((field = fieldsEnum.next()) != null) {
+	  TermsEnum termsEnum = fieldsEnum.terms();
+	  BytesRef text;
+	  while((text = termsEnum.next()) != null) {
+	    System.out.println("field=" + field + "; text=" + text.utf8ToString());
+	  }
+
+    * TermDocs is renamed to DocsEnum.  Instead of this:
+
+        while(td.next()) {
+	  int doc = td.doc();
+	  ...
+	}
+
+      do this:
+
+        int doc;
+	while((doc = td.next()) != DocsEnum.NO_MORE_DOCS) {
+	  ...
+ 	}
+
+      Instead of this:
+      
+        if (td.skipTo(target)) {
+	  int doc = td.doc();
+	  ...
+	}
+
+      do this:
+      
+        if ((doc=td.skipTo(target)) != DocsEnum.NO_MORE_DOCS) {
+	  ...
+	}
+
+    * TermPositions is renamed to DocsAndPositionsEnum, and no longer
+      extends the docs only enumerator (DocsEnum).
+
+    * Deleted docs are no longer implicitly filtered from
+      docs/positions enums.  Instead, you pass a Bits
+      skipDocs (set bits are skipped) when obtaining the enums.  Also,
+      you can now ask a reader for its deleted docs.
+
+    * The docs/positions enums cannot seek to a term.  Instead,
+      TermsEnum is able to seek, and then you request the
+      docs/positions enum from that TermsEnum.
+
+    * TermsEnum's seek method returns more information.  So instead of
+      this:
+
+        Term t;
+        TermEnum termEnum = reader.terms(t);
+	if (t.equals(termEnum.term())) {
+	  ...
+        }
+
+      do this:
+
+        TermsEnum termsEnum = ...;
+	BytesRef text;
+	if (termsEnum.seek(text) == TermsEnum.SeekStatus.FOUND) {
+	  ...
+	}
+
+      SeekStatus also contains END (enumerator is done) and NOT_FOUND
+      (term was not found but enumerator is now positioned to the next
+      term).
+
+    * TermsEnum has an ord() method, returning the long numeric
+      ordinal (ie, first term is 0, next is 1, and so on) for the term
+      it's not positioned to.  There is also a corresponding seek(long
+      ord) method.  Note that these methods are optional; in
+      particular the MultiFields TermsEnum does not implement them.
+
+
+  How you obtain the enums has changed.  The primary entry point is
+  the Fields class.  If you know your reader is a single segment
+  reader, do this:
+
+    Fields fields = reader.Fields();
+    if (fields != null) {
+      ...
+    }
+
+  If the reader might be multi-segment, you must do this:
+    
+    Fields fields = MultiFields.getFields(reader);
+    if (fields != null) {
+      ...
+    }
+  
+  The fields may be null (eg if the reader has no fields).
+
+  Note that the MultiFields approach entails a performance hit on
+  MultiReaders, as it must merge terms/docs/positions on the fly. It's
+  generally better to instead get the sequential readers (use
+  oal.util.ReaderUtil) and then step through those readers yourself,
+  if you can (this is how Lucene drives searches).
+
+  If you pass a SegmentReader to MultiFields.fiels it will simply
+  return reader.fields(), so there is no performance hit in that
+  case.
+
+  Once you have a non-null Fields you can do this:
+
+    Terms terms = fields.terms("field");
+    if (terms != null) {
+      ...
+    }
+
+  The terms may be null (eg if the field does not exist).
+
+  Once you have a non-null terms you can get an enum like this:
+
+    TermsEnum termsEnum = terms.iterator();
+
+  The returned TermsEnum will not be null.
+
+  You can then .next() through the TermsEnum, or seek.  If you want a
+  DocsEnum, do this:
+
+    Bits skipDocs = MultiFields.getDeletedDocs(reader);
+    DocsEnum docsEnum = null;
+
+    docsEnum = termsEnum.docs(skipDocs, docsEnum);
+
+  You can pass in a prior DocsEnum and it will be reused if possible.
+
+  Likewise for DocsAndPositionsEnum.
+
+  IndexReader has several sugar methods (which just go through the
+  above steps, under the hood).  Instead of:
+
+    Term t;
+    TermDocs termDocs = reader.termDocs();
+    termDocs.seek(t);
+
+  do this:
+
+    String field;
+    BytesRef text;
+    DocsEnum docsEnum = reader.termDocsEnum(reader.getDeletedDocs(), field, text);
+
+  Likewise for DocsAndPositionsEnum.
+    

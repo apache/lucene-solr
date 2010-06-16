@@ -59,9 +59,4 @@ public class TestPrefixQuery extends LuceneTestCase {
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("everything", 3, hits.length);
   }
-  
-  @Deprecated
-  public void testBackwardsLayer() {
-    assertTrue(new PrefixQuery(new Term("dummy", "dummy")).hasNewAPI);
-  }
 }

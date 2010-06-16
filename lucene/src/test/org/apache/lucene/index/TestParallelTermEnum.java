@@ -26,6 +26,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.Bits;
 
 public class TestParallelTermEnum extends LuceneTestCase {
     private IndexReader ir1;
@@ -77,105 +78,123 @@ public class TestParallelTermEnum extends LuceneTestCase {
         pr.add(ir1);
         pr.add(ir2);
 
-        TermDocs td = pr.termDocs();
+        Bits delDocs = pr.getDeletedDocs();
 
-        TermEnum te = pr.terms();
-        assertTrue(te.next());
-        assertEquals("field1:brown", te.term().toString());
-        td.seek(te.term());
-        assertTrue(td.next());
-        assertEquals(0, td.doc());
-        assertFalse(td.next());
-        assertTrue(te.next());
-        assertEquals("field1:fox", te.term().toString());
-        td.seek(te.term());
-        assertTrue(td.next());
-        assertEquals(0, td.doc());
-        assertFalse(td.next());
-        assertTrue(te.next());
-        assertEquals("field1:jumps", te.term().toString());
-        td.seek(te.term());
-        assertTrue(td.next());
-        assertEquals(0, td.doc());
-        assertFalse(td.next());
-        assertTrue(te.next());
-        assertEquals("field1:quick", te.term().toString());
-        td.seek(te.term());
-        assertTrue(td.next());
-        assertEquals(0, td.doc());
-        assertFalse(td.next());
-        assertTrue(te.next());
-        assertEquals("field1:the", te.term().toString());
-        td.seek(te.term());
-        assertTrue(td.next());
-        assertEquals(0, td.doc());
-        assertFalse(td.next());
-        assertTrue(te.next());
-        assertEquals("field2:brown", te.term().toString());
-        td.seek(te.term());
-        assertTrue(td.next());
-        assertEquals(0, td.doc());
-        assertFalse(td.next());
-        assertTrue(te.next());
-        assertEquals("field2:fox", te.term().toString());
-        td.seek(te.term());
-        assertTrue(td.next());
-        assertEquals(0, td.doc());
-        assertFalse(td.next());
-        assertTrue(te.next());
-        assertEquals("field2:jumps", te.term().toString());
-        td.seek(te.term());
-        assertTrue(td.next());
-        assertEquals(0, td.doc());
-        assertFalse(td.next());
-        assertTrue(te.next());
-        assertEquals("field2:quick", te.term().toString());
-        td.seek(te.term());
-        assertTrue(td.next());
-        assertEquals(0, td.doc());
-        assertFalse(td.next());
-        assertTrue(te.next());
-        assertEquals("field2:the", te.term().toString());
-        td.seek(te.term());
-        assertTrue(td.next());
-        assertEquals(0, td.doc());
-        assertFalse(td.next());
-        assertTrue(te.next());
-        assertEquals("field3:dog", te.term().toString());
-        td.seek(te.term());
-        assertTrue(td.next());
-        assertEquals(0, td.doc());
-        assertFalse(td.next());
-        assertTrue(te.next());
-        assertEquals("field3:fox", te.term().toString());
-        td.seek(te.term());
-        assertTrue(td.next());
-        assertEquals(0, td.doc());
-        assertFalse(td.next());
-        assertTrue(te.next());
-        assertEquals("field3:jumps", te.term().toString());
-        td.seek(te.term());
-        assertTrue(td.next());
-        assertEquals(0, td.doc());
-        assertFalse(td.next());
-        assertTrue(te.next());
-        assertEquals("field3:lazy", te.term().toString());
-        td.seek(te.term());
-        assertTrue(td.next());
-        assertEquals(0, td.doc());
-        assertFalse(td.next());
-        assertTrue(te.next());
-        assertEquals("field3:over", te.term().toString());
-        td.seek(te.term());
-        assertTrue(td.next());
-        assertEquals(0, td.doc());
-        assertFalse(td.next());
-        assertTrue(te.next());
-        assertEquals("field3:the", te.term().toString());
-        td.seek(te.term());
-        assertTrue(td.next());
-        assertEquals(0, td.doc());
-        assertFalse(td.next());
-        assertFalse(te.next());
+        FieldsEnum fe = pr.fields().iterator();
+
+        String f = fe.next();
+        assertEquals("field0", f);
+        f = fe.next();
+        assertEquals("field1", f);
+
+        TermsEnum te = fe.terms();
+
+        assertEquals("brown", te.next().utf8ToString());
+        DocsEnum td = te.docs(delDocs, null);
+        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+        assertEquals(0, td.docID());
+        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
+
+        assertEquals("fox", te.next().utf8ToString());
+        td = te.docs(delDocs, td);
+        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+        assertEquals(0, td.docID());
+        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
+
+        assertEquals("jumps", te.next().utf8ToString());
+        td = te.docs(delDocs, td);
+        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+        assertEquals(0, td.docID());
+        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
+
+        assertEquals("quick", te.next().utf8ToString());
+        td = te.docs(delDocs, td);
+        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+        assertEquals(0, td.docID());
+        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
+
+        assertEquals("the", te.next().utf8ToString());
+        td = te.docs(delDocs, td);
+        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+        assertEquals(0, td.docID());
+        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
+
+        assertNull(te.next());
+        f = fe.next();
+        assertEquals("field2", f);
+        te = fe.terms();
+
+        assertEquals("brown", te.next().utf8ToString());
+        td = te.docs(delDocs, td);
+        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+        assertEquals(0, td.docID());
+        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
+
+        assertEquals("fox", te.next().utf8ToString());
+        td = te.docs(delDocs, td);
+        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+        assertEquals(0, td.docID());
+        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
+
+        assertEquals("jumps", te.next().utf8ToString());
+        td = te.docs(delDocs, td);
+        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+        assertEquals(0, td.docID());
+        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
+
+        assertEquals("quick", te.next().utf8ToString());
+        td = te.docs(delDocs, td);
+        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+        assertEquals(0, td.docID());
+        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
+
+        assertEquals("the", te.next().utf8ToString());
+        td = te.docs(delDocs, td);
+        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+        assertEquals(0, td.docID());
+        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
+
+        assertNull(te.next());
+        f = fe.next();
+        assertEquals("field3", f);
+        te = fe.terms();
+
+        assertEquals("dog", te.next().utf8ToString());
+        td = te.docs(delDocs, td);
+        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+        assertEquals(0, td.docID());
+        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
+
+        assertEquals("fox", te.next().utf8ToString());
+        td = te.docs(delDocs, td);
+        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+        assertEquals(0, td.docID());
+        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
+
+        assertEquals("jumps", te.next().utf8ToString());
+        td = te.docs(delDocs, td);
+        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+        assertEquals(0, td.docID());
+        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
+
+        assertEquals("lazy", te.next().utf8ToString());
+        td = te.docs(delDocs, td);
+        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+        assertEquals(0, td.docID());
+        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
+
+        assertEquals("over", te.next().utf8ToString());
+        td = te.docs(delDocs, td);
+        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+        assertEquals(0, td.docID());
+        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
+
+        assertEquals("the", te.next().utf8ToString());
+        td = te.docs(delDocs, td);
+        assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+        assertEquals(0, td.docID());
+        assertEquals(td.nextDoc(), DocsEnum.NO_MORE_DOCS);
+
+        assertNull(te.next());
     }
 }

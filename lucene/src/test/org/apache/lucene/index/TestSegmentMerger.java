@@ -23,6 +23,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -85,9 +86,12 @@ public class TestSegmentMerger extends LuceneTestCase {
     assertTrue(newDoc2 != null);
     assertTrue(DocHelper.numFields(newDoc2) == DocHelper.numFields(doc2) - DocHelper.unstored.size());
     
-    TermDocs termDocs = mergedReader.termDocs(new Term(DocHelper.TEXT_FIELD_2_KEY, "field"));
+    DocsEnum termDocs = MultiFields.getTermDocsEnum(mergedReader,
+                                                    MultiFields.getDeletedDocs(mergedReader),
+                                                    DocHelper.TEXT_FIELD_2_KEY,
+                                                    new BytesRef("field"));
     assertTrue(termDocs != null);
-    assertTrue(termDocs.next() == true);
+    assertTrue(termDocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
     
     Collection<String> stored = mergedReader.getFieldNames(IndexReader.FieldOption.INDEXED_WITH_TERMVECTOR);
     assertTrue(stored != null);

@@ -21,7 +21,8 @@ import java.util.Random;
 
 import org.apache.lucene.benchmark.byTask.PerfRunData;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.util.Bits;
 
 /**
  * Deletes a percentage of documents from an index randomly
@@ -50,11 +51,6 @@ public class DeleteByPercentTask extends PerfTask {
   }
   
   @Override
-  public void setup() throws Exception {
-    super.setup();
-  }
-
-  @Override
   public void setParams(String params) {
     super.setParams(params);
     percent = Double.parseDouble(params)/100;
@@ -78,14 +74,14 @@ public class DeleteByPercentTask extends PerfTask {
     }
     while (numDeleted < numToDelete) {
       double delRate = ((double) (numToDelete-numDeleted))/r.numDocs();
-      TermDocs termDocs = r.termDocs(null);
-      while (termDocs.next() && numDeleted < numToDelete) {
-        if (random.nextDouble() <= delRate) {
-          r.deleteDocument(termDocs.doc());
+      Bits delDocs = MultiFields.getDeletedDocs(r);
+      int doc = 0;
+      while (doc < maxDoc && numDeleted < numToDelete) {
+        if (!delDocs.get(doc) && random.nextDouble() <= delRate) {
+          r.deleteDocument(doc);
           numDeleted++;
         }
       }
-      termDocs.close();
     }
     System.out.println("--> processed (delete) " + numDeleted + " docs");
     r.decRef();

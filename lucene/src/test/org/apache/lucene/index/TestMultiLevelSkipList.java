@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.Reader;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -34,6 +33,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * This testcase tests whether multi-level skipping is being used
@@ -68,11 +68,12 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     writer.close();
 
     IndexReader reader = SegmentReader.getOnlySegmentReader(dir);
-    TermPositions tp = reader.termPositions();
     
     for (int i = 0; i < 2; i++) {
       counter = 0;
-      tp.seek(term);
+      DocsAndPositionsEnum tp = reader.termPositionsEnum(reader.getDeletedDocs(),
+                                                         term.field(),
+                                                         new BytesRef(term.text()));
 
       checkSkipTo(tp, 14, 185); // no skips
       checkSkipTo(tp, 17, 190); // one skip on level 0
@@ -84,18 +85,18 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     }
   }
 
-  public void checkSkipTo(TermPositions tp, int target, int maxCounter) throws IOException {
-    tp.skipTo(target);
+  public void checkSkipTo(DocsAndPositionsEnum tp, int target, int maxCounter) throws IOException {
+    tp.advance(target);
     if (maxCounter < counter) {
       fail("Too many bytes read: " + counter);
     }
 
-    assertEquals("Wrong document " + tp.doc() + " after skipTo target " + target, target, tp.doc());
+    assertEquals("Wrong document " + tp.docID() + " after skipTo target " + target, target, tp.docID());
     assertEquals("Frequency is not 1: " + tp.freq(), 1,tp.freq());
     tp.nextPosition();
-    byte[] b = new byte[1];
-    tp.getPayload(b, 0);
-    assertEquals("Wrong payload for the target " + target + ": " + b[0], (byte) target, b[0]);
+    BytesRef b = tp.getPayload();
+    assertEquals(1, b.length);
+    assertEquals("Wrong payload for the target " + target + ": " + b.bytes[b.offset], (byte) target, b.bytes[b.offset]);
   }
 
   private static class PayloadAnalyzer extends Analyzer {

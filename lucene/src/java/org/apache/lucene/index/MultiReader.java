@@ -25,9 +25,6 @@ import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
-import org.apache.lucene.index.DirectoryReader.MultiTermDocs;       // deprecated
-import org.apache.lucene.index.DirectoryReader.MultiTermEnum;       // deprecated
-import org.apache.lucene.index.DirectoryReader.MultiTermPositions;  // deprecated
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
 import org.apache.lucene.util.Bits;
@@ -370,28 +367,6 @@ public class MultiReader extends IndexReader implements Cloneable {
   }
 
   @Override
-  public TermEnum terms() throws IOException {
-    ensureOpen();
-    if (subReaders.length == 1) {
-      // Optimize single segment case:
-      return subReaders[0].terms();
-    } else {
-      return new MultiTermEnum(this, subReaders, starts, null);
-    }
-  }
-
-  @Override
-  public TermEnum terms(Term term) throws IOException {
-    ensureOpen();
-    if (subReaders.length == 1) {
-      // Optimize single segment case:
-      return subReaders[0].terms(term);
-    } else {
-      return new MultiTermEnum(this, subReaders, starts, term);
-    }
-  }
-
-  @Override
   public int docFreq(Term t) throws IOException {
     ensureOpen();
     int total = 0;          // sum freqs in segments
@@ -410,39 +385,6 @@ public class MultiReader extends IndexReader implements Cloneable {
     return total;
   }
   
-  @Override
-  public TermDocs termDocs() throws IOException {
-    ensureOpen();
-    if (subReaders.length == 1) {
-      // Optimize single segment case:
-      return subReaders[0].termDocs();
-    } else {
-      return new MultiTermDocs(this, subReaders, starts);
-    }
-  }
-
-  @Override
-  public TermDocs termDocs(Term term) throws IOException {
-    ensureOpen();
-    if (subReaders.length == 1) {
-      // Optimize single segment case:
-      return subReaders[0].termDocs(term);
-    } else {
-      return super.termDocs(term);
-    }
-  }
-
-  @Override
-  public TermPositions termPositions() throws IOException {
-    ensureOpen();
-    if (subReaders.length == 1) {
-      // Optimize single segment case:
-      return subReaders[0].termPositions();
-    } else {
-      return new MultiTermPositions(this, subReaders, starts);
-    }
-  }
-
   @Override
   protected void doCommit(Map<String,String> commitUserData) throws IOException {
     for (int i = 0; i < subReaders.length; i++)

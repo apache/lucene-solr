@@ -244,40 +244,38 @@ public class TestTermVectors extends LuceneTestCase {
       writer.addDocument(testDoc4);
       writer.close();
       IndexSearcher knownSearcher = new IndexSearcher(dir, true);
-      TermEnum termEnum = knownSearcher.reader.terms();
-      TermDocs termDocs = knownSearcher.reader.termDocs();
-      //System.out.println("Terms: " + termEnum.size() + " Orig Len: " + termArray.length);
-      
-      //Similarity sim = knownSearcher.getSimilarity();
-      while (termEnum.next() == true)
-      {
-        Term term = termEnum.term();
-        //System.out.println("Term: " + term);
-        termDocs.seek(term);
-        while (termDocs.next())
-        {
-          int docId = termDocs.doc();
-          int freq = termDocs.freq();
-          //System.out.println("Doc Id: " + docId + " freq " + freq);
-          TermFreqVector vector = knownSearcher.reader.getTermFreqVector(docId, "field");
-          //float tf = sim.tf(freq);
-          //float idf = sim.idf(knownSearcher.docFreq(term), knownSearcher.maxDoc());
-          //float qNorm = sim.queryNorm()
-          //This is fine since we don't have stop words
-          //float lNorm = sim.lengthNorm("field", vector.getTerms().length);
-          //float coord = sim.coord()
-          //System.out.println("TF: " + tf + " IDF: " + idf + " LenNorm: " + lNorm);
-          assertTrue(vector != null);
-          String[] vTerms = vector.getTerms();
-          int [] freqs = vector.getTermFrequencies();
-          for (int i = 0; i < vTerms.length; i++)
-          {
-            if (term.text().equals(vTerms[i]))
-            {
-              assertTrue(freqs[i] == freq);
-            }
+      FieldsEnum fields = MultiFields.getFields(knownSearcher.reader).iterator();
+
+      DocsEnum docs = null;
+      while(fields.next() != null) {
+        TermsEnum terms = fields.terms();
+        while(terms.next() != null) {
+          String text = terms.term().utf8ToString();
+          docs = terms.docs(MultiFields.getDeletedDocs(knownSearcher.reader), docs);
+
+          while (docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+            int docId = docs.docID();
+            int freq = docs.freq();
+            //System.out.println("Doc Id: " + docId + " freq " + freq);
+            TermFreqVector vector = knownSearcher.reader.getTermFreqVector(docId, "field");
+            //float tf = sim.tf(freq);
+            //float idf = sim.idf(knownSearcher.docFreq(term), knownSearcher.maxDoc());
+            //float qNorm = sim.queryNorm()
+            //This is fine since we don't have stop words
+            //float lNorm = sim.lengthNorm("field", vector.getTerms().length);
+            //float coord = sim.coord()
+            //System.out.println("TF: " + tf + " IDF: " + idf + " LenNorm: " + lNorm);
+            assertTrue(vector != null);
+            String[] vTerms = vector.getTerms();
+            int [] freqs = vector.getTermFrequencies();
+            for (int i = 0; i < vTerms.length; i++)
+              {
+                if (text.equals(vTerms[i]))
+                  {
+                    assertTrue(freqs[i] == freq);
+                  }
+              }
           }
-          
         }
         //System.out.println("--------");
       }

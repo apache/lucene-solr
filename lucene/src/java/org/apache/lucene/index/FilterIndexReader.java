@@ -361,20 +361,6 @@ public class FilterIndexReader extends IndexReader {
     in.setNorm(d, f, b);
   }
 
-  // final to force subclass to impl flex APIs, instead
-  @Override
-  public final TermEnum terms() throws IOException {
-    ensureOpen();
-    return in.terms();
-  }
-
-  // final to force subclass to impl flex APIs, instead
-  @Override
-  public final TermEnum terms(Term t) throws IOException {
-    ensureOpen();
-    return in.terms(t);
-  }
-
   @Override
   public int docFreq(Term t) throws IOException {
     ensureOpen();
@@ -385,27 +371,6 @@ public class FilterIndexReader extends IndexReader {
   public int docFreq(String field, BytesRef t) throws IOException {
     ensureOpen();
     return in.docFreq(field, t);
-  }
-
-  // final to force subclass to impl flex APIs, instead
-  @Override
-  public final TermDocs termDocs() throws IOException {
-    ensureOpen();
-    return in.termDocs();
-  }
-
-  // final to force subclass to impl flex APIs, instead
-  @Override
-  public final TermDocs termDocs(Term term) throws IOException {
-    ensureOpen();
-    return in.termDocs(term);
-  }
-
-  // final to force subclass to impl flex APIs, instead
-  @Override
-  public final TermPositions termPositions() throws IOException {
-    ensureOpen();
-    return in.termPositions();
   }
 
   @Override

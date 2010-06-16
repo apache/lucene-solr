@@ -32,7 +32,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.queryParser.QueryParser; // for javadoc
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeImpl;
-import org.apache.lucene.util.VirtualMethod;
 
 /**
  * An abstract {@link Query} that matches documents
@@ -72,17 +71,6 @@ public abstract class MultiTermQuery extends Query {
   protected RewriteMethod rewriteMethod = CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
   transient int numberOfTerms = 0;
   
-  /** @deprecated remove when getEnum is removed */
-  private static final VirtualMethod<MultiTermQuery> getEnumMethod =
-    new VirtualMethod<MultiTermQuery>(MultiTermQuery.class, "getEnum", IndexReader.class);
-  /** @deprecated remove when getEnum is removed */
-  private static final VirtualMethod<MultiTermQuery> getTermsEnumMethod =
-    new VirtualMethod<MultiTermQuery>(MultiTermQuery.class, "getTermsEnum", IndexReader.class);
-  /** @deprecated remove when getEnum is removed */
-  final boolean hasNewAPI = 
-    VirtualMethod.compareImplementationDistance(getClass(), 
-        getTermsEnumMethod, getEnumMethod) >= 0; // its ok for both to be overridden
-
   /** Add this {@link Attribute} to a {@link TermsEnum} returned by {@link #getTermsEnum}
    * and update the boost on each returned term. This enables to control the boost factor
    * for each matching term in {@link #SCORING_BOOLEAN_QUERY_REWRITE} or
@@ -190,64 +178,42 @@ public abstract class MultiTermQuery extends Query {
   
     protected final int collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
 
-      if (query.hasNewAPI) {
-
-        if (query.field == null) {
-          throw new NullPointerException("If you implement getTermsEnum(), you must specify a non-null field in the constructor of MultiTermQuery.");
-        }
-
-        final Fields fields = MultiFields.getFields(reader);
-        if (fields == null) {
-          // reader has no fields
-          return 0;
-        }
-
-        final Terms terms = fields.terms(query.field);
-        if (terms == null) {
-          // field does not exist
-          return 0;
-        }
-
-        final TermsEnum termsEnum = query.getTermsEnum(reader);
-        assert termsEnum != null;
-
-        if (termsEnum == TermsEnum.EMPTY)
-          return 0;
-        final BoostAttribute boostAtt =
-          termsEnum.attributes().addAttribute(BoostAttribute.class);
-        collector.boostAtt = boostAtt;
-        int count = 0;
-        BytesRef term;
-        final Term placeholderTerm = new Term(query.field);
-        while ((term = termsEnum.next()) != null) {
-          if (collector.collect(placeholderTerm.createTerm(term.utf8ToString()), boostAtt.getBoost())) {
-            count++;
-          } else {
-            break;
-          }
-        }
-        collector.boostAtt = null;
-        return count;
-      } else {
-        // deprecated case
-        final FilteredTermEnum enumerator = query.getEnum(reader);
-        int count = 0;
-        try {
-          do {
-            Term t = enumerator.term();
-            if (t != null) {
-              if (collector.collect(t, enumerator.difference())) {
-                count++;
-              } else {
-                break;
-              }
-            }
-          } while (enumerator.next());    
-        } finally {
-          enumerator.close();
-        }
-        return count;
+      if (query.field == null) {
+        throw new NullPointerException("If you implement getTermsEnum(), you must specify a non-null field in the constructor of MultiTermQuery.");
       }
+
+      final Fields fields = MultiFields.getFields(reader);
+      if (fields == null) {
+        // reader has no fields
+        return 0;
+      }
+
+      final Terms terms = fields.terms(query.field);
+      if (terms == null) {
+        // field does not exist
+        return 0;
+      }
+
+      final TermsEnum termsEnum = query.getTermsEnum(reader);
+      assert termsEnum != null;
+
+      if (termsEnum == TermsEnum.EMPTY)
+        return 0;
+      final BoostAttribute boostAtt =
+        termsEnum.attributes().addAttribute(BoostAttribute.class);
+      collector.boostAtt = boostAtt;
+      int count = 0;
+      BytesRef term;
+      final Term placeholderTerm = new Term(query.field);
+      while ((term = termsEnum.next()) != null) {
+        if (collector.collect(placeholderTerm.createTerm(term.utf8ToString()), boostAtt.getBoost())) {
+          count++;
+        } else {
+          break;
+        }
+      }
+      collector.boostAtt = null;
+      return count;
     }
     
     protected static abstract class TermCollector {
@@ -699,24 +665,13 @@ public abstract class MultiTermQuery extends Query {
   public final String getField() { return field; }
 
   /** Construct the enumeration to be used, expanding the
-   * pattern term.
-   * @deprecated Please override {@link #getTermsEnum} instead */
-  @Deprecated
-  protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
-  /** Construct the enumeration to be used, expanding the
    *  pattern term.  This method should only be called if
    *  the field exists (ie, implementations can assume the
    *  field does exist).  This method should not return null
    *  (should instead return {@link TermsEnum#EMPTY} if no
    *  terms match).  The TermsEnum must already be
    *  positioned to the first matching term. */
-  // TODO 4.0: make this method abstract
-  protected TermsEnum getTermsEnum(IndexReader reader) throws IOException {
-    throw new UnsupportedOperationException();
-  }
+  protected abstract TermsEnum getTermsEnum(IndexReader reader) throws IOException;
 
   /**
    * Expert: Return the number of unique terms visited during execution of the query.

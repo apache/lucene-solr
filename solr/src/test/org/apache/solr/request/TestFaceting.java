@@ -18,6 +18,7 @@
 package org.apache.solr.request;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.After;
 import org.junit.BeforeClass;
@@ -68,7 +69,7 @@ public class TestFaceting extends SolrTestCaseJ4 {
     req = lrf.makeRequest("q","*:*");
 
     TermIndex ti = new TermIndex(proto.field());
-    NumberedTermEnum te = ti.getEnumerator(req.getSearcher().getReader());
+    NumberedTermsEnum te = ti.getEnumerator(req.getSearcher().getReader());
 
     // iterate through first
     while(te.term() != null) te.next();
@@ -82,11 +83,11 @@ public class TestFaceting extends SolrTestCaseJ4 {
     for (int i=0; i<size*2+10; i++) {
       int rnum = r.nextInt(size+2);
       String s = t(rnum);
-      boolean b = te.skipTo(proto.createTerm(s));
-      assertEquals(b, rnum < size);
+      BytesRef br = te.skipTo(new BytesRef(s));
+      assertEquals(br != null, rnum < size);
       if (rnum < size) {
         assertEquals(rnum, te.pos);
-        assertEquals(s, te.term().text());
+        assertEquals(s, te.term().utf8ToString());
       } else {
         assertEquals(null, te.term());
         assertEquals(size, te.getTermNumber());
@@ -94,10 +95,10 @@ public class TestFaceting extends SolrTestCaseJ4 {
     }
 
     // test seeking before term
-    assertEquals(size>0, te.skipTo(proto.createTerm("000")));
+    assertEquals(size>0, te.skipTo(new BytesRef("000")) != null);
     assertEquals(0, te.getTermNumber());
     if (size>0) {
-      assertEquals(t(0), te.term().text());
+      assertEquals(t(0), te.term().utf8ToString());
     } else {
       assertEquals(null, te.term());
     }
@@ -107,10 +108,10 @@ public class TestFaceting extends SolrTestCaseJ4 {
       for (int i=0; i<size*2+10; i++) {
         int rnum = r.nextInt(size);
         String s = t(rnum);
-        boolean b = te.skipTo(rnum);
-        assertEquals(true, b);
+        BytesRef br = te.skipTo(rnum);
+        assertNotNull(br);
         assertEquals(rnum, te.pos);
-        assertEquals(s, te.term().text());
+        assertEquals(s, te.term().utf8ToString());
       }
     }
   }
@@ -204,7 +205,6 @@ public class TestFaceting extends SolrTestCaseJ4 {
       sb.append(t(i));
       sb.append(' ');
     }
-    String many_ws = sb.toString();
 
     int i1=1000000;
 

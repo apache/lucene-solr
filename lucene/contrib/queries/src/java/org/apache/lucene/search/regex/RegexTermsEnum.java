@@ -1,4 +1,4 @@
-package org.apache.lucene.search;
+package org.apache.lucene.search.regex;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,52 +17,48 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.io.IOException;
-
+import org.apache.lucene.search.FilteredTermsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.BytesRef;
+
+import java.io.IOException;
 
 /**
  * Subclass of FilteredTermEnum for enumerating all terms that match the
- * specified prefix filter term.
+ * specified regular expression term using the specified regular expression
+ * implementation.
  * <p>
  * Term enumerations are always ordered by Term.compareTo().  Each term in
  * the enumeration is greater than all that precede it.
- *
- * @deprecated Use {@link PrefixTermsEnum} instead.
  */
-@Deprecated
-public class PrefixTermEnum extends FilteredTermEnum {
 
-  private final Term prefix;
-  private boolean endEnum = false;
+public class RegexTermsEnum extends FilteredTermsEnum {
+  private RegexCapabilities regexImpl;
+  private final BytesRef prefixRef;
 
-  public PrefixTermEnum(IndexReader reader, Term prefix) throws IOException {
-    this.prefix = prefix;
+  public RegexTermsEnum(IndexReader reader, Term term, RegexCapabilities regexImpl) throws IOException {
+    super(reader, term.field());
+    String text = term.text();
+    this.regexImpl = regexImpl;
 
-    setEnum(reader.terms(new Term(prefix.field(), prefix.text())));
+    regexImpl.compile(text);
+
+    String pre = regexImpl.prefix();
+    if (pre == null) pre = "";
+
+    setInitialSeekTerm(prefixRef = new BytesRef(pre));
   }
 
   @Override
-  public float difference() {
-    return 1.0f;
-  }
-
-  @Override
-  protected boolean endEnum() {
-    return endEnum;
-  }
-  
-  protected Term getPrefixTerm() {
-      return prefix;
-  }
-
-  @Override
-  protected boolean termCompare(Term term) {
-    if (term.field() == prefix.field() && term.text().startsWith(prefix.text())) {                                                                              
-      return true;
+  protected AcceptStatus accept(BytesRef term) {
+    if (term.startsWith(prefixRef)) {
+      // TODO: set BoostAttr based on distance of
+      // searchTerm.text() and term().text()
+      String text = term.utf8ToString();
+      return regexImpl.match(text) ? AcceptStatus.YES : AcceptStatus.NO;
+    } else {
+      return AcceptStatus.NO;
     }
-    endEnum = true;
-    return false;
   }
 }

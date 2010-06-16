@@ -22,8 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.codecs.standard.DefaultSkipListReader;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
@@ -31,7 +29,7 @@ import org.apache.lucene.util.Bits;
 /** @deprecated 
  *  @lucene.experimental */
 @Deprecated
-public class SegmentTermDocs implements TermDocs {
+public class SegmentTermDocs {
   //protected SegmentReader parent;
   private final FieldInfos fieldInfos;
   private final TermInfosReader tis;
@@ -84,17 +82,16 @@ public class SegmentTermDocs implements TermDocs {
     this.skipDocs = skipDocs;
   }
 
-  public void seek(TermEnum termEnum) throws IOException {
+  public void seek(SegmentTermEnum segmentTermEnum) throws IOException {
     TermInfo ti;
     Term term;
     
     // use comparison of fieldinfos to verify that termEnum belongs to the same segment as this SegmentTermDocs
-    if (termEnum instanceof SegmentTermEnum && ((SegmentTermEnum) termEnum).fieldInfos == fieldInfos) {        // optimized case
-      SegmentTermEnum segmentTermEnum = ((SegmentTermEnum) termEnum);
+    if (segmentTermEnum.fieldInfos == fieldInfos) {        // optimized case
       term = segmentTermEnum.term();
       ti = segmentTermEnum.termInfo();
     } else  {                                         // punt case
-      term = termEnum.term();
+      term = segmentTermEnum.term();
       ti = tis.get(term); 
     }
     

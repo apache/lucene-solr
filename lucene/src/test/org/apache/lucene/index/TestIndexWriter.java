@@ -1379,8 +1379,11 @@ public class TestIndexWriter extends LuceneTestCase {
       assertEquals(1, reader.numDocs());
       Term t = new Term("field", "a");
       assertEquals(1, reader.docFreq(t));
-      TermDocs td = reader.termDocs(t);
-      td.next();
+      DocsEnum td = MultiFields.getTermDocsEnum(reader,
+                                                MultiFields.getDeletedDocs(reader),
+                                                "field",
+                                                new BytesRef("a"));
+      td.nextDoc();
       assertEquals(128*1024, td.freq());
       reader.close();
       dir.close();
@@ -1701,9 +1704,13 @@ public class TestIndexWriter extends LuceneTestCase {
 
     // Make sure the doc that hit the exception was marked
     // as deleted:
-    TermDocs tdocs = reader.termDocs(t);
+    DocsEnum tdocs = MultiFields.getTermDocsEnum(reader,
+                                              MultiFields.getDeletedDocs(reader),
+                                              t.field(),
+                                              new BytesRef(t.text()));
+
     int count = 0;
-    while(tdocs.next()) {
+    while(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
       count++;
     }
     assertEquals(2, count);
@@ -2244,9 +2251,12 @@ public class TestIndexWriter extends LuceneTestCase {
 
       // Quick test to make sure index is not corrupt:
       IndexReader reader = IndexReader.open(dir, true);
-      TermDocs tdocs = reader.termDocs(new Term("field", "aaa"));
+      DocsEnum tdocs = MultiFields.getTermDocsEnum(reader,
+                                                  MultiFields.getDeletedDocs(reader),
+                                                  "field",
+                                                  new BytesRef("aaa"));
       int count = 0;
-      while(tdocs.next()) {
+      while(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
         count++;
       }
       assertTrue(count > 0);
@@ -3454,8 +3464,13 @@ public class TestIndexWriter extends LuceneTestCase {
     Query q = new SpanTermQuery(new Term("field", "a"));
     hits = s.search(q, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    TermPositions tps = s.getIndexReader().termPositions(new Term("field", "a"));
-    assertTrue(tps.next());
+
+    DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(s.getIndexReader(),
+                                                                MultiFields.getDeletedDocs(s.getIndexReader()),
+                                                                "field",
+                                                                new BytesRef("a"));
+
+    assertTrue(tps.nextDoc() != DocsEnum.NO_MORE_DOCS);
     assertEquals(1, tps.freq());
     assertEquals(0, tps.nextPosition());
     w.close();
@@ -4465,12 +4480,12 @@ public class TestIndexWriter extends LuceneTestCase {
 
 
     // test that the terms were indexed.
-    assertTrue(ir.termDocs(new Term("binary","doc1field1")).next());
-    assertTrue(ir.termDocs(new Term("binary","doc2field1")).next());
-    assertTrue(ir.termDocs(new Term("binary","doc3field1")).next());
-    assertTrue(ir.termDocs(new Term("string","doc1field2")).next());
-    assertTrue(ir.termDocs(new Term("string","doc2field2")).next());
-    assertTrue(ir.termDocs(new Term("string","doc3field2")).next());
+    assertTrue(MultiFields.getTermDocsEnum(ir, null, "binary", new BytesRef("doc1field1")).nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(MultiFields.getTermDocsEnum(ir, null, "binary", new BytesRef("doc2field1")).nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(MultiFields.getTermDocsEnum(ir, null, "binary", new BytesRef("doc3field1")).nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(MultiFields.getTermDocsEnum(ir, null, "string", new BytesRef("doc1field2")).nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(MultiFields.getTermDocsEnum(ir, null, "string", new BytesRef("doc2field2")).nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(MultiFields.getTermDocsEnum(ir, null, "string", new BytesRef("doc3field2")).nextDoc() != DocsEnum.NO_MORE_DOCS);
 
     ir.close();
     dir.close();

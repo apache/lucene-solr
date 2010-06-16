@@ -20,10 +20,14 @@ package org.apache.solr.request;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
+import org.apache.noggit.CharArr;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.SolrException;
@@ -36,6 +40,8 @@ import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.handler.component.StatsValues;
 import org.apache.solr.handler.component.FieldFacetStats;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -43,6 +49,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Comparator;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -80,12 +87,12 @@ public class UnInvertedField {
   private static int TNUM_OFFSET=2;
 
   static class TopTerm {
-    Term term;
+    BytesRef term;
     int termNum;
 
     long memSize() {
       return 8 +   // obj header
-             8 + 8 +(term.text().length()<<1) +  //term
+             8 + 8 +term.length +  //term
              4;    // int
     }
   }
@@ -191,7 +198,7 @@ public class UnInvertedField {
     final byte[][] bytes = new byte[maxDoc][]; // list of term numbers for the doc (delta encoded vInts)
     maxTermCounts = new int[1024];
 
-    NumberedTermEnum te = ti.getEnumerator(reader);
+    NumberedTermsEnum te = ti.getEnumerator(reader);
 
     // threshold, over which we use set intersections instead of counting
     // to (1) save memory, and (2) speed up faceting.
@@ -199,8 +206,6 @@ public class UnInvertedField {
     // the threshold even when the index is very small.
     int threshold = maxDoc / 20 + 2;
     // threshold = 2000000000; //////////////////////////////// USE FOR TESTING
-    int[] docs = new int[1000];
-    int[] freqs = new int[1000];
 
     // we need a minimum of 9 bytes, but round up to 12 since the space would
     // be wasted with most allocators anyway.
@@ -223,7 +228,7 @@ public class UnInvertedField {
     // frequent terms ahead of time.
 
     for (;;) {
-      Term t = te.term();
+      BytesRef t = te.term();
       if (t==null) break;
 
       int termNum = te.getTermNumber();
@@ -239,11 +244,11 @@ public class UnInvertedField {
       int df = te.docFreq();
       if (df >= threshold) {
         TopTerm topTerm = new TopTerm();
-        topTerm.term = t;
+        topTerm.term = new BytesRef(t);
         topTerm.termNum = termNum;
         bigTerms.put(topTerm.termNum, topTerm);
 
-        DocSet set = searcher.getDocSet(new TermQuery(topTerm.term));
+        DocSet set = searcher.getDocSet(new TermQuery(new Term(ti.field, topTerm.term.utf8ToString())));
         maxTermCounts[termNum] = set.size();
 
         te.next();
@@ -252,17 +257,19 @@ public class UnInvertedField {
 
       termsInverted++;
 
-      TermDocs td = te.getTermDocs();
-      td.seek(te);
+      DocsEnum td = te.getDocsEnum();
+
+      DocsEnum.BulkReadResult bulkResult = td.getBulkResult();
+
       for(;;) {
-        int n = td.read(docs,freqs);
+        int n = td.read();
         if (n <= 0) break;
 
         maxTermCounts[termNum] += n;
 
         for (int i=0; i<n; i++) {
           termInstances++;
-          int doc = docs[i];
+          int doc = bulkResult.docs.ints[i];
           // add 2 to the term number to make room for special reserved values:
           // 0 (end term) and 1 (index into byte array follows)
           int delta = termNum - lastTerm[doc] + TNUM_OFFSET;
@@ -460,11 +467,11 @@ public class UnInvertedField {
       int startTerm = 0;
       int endTerm = numTermsInField;  // one past the end
 
-      NumberedTermEnum te = ti.getEnumerator(searcher.getReader());
+      NumberedTermsEnum te = ti.getEnumerator(searcher.getReader());
       if (prefix != null && prefix.length() > 0) {
-        te.skipTo(prefix);
+        te.skipTo(new BytesRef(prefix));
         startTerm = te.getTermNumber();
-        te.skipTo(prefix + "\uffff\uffff\uffff\uffff");
+        te.skipTo(new BytesRef(prefix + "\uffff\uffff\uffff\uffff"));
         endTerm = te.getTermNumber();
       }
 
@@ -497,7 +504,7 @@ public class UnInvertedField {
       for (TopTerm tt : bigTerms.values()) {
         // TODO: counts could be deferred if sorted==false
         if (tt.termNum >= startTerm && tt.termNum < endTerm) {
-          counts[tt.termNum] = searcher.numDocs(new TermQuery(tt.term), docs);
+          counts[tt.termNum] = searcher.numDocs(new TermQuery(new Term(ti.field, tt.term.utf8ToString())), docs);
         }
       }
 
@@ -549,6 +556,8 @@ public class UnInvertedField {
         }
       }
 
+      CharArr spare = new CharArr();
+
       int off=offset;
       int lim=limit>=0 ? limit : Integer.MAX_VALUE;
 
@@ -584,7 +593,7 @@ public class UnInvertedField {
           int c = -(int)(p.longValue() >>> 32);
           //int tnum = 0x7fffffff - (int)p.longValue();  // use if priority queue
           int tnum = (int)p.longValue();
-          String label = ft.indexedToReadable(getTermText(te, tnum));
+          String label = getReadableValue(getTermValue(te, tnum), ft, spare);
           res.add(label, c);
         }
       } else {
@@ -602,7 +611,7 @@ public class UnInvertedField {
           if (c<mincount || --off>=0) continue;
           if (--lim<0) break;
 
-          String label = ft.indexedToReadable(getTermText(te, i));
+          String label = getReadableValue(getTermValue(te, i), ft, spare);
           res.add(label, c);
         }
       }
@@ -669,7 +678,7 @@ public class UnInvertedField {
     final int[] index = this.index;
     final int[] counts = new int[numTermsInField];//keep track of the number of times we see each word in the field for all the documents in the docset
 
-    NumberedTermEnum te = ti.getEnumerator(searcher.getReader());
+    NumberedTermsEnum te = ti.getEnumerator(searcher.getReader());
 
 
     boolean doNegative = false;
@@ -693,12 +702,13 @@ public class UnInvertedField {
     for (TopTerm tt : bigTerms.values()) {
       // TODO: counts could be deferred if sorted==false
       if (tt.termNum >= 0 && tt.termNum < numTermsInField) {
+        final Term t = new Term(ti.field, tt.term.utf8ToString());
         if (finfo.length == 0) {
-          counts[tt.termNum] = searcher.numDocs(new TermQuery(tt.term), docs);
+          counts[tt.termNum] = searcher.numDocs(new TermQuery(t), docs);
         } else {
           //COULD BE VERY SLOW
           //if we're collecting stats for facet fields, we need to iterate on all matching documents
-          DocSet bigTermDocSet = searcher.getDocSet(new TermQuery(tt.term)).intersection(docs);
+          DocSet bigTermDocSet = searcher.getDocSet(new TermQuery(t)).intersection(docs);
           DocIterator iter = bigTermDocSet.iterator();
           while (iter.hasNext()) {
             int doc = iter.nextDoc();
@@ -758,11 +768,15 @@ public class UnInvertedField {
     }
 
     // add results in index order
+    CharArr spare = new CharArr();
 
     for (i = 0; i < numTermsInField; i++) {
       int c = doNegative ? maxTermCounts[i] - counts[i] : counts[i];
       if (c == 0) continue;
-      Double value = Double.parseDouble(ft.indexedToReadable(getTermText(te, i)));
+      String label = getReadableValue(getTermValue(te, i), ft, spare);
+      // TODO: we should avoid this re-parse
+      Double value = Double.parseDouble(label);
+
       allstats.accumulate(value, c);
       //as we've parsed the termnum into a value, lets also accumulate fieldfacet statistics
       for (FieldFacetStats f : finfo) {
@@ -792,20 +806,27 @@ public class UnInvertedField {
 
   }
 
+  String getReadableValue(BytesRef termval, FieldType ft, CharArr spare) {
+    if (spare == null) {
+      spare = new CharArr();
+    } else {
+      spare.reset();
+    }
+    ft.indexedToReadable(termval, spare);
+    return spare.toString();    
+  }
 
-
-
-  String getTermText(NumberedTermEnum te, int termNum) throws IOException {
+  /** may return a reused BytesRef */
+  BytesRef getTermValue(NumberedTermsEnum te, int termNum) throws IOException {
     if (bigTerms.size() > 0) {
       // see if the term is one of our big terms.
       TopTerm tt = bigTerms.get(termNum);
       if (tt != null) {
-        return tt.term.text();
+        return tt.term;
       }
     }
 
-    te.skipTo(termNum);
-    return te.term().text();
+    return te.skipTo(termNum);
   }
 
   public String toString() {
@@ -860,95 +881,97 @@ class TermEnumListener {
 ***/
 
 
-class NumberedTermEnum extends TermEnum {
+class NumberedTermsEnum extends TermsEnum {
   protected final IndexReader reader;
   protected final TermIndex tindex;
-  protected TermEnum tenum;
+  protected TermsEnum tenum;
   protected int pos=-1;
-  protected Term t;
-  protected TermDocs termDocs;
+  protected BytesRef termText;
+  protected DocsEnum docsEnum;
 
 
-  NumberedTermEnum(IndexReader reader, TermIndex tindex) throws IOException {
+  NumberedTermsEnum(IndexReader reader, TermIndex tindex) throws IOException {
     this.reader = reader;
     this.tindex = tindex;
   }
 
 
-  NumberedTermEnum(IndexReader reader, TermIndex tindex, String termValue, int pos) throws IOException {
+  NumberedTermsEnum(IndexReader reader, TermIndex tindex, BytesRef termValue, int pos) throws IOException {
     this.reader = reader;
     this.tindex = tindex;
     this.pos = pos;
-    tenum = reader.terms(tindex.createTerm(termValue));
-    setTerm();
-  }
-
-  public TermDocs getTermDocs() throws IOException {
-    if (termDocs==null) termDocs = reader.termDocs(t);
-    else termDocs.seek(t);
-    return termDocs;
-  }
-
-  protected boolean setTerm() {
-    t = tenum.term();
-    if (t==null
-            || t.field() != tindex.fterm.field()  // intern'd compare
-            || (tindex.prefix != null && !t.text().startsWith(tindex.prefix,0)) )
-    {
-      t = null;
-      return false;
+    Terms terms = MultiFields.getTerms(reader, tindex.field);
+    if (terms != null) {
+      tenum = terms.iterator();
+      tenum.seek(termValue);
+      setTerm();
     }
-    return true;
   }
 
+  @Override
+  public Comparator<BytesRef> getComparator() throws IOException {
+    return tenum.getComparator();
+  }
 
-  public boolean next() throws IOException {
+  public DocsEnum getDocsEnum() throws IOException {
+    docsEnum = tenum.docs(MultiFields.getDeletedDocs(reader), docsEnum);
+    return docsEnum;
+  }
+
+  protected BytesRef setTerm() throws IOException {
+    termText = tenum.term();
+    if (tindex.prefix != null && !termText.startsWith(tindex.prefix)) {
+      termText = null;
+    }
+    return termText;
+  }
+
+  @Override
+  public BytesRef next() throws IOException {
     pos++;
-    boolean b = tenum.next();
-    if (!b) {
-      t = null;
-      return false;
+    if (tenum.next() == null) {
+      termText = null;
+      return null;
     }
     return setTerm();  // this is extra work if we know we are in bounds...
   }
 
-  public Term term() {
-    return t;
+  @Override
+  public BytesRef term() {
+    return termText;
   }
 
+  @Override
   public int docFreq() {
     return tenum.docFreq();
   }
 
-  public void close() throws IOException {
-    if (tenum!=null) tenum.close();
-  }
+  public BytesRef skipTo(BytesRef target) throws IOException {
 
-  public boolean skipTo(String target) throws IOException {
-    return skipTo(tindex.fterm.createTerm(target));
-  }
-
-  public boolean skipTo(Term target) throws IOException {
     // already here
-    if (t != null && t.equals(target)) return true;
+    if (termText != null && termText.equals(target)) return termText;
 
-    int startIdx = Arrays.binarySearch(tindex.index,target.text());
+    if (tenum == null) {
+      return null;
+    }
+
+    int startIdx = Arrays.binarySearch(tindex.index,target);
 
     if (startIdx >= 0) {
       // we hit the term exactly... lucky us!
-      if (tenum != null) tenum.close();
-      tenum = reader.terms(target);
+      TermsEnum.SeekStatus seekStatus = tenum.seek(target);
+      assert seekStatus == TermsEnum.SeekStatus.FOUND;
       pos = startIdx << tindex.intervalBits;
       return setTerm();
     }
 
     // we didn't hit the term exactly
     startIdx=-startIdx-1;
-
+    
     if (startIdx == 0) {
       // our target occurs *before* the first term
-      if (tenum != null) tenum.close();
-      tenum = reader.terms(target);
+      TermsEnum.SeekStatus seekStatus = tenum.seek(target);
+      assert seekStatus == TermsEnum.SeekStatus.NOT_FOUND;
       pos = 0;
       return setTerm();
     }
@@ -956,45 +979,48 @@ class NumberedTermEnum extends TermEnum {
     // back up to the start of the block
     startIdx--;
 
-    if ((pos >> tindex.intervalBits) == startIdx && t != null && t.text().compareTo(target.text())<=0) {
+    if ((pos >> tindex.intervalBits) == startIdx && termText != null && termText.compareTo(target)<=0) {
       // we are already in the right block and the current term is before the term we want,
       // so we don't need to seek.
     } else {
       // seek to the right block
-      if (tenum != null) tenum.close();            
-      tenum = reader.terms(target.createTerm(tindex.index[startIdx]));
+      TermsEnum.SeekStatus seekStatus = tenum.seek(tindex.index[startIdx]);
+      assert seekStatus == TermsEnum.SeekStatus.FOUND;
       pos = startIdx << tindex.intervalBits;
-      setTerm();  // should be true since it's in the index
+      setTerm();  // should be non-null since it's in the index
     }
 
-
-    while (t != null && t.text().compareTo(target.text()) < 0) {
+    while (termText != null && termText.compareTo(target) < 0) {
       next();
     }
 
-    return t != null;
+    return termText;
   }
 
-
-  public boolean skipTo(int termNumber) throws IOException {
+  public BytesRef skipTo(int termNumber) throws IOException {
     int delta = termNumber - pos;
     if (delta < 0 || delta > tindex.interval || tenum==null) {
       int idx = termNumber >>> tindex.intervalBits;
-      String base = tindex.index[idx];
+      BytesRef base = tindex.index[idx];
       pos = idx << tindex.intervalBits;
       delta = termNumber - pos;
-      if (tenum != null) tenum.close();
-      tenum = reader.terms(tindex.createTerm(base));
+      TermsEnum.SeekStatus seekStatus = tenum.seek(base);
+      assert seekStatus == TermsEnum.SeekStatus.FOUND;
     }
     while (--delta >= 0) {
-      boolean b = tenum.next();
-      if (b==false) {
-        t = null;
-        return false;
+      BytesRef br = tenum.next();
+      if (br == null) {
+        termText = null;
+        return null;
       }
       ++pos;
     }
     return setTerm();
+  }
+
+  protected void close() throws IOException {
+    // no-op, needed so the anon subclass that does indexing
+    // can build its index
   }
 
   /** The current term number, starting at 0.
@@ -1002,6 +1028,31 @@ class NumberedTermEnum extends TermEnum {
    */
   public int getTermNumber() {
     return pos;
+  }
+
+  @Override
+  public long ord() {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public SeekStatus seek(long ord) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public DocsEnum docs(Bits skipDocs, DocsEnum reuse) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public SeekStatus seek(BytesRef target, boolean useCache) {
+    throw new UnsupportedOperationException();
   }
 }
 
@@ -1018,9 +1069,9 @@ class TermIndex {
   final static int intervalMask = 0xffffffff >>> (32-intervalBits);
   final static int interval = 1 << intervalBits;
 
-  final Term fterm; // prototype to be used in term construction w/o String.intern overhead
-  final String prefix;
-  String[] index;
+  final String field;
+  final BytesRef prefix;
+  BytesRef[] index;
   int nTerms;
   long sizeOfStrings;
 
@@ -1029,16 +1080,12 @@ class TermIndex {
   }
 
   TermIndex(String field, String prefix) {
-    this.fterm = new Term(field, "");
-    this.prefix = prefix;
+    this.field = field;
+    this.prefix = prefix == null ? null : new BytesRef(prefix);
   }
 
-  Term createTerm(String termVal) {
-    return fterm.createTerm(termVal);
-  }
-
-  NumberedTermEnum getEnumerator(IndexReader reader, int termNumber) throws IOException {
-    NumberedTermEnum te = new NumberedTermEnum(reader, this);
+  NumberedTermsEnum getEnumerator(IndexReader reader, int termNumber) throws IOException {
+    NumberedTermsEnum te = new NumberedTermsEnum(reader, this);
     te.skipTo(termNumber);
     return te;
   }
@@ -1047,38 +1094,37 @@ class TermIndex {
      with next() to fully traverse all of the terms so the index
      will be built.
    */
-  NumberedTermEnum getEnumerator(IndexReader reader) throws IOException {
-    if (index==null) return new NumberedTermEnum(reader,this, prefix==null?"":prefix, 0) {
-      ArrayList<String> lst;
+  NumberedTermsEnum getEnumerator(IndexReader reader) throws IOException {
+    if (index==null) return new NumberedTermsEnum(reader,this, prefix==null?new BytesRef():prefix, 0) {
+      ArrayList<BytesRef> lst;
 
-      protected boolean setTerm() {
-        boolean b = super.setTerm();
-        if (b && (pos & intervalMask)==0) {
-          String text = term().text();
-          sizeOfStrings += text.length() << 1;
+      protected BytesRef setTerm() throws IOException {
+        BytesRef br = super.setTerm();
+        if (br != null && (pos & intervalMask)==0) {
+          sizeOfStrings += br.length;
           if (lst==null) {
-            lst = new ArrayList<String>();
+            lst = new ArrayList<BytesRef>();
           }
-          lst.add(text);
+          lst.add(new BytesRef(br));
         }
-        return b;
+        return br;
       }
 
-      public boolean skipTo(Term target) throws IOException {
+      public BytesRef skipTo(Term target) throws IOException {
         throw new UnsupportedOperationException();
       }
 
-      public boolean skipTo(int termNumber) throws IOException {
+      public BytesRef skipTo(int termNumber) throws IOException {
         throw new UnsupportedOperationException();
       }
 
       public void close() throws IOException {
         nTerms=pos;
         super.close();
-        index = lst!=null ? lst.toArray(new String[lst.size()]) : new String[0];
+        index = lst!=null ? lst.toArray(new BytesRef[lst.size()]) : new BytesRef[0];
       }
     };
-    else return new NumberedTermEnum(reader,this,"",0);
+    else return new NumberedTermsEnum(reader,this,new BytesRef(),0);
   }
 
 

@@ -27,11 +27,12 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermPositions;
+import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.BytesRef;
 
 public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
   private String[] tokens = new String[] {"term1", "term2", "term3", "term2"};
@@ -75,19 +76,28 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     writer.close();
     
     IndexReader reader = IndexReader.open(dir, true);
-    TermPositions termPositions = reader.termPositions(new Term("preanalyzed", "term1"));
-    assertTrue(termPositions.next());
+    DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader,
+                                                                          MultiFields.getDeletedDocs(reader),
+                                                                          "preanalyzed",
+                                                                          new BytesRef("term1"));
+    assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
     assertEquals(1, termPositions.freq());
     assertEquals(0, termPositions.nextPosition());
 
-    termPositions.seek(new Term("preanalyzed", "term2"));
-    assertTrue(termPositions.next());
+    termPositions = MultiFields.getTermPositionsEnum(reader,
+                                                     MultiFields.getDeletedDocs(reader),
+                                                     "preanalyzed",
+                                                     new BytesRef("term2"));
+    assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
     assertEquals(2, termPositions.freq());
     assertEquals(1, termPositions.nextPosition());
     assertEquals(3, termPositions.nextPosition());
     
-    termPositions.seek(new Term("preanalyzed", "term3"));
-    assertTrue(termPositions.next());
+    termPositions = MultiFields.getTermPositionsEnum(reader,
+                                                     MultiFields.getDeletedDocs(reader),
+                                                     "preanalyzed",
+                                                     new BytesRef("term3"));
+    assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
     assertEquals(1, termPositions.freq());
     assertEquals(2, termPositions.nextPosition());
     reader.close();

@@ -4,9 +4,12 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.SetBasedFieldSelector;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.index.TermVectorOffsetInfo;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -31,7 +34,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Logger;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -252,9 +255,12 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       int result = 1;
       currentTerm = currentTerm.createTerm(term);
       try {
-        TermEnum termEnum = reader.terms(currentTerm);
-        if (termEnum != null && termEnum.term().equals(currentTerm)) {
-          result = termEnum.docFreq();
+        Terms terms = MultiFields.getTerms(reader, currentTerm.field());
+        if (terms != null) {
+          TermsEnum termsEnum = terms.iterator();
+          if (termsEnum.seek(new BytesRef(term)) == TermsEnum.SeekStatus.FOUND) {
+            result = termsEnum.docFreq();
+          }
         }
       } catch (IOException e) {
         throw new RuntimeException(e);

@@ -298,25 +298,6 @@ final class JustCompileSearch {
     
   }
 
-  static final class JustCompileFilteredTermEnum extends FilteredTermEnum {
-
-    @Override
-    public float difference() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    protected boolean endEnum() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    protected boolean termCompare(Term term) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-  }
-
   static final class JustCompilePhraseScorer extends PhraseScorer {
 
     JustCompilePhraseScorer(Weight weight, DocsAndPositionsEnum[] docs, int[] offsets,

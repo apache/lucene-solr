@@ -54,7 +54,7 @@ public class InstantiatedDocsEnum extends DocsEnum {
 
   @Override
   public int advance(int target) {
-    if (currentDoc.getDocument().getDocumentNumber() >= target) {
+    if (currentDoc != null && currentDoc.getDocument().getDocumentNumber() >= target) {
       return nextDoc();
     }
 

@@ -27,9 +27,11 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.BytesRef;
 
 public class DuplicateFilterTest extends LuceneTestCase {
 	private static final String KEY_FIELD = "url";
@@ -134,11 +136,14 @@ public class DuplicateFilterTest extends LuceneTestCase {
 		{
 			Document d=searcher.doc(hits[i].doc);
 			String url=d.get(KEY_FIELD);
-			TermDocs td = reader.termDocs(new Term(KEY_FIELD,url));
+                        DocsEnum td = MultiFields.getTermDocsEnum(reader,
+                                                                  MultiFields.getDeletedDocs(reader),
+                                                                  KEY_FIELD,
+                                                                  new BytesRef(url));
 			int lastDoc=0;
-			while(td.next())
+			while(td.nextDoc() != DocsEnum.NO_MORE_DOCS)
 			{
-				lastDoc=td.doc();
+				lastDoc=td.docID();
 			}
 			assertEquals("Duplicate urls should return last doc",lastDoc, hits[i].doc);
 		}
@@ -155,10 +160,13 @@ public class DuplicateFilterTest extends LuceneTestCase {
 		{
 			Document d=searcher.doc(hits[i].doc);
 			String url=d.get(KEY_FIELD);
-			TermDocs td = reader.termDocs(new Term(KEY_FIELD,url));
+                        DocsEnum td = MultiFields.getTermDocsEnum(reader,
+                                                                  MultiFields.getDeletedDocs(reader),
+                                                                  KEY_FIELD,
+                                                                  new BytesRef(url));
 			int lastDoc=0;
-			td.next();
-			lastDoc=td.doc();
+			td.nextDoc();
+			lastDoc=td.docID();
 			assertEquals("Duplicate urls should return first doc",lastDoc, hits[i].doc);
 		}
 	}	

@@ -377,10 +377,4 @@ public class TestFuzzyQuery extends LuceneTestCase {
     doc.add(new Field("field", text, Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
   }
-  
-  @Deprecated
-  public void testBackwardsLayer() {
-    assertTrue(new FuzzyQuery(new Term("dummy", "dummy")).hasNewAPI);
-  }
-
 }

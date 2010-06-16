@@ -371,48 +371,10 @@ public class InstantiatedIndexReader extends IndexReader {
   }
 
   @Override
-  public TermEnum terms() throws IOException {
-    return new InstantiatedTermEnum(this);
-  }
-
-  @Override
-  public TermEnum terms(Term t) throws IOException {
-    InstantiatedTerm it = getIndex().findTerm(t);
-    if (it != null) {
-      return new InstantiatedTermEnum(this, it.getTermIndex());
-    } else {
-      int startPos = Arrays.binarySearch(index.getOrderedTerms(), t, InstantiatedTerm.termComparator);
-      if (startPos < 0) {
-        startPos = -1 - startPos;
-      }
-      return new InstantiatedTermEnum(this, startPos);
-    }
-  }
-
-  @Override
-  public TermDocs termDocs() throws IOException {
-    return new InstantiatedTermDocs(this);
-  }
-
-
-  @Override
-  public TermDocs termDocs(Term term) throws IOException {
-    if (term == null) {
-      return new InstantiatedAllTermDocs(this);
-    } else {
-      InstantiatedTermDocs termDocs = new InstantiatedTermDocs(this);
-      termDocs.seek(term);
-      return termDocs;
-    }
-  }
-
-  @Override
-  public TermPositions termPositions() throws IOException {
-    return new InstantiatedTermPositions(this);
-  }
-
-  @Override
   public Fields fields() {
+    if (getIndex().getOrderedTerms().length == 0) {
+      return null;
+    }
 
     return new Fields() {
       @Override

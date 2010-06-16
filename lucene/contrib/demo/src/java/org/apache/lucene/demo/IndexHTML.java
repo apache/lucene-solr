@@ -23,10 +23,13 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.File;
 import java.util.Date;
@@ -39,7 +42,7 @@ public class IndexHTML {
   private static boolean deleting = false;	  // true during deletion pass
   private static IndexReader reader;		  // existing index
   private static IndexWriter writer;		  // new index being built
-  private static TermEnum uidIter;		  // document id iterator
+  private static TermsEnum uidIter;		  // document id iterator
 
   /** Indexer for HTML files.*/
   public static void main(String[] argv) {
@@ -110,21 +113,24 @@ public class IndexHTML {
     if (!create) {				  // incrementally update
 
       reader = IndexReader.open(FSDirectory.open(index), false);		  // open existing index
-      uidIter = reader.terms(new Term("uid", "")); // init uid iterator
+      Terms terms = MultiFields.getTerms(reader, "uid");
+      if (terms != null) {
+        uidIter = terms.iterator();
 
-      indexDocs(file);
+        indexDocs(file);
 
-      if (deleting) {				  // delete rest of stale docs
-        while (uidIter.term() != null && uidIter.term().field() == "uid") {
-          System.out.println("deleting " +
-              HTMLDocument.uid2url(uidIter.term().text()));
-          reader.deleteDocuments(uidIter.term());
-          uidIter.next();
+        if (deleting) {				  // delete rest of stale docs
+          BytesRef text;
+          while ((text=uidIter.next()) != null) {
+            String termText = text.utf8ToString();
+            System.out.println("deleting " +
+                               HTMLDocument.uid2url(termText));
+            reader.deleteDocuments(new Term("uid", termText));
+          }
+          deleting = false;
         }
-        deleting = false;
       }
 
-      uidIter.close();				  // close uid iterator
       reader.close();				  // close existing index
 
     } else					  // don't have exisiting
@@ -145,17 +151,21 @@ public class IndexHTML {
       if (uidIter != null) {
         String uid = HTMLDocument.uid(file);	  // construct uid for doc
 
-        while (uidIter.term() != null && uidIter.term().field() == "uid" &&
-            uidIter.term().text().compareTo(uid) < 0) {
-          if (deleting) {			  // delete stale docs
-            System.out.println("deleting " +
-                HTMLDocument.uid2url(uidIter.term().text()));
-            reader.deleteDocuments(uidIter.term());
+        BytesRef text;
+        while((text = uidIter.next()) != null) {
+          String termText = text.utf8ToString();
+          if (termText.compareTo(uid) < 0) {
+            if (deleting) {			  // delete stale docs
+              System.out.println("deleting " +
+                                 HTMLDocument.uid2url(termText));
+              reader.deleteDocuments(new Term("uid", termText));
+            }
+          } else {
+            break;
           }
-          uidIter.next();
         }
-        if (uidIter.term() != null && uidIter.term().field() == "uid" &&
-            uidIter.term().text().compareTo(uid) == 0) {
+        if (text != null &&
+            text.utf8ToString().compareTo(uid) == 0) {
           uidIter.next();			  // keep matching docs
         } else if (!deleting) {			  // add new docs
           Document doc = HTMLDocument.Document(file);

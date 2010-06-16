@@ -25,6 +25,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 
@@ -158,33 +159,27 @@ public class TestDirectoryReader extends LuceneTestCase {
     MultiReader mr3 = new MultiReader(readers2);
 
     // test mixing up TermDocs and TermEnums from different readers.
-    TermDocs td2 = mr2.termDocs();
-    TermEnum te3 = mr3.terms(new Term("body","wow"));
-    td2.seek(te3);
+    TermsEnum te2 = MultiFields.getTerms(mr2, "body").iterator();
+    te2.seek(new BytesRef("wow"));
+    DocsEnum td = MultiFields.getTermDocsEnum(mr2,
+                                              MultiFields.getDeletedDocs(mr2),
+                                              "body",
+                                              te2.term());
+
+    TermsEnum te3 = MultiFields.getTerms(mr3, "body").iterator();
+    te3.seek(new BytesRef("wow"));
+    td = te3.docs(MultiFields.getDeletedDocs(mr3),
+                  td);
+    
     int ret = 0;
 
     // This should blow up if we forget to check that the TermEnum is from the same
     // reader as the TermDocs.
-    while (td2.next()) ret += td2.doc();
-    td2.close();
-    te3.close();
+    while (td.nextDoc() != td.NO_MORE_DOCS) ret += td.docID();
 
     // really a dummy assert to ensure that we got some docs and to ensure that
     // nothing is optimized out.
     assertTrue(ret > 0);
-  }
-
-  public void testAllTermDocs() throws IOException {
-    IndexReader reader = openReader();
-    int NUM_DOCS = 2;
-    TermDocs td = reader.termDocs(null);
-    for(int i=0;i<NUM_DOCS;i++) {
-      assertTrue(td.next());
-      assertEquals(i, td.doc());
-      assertEquals(1, td.freq());
-    }
-    td.close();
-    reader.close();
   }
 
   private void addDoc(RAMDirectory ramDir1, String s, boolean create) throws IOException {

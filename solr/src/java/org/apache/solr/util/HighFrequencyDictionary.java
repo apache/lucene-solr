@@ -21,18 +21,17 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.spell.Dictionary;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * HighFrequencyDictionary: terms taken from the given field
  * of a Lucene index, which appear in a number of documents
  * above a given threshold.
- *
- * When using IndexReader.terms(Term) the code must not call next() on TermEnum
- * as the first call to TermEnum, see: http://issues.apache.org/jira/browse/LUCENE-6
  *
  * Threshold is a value in [0..1] representing the minimum
  * number of documents (of the total) where a term should appear.
@@ -55,41 +54,34 @@ public class HighFrequencyDictionary implements Dictionary {
   }
 
   final class HighFrequencyIterator implements Iterator {
-    private TermEnum termEnum;
-    private Term actualTerm;
+    private TermsEnum termsEnum;
+    private BytesRef actualTerm;
     private boolean hasNextCalled;
     private int minNumDocs;
 
     HighFrequencyIterator() {
       try {
-        termEnum = reader.terms(new Term(field, ""));
+        Terms terms = MultiFields.getTerms(reader, field);
+        if (terms != null) {
+          termsEnum = terms.iterator();
+        }
         minNumDocs = (int)(thresh * (float)reader.numDocs());
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     }
 
-    private boolean isFrequent(Term term) {
-      try {
-        return reader.docFreq(term) >= minNumDocs;
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
+    private boolean isFrequent(int freq) {
+      return freq >= minNumDocs;
     }
 
     public Object next() {
-      if (!hasNextCalled) {
-        hasNext();
+      if (!hasNextCalled && !hasNext()) {
+        return null;
       }
       hasNextCalled = false;
 
-      try {
-        termEnum.next();
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-
-      return (actualTerm != null) ? actualTerm.text() : null;
+      return (actualTerm != null) ? actualTerm.utf8ToString() : null;
     }
 
     public boolean hasNext() {
@@ -98,35 +90,28 @@ public class HighFrequencyDictionary implements Dictionary {
       }
       hasNextCalled = true;
 
-      do {
-        actualTerm = termEnum.term();
+      if (termsEnum == null) {
+        return false;
+      }
+
+      while(true) {
+
+        try {
+          actualTerm = termsEnum.next();
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
 
         // if there are no words return false
         if (actualTerm == null) {
           return false;
         }
 
-        String currentField = actualTerm.field();
-
-        // if the next word doesn't have the same field return false
-        if (currentField != field) {   // intern'd comparison
-          actualTerm = null;
-          return false;
-        }
-
         // got a valid term, does it pass the threshold?
-        if (isFrequent(actualTerm)) {
+        if (isFrequent(termsEnum.docFreq())) {
           return true;
         }
-
-        // term not up to threshold
-        try {
-          termEnum.next();
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
-
-      } while (true);
+      }
     }
 
     public void remove() {

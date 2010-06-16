@@ -25,7 +25,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.Automaton;
@@ -119,10 +118,5 @@ public class TestRegexpQuery extends LuceneTestCase {
    */
   public void testBacktracking() throws IOException {
     assertEquals(1, regexQueryNrHits("4934[314]"));
-  }
-  
-  @Deprecated
-  public void testBackwardsLayer() {
-    assertTrue(new RegexpQuery(newTerm(".*")).hasNewAPI);
   }
 }

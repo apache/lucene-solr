@@ -38,6 +38,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.BytesRef;
 
 public class TestDocumentWriter extends LuceneTestCase {
   private RAMDirectory dir;
@@ -128,8 +129,9 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.close();
     SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
 
-    TermPositions termPositions = reader.termPositions(new Term("repeated", "repeated"));
-    assertTrue(termPositions.next());
+    DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader, MultiFields.getDeletedDocs(reader),
+                                                                          "repeated", new BytesRef("repeated"));
+    assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
     int freq = termPositions.freq();
     assertEquals(2, freq);
     assertEquals(0, termPositions.nextPosition());
@@ -190,16 +192,16 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.close();
     SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
 
-    TermPositions termPositions = reader.termPositions(new Term("f1", "a"));
-    assertTrue(termPositions.next());
+    DocsAndPositionsEnum termPositions = reader.fields().terms("f1").docsAndPositions(reader.getDeletedDocs(), new BytesRef("a"), null);
+    assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
     int freq = termPositions.freq();
     assertEquals(3, freq);
     assertEquals(0, termPositions.nextPosition());
-    assertEquals(true, termPositions.isPayloadAvailable());
+    assertEquals(true, termPositions.hasPayload());
     assertEquals(6, termPositions.nextPosition());
-    assertEquals(false, termPositions.isPayloadAvailable());
+    assertEquals(false, termPositions.hasPayload());
     assertEquals(7, termPositions.nextPosition());
-    assertEquals(false, termPositions.isPayloadAvailable());
+    assertEquals(false, termPositions.hasPayload());
   }
 
 
@@ -233,19 +235,19 @@ public class TestDocumentWriter extends LuceneTestCase {
     writer.close();
     SegmentReader reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
 
-    TermPositions termPositions = reader.termPositions(new Term("preanalyzed", "term1"));
-    assertTrue(termPositions.next());
+    DocsAndPositionsEnum termPositions = reader.fields().terms("preanalyzed").docsAndPositions(reader.getDeletedDocs(), new BytesRef("term1"), null);
+    assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
     assertEquals(1, termPositions.freq());
     assertEquals(0, termPositions.nextPosition());
 
-    termPositions.seek(new Term("preanalyzed", "term2"));
-    assertTrue(termPositions.next());
+    termPositions = reader.fields().terms("preanalyzed").docsAndPositions(reader.getDeletedDocs(), new BytesRef("term2"), null);
+    assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
     assertEquals(2, termPositions.freq());
     assertEquals(1, termPositions.nextPosition());
     assertEquals(3, termPositions.nextPosition());
     
-    termPositions.seek(new Term("preanalyzed", "term3"));
-    assertTrue(termPositions.next());
+    termPositions = reader.fields().terms("preanalyzed").docsAndPositions(reader.getDeletedDocs(), new BytesRef("term3"), null);
+    assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
     assertEquals(1, termPositions.freq());
     assertEquals(2, termPositions.nextPosition());
 

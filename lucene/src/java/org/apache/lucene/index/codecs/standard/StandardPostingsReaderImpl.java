@@ -152,11 +152,19 @@ public class StandardPostingsReaderImpl extends StandardPostingsReader {
     
   @Override
   public DocsEnum docs(FieldInfo fieldInfo, TermState termState, Bits skipDocs, DocsEnum reuse) throws IOException {
-    final SegmentDocsEnum docsEnum;
+    SegmentDocsEnum docsEnum;
     if (reuse == null) {
+      docsEnum = new SegmentDocsEnum(freqIn);
+    } else if (!(reuse instanceof SegmentDocsEnum)) {
       docsEnum = new SegmentDocsEnum(freqIn);
     } else {
       docsEnum = (SegmentDocsEnum) reuse;
+      if (docsEnum.freqIn != freqIn) {
+        // If you are using ParellelReader, and pass in a
+        // reused DocsEnum, it could have come from another
+        // reader also using standard codec
+        docsEnum = new SegmentDocsEnum(freqIn);
+      }
     }
     return docsEnum.reset(fieldInfo, (DocTermState) termState, skipDocs);
   }

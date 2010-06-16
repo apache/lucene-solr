@@ -22,10 +22,12 @@ package org.apache.solr.update;
 
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.BytesRef;
 
 import java.util.HashSet;
 import java.util.concurrent.Future;
@@ -35,7 +37,6 @@ import java.net.URL;
 
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.QueryParsing;
-import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -113,15 +114,16 @@ public class DirectUpdateHandler extends UpdateHandler {
     closeWriter();
     openSearcher();
     IndexReader ir = searcher.getReader();
-    TermDocs tdocs = null;
-    boolean exists=false;
-    try {
-      tdocs = ir.termDocs(idTerm(indexedId));
-      if (tdocs.next()) exists=true;
-    } finally {
-      try { if (tdocs != null) tdocs.close(); } catch (Exception e) {}
+    Term idTerm = idTerm(indexedId);
+    DocsEnum tdocs = MultiFields.getTermDocsEnum(ir,
+                                                 MultiFields.getDeletedDocs(ir),
+                                                 idTerm.field(),
+                                                 new BytesRef(idTerm.text()));
+    if (tdocs != null) {
+      return tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS;
+    } else {
+      return false;
     }
-    return exists;
   }
 
 
@@ -130,16 +132,11 @@ public class DirectUpdateHandler extends UpdateHandler {
 
     closeWriter(); openSearcher();
     IndexReader ir = searcher.getReader();
-    TermDocs tdocs = null;
     int num=0;
-    try {
-      Term term = new Term(idField.getName(), indexedId);
-      num = ir.deleteDocuments(term);
-      if (core.log.isTraceEnabled()) {
-        core.log.trace( core.getLogId()+"deleted " + num + " docs matching id " + idFieldType.indexedToReadable(indexedId));
-      }
-    } finally {
-      try { if (tdocs != null) tdocs.close(); } catch (Exception e) {}
+    Term term = new Term(idField.getName(), indexedId);
+    num = ir.deleteDocuments(term);
+    if (core.log.isTraceEnabled()) {
+      core.log.trace( core.getLogId()+"deleted " + num + " docs matching id " + idFieldType.indexedToReadable(indexedId));
     }
     return num;
   }
@@ -265,8 +262,6 @@ public class DirectUpdateHandler extends UpdateHandler {
         SolrException.log(log,e);
       }
     }
-
-    return;
   }
 
   /**

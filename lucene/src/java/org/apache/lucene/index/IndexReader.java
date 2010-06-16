@@ -868,18 +868,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
     setNorm(doc, field, Similarity.getDefault().encodeNormValue(value));
   }
 
-  /** Returns an enumeration of all the terms in the index. The
-   * enumeration is ordered by Term.compareTo(). Each term is greater
-   * than all that precede it in the enumeration. Note that after
-   * calling terms(), {@link TermEnum#next()} must be called
-   * on the resulting enumeration before calling other methods such as
-   * {@link TermEnum#term()}.
-   * @deprecated Use the new flex API ({@link #fields()}) instead.
-   * @throws IOException if there is a low-level IO error
-   */
-  @Deprecated
-  public abstract TermEnum terms() throws IOException;
-
   /** Flex API: returns {@link Fields} for this reader.
    *  This method may return null if the reader has no
    *  postings.
@@ -893,24 +881,10 @@ public abstract class IndexReader implements Cloneable,Closeable {
    * using {@link ReaderUtil#gatherSubReaders} and iterate
    * through them yourself. */
   public abstract Fields fields() throws IOException;
-  
-  /** Returns an enumeration of all terms starting at a given term. If
-   * the given term does not exist, the enumeration is positioned at the
-   * first term greater than the supplied term. The enumeration is
-   * ordered by Term.compareTo(). Each term is greater than all that
-   * precede it in the enumeration.
-   * @deprecated Use the new flex API ({@link #fields()}) instead.
-   * @throws IOException if there is a low-level IO error
-   */
-  @Deprecated
-  public abstract TermEnum terms(Term t) throws IOException;
 
-  /** Returns the number of documents containing the term <code>t</code>.
-   * @throws IOException if there is a low-level IO error
-   * @deprecated Use {@link #docFreq(String,BytesRef)} instead.
-   */
-  @Deprecated
-  public abstract int docFreq(Term t) throws IOException;
+  public int docFreq(Term term) throws IOException {
+    return docFreq(term.field(), new BytesRef(term.text()));
+  }
 
   /** Returns the number of documents containing the term
    * <code>t</code>.  This method returns 0 if the term or
@@ -927,28 +901,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
       return 0;
     }
     return terms.docFreq(term);
-  }
-
-  /** Returns an enumeration of all the documents which contain
-   * <code>term</code>. For each document, the document number, the frequency of
-   * the term in that document is also provided, for use in
-   * search scoring.  If term is null, then all non-deleted
-   * docs are returned with freq=1.
-   * Thus, this method implements the mapping:
-   * <p><ul>
-   * Term &nbsp;&nbsp; =&gt; &nbsp;&nbsp; &lt;docNum, freq&gt;<sup>*</sup>
-   * </ul>
-   * <p>The enumeration is ordered by document number.  Each document number
-   * is greater than all that precede it in the enumeration.
-   * @deprecated Use the new flex API ({@link #termDocsEnum}) instead.
-   * @throws IOException if there is a low-level IO error
-   */
-  @Deprecated
-  public TermDocs termDocs(Term term) throws IOException {
-    ensureOpen();
-    TermDocs termDocs = termDocs();
-    termDocs.seek(term);
-    return termDocs;
   }
 
   /** This may return null if the field does not exist.*/
@@ -996,50 +948,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
       return null;
     }
   }
-
-  /** Returns an unpositioned {@link TermDocs} enumerator.
-   * @deprecated Use the new flex API ({@link #fields()}) instead.
-   * @throws IOException if there is a low-level IO error
-   */
-  @Deprecated
-  public abstract TermDocs termDocs() throws IOException;
-
-  /** Returns an enumeration of all the documents which contain
-   * <code>term</code>.  For each document, in addition to the document number
-   * and frequency of the term in that document, a list of all of the ordinal
-   * positions of the term in the document is available.  Thus, this method
-   * implements the mapping:
-   *
-   * <p><ul>
-   * Term &nbsp;&nbsp; =&gt; &nbsp;&nbsp; &lt;docNum, freq,
-   * &lt;pos<sub>1</sub>, pos<sub>2</sub>, ...
-   * pos<sub>freq-1</sub>&gt;
-   * &gt;<sup>*</sup>
-   * </ul>
-   * <p> This positional information facilitates phrase and proximity searching.
-   * <p>The enumeration is ordered by document number.  Each document number is
-   * greater than all that precede it in the enumeration.
-   * @deprecated Please switch the flex API ({@link
-   * #termDocsEnum}) instead
-   * @throws IOException if there is a low-level IO error
-   */
-  @Deprecated
-  public TermPositions termPositions(Term term) throws IOException {
-    ensureOpen();
-    TermPositions termPositions = termPositions();
-    termPositions.seek(term);
-    return termPositions;
-  }
-
-  /** Returns an unpositioned {@link TermPositions} enumerator.
-   * @deprecated Please switch the flex API ({@link
-   * #termDocsEnum}) instead
-   * @throws IOException if there is a low-level IO error
-   */
-  @Deprecated
-  public abstract TermPositions termPositions() throws IOException;
-
-
 
   /** Deletes the document numbered <code>docNum</code>.  Once a document is
    * deleted it will not appear in TermDocs or TermPositions enumerations.
@@ -1089,16 +997,16 @@ public abstract class IndexReader implements Cloneable,Closeable {
    */
   public int deleteDocuments(Term term) throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     ensureOpen();
-    TermDocs docs = termDocs(term);
+    DocsEnum docs = MultiFields.getTermDocsEnum(this,
+                                                MultiFields.getDeletedDocs(this),
+                                                term.field(),
+                                                new BytesRef(term.text()));
     if (docs == null) return 0;
     int n = 0;
-    try {
-      while (docs.next()) {
-        deleteDocument(docs.doc());
-        n++;
-      }
-    } finally {
-      docs.close();
+    int doc;
+    while ((doc = docs.nextDoc()) != docs.NO_MORE_DOCS) {
+      deleteDocument(doc);
+      n++;
     }
     return n;
   }

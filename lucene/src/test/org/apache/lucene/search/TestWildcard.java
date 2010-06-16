@@ -19,12 +19,10 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
@@ -308,63 +306,5 @@ public class TestWildcard
     }
 
     searcher.close();
-  }
-  @Deprecated
-  private static final class OldWildcardQuery extends MultiTermQuery {
-    final Term term;
-  
-    OldWildcardQuery(Term term) {
-      this.term = term;
-    }
-      
-    @Override
-    protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
-      return new WildcardTermEnum(reader, term);
-    }
-    
-    @Override
-    public String toString(String field) {
-      return "OldWildcard(" + term.toString()+ ")";
-    }
-  }
-  
-  @Deprecated
-  public void testDeprecatedTermEnum() throws Exception {
-    RAMDirectory indexStore = getIndexStore("body", new String[]
-    {"metal", "metals"});
-    IndexSearcher searcher = new IndexSearcher(indexStore, true);
-    Query query1 = new TermQuery(new Term("body", "metal"));
-    Query query2 = new OldWildcardQuery(new Term("body", "metal*"));
-    Query query3 = new OldWildcardQuery(new Term("body", "m*tal"));
-    Query query4 = new OldWildcardQuery(new Term("body", "m*tal*"));
-    Query query5 = new OldWildcardQuery(new Term("body", "m*tals"));
-
-    BooleanQuery query6 = new BooleanQuery();
-    query6.add(query5, BooleanClause.Occur.SHOULD);
-
-    BooleanQuery query7 = new BooleanQuery();
-    query7.add(query3, BooleanClause.Occur.SHOULD);
-    query7.add(query5, BooleanClause.Occur.SHOULD);
-
-    // Queries do not automatically lower-case search terms:
-    Query query8 = new OldWildcardQuery(new Term("body", "M*tal*"));
-
-    assertMatches(searcher, query1, 1);
-    assertMatches(searcher, query2, 2);
-    assertMatches(searcher, query3, 1);
-    assertMatches(searcher, query4, 2);
-    assertMatches(searcher, query5, 1);
-    assertMatches(searcher, query6, 1);
-    assertMatches(searcher, query7, 2);
-    assertMatches(searcher, query8, 0);
-    assertMatches(searcher, new OldWildcardQuery(new Term("body", "*tall")), 0);
-    assertMatches(searcher, new OldWildcardQuery(new Term("body", "*tal")), 1);
-    assertMatches(searcher, new OldWildcardQuery(new Term("body", "*tal*")), 2);
-  }
-  
-  @Deprecated
-  public void testBackwardsLayer() {
-    assertTrue(new WildcardQuery(new Term("body", "metal*")).hasNewAPI);
-    assertFalse(new OldWildcardQuery(new Term("body", "metal*")).hasNewAPI);
   }
 }

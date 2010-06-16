@@ -71,8 +71,6 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
     IndexReader r = dw.writer.getReader();
     dw.writer.commit();
     verifyEquals(r, dir, "id");
-    FlexTestUtil.verifyFlexVsPreFlex(this.r, r);
-    FlexTestUtil.verifyFlexVsPreFlex(this.r, dir);
     r.close();
     dw.writer.close();
     dir.close();
@@ -94,8 +92,6 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
     // verifyEquals(dir2, dir2, "id");
 
     verifyEquals(dir1, dir2, "id");
-    FlexTestUtil.verifyFlexVsPreFlex(r, dir1);
-    FlexTestUtil.verifyFlexVsPreFlex(r, dir2);
   }
 
   public void testMultiConfig() throws Throwable {
@@ -121,9 +117,6 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
       indexSerial(docs, dir2);
       //System.out.println("TEST: verify");
       verifyEquals(dir1, dir2, "id");
-
-      FlexTestUtil.verifyFlexVsPreFlex(r, dir1);
-      FlexTestUtil.verifyFlexVsPreFlex(r, dir2);
     }
   }
 

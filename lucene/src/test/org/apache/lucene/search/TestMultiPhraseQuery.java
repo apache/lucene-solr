@@ -19,21 +19,20 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.Version;
 
 import java.io.IOException;
-import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.Collections;
 
 /**
  * This class tests the MultiPhraseQuery class.
@@ -73,13 +72,16 @@ public class TestMultiPhraseQuery extends LuceneTestCase
 
         // this TermEnum gives "piccadilly", "pie" and "pizza".
         String prefix = "pi";
-        TermEnum te = ir.terms(new Term("body", prefix));
+        TermsEnum te = MultiFields.getFields(ir).terms("body").iterator();
+        te.seek(new BytesRef(prefix));
         do {
-            if (te.term().text().startsWith(prefix))
-            {
-                termsWithPrefix.add(te.term());
+            String s = te.term().utf8ToString();
+            if (s.startsWith(prefix)) {
+              termsWithPrefix.add(new Term("body", s));
+            } else {
+              break;
             }
-        } while (te.next());
+        } while (te.next() != null);
 
         query1.add(termsWithPrefix.toArray(new Term[0]));
         assertEquals("body:\"blueberry (piccadilly pie pizza)\"", query1.toString());
@@ -96,13 +98,14 @@ public class TestMultiPhraseQuery extends LuceneTestCase
         MultiPhraseQuery query3 = new MultiPhraseQuery();
         termsWithPrefix.clear();
         prefix = "blue";
-        te = ir.terms(new Term("body", prefix));
+        te.seek(new BytesRef(prefix));
+
         do {
-            if (te.term().text().startsWith(prefix))
+            if (te.term().utf8ToString().startsWith(prefix))
             {
-                termsWithPrefix.add(te.term());
+              termsWithPrefix.add(new Term("body", te.term().utf8ToString()));
             }
-        } while (te.next());
+        } while (te.next() != null);
         ir.close();
         query3.add(termsWithPrefix.toArray(new Term[0]));
         query3.add(new Term("body", "pizza"));

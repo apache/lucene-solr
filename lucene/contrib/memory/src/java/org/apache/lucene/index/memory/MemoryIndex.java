@@ -44,11 +44,8 @@ import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
-import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.index.FieldInvertState;
 import org.apache.lucene.search.Collector;
@@ -732,7 +729,6 @@ public class MemoryIndex implements Serializable {
   ///////////////////////////////////////////////////////////////////////////////
   // Nested classes:
   ///////////////////////////////////////////////////////////////////////////////
-  private static final Term MATCH_ALL_TERM = new Term("");
     
   /**
    * Search support for Lucene framework integration; implements all methods
@@ -768,12 +764,6 @@ public class MemoryIndex implements Serializable {
       return freq;
     }
   
-    @Override
-    public TermEnum terms() {
-      if (DEBUG) System.err.println("MemoryIndexReader.terms()");
-      return terms(MATCH_ALL_TERM);
-    }
-
     @Override
     public Fields fields() {
 
@@ -1010,202 +1000,6 @@ public class MemoryIndex implements Serializable {
       }
     }
     
-    @Override
-    public TermEnum terms(Term term) {
-      if (DEBUG) System.err.println("MemoryIndexReader.terms: " + term);
-  
-      int i; // index into info.sortedTerms
-      int j; // index into sortedFields
-      
-      sortFields();
-      if (sortedFields.length == 1 && sortedFields[0].getKey() == term.field()) {
-        j = 0; // fast path
-      } else {
-        j = Arrays.binarySearch(sortedFields, term.field(), termComparator);
-      }
-      
-      if (j < 0) { // not found; choose successor
-        j = -j -1; 
-        i = 0;
-        if (j < sortedFields.length) getInfo(j).sortTerms();
-      } else { // found
-        Info info = getInfo(j);
-        info.sortTerms();
-        i = Arrays.binarySearch(info.sortedTerms, term.text(), termComparator);
-        if (i < 0) { // not found; choose successor
-          i = -i -1;
-          if (i >= info.sortedTerms.length) { // move to next successor
-            j++;
-            i = 0;
-            if (j < sortedFields.length) getInfo(j).sortTerms();
-          }
-        }
-      }
-      final int ix = i;
-      final int jx = j;
-  
-      return new TermEnum() {
-  
-        private int srtTermsIdx = ix; // index into info.sortedTerms
-        private int srtFldsIdx = jx; // index into sortedFields
-          
-        @Override
-        public boolean next() {
-          if (DEBUG) System.err.println("TermEnum.next");
-          if (srtFldsIdx >= sortedFields.length) return false;
-          Info info = getInfo(srtFldsIdx);
-          if (++srtTermsIdx < info.sortedTerms.length) return true;
-  
-          // move to successor
-          srtFldsIdx++;
-          srtTermsIdx = 0;
-          if (srtFldsIdx >= sortedFields.length) return false;
-          getInfo(srtFldsIdx).sortTerms();
-          return true;
-        }
-  
-        @Override
-        public Term term() {
-          if (DEBUG) System.err.println("TermEnum.term: " + srtTermsIdx);
-          if (srtFldsIdx >= sortedFields.length) return null;
-          Info info = getInfo(srtFldsIdx);
-          if (srtTermsIdx >= info.sortedTerms.length) return null;
-//          if (DEBUG) System.err.println("TermEnum.term: " + i + ", " + info.sortedTerms[i].getKey());
-          return createTerm(info, srtFldsIdx, info.sortedTerms[srtTermsIdx].getKey());
-        }
-        
-        @Override
-        public int docFreq() {
-          if (DEBUG) System.err.println("TermEnum.docFreq");
-          if (srtFldsIdx >= sortedFields.length) return 0;
-          Info info = getInfo(srtFldsIdx);
-          if (srtTermsIdx >= info.sortedTerms.length) return 0;
-          return numPositions(info.getPositions(srtTermsIdx));
-        }
-  
-        @Override
-        public void close() {
-          if (DEBUG) System.err.println("TermEnum.close");
-        }
-        
-        /** Returns a new Term object, minimizing String.intern() overheads. */
-        private Term createTerm(Info info, int pos, String text) { 
-          // Assertion: sortFields has already been called before
-          Term template = info.template;
-          if (template == null) { // not yet cached?
-            String fieldName = sortedFields[pos].getKey();
-            template = new Term(fieldName);
-            info.template = template;
-          }
-          
-          return template.createTerm(text);
-        }
-        
-      };
-    }
-  
-    @Override
-    public TermPositions termPositions() {
-      if (DEBUG) System.err.println("MemoryIndexReader.termPositions");
-      
-      return new TermPositions() {
-  
-        private boolean hasNext;
-        private int cursor = 0;
-        private ArrayIntList current;
-        private Term term;
-        
-        public void seek(Term term) {
-          this.term = term;
-          if (DEBUG) System.err.println(".seek: " + term);
-          if (term == null) {
-            hasNext = true;  // term==null means match all docs
-          } else {
-            Info info = getInfo(term.field());
-            current = info == null ? null : info.getPositions(term.text());
-            hasNext = (current != null);
-            cursor = 0;
-          }
-        }
-  
-        public void seek(TermEnum termEnum) {
-          if (DEBUG) System.err.println(".seekEnum");
-          seek(termEnum.term());
-        }
-  
-        public int doc() {
-          if (DEBUG) System.err.println(".doc");
-          return 0;
-        }
-  
-        public int freq() {
-          int freq = current != null ? numPositions(current) : (term == null ? 1 : 0);
-          if (DEBUG) System.err.println(".freq: " + freq);
-          return freq;
-        }
-  
-        public boolean next() {
-          if (DEBUG) System.err.println(".next: " + current + ", oldHasNext=" + hasNext);
-          boolean next = hasNext;
-          hasNext = false;
-          return next;
-        }
-  
-        public int read(int[] docs, int[] freqs) {
-          if (DEBUG) System.err.println(".read: " + docs.length);
-          if (!hasNext) return 0;
-          hasNext = false;
-          docs[0] = 0;
-          freqs[0] = freq();
-          return 1;
-        }
-  
-        public boolean skipTo(int target) {
-          if (DEBUG) System.err.println(".skipTo: " + target);
-          return next();
-        }
-  
-        public void close() {
-          if (DEBUG) System.err.println(".close");
-        }
-        
-        public int nextPosition() { // implements TermPositions
-          int pos = current.get(cursor);
-          cursor += stride;
-          if (DEBUG) System.err.println(".nextPosition: " + pos);
-          return pos;
-        }
-        
-        /**
-         * Not implemented.
-         * @throws UnsupportedOperationException
-         */
-        public int getPayloadLength() {
-          throw new UnsupportedOperationException();
-        }
-         
-        /**
-         * Not implemented.
-         * @throws UnsupportedOperationException
-         */
-        public byte[] getPayload(byte[] data, int offset) throws IOException {
-          throw new UnsupportedOperationException();
-        }
-
-        public boolean isPayloadAvailable() {
-          // unsuported
-          return false;
-        }
-
-      };
-    }
-  
-    @Override
-    public TermDocs termDocs() {
-      if (DEBUG) System.err.println("MemoryIndexReader.termDocs");
-      return termPositions();
-    }
-  
     @Override
     public TermFreqVector[] getTermFreqVectors(int docNumber) {
       if (DEBUG) System.err.println("MemoryIndexReader.getTermFreqVectors");

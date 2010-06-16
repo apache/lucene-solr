@@ -485,11 +485,6 @@ public class SolrIndexReader extends FilterIndexReader {
   }
 
   @Override
-  public TermPositions termPositions(Term term) throws IOException {
-    return in.termPositions(term);
-  }
-
-  @Override
   public void undeleteAll() throws StaleReaderException, CorruptIndexException, LockObtainFailedException, IOException {
     in.undeleteAll();
   }

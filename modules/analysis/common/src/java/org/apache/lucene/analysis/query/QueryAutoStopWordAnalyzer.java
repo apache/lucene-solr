@@ -18,12 +18,14 @@ package org.apache.lucene.analysis.query;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.StopFilter;
-import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -141,20 +143,15 @@ public final class QueryAutoStopWordAnalyzer extends Analyzer {
    */
   public int addStopWords(IndexReader reader, String fieldName, int maxDocFreq) throws IOException {
     HashSet<String> stopWords = new HashSet<String>();
-    String internedFieldName = StringHelper.intern(fieldName);
-    TermEnum te = reader.terms(new Term(fieldName));
-    Term term = te.term();
-    while (term != null) {
-      if (term.field() != internedFieldName) {
-        break;
+    Terms terms = MultiFields.getTerms(reader, fieldName);
+    if (terms != null) {
+      TermsEnum te = terms.iterator();
+      BytesRef text;
+      while ((text = te.next()) != null) {
+        if (te.docFreq() > maxDocFreq) {
+          stopWords.add(text.utf8ToString());
+        }
       }
-      if (te.docFreq() > maxDocFreq) {
-        stopWords.add(term.text());
-      }
-      if (!te.next()) {
-        break;
-      }
-      term = te.term();
     }
     stopWordsPerField.put(fieldName, stopWords);
     

@@ -22,7 +22,6 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.index.TermDocs;  // for javadocs
 
 /**
  * A {@link Filter} that only accepts documents whose single
@@ -70,7 +69,7 @@ import org.apache.lucene.index.TermDocs;  // for javadocs
  * 
  * In contrast, TermsFilter builds up an {@link OpenBitSet},
  * keyed by docID, every time it's created, by enumerating
- * through all matching docs using {@link TermDocs} to seek
+ * through all matching docs using {@link DocsEnum} to seek
  * and scan through each term's docID list.  While there is
  * no linear scan of all docIDs, besides the allocation of
  * the underlying array in the {@link OpenBitSet}, this

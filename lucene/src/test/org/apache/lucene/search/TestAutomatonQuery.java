@@ -196,10 +196,4 @@ public class TestAutomatonQuery extends LuceneTestCase {
     assertSame(TermsEnum.EMPTY, aq.getTermsEnum(searcher.getIndexReader()));
     assertEquals(0, automatonQueryNrHits(aq));
   }
-  
-  @Deprecated
-  public void testBackwardsLayer() {
-    assertTrue(new AutomatonQuery(newTerm("bogus"), BasicAutomata
-        .makeString("piece")).hasNewAPI);
-  }
 }

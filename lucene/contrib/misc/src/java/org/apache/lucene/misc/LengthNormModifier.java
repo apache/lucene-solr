@@ -16,14 +16,16 @@ package org.apache.lucene.misc;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
-import org.apache.lucene.index.TermDocs;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.Bits;
 
 import java.io.File;
 import java.io.IOException;
@@ -109,37 +111,25 @@ public class LengthNormModifier {
     String fieldName = StringHelper.intern(field);
     int[] termCounts = new int[0];
     
-    IndexReader reader = null;
-    TermEnum termEnum = null;
-    TermDocs termDocs = null;
+    IndexReader reader = IndexReader.open(dir, false);
     try {
-      reader = IndexReader.open(dir, false);
+
       termCounts = new int[reader.maxDoc()];
-      try {
-        termEnum = reader.terms(new Term(field));
-        try {
-          termDocs = reader.termDocs();
-          do {
-            Term term = termEnum.term();
-            if (term != null && term.field().equals(fieldName)) {
-              termDocs.seek(termEnum.term());
-              while (termDocs.next()) {
-                termCounts[termDocs.doc()] += termDocs.freq();
-              }
-            }
-          } while (termEnum.next());
-        } finally {
-          if (null != termDocs) termDocs.close();
+      Bits delDocs = MultiFields.getDeletedDocs(reader);
+      DocsEnum docs = null;
+
+      Terms terms = MultiFields.getTerms(reader, field);
+      if (terms != null) {
+        TermsEnum termsEnum = terms.iterator();
+        while(termsEnum.next() != null) {
+          docs = termsEnum.docs(delDocs, docs);
+          int doc;
+          while ((doc = docs.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
+            termCounts[doc] += docs.freq();
+          }
         }
-      } finally {
-        if (null != termEnum) termEnum.close();
       }
-    } finally {
-      if (null != reader) reader.close();
-    }
-    
-    try {
-      reader = IndexReader.open(dir, false); 
+
       for (int d = 0; d < termCounts.length; d++) {
         if (! reader.isDeleted(d)) {
           byte norm = Similarity.encodeNorm(sim.lengthNorm(fieldName, termCounts[d]));
@@ -147,7 +137,7 @@ public class LengthNormModifier {
         }
       }
     } finally {
-      if (null != reader) reader.close();
+      reader.close();
     }
   }
   

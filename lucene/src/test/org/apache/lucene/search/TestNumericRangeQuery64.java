@@ -590,10 +590,4 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
     );
      // difference to int range is tested in TestNumericRangeQuery32
   }
-  
-  @Test @Deprecated
-  public void testBackwardsLayer() {
-    assertTrue(NumericRangeQuery.newLongRange("dummy", null, null, true, true).hasNewAPI);
-  }
-  
 }

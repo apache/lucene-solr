@@ -24,8 +24,14 @@ import java.util.TreeSet;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.Fields;
 import org.apache.lucene.util.OpenBitSet;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Bits;
 
 /**
  * Constructs a filter for docs matching any of the terms added to this class. 
@@ -52,28 +58,37 @@ public class TermsFilter extends Filter
    * @see org.apache.lucene.search.Filter#getDocIdSet(org.apache.lucene.index.IndexReader)
 	 */
   @Override
-  public DocIdSet getDocIdSet(IndexReader reader) throws IOException
-	{
+  public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     OpenBitSet result=new OpenBitSet(reader.maxDoc());
-        TermDocs td = reader.termDocs();
-        try
-        {
-            for (Iterator<Term> iter = terms.iterator(); iter.hasNext();)
-            {
-                Term term = iter.next();
-                td.seek(term);
-                while (td.next())
-                {
-                    result.set(td.doc());
-                }
+    Fields fields = MultiFields.getFields(reader);
+    BytesRef br = new BytesRef();
+    Bits delDocs = MultiFields.getDeletedDocs(reader);
+    if (fields != null) {
+      String lastField = null;
+      Terms termsC = null;
+      TermsEnum termsEnum = null;
+      DocsEnum docs = null;
+      for (Iterator<Term> iter = terms.iterator(); iter.hasNext();) {
+        Term term = iter.next();
+        if (term.field() != lastField) {
+          termsC = fields.terms(term.field());
+          termsEnum = termsC.iterator();
+          lastField = term.field();
+        }
+
+        if (terms != null) {
+          br.copy(term.text());
+          if (termsEnum.seek(br) == TermsEnum.SeekStatus.FOUND) {
+            docs = termsEnum.docs(delDocs, docs);
+            while(docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+              result.set(docs.docID());
             }
+          }
         }
-        finally
-        {
-            td.close();
-        }
-        return result;
-	}
+      }
+    }
+    return result;
+  }
 	
 	@Override
 	public boolean equals(Object obj)

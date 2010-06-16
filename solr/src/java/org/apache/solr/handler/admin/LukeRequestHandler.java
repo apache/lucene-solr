@@ -37,13 +37,17 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FieldsEnum;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.BytesRef;
 import org.apache.solr.analysis.CharFilterFactory;
 import org.apache.solr.analysis.TokenFilterFactory;
 import org.apache.solr.analysis.TokenizerChain;
@@ -468,18 +472,18 @@ public class LukeRequestHandler extends RequestHandlerBase
     indexInfo.add("maxDoc", reader.maxDoc());
     
     if( countTerms ) {
-      TermEnum te = null;
-      try{
-        te = reader.terms();
-        int numTerms = 0;
-        while (te.next()) {
-          numTerms++;
+      Fields fields = MultiFields.getFields(reader);
+      int numTerms = 0;
+      if (fields != null) {
+        FieldsEnum fieldsEnum = fields.iterator();
+        while(fieldsEnum.next() != null) {
+          TermsEnum termsEnum = fieldsEnum.terms();
+          while(termsEnum.next() != null) {
+            numTerms++;
+          }
         }
-        indexInfo.add("numTerms", numTerms );
       }
-      finally{
-        if( te != null ) te.close();
-      }
+      indexInfo.add("numTerms", numTerms );
     }
 
     indexInfo.add("version", reader.getVersion());  // TODO? Is this different then: IndexReader.getCurrentVersion( dir )?
@@ -528,7 +532,6 @@ public class LukeRequestHandler extends RequestHandlerBase
     int maxBucket = -1;
     public Map<Integer,Integer> hist = new HashMap<Integer, Integer>();
     
-    private static final double LOG2 = Math.log( 2 );
     public static int getPowerOfTwoBucket( int num )
     {
       return Math.max(1, Integer.highestOneBit(num-1) << 1);
@@ -621,44 +624,47 @@ public class LukeRequestHandler extends RequestHandlerBase
   private static Map<String,TopTermQueue> getTopTerms( IndexReader reader, Set<String> fields, int numTerms, Set<String> junkWords ) throws Exception 
   {
     Map<String,TopTermQueue> info = new HashMap<String, TopTermQueue>();
-    
-    TermEnum terms = null;
-    try{
-      terms = reader.terms();    
-      while (terms.next()) {
-        String field = terms.term().field();
-        String t = terms.term().text();
+
+    Fields fieldsC = MultiFields.getFields(reader);
+    if (fieldsC != null) {
+      FieldsEnum fieldsEnum = fieldsC.iterator();
+      String field;
+      while((field = fieldsEnum.next()) != null) {
+
+        TermsEnum termsEnum = fieldsEnum.terms();
+        BytesRef text;
+        while((text = termsEnum.next()) != null) {
+          String t = text.utf8ToString();
   
-        // Compute distinct terms for every field
-        TopTermQueue tiq = info.get( field );
-        if( tiq == null ) {
-          tiq = new TopTermQueue( numTerms+1 );
-          info.put( field, tiq );
-        }
-        tiq.distinctTerms++;
-        tiq.histogram.add( terms.docFreq() );  // add the term to the histogram
+          // Compute distinct terms for every field
+          TopTermQueue tiq = info.get( field );
+          if( tiq == null ) {
+            tiq = new TopTermQueue( numTerms+1 );
+            info.put( field, tiq );
+          }
+
+          tiq.distinctTerms++;
+          tiq.histogram.add( termsEnum.docFreq() );  // add the term to the histogram
         
-        // Only save the distinct terms for fields we worry about
-        if (fields != null && fields.size() > 0) {
-          if( !fields.contains( field ) ) {
+          // Only save the distinct terms for fields we worry about
+          if (fields != null && fields.size() > 0) {
+            if( !fields.contains( field ) ) {
+              continue;
+            }
+          }
+          if( junkWords != null && junkWords.contains( t ) ) {
             continue;
           }
-        }
-        if( junkWords != null && junkWords.contains( t ) ) {
-          continue;
-        }
         
-        if( terms.docFreq() > tiq.minFreq ) {
-          tiq.add(new TopTermQueue.TermInfo(terms.term(), terms.docFreq()));
+          if( termsEnum.docFreq() > tiq.minFreq ) {
+            tiq.add(new TopTermQueue.TermInfo(new Term(field, t), termsEnum.docFreq()));
             if (tiq.size() > numTerms) { // if tiq full
-            tiq.pop(); // remove lowest in tiq
-            tiq.minFreq = ((TopTermQueue.TermInfo)tiq.top()).docFreq; // reset minFreq
+              tiq.pop(); // remove lowest in tiq
+              tiq.minFreq = ((TopTermQueue.TermInfo)tiq.top()).docFreq; // reset minFreq
+            }
           }
         }
       }
-    }
-    finally {
-      if( terms != null ) terms.close();
     }
     return info;
   }

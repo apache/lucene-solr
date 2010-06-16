@@ -21,17 +21,17 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.BytesRef;
 
 public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   
@@ -82,10 +82,16 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
     writer.close();
 
     IndexReader reader = IndexReader.open(dir, true);
-    TermDocs td = reader.termDocs(new Term("partnum", "Q36"));
-    assertTrue(td.next());
-    td = reader.termDocs(new Term("partnum", "Q37"));
-    assertTrue(td.next());
+    DocsEnum td = MultiFields.getTermDocsEnum(reader,
+                                              MultiFields.getDeletedDocs(reader),
+                                              "partnum",
+                                              new BytesRef("Q36"));
+    assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    td = MultiFields.getTermDocsEnum(reader,
+                                     MultiFields.getDeletedDocs(reader),
+                                     "partnum",
+                                     new BytesRef("Q37"));
+    assertTrue(td.nextDoc() != DocsEnum.NO_MORE_DOCS);
   }
 
   // LUCENE-1441
