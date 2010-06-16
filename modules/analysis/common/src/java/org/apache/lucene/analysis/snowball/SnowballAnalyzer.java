@@ -42,7 +42,7 @@ import java.util.Set;
  *   <li> As of 3.1, uses {@link TurkishLowerCaseFilter} for Turkish language.
  * </ul>
  * </p>
- * @deprecated Use the language-specific analyzer in contrib/analyzers instead. 
+ * @deprecated Use the language-specific analyzer in modules/analysis instead. 
  * This analyzer will be removed in Lucene 4.0
  */
 @Deprecated
