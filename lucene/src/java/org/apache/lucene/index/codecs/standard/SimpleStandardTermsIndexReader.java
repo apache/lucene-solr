@@ -137,7 +137,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
         if (success) {
           indexLoaded = true;
         }
-        termBytesReader = termBytes.freeze();
+        termBytesReader = termBytes.freeze(true);
       } else {
         this.in = in;
       }
@@ -413,7 +413,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
 
       indexLoaded = true;
       in.close();
-      termBytesReader = termBytes.freeze();
+      termBytesReader = termBytes.freeze(true);
     }
   }
 

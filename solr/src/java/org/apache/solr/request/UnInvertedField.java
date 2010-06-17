@@ -27,6 +27,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
+import org.apache.lucene.util.PagedBytes;
 import org.apache.noggit.CharArr;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
@@ -1097,6 +1098,7 @@ class TermIndex {
   NumberedTermsEnum getEnumerator(IndexReader reader) throws IOException {
     if (index==null) return new NumberedTermsEnum(reader,this, prefix==null?new BytesRef():prefix, 0) {
       ArrayList<BytesRef> lst;
+      PagedBytes bytes;
 
       protected BytesRef setTerm() throws IOException {
         BytesRef br = super.setTerm();
@@ -1104,8 +1106,11 @@ class TermIndex {
           sizeOfStrings += br.length;
           if (lst==null) {
             lst = new ArrayList<BytesRef>();
+            bytes = new PagedBytes(15);
           }
-          lst.add(new BytesRef(br));
+          BytesRef out = new BytesRef();
+          bytes.copy(br, out);
+          lst.add(out);
         }
         return br;
       }

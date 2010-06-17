@@ -866,7 +866,7 @@ class FieldCacheImpl implements FieldCache {
       }
 
       // maybe an int-only impl?
-      return new DocTermsIndexImpl(bytes.freeze(), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd);
+      return new DocTermsIndexImpl(bytes.freeze(true), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd);
     }
   }
 
@@ -971,7 +971,7 @@ class FieldCacheImpl implements FieldCache {
       }
 
       // maybe an int-only impl?
-      return new DocTermsImpl(bytes.freeze(), docToOffset.getMutable());
+      return new DocTermsImpl(bytes.freeze(true), docToOffset.getMutable());
     }
   }
   private volatile PrintStream infoStream;

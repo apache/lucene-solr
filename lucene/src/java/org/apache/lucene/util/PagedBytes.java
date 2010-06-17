@@ -203,8 +203,33 @@ public final class PagedBytes {
     }
   }
 
-  /** Commits final byte[], trimming it if necessary. */
-  public Reader freeze() {
+  /** Copy BytesRef in, setting BytesRef out to the result.
+   * Do not use this if you will use freeze(true).
+   * This only supports bytes.length <= blockSize */
+  public void copy(BytesRef bytes, BytesRef out) throws IOException {
+    int left = blockSize - upto;
+    if (bytes.length > left) {
+      if (currentBlock != null) {
+        blocks.add(currentBlock);
+        blockEnd.add(upto);
+      }
+      currentBlock = new byte[blockSize];
+      upto = 0;
+      left = blockSize;
+      assert bytes.length <= blockSize;
+      // TODO: we could also support variable block sizes
+    }
+
+    out.bytes = currentBlock;
+    out.offset = upto;
+    out.length = bytes.length;
+
+    System.arraycopy(bytes.bytes, bytes.offset, currentBlock, upto, bytes.length);
+    upto += bytes.length;
+  }
+
+  /** Commits final byte[], trimming it if necessary and if trim=true */
+  public Reader freeze(boolean trim) {
     if (upto < blockSize) {
       final byte[] newBlock = new byte[upto];
       System.arraycopy(currentBlock, 0, newBlock, 0, upto);
