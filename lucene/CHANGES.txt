@@ -885,6 +885,13 @@ Changes in runtime behavior
   fields when reading. You have to reindex to do that.
   (Michael Busch, Uwe Schindler)
 
+* LUCENE-2060: Changed ConcurrentMergeScheduler's default for
+  maxNumThreads from 3 to 1, because in practice we get the most
+  gains from running a single merge in the background.  More than one
+  concurrent merge causes a lot of thrashing (though it's possible on
+  SSD storage that there would be net gains).  (Jason Rutherglen,
+  Mike McCandless)
+
 API Changes
 
 * LUCENE-1257, LUCENE-1984, LUCENE-1985, LUCENE-2057, LUCENE-1833, LUCENE-2012,
