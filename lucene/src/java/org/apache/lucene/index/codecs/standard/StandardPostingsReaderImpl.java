@@ -153,13 +153,11 @@ public class StandardPostingsReaderImpl extends StandardPostingsReader {
   @Override
   public DocsEnum docs(FieldInfo fieldInfo, TermState termState, Bits skipDocs, DocsEnum reuse) throws IOException {
     SegmentDocsEnum docsEnum;
-    if (reuse == null) {
-      docsEnum = new SegmentDocsEnum(freqIn);
-    } else if (!(reuse instanceof SegmentDocsEnum)) {
+    if (reuse == null || !(reuse instanceof SegmentDocsEnum)) {
       docsEnum = new SegmentDocsEnum(freqIn);
     } else {
       docsEnum = (SegmentDocsEnum) reuse;
-      if (docsEnum.freqIn != freqIn) {
+      if (docsEnum.startFreqIn != freqIn) {
         // If you are using ParellelReader, and pass in a
         // reused DocsEnum, it could have come from another
         // reader also using standard codec
@@ -174,11 +172,17 @@ public class StandardPostingsReaderImpl extends StandardPostingsReader {
     if (fieldInfo.omitTermFreqAndPositions) {
       return null;
     }
-    final SegmentDocsAndPositionsEnum docsEnum;
-    if (reuse == null) {
+    SegmentDocsAndPositionsEnum docsEnum;
+    if (reuse == null || !(reuse instanceof SegmentDocsAndPositionsEnum)) {
       docsEnum = new SegmentDocsAndPositionsEnum(freqIn, proxIn);
     } else {
       docsEnum = (SegmentDocsAndPositionsEnum) reuse;
+      if (docsEnum.startFreqIn != freqIn) {
+        // If you are using ParellelReader, and pass in a
+        // reused DocsEnum, it could have come from another
+        // reader also using standard codec
+        docsEnum = new SegmentDocsAndPositionsEnum(freqIn, proxIn);
+      }
     }
     return docsEnum.reset(fieldInfo, (DocTermState) termState, skipDocs);
   }
@@ -186,6 +190,7 @@ public class StandardPostingsReaderImpl extends StandardPostingsReader {
   // Decodes only docs
   private class SegmentDocsEnum extends DocsEnum {
     final IndexInput freqIn;
+    final IndexInput startFreqIn;
 
     boolean omitTF;                               // does current field omit term freq?
     boolean storePayloads;                        // does current field store payloads?
@@ -204,6 +209,7 @@ public class StandardPostingsReaderImpl extends StandardPostingsReader {
     DefaultSkipListReader skipper;
 
     public SegmentDocsEnum(IndexInput freqIn) throws IOException {
+      startFreqIn = freqIn;
       this.freqIn = (IndexInput) freqIn.clone();
     }
 
@@ -353,6 +359,7 @@ public class StandardPostingsReaderImpl extends StandardPostingsReader {
 
   // Decodes docs & positions
   private class SegmentDocsAndPositionsEnum extends DocsAndPositionsEnum {
+    final IndexInput startFreqIn;
     private final IndexInput freqIn;
     private final IndexInput proxIn;
 
@@ -380,6 +387,7 @@ public class StandardPostingsReaderImpl extends StandardPostingsReader {
     private long lazyProxPointer;
 
     public SegmentDocsAndPositionsEnum(IndexInput freqIn, IndexInput proxIn) throws IOException {
+      startFreqIn = freqIn;
       this.freqIn = (IndexInput) freqIn.clone();
       this.proxIn = (IndexInput) proxIn.clone();
     }
