@@ -32,7 +32,7 @@
   <groupId>org.apache.solr</groupId>
   <artifactId>solr-parent</artifactId>
   <name>Apache Solr Parent POM</name>
-  <version>@maven_version@</version>
+  <version>@version@</version>
   <description>Apache Solr Parent POM</description>
   <url>http://lucene.apache.org/solr</url>
   <packaging>pom</packaging>

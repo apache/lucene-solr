@@ -26,13 +26,13 @@
   <parent>
     <groupId>org.apache.solr</groupId>
     <artifactId>solr-parent</artifactId>
-    <version>@maven_version@</version>
+    <version>@version@</version>
   </parent>
 
   <groupId>org.apache.solr</groupId>
   <artifactId>solr-dataimporthandler</artifactId>
   <name>Apache Solr DataImportHandler</name>
-  <version>@maven_version@</version>
+  <version>@version@</version>
   <description>Apache Solr DataImportHandler</description>
   <packaging>jar</packaging>
 

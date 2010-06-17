@@ -122,9 +122,7 @@
        The version suffix of the Lucene artifacts checked into "lib" 
        IF YOU CHANGE THIS, SANITY CHECK "javadoc.link.lucene"
   -->
-  <property name="lucene_version" value="${version}"/>
-  <!-- The version number to assign to the Maven artifacts. -->
-  <property name="maven_version" value="3.1-SNAPSHOT"/>
+  <property name="version" value="${version}"/>
 
   <!-- By default, "deploy" to a temporary directory (as well as installing
        into your local repository).  If you wish to deploy to a remote
@@ -184,28 +182,28 @@
     <mkdir dir="${lucene-libs}"/>
     <copy todir="${lucene-libs}" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
       <fileset dir="../lucene/build/">
-        <include name="lucene-core-${lucene_version}.jar" />
+        <include name="lucene-core-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/analyzers/common">
-        <include name="lucene-analyzers-${lucene_version}.jar" />
+        <include name="lucene-analyzers-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/highlighter">
-        <include name="lucene-highlighter-${lucene_version}.jar" />
+        <include name="lucene-highlighter-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/memory">
-        <include name="lucene-memory-${lucene_version}.jar" />
+        <include name="lucene-memory-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/misc">
-        <include name="lucene-misc-${lucene_version}.jar" />
+        <include name="lucene-misc-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/queries">
-        <include name="lucene-queries-${lucene_version}.jar" />
+        <include name="lucene-queries-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/spatial">
-        <include name="lucene-spatial-${lucene_version}.jar" />
+        <include name="lucene-spatial-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/spellchecker">
-        <include name="lucene-spellchecker-${lucene_version}.jar" />
+        <include name="lucene-spellchecker-${version}.jar" />
       </fileset>
       </copy>
   </target>  
@@ -345,7 +343,7 @@
     <sequential>
       <copy file="@{pom.xml}" tofile="${maven.build.dir}/@{pom.xml}">
         <filterset begintoken="@" endtoken="@">
-          <filter token="maven_version" value="${maven_version}"/>
+          <filter token="version" value="${version}"/>
         </filterset>
       </copy>
       <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-2"/>
