@@ -218,6 +218,10 @@ Other
  * LUCENE-2415: Use reflection instead of a shim class to access Jakarta
    Regex prefix.  (Uwe Schindler)
 
+================== Release 2.9.3 / 3.0.2 2010-06-18 ====================
+
+No changes.
+
 ================== Release 2.9.2 / 3.0.1 2010-02-26 ====================
 
 New features
