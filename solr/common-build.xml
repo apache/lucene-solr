@@ -118,14 +118,6 @@
 
   <property name="maven.dist.prefix" value="${maven.dist.dir}/org/apache/solr"/>
 
-  <!-- 
-       The version suffix of the Lucene artifacts checked into "lib" 
-       IF YOU CHANGE THIS, SANITY CHECK "javadoc.link.lucene"
-  -->
-  <property name="lucene_version" value="${version}"/>
-  <!-- The version number to assign to the Maven artifacts. -->
-  <property name="maven_version" value="4.0-SNAPSHOT"/>
-
   <!-- By default, "deploy" to a temporary directory (as well as installing
        into your local repository).  If you wish to deploy to a remote
        repository, set this property to the URL of that repository.  In
@@ -347,7 +339,7 @@
     <sequential>
       <copy file="@{pom.xml}" tofile="${maven.build.dir}/@{pom.xml}">
         <filterset begintoken="@" endtoken="@">
-          <filter token="maven_version" value="${maven_version}"/>
+          <filter token="version" value="${version}"/>
         </filterset>
       </copy>
       <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-2"/>
@@ -391,7 +383,7 @@
   <macrodef name="sign-maven-artifacts" description="Signs maven artifacts">
     <attribute name="artifact.id"/>
     <attribute name="prefix.dir" default="${maven.dist.prefix}"/>
-    <attribute name="maven.version" default="${maven_version}"/>
+    <attribute name="maven.version" default="${version}"/>
     <attribute name="gpg.passphrase"/>
     <sequential>
       <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.jar" gpg.passphrase="@{gpg.passphrase}"/>
@@ -404,7 +396,7 @@
   <macrodef name="sign-maven-dependency-artifacts" description="Signs maven artifacts">
     <attribute name="artifact.id"/>
     <attribute name="prefix.dir" default="${maven.dist.prefix}"/>
-    <attribute name="maven.version" default="${maven_version}"/>
+    <attribute name="maven.version" default="${version}"/>
     <attribute name="gpg.passphrase"/>
     <sequential>
       <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.jar"  gpg.passphrase="@{gpg.passphrase}"/>

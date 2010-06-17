@@ -815,8 +815,8 @@
     <sign-maven-artifacts artifact.id="solr-velocity" gpg.passphrase="${gpg.passphrase}"/>
 
     <!-- Thes are special since there are no jars, just poms -->
-    <sign-artifact input.file="${maven.dist.prefix}/solr-parent/${maven_version}/solr-parent-${maven_version}.pom" gpg.passphrase="${gpg.passphrase}"/>
-    <sign-artifact input.file="${maven.dist.prefix}/solr-lucene-contrib/${maven_version}/solr-lucene-contrib-${maven_version}.pom" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-artifact input.file="${maven.dist.prefix}/solr-parent/${version}/solr-parent-${version}.pom" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-artifact input.file="${maven.dist.prefix}/solr-lucene-contrib/${version}/solr-lucene-contrib-${version}.pom" gpg.passphrase="${gpg.passphrase}"/>
 
   </target>
 

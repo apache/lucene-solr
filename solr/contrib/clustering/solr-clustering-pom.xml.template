@@ -26,25 +26,25 @@
   <parent>
     <groupId>org.apache.solr</groupId>
     <artifactId>solr-parent</artifactId>
-    <version>@maven_version@</version>
+    <version>@version@</version>
   </parent>
 
   <groupId>org.apache.solr</groupId>
   <artifactId>solr-clustering</artifactId>
   <name>Apache Solr Clustering</name>
-  <version>@maven_version@</version>
+  <version>@version@</version>
   <description>Apache Solr Clustering</description>
   <packaging>jar</packaging>
   <dependencies>
     <dependency>
       <groupId>org.apache.solr</groupId>
       <artifactId>solr-solrj</artifactId>
-      <version>@maven_version@</version>
+      <version>@version@</version>
     </dependency>
     <dependency>
       <groupId>org.apache.solr</groupId>
       <artifactId>solr-core</artifactId>
-      <version>@maven_version@</version>
+      <version>@version@</version>
     </dependency>
     <!-- Carrot -->
     <dependency>
