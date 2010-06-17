@@ -37,7 +37,7 @@ public class TestMultiFields extends LuceneTestCase {
       Set<Integer> deleted = new HashSet<Integer>();
       List<BytesRef> terms = new ArrayList<BytesRef>();
 
-      int numDocs = r.nextInt(100*_TestUtil.getRandomMultiplier());
+      int numDocs = _TestUtil.nextInt(r, 1, 100*_TestUtil.getRandomMultiplier());
       Document doc = new Document();
       Field f = new Field("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
       doc.add(f);
