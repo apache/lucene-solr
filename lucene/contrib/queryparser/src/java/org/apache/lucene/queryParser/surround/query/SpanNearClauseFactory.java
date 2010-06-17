@@ -53,15 +53,10 @@ Operations:
  */
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Iterator;
-
+import java.util.HashMap;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
@@ -86,17 +81,6 @@ public class SpanNearClauseFactory {
   public String getFieldName() {return fieldName;}
 
   public BasicQueryFactory getBasicQueryFactory() {return qf;}
-  
-  public TermsEnum getTermsEnum(String termText) throws IOException {
-    Terms terms = MultiFields.getTerms(getIndexReader(), getFieldName());
-    if (terms != null) {
-      TermsEnum termsEnum = terms.iterator();
-      termsEnum.seek(new BytesRef(termText));
-      return termsEnum;
-    } else {
-      return null;
-    }
-  }
   
   public int size() {return weightBySpanQuery.size();}
   
