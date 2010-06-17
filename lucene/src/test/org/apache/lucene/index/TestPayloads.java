@@ -529,7 +529,8 @@ public class TestPayloads extends LuceneTestCase {
             int freq = tp.freq();
             for (int i = 0; i < freq; i++) {
               tp.nextPosition();
-              assertEquals(tp.getPayload().utf8ToString(), termText);
+              final BytesRef payload = tp.getPayload();
+              assertEquals(termText, pool.bytesToString(payload.bytes, payload.offset, payload.length));
             }
           }
         }
@@ -551,7 +552,7 @@ public class TestPayloads extends LuceneTestCase {
             this.pool = pool;
             payload = pool.get();
             generateRandomData(payload);
-            term = pool.bytesToString(payload);
+            term = pool.bytesToString(payload, 0, payload.length);
             first = true;
             payloadAtt = addAttribute(PayloadAttribute.class);
             termAtt = addAttribute(CharTermAttribute.class);
@@ -584,10 +585,9 @@ public class TestPayloads extends LuceneTestCase {
             }
         }
         
-        private BytesRef utf8Result = new BytesRef(10);
-
-        synchronized String bytesToString(byte[] bytes) {
-            String s = new String(bytes);
+        static String bytesToString(byte[] bytes, int start, int length) {
+            String s = new String(bytes, start, length);
+            BytesRef utf8Result = new BytesRef(10);
             UnicodeUtil.UTF16toUTF8(s, 0, s.length(), utf8Result);
             try {
                 return new String(utf8Result.bytes, 0, utf8Result.length, "UTF-8");
