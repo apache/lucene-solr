@@ -176,28 +176,28 @@
     <mkdir dir="${lucene-libs}"/>
     <copy todir="${lucene-libs}" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
       <fileset dir="../lucene/build/">
-        <include name="lucene-core-${lucene_version}.jar" />
+        <include name="lucene-core-${version}.jar" />
       </fileset>
       <fileset dir="../modules/analysis/build/common">
-        <include name="lucene-analyzers-common-${lucene_version}.jar" />
+        <include name="lucene-analyzers-common-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/highlighter">
-        <include name="lucene-highlighter-${lucene_version}.jar" />
+        <include name="lucene-highlighter-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/memory">
-        <include name="lucene-memory-${lucene_version}.jar" />
+        <include name="lucene-memory-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/misc">
-        <include name="lucene-misc-${lucene_version}.jar" />
+        <include name="lucene-misc-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/queries">
-        <include name="lucene-queries-${lucene_version}.jar" />
+        <include name="lucene-queries-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/spatial">
-        <include name="lucene-spatial-${lucene_version}.jar" />
+        <include name="lucene-spatial-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/spellchecker">
-        <include name="lucene-spellchecker-${lucene_version}.jar" />
+        <include name="lucene-spellchecker-${version}.jar" />
       </fileset>
       </copy>
   </target>  
