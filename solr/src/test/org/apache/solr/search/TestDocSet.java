@@ -108,7 +108,7 @@ public class TestDocSet extends TestCase {
   }
 
   public void checkEqual(OpenBitSet bs, DocSet set) {
-    for (int i=0; i<bs.capacity(); i++) {
+    for (int i=0; i<set.size(); i++) {
       assertEquals(bs.get(i), set.exists(i));
     }
     assertEquals(bs.cardinality(), set.size());

@@ -140,8 +140,11 @@ public class BitDocSet extends DocSetBase {
     size=-1;
   }
 
+  /** Returns true of the doc exists in the set.
+   *  Should only be called when doc < OpenBitSet.size()
+   */
   public boolean exists(int doc) {
-    return bits.get(doc);
+    return bits.fastGet(doc);
   }
 
   @Override
