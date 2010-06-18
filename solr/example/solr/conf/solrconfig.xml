@@ -55,7 +55,6 @@
        classpath, this is useful for including all jars in a directory.
     -->
   <lib dir="../../contrib/extraction/lib" />
-  <lib dir="../../contrib/velocity/src/main/solr/lib" />
   <!-- When a regex is specified in addition to a directory, only the files in that
        directory which completely match the regex (anchored on both ends)
        will be included.
@@ -509,6 +508,37 @@
         -->
      </lst>
   </requestHandler>
+  
+  <!-- 
+  -->
+  <requestHandler name="/browse" class="solr.SearchHandler">
+     <lst name="defaults">
+       <str name="wt">velocity</str>
+
+       <str name="v.template">browse</str>
+       <str name="v.layout">layout</str>
+       <str name="title">Solritas</str>
+
+       <str name="defType">dismax</str>
+       <str name="q.alt">*:*</str>
+       <str name="rows">10</str>
+       <str name="fl">*,score</str>
+
+       <str name="facet">on</str>
+       <str name="facet.field">cat</str>
+       <str name="facet.field">manu_exact</str>
+       <str name="facet.mincount">1</str>
+       <str name="qf">
+          text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
+       </str>
+       
+       <str name="hl">on</str>
+       <str name="hl.fl">text features name</str>
+       <str name="f.name.hl.fragsize">0</str>
+       <str name="f.name.hl.alternateField">name</str>
+     </lst>
+  </requestHandler>
+  
 
 <!-- Please refer to http://wiki.apache.org/solr/SolrReplication for details on configuring replication -->
 <!-- remove the <lst name="master"> section if this is just a slave -->
@@ -1022,13 +1052,12 @@
     <queryResponseWriter name="ruby" class="solr.RubyResponseWriter"/>
     <queryResponseWriter name="php" class="solr.PHPResponseWriter"/>
     <queryResponseWriter name="phps" class="solr.PHPSerializedResponseWriter"/>
+    <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter"/>
 
       Custom response writers can be declared as needed...
     
     <queryResponseWriter name="custom" class="com.example.MyResponseWriter"/>
   -->
-
-  <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter"/>
 
   <!-- XSLT response writer transforms the XML output by any xslt file found
        in Solr's conf/xslt directory.  Changes to xslt files are checked for

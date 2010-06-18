@@ -1,0 +1,23 @@
+<html>
+  <head>
+    ## An example of using an arbitrary request parameter
+    <title>#param('title')</title>
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+    <script type="text/javascript" src="/solr/admin/jquery-1.2.3.min.js"></script>
+    <link rel="stylesheet" type="text/css" href="/solr/admin/file?file=/velocity/main.css&contentType=text/css"/>
+  </head>
+  <body>
+    <div id="header">
+      #parse("header.vm")
+    </div>
+    
+    <div id="content">
+      $content
+    </div>
+  
+    <div id="footer">
+      #parse("footer.vm")
+    </div>
+
+  </body>
+</html>
