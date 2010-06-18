@@ -26,6 +26,7 @@ import java.lang.management.OperatingSystemMXBean;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -58,6 +59,23 @@ public class SystemInfoHandler extends RequestHandlerBase
 {
   private static Logger log = LoggerFactory.getLogger(SystemInfoHandler.class);
   
+
+  // on some platforms, resolving canonical hostname can cause the thread
+  // to block for several seconds if nameservices aren't available
+  // so resolve this once per handler instance 
+  //(ie: not static, so core reload will refresh)
+  private String hostname = null;
+
+  public SystemInfoHandler() {
+    super();
+    try {
+      InetAddress addr = InetAddress.getLocalHost();
+      hostname = addr.getCanonicalHostName();
+    } catch (UnknownHostException e) {
+      //default to null
+    }
+  }
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
@@ -71,7 +89,7 @@ public class SystemInfoHandler extends RequestHandlerBase
   /**
    * Get system info
    */
-  private static SimpleOrderedMap<Object> getCoreInfo( SolrCore core ) throws Exception 
+  private SimpleOrderedMap<Object> getCoreInfo( SolrCore core ) throws Exception 
   {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
     
@@ -79,8 +97,7 @@ public class SystemInfoHandler extends RequestHandlerBase
     info.add( "schema", schema != null ? schema.getSchemaName():"no schema!" );
     
     // Host
-    InetAddress addr = InetAddress.getLocalHost();
-    info.add( "host", addr.getCanonicalHostName() );
+    info.add( "host", hostname );
 
     // Now
     info.add( "now", new Date() );
@@ -90,6 +107,7 @@ public class SystemInfoHandler extends RequestHandlerBase
 
     // Solr Home
     SimpleOrderedMap<Object> dirs = new SimpleOrderedMap<Object>();
+    dirs.add( "cwd" , new File( System.getProperty("user.dir")).getAbsolutePath() );
     dirs.add( "instance", new File( core.getResourceLoader().getInstanceDir() ).getAbsolutePath() );
     dirs.add( "data", new File( core.getDataDir() ).getAbsolutePath() );
     dirs.add( "index", new File( core.getIndexDir() ).getAbsolutePath() );
@@ -193,16 +211,28 @@ public class SystemInfoHandler extends RequestHandlerBase
     Runtime runtime = Runtime.getRuntime();
     jvm.add( "processors", runtime.availableProcessors() );
     
-    long used = runtime.totalMemory() - runtime.freeMemory();
     // not thread safe, but could be thread local
     DecimalFormat df = new DecimalFormat("#.#");
-    double percentUsed = ((double)(used)/(double)runtime.maxMemory())*100;
 
     SimpleOrderedMap<Object> mem = new SimpleOrderedMap<Object>();
-    mem.add("free", humanReadableUnits(runtime.freeMemory(), df));
-    mem.add("total", humanReadableUnits(runtime.totalMemory(), df));
-    mem.add("max", humanReadableUnits(runtime.maxMemory(), df));
-    mem.add("used", humanReadableUnits(used, df) + " (%" + df.format(percentUsed) + ")");
+    SimpleOrderedMap<Object> raw = new SimpleOrderedMap<Object>();
+    long free = runtime.freeMemory();
+    long max = runtime.maxMemory();
+    long total = runtime.totalMemory();
+    long used = total - free;
+    double percentUsed = ((double)(used)/(double)max)*100;
+    raw.add("free",  free );
+    mem.add("free",  humanReadableUnits(free, df));
+    raw.add("total", total );
+    mem.add("total", humanReadableUnits(total, df));
+    raw.add("max",   max );
+    mem.add("max",   humanReadableUnits(max, df));
+    raw.add("used",  used );
+    mem.add("used",  humanReadableUnits(used, df) + 
+            " (%" + df.format(percentUsed) + ")");
+    raw.add("used%", percentUsed);
+
+    mem.add("raw", raw);
     jvm.add("memory", mem);
 
     // JMX properties -- probably should be moved to a different handler
@@ -215,11 +245,10 @@ public class SystemInfoHandler extends RequestHandlerBase
       // the input arguments passed to the Java virtual machine
       // which does not include the arguments to the main method.
       jmx.add( "commandLineArgs", mx.getInputArguments());
-      // a map of names and values of all system properties.
-      //jmx.add( "SYSTEM PROPERTIES", mx.getSystemProperties());
 
       jmx.add( "startTime", new Date(mx.getStartTime()));
       jmx.add( "upTimeMS",  mx.getUptime() );
+
     }
     catch (Exception e) {
       log.warn("Error getting JMX properties", e);
@@ -231,46 +260,17 @@ public class SystemInfoHandler extends RequestHandlerBase
   private static SimpleOrderedMap<Object> getLuceneInfo() throws Exception 
   {
     SimpleOrderedMap<Object> info = new SimpleOrderedMap<Object>();
-    
-    String solrImplVersion = "";
-    String solrSpecVersion = "";
-    String luceneImplVersion = "";
-    String luceneSpecVersion = "";
 
-    // ---
     Package p = SolrCore.class.getPackage();
-    StringWriter tmp = new StringWriter();
-    solrImplVersion = p.getImplementationVersion();
-    if (null != solrImplVersion) {
-      XML.escapeCharData(solrImplVersion, tmp);
-      solrImplVersion = tmp.toString();
-    }
-    tmp = new StringWriter();
-    solrSpecVersion = p.getSpecificationVersion() ;
-    if (null != solrSpecVersion) {
-      XML.escapeCharData(solrSpecVersion, tmp);
-      solrSpecVersion = tmp.toString();
-    }
+
+    info.add( "solr-spec-version", p.getSpecificationVersion() );
+    info.add( "solr-impl-version", p.getImplementationVersion() );
   
     p = LucenePackage.class.getPackage();
-    tmp = new StringWriter();
-    luceneImplVersion = p.getImplementationVersion();
-    if (null != luceneImplVersion) {
-      XML.escapeCharData(luceneImplVersion, tmp);
-      luceneImplVersion = tmp.toString();
-    }
-    tmp = new StringWriter();
-    luceneSpecVersion = p.getSpecificationVersion() ;
-    if (null != luceneSpecVersion) {
-      XML.escapeCharData(luceneSpecVersion, tmp);
-      luceneSpecVersion = tmp.toString();
-    }
-    
-    // Add it to the list
-    info.add( "solr-spec-version",   solrSpecVersion   );
-    info.add( "solr-impl-version",   solrImplVersion   );
-    info.add( "lucene-spec-version", luceneSpecVersion );
-    info.add( "lucene-impl-version", luceneImplVersion );
+
+    info.add( "lucene-spec-version", p.getSpecificationVersion() );
+    info.add( "lucene-impl-version", p.getImplementationVersion() );
+
     return info;
   }
   

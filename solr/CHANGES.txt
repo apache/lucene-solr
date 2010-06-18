@@ -435,6 +435,9 @@ Other Changes
   ExtendedDismaxQParser has been changed to be determined based on the
   effective value of the 'q.op' param (hossman)
 
+* SOLR-1946: Misc improvements to the SystemInfoHandler: /admin/system
+  (hossman)
+
 Build
 ----------------------
 
