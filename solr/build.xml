@@ -682,7 +682,8 @@
     <echo>See ${example}/README.txt for how to run the Solr example configuration.</echo>
   </target>
 	
-  <target name="run-example" depends="example">
+  <target name="run-example" depends="example"
+          description="Run Solr interactively, via Jetty.  -Dexample.debug=true to enable JVM debugger">
     <property name="example.solr.home" location="example/solr"/>
     <property name="example.data.dir" location="example/solr/data"/>
     <property name="example.debug.suspend" value="n"/>
