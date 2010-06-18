@@ -513,30 +513,44 @@
   -->
   <requestHandler name="/browse" class="solr.SearchHandler">
      <lst name="defaults">
-       <str name="wt">velocity</str>
 
+       <!-- VelocityResponseWriter settings -->
+       <str name="wt">velocity</str>
        <str name="v.template">browse</str>
        <str name="v.layout">layout</str>
        <str name="title">Solritas</str>
 
+       <!-- Query settings -->
        <str name="defType">dismax</str>
+       <str name="qf">
+          text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
+       </str>
        <str name="q.alt">*:*</str>
        <str name="rows">10</str>
        <str name="fl">*,score</str>
 
+       <!-- Faceting defaults -->
        <str name="facet">on</str>
        <str name="facet.field">cat</str>
        <str name="facet.field">manu_exact</str>
        <str name="facet.mincount">1</str>
-       <str name="qf">
-          text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
-       </str>
-       
+
+       <!-- Highlighting defaults -->
        <str name="hl">on</str>
        <str name="hl.fl">text features name</str>
        <str name="f.name.hl.fragsize">0</str>
        <str name="f.name.hl.alternateField">name</str>
+
+       <!-- Spell checking defaults -->
+       <str name="spellcheck">on</str>
+       <str name="spellcheck.collate">true</str>
+       <str name="spellcheck.onlyMorePopular">false</str>
+       <str name="spellcheck.extendedResults">false</str>
+       <str name="spellcheck.count">3</str>
      </lst>
+     <arr name="last-components">
+       <str>spellcheck</str>
+     </arr>
   </requestHandler>
   
 
@@ -694,6 +708,7 @@
       <str name="name">default</str>
       <str name="field">name</str>
       <str name="spellcheckIndexDir">./spellchecker</str>
+      <str name="buildOnCommit">true</str>
     </lst>
 
     <!-- a spellchecker that uses a different distance measure
