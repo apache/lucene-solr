@@ -4,7 +4,8 @@
 
 <div class="query-box">
   <form id="query-form" action="#{url_for_home}#fqs($request.params.getParams('fq'))" method="GET">
-    <a href="#url_for_home#if($request.params.get('debugQuery'))?debugQuery=true#end">Find</a>: <input type="text" name="q" value="$!esc.html($params.get('q'))"/>
+    <a href="#url_for_home#if($request.params.get('debugQuery'))?debugQuery=true#end">Find</a>:
+    <input type="text" id="q" name="q" value="$!esc.html($params.get('q'))"/>
     #if($request.params.get('debugQuery'))
       <input type="hidden" name="debugQuery" value="true"/>
     #end
@@ -24,7 +25,7 @@
   </script>
 </div>
 
-#if($response.response.spellcheck.suggestions.size() > 0)
+#if($response.response.spellcheck.suggestions and $response.response.spellcheck.suggestions.size() > 0)
   Did you mean <a href="#url_for_home?q=$esc.url($response.response.spellcheck.suggestions.collation)#if($list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end#debug">$response.response.spellcheck.suggestions.collation</a>?
 #end
 
