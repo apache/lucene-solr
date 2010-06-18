@@ -62,7 +62,7 @@
     <echo message="Use 'ant dist' to build the project WAR and JAR files." />
     <echo message="Use 'ant generate-maven-artifacts' to generate maven artifacts." />
     <echo message="Use 'ant package' to generate zip, tgz, and maven artifacts for distribution." />
-    <echo message="Use 'ant luke' to start luke.  see: http://www.getopt.org/luke/" />
+    <echo message="Use 'ant luke' to start luke.  see: http://luke.googlecode.com" />
     <echo message="Use 'ant test' to run unit tests." />
   </target>
 
