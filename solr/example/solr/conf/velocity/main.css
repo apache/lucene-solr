@@ -53,6 +53,7 @@ body {
 
 #logo {
   margin: 10px;
+  border-style: none; 
 }
 
 .query-box, .constraints {
@@ -67,7 +68,7 @@ body {
 
 .query-box input {
   margin-left: 8px;
-  width: 85%;
+  width: 60%;
 }
 
 .pagination {
