@@ -582,20 +582,43 @@ public class SimpleFacets {
             // TODO: do this per-segment for better efficiency (MultiDocsEnum just uses base class impl)
             // TODO: would passing deleted docs lead to better efficiency over checking the fastForRandomSet?
             docsEnum = termsEnum.docs(null, docsEnum);
-
-            // this should be the same bulk result object if sharing of the docsEnum succeeded
-            DocsEnum.BulkReadResult bulk = docsEnum.getBulkResult();
-
             c=0;
-            for (;;) {
-              int nDocs = docsEnum.read();
-              if (nDocs == 0) break;
-              int[] docArr = bulk.docs.ints;  // this might be movable outside the loop, but perhaps not worth the risk.
-              int end = bulk.docs.offset + nDocs;
-              for (int i=bulk.docs.offset; i<end; i++) {
-                if (fastForRandomSet.exists(docArr[i])) c++;
+
+            if (docsEnum instanceof MultiDocsEnum) {
+              MultiDocsEnum.EnumWithSlice[] subs = ((MultiDocsEnum)docsEnum).getSubs();
+              int numSubs = ((MultiDocsEnum)docsEnum).getNumSubs();
+              for (int subindex = 0; subindex<numSubs; subindex++) {
+                MultiDocsEnum.EnumWithSlice sub = subs[subindex];
+                if (sub.docsEnum == null) continue;
+                DocsEnum.BulkReadResult bulk = sub.docsEnum.getBulkResult();
+                int base = sub.slice.start;
+                for (;;) {
+                  int nDocs = sub.docsEnum.read();
+                  if (nDocs == 0) break;
+                  int[] docArr = bulk.docs.ints;  // this might be movable outside the loop, but perhaps not worth the risk.
+                  int end = bulk.docs.offset + nDocs;
+                  for (int i=bulk.docs.offset; i<end; i++) {
+                    if (fastForRandomSet.exists(docArr[i]+base)) c++;
+                  }
+                }
+              }
+            } else {
+
+              // this should be the same bulk result object if sharing of the docsEnum succeeded
+              DocsEnum.BulkReadResult bulk = docsEnum.getBulkResult();
+
+              for (;;) {
+                int nDocs = docsEnum.read();
+                if (nDocs == 0) break;
+                int[] docArr = bulk.docs.ints;  // this might be movable outside the loop, but perhaps not worth the risk.
+                int end = bulk.docs.offset + nDocs;
+                for (int i=bulk.docs.offset; i<end; i++) {
+                  if (fastForRandomSet.exists(docArr[i])) c++;
+                }
               }
             }
+            
+
           }
 
           if (sortByCount) {
