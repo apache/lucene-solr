@@ -11,8 +11,12 @@
 }
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Helvetica, Arial, sans-serif;
   font-size: 10pt;
+}
+
+a {
+  color: #43a4b1;
 }
 
 .constraints-title {
@@ -23,11 +27,33 @@ body {
   float: left;
   margin: 5px;
   margin-top: 0px;
-  background: #FEC293;
-  border: 2px solid #474747;
   width: 185px;
-  padding: 2px;
+  padding: 5px;
+  top: -20px;
+  position: relative;  
 }
+
+.navigators h2 {
+  background: #FEC293;
+  border: 1px solid #ce9d77;
+  padding: 5px;
+}
+
+.navigators ul {
+  list-style: none;
+  margin: 0;
+  margin-bottom: 5px;
+  margin-top: 5px;
+  padding-left: 10px;
+}
+
+.navigators ul li {
+  color: #999;
+  padding: 2px;
+  text-transform: capitalize;
+}
+
+
 
 .facet-field {
   font-weight: bold;
@@ -59,34 +85,52 @@ body {
 .query-box, .constraints {
   padding: 5px;
   margin: 5px;
-  border: 3px solid #474747;
-  color: white;
-  background: #FD9644;
-  font-weight: bold;
-  font-size: 16px;
+  font-weight: normal;
+  font-size: 24px;
+  letter-spacing: 0.08em;
 }
 
 .query-box input {
   margin-left: 8px;
   width: 60%;
+  height: 40px;
+  border: 1px solid #999;
+  font-size: 1em;
+  padding: 0.4em;
+}
+
+.query-box {
+  top: -35px;
+  position: relative;
+}
+
+#logo {
+  top: 35px;
+  position: relative;
+  margin-right: 50px;
 }
 
 .pagination {
   padding-left: 33%;
-  font-weight: bold;
-  background: gray;
-  color: white;
+  background: #eee;
   margin: 5px;
-  margin-left: 200px;
+  margin-left: 210px;
+  padding-top: 5px;
+  padding-bottom: 5px;
 }
 
 .result-document {
-  border: 3px solid #474747;
-  background: #FEC293;
+  border: 1px solid #999;
   padding: 5px;
   margin: 5px;
-  margin-left: 200px;
+  margin-left: 210px;
+  margin-bottom: 15px;
 }
+
+.result-document:nth-child(2n+1) {
+  background-color: #eee;
+}
+
 
 .selected-facet-field {
   font-weight: bold;
