@@ -7,6 +7,10 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.packed.Direct16;
+import org.apache.lucene.util.packed.Direct32;
+import org.apache.lucene.util.packed.Direct8;
+import org.apache.lucene.util.packed.PackedInts;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
@@ -248,21 +252,66 @@ class PerSegmentSingleValuedFaceting {
         DocIdSet idSet = baseSet.getDocIdSet(reader);
         DocIdSetIterator iter = idSet.iterator();
 
-        if (startTermIndex==0 && endTermIndex==si.numOrd()) {
-          // specialized version when collecting counts for all terms
-          int doc;
-          while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-            counts[si.getOrd(doc)]++;
+
+        ////
+        PackedInts.Reader ordReader = si.getDocToOrd();
+        int doc;
+
+        if (ordReader instanceof Direct32) {
+          int[] ords = ((Direct32)ordReader).getArray();
+          if (prefix==null) {
+            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
+              counts[ords[doc]]++;
+            }
+          } else {
+            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
+              int term = ords[doc];
+              int arrIdx = term-startTermIndex;
+              if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+            }
+          }
+        } else if (ordReader instanceof Direct16) {
+          short[] ords = ((Direct16)ordReader).getArray();
+          if (prefix==null) {
+            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
+              counts[ords[doc] & 0xffff]++;
+            }
+          } else {
+            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
+              int term = ords[doc] & 0xffff;
+              int arrIdx = term-startTermIndex;
+              if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+            }
+          }
+        } else if (ordReader instanceof Direct8) {
+          byte[] ords = ((Direct8)ordReader).getArray();
+          if (prefix==null) {
+            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
+              counts[ords[doc] & 0xff]++;
+            }
+          } else {
+            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
+              int term = ords[doc] & 0xff;
+              int arrIdx = term-startTermIndex;
+              if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+            }
           }
         } else {
-          // version that adjusts term numbers because we aren't collecting the full range
-          int doc;
-          while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-            int term = si.getOrd(doc);
-            int arrIdx = term-startTermIndex;
-            if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+          if (prefix==null) {
+            // specialized version when collecting counts for all terms
+            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
+              counts[si.getOrd(doc)]++;
+            }
+          } else {
+            // version that adjusts term numbers because we aren't collecting the full range
+            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
+              int term = si.getOrd(doc);
+              int arrIdx = term-startTermIndex;
+              if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+            }
           }
         }
+
       }
     }
   }
