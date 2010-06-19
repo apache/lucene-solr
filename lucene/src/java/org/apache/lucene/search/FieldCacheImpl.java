@@ -634,7 +634,7 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  private static class DocTermsIndexImpl extends DocTermsIndex {
+  public static class DocTermsIndexImpl extends DocTermsIndex {
     private final PagedBytes.Reader bytes;
     private final PackedInts.Reader termOrdToBytesOffset;
     private final PackedInts.Reader docToTermOrd;
@@ -645,6 +645,11 @@ class FieldCacheImpl implements FieldCache {
       this.docToTermOrd = docToTermOrd;
       this.termOrdToBytesOffset = termOrdToBytesOffset;
       this.numOrd = numOrd;
+    }
+
+    @Override
+    public PackedInts.Reader getDocToOrd() {
+      return docToTermOrd;
     }
 
     @Override

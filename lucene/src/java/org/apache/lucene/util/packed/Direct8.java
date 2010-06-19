@@ -25,9 +25,10 @@ import java.util.Arrays;
 
 /**
  * Direct wrapping of 8 bit values to a backing array of bytes.
+ * @lucene.internal
  */
 
-class Direct8 extends PackedInts.ReaderImpl
+public class Direct8 extends PackedInts.ReaderImpl
         implements PackedInts.Mutable {
   private byte[] values;
   private static final int BITS_PER_VALUE = 8;
@@ -66,6 +67,10 @@ class Direct8 extends PackedInts.ReaderImpl
   public Direct8(byte[] values) {
     super(values.length, BITS_PER_VALUE);
     this.values = values;
+  }
+
+  public byte[] getArray() {
+    return values;
   }
 
   public long get(final int index) {

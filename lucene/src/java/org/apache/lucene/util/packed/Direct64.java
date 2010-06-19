@@ -25,9 +25,10 @@ import java.util.Arrays;
 
 /**
  * Direct wrapping of 32 bit values to a backing array of ints.
+ * @lucene.internal
  */
 
-class Direct64 extends PackedInts.ReaderImpl
+public class Direct64 extends PackedInts.ReaderImpl
         implements PackedInts.Mutable {
   private long[] values;
   private static final int BITS_PER_VALUE = 64;
@@ -47,6 +48,9 @@ class Direct64 extends PackedInts.ReaderImpl
     this.values = values;
   }
 
+  public long[] getArray() {
+    return values;
+  }
 
   /**
    * Creates an array backed by the given values.

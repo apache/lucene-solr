@@ -24,6 +24,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.document.NumericField; // for javadocs
 import org.apache.lucene.analysis.NumericTokenStream; // for javadocs
+import org.apache.lucene.util.packed.PackedInts;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -534,6 +535,9 @@ public interface FieldCache {
 
     /** Returns a TermsEnum that can iterate over the values in this index entry */
     public abstract TermsEnum getTermsEnum();
+
+    /** @lucene.internal */
+    public abstract PackedInts.Reader getDocToOrd();
   }
 
   /** Checks the internal cache for an appropriate entry, and if none
