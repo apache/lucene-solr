@@ -21,6 +21,10 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.packed.Direct16;
+import org.apache.lucene.util.packed.Direct32;
+import org.apache.lucene.util.packed.Direct8;
+import org.apache.lucene.util.packed.PackedInts;
 import org.apache.noggit.CharArr;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
@@ -400,7 +404,7 @@ public class SimpleFacets {
       assert endTermIndex < 0;
       endTermIndex = -endTermIndex-1;
     } else {
-      startTermIndex=1;
+      startTermIndex=0;
       endTermIndex=si.numOrd();
     }
 
@@ -415,10 +419,53 @@ public class SimpleFacets {
       final int[] counts = new int[nTerms];
 
       DocIterator iter = docs.iterator();
-      while (iter.hasNext()) {
-        int term = si.getOrd(iter.nextDoc());
-        int arrIdx = term-startTermIndex;
-        if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+
+      PackedInts.Reader ordReader = si.getDocToOrd();
+      if (ordReader instanceof Direct32) {
+        int[] ords = ((Direct32)ordReader).getArray();
+        if (prefix==null) {
+          while (iter.hasNext()) {
+            counts[ords[iter.nextDoc()]]++;
+          }
+        } else {
+          while (iter.hasNext()) {
+            int term = ords[iter.nextDoc()];
+            int arrIdx = term-startTermIndex;
+            if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+          }
+        }
+      } else if (ordReader instanceof Direct16) {
+        short[] ords = ((Direct16)ordReader).getArray();
+        if (prefix==null) {
+          while (iter.hasNext()) {
+            counts[ords[iter.nextDoc()] & 0xffff]++;
+          }
+        } else {
+          while (iter.hasNext()) {
+            int term = ords[iter.nextDoc()] & 0xffff;
+            int arrIdx = term-startTermIndex;
+            if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+          }
+        }
+      } else if (ordReader instanceof Direct8) {
+        byte[] ords = ((Direct8)ordReader).getArray();
+        if (prefix==null) {
+          while (iter.hasNext()) {
+            counts[ords[iter.nextDoc()] & 0xff]++;
+          }
+        } else {
+          while (iter.hasNext()) {
+            int term = ords[iter.nextDoc()] & 0xff;
+            int arrIdx = term-startTermIndex;
+            if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+          }
+        }
+      } else {
+        while (iter.hasNext()) {
+          int term = si.getOrd(iter.nextDoc());
+          int arrIdx = term-startTermIndex;
+          if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+        }
       }
 
       // IDEA: we could also maintain a count of "other"... everything that fell outside
@@ -432,7 +479,7 @@ public class SimpleFacets {
         maxsize = Math.min(maxsize, nTerms);
         final BoundedTreeSet<CountPair<BytesRef,Integer>> queue = new BoundedTreeSet<CountPair<BytesRef,Integer>>(maxsize);
         int min=mincount-1;  // the smallest value in the top 'N' values
-        for (int i=0; i<nTerms; i++) {
+        for (int i=(startTermIndex==0)?1:0; i<nTerms; i++) {
           int c = counts[i];
           if (c>min) {
             // NOTE: we use c>min rather than c>=min as an optimization because we are going in
@@ -452,11 +499,11 @@ public class SimpleFacets {
         }
       } else {
         // add results in index order
-        int i=0;
+        int i=(startTermIndex==0)?1:0;
         if (mincount<=0) {
           // if mincount<=0, then we won't discard any terms and we know exactly
           // where to start.
-          i=off;
+          i+=off;
           off=0;
         }
 
