@@ -3,12 +3,15 @@
 #set($clusters = $response.response.clusters)
 
 <div class="query-box">
-  <form id="query-form" action="#{url_for_home}#fqs($request.params.getParams('fq'))" method="GET">
+  <form id="query-form" action="#{url_for_home}" method="GET">
   <a href="#url_for_home#if($request.params.get('debugQuery'))?debugQuery=true#end"><img src="#{url_for_solr}/admin/solr_small.png" id="logo"/></a>
   
     Find: <input type="text" id="q" name="q" value="$!esc.html($params.get('q'))"/>
     #if($request.params.get('debugQuery'))
       <input type="hidden" name="debugQuery" value="true"/>
+    #end
+    #foreach($fq in $request.params.getParams('fq'))
+      <input type="hidden" name="fq" value="$esc.html($fq)"/>
     #end
     <div>
       #foreach($fq in $params.getParams('fq'))
@@ -21,9 +24,6 @@
         <pre style="display:none">$response.response.debug.parsedquery</pre>
       #end    
   </form>
-  <script language="text/javascript">
-    $("input[type=text]").autoSuggest("/solr/suggest", {selectedItemProp: "name", searchObjProps: "name"}});
-  </script>
 </div>
 
 #if($response.response.spellcheck.suggestions and $response.response.spellcheck.suggestions.size() > 0)
