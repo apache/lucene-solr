@@ -42,7 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * StreamingHttpSolrServer buffers all added documents and writes them
+ * {@link StreamingUpdateSolrServer} buffers all added documents and writes them
  * into open HTTP connections. This class is thread safe.
  * 
  * Although any SolrServer request can be made with this implementation, 
