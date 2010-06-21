@@ -17,8 +17,17 @@ package org.apache.lucene.util.automaton;
  * limitations under the License.
  */
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IdentityHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 
@@ -64,5 +73,144 @@ public class AutomatonTestUtil {
       else if (10 == t) buffer[i] = ')';
     }
     return new String(buffer, 0, end);
+  }
+  
+  // picks a random int code point that this transition
+  // accepts, avoiding the surrogates range since they are
+  // "defined" in UTF32.  Don't call this on a transition
+  // that only accepts UTF16 surrogate values!!
+  private static int getRandomCodePoint(final Random r, final Transition t) {
+    return t.min+r.nextInt(t.max-t.min+1);
+  }
+
+  public static class RandomAcceptedStrings {
+
+    private final Map<Transition,Boolean> leadsToAccept;
+    private final Automaton a;
+
+    private static class ArrivingTransition {
+      final State from;
+      final Transition t;
+      public ArrivingTransition(State from, Transition t) {
+        this.from = from;
+        this.t = t;
+      }
+    }
+
+    public RandomAcceptedStrings(Automaton a) {
+      this.a = a;
+      if (a.isSingleton()) {
+        leadsToAccept = null;
+        return;
+      }
+
+      // must use IdentityHashmap because two Transitions w/
+      // different start nodes can be considered the same
+      leadsToAccept = new IdentityHashMap<Transition,Boolean>();
+      final Map<State,List<ArrivingTransition>> allArriving = new HashMap<State,List<ArrivingTransition>>();
+
+      final LinkedList<State> q = new LinkedList<State>();
+      final Set<State> seen = new HashSet<State>();
+
+      // reverse map the transitions, so we can quickly look
+      // up all arriving transitions to a given state
+      for(State s: a.getNumberedStates()) {
+        for(int i=0;i<s.numTransitions;i++) {
+          final Transition t = s.transitionsArray[i];
+          List<ArrivingTransition> tl = allArriving.get(t.to);
+          if (tl == null) {
+            tl = new ArrayList<ArrivingTransition>();
+            allArriving.put(t.to, tl);
+          }
+          tl.add(new ArrivingTransition(s, t));
+        }
+        if (s.accept) {
+          q.add(s);
+          seen.add(s);
+        }
+      }
+
+      // Breadth-first search, from accept states,
+      // backwards:
+      while(!q.isEmpty()) {
+        final State s = q.removeFirst();
+        List<ArrivingTransition> arriving = allArriving.get(s);
+        if (arriving != null) {
+          for(ArrivingTransition at : arriving) {
+            final State from = at.from;
+            if (!seen.contains(from)) {
+              q.add(from);
+              seen.add(from);
+              leadsToAccept.put(at.t, Boolean.TRUE);
+            }
+          }
+        }
+      }
+    }
+
+    public int[] getRandomAcceptedString(Random r) {
+
+      final List<Integer> soFar = new ArrayList<Integer>();
+      if (a.isSingleton()) {
+        // accepts only one
+        final String s = a.singleton;
+      
+        int charUpto = 0;
+        while(charUpto < s.length()) {
+          final int cp = s.codePointAt(charUpto);
+          charUpto += Character.charCount(cp);
+          soFar.add(cp);
+        }
+      } else {
+
+        State s = a.initial;
+
+        while(true) {
+      
+          if (s.accept) {
+            if (s.numTransitions == 0) {
+              // stop now
+              break;
+            } else {
+              if (r.nextBoolean()) {
+                break;
+              }
+            }
+          }
+
+          if (s.numTransitions == 0) {
+            throw new RuntimeException("this automaton has dead states");
+          }
+
+          boolean cheat = r.nextBoolean();
+
+          final Transition t;
+          if (cheat) {
+            // pick a transition that we know is the fastest
+            // path to an accept state
+            List<Transition> toAccept = new ArrayList<Transition>();
+            for(int i=0;i<s.numTransitions;i++) {
+              final Transition t0 = s.transitionsArray[i];
+              if (leadsToAccept.containsKey(t0)) {
+                toAccept.add(t0);
+              }
+            }
+            if (toAccept.size() == 0) {
+              // this is OK -- it means we jumped into a cycle
+              t = s.transitionsArray[r.nextInt(s.numTransitions)];
+            } else {
+              t = toAccept.get(r.nextInt(toAccept.size()));
+            }
+          } else {
+            t = s.transitionsArray[r.nextInt(s.numTransitions)];
+          }
+          
+          soFar.add(getRandomCodePoint(r, t));
+          s = t.to;
+        }
+      }
+
+      return ArrayUtil.toIntArray(soFar);
+    }
   }
 }
