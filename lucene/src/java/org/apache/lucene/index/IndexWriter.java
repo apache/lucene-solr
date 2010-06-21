@@ -2841,7 +2841,7 @@ public class IndexWriter implements Closeable {
    * starting index (see {@link #optimize()} for details).
    *
    * <p>
-   * <b>NOTE:</b> this method only copies the segments of the incomning indexes
+   * <b>NOTE:</b> this method only copies the segments of the incoming indexes
    * and does not merge them. Therefore deleted documents are not removed and
    * the new segments are not merged with the existing ones. Also, the segments 
    * are copied as-is, meaning they are not converted to CFS if they aren't, 
