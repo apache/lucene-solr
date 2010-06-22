@@ -59,16 +59,21 @@ public class StandardTermsDictWriter extends FieldsConsumer {
   final StandardPostingsWriter postingsWriter;
   final FieldInfos fieldInfos;
   FieldInfo currentField;
-  private final StandardTermsIndexWriter indexWriter;
+  private final StandardTermsIndexWriter termsIndexWriter;
   private final List<TermsConsumer> fields = new ArrayList<TermsConsumer>();
   private final Comparator<BytesRef> termComp;
 
-  public StandardTermsDictWriter(StandardTermsIndexWriter indexWriter, SegmentWriteState state, StandardPostingsWriter postingsWriter, Comparator<BytesRef> termComp) throws IOException {
+  public StandardTermsDictWriter(
+      StandardTermsIndexWriter termsIndexWriter,
+      SegmentWriteState state,
+      StandardPostingsWriter postingsWriter,
+      Comparator<BytesRef> termComp) throws IOException
+  {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentName, "", StandardCodec.TERMS_EXTENSION);
-    this.indexWriter = indexWriter;
+    this.termsIndexWriter = termsIndexWriter;
     this.termComp = termComp;
     out = state.directory.createOutput(termsFileName);
-    indexWriter.setTermsOutput(out);
+    termsIndexWriter.setTermsOutput(out);
     state.flushedFiles.add(termsFileName);
 
     fieldInfos = state.fieldInfos;
@@ -89,7 +94,7 @@ public class StandardTermsDictWriter extends FieldsConsumer {
   public TermsConsumer addField(FieldInfo field) {
     assert currentField == null || currentField.name.compareTo(field.name) < 0;
     currentField = field;
-    StandardTermsIndexWriter.FieldWriter fieldIndexWriter = indexWriter.addField(field);
+    StandardTermsIndexWriter.FieldWriter fieldIndexWriter = termsIndexWriter.addField(field);
     TermsConsumer terms = new TermsWriter(fieldIndexWriter, field, postingsWriter);
     fields.add(terms);
     return terms;
@@ -119,7 +124,7 @@ public class StandardTermsDictWriter extends FieldsConsumer {
         try {
           postingsWriter.close();
         } finally {
-          indexWriter.close();
+          termsIndexWriter.close();
         }
       }
     }
@@ -132,7 +137,11 @@ public class StandardTermsDictWriter extends FieldsConsumer {
     private long numTerms;
     private final StandardTermsIndexWriter.FieldWriter fieldIndexWriter;
 
-    TermsWriter(StandardTermsIndexWriter.FieldWriter fieldIndexWriter, FieldInfo fieldInfo, StandardPostingsWriter postingsWriter) {
+    TermsWriter(
+        StandardTermsIndexWriter.FieldWriter fieldIndexWriter,
+        FieldInfo fieldInfo,
+        StandardPostingsWriter postingsWriter) 
+    {
       this.fieldInfo = fieldInfo;
       this.fieldIndexWriter = fieldIndexWriter;
 
