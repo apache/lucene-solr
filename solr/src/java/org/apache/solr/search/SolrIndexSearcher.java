@@ -21,6 +21,7 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
@@ -565,6 +566,18 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     return answer;
   }
 
+    // only handle positive (non negative) queries
+  /** @lucene.internal */
+  public DocSet getPositiveDocSet(Query q, TermDocsState tdState) throws IOException {
+    DocSet answer;
+    if (filterCache != null) {
+      answer = (DocSet)filterCache.get(q);
+      if (answer!=null) return answer;
+    }
+    answer = getDocSetNC(q, null, tdState);
+    if (filterCache != null) filterCache.put(q,answer);
+    return answer;
+  }
 
   private static Query matchAllDocsQuery = new MatchAllDocsQuery();
 
@@ -657,6 +670,56 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       super.search(query, luceneFilter, collector);
       return collector.getDocSet();
     }
+  }
+
+  /** @lucene.internal */
+  public static class TermDocsState {
+    public TermEnum tenum;
+    public TermDocs tdocs;
+  }
+
+  // query must be positive
+  protected DocSet getDocSetNC(Query query, DocSet filter, TermDocsState tdState) throws IOException {
+    int smallSetSize = maxDoc()>>6;
+    int largestPossible = tdState.tenum.docFreq();
+    int[] docs = new int[Math.min(smallSetSize, largestPossible)];
+    OpenBitSet obs = null;
+    int upto=0;
+    int numBits = 0;
+
+    if (tdState.tdocs == null) {
+      tdState.tdocs = reader.termDocs();
+    }
+
+    tdState.tdocs.seek(tdState.tenum);
+
+    int[] arr = new int[Math.min(largestPossible, 256)];
+    int[] freq = new int[arr.length];
+
+    for(;;) {
+      int num = tdState.tdocs.read(arr, freq);
+      if (num==0) break;
+      if (upto + num > docs.length) {
+        if (obs == null) obs = new OpenBitSet(maxDoc());
+        for (int i = 0; i<num; i++) {
+          obs.fastSet(arr[i]);
+        }
+        numBits += num;
+      } else {
+        System.arraycopy(arr, 0, docs, upto, num);
+        upto += num;
+      }
+    }
+
+    if (obs != null) {
+      for (int i=0; i<upto; i++) {
+        obs.fastSet(docs[i]);
+      }
+      numBits += upto;
+      return new BitDocSet(obs, numBits);
+    }
+
+    return new SortedIntDocSet(docs, upto);
   }
 
 

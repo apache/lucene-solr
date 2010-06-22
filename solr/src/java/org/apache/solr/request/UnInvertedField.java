@@ -193,6 +193,10 @@ public class UnInvertedField {
 
     NumberedTermEnum te = ti.getEnumerator(reader);
 
+    SolrIndexSearcher.TermDocsState tdState = new SolrIndexSearcher.TermDocsState();
+    tdState.tenum = te.tenum;
+    tdState.tdocs = te.termDocs;
+
     // threshold, over which we use set intersections instead of counting
     // to (1) save memory, and (2) speed up faceting.
     // Add 2 for testing purposes so that there will always be some terms under
@@ -243,7 +247,7 @@ public class UnInvertedField {
         topTerm.termNum = termNum;
         bigTerms.put(topTerm.termNum, topTerm);
 
-        DocSet set = searcher.getDocSet(new TermQuery(topTerm.term));
+        DocSet set = searcher.getPositiveDocSet(new TermQuery(topTerm.term), tdState);
         maxTermCounts[termNum] = set.size();
 
         te.next();

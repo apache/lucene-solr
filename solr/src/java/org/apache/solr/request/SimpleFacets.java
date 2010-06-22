@@ -471,6 +471,9 @@ public class SimpleFacets {
     String startTerm = prefix==null ? "" : ft.toInternal(prefix);
     TermEnum te = r.terms(new Term(field,startTerm));
     TermDocs td = r.termDocs();
+    SolrIndexSearcher.TermDocsState tdState = new SolrIndexSearcher.TermDocsState();
+    tdState.tenum = te;
+    tdState.tdocs = td;
 
     if (docs.size() >= mincount) { 
     do {
@@ -491,7 +494,7 @@ public class SimpleFacets {
 
         if (df >= minDfFilterCache) {
           // use the filter cache
-          c = searcher.numDocs(new TermQuery(t), docs);
+          c = docs.intersectionSize( searcher.getPositiveDocSet(new TermQuery(t), tdState) );
         } else {
           // iterate over TermDocs to calculate the intersection
           td.seek(te);
