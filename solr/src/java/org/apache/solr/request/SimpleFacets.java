@@ -577,7 +577,7 @@ public class SimpleFacets {
     Fields fields = MultiFields.getFields(r);
     Terms terms = fields==null ? null : fields.terms(field);
     TermsEnum termsEnum = null;
-
+    SolrIndexSearcher.DocsEnumState deState = null;
     BytesRef term = null;
     if (terms != null) {
       termsEnum = terms.iterator();
@@ -621,7 +621,17 @@ public class SimpleFacets {
             spare.reset();
             ByteUtils.UTF8toUTF16(term, spare);
             Term t = template.createTerm(spare.toString());
-            c = searcher.numDocs(new TermQuery(t), docs);
+
+            if (deState==null) {
+              deState = new SolrIndexSearcher.DocsEnumState();
+              deState.deletedDocs = MultiFields.getDeletedDocs(r);
+              deState.termsEnum = termsEnum;
+              deState.reuse = docsEnum;
+            }
+
+            c = searcher.numDocs(new TermQuery(t), docs, deState);
+
+            docsEnum = deState.reuse;
           } else {
             // iterate over TermDocs to calculate the intersection
 

@@ -209,6 +209,11 @@ Optimizations
   JMX.  The default root name is "solr" followed by the core name.
   (Constantijn Visinescu, hossman)
 
+* SOLR-1968: speed up initial filter cache population for facet.method=enum and
+  also big terms for multi-valued facet.method=fc.  The resulting speedup
+  for the first facet request is anywhere from 30% to 32x, depending on how many
+  terms are in the field and how many documents match per term.  (yonik) 
+
 Bug Fixes
 ----------------------
 

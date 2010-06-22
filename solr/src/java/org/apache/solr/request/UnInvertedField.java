@@ -228,6 +228,8 @@ public class UnInvertedField {
     // values.  This requires going over the field first to find the most
     // frequent terms ahead of time.
 
+    SolrIndexSearcher.DocsEnumState deState = null;
+
     for (;;) {
       BytesRef t = te.term();
       if (t==null) break;
@@ -249,7 +251,14 @@ public class UnInvertedField {
         topTerm.termNum = termNum;
         bigTerms.put(topTerm.termNum, topTerm);
 
-        DocSet set = searcher.getDocSet(new TermQuery(new Term(ti.field, topTerm.term.utf8ToString())));
+        if (deState == null) {
+          deState = new SolrIndexSearcher.DocsEnumState();
+          deState.termsEnum = te.tenum;
+          deState.reuse = te.docsEnum;
+        }
+        DocSet set = searcher.getDocSet(new TermQuery(new Term(ti.field, topTerm.term.utf8ToString())), deState);
+        te.docsEnum = deState.reuse;
+
         maxTermCounts[termNum] = set.size();
 
         te.next();
@@ -258,12 +267,12 @@ public class UnInvertedField {
 
       termsInverted++;
 
-      DocsEnum td = te.getDocsEnum();
+      DocsEnum docsEnum = te.getDocsEnum();
 
-      DocsEnum.BulkReadResult bulkResult = td.getBulkResult();
+      DocsEnum.BulkReadResult bulkResult = docsEnum.getBulkResult();
 
       for(;;) {
-        int n = td.read();
+        int n = docsEnum.read();
         if (n <= 0) break;
 
         maxTermCounts[termNum] += n;
@@ -889,6 +898,7 @@ class NumberedTermsEnum extends TermsEnum {
   protected int pos=-1;
   protected BytesRef termText;
   protected DocsEnum docsEnum;
+  protected Bits deletedDocs;
 
 
   NumberedTermsEnum(IndexReader reader, TermIndex tindex) throws IOException {
@@ -902,6 +912,7 @@ class NumberedTermsEnum extends TermsEnum {
     this.tindex = tindex;
     this.pos = pos;
     Terms terms = MultiFields.getTerms(reader, tindex.field);
+    deletedDocs = MultiFields.getDeletedDocs(reader);
     if (terms != null) {
       tenum = terms.iterator();
       tenum.seek(termValue);
@@ -915,7 +926,7 @@ class NumberedTermsEnum extends TermsEnum {
   }
 
   public DocsEnum getDocsEnum() throws IOException {
-    docsEnum = tenum.docs(MultiFields.getDeletedDocs(reader), docsEnum);
+    docsEnum = tenum.docs(deletedDocs, docsEnum);
     return docsEnum;
   }
 
