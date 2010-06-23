@@ -17,11 +17,10 @@
 
 package org.apache.solr.analysis;
 
-import org.apache.lucene.analysis.*;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.miscellaneous.CapitalizationFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -29,11 +28,7 @@ import java.util.Map;
 import java.util.StringTokenizer;
 
 /**
- * A filter to apply normal capitalization rules to Tokens.  It will make the first letter
- * capital and the rest lower case.
- * <p/>
- * This filter is particularly useful to build nice looking facet parameters.  This filter
- * is not appropriate if you intend to use a prefix query.
+ * Factory for {@link CapitalizationFilter}.
  * <p/>
  * The factory takes parameters:<br/>
  * "onlyFirstWord" - should each word be capitalized or all of the words?<br/>
@@ -52,7 +47,6 @@ import java.util.StringTokenizer;
  * @since solr 1.3
  */
 public class CapitalizationFilterFactory extends BaseTokenFilterFactory {
-  public static final int DEFAULT_MAX_WORD_COUNT = Integer.MAX_VALUE;
   public static final String KEEP = "keep";
   public static final String KEEP_IGNORE_CASE = "keepIgnoreCase";
   public static final String OK_PREFIX = "okPrefix";
@@ -68,8 +62,8 @@ public class CapitalizationFilterFactory extends BaseTokenFilterFactory {
   Collection<char[]> okPrefix = Collections.emptyList(); // for Example: McK
 
   int minWordLength = 0;  // don't modify capitalization for words shorter then this
-  int maxWordCount = DEFAULT_MAX_WORD_COUNT;
-  int maxTokenLength = DEFAULT_MAX_WORD_COUNT;
+  int maxWordCount = CapitalizationFilter.DEFAULT_MAX_WORD_COUNT;
+  int maxTokenLength = CapitalizationFilter.DEFAULT_MAX_TOKEN_LENGTH;
   boolean onlyFirstWord = true;
   boolean forceFirstLetter = true; // make sure the first letter is capitol even if it is in the keep list
 
@@ -128,116 +122,8 @@ public class CapitalizationFilterFactory extends BaseTokenFilterFactory {
     }
   }
 
-
-  public void processWord(char[] buffer, int offset, int length, int wordCount) {
-    if (length < 1) {
-      return;
-    }
-    if (onlyFirstWord && wordCount > 0) {
-      for (int i = 0; i < length; i++) {
-        buffer[offset + i] = Character.toLowerCase(buffer[offset + i]);
-
-      }
-      return;
-    }
-
-    if (keep != null && keep.contains(buffer, offset, length)) {
-      if (wordCount == 0 && forceFirstLetter) {
-        buffer[offset] = Character.toUpperCase(buffer[offset]);
-      }
-      return;
-    }
-    if (length < minWordLength) {
-      return;
-    }
-    for (char[] prefix : okPrefix) {
-      if (length >= prefix.length) { //don't bother checking if the buffer length is less than the prefix
-        boolean match = true;
-        for (int i = 0; i < prefix.length; i++) {
-          if (prefix[i] != buffer[offset + i]) {
-            match = false;
-            break;
-          }
-        }
-        if (match == true) {
-          return;
-        }
-      }
-    }
-
-    // We know it has at least one character
-    /*char[] chars = w.toCharArray();
-    StringBuilder word = new StringBuilder( w.length() );
-    word.append( Character.toUpperCase( chars[0] ) );*/
-    buffer[offset] = Character.toUpperCase(buffer[offset]);
-
-    for (int i = 1; i < length; i++) {
-      buffer[offset + i] = Character.toLowerCase(buffer[offset + i]);
-    }
-    //return word.toString();
-  }
-
   public CapitalizationFilter create(TokenStream input) {
-    return new CapitalizationFilter(input, this);
+    return new CapitalizationFilter(input, onlyFirstWord, keep, 
+      forceFirstLetter, okPrefix, minWordLength, maxWordCount, maxTokenLength);
   }
 }
-
-
-/**
- * This relies on the Factory so that the difficult stuff does not need to be
- * re-initialized each time the filter runs.
- * <p/>
- * This is package protected since it is not useful without the Factory
- */
-final class CapitalizationFilter extends TokenFilter {
-  private final CapitalizationFilterFactory factory;
-  private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
-
-  public CapitalizationFilter(TokenStream in, final CapitalizationFilterFactory factory) {
-    super(in);
-    this.factory = factory;
-  }
-
-  @Override
-  public boolean incrementToken() throws IOException {
-    if (!input.incrementToken()) return false;
-
-    char[] termBuffer = termAtt.buffer();
-    int termBufferLength = termAtt.length();
-    char[] backup = null;
-    if (factory.maxWordCount < CapitalizationFilterFactory.DEFAULT_MAX_WORD_COUNT) {
-      //make a backup in case we exceed the word count
-      backup = new char[termBufferLength];
-      System.arraycopy(termBuffer, 0, backup, 0, termBufferLength);
-    }
-    if (termBufferLength < factory.maxTokenLength) {
-      int wordCount = 0;
-
-      int lastWordStart = 0;
-      for (int i = 0; i < termBufferLength; i++) {
-        char c = termBuffer[i];
-        if (c <= ' ' || c == '.') {
-          int len = i - lastWordStart;
-          if (len > 0) {
-            factory.processWord(termBuffer, lastWordStart, len, wordCount++);
-            lastWordStart = i + 1;
-            i++;
-          }
-        }
-      }
-
-      // process the last word
-      if (lastWordStart < termBufferLength) {
-        factory.processWord(termBuffer, lastWordStart, termBufferLength - lastWordStart, wordCount++);
-      }
-
-      if (wordCount > factory.maxWordCount) {
-        termAtt.copyBuffer(backup, 0, termBufferLength);
-      }
-    }
-
-    return true;
-  }
-
-}
-

@@ -19,6 +19,7 @@ package org.apache.solr.analysis;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.phonetic.DoubleMetaphoneFilter;
 
 public class DoubleMetaphoneFilterFactory extends BaseTokenFilterFactory 
 {

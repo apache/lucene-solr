@@ -147,6 +147,7 @@
   <path id="lucene.classpath">
     <pathelement location="${common-solr.dir}/../lucene/build/classes/java" />
     <pathelement location="${common-solr.dir}/../modules/analysis/build/common/classes/java" />
+    <pathelement location="${common-solr.dir}/../modules/analysis/build/phonetic/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/highlighter/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/memory/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/misc/classes/java" />
@@ -162,6 +163,7 @@
       </subant>
       <subant target="jar" inheritall="false" failonerror="true">
         <fileset dir="../modules/analysis/common" includes="build.xml" />
+        <fileset dir="../modules/analysis/phonetic" includes="build.xml" />
         <fileset dir="../lucene/contrib/highlighter" includes="build.xml" />
         <fileset dir="../lucene/contrib/memory" includes="build.xml" />
         <fileset dir="../lucene/contrib/misc" includes="build.xml" />
@@ -180,6 +182,9 @@
       </fileset>
       <fileset dir="../modules/analysis/build/common">
         <include name="lucene-analyzers-common-${version}.jar" />
+      </fileset>
+      <fileset dir="../modules/analysis/build/phonetic">
+        <include name="lucene-analyzers-phonetic-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/highlighter">
         <include name="lucene-highlighter-${version}.jar" />
@@ -206,6 +211,7 @@
     <property name="lucene-compiled" value="true"/>
     <subant target="default">
       <fileset dir="../modules/analysis/common" includes="build.xml"/>
+      <fileset dir="../modules/analysis/phonetic" includes="build.xml"/>
       <fileset dir="../lucene/contrib/highlighter" includes="build.xml"/>
       <fileset dir="../lucene/contrib/memory" includes="build.xml"/>
       <fileset dir="../lucene/contrib/misc" includes="build.xml"/>

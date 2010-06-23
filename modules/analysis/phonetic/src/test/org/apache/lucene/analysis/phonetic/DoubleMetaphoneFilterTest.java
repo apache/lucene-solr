@@ -14,52 +14,53 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.phonetic;
 
 import java.io.StringReader;
 
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
-public class DoubleMetaphoneFilterTest extends BaseTokenTestCase {
+public class DoubleMetaphoneFilterTest extends BaseTokenStreamTestCase {
 
   public void testSize4FalseInject() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("international"));
+    TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("international"));
     TokenStream filter = new DoubleMetaphoneFilter(stream, 4, false);
     assertTokenStreamContents(filter, new String[] { "ANTR" });
   }
 
   public void testSize4TrueInject() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("international"));
+    TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("international"));
     TokenStream filter = new DoubleMetaphoneFilter(stream, 4, true);
     assertTokenStreamContents(filter, new String[] { "international", "ANTR" });
   }
 
   public void testAlternateInjectFalse() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("Kuczewski"));
+    TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("Kuczewski"));
     TokenStream filter = new DoubleMetaphoneFilter(stream, 4, false);
     assertTokenStreamContents(filter, new String[] { "KSSK", "KXFS" });
   }
 
   public void testSize8FalseInject() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("international"));
+    TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("international"));
     TokenStream filter = new DoubleMetaphoneFilter(stream, 8, false);
     assertTokenStreamContents(filter, new String[] { "ANTRNXNL" });
   }
 
   public void testNonConvertableStringsWithInject() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("12345 #$%@#^%&"));
+    TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("12345 #$%@#^%&"));
     TokenStream filter = new DoubleMetaphoneFilter(stream, 8, true);
     assertTokenStreamContents(filter, new String[] { "12345", "#$%@#^%&" });
   }
 
   public void testNonConvertableStringsWithoutInject() throws Exception {
-    TokenStream stream = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("12345 #$%@#^%&"));
+    TokenStream stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("12345 #$%@#^%&"));
     TokenStream filter = new DoubleMetaphoneFilter(stream, 8, false);
     assertTokenStreamContents(filter, new String[] { "12345", "#$%@#^%&" });
     
     // should have something after the stream
-    stream = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("12345 #$%@#^%& hello"));
+    stream = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("12345 #$%@#^%& hello"));
     filter = new DoubleMetaphoneFilter(stream, 8, false);
     assertTokenStreamContents(filter, new String[] { "12345", "#$%@#^%&", "HL" });
   }

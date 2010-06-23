@@ -20,7 +20,12 @@ lucene-analyzers-common-XX.jar
 lucene-analyzers-icu-XX.jar
   An add-on analysis library that provides improved Unicode support via
   International Components for Unicode (ICU). Note: this module depends on
-  the ICU4j jar file (version > 4.4.0)
+  the ICU4j jar file (version >= 4.4.0)
+
+lucene-analyzers-phonetic-XX.jar
+  An add-on analysis library that provides phonetic encoders via Apache
+  Commons-Codec. Note: this module depends on the commons-codec jar 
+  file (version >= 1.4)
   
 lucene-analyzers-smartcn-XX.jar
   An add-on analysis library that provides word segmentation for Simplified
@@ -32,12 +37,14 @@ lucene-analyzers-stempel-XX.jar
 
 common/src/java
 icu/src/java
+phonetic/src/java
 smartcn/src/java
 stempel/src/java
-  The source code for the four libraries.
+  The source code for the ffve libraries.
 
 common/src/test
 icu/src/test
+phonetic/src/test
 smartcn/src/test
 stempel/src/test
-  Unit tests for the four libraries.
+  Unit tests for the five libraries.

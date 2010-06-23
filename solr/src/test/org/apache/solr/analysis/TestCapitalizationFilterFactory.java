@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 /**
  * 
  */
-public class TestCapitalizationFilter extends BaseTokenTestCase {
+public class TestCapitalizationFilterFactory extends BaseTokenTestCase {
   
   public void testCapitalization() throws Exception 
   {
@@ -40,74 +40,78 @@ public class TestCapitalizationFilter extends BaseTokenTestCase {
     
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
     factory.init( args );
-    char[] termBuffer;
-    termBuffer = "kiTTEN".toCharArray();
-    factory.processWord(termBuffer, 0, termBuffer.length, 0 );
-    assertEquals( "Kitten",  new String(termBuffer, 0, termBuffer.length));
-
+    assertTokenStreamContents(factory.create(
+        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("kiTTEN"))),
+        new String[] { "Kitten" });
+    
     factory.forceFirstLetter = true;
 
-    termBuffer = "and".toCharArray();
-    factory.processWord(termBuffer, 0, termBuffer.length, 0 );
-    assertEquals( "And",  new String(termBuffer, 0, termBuffer.length));//first is forced
+    assertTokenStreamContents(factory.create(
+        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("and"))),
+        new String[] { "And" });
 
-    termBuffer = "AnD".toCharArray();
-    factory.processWord(termBuffer, 0, termBuffer.length, 0 );
-    assertEquals( "And",  new String(termBuffer, 0, termBuffer.length));//first is forced, but it's not a keep word, either
+    //first is forced, but it's not a keep word, either
+    assertTokenStreamContents(factory.create(
+        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("AnD"))),
+        new String[] { "And" });
 
     factory.forceFirstLetter = false;
-    termBuffer = "AnD".toCharArray();
-    factory.processWord(termBuffer, 0, termBuffer.length, 0 );
-    assertEquals( "And",  new String(termBuffer, 0, termBuffer.length)); //first is not forced, but it's not a keep word, either
+
+    //first is not forced, but it's not a keep word, either
+    assertTokenStreamContents(factory.create(
+        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("AnD"))),
+        new String[] { "And" });
 
     factory.forceFirstLetter = true;
-    termBuffer = "big".toCharArray();
-    factory.processWord(termBuffer, 0, termBuffer.length, 0 );
-    assertEquals( "Big",  new String(termBuffer, 0, termBuffer.length));
-    termBuffer = "BIG".toCharArray();
-    factory.processWord(termBuffer, 0, termBuffer.length, 0 );
-    assertEquals( "BIG",  new String(termBuffer, 0, termBuffer.length));
     
-    Tokenizer tokenizer = new KeywordTokenizer(new StringReader("Hello thEre my Name is Ryan"));
-    TokenStream stream = factory.create(tokenizer);
-    assertTokenStreamContents(stream, new String[] { "Hello there my name is ryan" });
+    assertTokenStreamContents(factory.create(
+        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("big"))),
+        new String[] { "Big" });
     
+    assertTokenStreamContents(factory.create(
+        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("BIG"))),
+        new String[] { "BIG" });
+
+    assertTokenStreamContents(factory.create(
+        new KeywordTokenizer(new StringReader("Hello thEre my Name is Ryan"))),
+        new String[] { "Hello there my name is ryan" });
+        
     // now each token
     factory.onlyFirstWord = false;
-    tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("Hello thEre my Name is Ryan"));
-    stream = factory.create(tokenizer);
-    assertTokenStreamContents(stream, new String[] { "Hello", "There", "My", "Name", "Is", "Ryan" });
+    assertTokenStreamContents(factory.create(
+        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("Hello thEre my Name is Ryan"))),
+        new String[] { "Hello", "There", "My", "Name", "Is", "Ryan" });
     
     // now only the long words
     factory.minWordLength = 3;
-    tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("Hello thEre my Name is Ryan" ));
-    stream = factory.create(tokenizer);
-    assertTokenStreamContents(stream, new String[] { "Hello", "There", "my", "Name", "is", "Ryan" });
+    assertTokenStreamContents(factory.create(
+        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("Hello thEre my Name is Ryan"))),
+        new String[] { "Hello", "There", "my", "Name", "is", "Ryan" });
     
     // without prefix
-    tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("McKinley" ));
-    stream = factory.create(tokenizer);
-    assertTokenStreamContents(stream, new String[] { "Mckinley" });
+    assertTokenStreamContents(factory.create(
+        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("McKinley"))),
+        new String[] { "Mckinley" });
     
     // Now try some prefixes
     factory = new CapitalizationFilterFactory();
     args.put( "okPrefix", "McK" );  // all words
     factory.init( args );
-    tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("McKinley" ));
-    stream = factory.create(tokenizer);
-    assertTokenStreamContents(stream, new String[] { "McKinley" });
+    assertTokenStreamContents(factory.create(
+        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("McKinley"))),
+        new String[] { "McKinley" });
     
     // now try some stuff with numbers
     factory.forceFirstLetter = false;
     factory.onlyFirstWord = false;
-    tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("1st 2nd third" ));
-    stream = factory.create(tokenizer);
-    assertTokenStreamContents(stream, new String[] { "1st", "2nd", "Third" });
+    assertTokenStreamContents(factory.create(
+        new WhitespaceTokenizer(DEFAULT_VERSION, new StringReader("1st 2nd third"))),
+        new String[] { "1st", "2nd", "Third" });
     
-    factory.forceFirstLetter = true;  
-    tokenizer = new KeywordTokenizer(new StringReader("the The the" ));
-    stream = factory.create(tokenizer);
-    assertTokenStreamContents(stream, new String[] { "The The the" });
+    factory.forceFirstLetter = true;
+    assertTokenStreamContents(factory.create(
+        new KeywordTokenizer(new StringReader("the The the"))),
+        new String[] { "The The the" });
   }
 
   public void testKeepIgnoreCase() throws Exception {
@@ -118,21 +122,20 @@ public class TestCapitalizationFilter extends BaseTokenTestCase {
 
     CapitalizationFilterFactory factory = new CapitalizationFilterFactory();
     factory.init( args );
-    char[] termBuffer;
-    termBuffer = "kiTTEN".toCharArray();
     factory.forceFirstLetter = true;
-    factory.processWord(termBuffer, 0, termBuffer.length, 0 );
-    assertEquals( "KiTTEN",  new String(termBuffer, 0, termBuffer.length));
+    assertTokenStreamContents(factory.create(
+        new KeywordTokenizer(new StringReader("kiTTEN"))),
+        new String[] { "KiTTEN" });
 
     factory.forceFirstLetter = false;
-    termBuffer = "kiTTEN".toCharArray();
-    factory.processWord(termBuffer, 0, termBuffer.length, 0 );
-    assertEquals( "kiTTEN",  new String(termBuffer, 0, termBuffer.length));
+    assertTokenStreamContents(factory.create(
+        new KeywordTokenizer(new StringReader("kiTTEN"))),
+        new String[] { "kiTTEN" });
 
     factory.keep = null;
-    termBuffer = "kiTTEN".toCharArray();
-    factory.processWord(termBuffer, 0, termBuffer.length, 0 );
-    assertEquals( "Kitten",  new String(termBuffer, 0, termBuffer.length));
+    assertTokenStreamContents(factory.create(
+        new KeywordTokenizer(new StringReader("kiTTEN"))),
+        new String[] { "Kitten" });
   }
   
   /**

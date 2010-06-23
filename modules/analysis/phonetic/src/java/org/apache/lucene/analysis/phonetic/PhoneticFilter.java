@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.phonetic;
 
 import org.apache.commons.codec.Encoder;
 import org.apache.lucene.analysis.TokenFilter;
@@ -28,23 +28,19 @@ import java.io.IOException;
 /**
  * Create tokens for phonetic matches.  See:
  * http://jakarta.apache.org/commons/codec/api-release/org/apache/commons/codec/language/package-summary.html
- *
- * @version $Id$
  */
 public final class PhoneticFilter extends TokenFilter 
 {
   protected boolean inject = true; 
   protected Encoder encoder = null;
-  protected String name = null;
   
   protected State save = null;
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posAtt = addAttribute(PositionIncrementAttribute.class);
 
-  public PhoneticFilter(TokenStream in, Encoder encoder, String name, boolean inject) {
+  public PhoneticFilter(TokenStream in, Encoder encoder, boolean inject) {
     super(in);
     this.encoder = encoder;
-    this.name = name;
     this.inject = inject;   
   }
 

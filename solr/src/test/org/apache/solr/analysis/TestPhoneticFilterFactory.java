@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 /**
  * @version $Id$
  */
-public class TestPhoneticFilter extends BaseTokenTestCase {
+public class TestPhoneticFilterFactory extends BaseTokenTestCase {
   
   public void testFactory()
   {

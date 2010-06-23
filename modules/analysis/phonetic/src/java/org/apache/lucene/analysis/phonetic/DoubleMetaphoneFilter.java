@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.analysis;
+package org.apache.lucene.analysis.phonetic;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -35,7 +35,7 @@ public final class DoubleMetaphoneFilter extends TokenFilter {
   private final CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
   private final PositionIncrementAttribute posAtt = addAttribute(PositionIncrementAttribute.class);
 
-  protected DoubleMetaphoneFilter(TokenStream input, int maxCodeLength, boolean inject) {
+  public DoubleMetaphoneFilter(TokenStream input, int maxCodeLength, boolean inject) {
     super(input);
     this.encoder.setMaxCodeLen(maxCodeLength);
     this.inject = inject;

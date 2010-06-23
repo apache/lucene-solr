@@ -27,11 +27,14 @@ New Features
      with text contained in the required words (inverse of StopFilter).
    - o.a.l.analysis.miscellaneous.HyphenatedWordsFilter: A TokenFilter that puts 
      hyphenated words broken into two lines back together.
+   - o.a.l.analysis.miscellaneous.CapitalizationFilter: A TokenFilter that applies
+     capitalization rules to tokens.
    - o.a.l.analysis.pattern: Package for pattern-based analysis, containing a 
      CharFilter, Tokenizer, and Tokenfilter for transforming text with regexes.
    - o.a.l.analysis.synonym.SynonymFilter: A synonym filter that supports multi-word
      synonyms.
-   (... in progress)
+   - o.a.l.analysis.phonetic: Package for phonetic search, containing various
+     phonetic encoders such as Double Metaphone.
 
   * LUCENE-2413: Consolidated all Lucene analyzers into common.
     - o.a.l.analysis.KeywordAnalyzer -> o.a.l.analysis.core.KeywordAnalyzer
@@ -60,7 +63,6 @@ New Features
     - o.a.l.analysis.ReusableAnalyzerBase -> o.a.l.analysis.util.ReusableAnalyzerBase
     - o.a.l.analysis.StopwordAnalyzerBase -> o.a.l.analysis.util.StopwordAnalyzerBase
     - o.a.l.analysis.WordListLoader -> o.a.l.analysis.util.WordListLoader
-    ... (in progress)
 
 Build
 
