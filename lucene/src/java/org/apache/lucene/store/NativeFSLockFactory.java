@@ -85,7 +85,7 @@ public class NativeFSLockFactory extends FSLockFactory {
     // Also, remove any non-alphanumeric characters, so that the lock file will
     // be created for sure on all systems.
     String randomLockName = "lucene-"
-        + ManagementFactory.getRuntimeMXBean().getName().replaceAll("[^a..zA..Z0..9]+","") + "-"
+        + ManagementFactory.getRuntimeMXBean().getName().replaceAll("[^a-zA-Z0-9]+","") + "-"
         + Long.toString(new Random().nextInt(), Character.MAX_RADIX)
         + "-test.lock";
     
