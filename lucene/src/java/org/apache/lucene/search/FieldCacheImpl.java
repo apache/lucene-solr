@@ -586,8 +586,17 @@ class FieldCacheImpl implements FieldCache {
       final String[] retArray = new String[reader.maxDoc()];
       TermDocs termDocs = reader.termDocs();
       TermEnum termEnum = reader.terms (new Term (field));
+      final int termCountHardLimit = reader.maxDoc();
+      int termCount = 0;
       try {
         do {
+          if (termCount++ == termCountHardLimit) {
+            // app is misusing the API (there is more than
+            // one term per doc); in this case we make best
+            // effort to load what we can (see LUCENE-2142)
+            break;
+          }
+
           Term term = termEnum.term();
           if (term==null || term.field() != field) break;
           String termval = term.text();
