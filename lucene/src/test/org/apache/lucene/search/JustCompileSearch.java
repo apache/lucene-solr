@@ -24,7 +24,6 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.util.PriorityQueue;
 
 /**
@@ -318,9 +317,9 @@ final class JustCompileSearch {
 
   static final class JustCompilePhraseScorer extends PhraseScorer {
 
-    JustCompilePhraseScorer(Weight weight, TermPositions[] tps, int[] offsets,
+    JustCompilePhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
         Similarity similarity, byte[] norms) {
-      super(weight, tps, offsets, similarity, norms);
+      super(weight, postings, similarity, norms);
     }
 
     @Override

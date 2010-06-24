@@ -117,4 +117,40 @@ public class _TestUtil {
   public static int getRandomMultiplier() {
     return Integer.parseInt(System.getProperty("random.multiplier", "1"));
   }
+
+  /** Returns random string, including full unicode range. */
+  public static String randomUnicodeString(Random r) {
+    return randomUnicodeString(r, 20);
+  }
+
+  public static String randomUnicodeString(Random r, int maxLength) {
+    final int end = r.nextInt(maxLength);
+    if (end == 0) {
+      // allow 0 length
+      return "";
+    }
+    final char[] buffer = new char[end];
+    for (int i = 0; i < end; i++) {
+      int t = r.nextInt(5);
+      //buffer[i] = (char) (97 + r.nextInt(26));
+
+      if (0 == t && i < end - 1) {
+        // Make a surrogate pair
+        // High surrogate
+        buffer[i++] = (char) nextInt(r, 0xd800, 0xdbff);
+        // Low surrogate
+        buffer[i] = (char) nextInt(r, 0xdc00, 0xdfff);
+      }
+      else if (t <= 1) buffer[i] = (char) r.nextInt(0x80);
+      else if (2 == t) buffer[i] = (char) nextInt(r, 0x80, 0x800);
+      else if (3 == t) buffer[i] = (char) nextInt(r, 0x800, 0xd7ff);
+      else if (4 == t) buffer[i] = (char) nextInt(r, 0xe000, 0xfffe);
+    }
+    return new String(buffer, 0, end);
+  }
+
+  /** start and end are BOTH inclusive */
+  public static int nextInt(Random r, int start, int end) {
+    return start + r.nextInt(end-start+1);
+  }
 }

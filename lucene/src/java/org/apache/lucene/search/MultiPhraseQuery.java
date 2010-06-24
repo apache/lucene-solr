@@ -167,28 +167,51 @@ public class MultiPhraseQuery extends Query {
       if (termArrays.size() == 0)                  // optimize zero-term case
         return null;
 
-      TermPositions[] tps = new TermPositions[termArrays.size()];
-      for (int i=0; i<tps.length; i++) {
+      PhraseQuery.PostingsAndFreq[] postingsFreqs = new PhraseQuery.PostingsAndFreq[termArrays.size()];
+
+      for (int i=0; i<postingsFreqs.length; i++) {
         Term[] terms = termArrays.get(i);
 
-        TermPositions p;
-        if (terms.length > 1)
+        final TermPositions p;
+        int docFreq;
+
+        if (terms.length > 1) {
           p = new MultipleTermPositions(reader, terms);
-        else
+
+          // coarse -- this overcounts since a given doc can
+          // have more than one terms:
+          docFreq = 0;
+          for(int j=0;j<terms.length;j++) {
+            docFreq += reader.docFreq(terms[i]);
+          }
+        } else {
           p = reader.termPositions(terms[0]);
+          docFreq = reader.docFreq(terms[0]);
 
-        if (p == null)
-          return null;
+          if (p == null)
+            return null;
+        }
 
-        tps[i] = p;
+        postingsFreqs[i] = new PhraseQuery.PostingsAndFreq(p, docFreq, positions.get(i).intValue());
       }
 
-      if (slop == 0)
-        return new ExactPhraseScorer(this, tps, getPositions(), similarity,
-                                     reader.norms(field));
-      else
-        return new SloppyPhraseScorer(this, tps, getPositions(), similarity,
+      // sort by increasing docFreq order
+      if (slop == 0) {
+        Arrays.sort(postingsFreqs);
+      }
+
+      if (slop == 0) {
+        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity,
+                                                    reader.norms(field));
+        if (s.noDocs) {
+          return null;
+        } else {
+          return s;
+        }
+      } else {
+        return new SloppyPhraseScorer(this, postingsFreqs, similarity,
                                       slop, reader.norms(field));
+      }
     }
 
     @Override
@@ -223,13 +246,24 @@ public class MultiPhraseQuery extends Query {
       fieldExpl.setDescription("fieldWeight("+getQuery()+" in "+doc+
                                "), product of:");
 
-      PhraseScorer scorer = (PhraseScorer) scorer(reader, true, false);
+      Scorer scorer = (Scorer) scorer(reader, true, false);
       if (scorer == null) {
         return new Explanation(0.0f, "no matching docs");
       }
+
       Explanation tfExplanation = new Explanation();
       int d = scorer.advance(doc);
-      float phraseFreq = (d == doc) ? scorer.currentFreq() : 0.0f;
+      float phraseFreq;
+      if (d == doc) {
+        if (slop == 0) {
+          phraseFreq = ((ExactPhraseScorer) scorer).currentFreq();
+        } else {
+          phraseFreq = ((SloppyPhraseScorer) scorer).currentFreq();
+        }
+      } else {
+        phraseFreq = 0.0f;
+      }
+
       tfExplanation.setValue(similarity.tf(phraseFreq));
       tfExplanation.setDescription("tf(phraseFreq=" + phraseFreq + ")");
       fieldExpl.addDetail(tfExplanation);

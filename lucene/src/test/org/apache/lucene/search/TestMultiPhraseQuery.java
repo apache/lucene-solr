@@ -23,6 +23,7 @@ import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -111,6 +112,10 @@ public class TestMultiPhraseQuery extends LuceneTestCase
         // test slop:
         query3.setSlop(1);
         result = searcher.search(query3, null, 1000).scoreDocs;
+
+        // just make sure no exc:
+        searcher.explain(query3, 0);
+
         assertEquals(3, result.length); // blueberry pizza, bluebird pizza, bluebird foobar pizza
 
         MultiPhraseQuery query4 = new MultiPhraseQuery();
@@ -163,6 +168,10 @@ public class TestMultiPhraseQuery extends LuceneTestCase
       ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
 
       assertEquals("Wrong number of hits", 2, hits.length);
+
+      // just make sure no exc:
+      searcher.explain(q, 0);
+
       searcher.close();
   }
     
@@ -190,6 +199,26 @@ public class TestMultiPhraseQuery extends LuceneTestCase
     ScoreDoc[] hits = searcher.search(q, null, 1000).scoreDocs;
     assertEquals("Wrong number of hits", 0, hits.length);
     searcher.close();
+  }
+
+  public void testNoDocs() throws Exception {
+    MockRAMDirectory indexStore = new MockRAMDirectory();
+    IndexWriter writer = new IndexWriter(indexStore, new StandardAnalyzer(TEST_VERSION_CURRENT, Collections.emptySet()), true, IndexWriter.MaxFieldLength.LIMITED);
+    add("a note", "note", writer);
+    writer.close();
+
+    IndexSearcher searcher = new IndexSearcher(indexStore, true);
+
+    MultiPhraseQuery q = new MultiPhraseQuery();
+    q.add(new Term("body", "a"));
+    q.add(new Term[] { new Term("body", "nope"), new Term("body", "nope") });
+    assertEquals("Wrong number of hits", 0, searcher.search(q, null, 1).totalHits);
+
+    // just make sure no exc:
+    searcher.explain(q, 0);
+
+    searcher.close();
+    indexStore.close();
   }
   
   public void testHashCodeAndEquals(){

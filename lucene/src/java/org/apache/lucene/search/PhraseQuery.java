@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Set;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermPositions;
@@ -117,6 +118,22 @@ public class PhraseQuery extends Query {
       return super.rewrite(reader);
   }
 
+  static class PostingsAndFreq implements Comparable<PostingsAndFreq> {
+    final TermPositions postings;
+    final int docFreq;
+    final int position;
+
+    public PostingsAndFreq(TermPositions postings, int docFreq, int position) {
+      this.postings = postings;
+      this.docFreq = docFreq;
+      this.position = position;
+    }
+
+    public int compareTo(PostingsAndFreq other) {
+      return docFreq - other.docFreq;
+    }
+  }
+
   private class PhraseWeight extends Weight {
     private final Similarity similarity;
     private float value;
@@ -160,22 +177,33 @@ public class PhraseQuery extends Query {
       if (terms.size() == 0)			  // optimize zero-term case
         return null;
 
-      TermPositions[] tps = new TermPositions[terms.size()];
+      PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.size()];
       for (int i = 0; i < terms.size(); i++) {
-        TermPositions p = reader.termPositions(terms.get(i));
+        final Term t = terms.get(i);
+        TermPositions p = reader.termPositions(t);
         if (p == null)
           return null;
-        tps[i] = p;
+        postingsFreqs[i] = new PostingsAndFreq(p, reader.docFreq(t), positions.get(i).intValue());
       }
 
-      if (slop == 0)				  // optimize exact case
-        return new ExactPhraseScorer(this, tps, getPositions(), similarity,
-                                     reader.norms(field));
-      else
-        return
-          new SloppyPhraseScorer(this, tps, getPositions(), similarity, slop,
-                                 reader.norms(field));
+      // sort by increasing docFreq order
+      if (slop == 0) {
+        Arrays.sort(postingsFreqs);
+      }
 
+      if (slop == 0) {				  // optimize exact case
+        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity,
+                                                    reader.norms(field));
+        if (s.noDocs) {
+          return null;
+        } else {
+          return s;
+        }
+      } else {
+        return
+          new SloppyPhraseScorer(this, postingsFreqs, similarity, slop,
+                                 reader.norms(field));
+      }
     }
 
     @Override
@@ -226,13 +254,23 @@ public class PhraseQuery extends Query {
       fieldExpl.setDescription("fieldWeight("+field+":"+query+" in "+doc+
                                "), product of:");
 
-      PhraseScorer scorer = (PhraseScorer) scorer(reader, true, false);
+      Scorer scorer = (Scorer) scorer(reader, true, false);
       if (scorer == null) {
         return new Explanation(0.0f, "no matching docs");
       }
       Explanation tfExplanation = new Explanation();
       int d = scorer.advance(doc);
-      float phraseFreq = (d == doc) ? scorer.currentFreq() : 0.0f;
+      float phraseFreq;
+      if (d == doc) {
+        if (slop == 0) {
+          phraseFreq = ((ExactPhraseScorer) scorer).currentFreq();
+        } else {
+          phraseFreq = ((SloppyPhraseScorer) scorer).currentFreq();
+        }
+      } else {
+        phraseFreq = 0.0f;
+      }
+
       tfExplanation.setValue(similarity.tf(phraseFreq));
       tfExplanation.setDescription("tf(phraseFreq=" + phraseFreq + ")");
       
