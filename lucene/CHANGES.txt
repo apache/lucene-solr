@@ -389,6 +389,10 @@ Bug fixes
   a prior (corrupt) index missing its segments_N file.  (Mike
   McCandless)
 
+* LUCENE-2142 (correct fix): FieldCacheImpl.getStringIndex no longer
+  throws an exception when term count exceeds doc count.
+  (Mike McCandless, Uwe Schindler)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
