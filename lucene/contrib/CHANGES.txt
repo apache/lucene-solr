@@ -7,6 +7,14 @@ Build
  * LUCENE-2413: Moved the demo out of lucene core and into contrib/demo.
    (Robert Muir)
 
+New Features
+
+  * LUCENE-2500: Added DirectIOLinuxDirectory, a Linux-specific
+    Directory impl that uses the O_DIRECT flag to bypass the buffer
+    cache.  This is useful to prevent segment merging from evicting
+    pages from the buffer cache, since fadvise/madvise do not seem.
+    (Michael McCandless)
+
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy

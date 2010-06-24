@@ -21,6 +21,57 @@
     </title>
   </head>
   <body>
-  miscellaneous
-  </body>
+
+<h2>Misc Tools</h2>
+
+The misc package has various tools for splitting/merging indices,
+changing norms, finding high freq terms, and others.
+
+<h2>DirectIOLinuxDirectory</h2>
+
+<p>
+<b>NOTE</b>: This uses C++ sources (accessible via JNI), which you'll
+have to compile on your platform.  Further, this is a very
+platform-specific extensions (runs only on Linux, and likely only on
+2.6.x kernels).
+
+<p>
+DirectIOLinuxDirectory is a Directory implementation that bypasses the
+OS's buffer cache for any IndexInput and IndexOutput opened through it
+(using the linux-specific O_DIRECT flag).
+
+<p>
+Note that doing so typically results in bad performance loss!  You
+should not use this for searching, but rather for indexing (or maybe
+just merging during indexing), to avoid evicting useful pages from the
+buffer cache.
+
+See <a target=_top href="http://chbits.blogspot.com/2010/06/lucene-and-fadvisemadvise.html">here</a>
+for details.
+
+Steps to build:
+<ul>
+  <li> <tt>cd lucene/contrib/misc/src/java/org/apache/lucene/store</tt>
+
+  <li> Compile NativePosixUtil.cpp -> libNativePosixUtil.so.  On linux, something like <tt>gcc -fPIC -o libNativePosixUtil.so -shared -Wl,-soname,libNativePosixUtil.so  -I$JAVA_HOME/include -I$JAVA_HOME/include/linux NativePosixUtil.cpp -lc -lstdc++</tt>.  Add <tt>-m64</tt> if you want to compile 64bit (and java must be run with -d64 so it knows to load a 64bit dynamic lib).
+
+  <li> Make sure libNativePosixUtil.so is on your LD_LIBRARY_PATH so java can find it (something like <tt>export LD_LIBRARY_PATH=/path/to/dir:$LD_LIBRARY_PATH</tt>, where /path/to/dir contains libNativePosixUtil.so)
+
+  <li> <tt>ant jar</tt> to compile the java source and put that JAR on your CLASSPATH
+</ul>
+
+<p>
+To use this, you'll likely want to make a custom subclass of
+FSDirectory that only opens direct IndexInput/Output for merging.  One
+hackish way to do this is to check if the current thread's name starts
+with "Lucene Merge Thread".  Alternatively, you could use this Dir as
+is for all indexing ops, but not for searching.
+
+<p>
+NativePosixUtil.cpp/java also expose access to the posix_madvise,
+madvise, posix_fadvise functions, which are somewhat more cross
+platform than O_DIRECT, however, in testing (see above link), these
+APIs did not seem to help prevent buffer cache eviction.
+</body>
+
 </html>
