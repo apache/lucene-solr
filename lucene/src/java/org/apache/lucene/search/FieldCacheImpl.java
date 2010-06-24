@@ -634,7 +634,7 @@ class FieldCacheImpl implements FieldCache {
       try {
         do {
           Term term = termEnum.term();
-          if (term==null || term.field() != field) break;
+          if (term==null || term.field() != field || t >= mterms.length) break;
 
           // store term text
           mterms[t] = term.text();
