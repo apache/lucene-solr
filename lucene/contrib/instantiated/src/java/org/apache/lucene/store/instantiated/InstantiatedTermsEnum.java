@@ -123,7 +123,7 @@ public class InstantiatedTermsEnum extends TermsEnum {
 
   @Override
   public Comparator<BytesRef> getComparator() {
-    return BytesRef.getUTF8SortedAsUTF16Comparator();
+    return BytesRef.getUTF8SortedAsUnicodeComparator();
   }
 }
 

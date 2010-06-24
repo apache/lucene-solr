@@ -130,7 +130,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
     // TODO: we may want to make this sort in same order
     // as Codec's terms dict?
-    final int[] termIDs = termsHashPerField.sortPostings(BytesRef.getUTF8SortedAsUTF16Comparator());
+    final int[] termIDs = termsHashPerField.sortPostings(BytesRef.getUTF8SortedAsUnicodeComparator());
 
     tvf.writeVInt(numPostings);
     byte bits = 0x0;

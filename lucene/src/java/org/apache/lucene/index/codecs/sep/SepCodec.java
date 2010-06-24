@@ -63,7 +63,7 @@ public class SepCodec extends Codec {
 
     success = false;
     try {
-      FieldsConsumer ret = new StandardTermsDictWriter(indexWriter, state, postingsWriter, BytesRef.getUTF8SortedAsUTF16Comparator());
+      FieldsConsumer ret = new StandardTermsDictWriter(indexWriter, state, postingsWriter, BytesRef.getUTF8SortedAsUnicodeComparator());
       success = true;
       return ret;
     } finally {
@@ -95,7 +95,7 @@ public class SepCodec extends Codec {
                                                        state.fieldInfos,
                                                        state.segmentInfo.name,
                                                        state.termsIndexDivisor,
-                                                       BytesRef.getUTF8SortedAsUTF16Comparator());
+                                                       BytesRef.getUTF8SortedAsUnicodeComparator());
       success = true;
     } finally {
       if (!success) {
@@ -111,7 +111,7 @@ public class SepCodec extends Codec {
                                                        state.segmentInfo.name,
                                                        postingsReader,
                                                        state.readBufferSize,
-                                                       BytesRef.getUTF8SortedAsUTF16Comparator(),
+                                                       BytesRef.getUTF8SortedAsUnicodeComparator(),
                                                        StandardCodec.TERMS_CACHE_SIZE);
       success = true;
       return ret;

@@ -80,7 +80,7 @@ public class PulsingCodec extends Codec {
     // Terms dict
     success = false;
     try {
-      FieldsConsumer ret = new StandardTermsDictWriter(indexWriter, state, pulsingWriter, BytesRef.getUTF8SortedAsUTF16Comparator());
+      FieldsConsumer ret = new StandardTermsDictWriter(indexWriter, state, pulsingWriter, BytesRef.getUTF8SortedAsUnicodeComparator());
       success = true;
       return ret;
     } finally {
@@ -111,7 +111,7 @@ public class PulsingCodec extends Codec {
                                                        state.fieldInfos,
                                                        state.segmentInfo.name,
                                                        state.termsIndexDivisor,
-                                                       BytesRef.getUTF8SortedAsUTF16Comparator());
+                                                       BytesRef.getUTF8SortedAsUnicodeComparator());
       success = true;
     } finally {
       if (!success) {
@@ -126,7 +126,7 @@ public class PulsingCodec extends Codec {
                                                        state.dir, state.fieldInfos, state.segmentInfo.name,
                                                        pulsingReader,
                                                        state.readBufferSize,
-                                                       BytesRef.getUTF8SortedAsUTF16Comparator(),
+                                                       BytesRef.getUTF8SortedAsUnicodeComparator(),
                                                        StandardCodec.TERMS_CACHE_SIZE);
       success = true;
       return ret;

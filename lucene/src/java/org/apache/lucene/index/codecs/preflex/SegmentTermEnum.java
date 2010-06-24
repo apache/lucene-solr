@@ -53,6 +53,7 @@ public final class SegmentTermEnum implements Cloneable {
   long indexPointer = 0;
   int indexInterval;
   int skipInterval;
+  int newSuffixStart;
   int maxSkipLevels;
   private int formatM1SkipInterval;
 
@@ -136,6 +137,7 @@ public final class SegmentTermEnum implements Cloneable {
 
     prevBuffer.set(termBuffer);
     termBuffer.read(input, fieldInfos);
+    newSuffixStart = termBuffer.newSuffixStart;
 
     termInfo.docFreq = input.readVInt();	  // read doc freq
     termInfo.freqPointer += input.readVLong();	  // read freq pointer

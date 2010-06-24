@@ -3964,7 +3964,7 @@ public class IndexWriter implements Closeable {
         // commit merged deletes
         SegmentReader reader = merge.readers[i] = readerPool.get(info, merge.mergeDocStores,
                                                                  MERGE_READ_BUFFER_SIZE,
-                                                                 -1);
+                                                                 -config.getReaderTermsIndexDivisor());
 
         // We clone the segment readers because other
         // deletes may come in while we're merging so we

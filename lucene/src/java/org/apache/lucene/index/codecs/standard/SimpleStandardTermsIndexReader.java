@@ -104,7 +104,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
       indexInterval = in.readInt();
       this.indexDivisor = indexDivisor;
 
-      if (indexDivisor == -1) {
+      if (indexDivisor < 0) {
         totalIndexInterval = indexInterval;
       } else {
         // In case terms index gets loaded, later, on demand
@@ -131,7 +131,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
       }
       success = true;
     } finally {
-      if (indexDivisor != -1) {
+      if (indexDivisor > 0) {
         in.close();
         this.in = null;
         if (success) {
@@ -173,7 +173,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
       // We still create the indexReader when indexDivisor
       // is -1, so that StandardTermsDictReader can call
       // isIndexTerm for each field:
-      if (indexDivisor != -1) {
+      if (indexDivisor > 0) {
         coreIndex = new CoreFieldIndex(indexStart,
                                        termsStart,
                                        packedIndexStart,
@@ -218,7 +218,8 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
 
     @Override
     public void getIndexOffset(long ord, TermsIndexResult result) throws IOException {
-      // You must call loadTermsIndex if you had specified -1 for indexDivisor
+      // You must call loadTermsIndex if you had specified
+      // indexDivisor < 0 to ctor
       if (coreIndex == null) {
         throw new IllegalStateException("terms index was not loaded");
       }

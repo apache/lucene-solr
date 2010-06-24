@@ -53,7 +53,7 @@ public final class FieldInfos {
   private final HashMap<String,FieldInfo> byName = new HashMap<String,FieldInfo>();
   private int format;
 
-  FieldInfos() { }
+  public FieldInfos() { }
 
   /**
    * Construct a FieldInfos object using the directory and the name of the file
@@ -62,7 +62,7 @@ public final class FieldInfos {
    * @param name The name of the file to open the IndexInput from in the Directory
    * @throws IOException
    */
-  FieldInfos(Directory d, String name) throws IOException {
+  public FieldInfos(Directory d, String name) throws IOException {
     IndexInput input = d.openInput(name);
     try {
       read(input, name);

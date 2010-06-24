@@ -19,7 +19,6 @@ package org.apache.lucene.index.codecs.preflex;
 
 import java.io.IOException;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.index.Term;
@@ -33,6 +32,8 @@ final class TermBuffer implements Cloneable {
 
   private UnicodeUtil.UTF16Result text = new UnicodeUtil.UTF16Result();
   private BytesRef bytes = new BytesRef(10);
+
+  int newSuffixStart;
 
   public final int compareTo(TermBuffer other) {
     if (field == other.field) 	  // fields are interned
@@ -60,22 +61,32 @@ final class TermBuffer implements Cloneable {
     int start = input.readVInt();
     int length = input.readVInt();
     int totalLength = start + length;
+    if (bytes.bytes.length < totalLength) {
+      bytes.grow(totalLength);
+    }
     if (dirty) {
       // Fully convert all bytes since bytes is dirty
       UnicodeUtil.UTF16toUTF8(text.result, 0, text.length, bytes);
-      if (bytes.bytes.length < totalLength)
-        bytes.bytes = new byte[totalLength];
       bytes.length = totalLength;
       input.readBytes(bytes.bytes, start, length);
       UnicodeUtil.UTF8toUTF16(bytes.bytes, 0, totalLength, text);
       dirty = false;
     } else {
       // Incrementally convert only the UTF8 bytes that are new:
-      if (bytes.bytes.length < totalLength)
-        bytes.bytes = ArrayUtil.grow(bytes.bytes, totalLength);
       bytes.length = totalLength;
       input.readBytes(bytes.bytes, start, length);
       UnicodeUtil.UTF8toUTF16(bytes.bytes, start, length, text);
+    }
+
+    while(true) {
+      newSuffixStart = text.offsets[start];
+      if (newSuffixStart != -1) {
+        break;
+      }
+      if (--start == 0) {
+        newSuffixStart = 0;
+        break;
+      }
     }
     this.field = fieldInfos.fieldName(input.readVInt());
   }
@@ -124,10 +135,11 @@ final class TermBuffer implements Cloneable {
     try {
       clone = (TermBuffer)super.clone();
     } catch (CloneNotSupportedException e) {}
-
     clone.dirty = true;
     clone.bytes = new BytesRef(10);
     clone.text = new UnicodeUtil.UTF16Result();
+    clone.text.offsets = new int[text.offsets.length];
+    System.arraycopy(text.offsets, 0, clone.text.offsets, 0, text.offsets.length);
     clone.text.copyText(text);
     return clone;
   }

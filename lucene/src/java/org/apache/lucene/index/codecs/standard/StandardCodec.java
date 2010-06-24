@@ -58,7 +58,7 @@ public class StandardCodec extends Codec {
 
     success = false;
     try {
-      FieldsConsumer ret = new StandardTermsDictWriter(indexWriter, state, docs, BytesRef.getUTF8SortedAsUTF16Comparator());
+      FieldsConsumer ret = new StandardTermsDictWriter(indexWriter, state, docs, BytesRef.getUTF8SortedAsUnicodeComparator());
       success = true;
       return ret;
     } finally {
@@ -85,7 +85,7 @@ public class StandardCodec extends Codec {
                                                        state.fieldInfos,
                                                        state.segmentInfo.name,
                                                        state.termsIndexDivisor,
-                                                       BytesRef.getUTF8SortedAsUTF16Comparator());
+                                                       BytesRef.getUTF8SortedAsUnicodeComparator());
       success = true;
     } finally {
       if (!success) {
@@ -101,7 +101,7 @@ public class StandardCodec extends Codec {
                                                        state.segmentInfo.name,
                                                        postings,
                                                        state.readBufferSize,
-                                                       BytesRef.getUTF8SortedAsUTF16Comparator(),
+                                                       BytesRef.getUTF8SortedAsUnicodeComparator(),
                                                        TERMS_CACHE_SIZE);
       success = true;
       return ret;

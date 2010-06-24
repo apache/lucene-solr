@@ -39,10 +39,14 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.ArrayUtil;
 
 /** Exposes flex API on a pre-flex index, as a codec. 
  * @lucene.experimental */
 public class PreFlexFields extends FieldsProducer {
+
+  private static final boolean DEBUG_SURROGATES = false;
 
   public TermInfosReader tis;
   public final TermInfosReader tisNoIndex;
@@ -60,6 +64,15 @@ public class PreFlexFields extends FieldsProducer {
     throws IOException {
 
     si = info;
+
+    // NOTE: we must always load terms index, even for
+    // "sequential" scan during merging, because what is
+    // sequential to merger may not be to TermInfosReader
+    // since we do the surrogates dance:
+    if (indexDivisor < 0) {
+      indexDivisor = -indexDivisor;
+    }
+
     TermInfosReader r = new TermInfosReader(dir, info.name, fieldInfos, readBufferSize, indexDivisor);    
     if (indexDivisor == -1) {
       tisNoIndex = r;
@@ -174,7 +187,6 @@ public class PreFlexFields extends FieldsProducer {
   private class PreFlexFieldsEnum extends FieldsEnum {
     final Iterator<FieldInfo> it;
     private final PreTermsEnum termsEnum;
-    private int count;
     FieldInfo current;
 
     public PreFlexFieldsEnum() throws IOException {
@@ -185,7 +197,6 @@ public class PreFlexFields extends FieldsProducer {
     @Override
     public String next() {
       if (it.hasNext()) {
-        count++;
         current = it.next();
         return current.name;
       } else {
@@ -195,7 +206,7 @@ public class PreFlexFields extends FieldsProducer {
 
     @Override
     public TermsEnum terms() throws IOException {
-      termsEnum.reset(current, count == 1);
+      termsEnum.reset(current);
       return termsEnum;
     }
   }
@@ -209,14 +220,15 @@ public class PreFlexFields extends FieldsProducer {
     @Override
     public TermsEnum iterator() throws IOException {    
       PreTermsEnum termsEnum = new PreTermsEnum();
-      termsEnum.reset(fieldInfo, false);
+      termsEnum.reset(fieldInfo);
       return termsEnum;
     }
 
     @Override
     public Comparator<BytesRef> getComparator() {
-      // Pre-flex indexes always sorted in UTF16 order
-      return BytesRef.getUTF8SortedAsUTF16Comparator();
+      // Pre-flex indexes always sorted in UTF16 order, but
+      // we remap on-the-fly to unicode order
+      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
   }
 
@@ -227,37 +239,229 @@ public class PreFlexFields extends FieldsProducer {
     private BytesRef current;
     private final BytesRef scratchBytesRef = new BytesRef();
 
-    void reset(FieldInfo fieldInfo, boolean isFirstField) throws IOException {
+    private int[] surrogateSeekPending = new int[1];
+    private boolean[] surrogateDidSeekBack = new boolean[1];
+    private int surrogateSeekUpto;
+    private char[] pendingPrefix;
+
+    private SegmentTermEnum seekTermEnum;
+    private Term protoTerm;
+    private int newSuffixStart;
+
+    void reset(FieldInfo fieldInfo) throws IOException {
       this.fieldInfo = fieldInfo;
+      protoTerm = new Term(fieldInfo.name);
       if (termEnum == null) {
-        // First time reset is called
-        if (isFirstField) {
-          termEnum = getTermsDict().terms();
-          skipNext = false;
-        } else {
-          termEnum = getTermsDict().terms(new Term(fieldInfo.name, ""));
-          skipNext = true;
-        }
+        termEnum = getTermsDict().terms(protoTerm);
+        seekTermEnum = getTermsDict().terms(protoTerm);
       } else {
-        final Term t = termEnum.term();
-        if (t != null && t.field() == fieldInfo.name) {
-          // No need to seek -- we have already advanced onto
-          // this field.  We must be @ first term because
-          // flex API will not advance this enum further, on
-          // seeing a different field.
-        } else {
-          assert t == null || !t.field().equals(fieldInfo.name);  // make sure field name is interned
-          final TermInfosReader tis = getTermsDict();
-          tis.seekEnum(termEnum, new Term(fieldInfo.name, ""));
-        }
-        skipNext = true;
+        getTermsDict().seekEnum(termEnum, protoTerm);
       }
+      skipNext = true;
+      
+      surrogateSeekUpto = 0;
+      newSuffixStart = 0;
+
+      surrogatesDance();
+    }
+
+    private void surrogatesDance() throws IOException {
+      
+      // Tricky: prior to 4.0, Lucene index sorted terms in
+      // UTF16 order, but as of 4.0 we sort by Unicode code
+      // point order.  These orders differ because of the
+      // surrrogates; so we have to fixup our enum, here, by
+      // carefully first seeking past the surrogates and
+      // then back again at the end.  The process is
+      // recursive, since any given term could have multiple
+      // new occurrences of surrogate pairs, so we use a
+      // stack to record the pending seek-backs.
+      if (DEBUG_SURROGATES) {
+        System.out.println("  dance start term=" + (termEnum.term() == null ? null : UnicodeUtil.toHexString(termEnum.term().text())));
+      }
+
+      while(popPendingSeek());
+      while(pushNewSurrogate());
+    }
+
+    // only for debugging
+    private String getStack() {
+      if (surrogateSeekUpto == 0) {
+        return "null";
+      } else {
+        StringBuffer sb = new StringBuffer();
+        for(int i=0;i<surrogateSeekUpto;i++) {
+          if (i > 0) {
+            sb.append(' ');
+          }
+          sb.append(surrogateSeekPending[i]);
+        }
+        sb.append(" pendingSeekText=" + new String(pendingPrefix, 0, surrogateSeekPending[surrogateSeekUpto-1]));
+        return sb.toString();
+      }
+    }
+
+    private boolean popPendingSeek() throws IOException {
+      if (DEBUG_SURROGATES) {
+        System.out.println("  check pop newSuffix=" + newSuffixStart + " stack=" + getStack());
+      }
+      // if a .next() has advanced beyond the
+      // after-surrogates range we had last seeked to, we
+      // must seek back to the start and resume .next from
+      // there.  this pops the pending seek off the stack.
+      final Term t = termEnum.term();
+      if (surrogateSeekUpto > 0) {
+        final int seekPrefix = surrogateSeekPending[surrogateSeekUpto-1];
+        if (DEBUG_SURROGATES) {
+          System.out.println("    seekPrefix=" + seekPrefix);
+        }
+        if (newSuffixStart < seekPrefix) {
+          assert pendingPrefix != null;
+          assert pendingPrefix.length > seekPrefix;
+          pendingPrefix[seekPrefix] = UnicodeUtil.UNI_SUR_HIGH_START;
+          Term t2 = protoTerm.createTerm(new String(pendingPrefix, 0, 1+seekPrefix));
+          if (DEBUG_SURROGATES) {
+            System.out.println("    do pop; seek back to " + UnicodeUtil.toHexString(t2.text()));
+          }
+          getTermsDict().seekEnum(termEnum, t2);
+          surrogateDidSeekBack[surrogateSeekUpto-1] = true;
+
+          // +2 because we don't want to re-check the
+          // surrogates we just seek'd back to
+          newSuffixStart = seekPrefix + 2;
+          return true;
+        } else if (newSuffixStart == seekPrefix && surrogateDidSeekBack[surrogateSeekUpto-1] && t != null && t.field() == fieldInfo.name && t.text().charAt(seekPrefix) > UnicodeUtil.UNI_SUR_LOW_END) {
+          assert pendingPrefix != null;
+          assert pendingPrefix.length > seekPrefix;
+          pendingPrefix[seekPrefix] = 0xffff;
+          Term t2 = protoTerm.createTerm(new String(pendingPrefix, 0, 1+seekPrefix));
+          if (DEBUG_SURROGATES) {
+            System.out.println("    finish pop; seek fwd to " + UnicodeUtil.toHexString(t2.text()));
+          }
+          getTermsDict().seekEnum(termEnum, t2);
+          if (DEBUG_SURROGATES) {
+            System.out.println("    found term=" + (termEnum.term() == null ? null : UnicodeUtil.toHexString(termEnum.term().text())));
+          }
+          surrogateSeekUpto--;
+
+          if (termEnum.term() == null || termEnum.term().field() != fieldInfo.name) {
+            // force pop
+            newSuffixStart = -1;
+          } else {
+            newSuffixStart = termEnum.newSuffixStart;
+          }
+
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    private boolean pushNewSurrogate() throws IOException {
+      if (DEBUG_SURROGATES) {
+        System.out.println("  check push newSuffix=" + newSuffixStart + " stack=" + getStack());
+      }
+      final Term t = termEnum.term();
+      if (t == null || t.field() != fieldInfo.name) {
+        return false;
+      }
+      final String text = t.text();
+      final int textLen = text.length();
+
+      for(int i=Math.max(0,newSuffixStart);i<textLen;i++) {
+        final char ch = text.charAt(i);
+        if (ch >= UnicodeUtil.UNI_SUR_HIGH_START && ch <= UnicodeUtil.UNI_SUR_HIGH_END && (surrogateSeekUpto == 0 || i > surrogateSeekPending[surrogateSeekUpto-1])) {
+
+          if (DEBUG_SURROGATES) {
+            System.out.println("    found high surr 0x" + Integer.toHexString(ch) + " at pos=" + i);
+          }
+
+          // the next() that we just did read in a new
+          // suffix, containing a surrogate pair
+
+          // seek forward to see if there are any terms with
+          // this same prefix, but with characters after the
+          // surrogate range; if so, we must first iterate
+          // them, then seek back to the surrogates
+
+          char[] testPrefix = new char[i+1];
+          for(int j=0;j<i;j++) {
+            testPrefix[j] = text.charAt(j);
+          }
+          testPrefix[i] = 1+UnicodeUtil.UNI_SUR_LOW_END;
+
+          getTermsDict().seekEnum(seekTermEnum, protoTerm.createTerm(new String(testPrefix)));
+
+          Term t2 = seekTermEnum.term();
+          boolean isPrefix;
+          if (t2 != null && t2.field() == fieldInfo.name) {
+            String seekText = t2.text();
+            isPrefix = true;
+            if (DEBUG_SURROGATES) {
+              System.out.println("      seek found " + UnicodeUtil.toHexString(seekText));
+            }
+            for(int j=0;j<i;j++) {
+              if (testPrefix[j] != seekText.charAt(j)) {
+                isPrefix = false;
+                break;
+              }
+            }
+            if (DEBUG_SURROGATES && !isPrefix) {
+              System.out.println("      no end terms");
+            }
+          } else {
+            if (DEBUG_SURROGATES) {
+              System.out.println("      no end terms");
+            }
+            isPrefix = false;
+          }
+
+          if (isPrefix) {
+            // we found a term, sharing the same prefix,
+            // with characters after the surrogates, so we
+            // must first enum those, and then return the
+            // the surrogates afterwards.  push that pending
+            // seek on the surrogates stack now:
+            pendingPrefix = testPrefix;
+
+            getTermsDict().seekEnum(termEnum, t2);
+
+            if (surrogateSeekUpto == surrogateSeekPending.length) {
+              surrogateSeekPending = ArrayUtil.grow(surrogateSeekPending);
+            }
+            if (surrogateSeekUpto == surrogateDidSeekBack.length) {
+              surrogateDidSeekBack = ArrayUtil.grow(surrogateDidSeekBack);
+            }
+            surrogateSeekPending[surrogateSeekUpto] = i;
+            surrogateDidSeekBack[surrogateSeekUpto] = false;
+            surrogateSeekUpto++;
+
+            if (DEBUG_SURROGATES) {
+              System.out.println("      do push " + i + "; end term=" + UnicodeUtil.toHexString(t2.text()));
+            }
+
+            newSuffixStart = i+1;
+
+            return true;
+          } else {
+            // there are no terms after the surrogates, so
+            // we do nothing to the enum and just step
+            // through the surrogates like normal.  but we
+            // must keep iterating through the term, in case
+            // another surrogate pair appears later
+          }
+        }
+      }
+
+      return false;
     }
 
     @Override
     public Comparator<BytesRef> getComparator() {
-      // Pre-flex indexes always sorted in UTF16 order
-      return BytesRef.getUTF8SortedAsUTF16Comparator();
+      // Pre-flex indexes always sorted in UTF16 order, but
+      // we remap on-the-fly to unicode order
+      return BytesRef.getUTF8SortedAsUnicodeComparator();
     }
 
     @Override
@@ -272,14 +476,24 @@ public class PreFlexFields extends FieldsProducer {
 
     @Override
     public SeekStatus seek(BytesRef term, boolean useCache) throws IOException {
+      if (DEBUG_SURROGATES) {
+        System.out.println("TE.seek() term=" + term.utf8ToString());
+      }
       skipNext = false;
       final TermInfosReader tis = getTermsDict();
-      final Term t0 = new Term(fieldInfo.name, term.utf8ToString());
+      final Term t0 = protoTerm.createTerm(term.utf8ToString());
+
+      assert termEnum != null;
+
       if (termEnum == null) {
         termEnum = tis.terms(t0);
       } else {
         tis.seekEnum(termEnum, t0);
       }
+
+      surrogateSeekUpto = 0;
+      surrogatesDance();
+
       final Term t = termEnum.term();
 
       final BytesRef tr;
@@ -304,6 +518,9 @@ public class PreFlexFields extends FieldsProducer {
 
     @Override
     public BytesRef next() throws IOException {
+      if (DEBUG_SURROGATES) {
+        System.out.println("TE.next() skipNext=" + skipNext);
+      }
       if (skipNext) {
         skipNext = false;
         if (termEnum.term() == null) {
@@ -313,19 +530,37 @@ public class PreFlexFields extends FieldsProducer {
           return current = scratchBytesRef;
         }
       }
-      if (termEnum.next()) {
+      if (termEnum.next() && termEnum.term().field() == fieldInfo.name) {
+        newSuffixStart = termEnum.newSuffixStart;
+        if (DEBUG_SURROGATES) {
+          System.out.println("  set newSuffixStart=" + newSuffixStart);
+        }
+        surrogatesDance();
         final Term t = termEnum.term();
-        if (t.field() == fieldInfo.name) {
+        if (t == null || t.field() != fieldInfo.name) {
+          assert t == null || !t.field().equals(fieldInfo.name); // make sure fields are in fact interned
+          current = null;
+        } else {
+          scratchBytesRef.copy(t.text());
+          current = scratchBytesRef;
+        }
+        return current;
+      } else {
+        if (DEBUG_SURROGATES) {
+          System.out.println("  force pop");
+        }
+        // force pop
+        newSuffixStart = -1;
+        surrogatesDance();
+        final Term t = termEnum.term();
+        if (t == null || t.field() != fieldInfo.name) {
+          assert t == null || !t.field().equals(fieldInfo.name); // make sure fields are in fact interned
+          return null;
+        } else {
           scratchBytesRef.copy(t.text());
           current = scratchBytesRef;
           return current;
-        } else {
-          assert !t.field().equals(fieldInfo.name);  // make sure field name is interned
-          // Crossed into new field
-          return null;
         }
-      } else {
-        return null;
       }
     }
 

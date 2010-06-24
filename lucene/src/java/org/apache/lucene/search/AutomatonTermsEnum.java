@@ -103,7 +103,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     // build a cache of sorted transitions for every state
     allTransitions = new Transition[runAutomaton.getSize()][];
     for (State state : this.automaton.getNumberedStates()) {
-      state.sortTransitions(Transition.CompareByMinMaxThenDestUTF8InUTF16Order);
+      state.sortTransitions(Transition.CompareByMinMaxThenDest);
       state.trimTransitionsArray();
       allTransitions[state.getNumber()] = state.transitionsArray;
     }
@@ -158,11 +158,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     // seek to the next possible string;
     if (nextString()) {
       // reposition
-      
-      // FIXME: this is really bad to turn off
-      // but it cannot work correctly until terms are in utf8 order.
-      linear = false;
-      
+           
       if (linear)
         setLinear(infinitePosition);
       return seekBytesRef;
@@ -188,15 +184,15 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     }
     for (int i = 0; i < allTransitions[state].length; i++) {
       Transition t = allTransitions[state][i];
-      if (compareToUTF16(t.getMin(), (seekBytesRef.bytes[position] & 0xff)) <= 0 && 
-          compareToUTF16((seekBytesRef.bytes[position] & 0xff), t.getMax()) <= 0) {
+      if (t.getMin() <= (seekBytesRef.bytes[position] & 0xff) && 
+          (seekBytesRef.bytes[position] & 0xff) <= t.getMax()) {
         maxInterval = t.getMax();
         break;
       }
     }
-    // 0xef terms don't get the optimization... not worth the trouble.
-    if (maxInterval != 0xef)
-      maxInterval = incrementUTF16(maxInterval);
+    // 0xff terms don't get the optimization... not worth the trouble.
+    if (maxInterval != 0xff)
+      maxInterval = incrementUTF8(maxInterval);
     int length = position + 1; /* position + maxTransition */
     if (linearUpperBound.bytes.length < length)
       linearUpperBound.bytes = new byte[length];
@@ -281,7 +277,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
       // if the next character is U+FFFF and is not part of the useful portion,
       // then by definition it puts us in a reject state, and therefore this
       // path is dead. there cannot be any higher transitions. backtrack.
-      c = incrementUTF16(c);
+      c = incrementUTF8(c);
       if (c == -1)
         return false;
     }
@@ -295,8 +291,8 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     
     for (int i = 0; i < transitions.length; i++) {
       Transition transition = transitions[i];
-      if (compareToUTF16(transition.getMax(), c) >= 0) {
-        int nextChar = compareToUTF16(c, transition.getMin()) > 0 ? c : transition.getMin();
+      if (transition.getMax() >= c) {
+        int nextChar = Math.max(c, transition.getMin());
         // append either the next sequential char, or the minimum transition
         seekBytesRef.grow(seekBytesRef.length + 1);
         seekBytesRef.length++;
@@ -342,9 +338,9 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
   private boolean backtrack(int position) {
     while (position > 0) {
       int nextChar = seekBytesRef.bytes[position - 1] & 0xff;
-      // if a character is 0xef its a dead-end too,
-      // because there is no higher character in UTF-16 sort order.
-      nextChar = incrementUTF16(nextChar);
+      // if a character is 0xff its a dead-end too,
+      // because there is no higher character in UTF-8 sort order.
+      nextChar = incrementUTF8(nextChar);
       if (nextChar != -1) {
         seekBytesRef.bytes[position - 1] = (byte) nextChar;
         seekBytesRef.length = position;
@@ -355,34 +351,11 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     return false; /* all solutions exhausted */
   }
 
-  /* return the next utf8 byte in utf16 order, or -1 if exhausted */
-  private final int incrementUTF16(int utf8) {
+  /* return the next utf8 byte in utf8 order, or -1 if exhausted */
+  private final int incrementUTF8(int utf8) {
     switch(utf8) {
-      case 0xed: return 0xf0;
-      case 0xfd: return 0xee;
-      case 0xee: return 0xef;
-      case 0xef: return -1;
+      case 0xff: return -1;
       default: return utf8 + 1;
     }
-  }
-  
-  int compareToUTF16(int aByte, int bByte) {
-    if (aByte != bByte) {
-      // See http://icu-project.org/docs/papers/utf16_code_point_order.html#utf-8-in-utf-16-order
-
-      // We know the terms are not equal, but, we may
-      // have to carefully fixup the bytes at the
-      // difference to match UTF16's sort order:
-      if (aByte >= 0xee && bByte >= 0xee) {
-        if ((aByte & 0xfe) == 0xee) {
-          aByte += 0x10;
-        }
-        if ((bByte&0xfe) == 0xee) {
-          bByte += 0x10;
-        }
-      }
-      return aByte - bByte;
-    }
-    return 0;
   }
 }

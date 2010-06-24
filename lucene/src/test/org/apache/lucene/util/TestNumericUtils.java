@@ -30,7 +30,7 @@ public class TestNumericUtils extends LuceneTestCase {
       NumericUtils.longToPrefixCoded(l, 0, act);
       if (last!=null) {
         // test if smaller
-        assertTrue("actual bigger than last (BytesRef)", BytesRef.getUTF8SortedAsUTF16Comparator().compare(last, act) < 0 );
+        assertTrue("actual bigger than last (BytesRef)", BytesRef.getUTF8SortedAsUnicodeComparator().compare(last, act) < 0 );
         assertTrue("actual bigger than last (as String)", last.utf8ToString().compareTo(act.utf8ToString()) < 0 );
       }
       // test is back and forward conversion works
@@ -48,7 +48,7 @@ public class TestNumericUtils extends LuceneTestCase {
       NumericUtils.intToPrefixCoded(i, 0, act);
       if (last!=null) {
         // test if smaller
-        assertTrue("actual bigger than last (BytesRef)", BytesRef.getUTF8SortedAsUTF16Comparator().compare(last, act) < 0 );
+        assertTrue("actual bigger than last (BytesRef)", BytesRef.getUTF8SortedAsUnicodeComparator().compare(last, act) < 0 );
         assertTrue("actual bigger than last (as String)", last.utf8ToString().compareTo(act.utf8ToString()) < 0 );
       }
       // test is back and forward conversion works
@@ -84,7 +84,7 @@ public class TestNumericUtils extends LuceneTestCase {
     
     // check sort order (prefixVals should be ascending)
     for (int i=1; i<prefixVals.length; i++) {
-      assertTrue( "check sort order", BytesRef.getUTF8SortedAsUTF16Comparator().compare(prefixVals[i-1], prefixVals[i] ) < 0 );
+      assertTrue( "check sort order", BytesRef.getUTF8SortedAsUnicodeComparator().compare(prefixVals[i-1], prefixVals[i] ) < 0 );
     }
         
     // check the prefix encoding, lower precision should have the difference to original value equal to the lower removed bits
@@ -124,7 +124,7 @@ public class TestNumericUtils extends LuceneTestCase {
     
     // check sort order (prefixVals should be ascending)
     for (int i=1; i<prefixVals.length; i++) {
-      assertTrue( "check sort order", BytesRef.getUTF8SortedAsUTF16Comparator().compare(prefixVals[i-1], prefixVals[i] ) < 0 );
+      assertTrue( "check sort order", BytesRef.getUTF8SortedAsUnicodeComparator().compare(prefixVals[i-1], prefixVals[i] ) < 0 );
     }
     
     // check the prefix encoding, lower precision should have the difference to original value equal to the lower removed bits

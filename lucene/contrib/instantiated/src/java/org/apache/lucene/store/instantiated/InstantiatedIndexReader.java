@@ -426,7 +426,7 @@ public class InstantiatedIndexReader extends IndexReader {
 
           @Override
           public Comparator<BytesRef> getComparator() {
-            return BytesRef.getUTF8SortedAsUTF16Comparator();
+            return BytesRef.getUTF8SortedAsUnicodeComparator();
           }
         };
       }

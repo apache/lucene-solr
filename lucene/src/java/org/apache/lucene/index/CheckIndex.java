@@ -32,7 +32,7 @@ import java.io.PrintStream;
 import java.io.IOException;
 import java.io.File;
 import java.util.Collection;
-
+import java.util.Comparator;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -596,11 +596,26 @@ public class CheckIndex {
         boolean hasOrd = true;
         final long termCountStart = status.termCount;
 
+        BytesRef lastTerm = null;
+
+        Comparator<BytesRef> termComp = terms.getComparator();
+
         while(true) {
 
           final BytesRef term = terms.next();
           if (term == null) {
             break;
+          }
+
+          // make sure terms arrive in order according to
+          // the comp
+          if (lastTerm == null) {
+            lastTerm = new BytesRef(term);
+          } else {
+            if (termComp.compare(lastTerm, term) >= 0) {
+              throw new RuntimeException("terms out of order: lastTerm=" + lastTerm + " term=" + term);
+            }
+            lastTerm.copy(term);
           }
 
           final int docFreq = terms.docFreq();

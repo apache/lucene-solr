@@ -4621,38 +4621,22 @@ public class TestIndexWriter extends LuceneTestCase {
   private void checkTermsOrder(IndexReader r, Set<String> allTerms, boolean isTop) throws IOException {
     TermsEnum terms = MultiFields.getFields(r).terms("f").iterator();
 
-    char[] last = new char[2];
-    int lastLength = 0;
+    BytesRef last = new BytesRef();
 
     Set<String> seenTerms = new HashSet<String>();
 
-    UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
     while(true) {
       final BytesRef term = terms.next();
       if (term == null) {
         break;
       }
-      UnicodeUtil.UTF8toUTF16(term.bytes, term.offset, term.length, utf16);
-      assertTrue(utf16.length <= 2);
 
-      // Make sure last term comes before current one, in
-      // UTF16 sort order
-      int i = 0;
-      for(i=0;i<lastLength && i<utf16.length;i++) {
-        assertTrue("UTF16 code unit " + termDesc(new String(utf16.result, 0, utf16.length)) + " incorrectly sorted after code unit " + termDesc(new String(last, 0, lastLength)), last[i] <= utf16.result[i]);
-        if (last[i] < utf16.result[i]) {
-          break;
-        }
-      }
-      // Terms should not have been identical
-      assertTrue(lastLength != utf16.length || i < lastLength);
+      assertTrue(last.compareTo(term) < 0);
+      last.copy(term);
 
-      final String s = new String(utf16.result, 0, utf16.length);
+      final String s = term.utf8ToString();
       assertTrue("term " + termDesc(s) + " was not added to index (count=" + allTerms.size() + ")", allTerms.contains(s));
       seenTerms.add(s);
-
-      System.arraycopy(utf16.result, 0, last, 0, utf16.length);
-      lastLength = utf16.length;
     }
 
     if (isTop) {
