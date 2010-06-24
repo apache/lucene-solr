@@ -13,7 +13,7 @@
     #foreach($fq in $request.params.getParams('fq'))
       <input type="hidden" name="fq" value="$esc.html($fq)"/>
     #end
-    <div>
+    <div class="constraints">
       #foreach($fq in $params.getParams('fq'))
         #set($previous_fq_count=$velocityCount - 1)
       &gt; <a style="{text-decoration: line-through;}" href="#url_for_filters($request.params.getParams('fq').subList(0,$previous_fq_count))">$fq</a>

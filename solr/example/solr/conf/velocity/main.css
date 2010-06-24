@@ -19,10 +19,6 @@ a {
   color: #43a4b1;
 }
 
-.constraints-title {
-  background: gray;
-}
-
 .navigators {
   float: left;
   margin: 5px;
@@ -82,6 +78,10 @@ a {
   border-style: none; 
 }
 
+.constraints {
+  margin-top: 10px;
+}
+
 .query-box, .constraints {
   padding: 5px;
   margin: 5px;
@@ -93,7 +93,7 @@ a {
 .query-box input {
   margin-left: 8px;
   width: 60%;
-  height: 40px;
+  height: 50px;
   border: 1px solid #999;
   font-size: 1em;
   padding: 0.4em;
