@@ -393,6 +393,9 @@ Bug fixes
   throws an exception when term count exceeds doc count.
   (Mike McCandless, Uwe Schindler)
 
+* LUCENE-2513: when opening writable IndexReader on a not-current
+  commit, do not overwrite "future" commits.  (Mike McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight

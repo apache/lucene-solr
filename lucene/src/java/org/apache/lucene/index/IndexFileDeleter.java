@@ -102,6 +102,7 @@ final class IndexFileDeleter {
   private DocumentsWriter docWriter;
 
   final boolean startingCommitDeleted;
+  private SegmentInfos lastSegmentInfos;
 
   /** Change to true to see details of reference counts when
    *  infoStream != null */
@@ -168,33 +169,43 @@ final class IndexFileDeleter {
           // This is a commit (segments or segments_N), and
           // it's valid (<= the max gen).  Load it, then
           // incref all files it refers to:
-          if (SegmentInfos.generationFromSegmentsFileName(fileName) <= currentGen) {
+          if (infoStream != null) {
+            message("init: load commit \"" + fileName + "\"");
+          }
+          SegmentInfos sis = new SegmentInfos();
+          try {
+            sis.read(directory, fileName, codecs);
+          } catch (FileNotFoundException e) {
+            // LUCENE-948: on NFS (and maybe others), if
+            // you have writers switching back and forth
+            // between machines, it's very likely that the
+            // dir listing will be stale and will claim a
+            // file segments_X exists when in fact it
+            // doesn't.  So, we catch this and handle it
+            // as if the file does not exist
             if (infoStream != null) {
-              message("init: load commit \"" + fileName + "\"");
+              message("init: hit FileNotFoundException when loading commit \"" + fileName + "\"; skipping this commit point");
             }
-            SegmentInfos sis = new SegmentInfos();
-            try {
-              sis.read(directory, fileName, codecs);
-            } catch (FileNotFoundException e) {
-              // LUCENE-948: on NFS (and maybe others), if
-              // you have writers switching back and forth
-              // between machines, it's very likely that the
-              // dir listing will be stale and will claim a
-              // file segments_X exists when in fact it
-              // doesn't.  So, we catch this and handle it
-              // as if the file does not exist
-              if (infoStream != null) {
-                message("init: hit FileNotFoundException when loading commit \"" + fileName + "\"; skipping this commit point");
-              }
-              sis = null;
+            sis = null;
+          } catch (IOException e) {
+            if (SegmentInfos.generationFromSegmentsFileName(fileName) <= currentGen) {
+              throw e;
+            } else {
+              // Most likely we are opening an index that
+              // has an aborted "future" commit, so suppress
+              // exc in this case
             }
-            if (sis != null) {
-              CommitPoint commitPoint = new CommitPoint(commitsToDelete, directory, sis);
-              if (sis.getGeneration() == segmentInfos.getGeneration()) {
-                currentCommitPoint = commitPoint;
-              }
-              commits.add(commitPoint);
-              incRef(sis, true);
+          }
+          if (sis != null) {
+            CommitPoint commitPoint = new CommitPoint(commitsToDelete, directory, sis);
+            if (sis.getGeneration() == segmentInfos.getGeneration()) {
+              currentCommitPoint = commitPoint;
+            }
+            commits.add(commitPoint);
+            incRef(sis, true);
+
+            if (lastSegmentInfos == null || sis.getGeneration() > lastSegmentInfos.getGeneration()) {
+              lastSegmentInfos = sis;
             }
           }
         }
@@ -252,6 +263,10 @@ final class IndexFileDeleter {
     startingCommitDeleted = currentCommitPoint == null ? false : currentCommitPoint.isDeleted();
 
     deleteCommits();
+  }
+
+  public SegmentInfos getLastSegmentInfos() {
+    return lastSegmentInfos;
   }
 
   /**
