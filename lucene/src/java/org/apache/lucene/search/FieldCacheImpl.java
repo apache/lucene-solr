@@ -802,6 +802,14 @@ class FieldCacheImpl implements FieldCache {
       int startTermsBPV;
       int startNumUniqueTerms;
 
+      int maxDoc = reader.maxDoc();
+      final int termCountHardLimit;
+      if (maxDoc == Integer.MAX_VALUE) {
+        termCountHardLimit = Integer.MAX_VALUE;
+      } else {
+        termCountHardLimit = maxDoc+1;
+      }
+
       if (terms != null) {
         // Try for coarse estimate for number of bits; this
         // should be an underestimate most of the time, which
@@ -813,11 +821,17 @@ class FieldCacheImpl implements FieldCache {
           numUniqueTerms = -1;
         }
         if (numUniqueTerms != -1) {
+
+          if (numUniqueTerms > termCountHardLimit) {
+            // app is misusing the API (there is more than
+            // one term per doc); in this case we make best
+            // effort to load what we can (see LUCENE-2142)
+            numUniqueTerms = termCountHardLimit;
+          }
+
           startBytesBPV = PackedInts.bitsRequired(numUniqueTerms*4);
           startTermsBPV = PackedInts.bitsRequired(numUniqueTerms);
-          if (numUniqueTerms > Integer.MAX_VALUE-1) {
-            throw new IllegalStateException("this field has too many (" + numUniqueTerms + ") unique terms");
-          }
+
           startNumUniqueTerms = (int) numUniqueTerms;
         } else {
           startBytesBPV = 1;
@@ -847,6 +861,10 @@ class FieldCacheImpl implements FieldCache {
           if (term == null) {
             break;
           }
+          if (termOrd >= termCountHardLimit) {
+            break;
+          }
+
           if (termOrd == termOrdToBytesOffset.size()) {
             // NOTE: this code only runs if the incoming
             // reader impl doesn't implement
@@ -925,6 +943,8 @@ class FieldCacheImpl implements FieldCache {
 
       final boolean fasterButMoreRAM = ((Boolean) entryKey.custom).booleanValue();
 
+      final int termCountHardLimit = reader.maxDoc();
+
       // Holds the actual term data, expanded.
       final PagedBytes bytes = new PagedBytes(15);
 
@@ -941,6 +961,9 @@ class FieldCacheImpl implements FieldCache {
           numUniqueTerms = -1;
         }
         if (numUniqueTerms != -1) {
+          if (numUniqueTerms > termCountHardLimit) {
+            numUniqueTerms = termCountHardLimit;
+          }
           startBPV = PackedInts.bitsRequired(numUniqueTerms*4);
         } else {
           startBPV = 1;
@@ -955,10 +978,18 @@ class FieldCacheImpl implements FieldCache {
       bytes.copyUsingLengthPrefix(new BytesRef());
 
       if (terms != null) {
+        int termCount = 0;
         final TermsEnum termsEnum = terms.iterator();
         final Bits delDocs = MultiFields.getDeletedDocs(reader);
         DocsEnum docs = null;
         while(true) {
+          if (termCount++ == termCountHardLimit) {
+            // app is misusing the API (there is more than
+            // one term per doc); in this case we make best
+            // effort to load what we can (see LUCENE-2142)
+            break;
+          }
+
           final BytesRef term = termsEnum.next();
           if (term == null) {
             break;
