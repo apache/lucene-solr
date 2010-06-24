@@ -19,18 +19,21 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.document.*;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.*;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util._TestUtil;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.io.StringReader;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Random;
 
 /**
  * Tests {@link PhraseQuery}.
@@ -331,11 +334,11 @@ public class TestPhraseQuery extends LuceneTestCase {
     writer.addDocument(doc);
     
     Document doc2 = new Document();
-    doc2.add(new Field("field", "foo firstname xxx lastname foo", Field.Store.YES, Field.Index.ANALYZED));
+    doc2.add(new Field("field", "foo firstname zzz lastname foo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc2);
     
     Document doc3 = new Document();
-    doc3.add(new Field("field", "foo firstname xxx yyy lastname foo", Field.Store.YES, Field.Index.ANALYZED));
+    doc3.add(new Field("field", "foo firstname zzz yyy lastname foo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc3);
     
     writer.optimize();
@@ -517,6 +520,9 @@ public class TestPhraseQuery extends LuceneTestCase {
     //System.out.println("(exact) field: one two three: "+score0);
     QueryUtils.check(query,searcher);
 
+    // just make sure no exc:
+    searcher.explain(query, 0);
+
     // search on non palyndrome, find phrase with slop 3, though no slop required here.
     query.setSlop(4); // to use sloppy scorer 
     hits = searcher.search(query, null, 1000).scoreDocs;
@@ -533,6 +539,10 @@ public class TestPhraseQuery extends LuceneTestCase {
     query.add(new Term("palindrome", "two"));
     query.add(new Term("palindrome", "three"));
     hits = searcher.search(query, null, 1000).scoreDocs;
+
+    // just make sure no exc:
+    searcher.explain(query, 0);
+
     assertEquals("just sloppy enough", 1, hits.length);
     //float score2 = hits[0].score;
     //System.out.println("palindrome: one two three: "+score2);
@@ -571,5 +581,94 @@ public class TestPhraseQuery extends LuceneTestCase {
     pq.add(new Term("foo", "bar"));
     Query rewritten = pq.rewrite(searcher.getIndexReader());
     assertTrue(rewritten instanceof TermQuery);
+  }
+
+  public void testRandomPhrases() throws Exception {
+    Directory dir = new MockRAMDirectory();
+    Analyzer analyzer = new MockAnalyzer();
+
+    IndexWriter w  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    List<List<String>> docs = new ArrayList<List<String>>();
+    Document d = new Document();
+    Field f = new Field("f", "", Field.Store.NO, Field.Index.ANALYZED);
+    d.add(f);
+
+    Random r = newRandom();
+
+    int NUM_DOCS = 10*_TestUtil.getRandomMultiplier();
+    for(int i=0;i<NUM_DOCS;i++) {
+      // must be > 4096 so it spans multiple chunks
+      int termCount = _TestUtil.nextInt(r, 10000, 30000);
+
+      List<String> doc = new ArrayList<String>();
+
+      StringBuilder sb = new StringBuilder();
+      while(doc.size() < termCount) {
+        if (r.nextInt(5) == 1 || docs.size() == 0) {
+          // make new non-empty-string term
+          String term;
+          while(true) {
+            term = _TestUtil.randomUnicodeString(r);
+            if (term.length() > 0) {
+              break;
+            }
+          }
+          TokenStream ts = analyzer.reusableTokenStream("ignore", new StringReader(term));
+          CharTermAttribute termAttr = ts.addAttribute(CharTermAttribute.class);
+          while(ts.incrementToken()) {
+            String text = termAttr.toString();
+            doc.add(text);
+            sb.append(text).append(' ');
+          }
+        } else {
+          // pick existing sub-phrase
+          List<String> lastDoc = docs.get(r.nextInt(docs.size()));
+          int len = _TestUtil.nextInt(r, 1, 10);
+          int start = r.nextInt(lastDoc.size()-len);
+          for(int k=start;k<start+len;k++) {
+            String t = lastDoc.get(k);
+            doc.add(t);
+            sb.append(t).append(' ');
+          }
+        }
+      }
+      docs.add(doc);
+      f.setValue(sb.toString());
+      w.addDocument(d);
+    }
+
+    IndexReader reader = w.getReader();
+    IndexSearcher s = new IndexSearcher(reader);
+    w.close();
+
+    // now search
+    for(int i=0;i<100*_TestUtil.getRandomMultiplier();i++) {
+      int docID = r.nextInt(docs.size());
+      List<String> doc = docs.get(docID);
+      
+      final int numTerm = _TestUtil.nextInt(r, 2, 20);
+      final int start = r.nextInt(doc.size()-numTerm);
+      PhraseQuery pq = new PhraseQuery();
+      StringBuilder sb = new StringBuilder();
+      for(int t=start;t<start+numTerm;t++) {
+        pq.add(new Term("f", doc.get(t)));
+        sb.append(doc.get(t)).append(' ');
+      }
+
+      TopDocs hits = s.search(pq, NUM_DOCS);
+      boolean found = false;
+      for(int j=0;j<hits.scoreDocs.length;j++) {
+        if (hits.scoreDocs[j].doc == docID) {
+          found = true;
+          break;
+        }
+      }
+
+      assertTrue("phrase '" + sb + "' not found; start=" + start, found);
+    }
+
+    reader.close();
+    searcher.close();
+    dir.close();
   }
 }

@@ -171,32 +171,64 @@ public class MultiPhraseQuery extends Query {
       if (termArrays.size() == 0)                  // optimize zero-term case
         return null;
 
-      DocsAndPositionsEnum[] postings = new DocsAndPositionsEnum[termArrays.size()];
-      for (int i=0; i<postings.length; i++) {
+      final Bits delDocs = MultiFields.getDeletedDocs(reader);
+      
+      PhraseQuery.PostingsAndFreq[] postingsFreqs = new PhraseQuery.PostingsAndFreq[termArrays.size()];
+
+      for (int i=0; i<postingsFreqs.length; i++) {
         Term[] terms = termArrays.get(i);
 
         final DocsAndPositionsEnum postingsEnum;
+        int docFreq;
+
         if (terms.length > 1) {
           postingsEnum = new UnionDocsAndPositionsEnum(reader, terms);
+
+          // coarse -- this overcounts since a given doc can
+          // have more than one terms:
+          docFreq = 0;
+          for(int j=0;j<terms.length;j++) {
+            docFreq += reader.docFreq(terms[i]);
+          }
         } else {
-          postingsEnum = reader.termPositionsEnum(MultiFields.getDeletedDocs(reader),
+          final BytesRef text = new BytesRef(terms[0].text());
+          postingsEnum = reader.termPositionsEnum(delDocs,
                                                   terms[0].field(),
-                                                  new BytesRef(terms[0].text()));
+                                                  text);
+
+          if (postingsEnum == null) {
+            if (MultiFields.getTermDocsEnum(reader, delDocs, terms[0].field(), text) != null) {
+              // term does exist, but has no positions
+              throw new IllegalStateException("field \"" + terms[0].field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + terms[0].text() + ")");
+            } else {
+              // term does not exist
+              return null;
+            }
+          }
+
+          docFreq = reader.docFreq(terms[0].field(), text);
         }
 
-        if (postingsEnum == null) {
-          return null;
-        }
-
-        postings[i] = postingsEnum;
+        postingsFreqs[i] = new PhraseQuery.PostingsAndFreq(postingsEnum, docFreq, positions.get(i).intValue());
       }
 
-      if (slop == 0)
-        return new ExactPhraseScorer(this, postings, getPositions(), similarity,
-                                     reader.norms(field));
-      else
-        return new SloppyPhraseScorer(this, postings, getPositions(), similarity,
+      // sort by increasing docFreq order
+      if (slop == 0) {
+        Arrays.sort(postingsFreqs);
+      }
+
+      if (slop == 0) {
+        ExactPhraseScorer s = new ExactPhraseScorer(this, postingsFreqs, similarity,
+                                                    reader.norms(field));
+        if (s.noDocs) {
+          return null;
+        } else {
+          return s;
+        }
+      } else {
+        return new SloppyPhraseScorer(this, postingsFreqs, similarity,
                                       slop, reader.norms(field));
+      }
     }
 
     @Override
@@ -231,13 +263,24 @@ public class MultiPhraseQuery extends Query {
       fieldExpl.setDescription("fieldWeight("+getQuery()+" in "+doc+
                                "), product of:");
 
-      PhraseScorer scorer = (PhraseScorer) scorer(reader, true, false);
+      Scorer scorer = (Scorer) scorer(reader, true, false);
       if (scorer == null) {
         return new Explanation(0.0f, "no matching docs");
       }
+
       Explanation tfExplanation = new Explanation();
       int d = scorer.advance(doc);
-      float phraseFreq = (d == doc) ? scorer.currentFreq() : 0.0f;
+      float phraseFreq;
+      if (d == doc) {
+        if (slop == 0) {
+          phraseFreq = ((ExactPhraseScorer) scorer).currentFreq();
+        } else {
+          phraseFreq = ((SloppyPhraseScorer) scorer).currentFreq();
+        }
+      } else {
+        phraseFreq = 0.0f;
+      }
+
       tfExplanation.setValue(similarity.tf(phraseFreq));
       tfExplanation.setDescription("tf(phraseFreq=" + phraseFreq + ")");
       fieldExpl.addDetail(tfExplanation);
@@ -456,11 +499,17 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
     List<DocsAndPositionsEnum> docsEnums = new LinkedList<DocsAndPositionsEnum>();
     final Bits delDocs = MultiFields.getDeletedDocs(indexReader);
     for (int i = 0; i < terms.length; i++) {
+      final BytesRef text = new BytesRef(terms[i].text());
       DocsAndPositionsEnum postings = indexReader.termPositionsEnum(delDocs,
                                                                     terms[i].field(),
-                                                                    new BytesRef(terms[i].text()));
+                                                                    text);
       if (postings != null) {
         docsEnums.add(postings);
+      } else {
+        if (MultiFields.getTermDocsEnum(indexReader, delDocs, terms[i].field(), text) != null) {
+          // term does exist, but has no positions
+          throw new IllegalStateException("field \"" + terms[i].field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + terms[i].text() + ")");
+        }
       }
     }
 
