@@ -235,30 +235,24 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       if (!reader.isDeleted(i)) {
         Document d = reader.document(i);
         List<Fieldable> fields = d.getFields();
-        if (!oldName.startsWith("19.") &&
-            !oldName.startsWith("20.") &&
-            !oldName.startsWith("21.") &&
-            !oldName.startsWith("22.")) {
+        if (d.getField("content3") == null) {
+          final int numFields = 5;
+          assertEquals(numFields, fields.size());
+          Field f =  d.getField("id");
+          assertEquals(""+i, f.stringValue());
 
-          if (d.getField("content3") == null) {
-            final int numFields = 5;
-            assertEquals(numFields, fields.size());
-            Field f =  d.getField("id");
-            assertEquals(""+i, f.stringValue());
+          f = d.getField("utf8");
+          assertEquals("Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", f.stringValue());
 
-            f = d.getField("utf8");
-            assertEquals("Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", f.stringValue());
+          f =  d.getField("autf8");
+          assertEquals("Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", f.stringValue());
+      
+          f = d.getField("content2");
+          assertEquals("here is more content with aaa aaa aaa", f.stringValue());
 
-            f =  d.getField("autf8");
-            assertEquals("Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", f.stringValue());
-        
-            f = d.getField("content2");
-            assertEquals("here is more content with aaa aaa aaa", f.stringValue());
-
-            f = d.getField("fie\u2C77ld");
-            assertEquals("field with non-ascii name", f.stringValue());
-          }
-        }       
+          f = d.getField("fie\u2C77ld");
+          assertEquals("field with non-ascii name", f.stringValue());
+        }
       } else
         // Only ID 7 is deleted
         assertEquals(7, i);
@@ -273,18 +267,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     doTestHits(hits, 34, searcher.getIndexReader());
 
-    if (!oldName.startsWith("19.") &&
-        !oldName.startsWith("20.") &&
-        !oldName.startsWith("21.") &&
-        !oldName.startsWith("22.")) {
-      // Test on indices >= 2.3
-      hits = searcher.search(new TermQuery(new Term("utf8", "\u0000")), null, 1000).scoreDocs;
-      assertEquals(34, hits.length);
-      hits = searcher.search(new TermQuery(new Term("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne")), null, 1000).scoreDocs;
-      assertEquals(34, hits.length);
-      hits = searcher.search(new TermQuery(new Term("utf8", "ab\ud917\udc17cd")), null, 1000).scoreDocs;
-      assertEquals(34, hits.length);
-    }
+    hits = searcher.search(new TermQuery(new Term("utf8", "\u0000")), null, 1000).scoreDocs;
+    assertEquals(34, hits.length);
+    hits = searcher.search(new TermQuery(new Term("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne")), null, 1000).scoreDocs;
+    assertEquals(34, hits.length);
+    hits = searcher.search(new TermQuery(new Term("utf8", "ab\ud917\udc17cd")), null, 1000).scoreDocs;
+    assertEquals(34, hits.length);
 
     searcher.close();
     dir.close();
@@ -563,12 +551,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   public static String fullDir(String dirName) throws IOException {
     return new File(TEMP_DIR, dirName).getCanonicalPath();
   }
-
-  static final String TEXT_TO_COMPRESS = "this is a compressed field and should appear in 3.0 as an uncompressed field after merge";
-
-  // FieldSelectorResult.SIZE returns compressed size for compressed fields, which are internally handled as binary;
-  // do it in the same way like FieldsWriter, do not use CompressionTools.compressString() for compressed fields:
-  static final byte[] BINARY_TO_COMPRESS = new byte[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20};
 
   private int countDocs(DocsEnum docs) throws IOException {
     int count = 0;
