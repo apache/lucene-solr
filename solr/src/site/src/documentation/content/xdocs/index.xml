@@ -66,6 +66,23 @@ customization is required.
     </section>
     <section id="news">
       <title>News</title>
+        <section>
+          <title>25 June 2010 - Solr 1.4.1 Released</title>
+          <p>
+           Solr 1.4.1 has been released and is now available for public
+           <a href="http://www.apache.org/dyn/closer.cgi/lucene/solr/">download</a>!
+
+           Solr 1.4.1 is a bug fix release for Solr 1.4 that includes many
+           Solr bug fixes as well as Lucene bug fixes from Lucene 2.9.3.
+          </p>
+
+          <p>
+          See the <a
+          href="http://svn.apache.org/repos/asf/lucene/solr/tags/release-1.4.1/CHANGES.txt">release notes</a>
+          for more details.
+          </p>
+
+        </section>
       <section>
 	<title>7 May 2010 - Apache Lucene Eurocon 2010 Coming to Prague May 18-21</title>
 	<p>
