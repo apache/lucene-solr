@@ -194,6 +194,7 @@ final class IndexFileDeleter {
               // Most likely we are opening an index that
               // has an aborted "future" commit, so suppress
               // exc in this case
+              sis = null;
             }
           }
           if (sis != null) {
