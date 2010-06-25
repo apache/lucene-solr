@@ -294,7 +294,7 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
       bytes = new byte[length];
       in.read(bytes, 0, length);
     } else {
-      bytes = null;
+      bytes = EMPTY_BYTES;
     }
   }
 }
