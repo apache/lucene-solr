@@ -63,6 +63,11 @@ class DirectoryReader extends IndexReader implements Cloneable {
   private int numDocs = -1;
   private boolean hasDeletions = false;
 
+  // Max version in index as of when we opened; this can be
+  // > our current segmentInfos version in case we were
+  // opened on a past IndexCommit:
+  private long maxIndexVersion;
+
   static IndexReader open(final Directory directory, final IndexDeletionPolicy deletionPolicy, final IndexCommit commit, final boolean readOnly,
                           final int termInfosIndexDivisor) throws CorruptIndexException, IOException {
     return (IndexReader) new SegmentInfos.FindSegmentsFile(directory) {
@@ -292,7 +297,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
     return buffer.toString();
   }
 
-  private void initialize(SegmentReader[] subReaders) {
+  private void initialize(SegmentReader[] subReaders) throws IOException {
     this.subReaders = subReaders;
     starts = new int[subReaders.length + 1];    // build starts array
     for (int i = 0; i < subReaders.length; i++) {
@@ -303,6 +308,10 @@ class DirectoryReader extends IndexReader implements Cloneable {
         hasDeletions = true;
     }
     starts[subReaders.length] = maxDoc;
+
+    if (!readOnly) {
+      maxIndexVersion = SegmentInfos.readCurrentVersion(directory);
+    }
   }
 
   @Override
@@ -721,8 +730,9 @@ class DirectoryReader extends IndexReader implements Cloneable {
         this.writeLock = writeLock;
 
         // we have to check whether index has changed since this reader was opened.
-        // if so, this reader is no longer valid for deletion
-        if (SegmentInfos.readCurrentVersion(directory) > segmentInfos.getVersion()) {
+        // if so, this reader is no longer valid for
+        // deletion
+        if (SegmentInfos.readCurrentVersion(directory) > maxIndexVersion) {
           stale = true;
           this.writeLock.release();
           this.writeLock = null;
@@ -749,6 +759,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
       IndexFileDeleter deleter = new IndexFileDeleter(directory,
                                                       deletionPolicy == null ? new KeepOnlyLastCommitDeletionPolicy() : deletionPolicy,
                                                       segmentInfos, null, null);
+      segmentInfos.updateGeneration(deleter.getLastSegmentInfos());
 
       // Checkpoint the state we are about to change, in
       // case we have to roll back:
@@ -786,6 +797,8 @@ class DirectoryReader extends IndexReader implements Cloneable {
       // files due to this commit:
       deleter.checkpoint(segmentInfos, true);
       deleter.close();
+
+      maxIndexVersion = segmentInfos.getVersion();
 
       if (writeLock != null) {
         writeLock.release();  // release write lock
