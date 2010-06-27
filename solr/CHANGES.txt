@@ -185,6 +185,7 @@ New Features
              Example search UI now available at http://localhost:8983/solr/browse
              (ehatcher)
 
+* SOLR-1974: Add LimitTokenCountFilterFactory. (koji)
    
 Optimizations
 ----------------------
