@@ -143,6 +143,7 @@ New Features
 * SOLR-1923: PhoneticFilterFactory now has support for the 
   Caverphone algorithm. (rmuir)
 
+* SOLR-1974: Add LimitTokenCountFilterFactory. (koji)
    
 Optimizations
 ----------------------
