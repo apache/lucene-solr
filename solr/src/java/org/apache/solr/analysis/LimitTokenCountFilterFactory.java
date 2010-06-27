@@ -32,7 +32,6 @@ public class LimitTokenCountFilterFactory extends BaseTokenFilterFactory {
     maxTokenCount = Integer.parseInt( args.get( "maxTokenCount" ) );
   }
 
-  @Override
   public TokenStream create(TokenStream input) {
     return new LimitTokenCountFilter( input, maxTokenCount );
   }
