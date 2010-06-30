@@ -29,6 +29,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
+
+import org.apache.solr.common.params.QueryElevationParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,22 +79,20 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
   // Constants used in solrconfig.xml
   static final String FIELD_TYPE = "queryFieldType";
   static final String CONFIG_FILE = "config-file";
-  static final String FORCE_ELEVATION = "forceElevation";
   static final String EXCLUDE = "exclude";
   
   // Runtime param -- should be in common?
-  static final String ENABLE = "enableElevation";
-    
+
   private SolrParams initArgs = null;
   private Analyzer analyzer = null;
   private String idField = null;
+
   boolean forceElevation = false;
-  
   // For each IndexReader, keep a query->elevation map
   // When the configuration is loaded from the data directory.
   // The key is null if loaded from the config directory, and
   // is never re-loaded.
-  final Map<IndexReader,Map<String, ElevationObj>> elevationCache = 
+  final Map<IndexReader,Map<String, ElevationObj>> elevationCache =
     new WeakHashMap<IndexReader, Map<String,ElevationObj>>();
 
   class ElevationObj {
@@ -160,7 +160,7 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     }
     idField = StringHelper.intern(sf.getName());
     
-    forceElevation = initArgs.getBool( FORCE_ELEVATION, forceElevation );
+    forceElevation = initArgs.getBool( QueryElevationParams.FORCE_ELEVATION, forceElevation );
     try {
       synchronized( elevationCache ) {
         elevationCache.clear();
@@ -316,12 +316,13 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     SolrQueryRequest req = rb.req;
     SolrParams params = req.getParams();
     // A runtime param can skip 
-    if( !params.getBool( ENABLE, true ) ) {
+    if( !params.getBool( QueryElevationParams.ENABLE, true ) ) {
       return;
     }
 
+    boolean exclusive = params.getBool(QueryElevationParams.EXCLUSIVE, false);
     // A runtime parameter can alter the config value for forceElevation
-    boolean force = params.getBool( FORCE_ELEVATION, forceElevation );
+    boolean force = params.getBool( QueryElevationParams.FORCE_ELEVATION, forceElevation );
     
     Query query = rb.getQuery();
     String qstr = rb.getQueryString();
@@ -342,15 +343,21 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
     
     if( booster != null ) {
       // Change the query to insert forced documents
-      BooleanQuery newq = new BooleanQuery( true );
-      newq.add( query, BooleanClause.Occur.SHOULD );
-      newq.add( booster.include, BooleanClause.Occur.SHOULD );
-      if( booster.exclude != null ) {
-        for( BooleanClause bq : booster.exclude ) {
-          newq.add( bq );
+      if (exclusive == true){
+        //we only want these results
+        rb.setQuery(booster.include);
+      } else {
+        BooleanQuery newq = new BooleanQuery( true );
+        newq.add( query, BooleanClause.Occur.SHOULD );
+        newq.add( booster.include, BooleanClause.Occur.SHOULD );
+        if( booster.exclude != null ) {
+          for( BooleanClause bq : booster.exclude ) {
+            newq.add( bq );
+          }
         }
+        rb.setQuery( newq );
       }
-      rb.setQuery( newq );
+
       
       // if the sort is 'score desc' use a custom sorting method to 
       // insert documents in their proper place 

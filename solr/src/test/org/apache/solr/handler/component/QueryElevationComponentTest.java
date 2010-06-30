@@ -29,6 +29,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.QueryElevationParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.QueryElevationComponent.ElevationObj;
@@ -198,10 +199,19 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
         ,"//result/doc[3]/str[@name='id'][.='b']"
         ,"//result/doc[4]/str[@name='id'][.='c']"
         );
-    
+
+    //Test exclusive (not to be confused with exclusion)
+    args.put(QueryElevationParams.EXCLUSIVE, "true");
+    booster.setTopQueryResults( reader, query, new String[] { "x" },  new String[] {} );
+    assertQ( null, req
+        ,"//*[@numFound='1']"
+        ,"//result/doc[1]/str[@name='id'][.='x']"
+        );
+
     // Test exclusion
     booster.elevationCache.clear();
     args.remove( CommonParams.SORT );
+    args.remove( QueryElevationParams.EXCLUSIVE);
     booster.setTopQueryResults( reader, query, new String[] { "x" },  new String[] { "a" } );
     assertQ( null, req
         ,"//*[@numFound='3']"
@@ -209,6 +219,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
         ,"//result/doc[2]/str[@name='id'][.='b']"
         ,"//result/doc[3]/str[@name='id'][.='c']"
         );
+
   }
   
   // write a test file to boost some docs

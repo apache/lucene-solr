@@ -186,6 +186,8 @@ New Features
              (ehatcher)
 
 * SOLR-1974: Add LimitTokenCountFilterFactory. (koji)
+
+* SOLR-1966: QueryElevationComponent can now return just the included results in the elevation file (gsingers, yonik)
    
 Optimizations
 ----------------------
