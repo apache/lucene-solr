@@ -203,12 +203,12 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
 
     //Test exclusive (not to be confused with exclusion)
     args.put(QueryElevationParams.EXCLUSIVE, "true");
-    booster.setTopQueryResults( reader, query, new String[] { "x" },  new String[] {} );
-    assertQ( null, req
-        ,"//*[@numFound='1']"
-        ,"//result/doc[1]/str[@name='id'][.='x']"
-        );
-
+	booster.setTopQueryResults( reader, query, new String[] { "x", "a" },  new String[] {} );
+	assertQ( null, req
+	    ,"//*[@numFound='2']"
+	    ,"//result/doc[1]/str[@name='id'][.='x']"
+	    ,"//result/doc[2]/str[@name='id'][.='a']"            
+	    );
     // Test exclusion
     booster.elevationCache.clear();
     args.remove( CommonParams.SORT );
