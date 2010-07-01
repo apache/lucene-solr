@@ -220,7 +220,8 @@ final class FieldsReader implements Cloneable {
       }
       else if (acceptField.equals(FieldSelectorResult.LAZY_LOAD)) {
         addFieldLazy(doc, fi, binary, tokenize, true);
-      } else if (acceptField.equals(FieldSelectorResult.LATENT)) {
+      }
+      else if (acceptField.equals(FieldSelectorResult.LATENT)) {
         addFieldLazy(doc, fi, binary, tokenize, false);
       }
       else if (acceptField.equals(FieldSelectorResult.SIZE)){
