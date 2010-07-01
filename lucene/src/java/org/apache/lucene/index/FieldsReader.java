@@ -219,7 +219,9 @@ final class FieldsReader implements Cloneable {
         break;//Get out of this loop
       }
       else if (acceptField.equals(FieldSelectorResult.LAZY_LOAD)) {
-        addFieldLazy(doc, fi, binary, tokenize);
+        addFieldLazy(doc, fi, binary, tokenize, true);
+      } else if (acceptField.equals(FieldSelectorResult.LATENT)) {
+        addFieldLazy(doc, fi, binary, tokenize, false);
       }
       else if (acceptField.equals(FieldSelectorResult.SIZE)){
         skipField(addFieldSize(doc, fi, binary));
@@ -274,12 +276,12 @@ final class FieldsReader implements Cloneable {
     fieldsStream.seek(fieldsStream.getFilePointer() + toRead);
   }
 
-  private void addFieldLazy(Document doc, FieldInfo fi, boolean binary, boolean tokenize) throws IOException {
+  private void addFieldLazy(Document doc, FieldInfo fi, boolean binary, boolean tokenize, boolean cacheResult) throws IOException {
     if (binary) {
       int toRead = fieldsStream.readVInt();
       long pointer = fieldsStream.getFilePointer();
       //was: doc.add(new Fieldable(fi.name, b, Fieldable.Store.YES));
-      doc.add(new LazyField(fi.name, Field.Store.YES, toRead, pointer, binary));
+      doc.add(new LazyField(fi.name, Field.Store.YES, toRead, pointer, binary, cacheResult));
       //Need to move the pointer ahead by toRead positions
       fieldsStream.seek(pointer + toRead);
     } else {
@@ -292,7 +294,7 @@ final class FieldsReader implements Cloneable {
       long pointer = fieldsStream.getFilePointer();
       //Skip ahead of where we are by the length of what is stored
       fieldsStream.seek(pointer+length);
-      f = new LazyField(fi.name, store, index, termVector, length, pointer, binary);
+      f = new LazyField(fi.name, store, index, termVector, length, pointer, binary, cacheResult);
       f.setOmitNorms(fi.omitNorms);
       f.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
 
@@ -349,22 +351,25 @@ final class FieldsReader implements Cloneable {
   private class LazyField extends AbstractField implements Fieldable {
     private int toRead;
     private long pointer;
+    private final boolean cacheResult;
 
-    public LazyField(String name, Field.Store store, int toRead, long pointer, boolean isBinary) {
+    public LazyField(String name, Field.Store store, int toRead, long pointer, boolean isBinary, boolean cacheResult) {
       super(name, store, Field.Index.NO, Field.TermVector.NO);
       this.toRead = toRead;
       this.pointer = pointer;
       this.isBinary = isBinary;
+      this.cacheResult = cacheResult;
       if (isBinary)
         binaryLength = toRead;
       lazy = true;
     }
 
-    public LazyField(String name, Field.Store store, Field.Index index, Field.TermVector termVector, int toRead, long pointer, boolean isBinary) {
+    public LazyField(String name, Field.Store store, Field.Index index, Field.TermVector termVector, int toRead, long pointer, boolean isBinary, boolean cacheResult) {
       super(name, store, index, termVector);
       this.toRead = toRead;
       this.pointer = pointer;
       this.isBinary = isBinary;
+      this.cacheResult = cacheResult;
       if (isBinary)
         binaryLength = toRead;
       lazy = true;
@@ -404,17 +409,23 @@ final class FieldsReader implements Cloneable {
         return null;
       else {
         if (fieldsData == null) {
+          String result = null;
           IndexInput localFieldsStream = getFieldStream();
           try {
             localFieldsStream.seek(pointer);
             byte[] bytes = new byte[toRead];
             localFieldsStream.readBytes(bytes, 0, toRead);
-            fieldsData = new String(bytes, "UTF-8");
+            result = new String(bytes, "UTF-8");
           } catch (IOException e) {
             throw new FieldReaderException(e);
           }
+          if (cacheResult == true){
+            fieldsData = result;
+          }
+          return result;
+        } else {
+          return (String) fieldsData;
         }
-        return (String) fieldsData;
       }
     }
 
@@ -438,16 +449,19 @@ final class FieldsReader implements Cloneable {
           try {
             localFieldsStream.seek(pointer);
             localFieldsStream.readBytes(b, 0, toRead);
-            fieldsData = b;
           } catch (IOException e) {
             throw new FieldReaderException(e);
           }
 
           binaryOffset = 0;
           binaryLength = toRead;
+          if (cacheResult == true){
+            fieldsData = b;
+          }
+          return b;
+        } else {
+          return (byte[]) fieldsData;
         }
-
-        return (byte[]) fieldsData;
       } else
         return null;     
     }

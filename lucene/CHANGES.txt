@@ -184,6 +184,9 @@ New features
 * LUCENE-2489: Added PerFieldCodecWrapper (in oal.index.codecs) which
   lets you set the Codec per field (Mike McCandless)
 
+* LUCENE-1810: Added FieldSelectorResult.LATENT to not cache lazy loaded fields
+  (Tim Smith, Grant Ingersoll)
+
 Optimizations
 
 * LUCENE-2410: ~2.5X speedup on exact (slop=0) PhraseQuery matching.
