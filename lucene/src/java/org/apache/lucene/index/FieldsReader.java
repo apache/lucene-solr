@@ -243,8 +243,10 @@ final class FieldsReader implements Cloneable {
         break;//Get out of this loop
       }
       else if (acceptField.equals(FieldSelectorResult.LAZY_LOAD)) {
-        addFieldLazy(doc, fi, binary, compressed, tokenize);
-      }
+        addFieldLazy(doc, fi, binary, compressed, tokenize, true);
+      } else if (acceptField.equals(FieldSelectorResult.LATENT)) {
+        addFieldLazy(doc, fi, binary, compressed, tokenize, false);
+	  }
       else if (acceptField.equals(FieldSelectorResult.SIZE)){
         skipField(binary, compressed, addFieldSize(doc, fi, binary, compressed));
       }
@@ -303,12 +305,12 @@ final class FieldsReader implements Cloneable {
    }
   }
 
-  private void addFieldLazy(Document doc, FieldInfo fi, boolean binary, boolean compressed, boolean tokenize) throws IOException {
+  private void addFieldLazy(Document doc, FieldInfo fi, boolean binary, boolean compressed, boolean tokenize, boolean cacheResult) throws IOException {
     if (binary) {
       int toRead = fieldsStream.readVInt();
       long pointer = fieldsStream.getFilePointer();
       //was: doc.add(new Fieldable(fi.name, b, Fieldable.Store.YES));
-      doc.add(new LazyField(fi.name, Field.Store.YES, toRead, pointer, binary, compressed));
+      doc.add(new LazyField(fi.name, Field.Store.YES, toRead, pointer, binary, compressed, cacheResult));
       //Need to move the pointer ahead by toRead positions
       fieldsStream.seek(pointer + toRead);
     } else {
@@ -320,7 +322,7 @@ final class FieldsReader implements Cloneable {
       if (compressed) {
         int toRead = fieldsStream.readVInt();
         long pointer = fieldsStream.getFilePointer();
-        f = new LazyField(fi.name, store, toRead, pointer, binary, compressed);
+        f = new LazyField(fi.name, store, toRead, pointer, binary, compressed, cacheResult);
         //skip over the part that we aren't loading
         fieldsStream.seek(pointer + toRead);
         f.setOmitNorms(fi.omitNorms);
@@ -334,7 +336,7 @@ final class FieldsReader implements Cloneable {
         } else {
           fieldsStream.skipChars(length);
         }
-        f = new LazyField(fi.name, store, index, termVector, length, pointer, binary, compressed);
+        f = new LazyField(fi.name, store, index, termVector, length, pointer, binary, compressed, cacheResult);
         f.setOmitNorms(fi.omitNorms);
         f.setOmitTermFreqAndPositions(fi.omitTermFreqAndPositions);
       }
@@ -414,23 +416,26 @@ final class FieldsReader implements Cloneable {
     /** @deprecated Only kept for backward-compatbility with <3.0 indexes. Will be removed in 4.0. */
     @Deprecated
     private boolean isCompressed;
+	private boolean cacheResult;
 
-    public LazyField(String name, Field.Store store, int toRead, long pointer, boolean isBinary, boolean isCompressed) {
+    public LazyField(String name, Field.Store store, int toRead, long pointer, boolean isBinary, boolean isCompressed, boolean cacheResult) {
       super(name, store, Field.Index.NO, Field.TermVector.NO);
       this.toRead = toRead;
       this.pointer = pointer;
       this.isBinary = isBinary;
+	  this.cacheResult = cacheResult;
       if (isBinary)
         binaryLength = toRead;
       lazy = true;
       this.isCompressed = isCompressed;
     }
 
-    public LazyField(String name, Field.Store store, Field.Index index, Field.TermVector termVector, int toRead, long pointer, boolean isBinary, boolean isCompressed) {
+    public LazyField(String name, Field.Store store, Field.Index index, Field.TermVector termVector, int toRead, long pointer, boolean isBinary, boolean isCompressed, boolean cacheResult) {
       super(name, store, index, termVector);
       this.toRead = toRead;
       this.pointer = pointer;
       this.isBinary = isBinary;
+	  this.cacheResult = cacheResult;
       if (isBinary)
         binaryLength = toRead;
       lazy = true;
@@ -472,29 +477,36 @@ final class FieldsReader implements Cloneable {
       else {
         if (fieldsData == null) {
           IndexInput localFieldsStream = getFieldStream();
+		  String value;
           try {
             localFieldsStream.seek(pointer);
             if (isCompressed) {
               final byte[] b = new byte[toRead];
               localFieldsStream.readBytes(b, 0, b.length);
-              fieldsData = new String(uncompress(b), "UTF-8");
+              value = new String(uncompress(b), "UTF-8");
             } else {
               if (format >= FieldsWriter.FORMAT_VERSION_UTF8_LENGTH_IN_BYTES) {
                 byte[] bytes = new byte[toRead];
                 localFieldsStream.readBytes(bytes, 0, toRead);
-                fieldsData = new String(bytes, "UTF-8");
+                value = new String(bytes, "UTF-8");
               } else {
                 //read in chars b/c we already know the length we need to read
                 char[] chars = new char[toRead];
                 localFieldsStream.readChars(chars, 0, toRead);
-                fieldsData = new String(chars);
+                value = new String(chars);
               }
             }
           } catch (IOException e) {
             throw new FieldReaderException(e);
           }
-        }
-        return (String) fieldsData;
+		  if (cacheResult == true){
+			fieldsData = value;
+		  }
+		  return value;
+        } else{
+			return (String) fieldsData;
+		}
+        
       }
     }
 
@@ -526,6 +538,7 @@ final class FieldsReader implements Cloneable {
         if (fieldsData == null) {
           // Allocate new buffer if result is null or too small
           final byte[] b;
+		  byte[] value;
           if (result == null || result.length < toRead)
             b = new byte[toRead];
           else
@@ -539,19 +552,25 @@ final class FieldsReader implements Cloneable {
             localFieldsStream.seek(pointer);
             localFieldsStream.readBytes(b, 0, toRead);
             if (isCompressed == true) {
-              fieldsData = uncompress(b);
+              value = uncompress(b);
             } else {
-              fieldsData = b;
-            }
+			  value = b;
+			}
           } catch (IOException e) {
             throw new FieldReaderException(e);
           }
 
           binaryOffset = 0;
           binaryLength = toRead;
-        }
+		  if (cacheResult == true){
+			fieldsData = value;
+		  }
+		  return value;
+        } else{
+		  return (byte[]) fieldsData;
+		}
 
-        return (byte[]) fieldsData;
+        
       } else
         return null;     
     }

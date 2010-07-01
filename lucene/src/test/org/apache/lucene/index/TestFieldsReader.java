@@ -128,6 +128,8 @@ public class TestFieldsReader extends LuceneTestCase {
     String value = field.stringValue();
     assertTrue("value is null and it shouldn't be", value != null);
     assertTrue(value + " is not equal to " + DocHelper.LAZY_FIELD_TEXT, value.equals(DocHelper.LAZY_FIELD_TEXT) == true);
+    assertTrue("calling stringValue() twice should give same reference", field.stringValue() == field.stringValue());
+
     field = doc.getFieldable(DocHelper.TEXT_FIELD_1_KEY);
     assertTrue("field is null and it shouldn't be", field != null);
     assertTrue("Field is lazy and it should not be", field.isLazy() == false);
@@ -148,11 +150,84 @@ public class TestFieldsReader extends LuceneTestCase {
     byte [] bytes = field.getBinaryValue();
     assertTrue("bytes is null and it shouldn't be", bytes != null);
     assertTrue("", DocHelper.LAZY_FIELD_BINARY_BYTES.length == bytes.length);
+    assertTrue("calling binaryValue() twice should give same reference", field.getBinaryValue() == field.getBinaryValue());
     for (int i = 0; i < bytes.length; i++) {
       assertTrue("byte[" + i + "] is mismatched", bytes[i] == DocHelper.LAZY_FIELD_BINARY_BYTES[i]);
 
     }
   }
+
+  public void testLatentFields() throws Exception {
+    assertTrue(dir != null);
+    assertTrue(fieldInfos != null);
+    FieldsReader reader = new FieldsReader(dir, TEST_SEGMENT_NAME, fieldInfos);
+    assertTrue(reader != null);
+    assertTrue(reader.size() == 1);
+    Set loadFieldNames = new HashSet();
+    loadFieldNames.add(DocHelper.TEXT_FIELD_1_KEY);
+    loadFieldNames.add(DocHelper.TEXT_FIELD_UTF1_KEY);
+    Set lazyFieldNames = new HashSet();
+    //new String[]{DocHelper.LARGE_LAZY_FIELD_KEY, DocHelper.LAZY_FIELD_KEY, DocHelper.LAZY_FIELD_BINARY_KEY};
+    lazyFieldNames.add(DocHelper.LARGE_LAZY_FIELD_KEY);
+    lazyFieldNames.add(DocHelper.LAZY_FIELD_KEY);
+    lazyFieldNames.add(DocHelper.LAZY_FIELD_BINARY_KEY);
+    lazyFieldNames.add(DocHelper.TEXT_FIELD_UTF2_KEY);
+
+    // Use LATENT instead of LAZY
+    SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(loadFieldNames, lazyFieldNames) {
+        public FieldSelectorResult accept(String fieldName) {
+          final FieldSelectorResult result = super.accept(fieldName);
+          if (result.equals(FieldSelectorResult.LAZY_LOAD)) {
+            return FieldSelectorResult.LATENT;
+          } else {
+            return result;
+          }
+        }
+      };
+
+    Document doc = reader.doc(0, fieldSelector);
+    assertTrue("doc is null and it shouldn't be", doc != null);
+    Fieldable field = doc.getFieldable(DocHelper.LAZY_FIELD_KEY);
+    assertTrue("field is null and it shouldn't be", field != null);
+    assertTrue("field is not lazy and it should be", field.isLazy());
+    String value = field.stringValue();
+    assertTrue("value is null and it shouldn't be", value != null);
+    assertTrue(value + " is not equal to " + DocHelper.LAZY_FIELD_TEXT, value.equals(DocHelper.LAZY_FIELD_TEXT) == true);
+    assertTrue("calling stringValue() twice should give different references", field.stringValue() != field.stringValue());
+
+    field = doc.getFieldable(DocHelper.TEXT_FIELD_1_KEY);
+    assertTrue("field is null and it shouldn't be", field != null);
+    assertTrue("Field is lazy and it should not be", field.isLazy() == false);
+    assertTrue("calling stringValue() twice should give same reference", field.stringValue() == field.stringValue());
+
+    field = doc.getFieldable(DocHelper.TEXT_FIELD_UTF1_KEY);
+    assertTrue("field is null and it shouldn't be", field != null);
+    assertTrue("Field is lazy and it should not be", field.isLazy() == false);
+    assertTrue(field.stringValue() + " is not equal to " + DocHelper.FIELD_UTF1_TEXT, field.stringValue().equals(DocHelper.FIELD_UTF1_TEXT) == true);
+    assertTrue("calling stringValue() twice should give same reference", field.stringValue() == field.stringValue());
+
+    field = doc.getFieldable(DocHelper.TEXT_FIELD_UTF2_KEY);
+    assertTrue("field is null and it shouldn't be", field != null);
+    assertTrue("Field is lazy and it should not be", field.isLazy() == true);
+    assertTrue(field.stringValue() + " is not equal to " + DocHelper.FIELD_UTF2_TEXT, field.stringValue().equals(DocHelper.FIELD_UTF2_TEXT) == true);
+    assertTrue("calling stringValue() twice should give different references", field.stringValue() != field.stringValue());
+
+    field = doc.getFieldable(DocHelper.LAZY_FIELD_BINARY_KEY);
+    assertTrue("field is null and it shouldn't be", field != null);
+    assertTrue("stringValue isn't null for lazy binary field", field.stringValue() == null);
+    assertTrue("calling binaryValue() twice should give different references", field.getBinaryValue() != field.getBinaryValue());
+
+    byte [] bytes = field.getBinaryValue();
+    assertTrue("bytes is null and it shouldn't be", bytes != null);
+    assertTrue("", DocHelper.LAZY_FIELD_BINARY_BYTES.length == bytes.length);
+    for (int i = 0; i < bytes.length; i++) {
+      assertTrue("byte[" + i + "] is mismatched", bytes[i] == DocHelper.LAZY_FIELD_BINARY_BYTES[i]);
+
+    }
+  }
+
+
+
 
   public void testLazyFieldsAfterClose() throws Exception {
     assertTrue(dir != null);
