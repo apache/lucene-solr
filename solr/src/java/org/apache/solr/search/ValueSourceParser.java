@@ -47,7 +47,7 @@ import java.util.Collections;
 
 /**
  * A factory that parses user queries to generate ValueSource instances.
- * Intented usage is to create pluggable, named functions for use in function queries.
+ * Intended usage is to create pluggable, named functions for use in function queries.
  */
 public abstract class ValueSourceParser implements NamedListInitializedPlugin {
   /**
