@@ -66,6 +66,9 @@ public class TestTermVectors extends LuceneTestCase {
       }
       doc.add(new Field("field", English.intToEnglish(i),
           Field.Store.YES, Field.Index.ANALYZED, termVector));
+      //test no term vectors too
+      doc.add(new Field("noTV", English.intToEnglish(i),
+          Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     writer.close();
@@ -88,6 +91,14 @@ public class TestTermVectors extends LuceneTestCase {
         assertTrue(vector != null);
         assertTrue(vector.length == 1);
       }
+      TermFreqVector vector;
+      vector = searcher.reader.getTermFreqVector(hits[0].doc, "noTV");
+      assertNull(vector);
+
+      TestTermVectorMapper mapper = new TestTermVectorMapper();
+      searcher.reader.getTermFreqVector(hits[0].doc, "noTV", mapper);
+      assertNull(mapper.field);
+
     } catch (IOException e) {
       assertTrue(false);
     }
@@ -424,6 +435,20 @@ public class TestTermVectors extends LuceneTestCase {
     for(int i=0;i<5;i++) {
       assertEquals(4*i, offsets[i].getStartOffset());
       assertEquals(4*i+3, offsets[i].getEndOffset());
+    }
+  }
+
+  private static class TestTermVectorMapper extends TermVectorMapper {
+    public String field = null;
+
+    @Override
+    public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
+      this.field = field;
+    }
+
+    @Override
+    public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
+
     }
   }
 }
