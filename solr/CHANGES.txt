@@ -188,6 +188,12 @@ New Features
 * SOLR-1974: Add LimitTokenCountFilterFactory. (koji)
 
 * SOLR-1966: QueryElevationComponent can now return just the included results in the elevation file (gsingers, yonik)
+
+* SOLR-1556: TermVectorComponent now supports per field overrides.  Also, it now throws an error
+ if passed in fields do not exist and warnings
+  if fields that do not have term vector options (termVectors, offsets, positions)
+   that align with the schema declaration. It also
+    will now return warnings about (gsingers)
    
 Optimizations
 ----------------------
