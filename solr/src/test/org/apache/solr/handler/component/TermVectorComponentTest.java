@@ -1,7 +1,6 @@
 package org.apache.solr.handler.component;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.CommonParams;
@@ -19,6 +18,7 @@ import static org.junit.Assert.*;
 import java.util.HashMap;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -46,18 +46,77 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml","schema.xml");
 
-    assertNull(h.validateUpdate(adoc("id", "0", "test_posofftv", "This is a title and another title")));
-    assertNull(h.validateUpdate(adoc("id", "1", "test_posofftv",
-            "The quick reb fox jumped over the lazy brown dogs.")));
-    assertNull(h.validateUpdate(adoc("id", "2", "test_posofftv", "This is a document")));
-    assertNull(h.validateUpdate(adoc("id", "3", "test_posofftv", "another document")));
+    assertNull(h.validateUpdate(adoc("id", "0",
+            "test_posofftv", "This is a title and another title",
+            "test_basictv", "This is a title and another title",
+            "test_notv", "This is a title and another title",
+            "test_postv", "This is a title and another title",
+            "test_offtv", "This is a title and another title"
+    )));
+    assertNull(h.validateUpdate(adoc("id", "1",
+            "test_posofftv", "The quick reb fox jumped over the lazy brown dogs.",
+            "test_basictv", "The quick reb fox jumped over the lazy brown dogs.",
+            "test_notv", "The quick reb fox jumped over the lazy brown dogs.",
+            "test_postv", "The quick reb fox jumped over the lazy brown dogs.",
+            "test_offtv", "The quick reb fox jumped over the lazy brown dogs."
+    )));
+    assertNull(h.validateUpdate(adoc("id", "2",
+            "test_posofftv", "This is a document",
+            "test_basictv", "This is a document",
+            "test_notv", "This is a document",
+            "test_postv", "This is a document",
+            "test_offtv", "This is a document"
+    )));
+    assertNull(h.validateUpdate(adoc("id", "3",
+            "test_posofftv", "another document",
+            "test_basictv", "another document",
+            "test_notv", "another document",
+            "test_postv", "another document",
+            "test_offtv", "another document"
+    )));
     //bunch of docs that are variants on blue
-    assertNull(h.validateUpdate(adoc("id", "4", "test_posofftv", "blue")));
-    assertNull(h.validateUpdate(adoc("id", "5", "test_posofftv", "blud")));
-    assertNull(h.validateUpdate(adoc("id", "6", "test_posofftv", "boue")));
-    assertNull(h.validateUpdate(adoc("id", "7", "test_posofftv", "glue")));
-    assertNull(h.validateUpdate(adoc("id", "8", "test_posofftv", "blee")));
-    assertNull(h.validateUpdate(adoc("id", "9", "test_posofftv", "blah")));
+    assertNull(h.validateUpdate(adoc("id", "4",
+            "test_posofftv", "blue",
+            "test_basictv", "blue",
+            "test_notv", "blue",
+            "test_postv", "blue",
+            "test_offtv", "blue"
+    )));
+    assertNull(h.validateUpdate(adoc("id", "5",
+            "test_posofftv", "blud",
+            "test_basictv", "blud",
+            "test_notv", "blud",
+            "test_postv", "blud",
+            "test_offtv", "blud"
+    )));
+    assertNull(h.validateUpdate(adoc("id", "6",
+            "test_posofftv", "boue",
+            "test_basictv", "boue",
+            "test_notv", "boue",
+            "test_postv", "boue",
+            "test_offtv", "boue"
+    )));
+    assertNull(h.validateUpdate(adoc("id", "7",
+            "test_posofftv", "glue",
+            "test_basictv", "glue",
+            "test_notv", "glue",
+            "test_postv", "glue",
+            "test_offtv", "glue"
+    )));
+    assertNull(h.validateUpdate(adoc("id", "8",
+            "test_posofftv", "blee",
+            "test_basictv", "blee",
+            "test_notv", "blee",
+            "test_postv", "blee",
+            "test_offtv", "blee"
+    )));
+    assertNull(h.validateUpdate(adoc("id", "9",
+            "test_posofftv", "blah",
+            "test_basictv", "blah",
+            "test_notv", "blah",
+            "test_postv", "blah",
+            "test_offtv", "blah"
+    )));
 
     assertNull(h.validateUpdate(commit()));
   }
@@ -80,10 +139,10 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
     NamedList values = rsp.getValues();
     NamedList termVectors = (NamedList) values.get(TermVectorComponent.TERM_VECTORS);
     assertTrue("termVectors is null and it shouldn't be", termVectors != null);
-    // System.out.println("TVs:" + termVectors);
+    System.out.println("TVs:" + termVectors);
     NamedList doc = (NamedList) termVectors.getVal(0);
     assertTrue("doc is null and it shouldn't be", doc != null);
-    assertTrue(doc.size() + " does not equal: " + 2, doc.size() == 2);
+    assertEquals(doc.size(), 5);
     NamedList field = (NamedList) doc.get("test_posofftv");
     assertTrue("field is null and it shouldn't be", field != null);
     assertTrue(field.size() + " does not equal: " + 2, field.size() == 2);
@@ -127,7 +186,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
     // System.out.println("TVs: " + termVectors);
     NamedList doc = (NamedList) termVectors.getVal(0);
     assertTrue("doc is null and it shouldn't be", doc != null);
-    assertTrue(doc.size() + " does not equal: " + 2, doc.size() == 2);
+    assertEquals(doc.size(), 5);
     NamedList offtv = (NamedList) doc.get("test_posofftv");
     assertTrue("offtv is null and it shouldn't be", offtv != null);
     assertTrue("offtv Size: " + offtv.size() + " is not: " + 2, offtv.size() == 2);
@@ -144,8 +203,114 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
     Double tfIdf = (Double) another.get("tf-idf");
     assertTrue("tfIdf is null and it shouldn't be", tfIdf != null);
     assertTrue(tfIdf + " does not equal: " + 0.5, tfIdf == 0.5);
+  }
 
-
+  /*
+<field name="test_basictv" type="text" termVectors="true"/>
+   <field name="test_notv" type="text" termVectors="false"/>
+   <field name="test_postv" type="text" termVectors="true" termPositions="true"/>
+   <field name="test_offtv" type="text" termVectors="true" termOffsets="true"/>
+   <field name="test_posofftv" type="text" termVectors="true"
+     termPositions="true" termOffsets="true"/>
+   */
+  @Test
+  public void testPerField() throws Exception {
+    SolrCore core = h.getCore();
+    SearchComponent tvComp = core.getSearchComponent("tvComponent");
+    assertTrue("tvComp is null and it shouldn't be", tvComp != null);
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CommonParams.Q, "id:0");
+    params.add(CommonParams.QT, "tvrh");
+    params.add(TermVectorParams.FIELDS, "test_basictv,test_notv,test_postv,test_offtv,test_posofftv");
+    params.add(TermVectorParams.TF, "true");
+    params.add(TermVectorParams.DF, "true");
+    params.add(TermVectorParams.OFFSETS, "true");
+    params.add(TermVectorParams.POSITIONS, "true");
+    params.add(TermVectorParams.TF_IDF, "true");
+    params.add(TermVectorComponent.COMPONENT_NAME, "true");
+    //per field
+    params.add("f.test_posofftv." + TermVectorParams.POSITIONS, "false");
+    params.add("f.test_offtv." + TermVectorParams.OFFSETS, "false");
+    params.add("f.test_basictv." + TermVectorParams.DF, "false");
+    params.add("f.test_basictv." + TermVectorParams.TF, "false");
+    params.add("f.test_basictv." + TermVectorParams.TF_IDF, "false");
+    SolrRequestHandler handler = core.getRequestHandler("tvrh");
+    SolrQueryResponse rsp;
+    rsp = new SolrQueryResponse();
+    rsp.add("responseHeader", new SimpleOrderedMap());
+    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
+    NamedList values = rsp.getValues();
+    NamedList termVectors = (NamedList) values.get(TermVectorComponent.TERM_VECTORS);
+    assertTrue("termVectors is null and it shouldn't be", termVectors != null);
+    System.out.println("TVs: " + termVectors);
+    NamedList doc = (NamedList) termVectors.get("doc-0");
+    assertTrue("doc is null and it shouldn't be", doc != null);
+    assertEquals(doc.size(), 5);
+    NamedList vec;
+    NamedList another;
+    NamedList offsets;
+    NamedList pos;
+    Integer df;
+    Double val;
+    vec = (NamedList) doc.get("test_posofftv");
+    assertNotNull(vec);
+    assertEquals(vec.size(), 2);
+    another = (NamedList) vec.get("anoth");
+    offsets = (NamedList) another.get("offsets");
+    assertNotNull(offsets);
+    assertTrue(offsets.size() > 0);
+    pos = (NamedList) another.get("positions");
+    //positions should be null, since we turned them off
+    assertNull(pos);
+    df = (Integer) another.get("df");
+    assertNotNull(df);
+    assertTrue(df == 2);
+    val = (Double) another.get("tf-idf");
+    assertTrue("tfIdf is null and it shouldn't be", val != null);
+    assertTrue(val + " does not equal: " + 0.5, val == 0.5);
+    //Try out the other fields, too
+    vec = (NamedList) doc.get("test_offtv");
+    assertNotNull(vec);
+    assertEquals(vec.size(), 2);
+    another = (NamedList) vec.get("anoth");
+    offsets = (NamedList) another.get("offsets");
+    assertNull(offsets);
+    pos = (NamedList) another.get("positions");
+    //positions should be null, since we turned them off
+    assertNull(vec.toString(), pos);
+    df = (Integer) another.get("df");
+    assertNotNull(df);
+    assertTrue(df == 2);
+    val = (Double) another.get("tf-idf");
+    assertTrue("tfIdf is null and it shouldn't be", val != null);
+    assertTrue(val + " does not equal: " + 0.5, val == 0.5);
+    vec = (NamedList) doc.get("test_basictv");
+    assertNotNull(vec);
+    assertEquals(vec.size(), 2);
+    another = (NamedList) vec.get("anoth");
+    offsets = (NamedList) another.get("offsets");
+    assertNull(offsets);
+    pos = (NamedList) another.get("positions");
+    assertNull(pos);
+    df = (Integer) another.get("df");
+    assertNull(df);
+    val = (Double) another.get("tf-idf");
+    assertNull(val);
+    val = (Double) another.get("tf");
+    assertNull(val);
+    //Now validate we have error messages
+    NamedList warnings = (NamedList) termVectors.get("warnings");
+    assertNotNull(warnings);
+    List<String> theList;
+    theList = (List<String>) warnings.get("noTermVectors");
+    assertNotNull(theList);
+    assertEquals(theList.size(), 1);
+    theList = (List<String>) warnings.get("noPositions");
+    assertNotNull(theList);
+    assertEquals(theList.size(), 2);
+    theList = (List<String>) warnings.get("noOffsets");
+    assertNotNull(theList);
+    assertEquals(theList.size(), 2);
   }
 
   @Test
@@ -165,13 +330,13 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
     rsp = new SolrQueryResponse();
     rsp.add("responseHeader", new SimpleOrderedMap());
     handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    NamedList values = rsp.getValues();
-    NamedList termVectors = (NamedList) values.get(TermVectorComponent.TERM_VECTORS);
-    assertTrue("termVectors is null and it shouldn't be", termVectors != null);
-    NamedList doc = (NamedList) termVectors.getVal(0);
-    assertTrue("doc is null and it shouldn't be", doc != null);
-    assertTrue(doc.size() + " does not equal: " + 1, doc.size() == 1);
+    Exception exception = rsp.getException();
+    assertNotNull(exception);
+
   }
+
+
+
 
   @Test
   public void testDistributed() throws Exception {
