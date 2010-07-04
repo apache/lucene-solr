@@ -263,4 +263,9 @@ public class TestMultiPhraseQuery extends LuceneTestCase
     writer.addDocument(doc);
   }
 
+  // LUCENE-2526
+  public void testEmptyToString() {
+    new MultiPhraseQuery().toString();
+  }
+
 }

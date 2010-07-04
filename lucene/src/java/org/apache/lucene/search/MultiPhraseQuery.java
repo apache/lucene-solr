@@ -336,7 +336,7 @@ public class MultiPhraseQuery extends Query {
   @Override
   public final String toString(String f) {
     StringBuilder buffer = new StringBuilder();
-    if (!field.equals(f)) {
+    if (field == null || !field.equals(f)) {
       buffer.append(field);
       buffer.append(":");
     }

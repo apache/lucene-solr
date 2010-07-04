@@ -474,6 +474,9 @@ New features
   to wrap any other Analyzer and provide the same functionality as
   MaxFieldLength provided on IndexWriter.  This patch also fixes a bug
   in the offset calculation in CharTokenizer. (Uwe Schindler, Shai Erera)
+
+* LUCENE-2526: Don't throw NPE from MultiPhraseQuery.toString when
+  it's empty.  (Ross Woolf via Mike McCandless)
   
 Optimizations
 
