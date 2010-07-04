@@ -36,7 +36,10 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     "<b style=\"background:yellow\">", "<b style=\"background:lawngreen\">", "<b style=\"background:aquamarine\">",
     "<b style=\"background:magenta\">", "<b style=\"background:palegreen\">", "<b style=\"background:coral\">",
     "<b style=\"background:wheat\">", "<b style=\"background:khaki\">", "<b style=\"background:lime\">",
-    "<b style=\"background:deepskyblue\">"
+    "<b style=\"background:deepskyblue\">", "<b style=\"background:deeppink\">", "<b style=\"background:salmon\">",
+    "<b style=\"background:peachpuff\">", "<b style=\"background:violet\">", "<b style=\"background:mediumpurple\">",
+    "<b style=\"background:palegoldenrod\">", "<b style=\"background:darkkhaki\">", "<b style=\"background:springgreen\">",
+    "<b style=\"background:turquoise\">", "<b style=\"background:powderblue\">"
   };
   public static final String[] COLORED_POST_TAGS = { "</b>" };
   
@@ -145,10 +148,12 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
   }
   
   protected String getPreTag( int num ){
-    return preTags.length > num ? preTags[num] : preTags[0];
+    int n = num % preTags.length;
+    return preTags[n];
   }
   
   protected String getPostTag( int num ){
-    return postTags.length > num ? postTags[num] : postTags[0];
+    int n = num % postTags.length;
+    return postTags[n];
   }
 }

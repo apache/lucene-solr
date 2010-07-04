@@ -86,6 +86,9 @@ Bug fixes
  * LUCENE-2404: Fix bugs with position increment and empty tokens in ThaiWordFilter.
    For matchVersion >= 3.1 the filter also no longer lowercases. ThaiAnalyzer
    will use a separate LowerCaseFilter instead. (Uwe Schindler, Robert Muir)
+
+* LUCENE-2524: FastVectorHighlighter: use mod for getting colored tag.
+  (Koji Sekiguchi)
    
 API Changes
 
