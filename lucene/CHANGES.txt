@@ -23,17 +23,17 @@ Changes in backwards compatibility policy
 
   - Directory.copy/Directory.copyTo now copies all files (not just
     index files), since what is and isn't and index file is now
-    dependent on the codecs used. (Mike McCandless)
+    dependent on the codecs used.
 
   - UnicodeUtil now uses BytesRef for UTF-8 output, and some method
     signatures have changed to CharSequence.  These are internal APIs
-    and subject to change suddenly.  (Robert Muir, Mike McCandless)
+    and subject to change suddenly.
 
   - Positional queries (PhraseQuery, *SpanQuery) will now throw an
     exception if use them on a field that omits positions during
     indexing (previously they silently returned no results).
 
-  - FieldCache.(Byte,Short,Int,Long,Float,Double}Parser's API has
+  - FieldCache.{Byte,Short,Int,Long,Float,Double}Parser's API has
     changed -- each parse method now takes a BytesRef instead of a
     String.  If you have an existing Parser, a simple way to fix it is
     invoke BytesRef.utf8ToString, and pass that String to your
@@ -57,6 +57,8 @@ Changes in backwards compatibility policy
     an IllegalArgumentException, because the NTS does not support
     TermAttribute/CharTermAttribute. If you want to further filter
     or attach Payloads to NTS, use the new NumericTermAttribute.
+    
+  (Mike McCandless, Robert Muir, Uwe Schindler, Mark Miller, Michael Busch)
 
 * LUCENE-2386: IndexWriter no longer performs an empty commit upon new index
   creation. Previously, if you passed an empty Directory and set OpenMode to
@@ -119,7 +121,7 @@ New features
 
 * LUCENE-1990: Adds internal packed ints implementation, to be used
   for more efficient storage of int arrays when the values are
-  bounded, for example for storing the terms dict index Toke Toke
+  bounded, for example for storing the terms dict index (Toke
   Eskildsen via Mike McCandless)
 
 * LUCENE-2321: Cutover to a more RAM efficient packed-ints based
@@ -215,7 +217,8 @@ Changes in backwards compatibility policy
   the IndexWriter for a MergePolicy exactly once. You can change references to
   'writer' from <code>writer.doXYZ()</code> to <code>writer.get().doXYZ()</code>
   (it is also advisable to add an <code>assert writer != null;</code> before you
-  access the wrapped IndexWriter.
+  access the wrapped IndexWriter.)
+
   In addition, MergePolicy only exposes a default constructor, and the one that
   took IndexWriter as argument has been removed from all MergePolicy extensions.
   (Shai Erera via Mike McCandless)
@@ -265,6 +268,7 @@ Changes in runtime behavior
   invokes a merge on the incoming and target segments, but instead copies the
   segments to the target index. You can call maybeMerge or optimize after this
   method completes, if you need to.
+  
   In addition, Directory.copyTo* were removed in favor of copy which takes the
   target Directory, source and target files as arguments, and copies the source
   file to the target Directory under the target file name. (Shai Erera)
@@ -353,9 +357,9 @@ API Changes
   next commit). (Shai Erera)
 
 * LUCENE-2455: IndexWriter.addIndexesNoOptimize was renamed to addIndexes.
-  IndexFileNames.segmentFileName now takes another parameter to accomodate
+  IndexFileNames.segmentFileName now takes another parameter to accommodate
   custom file names. You should use this method to name all your files.
-  (Shai Erera) 
+  (Shai Erera)
   
 * LUCENE-2481: SnapshotDeletionPolicy.snapshot() and release() were replaced
   with equivalent ones that take a String (id) as argument. You can pass
