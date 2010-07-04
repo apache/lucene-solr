@@ -163,10 +163,10 @@ public class TestFieldsReader extends LuceneTestCase {
     FieldsReader reader = new FieldsReader(dir, TEST_SEGMENT_NAME, fieldInfos);
     assertTrue(reader != null);
     assertTrue(reader.size() == 1);
-    Set loadFieldNames = new HashSet();
+    Set<String> loadFieldNames = new HashSet<String>();
     loadFieldNames.add(DocHelper.TEXT_FIELD_1_KEY);
     loadFieldNames.add(DocHelper.TEXT_FIELD_UTF1_KEY);
-    Set lazyFieldNames = new HashSet();
+    Set<String> lazyFieldNames = new HashSet<String>();
     //new String[]{DocHelper.LARGE_LAZY_FIELD_KEY, DocHelper.LAZY_FIELD_KEY, DocHelper.LAZY_FIELD_BINARY_KEY};
     lazyFieldNames.add(DocHelper.LARGE_LAZY_FIELD_KEY);
     lazyFieldNames.add(DocHelper.LAZY_FIELD_KEY);
@@ -177,7 +177,7 @@ public class TestFieldsReader extends LuceneTestCase {
     SetBasedFieldSelector fieldSelector = new SetBasedFieldSelector(loadFieldNames, lazyFieldNames) {
         public FieldSelectorResult accept(String fieldName) {
           final FieldSelectorResult result = super.accept(fieldName);
-          if (result.equals(FieldSelectorResult.LAZY_LOAD)) {
+          if (result == FieldSelectorResult.LAZY_LOAD) {
             return FieldSelectorResult.LATENT;
           } else {
             return result;
