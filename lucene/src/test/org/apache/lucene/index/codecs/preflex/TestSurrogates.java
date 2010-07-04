@@ -25,9 +25,10 @@ import org.apache.lucene.util.*;
 import java.util.*;
 import java.io.IOException;
 
-public class TestSurrogates extends LuceneTestCase {
+import static org.junit.Assert.*;
+import org.junit.Test;
 
-  private static final boolean DEBUG = false;
+public class TestSurrogates extends LuceneTestCaseJ4 {
 
   // like Term, but uses BytesRef for text
   private static class FieldAndText implements Comparable<FieldAndText> {
@@ -116,7 +117,7 @@ public class TestSurrogates extends LuceneTestCase {
     BytesRef utf8 = new BytesRef(10);
     String lastText = null;
     int uniqueTermCount = 0;
-    if (DEBUG) {
+    if (VERBOSE) {
       System.out.println("TEST: utf16 order:");
     }
     for(Term t : terms) {
@@ -131,7 +132,7 @@ public class TestSurrogates extends LuceneTestCase {
       lastText = text;
       UnicodeUtil.UTF16toUTF8(text, 0, text.length(), utf8);
 
-      if (DEBUG) {
+      if (VERBOSE) {
         System.out.println("  " + toHexString(t));
       }
       w.add(fi.number, utf8.bytes, utf8.length, ti);
@@ -139,7 +140,7 @@ public class TestSurrogates extends LuceneTestCase {
     w.close();
 
     Collections.sort(fieldTerms);
-    if (DEBUG) {
+    if (VERBOSE) {
       System.out.println("\nTEST: codepoint order");
       for(FieldAndText t: fieldTerms) {
         System.out.println("  " + t.field + ":" + UnicodeUtil.toHexString(t.text.utf8ToString()));
@@ -156,7 +157,8 @@ public class TestSurrogates extends LuceneTestCase {
   private String toHexString(Term t) {
     return t.field() + ":" + UnicodeUtil.toHexString(t.text());
   }
-
+  
+  @Test
   public void testSurrogatesOrder() throws Exception {
     Directory dir = new MockRAMDirectory();
 
@@ -173,7 +175,7 @@ public class TestSurrogates extends LuceneTestCase {
     FieldsProducer fields = codec.fieldsProducer(new SegmentReadState(dir, si, fieldInfos, 1024, 1));
     assertNotNull(fields);
 
-    if (DEBUG) {
+    if (VERBOSE) {
       System.out.println("\nTEST: now enum");
     }
     FieldsEnum fieldsEnum = fields.iterator();
@@ -187,7 +189,7 @@ public class TestSurrogates extends LuceneTestCase {
       BytesRef lastText = null;
       while((text = termsEnum.next()) != null) {
         UnicodeUtil.UTF8toUTF16(text.bytes, text.offset, text.length, utf16);
-        if (DEBUG) {
+        if (VERBOSE) {
           System.out.println("got term=" + field + ":" + UnicodeUtil.toHexString(new String(utf16.result, 0, utf16.length)));
           System.out.println();
         }
@@ -201,7 +203,7 @@ public class TestSurrogates extends LuceneTestCase {
         assertEquals(fieldTerms.get(termCount).text, text);
         termCount++;
       }
-      if (DEBUG) {
+      if (VERBOSE) {
         System.out.println("  no more terms for field=" + field);
       }
     }
