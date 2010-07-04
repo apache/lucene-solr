@@ -62,8 +62,8 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
 
   if (/\s*===+\s*(.*?)\s*===+\s*/) {   # New-style release headings
     $release = $1;
-    $release =~ s/^release\s*//i;      # Trim "Release " prefix
-    ($release, $relinfo) = ($release =~ /^(\d+(?:\.\d+)*|Trunk)\s*(.*)/i);
+    $release =~ s/^(?:release|lucene)\s*//i;  # Trim "Release " or "Lucene " prefix
+    ($release, $relinfo) = ($release =~ /^(\d+(?:\.(?:\d+|[xyz]))*|Trunk)\s*(.*)/i);
     $relinfo =~ s/\s*:\s*$//;          # Trim trailing colon
     $relinfo =~ s/^\s*,\s*//;          # Trim leading comma
     ($reldate, $relinfo) = get_release_date($release, $relinfo);
@@ -164,6 +164,14 @@ for (my $line_num = 0 ; $line_num <= $#lines ; ++$line_num) {
   }
 }
 
+# Recognize IDs of top level nodes of the most recent two releases,
+# escaping JavaScript regex metacharacters, e.g.: "^(?:trunk|2\\\\.4\\\\.0)"
+my $first_relid_regex = $first_relid;
+$first_relid_regex =~ s!([.+*?{}()|^$/\[\]\\])!\\\\\\\\$1!g;
+my $second_relid_regex = $second_relid;
+$second_relid_regex =~ s!([.+*?{}()|^$/\[\]\\])!\\\\\\\\$1!g;
+my $newer_version_regex = "^(?:$first_relid_regex|$second_relid_regex)";
+
 #
 # Print HTML-ified version to STDOUT
 #
@@ -258,7 +266,7 @@ print<<"__HTML_HEADER__";
 
     }
 
-    var newerRegex = new RegExp("^(?:trunk|2\\\\.4\\\\.0)");
+    var newerRegex = new RegExp("$newer_version_regex");
     function isOlder(listId) {
       return ! newerRegex.test(listId);
     }
@@ -388,16 +396,21 @@ for my $rel (@releases) {
 
     for my $itemnum (1..$#{$items}) {
       my $item = $items->[$itemnum];
-      $item =~ s:&:&amp;:g;                   # Escape HTML metachars,
-      $item =~ s:<(?!/?code>):&lt;:gi;        #   but leave <code> tags intact
-      $item =~ s:(?<!code)>:&gt;:gi;          #   and add <pre> tags so that
-      $item =~ s:<code>:<code><pre>:gi;       #   whitespace is preserved in the
-      $item =~ s:\s*</code>:</pre></code>:gi; #   output.
+      $item =~ s:&:&amp;:g;               # Escape HTML metachars, but leave 
+      $item =~ s:<(?!/?code>):&lt;:gi;    #   <code> tags intact and add <pre>
+      $item =~ s:(?<!code)>:&gt;:gi;      #   wrappers for non-inline sections
+      $item =~ s{((?:^|.*\n)\s*)<code>(?!</code>.+)(.+)</code>(?![ \t]*\S)}
+                { 
+                  my $prefix = $1; 
+                  my $code = $2;
+                  $code =~ s/\s+$//;
+                  "$prefix<code><pre>$code</pre></code>"
+                }gise;
 
       # Put attributions on their own lines.
       # Check for trailing parenthesized attribution with no following period.
       # Exclude things like "(see #3 above)" and "(use the bug number instead of xxxx)" 
-      unless ($item =~ s:\s*(\((?!see #|use the bug number)[^)"]+?\))\s*$:\n<br /><span class="attrib">$1</span>:) {
+      unless ($item =~ s:\s*(\((?!see #|use the bug number)[^()"]+?\))\s*$:\n<br /><span class="attrib">$1</span>:) {
         # If attribution is not found, then look for attribution with a
         # trailing period, but try not to include trailing parenthesized things
         # that are not attributions.
@@ -405,9 +418,9 @@ for my $rel (@releases) {
         # Rule of thumb: if a trailing parenthesized expression with a following
         # period does not contain "LUCENE-XXX", and it either has three or 
         # fewer words or it includes the word "via" or the phrase "updates from",
-	      # then it is considered to be an attribution.
+	    # then it is considered to be an attribution.
 
-        $item =~ s{(\s*(\((?!see \#|use the bug number)[^)"]+?\)))
+        $item =~ s{(\s*(\((?!see \#|use the bug number)[^()"]+?\)))
                    ((?:\.|(?i:\.?\s*Issue\s+\d{3,}|LUCENE-\d+)\.?)\s*)$}
                   {
                     my $subst = $1;  # default: no change
