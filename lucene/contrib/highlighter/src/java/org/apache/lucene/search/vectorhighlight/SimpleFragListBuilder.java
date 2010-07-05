@@ -24,7 +24,7 @@ import java.util.List;
 import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo;
 
 /**
- * A simple implementation of FragListBuilder.
+ * A simple implementation of {@link FragListBuilder}.
  */
 public class SimpleFragListBuilder implements FragListBuilder {
   
