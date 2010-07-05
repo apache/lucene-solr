@@ -564,7 +564,11 @@ Build
   can force them to run sequentially by passing -Drunsequential=1 on the command
   line. The number of threads that are spwaned per CPU defaults to '1'. If you 
   wish to change that, you can run the tests with -DthreadsPerProcessor=[num].
-  (Robert Muir, Shai Erera, Peter Kofler) 
+  (Robert Muir, Shai Erera, Peter Kofler)
+
+* LUCENE-2516: Backwards tests are now compiled against released lucene-core.jar
+  from tarball of previous version. Backwards tests are now packaged together
+  with src distribution.  (Uwe Schindler)
 
 Test Cases
 
