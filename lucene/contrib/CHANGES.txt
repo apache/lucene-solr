@@ -179,6 +179,9 @@ New features
  * LUCENE-1287: Allow usage of HyphenationCompoundWordTokenFilter without dictionary.
    (Thomas Peuss via Robert Muir)
 
+ * LUCENE-2464: FastVectorHighlighter: add SingleFragListBuilder to return
+   entire field contents. (Koji Sekiguchi)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
