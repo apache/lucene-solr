@@ -421,7 +421,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
   private IndexWriter newWriter(Directory dir, boolean create)
       throws IOException {
     final IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), create, IndexWriter.MaxFieldLength.UNLIMITED);
-    writer.setMergePolicy(new LogDocMergePolicy());
+    //BACKWARDS TEST PASS WITHOUT THIS: writer.setMergePolicy(new LogDocMergePolicy());
     return writer;
   }
 
@@ -495,7 +495,7 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
 
     Directory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
-    writer.setMergePolicy(new LogByteSizeMergePolicy());
+    //BACKWARDS TEST PASS WITHOUT THIS: writer.setMergePolicy(new LogByteSizeMergePolicy());
     writer.setMaxBufferedDocs(5);
     writer.setUseCompoundFile(false);
     writer.setMergeFactor(100);
@@ -521,9 +521,11 @@ public class TestAddIndexesNoOptimize extends LuceneTestCase {
 
     Directory dir2 = new MockRAMDirectory();
     writer = new IndexWriter(dir2, new WhitespaceAnalyzer(), true, IndexWriter.MaxFieldLength.LIMITED);
+    /* BACKWARDS TEST PASS WITHOUT THIS: 
     LogByteSizeMergePolicy lmp = new LogByteSizeMergePolicy();
     lmp.setMinMergeMB(0.0001);
     writer.setMergePolicy(lmp);
+    */
     writer.setMergeFactor(4);
     writer.setUseCompoundFile(false);
     writer.setMergeScheduler(new SerialMergeScheduler());

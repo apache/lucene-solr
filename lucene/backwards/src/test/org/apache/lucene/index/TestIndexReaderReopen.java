@@ -951,7 +951,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     IndexWriter.unlock(dir);
     IndexWriter w = new IndexWriter(dir, new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
 
-    w.setMergePolicy(new LogDocMergePolicy());
+    //BACKWARDS TEST PASS WITHOUT THIS: w.setMergePolicy(new LogDocMergePolicy());
     
     for (int i = 0; i < 100; i++) {
       w.addDocument(createDocument(i, 4));

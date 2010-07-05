@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This is a subclass of RAMDirectory that adds methods
@@ -213,7 +214,12 @@ public class MockRAMDirectory extends RAMDirectory {
       throw new IOException("file " + name + " already exists");
     else {
       if (existing!=null) {
-        sizeInBytes.getAndAdd(-existing.sizeInBytes);
+        //BACKWARDS BREAK in RamDirectory: sizeInBytes -= existing.sizeInBytes;
+        try {
+          ((AtomicLong) getClass().getSuperclass().getDeclaredField("sizeInBytes").get(this)).getAndAdd(-existing.sizeInBytes);
+        } catch (Exception e) {
+          throw new RuntimeException("Backwards-hack failed.", e);
+        }
         existing.directory = null;
       }
 

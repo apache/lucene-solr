@@ -600,7 +600,8 @@ public class TestIndexWriter extends LuceneTestCase {
       dir.close();
     }
 
-    public void testOptimizeMaxNumSegments() throws IOException {
+    //BACKWARDS_BREAK: 
+    /*public void testOptimizeMaxNumSegments() throws IOException {
 
       MockRAMDirectory dir = new MockRAMDirectory();
 
@@ -679,7 +680,7 @@ public class TestIndexWriter extends LuceneTestCase {
         else
           assertEquals(7, optSegCount);
       }
-    }
+    }*/
 
     /**
      * Make sure optimize doesn't use any more than 1X
@@ -2751,6 +2752,8 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
 
+  //BACKWARDS_BREAK: 
+  /*
   // LUCENE-1168
   public void testTermVectorCorruption() throws IOException {
 
@@ -2887,7 +2890,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
     reader.close();
     dir.close();
-  }
+  }*/
 
   // LUCENE-1084: test user-specified field length
   public void testUserSpecifiedMaxFieldLength() throws IOException {

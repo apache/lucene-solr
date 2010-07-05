@@ -110,6 +110,8 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     directory.close();
   }
 
+  //BACKWARDS_BREAK: 
+  /*
   // Test that deletes committed after a merge started and
   // before it finishes, are correctly merged back:
   public void testDeleteMerging() throws IOException {
@@ -152,7 +154,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     assertEquals(450, reader.numDocs());
     reader.close();
     directory.close();
-  }
+  }*/
 
   public void testNoExtraFiles() throws IOException {
 
