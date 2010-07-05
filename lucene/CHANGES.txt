@@ -23,7 +23,8 @@ Changes in backwards compatibility policy
   the IndexWriter for a MergePolicy exactly once. You can change references to
   'writer' from <code>writer.doXYZ()</code> to <code>writer.get().doXYZ()</code>
   (it is also advisable to add an <code>assert writer != null;</code> before you
-  access the wrapped IndexWriter.
+  access the wrapped IndexWriter.)
+
   In addition, MergePolicy only exposes a default constructor, and the one that
   took IndexWriter as argument has been removed from all MergePolicy extensions.
   (Shai Erera via Mike McCandless)
@@ -73,6 +74,7 @@ Changes in runtime behavior
   invokes a merge on the incoming and target segments, but instead copies the
   segments to the target index. You can call maybeMerge or optimize after this
   method completes, if you need to.
+
   In addition, Directory.copyTo* were removed in favor of copy which takes the
   target Directory, source and target files as arguments, and copies the source
   file to the target Directory under the target file name. (Shai Erera)
