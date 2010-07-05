@@ -191,7 +191,7 @@ New features
 
 Optimizations
 
-* LUCENE-2410: ~2.5X speedup on exact (slop=0) PhraseQuery matching.
+* LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.
   (Mike McCandless)
   
 ======================= Lucene 3.x (not yet released) =======================
