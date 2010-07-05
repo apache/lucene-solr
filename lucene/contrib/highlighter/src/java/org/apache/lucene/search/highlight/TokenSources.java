@@ -36,6 +36,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermVectorOffsetInfo;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Hides implementation issues associated with obtaining a TokenStream for use
@@ -176,7 +177,7 @@ public class TokenSources {
       }
     }
     // code to reconstruct the original sequence of Tokens
-    String[] terms = tpv.getTerms();
+    BytesRef[] terms = tpv.getTerms();
     int[] freq = tpv.getTermFrequencies();
     int totalTokens = 0;
 
@@ -204,7 +205,7 @@ public class TokenSources {
           unsortedTokens = new ArrayList<Token>();
         }
         for (int tp = 0; tp < offsets.length; tp++) {
-          Token token = new Token(terms[t], offsets[tp].getStartOffset(), offsets[tp]
+          Token token = new Token(terms[t].utf8ToString(), offsets[tp].getStartOffset(), offsets[tp]
               .getEndOffset());
           unsortedTokens.add(token);
         }
@@ -220,7 +221,7 @@ public class TokenSources {
         // tokens stored with positions - can use this to index straight into
         // sorted array
         for (int tp = 0; tp < pos.length; tp++) {
-          Token token = new Token(terms[t], offsets[tp].getStartOffset(),
+          Token token = new Token(terms[t].utf8ToString(), offsets[tp].getStartOffset(),
               offsets[tp].getEndOffset());
           tokensInOriginalOrder[pos[tp]] = token;
         }

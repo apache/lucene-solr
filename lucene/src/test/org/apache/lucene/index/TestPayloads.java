@@ -188,7 +188,7 @@ public class TestPayloads extends LuceneTestCase {
         Term[] terms = generateTerms(fieldName, numTerms);
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < terms.length; i++) {
-            sb.append(terms[i].text);
+            sb.append(terms[i].text());
             sb.append(" ");
         }
         String content = sb.toString();

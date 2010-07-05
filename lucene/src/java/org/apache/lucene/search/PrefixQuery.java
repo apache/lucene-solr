@@ -46,7 +46,7 @@ public class PrefixQuery extends MultiTermQuery {
   
   @Override  
   protected TermsEnum getTermsEnum(IndexReader reader) throws IOException {
-    if (prefix.text().length() == 0) {
+    if (prefix.bytes().length == 0) {
       // no prefix -- match all terms for this field:
       final Terms terms = MultiFields.getTerms(reader, getField());
       return (terms != null) ? terms.iterator() : TermsEnum.EMPTY;

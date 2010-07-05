@@ -125,6 +125,26 @@ public final class PagedBytes {
       return index;
     }
 
+    /** @lucene.internal  Reads length as 1 or 2 byte vInt prefix, starting @ start. 
+     * Returns the start offset of the next part, suitable as start parameter on next call
+     * to sequentially read all BytesRefs. */
+    public long fillUsingLengthPrefix3(BytesRef b, long start) {
+      final int index = (int) (start >> blockBits);
+      final int offset = (int) (start & blockMask);
+      final byte[] block = b.bytes = blocks[index];
+
+      if ((block[offset] & 128) == 0) {
+        b.length = block[offset];
+        b.offset = offset+1;
+        start += 1L + b.length;
+      } else {
+        b.length = (((int) (block[offset] & 0x7f)) << 8) | (block[1+offset] & 0xff);
+        b.offset = offset+2;
+        start += 2L + b.length;
+        assert b.length > 0;
+      }
+      return start;
+    }
 
     /** @lucene.internal */
     public byte[][] getBlocks() {
@@ -230,7 +250,7 @@ public final class PagedBytes {
 
   /** Commits final byte[], trimming it if necessary and if trim=true */
   public Reader freeze(boolean trim) {
-    if (upto < blockSize) {
+    if (trim && upto < blockSize) {
       final byte[] newBlock = new byte[upto];
       System.arraycopy(currentBlock, 0, newBlock, 0, upto);
       currentBlock = newBlock;

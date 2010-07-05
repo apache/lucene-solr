@@ -290,7 +290,7 @@ public class InstantiatedIndex
           TermPositionVector termPositionVector = (TermPositionVector) sourceIndexReader.getTermFreqVector(document.getDocumentNumber(), field.name());
           if (termPositionVector != null) {
             for (int i = 0; i < termPositionVector.getTerms().length; i++) {
-              String token = termPositionVector.getTerms()[i];
+              String token = termPositionVector.getTerms()[i].utf8ToString();
               InstantiatedTerm term = findTerm(field.name(), token);
               InstantiatedTermDocumentInformation termDocumentInformation = term.getAssociatedDocument(document.getDocumentNumber());
               termDocumentInformation.setTermOffsets(termPositionVector.getOffsets(i));

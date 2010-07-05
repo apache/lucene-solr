@@ -76,7 +76,6 @@ final class TermInfosWriter {
   private int lastFieldNumber = -1;
 
   private TermInfosWriter other;
-  private BytesRef utf8Result = new BytesRef(10);
 
   TermInfosWriter(Directory directory, String segment, FieldInfos fis,
                   int interval)
@@ -106,8 +105,7 @@ final class TermInfosWriter {
   }
 
   void add(Term term, TermInfo ti) throws IOException {
-    UnicodeUtil.UTF16toUTF8(term.text(), 0, term.text().length(), utf8Result);
-    add(fieldInfos.fieldNumber(term.field()), utf8Result.bytes, utf8Result.length, ti);
+    add(fieldInfos.fieldNumber(term.field()), term.bytes().bytes, term.bytes().length, ti);
   }
 
   // Currently used only by assert statements

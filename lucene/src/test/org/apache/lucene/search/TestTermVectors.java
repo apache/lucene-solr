@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -123,11 +124,11 @@ public class TestTermVectors extends LuceneTestCase {
     for(int i=0;i<v.length;i++) {
       TermPositionVector posVec = (TermPositionVector) v[i];
       assertEquals(expectedFields[i], posVec.getField());
-      String[] terms = posVec.getTerms();
+      BytesRef[] terms = posVec.getTerms();
       assertEquals(3, terms.length);
-      assertEquals("content", terms[0]);
-      assertEquals("here", terms[1]);
-      assertEquals("some", terms[2]);
+      assertEquals("content", terms[0].utf8ToString());
+      assertEquals("here", terms[1].utf8ToString());
+      assertEquals("some", terms[2].utf8ToString());
       for(int j=0;j<3;j++) {
         int[] positions = posVec.getTermPositions(j);
         assertEquals(1, positions.length);
@@ -156,7 +157,7 @@ public class TestTermVectors extends LuceneTestCase {
         
         if(shouldBePosVector || shouldBeOffVector){
           TermPositionVector posVec = (TermPositionVector)vector[0];
-          String [] terms = posVec.getTerms();
+          BytesRef [] terms = posVec.getTerms();
           assertTrue(terms != null && terms.length > 0);
           
           for (int j = 0; j < terms.length; j++) {
@@ -184,7 +185,7 @@ public class TestTermVectors extends LuceneTestCase {
           }
           catch(ClassCastException ignore){
             TermFreqVector freqVec = vector[0];
-            String [] terms = freqVec.getTerms();
+            BytesRef [] terms = freqVec.getTerms();
             assertTrue(terms != null && terms.length > 0);
           }
           
@@ -277,11 +278,11 @@ public class TestTermVectors extends LuceneTestCase {
             //float coord = sim.coord()
             //System.out.println("TF: " + tf + " IDF: " + idf + " LenNorm: " + lNorm);
             assertTrue(vector != null);
-            String[] vTerms = vector.getTerms();
+            BytesRef[] vTerms = vector.getTerms();
             int [] freqs = vector.getTermFrequencies();
             for (int i = 0; i < vTerms.length; i++)
               {
-                if (text.equals(vTerms[i]))
+                if (text.equals(vTerms[i].utf8ToString()))
                   {
                     assertTrue(freqs[i] == freq);
                   }
@@ -306,11 +307,11 @@ public class TestTermVectors extends LuceneTestCase {
       TermFreqVector vector = knownSearcher.reader.getTermFreqVector(hits[1].doc, "field");
       assertTrue(vector != null);
       //System.out.println("Vector: " + vector);
-      String[] terms = vector.getTerms();
+      BytesRef[] terms = vector.getTerms();
       int [] freqs = vector.getTermFrequencies();
       assertTrue(terms != null && terms.length == 10);
       for (int i = 0; i < terms.length; i++) {
-        String term = terms[i];
+        String term = terms[i].utf8ToString();
         //System.out.println("Term: " + term);
         int freq = freqs[i];
         assertTrue(test4.indexOf(term) != -1);
@@ -327,7 +328,7 @@ public class TestTermVectors extends LuceneTestCase {
         if (tve != null && last != null)
         {
           assertTrue("terms are not properly sorted", last.getFrequency() >= tve.getFrequency());
-          Integer expectedFreq =  test4Map.get(tve.getTerm());
+          Integer expectedFreq =  test4Map.get(tve.getTerm().utf8ToString());
           //we expect double the expectedFreq, since there are two fields with the exact same text and we are collapsing all fields
           assertTrue("Frequency is not correct:", tve.getFrequency() == 2*expectedFreq.intValue());
         }
@@ -421,9 +422,9 @@ public class TestTermVectors extends LuceneTestCase {
     assertTrue(vector.length == 1);
     TermPositionVector tfv = (TermPositionVector) vector[0];
     assertTrue(tfv.getField().equals("field"));
-    String[] terms = tfv.getTerms();
+    BytesRef[] terms = tfv.getTerms();
     assertEquals(1, terms.length);
-    assertEquals(terms[0], "one");
+    assertEquals(terms[0].utf8ToString(), "one");
     assertEquals(5, tfv.getTermFrequencies()[0]);
 
     int[] positions = tfv.getTermPositions(0);
@@ -447,7 +448,7 @@ public class TestTermVectors extends LuceneTestCase {
     }
 
     @Override
-    public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
+    public void map(BytesRef term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
 
     }
   }

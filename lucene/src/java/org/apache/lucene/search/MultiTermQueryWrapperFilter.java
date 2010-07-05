@@ -106,10 +106,6 @@ public class MultiTermQueryWrapperFilter<Q extends MultiTermQuery> extends Filte
    */
   @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
-    if (query.field == null) {
-      throw new NullPointerException("If you implement getTermsEnum(), you must specify a non-null field in the constructor of MultiTermQuery.");
-    }
-
     final Fields fields = MultiFields.getFields(reader);
     if (fields == null) {
       // reader has no fields

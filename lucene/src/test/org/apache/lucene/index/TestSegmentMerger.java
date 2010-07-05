@@ -100,7 +100,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     
     TermFreqVector vector = mergedReader.getTermFreqVector(0, DocHelper.TEXT_FIELD_2_KEY);
     assertTrue(vector != null);
-    String [] terms = vector.getTerms();
+    BytesRef [] terms = vector.getTerms();
     assertTrue(terms != null);
     //System.out.println("Terms size: " + terms.length);
     assertTrue(terms.length == 3);
@@ -110,7 +110,7 @@ public class TestSegmentMerger extends LuceneTestCase {
     assertTrue(vector instanceof TermPositionVector == true);
     
     for (int i = 0; i < terms.length; i++) {
-      String term = terms[i];
+      String term = terms[i].utf8ToString();
       int freq = freqs[i];
       //System.out.println("Term: " + term + " Freq: " + freq);
       assertTrue(DocHelper.FIELD_2_TEXT.indexOf(term) != -1);

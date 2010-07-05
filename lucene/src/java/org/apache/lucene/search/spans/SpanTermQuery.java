@@ -85,16 +85,15 @@ public class SpanTermQuery extends SpanQuery {
   public Spans getSpans(final IndexReader reader) throws IOException {
     // NOTE: debateably, the caller should never pass in a
     // multi reader...
-    final BytesRef textBytes = new BytesRef(term.text());
     final DocsAndPositionsEnum postings = MultiFields.getTermPositionsEnum(reader,
                                                                            MultiFields.getDeletedDocs(reader),
                                                                            term.field(),
-                                                                           textBytes);
+                                                                           term.bytes());
 
     if (postings != null) {
       return new TermSpans(postings, term);
     } else {
-      if (MultiFields.getTermDocsEnum(reader, MultiFields.getDeletedDocs(reader), term.field(), textBytes) != null) {
+      if (MultiFields.getTermDocsEnum(reader, MultiFields.getDeletedDocs(reader), term.field(), term.bytes()) != null) {
         // term does exist, but has no positions
         throw new IllegalStateException("field \"" + term.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run SpanTermQuery (term=" + term.text() + ")");
       } else {

@@ -102,6 +102,15 @@ Changes in backwards compatibility policy
 
 API Changes
 
+* LUCENE-2302, LUCENE-1458, LUCENE-2111, LUCENE-2514: Terms are no longer
+  required to be character based. Lucene views a term as an arbitrary byte[]:
+  during analysis, character-based terms are converted to UTF8 byte[],
+  but analyzers are free to directly create terms as byte[]
+  (NumericField does this, for example).  The term data is buffered as
+  byte[] during indexing, written as byte[] into the terms dictionary,
+  and iterated as byte[] (wrapped in a BytesRef) by IndexReader for
+  searching.
+
 * LUCENE-1458, LUCENE-2111: IndexReader now directly exposes its
   deleted docs (getDeletedDocs), providing a new Bits interface to
   directly query by doc ID.
@@ -146,15 +155,6 @@ New features
   data and payloads in 5 separate files instead of the 2 used by
   standard codec), and int block (really a "base" for using
   block-based compressors like PForDelta for storing postings data).
-
-* LUCENE-2302, LUCENE-1458, LUCENE-2111: Terms are no longer required
-  to be character based.  Lucene views a term as an arbitrary byte[]:
-  during analysis, character-based terms are converted to UTF8 byte[],
-  but analyzers are free to directly create terms as byte[]
-  (NumericField does this, for example).  The term data is buffered as
-  byte[] during indexing, written as byte[] into the terms dictionary,
-  and iterated as byte[] (wrapped in a BytesRef) by IndexReader for
-  searching.
 
 * LUCENE-2385: Moved NoDeletionPolicy from benchmark to core. NoDeletionPolicy
   can be used to prevent commits from ever getting deleted from the index.

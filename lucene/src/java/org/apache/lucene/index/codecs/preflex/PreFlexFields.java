@@ -237,7 +237,6 @@ public class PreFlexFields extends FieldsProducer {
     private FieldInfo fieldInfo;
     private boolean skipNext;
     private BytesRef current;
-    private final BytesRef scratchBytesRef = new BytesRef();
 
     private int[] surrogateSeekPending = new int[1];
     private boolean[] surrogateDidSeekBack = new boolean[1];
@@ -319,7 +318,8 @@ public class PreFlexFields extends FieldsProducer {
           assert pendingPrefix != null;
           assert pendingPrefix.length > seekPrefix;
           pendingPrefix[seekPrefix] = UnicodeUtil.UNI_SUR_HIGH_START;
-          Term t2 = protoTerm.createTerm(new String(pendingPrefix, 0, 1+seekPrefix));
+          pendingPrefix[1+seekPrefix] = UnicodeUtil.UNI_SUR_LOW_START;
+          Term t2 = protoTerm.createTerm(new BytesRef(pendingPrefix, 0, 2+seekPrefix));
           if (DEBUG_SURROGATES) {
             System.out.println("    do pop; seek back to " + UnicodeUtil.toHexString(t2.text()));
           }
@@ -334,7 +334,7 @@ public class PreFlexFields extends FieldsProducer {
           assert pendingPrefix != null;
           assert pendingPrefix.length > seekPrefix;
           pendingPrefix[seekPrefix] = 0xffff;
-          Term t2 = protoTerm.createTerm(new String(pendingPrefix, 0, 1+seekPrefix));
+          Term t2 = protoTerm.createTerm(new BytesRef(pendingPrefix, 0, 1+seekPrefix));
           if (DEBUG_SURROGATES) {
             System.out.println("    finish pop; seek fwd to " + UnicodeUtil.toHexString(t2.text()));
           }
@@ -358,6 +358,9 @@ public class PreFlexFields extends FieldsProducer {
       return false;
     }
 
+    private UnicodeUtil.UTF16Result termBuffer = new UnicodeUtil.UTF16Result();
+    private UnicodeUtil.UTF16Result seekBuffer = new UnicodeUtil.UTF16Result();
+    
     private boolean pushNewSurrogate() throws IOException {
       if (DEBUG_SURROGATES) {
         System.out.println("  check push newSuffix=" + newSuffixStart + " stack=" + getStack());
@@ -366,11 +369,12 @@ public class PreFlexFields extends FieldsProducer {
       if (t == null || t.field() != fieldInfo.name) {
         return false;
       }
-      final String text = t.text();
-      final int textLen = text.length();
 
-      for(int i=Math.max(0,newSuffixStart);i<textLen;i++) {
-        final char ch = text.charAt(i);
+      final BytesRef bytes = t.bytes();
+      UnicodeUtil.UTF8toUTF16(bytes.bytes, bytes.offset, bytes.length, termBuffer);
+
+      for(int i=Math.max(0,newSuffixStart);i<termBuffer.length;i++) {
+        final char ch = termBuffer.result[i];
         if (ch >= UnicodeUtil.UNI_SUR_HIGH_START && ch <= UnicodeUtil.UNI_SUR_HIGH_END && (surrogateSeekUpto == 0 || i > surrogateSeekPending[surrogateSeekUpto-1])) {
 
           if (DEBUG_SURROGATES) {
@@ -385,24 +389,27 @@ public class PreFlexFields extends FieldsProducer {
           // surrogate range; if so, we must first iterate
           // them, then seek back to the surrogates
 
-          char[] testPrefix = new char[i+1];
+          char[] testPrefix = new char[i+2];
           for(int j=0;j<i;j++) {
-            testPrefix[j] = text.charAt(j);
+            testPrefix[j] = termBuffer.result[j];
           }
           testPrefix[i] = 1+UnicodeUtil.UNI_SUR_LOW_END;
 
-          getTermsDict().seekEnum(seekTermEnum, protoTerm.createTerm(new String(testPrefix)));
+          getTermsDict().seekEnum(seekTermEnum, protoTerm.createTerm(new BytesRef(testPrefix, 0, i+1)));
 
           Term t2 = seekTermEnum.term();
           boolean isPrefix;
           if (t2 != null && t2.field() == fieldInfo.name) {
-            String seekText = t2.text();
+
+            final BytesRef seekBytes = t2.bytes();
+            UnicodeUtil.UTF8toUTF16(seekBytes.bytes, seekBytes.offset, seekBytes.length, seekBuffer);
+
             isPrefix = true;
             if (DEBUG_SURROGATES) {
-              System.out.println("      seek found " + UnicodeUtil.toHexString(seekText));
+              System.out.println("      seek found " + UnicodeUtil.toHexString(t2.text()));
             }
             for(int j=0;j<i;j++) {
-              if (testPrefix[j] != seekText.charAt(j)) {
+              if (testPrefix[j] != seekBuffer.result[j]) {
                 isPrefix = false;
                 break;
               }
@@ -481,7 +488,7 @@ public class PreFlexFields extends FieldsProducer {
       }
       skipNext = false;
       final TermInfosReader tis = getTermsDict();
-      final Term t0 = protoTerm.createTerm(term.utf8ToString());
+      final Term t0 = protoTerm.createTerm(term);
 
       assert termEnum != null;
 
@@ -496,13 +503,7 @@ public class PreFlexFields extends FieldsProducer {
 
       final Term t = termEnum.term();
 
-      final BytesRef tr;
-      if (t != null) {
-        tr = scratchBytesRef;
-        scratchBytesRef.copy(t.text());
-      } else {
-        tr = null;
-      }
+      final BytesRef tr = t == null ? null : t.bytes();
 
       if (t != null && t.field() == fieldInfo.name && term.bytesEquals(tr)) {
         current = tr;
@@ -526,8 +527,7 @@ public class PreFlexFields extends FieldsProducer {
         if (termEnum.term() == null) {
           return null;
         } else {
-          scratchBytesRef.copy(termEnum.term().text());
-          return current = scratchBytesRef;
+          return current = termEnum.term().bytes();
         }
       }
       if (termEnum.next() && termEnum.term().field() == fieldInfo.name) {
@@ -541,8 +541,7 @@ public class PreFlexFields extends FieldsProducer {
           assert t == null || !t.field().equals(fieldInfo.name); // make sure fields are in fact interned
           current = null;
         } else {
-          scratchBytesRef.copy(t.text());
-          current = scratchBytesRef;
+          current = t.bytes();
         }
         return current;
       } else {
@@ -557,8 +556,7 @@ public class PreFlexFields extends FieldsProducer {
           assert t == null || !t.field().equals(fieldInfo.name); // make sure fields are in fact interned
           return null;
         } else {
-          scratchBytesRef.copy(t.text());
-          current = scratchBytesRef;
+          current = t.bytes();
           return current;
         }
       }

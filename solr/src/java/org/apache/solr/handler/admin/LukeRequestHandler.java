@@ -265,7 +265,7 @@ public class LukeRequestHandler extends RequestHandlerBase
           if( v != null ) {
             SimpleOrderedMap<Integer> tfv = new SimpleOrderedMap<Integer>();
             for( int i=0; i<v.size(); i++ ) {
-              tfv.add( v.getTerms()[i], v.getTermFrequencies()[i] );
+              tfv.add( v.getTerms()[i].utf8ToString(), v.getTermFrequencies()[i] );
             }
             f.add( "termVector", tfv );
           }

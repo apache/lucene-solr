@@ -292,9 +292,9 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
       this.reader = reader;
     }
 
-    public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
+    public void map(BytesRef term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
       NamedList termInfo = new NamedList();
-        fieldNL.add(term, termInfo);
+        fieldNL.add(term.utf8ToString(), termInfo);
         if (fieldOptions.termFreq == true) {
           termInfo.add("tf", frequency);
         }
@@ -323,14 +323,14 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
         }
     }
 
-    private int getDocFreq(String term) {
+    private int getDocFreq(BytesRef term) {
       int result = 1;
       currentTerm = currentTerm.createTerm(term);
       try {
         Terms terms = MultiFields.getTerms(reader, currentTerm.field());
         if (terms != null) {
           TermsEnum termsEnum = terms.iterator();
-          if (termsEnum.seek(new BytesRef(term)) == TermsEnum.SeekStatus.FOUND) {
+          if (termsEnum.seek(term) == TermsEnum.SeekStatus.FOUND) {
             result = termsEnum.docFreq();
           }
         }

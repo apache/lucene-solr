@@ -2,6 +2,8 @@ package org.apache.lucene.index;
 
 import java.util.*;
 
+import org.apache.lucene.util.BytesRef;
+
 /**
  * Copyright 2007 The Apache Software Foundation
  * <p/>
@@ -44,7 +46,7 @@ public class FieldSortedTermVectorMapper extends TermVectorMapper{
   }
 
   @Override
-  public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
+  public void map(BytesRef term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
     TermVectorEntry entry = new TermVectorEntry(currentField, term, frequency, offsets, positions);
     currentSet.add(entry);
   }

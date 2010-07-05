@@ -21,7 +21,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.UnicodeUtil;
 
 import java.io.IOException;
 
@@ -29,7 +28,6 @@ final class TermVectorsWriter {
   
   private IndexOutput tvx = null, tvd = null, tvf = null;
   private FieldInfos fieldInfos;
-  final BytesRef[] utf8Results = new BytesRef[] {new BytesRef(10), new BytesRef(10)};
 
   public TermVectorsWriter(Directory directory, String segment,
                            FieldInfos fieldInfos)
@@ -97,25 +95,19 @@ final class TermVectorsWriter {
 
         tvf.writeVInt(bits);
 
-        final String[] terms = vectors[i].getTerms();
+        final BytesRef[] terms = vectors[i].getTerms();
         final int[] freqs = vectors[i].getTermFrequencies();
 
-        int utf8Upto = 0;
-        utf8Results[1].length = 0;
-
         for (int j=0; j<numTerms; j++) {
-
-          UnicodeUtil.UTF16toUTF8(terms[j], 0, terms[j].length(), utf8Results[utf8Upto]);
           
-          int start = StringHelper.bytesDifference(utf8Results[1-utf8Upto].bytes,
-                                                   utf8Results[1-utf8Upto].length,
-                                                   utf8Results[utf8Upto].bytes,
-                                                   utf8Results[utf8Upto].length);
-          int length = utf8Results[utf8Upto].length - start;
+          int start = j == 0 ? 0 : StringHelper.bytesDifference(terms[j-1].bytes,
+                                                   terms[j-1].length,
+                                                   terms[j].bytes,
+                                                   terms[j].length);
+          int length = terms[j].length - start;
           tvf.writeVInt(start);       // write shared prefix length
           tvf.writeVInt(length);        // write delta length
-          tvf.writeBytes(utf8Results[utf8Upto].bytes, start, length);  // write delta bytes
-          utf8Upto = 1-utf8Upto;
+          tvf.writeBytes(terms[j].bytes, start, length);  // write delta bytes
 
           final int termFreq = freqs[j];
 

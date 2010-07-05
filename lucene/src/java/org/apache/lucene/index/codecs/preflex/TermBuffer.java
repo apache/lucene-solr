@@ -96,10 +96,9 @@ final class TermBuffer implements Cloneable {
       reset();
       return;
     }
-    final String termText = term.text();
-    final int termLen = termText.length();
-    text.setLength(termLen);
-    termText.getChars(0, termLen, text.result, 0);
+    
+    final BytesRef termBytes = term.bytes();
+    UnicodeUtil.UTF8toUTF16(termBytes.bytes, termBytes.offset, termBytes.length, text);
     dirty = true;
     field = term.field();
     this.term = term;
@@ -124,7 +123,7 @@ final class TermBuffer implements Cloneable {
       return null;
 
     if (term == null)
-      term = new Term(field, new String(text.result, 0, text.length), false);
+      term = new Term(field, new BytesRef(text.result, 0, text.length), false);
 
     return term;
   }

@@ -47,6 +47,7 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
 
@@ -848,10 +849,10 @@ public final class MoreLikeThis {
 	 */
 	private void addTermFrequencies(Map<String,Int> termFreqMap, TermFreqVector vector)
 	{
-		String[] terms = vector.getTerms();
+		BytesRef[] terms = vector.getTerms();
 		int freqs[]=vector.getTermFrequencies();
 		for (int j = 0; j < terms.length; j++) {
-		    String term = terms[j];
+		    String term = terms[j].utf8ToString();
 		
 			if(isNoiseWord(term)){
 				continue;

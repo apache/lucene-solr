@@ -256,7 +256,7 @@ public class UnInvertedField {
           deState.termsEnum = te.tenum;
           deState.reuse = te.docsEnum;
         }
-        DocSet set = searcher.getDocSet(new TermQuery(new Term(ti.field, topTerm.term.utf8ToString())), deState);
+        DocSet set = searcher.getDocSet(new TermQuery(new Term(ti.field, topTerm.term)), deState);
         te.docsEnum = deState.reuse;
 
         maxTermCounts[termNum] = set.size();
@@ -514,7 +514,7 @@ public class UnInvertedField {
       for (TopTerm tt : bigTerms.values()) {
         // TODO: counts could be deferred if sorted==false
         if (tt.termNum >= startTerm && tt.termNum < endTerm) {
-          counts[tt.termNum] = searcher.numDocs(new TermQuery(new Term(ti.field, tt.term.utf8ToString())), docs);
+          counts[tt.termNum] = searcher.numDocs(new TermQuery(new Term(ti.field, tt.term)), docs);
         }
       }
 
@@ -712,7 +712,7 @@ public class UnInvertedField {
     for (TopTerm tt : bigTerms.values()) {
       // TODO: counts could be deferred if sorted==false
       if (tt.termNum >= 0 && tt.termNum < numTermsInField) {
-        final Term t = new Term(ti.field, tt.term.utf8ToString());
+        final Term t = new Term(ti.field, tt.term);
         if (finfo.length == 0) {
           counts[tt.termNum] = searcher.numDocs(new TermQuery(t), docs);
         } else {

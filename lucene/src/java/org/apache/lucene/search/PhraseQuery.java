@@ -184,15 +184,14 @@ public class PhraseQuery extends Query {
       final Bits delDocs = MultiFields.getDeletedDocs(reader);
       for (int i = 0; i < terms.size(); i++) {
         final Term t = terms.get(i);
-        final BytesRef text = new BytesRef(t.text());
         DocsAndPositionsEnum postingsEnum = MultiFields.getTermPositionsEnum(reader,
                                                                              delDocs,
                                                                              t.field(),
-                                                                             text);
+                                                                             t.bytes());
         // PhraseQuery on a field that did not index
         // positions.
         if (postingsEnum == null) {
-          if (MultiFields.getTermDocsEnum(reader, delDocs, t.field(), text) != null) {
+          if (MultiFields.getTermDocsEnum(reader, delDocs, t.field(), t.bytes()) != null) {
             // term does exist, but has no positions
             throw new IllegalStateException("field \"" + t.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + t.text() + ")");
           } else {
@@ -200,7 +199,7 @@ public class PhraseQuery extends Query {
             return null;
           }
         }
-        postingsFreqs[i] = new PostingsAndFreq(postingsEnum, reader.docFreq(t.field(), text), positions.get(i).intValue());
+        postingsFreqs[i] = new PostingsAndFreq(postingsEnum, reader.docFreq(t.field(), t.bytes()), positions.get(i).intValue());
       }
 
       // sort by increasing docFreq order

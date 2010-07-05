@@ -17,6 +17,8 @@ package org.apache.lucene.index;
 
 import java.util.*;
 
+import org.apache.lucene.util.BytesRef;
+
 /**
  * Store a sorted collection of {@link org.apache.lucene.index.TermVectorEntry}s.  Collects all term information
  * into a single, SortedSet.
@@ -30,7 +32,7 @@ public class SortedTermVectorMapper extends TermVectorMapper{
 
 
   private SortedSet<TermVectorEntry> currentSet;
-  private Map<String,TermVectorEntry> termToTVE = new HashMap<String,TermVectorEntry>();
+  private Map<BytesRef,TermVectorEntry> termToTVE = new HashMap<BytesRef,TermVectorEntry>();
   private boolean storeOffsets;
   private boolean storePositions;
   /**
@@ -61,7 +63,7 @@ public class SortedTermVectorMapper extends TermVectorMapper{
    */
   //We need to combine any previous mentions of the term
   @Override
-  public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
+  public void map(BytesRef term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
     TermVectorEntry entry =  termToTVE.get(term);
     if (entry == null) {
       entry = new TermVectorEntry(ALL, term, frequency, 

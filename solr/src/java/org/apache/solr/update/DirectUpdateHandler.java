@@ -118,7 +118,7 @@ public class DirectUpdateHandler extends UpdateHandler {
     DocsEnum tdocs = MultiFields.getTermDocsEnum(ir,
                                                  MultiFields.getDeletedDocs(ir),
                                                  idTerm.field(),
-                                                 new BytesRef(idTerm.text()));
+                                                 idTerm.bytes());
     if (tdocs != null) {
       return tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS;
     } else {

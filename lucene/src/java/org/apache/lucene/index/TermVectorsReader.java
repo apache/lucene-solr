@@ -21,6 +21,7 @@ import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -415,14 +416,15 @@ class TermVectorsReader implements Cloneable {
       deltaLength = tvf.readVInt();
       totalLength = start + deltaLength;
 
-      final String term;
+      final BytesRef term = new BytesRef(totalLength);
       
       // Term stored as utf8 bytes
       if (byteBuffer.length < totalLength) {
         byteBuffer = ArrayUtil.grow(byteBuffer, totalLength);
       }
       tvf.readBytes(byteBuffer, start, deltaLength);
-      term = new String(byteBuffer, 0, totalLength, "UTF-8");
+      System.arraycopy(byteBuffer, 0, term.bytes, 0, totalLength);
+      term.length = totalLength;
       int freq = tvf.readVInt();
       int [] positions = null;
       if (storePositions) { //read in the positions
@@ -491,7 +493,7 @@ class TermVectorsReader implements Cloneable {
 class ParallelArrayTermVectorMapper extends TermVectorMapper
 {
 
-  private String[] terms;
+  private BytesRef[] terms;
   private int[] termFreqs;
   private int positions[][];
   private TermVectorOffsetInfo offsets[][];
@@ -503,7 +505,7 @@ class ParallelArrayTermVectorMapper extends TermVectorMapper
   @Override
   public void setExpectations(String field, int numTerms, boolean storeOffsets, boolean storePositions) {
     this.field = field;
-    terms = new String[numTerms];
+    terms = new BytesRef[numTerms];
     termFreqs = new int[numTerms];
     this.storingOffsets = storeOffsets;
     this.storingPositions = storePositions;
@@ -514,7 +516,7 @@ class ParallelArrayTermVectorMapper extends TermVectorMapper
   }
 
   @Override
-  public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
+  public void map(BytesRef term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
     terms[currentPosition] = term;
     termFreqs[currentPosition] = frequency;
     if (storingOffsets)

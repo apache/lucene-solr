@@ -75,7 +75,7 @@ public class TermQuery extends Query {
     public Scorer scorer(IndexReader reader, boolean scoreDocsInOrder, boolean topScorer) throws IOException {
       // NOTE: debateably, the caller should never pass in a
       // multi reader...
-      DocsEnum docs = MultiFields.getTermDocsEnum(reader, MultiFields.getDeletedDocs(reader), term.field(), new BytesRef(term.text()));
+      DocsEnum docs = MultiFields.getTermDocsEnum(reader, MultiFields.getDeletedDocs(reader), term.field(), term.bytes());
       if (docs == null) {
         return null;
       }
@@ -118,7 +118,7 @@ public class TermQuery extends Query {
 
       Explanation tfExplanation = new Explanation();
       int tf = 0;
-      DocsEnum docs = reader.termDocsEnum(MultiFields.getDeletedDocs(reader), term.field(), new BytesRef(term.text()));
+      DocsEnum docs = reader.termDocsEnum(MultiFields.getDeletedDocs(reader), term.field(), term.bytes());
       if (docs != null) {
           int newDoc = docs.advance(doc);
           if (newDoc == doc) {

@@ -77,6 +77,16 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
     this();
     copy(text);
   }
+  
+  /**
+   * @param text Initialize the byte[] from the UTF8 bytes
+   * for the provided array.  This must be well-formed
+   * unicode text, with no unpaired surrogates or U+FFFF.
+   */
+  public BytesRef(char text[], int offset, int length) {
+    this(length * 4);
+    copy(text, offset, length);
+  }
 
   public BytesRef(BytesRef other) {
     this();
@@ -106,6 +116,15 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
     UnicodeUtil.UTF16toUTF8(text, 0, text.length(), this);
   }
 
+  /**
+   * Copies the UTF8 bytes for this string.
+   * 
+   * @param text Must be well-formed unicode text, with no
+   * unpaired surrogates or invalid UTF16 code units.
+   */
+  public void copy(char text[], int offset, int length) {
+    UnicodeUtil.UTF16toUTF8(text, offset, length, this);
+  }
   public boolean bytesEquals(BytesRef other) {
     if (length == other.length) {
       int otherUpto = other.offset;
@@ -275,6 +294,62 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
       // One is a prefix of the other, or, they are equal:
       return a.length - b.length;
     }    
+  }
+
+  private final static Comparator<BytesRef> utf8SortedAsUTF16SortOrder = new UTF8SortedAsUTF16Comparator();
+
+  public static Comparator<BytesRef> getUTF8SortedAsUTF16Comparator() {
+    return utf8SortedAsUTF16SortOrder;
+  }
+
+  private static class UTF8SortedAsUTF16Comparator implements Comparator<BytesRef> {
+    // Only singleton
+    private UTF8SortedAsUTF16Comparator() {};
+
+    public int compare(BytesRef a, BytesRef b) {
+
+      final byte[] aBytes = a.bytes;
+      int aUpto = a.offset;
+      final byte[] bBytes = b.bytes;
+      int bUpto = b.offset;
+      
+      final int aStop;
+      if (a.length < b.length) {
+        aStop = aUpto + a.length;
+      } else {
+        aStop = aUpto + b.length;
+      }
+
+      while(aUpto < aStop) {
+        int aByte = aBytes[aUpto++] & 0xff;
+        int bByte = bBytes[bUpto++] & 0xff;
+
+        if (aByte != bByte) {
+
+          // See http://icu-project.org/docs/papers/utf16_code_point_order.html#utf-8-in-utf-16-order
+
+          // We know the terms are not equal, but, we may
+          // have to carefully fixup the bytes at the
+          // difference to match UTF16's sort order:
+          if (aByte >= 0xee && bByte >= 0xee) {
+            if ((aByte & 0xfe) == 0xee) {
+              aByte += 0x10;
+            }
+            if ((bByte&0xfe) == 0xee) {
+              bByte += 0x10;
+            }
+          }
+          return aByte - bByte;
+        }
+      }
+
+      // One is a prefix of the other, or, they are equal:
+      return a.length - b.length;
+    }
+
+    public boolean equals(Object other) {
+      return this == other;
+    }
   }
 
   public void writeExternal(ObjectOutput out)

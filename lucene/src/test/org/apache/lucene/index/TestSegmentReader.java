@@ -192,11 +192,11 @@ public class TestSegmentReader extends LuceneTestCase {
   public void testTermVectors() throws IOException {
     TermFreqVector result = reader.getTermFreqVector(0, DocHelper.TEXT_FIELD_2_KEY);
     assertTrue(result != null);
-    String [] terms = result.getTerms();
+    BytesRef [] terms = result.getTerms();
     int [] freqs = result.getTermFrequencies();
     assertTrue(terms != null && terms.length == 3 && freqs != null && freqs.length == 3);
     for (int i = 0; i < terms.length; i++) {
-      String term = terms[i];
+      String term = terms[i].utf8ToString();
       int freq = freqs[i];
       assertTrue(DocHelper.FIELD_2_TEXT.indexOf(term) != -1);
       assertTrue(freq > 0);

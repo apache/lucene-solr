@@ -30,25 +30,6 @@ import org.junit.Test;
 
 public class TestSurrogates extends LuceneTestCaseJ4 {
 
-  // like Term, but uses BytesRef for text
-  private static class FieldAndText implements Comparable<FieldAndText> {
-    String field;
-    BytesRef text;
-
-    public FieldAndText(Term t) {
-      field = t.field();
-      text = new BytesRef(t.text());
-    }
-    
-    public int compareTo(FieldAndText other) {
-      if (other.field == field) {
-        return text.compareTo(other.text);
-      } else {
-        return field.compareTo(other.field);
-      }
-    }
-  }
-
   // chooses from a very limited alphabet to exacerbate the
   // surrogate seeking required
   private static String makeDifficultRandomUnicodeString(Random r) {
@@ -76,7 +57,7 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
     return new String(buffer, 0, end);
   }
 
-  private SegmentInfo makePreFlexSegment(Random r, String segName, Directory dir, FieldInfos fieldInfos, Codec codec, List<FieldAndText> fieldTerms) throws IOException {
+  private SegmentInfo makePreFlexSegment(Random r, String segName, Directory dir, FieldInfos fieldInfos, Codec codec, List<Term> fieldTerms) throws IOException {
 
     final int numField = _TestUtil.nextInt(r, 2, 5);
 
@@ -110,11 +91,14 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
     fieldInfos.write(dir, segName);
 
     // sorts in UTF16 order, just like preflex:
-    Collections.sort(terms);
+    Collections.sort(terms, new Comparator<Term>() {
+      public int compare(Term o1, Term o2) {
+        return o1.compareToUTF16(o2);
+      }
+    });
 
     TermInfosWriter w = new TermInfosWriter(dir, segName, fieldInfos, 128);
     TermInfo ti = new TermInfo();
-    BytesRef utf8 = new BytesRef(10);
     String lastText = null;
     int uniqueTermCount = 0;
     if (VERBOSE) {
@@ -127,23 +111,22 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
       if (lastText != null && lastText.equals(text)) {
         continue;
       }
-      fieldTerms.add(new FieldAndText(t));
+      fieldTerms.add(t);
       uniqueTermCount++;
       lastText = text;
-      UnicodeUtil.UTF16toUTF8(text, 0, text.length(), utf8);
 
       if (VERBOSE) {
         System.out.println("  " + toHexString(t));
       }
-      w.add(fi.number, utf8.bytes, utf8.length, ti);
+      w.add(fi.number, t.bytes().bytes, t.bytes().length, ti);
     }
     w.close();
 
     Collections.sort(fieldTerms);
     if (VERBOSE) {
       System.out.println("\nTEST: codepoint order");
-      for(FieldAndText t: fieldTerms) {
-        System.out.println("  " + t.field + ":" + UnicodeUtil.toHexString(t.text.utf8ToString()));
+      for(Term t: fieldTerms) {
+        System.out.println("  " + t.field() + ":" + toHexString(t));
       }
     }
 
@@ -166,7 +149,7 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
 
     Random r = newRandom();
     FieldInfos fieldInfos = new FieldInfos();
-    List<FieldAndText> fieldTerms = new ArrayList<FieldAndText>();
+    List<Term> fieldTerms = new ArrayList<Term>();
     SegmentInfo si = makePreFlexSegment(r, "_0", dir, fieldInfos, codec, fieldTerms);
 
     // hack alert!!
@@ -188,8 +171,8 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
       BytesRef text;
       BytesRef lastText = null;
       while((text = termsEnum.next()) != null) {
-        UnicodeUtil.UTF8toUTF16(text.bytes, text.offset, text.length, utf16);
         if (VERBOSE) {
+          UnicodeUtil.UTF8toUTF16(text.bytes, text.offset, text.length, utf16);
           System.out.println("got term=" + field + ":" + UnicodeUtil.toHexString(new String(utf16.result, 0, utf16.length)));
           System.out.println();
         }
@@ -199,8 +182,8 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
           assertTrue(lastText.compareTo(text) < 0);
           lastText.copy(text);
         }
-        assertEquals(fieldTerms.get(termCount).field, field);
-        assertEquals(fieldTerms.get(termCount).text, text);
+        assertEquals(fieldTerms.get(termCount).field(), field);
+        assertEquals(fieldTerms.get(termCount).bytes(), text);
         termCount++;
       }
       if (VERBOSE) {

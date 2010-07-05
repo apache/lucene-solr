@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.BytesRef;
+
 /**
  * For each Field, store position by position information.  It ignores frequency information
  * <p/>
@@ -69,7 +71,7 @@ public class PositionBasedTermVectorMapper extends TermVectorMapper{
    * @param positions
    */
   @Override
-  public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
+  public void map(BytesRef term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
     for (int i = 0; i < positions.length; i++) {
       Integer posVal = Integer.valueOf(positions[i]);
       TVPositionInfo pos = currentPositions.get(posVal);
@@ -120,20 +122,20 @@ public class PositionBasedTermVectorMapper extends TermVectorMapper{
   public static class TVPositionInfo{
     private int position;
 
-    private List<String> terms;
+    private List<BytesRef> terms;
 
     private List<TermVectorOffsetInfo> offsets;
 
 
     public TVPositionInfo(int position, boolean storeOffsets) {
       this.position = position;
-      terms = new ArrayList<String>();
+      terms = new ArrayList<BytesRef>();
       if (storeOffsets) {
         offsets = new ArrayList<TermVectorOffsetInfo>();
       }
     }
 
-    void addTerm(String term, TermVectorOffsetInfo info)
+    void addTerm(BytesRef term, TermVectorOffsetInfo info)
     {
       terms.add(term);
       if (offsets != null) {
@@ -151,9 +153,9 @@ public class PositionBasedTermVectorMapper extends TermVectorMapper{
 
     /**
      * Note, there may be multiple terms at the same position
-     * @return A List of Strings
+     * @return A List of BytesRefs
      */
-    public List<String> getTerms() {
+    public List<BytesRef> getTerms() {
       return terms;
     }
 

@@ -480,7 +480,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     if (fields == null) return -1;
     Terms terms = fields.terms(t.field());
     if (terms == null) return -1;
-    BytesRef termBytes = new BytesRef(t.text());
+    BytesRef termBytes = t.bytes();
     DocsEnum docs = terms.docs(MultiFields.getDeletedDocs(reader), termBytes, null);
     if (docs == null) return -1;
     int id = docs.nextDoc();
@@ -754,7 +754,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
           
           Fields fields = sir.fields();
           Terms terms = fields.terms(t.field());
-          BytesRef termBytes = new BytesRef(t.text());
+          BytesRef termBytes = t.bytes();
           
           Bits skipDocs = sir.getDeletedDocs();
           DocsEnum docsEnum = terms==null ? null : terms.docs(skipDocs, termBytes, null);

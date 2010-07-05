@@ -464,7 +464,7 @@ public class InstantiatedIndexReader extends IndexReader {
       List<InstantiatedTermDocumentInformation> tv = doc.getVectorSpace().get(field);
       mapper.setExpectations(field, tv.size(), true, true);
       for (InstantiatedTermDocumentInformation tdi : tv) {
-        mapper.map(tdi.getTerm().text(), tdi.getTermPositions().length, tdi.getTermOffsets(), tdi.getTermPositions());
+        mapper.map(tdi.getTerm().getTerm().bytes(), tdi.getTermPositions().length, tdi.getTermOffsets(), tdi.getTermPositions());
       }
     }
   }
@@ -475,7 +475,7 @@ public class InstantiatedIndexReader extends IndexReader {
     for (Map.Entry<String, List<InstantiatedTermDocumentInformation>> e : doc.getVectorSpace().entrySet()) {
       mapper.setExpectations(e.getKey(), e.getValue().size(), true, true);
       for (InstantiatedTermDocumentInformation tdi : e.getValue()) {
-        mapper.map(tdi.getTerm().text(), tdi.getTermPositions().length, tdi.getTermOffsets(), tdi.getTermPositions());
+        mapper.map(tdi.getTerm().getTerm().bytes(), tdi.getTermPositions().length, tdi.getTermOffsets(), tdi.getTermPositions());
       }
     }
   }

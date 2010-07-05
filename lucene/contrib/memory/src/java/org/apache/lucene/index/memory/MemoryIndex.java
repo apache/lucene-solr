@@ -207,7 +207,7 @@ public class MemoryIndex implements Serializable {
       if (o1 instanceof Map.Entry<?,?>) o1 = ((Map.Entry<?,?>) o1).getKey();
       if (o2 instanceof Map.Entry<?,?>) o2 = ((Map.Entry<?,?>) o2).getKey();
       if (o1 == o2) return 0;
-      return ((String) o1).compareTo((String) o2);
+      return ((Comparable) o1).compareTo((Comparable) o2);
     }
   };
 
@@ -341,21 +341,19 @@ public class MemoryIndex implements Serializable {
       if (fields.get(fieldName) != null)
         throw new IllegalArgumentException("field must not be added more than once");
       
-      HashMap<String,ArrayIntList> terms = new HashMap<String,ArrayIntList>();
+      HashMap<BytesRef,ArrayIntList> terms = new HashMap<BytesRef,ArrayIntList>();
       int numTokens = 0;
       int numOverlapTokens = 0;
       int pos = -1;
       
-      TermToBytesRefAttribute termAtt = stream.addAttribute(TermToBytesRefAttribute.class);
+      TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
       PositionIncrementAttribute posIncrAttribute = stream.addAttribute(PositionIncrementAttribute.class);
       OffsetAttribute offsetAtt = stream.addAttribute(OffsetAttribute.class);
       BytesRef ref = new BytesRef(10);
       stream.reset();
       while (stream.incrementToken()) {
         termAtt.toBytesRef(ref);
-        // TODO: support non-UTF8 strings (like numerics) here
-        String term = ref.utf8ToString();
-        if (term.length() == 0) continue; // nothing to do
+        if (ref.length == 0) continue; // nothing to do
 //        if (DEBUG) System.err.println("token='" + term + "'");
         numTokens++;
         final int posIncr = posIncrAttribute.getPositionIncrement();
@@ -363,10 +361,10 @@ public class MemoryIndex implements Serializable {
           numOverlapTokens++;
         pos += posIncr;
         
-        ArrayIntList positions = terms.get(term);
+        ArrayIntList positions = terms.get(ref);
         if (positions == null) { // term not seen before
           positions = new ArrayIntList(stride);
-          terms.put(term, positions);
+          terms.put(new BytesRef(ref), positions);
         }
         if (stride == 1) {
           positions.add(pos);
@@ -490,9 +488,10 @@ public class MemoryIndex implements Serializable {
       
       int len = info.terms.size();
       size += VM.sizeOfHashMap(len);
-      Iterator<Map.Entry<String,ArrayIntList>> iter2 = info.terms.entrySet().iterator();
+      Iterator<Map.Entry<BytesRef,ArrayIntList>> iter2 = info.terms.entrySet().iterator();
       while (--len >= 0) { // for each term
-        Map.Entry<String,ArrayIntList> e = iter2.next();
+        Map.Entry<BytesRef,ArrayIntList> e = iter2.next();
+        // FIXME: this calculation is probably not correct since we use bytes now.
         size += VM.sizeOfObject(PTR + 3*INT); // assumes substring() memory overlay
 //        size += STR + 2 * ((String) e.getKey()).length();
         ArrayIntList positions = e.getValue();
@@ -534,7 +533,7 @@ public class MemoryIndex implements Serializable {
   public String toString() {
     StringBuilder result = new StringBuilder(256);    
     sortFields();   
-    int sumChars = 0;
+    int sumBytes = 0;
     int sumPositions = 0;
     int sumTerms = 0;
     
@@ -545,32 +544,32 @@ public class MemoryIndex implements Serializable {
       info.sortTerms();
       result.append(fieldName + ":\n");
       
-      int numChars = 0;
+      int numBytes = 0;
       int numPositions = 0;
       for (int j=0; j < info.sortedTerms.length; j++) {
-        Map.Entry<String,ArrayIntList> e = info.sortedTerms[j];
-        String term = e.getKey();
+        Map.Entry<BytesRef,ArrayIntList> e = info.sortedTerms[j];
+        BytesRef term = e.getKey();
         ArrayIntList positions = e.getValue();
         result.append("\t'" + term + "':" + numPositions(positions) + ":");
         result.append(positions.toString(stride)); // ignore offsets
         result.append("\n");
         numPositions += numPositions(positions);
-        numChars += term.length();
+        numBytes += term.length;
       }
       
       result.append("\tterms=" + info.sortedTerms.length);
       result.append(", positions=" + numPositions);
-      result.append(", Kchars=" + (numChars/1000.0f));
+      result.append(", Kbytes=" + (numBytes/1000.0f));
       result.append("\n");
       sumPositions += numPositions;
-      sumChars += numChars;
+      sumBytes += numBytes;
       sumTerms += info.sortedTerms.length;
     }
     
     result.append("\nfields=" + sortedFields.length);
     result.append(", terms=" + sumTerms);
     result.append(", positions=" + sumPositions);
-    result.append(", Kchars=" + (sumChars/1000.0f));
+    result.append(", Kbytes=" + (sumBytes/1000.0f));
     return result.toString();
   }
   
@@ -588,10 +587,10 @@ public class MemoryIndex implements Serializable {
      * Term strings and their positions for this field: Map <String
      * termText, ArrayIntList positions>
      */
-    private final HashMap<String,ArrayIntList> terms; 
+    private final HashMap<BytesRef,ArrayIntList> terms; 
     
     /** Terms sorted ascending by term text; computed on demand */
-    private transient Map.Entry<String,ArrayIntList>[] sortedTerms;
+    private transient Map.Entry<BytesRef,ArrayIntList>[] sortedTerms;
     
     /** Number of added tokens for this field */
     private final int numTokens;
@@ -607,7 +606,7 @@ public class MemoryIndex implements Serializable {
 
     private static final long serialVersionUID = 2882195016849084649L;  
 
-    public Info(HashMap<String,ArrayIntList> terms, int numTokens, int numOverlapTokens, float boost) {
+    public Info(HashMap<BytesRef,ArrayIntList> terms, int numTokens, int numOverlapTokens, float boost) {
       this.terms = terms;
       this.numTokens = numTokens;
       this.numOverlapTokens = numOverlapTokens;
@@ -627,7 +626,7 @@ public class MemoryIndex implements Serializable {
     }
         
     /** note that the frequency can be calculated as numPosition(getPositions(x)) */
-    public ArrayIntList getPositions(String term) {
+    public ArrayIntList getPositions(BytesRef term) {
       return terms.get(term);
     }
 
@@ -759,7 +758,7 @@ public class MemoryIndex implements Serializable {
     public int docFreq(Term term) {
       Info info = getInfo(term.field());
       int freq = 0;
-      if (info != null) freq = info.getPositions(term.text()) != null ? 1 : 0;
+      if (info != null) freq = info.getPositions(term.bytes()) != null ? 1 : 0;
       if (DEBUG) System.err.println("MemoryIndexReader.docFreq: " + term + ", freq:" + freq);
       return freq;
     }
@@ -833,8 +832,7 @@ public class MemoryIndex implements Serializable {
 
       @Override
       public SeekStatus seek(BytesRef text, boolean useCache) {
-        final String s = text.utf8ToString();
-        termUpto = Arrays.binarySearch(info.sortedTerms, s, termComparator);
+        termUpto = Arrays.binarySearch(info.sortedTerms, text, termComparator);
         if (termUpto < 0) { // not found; choose successor
           termUpto = -termUpto -1;
           if (termUpto >= info.sortedTerms.length) {
@@ -1061,7 +1059,7 @@ public class MemoryIndex implements Serializable {
       
       return new TermPositionVector() { 
   
-        private final Map.Entry<String,ArrayIntList>[] sortedTerms = info.sortedTerms;
+        private final Map.Entry<BytesRef,ArrayIntList>[] sortedTerms = info.sortedTerms;
         
         public String getField() {
           return fieldName;
@@ -1071,8 +1069,8 @@ public class MemoryIndex implements Serializable {
           return sortedTerms.length;
         }
   
-        public String[] getTerms() {
-          String[] terms = new String[sortedTerms.length];
+        public BytesRef[] getTerms() {
+          BytesRef[] terms = new BytesRef[sortedTerms.length];
           for (int i=sortedTerms.length; --i >= 0; ) {
             terms[i] = sortedTerms[i].getKey();
           }
@@ -1087,12 +1085,12 @@ public class MemoryIndex implements Serializable {
           return freqs;
         }
   
-        public int indexOf(String term) {
+        public int indexOf(BytesRef term) {
           int i = Arrays.binarySearch(sortedTerms, term, termComparator);
           return i >= 0 ? i : -1;
         }
   
-        public int[] indexesOf(String[] terms, int start, int len) {
+        public int[] indexesOf(BytesRef[] terms, int start, int len) {
           int[] indexes = new int[len];
           for (int i=0; i < len; i++) {
             indexes[i] = indexOf(terms[start++]);

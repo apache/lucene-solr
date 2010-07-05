@@ -95,11 +95,18 @@ import org.apache.lucene.util.BytesRef;
 
 public class FieldCacheTermsFilter extends Filter {
   private String field;
-  private String[] terms;
+  private BytesRef[] terms;
+
+  public FieldCacheTermsFilter(String field, BytesRef... terms) {
+    this.field = field;
+    this.terms = terms;
+  }
 
   public FieldCacheTermsFilter(String field, String... terms) {
     this.field = field;
-    this.terms = terms;
+    this.terms = new BytesRef[terms.length];
+    for (int i = 0; i < terms.length; i++)
+      this.terms[i] = new BytesRef(terms[i]);
   }
 
   public FieldCache getFieldCache() {
@@ -121,7 +128,7 @@ public class FieldCacheTermsFilter extends Filter {
       openBitSet = new OpenBitSet(this.fcsi.size());
       final BytesRef spare = new BytesRef();
       for (int i=0;i<terms.length;i++) {
-        int termNumber = this.fcsi.binarySearchLookup(new BytesRef(terms[i]), spare);
+        int termNumber = this.fcsi.binarySearchLookup(terms[i], spare);
         if (termNumber > 0) {
           openBitSet.fastSet(termNumber);
         }

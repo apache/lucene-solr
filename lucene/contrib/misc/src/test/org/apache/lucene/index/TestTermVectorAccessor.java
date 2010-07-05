@@ -76,21 +76,21 @@ public class TestTermVectorAccessor extends LuceneTestCase {
       mapper = new ParallelArrayTermVectorMapper();
       accessor.accept(ir, i, "a", mapper);
       tfv = mapper.materializeVector();
-      assertEquals("doc " + i, "a", tfv.getTerms()[0]);
+      assertEquals("doc " + i, "a", tfv.getTerms()[0].utf8ToString());
       assertEquals("doc " + i, 8, tfv.getTermFrequencies()[0]);
 
       mapper = new ParallelArrayTermVectorMapper();
       accessor.accept(ir, i, "b", mapper);
       tfv = mapper.materializeVector();
       assertEquals("doc " + i, 8, tfv.getTermFrequencies().length);
-      assertEquals("doc " + i, "b", tfv.getTerms()[1]);
+      assertEquals("doc " + i, "b", tfv.getTerms()[1].utf8ToString());
       assertEquals("doc " + i, 7, tfv.getTermFrequencies()[1]);
 
       mapper = new ParallelArrayTermVectorMapper();
       accessor.accept(ir, i, "c", mapper);
       tfv = mapper.materializeVector();
       assertEquals("doc " + i, 8, tfv.getTermFrequencies().length);
-      assertEquals("doc " + i, "c", tfv.getTerms()[2]);
+      assertEquals("doc " + i, "c", tfv.getTerms()[2].utf8ToString());
       assertEquals("doc " + i, 7, tfv.getTermFrequencies()[2]);
 
       mapper = new ParallelArrayTermVectorMapper();

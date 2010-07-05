@@ -69,7 +69,7 @@ public class TermVectorAccessor {
   }
 
   /** Instance reused to save garbage collector some time */
-  private List<String> tokens;
+  private List<BytesRef> tokens;
 
   /** Instance reused to save garbage collector some time */
   private List<int[]> positions;
@@ -91,7 +91,7 @@ public class TermVectorAccessor {
   private void build(IndexReader indexReader, String field, TermVectorMapper mapper, int documentNumber) throws IOException {
 
     if (tokens == null) {
-      tokens = new ArrayList<String>(500);
+      tokens = new ArrayList<BytesRef>(500);
       positions = new ArrayList<int[]>(500);
       frequencies = new ArrayList<Integer>(500);
     } else {
@@ -122,7 +122,7 @@ public class TermVectorAccessor {
           if (docID == documentNumber) {
 
             frequencies.add(Integer.valueOf(docs.freq()));
-            tokens.add(text.utf8ToString());
+            tokens.add(new BytesRef(text));
 
             if (!mapper.isIgnoringPositions()) {
               int[] positions = new int[docs.freq()];
@@ -173,7 +173,7 @@ public class TermVectorAccessor {
     }
 
     @Override
-    public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
+    public void map(BytesRef term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
       decorated.map(term, frequency, offsets, positions);
     }
 

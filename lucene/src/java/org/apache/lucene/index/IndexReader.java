@@ -883,7 +883,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public abstract Fields fields() throws IOException;
 
   public int docFreq(Term term) throws IOException {
-    return docFreq(term.field(), new BytesRef(term.text()));
+    return docFreq(term.field(), term.bytes());
   }
 
   /** Returns the number of documents containing the term
@@ -1000,7 +1000,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
     DocsEnum docs = MultiFields.getTermDocsEnum(this,
                                                 MultiFields.getDeletedDocs(this),
                                                 term.field(),
-                                                new BytesRef(term.text()));
+                                                term.bytes());
     if (docs == null) return 0;
     int n = 0;
     int doc;

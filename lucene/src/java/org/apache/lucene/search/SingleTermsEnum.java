@@ -41,7 +41,7 @@ public final class SingleTermsEnum extends FilteredTermsEnum {
    */
   public SingleTermsEnum(IndexReader reader, Term singleTerm) throws IOException {
     super(reader, singleTerm.field());
-    singleRef = new BytesRef(singleTerm.text());
+    singleRef = singleTerm.bytes();
     setInitialSeekTerm(singleRef);
   }
 

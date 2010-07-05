@@ -1,5 +1,7 @@
 package org.apache.lucene.index;
 
+import org.apache.lucene.util.BytesRef;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -38,7 +40,7 @@ public interface TermFreqVector {
   /** 
    * @return An Array of term texts in ascending order.
    */
-  public String[] getTerms();
+  public BytesRef[] getTerms();
 
 
   /** Array of term frequencies. Locations of the array correspond one to one
@@ -54,7 +56,7 @@ public interface TermFreqVector {
    *  <code>term</code> appears. If this term does not appear in the array,
    *  return -1.
    */
-  public int indexOf(String term);
+  public int indexOf(BytesRef term);
 
 
   /** Just like <code>indexOf(int)</code> but searches for a number of terms
@@ -66,6 +68,6 @@ public interface TermFreqVector {
    *  @param start index in the array where the list of terms starts
    *  @param len the number of terms in the list
    */
-  public int[] indexesOf(String[] terms, int start, int len);
+  public int[] indexesOf(BytesRef[] terms, int start, int len);
 
 }

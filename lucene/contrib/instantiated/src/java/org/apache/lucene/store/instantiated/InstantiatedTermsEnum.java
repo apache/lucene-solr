@@ -41,14 +41,14 @@ public class InstantiatedTermsEnum extends TermsEnum {
 
   @Override
   public SeekStatus seek(BytesRef text, boolean useCache) {
-    final Term t = new Term(field, text.utf8ToString());
+    final Term t = new Term(field, text);
     int loc = Arrays.binarySearch(terms, t, InstantiatedTerm.termComparator);
     if (loc < 0) {
       upto = -loc - 1;
       if (upto >= terms.length) {
         return SeekStatus.END;
       } else {
-        br.copy(terms[upto].getTerm().text());
+        br.copy(terms[upto].getTerm().bytes());
         return SeekStatus.NOT_FOUND;
       }
     } else {

@@ -1073,7 +1073,6 @@ final class DocumentsWriter {
       TermsEnum termsEnum = null;
         
       String currentField = null;
-      BytesRef termRef = new BytesRef();
       DocsEnum docs = null;
         
       for (Entry<Term, BufferedDeletes.Num> entry: deletesFlushed.terms.entrySet()) {
@@ -1097,9 +1096,7 @@ final class DocumentsWriter {
         }
         assert checkDeleteTerm(term);
           
-        termRef.copy(term.text());
-          
-        if (termsEnum.seek(termRef, false) == TermsEnum.SeekStatus.FOUND) {
+        if (termsEnum.seek(term.bytes(), false) == TermsEnum.SeekStatus.FOUND) {
           DocsEnum docsEnum = termsEnum.docs(reader.getDeletedDocs(), docs);
             
           if (docsEnum != null) {
@@ -1166,7 +1163,7 @@ final class DocumentsWriter {
       num.setNum(docIDUpto);
     deletesInRAM.numTerms++;
 
-    deletesInRAM.addBytesUsed(BYTES_PER_DEL_TERM + term.text.length()*CHAR_NUM_BYTE);
+    deletesInRAM.addBytesUsed(BYTES_PER_DEL_TERM + term.bytes.length);
   }
 
   // Buffer a specific docID for deletion.  Currently only

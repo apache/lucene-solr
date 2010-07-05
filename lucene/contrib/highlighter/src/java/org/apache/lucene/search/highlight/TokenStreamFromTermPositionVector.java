@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermVectorOffsetInfo;
+import org.apache.lucene.util.BytesRef;
 
 public final class TokenStreamFromTermPositionVector extends TokenStream {
 
@@ -54,18 +55,18 @@ public final class TokenStreamFromTermPositionVector extends TokenStream {
     termAttribute = addAttribute(CharTermAttribute.class);
     positionIncrementAttribute = addAttribute(PositionIncrementAttribute.class);
     offsetAttribute = addAttribute(OffsetAttribute.class);
-    final String[] terms = termPositionVector.getTerms();
+    final BytesRef[] terms = termPositionVector.getTerms();
     for (int i = 0; i < terms.length; i++) {
       final TermVectorOffsetInfo[] offsets = termPositionVector.getOffsets(i);
       final int[] termPositions = termPositionVector.getTermPositions(i);
       for (int j = 0; j < termPositions.length; j++) {
         Token token;
         if (offsets != null) {
-          token = new Token(terms[i].toCharArray(), 0, terms[i].length(),
+          token = new Token(terms[i].utf8ToString(),
               offsets[j].getStartOffset(), offsets[j].getEndOffset());
         } else {
           token = new Token();
-          token.setEmpty().append(terms[i]);
+          token.setEmpty().append(terms[i].utf8ToString());
         }
         // Yes - this is the position, not the increment! This is for
         // sorting. This value

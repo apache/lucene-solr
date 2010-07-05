@@ -32,6 +32,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestTermVectorsReader extends LuceneTestCase {
@@ -170,11 +171,11 @@ public class TestTermVectorsReader extends LuceneTestCase {
     for (int j = 0; j < 5; j++) {
       TermFreqVector vector = reader.get(j, testFields[0]);
       assertTrue(vector != null);
-      String[] terms = vector.getTerms();
+      BytesRef[] terms = vector.getTerms();
       assertTrue(terms != null);
       assertTrue(terms.length == testTerms.length);
       for (int i = 0; i < terms.length; i++) {
-        String term = terms[i];
+        String term = terms[i].utf8ToString();
         //System.out.println("Term: " + term);
         assertTrue(term.equals(testTerms[i]));
       }
@@ -184,14 +185,14 @@ public class TestTermVectorsReader extends LuceneTestCase {
   public void testPositionReader() throws IOException {
     TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
     TermPositionVector vector;
-    String[] terms;
+    BytesRef[] terms;
     vector = (TermPositionVector) reader.get(0, testFields[0]);
     assertTrue(vector != null);
     terms = vector.getTerms();
     assertTrue(terms != null);
     assertTrue(terms.length == testTerms.length);
     for (int i = 0; i < terms.length; i++) {
-      String term = terms[i];
+      String term = terms[i].utf8ToString();
       //System.out.println("Term: " + term);
       assertTrue(term.equals(testTerms[i]));
       int[] positions = vector.getTermPositions(i);
@@ -217,7 +218,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     assertTrue(terms != null);
     assertTrue(terms.length == testTerms.length);
     for (int i = 0; i < terms.length; i++) {
-      String term = terms[i];
+      String term = terms[i].utf8ToString();
       //System.out.println("Term: " + term);
       assertTrue(term.equals(testTerms[i]));
     }
@@ -227,11 +228,11 @@ public class TestTermVectorsReader extends LuceneTestCase {
     TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
     TermPositionVector vector = (TermPositionVector) reader.get(0, testFields[0]);
     assertTrue(vector != null);
-    String[] terms = vector.getTerms();
+    BytesRef[] terms = vector.getTerms();
     assertTrue(terms != null);
     assertTrue(terms.length == testTerms.length);
     for (int i = 0; i < terms.length; i++) {
-      String term = terms[i];
+      String term = terms[i].utf8ToString();
       //System.out.println("Term: " + term);
       assertTrue(term.equals(testTerms[i]));
       int[] positions = vector.getTermPositions(i);
@@ -413,7 +414,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     }
 
     @Override
-    public void map(String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
+    public void map(BytesRef term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
       if (documentNumber == -1) {
         throw new RuntimeException("Documentnumber should be set at this point!");
       }

@@ -499,14 +499,13 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
     List<DocsAndPositionsEnum> docsEnums = new LinkedList<DocsAndPositionsEnum>();
     final Bits delDocs = MultiFields.getDeletedDocs(indexReader);
     for (int i = 0; i < terms.length; i++) {
-      final BytesRef text = new BytesRef(terms[i].text());
       DocsAndPositionsEnum postings = indexReader.termPositionsEnum(delDocs,
                                                                     terms[i].field(),
-                                                                    text);
+                                                                    terms[i].bytes());
       if (postings != null) {
         docsEnums.add(postings);
       } else {
-        if (MultiFields.getTermDocsEnum(indexReader, delDocs, terms[i].field(), text) != null) {
+        if (MultiFields.getTermDocsEnum(indexReader, delDocs, terms[i].field(), terms[i].bytes()) != null) {
           // term does exist, but has no positions
           throw new IllegalStateException("field \"" + terms[i].field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + terms[i].text() + ")");
         }
