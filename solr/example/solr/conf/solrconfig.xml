@@ -1019,6 +1019,9 @@
    <!-- Configure the standard fragListBuilder -->
    <fragListBuilder name="simple" class="org.apache.solr.highlight.SimpleFragListBuilder" default="true"/>
 
+   <!-- Configure the single fragListBuilder -->
+   <fragListBuilder name="single" class="org.apache.solr.highlight.SingleFragListBuilder"/>
+
    <!-- multi-colored tag FragmentsBuilder -->
    <fragmentsBuilder name="colored" class="org.apache.solr.highlight.MultiColoredScoreOrderFragmentsBuilder" default="true"/>
   </highlighting>

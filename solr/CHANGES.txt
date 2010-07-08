@@ -194,6 +194,8 @@ New Features
   if fields that do not have term vector options (termVectors, offsets, positions)
    that align with the schema declaration. It also
     will now return warnings about (gsingers)
+
+* SOLR-1985: FastVectorHighlighter: add wrapper class for Lucene's SingleFragListBuilder (koji)
    
 Optimizations
 ----------------------
