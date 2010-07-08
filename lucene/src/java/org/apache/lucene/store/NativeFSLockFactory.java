@@ -152,13 +152,20 @@ public class NativeFSLockFactory extends FSLockFactory {
     // they are locked, but, still do this in case people
     // really want to see the files go away:
     if (lockDir.exists()) {
+      
+      // Try to release the lock first - if it's held by another process, this
+      // method should not silently fail.
+      // NOTE: makeLock fixes the lock name by prefixing it w/ lockPrefix.
+      // Therefore it should be called before the code block next which prefixes
+      // the given name.
+      makeLock(lockName).release();
+
       if (lockPrefix != null) {
         lockName = lockPrefix + "-" + lockName;
       }
-      File lockFile = new File(lockDir, lockName);
-      if (lockFile.exists() && !lockFile.delete()) {
-        throw new IOException("Cannot delete " + lockFile);
-      }
+      
+      // As mentioned above, we don't care if the deletion of the file failed.
+      new File(lockDir, lockName).delete();
     }
   }
 }
