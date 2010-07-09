@@ -33,7 +33,7 @@ import java.io.IOException;
 
 /** @lucene.experimental */
 public class SimpleStandardTermsIndexWriter extends StandardTermsIndexWriter {
-  final private IndexOutput out;
+  protected final IndexOutput out;
 
   final static String CODEC_NAME = "SIMPLE_STANDARD_TERMS_INDEX";
   final static int VERSION_START = 0;
@@ -50,12 +50,15 @@ public class SimpleStandardTermsIndexWriter extends StandardTermsIndexWriter {
     state.flushedFiles.add(indexFileName);
     termIndexInterval = state.termIndexInterval;
     out = state.directory.createOutput(indexFileName);
-    CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);
     fieldInfos = state.fieldInfos;
-
+    writeHeader(out);
+    out.writeInt(termIndexInterval);
+  }
+  
+  protected void writeHeader(IndexOutput out) throws IOException {
+    CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT);
     // Placeholder for dir offset
     out.writeLong(0);
-    out.writeInt(termIndexInterval);
   }
 
   @Override
@@ -179,8 +182,12 @@ public class SimpleStandardTermsIndexWriter extends StandardTermsIndexWriter {
       out.writeLong(field.packedIndexStart);
       out.writeLong(field.packedOffsetsStart);
     }
+    writeTrailer(dirStart);
+    out.close();
+  }
+
+  protected void writeTrailer(long dirStart) throws IOException {
     out.seek(CodecUtil.headerLength(CODEC_NAME));
     out.writeLong(dirStart);
-    out.close();
   }
 }

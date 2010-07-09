@@ -133,12 +133,14 @@ public final class SegmentInfo {
   /**
    * Construct a new SegmentInfo instance by reading a
    * previously saved SegmentInfo from input.
+   * <p>Note: this is public only to allow access from
+   * the codecs package.</p>
    *
    * @param dir directory to load from
    * @param format format of the segments info file
    * @param input input handle to read segment info from
    */
-  SegmentInfo(Directory dir, int format, IndexInput input, CodecProvider codecs) throws IOException {
+  public SegmentInfo(Directory dir, int format, IndexInput input, CodecProvider codecs) throws IOException {
     this.dir = dir;
     name = input.readString();
     docCount = input.readInt();
@@ -373,7 +375,7 @@ public final class SegmentInfo {
   }
   
   /** Save this segment's info. */
-  void write(IndexOutput output)
+  public void write(IndexOutput output)
     throws IOException {
     assert delCount <= docCount: "delCount=" + delCount + " docCount=" + docCount + " segment=" + name;
     output.writeString(name);

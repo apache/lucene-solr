@@ -15,6 +15,11 @@ New Features
     pages from the buffer cache, since fadvise/madvise do not seem.
     (Michael McCandless)
 
+  * LUCENE-2373: Added a Codec implementation that works with append-only
+    filesystems (such as e.g. Hadoop DFS). SegmentInfos writing/reading
+    code is refactored to support append-only FS, and to allow for future
+    customization of per-segment information. (Andrzej Bialecki)
+
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy

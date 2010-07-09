@@ -189,6 +189,10 @@ New features
 * LUCENE-1810: Added FieldSelectorResult.LATENT to not cache lazy loaded fields
   (Tim Smith, Grant Ingersoll)
 
+* LUCENE-2373: Extend CodecProvider to use SegmentInfosWriter and
+  SegmentInfosReader to allow customization of SegmentInfos data.
+  (Andrzej Bialecki)
+
 Optimizations
 
 * LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.

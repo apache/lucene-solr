@@ -20,10 +20,10 @@ package org.apache.lucene.index;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.ChecksumIndexOutput;
-import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.SegmentInfosReader;
+import org.apache.lucene.index.codecs.SegmentInfosWriter;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 import java.io.FileNotFoundException;
@@ -65,7 +65,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
   public static final int FORMAT_4_0 = -10;
 
   /* This must always point to the most recent file format. */
-  static final int CURRENT_FORMAT = FORMAT_4_0;
+  public static final int CURRENT_FORMAT = FORMAT_4_0;
   
   public int counter = 0;    // used to name new segments
   
@@ -73,20 +73,30 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    * counts how often the index has been changed by adding or deleting docs.
    * starting with the current time in milliseconds forces to create unique version numbers.
    */
-  private long version = System.currentTimeMillis();
+  public long version = System.currentTimeMillis();
 
   private long generation = 0;     // generation of the "segments_N" for the next commit
   private long lastGeneration = 0; // generation of the "segments_N" file we last successfully read
                                    // or wrote; this is normally the same as generation except if
                                    // there was an IOException that had interrupted a commit
 
-  private Map<String,String> userData = Collections.<String,String>emptyMap();       // Opaque Map<String, String> that user can specify during IndexWriter.commit
+  public Map<String,String> userData = Collections.<String,String>emptyMap();       // Opaque Map<String, String> that user can specify during IndexWriter.commit
+  
+  private CodecProvider codecs;
 
   /**
    * If non-null, information about loading segments_N files
    * will be printed here.  @see #setInfoStream.
    */
   private static PrintStream infoStream;
+  
+  public SegmentInfos() {
+    this(CodecProvider.getDefault());
+  }
+  
+  public SegmentInfos(CodecProvider codecs) {
+    this.codecs = codecs;
+  }
 
   public final SegmentInfo info(int i) {
     return get(i);
@@ -205,42 +215,22 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    */
   public final void read(Directory directory, String segmentFileName, 
                          CodecProvider codecs) throws CorruptIndexException, IOException {
+    this.codecs = codecs;
     boolean success = false;
 
     // Clear any previous segments:
     clear();
-
-    ChecksumIndexInput input = new ChecksumIndexInput(directory.openInput(segmentFileName));
 
     generation = generationFromSegmentsFileName(segmentFileName);
 
     lastGeneration = generation;
 
     try {
-      int format = input.readInt();
-
-      // check that it is a format we can understand
-      if (format < CURRENT_FORMAT)
-        throw new CorruptIndexException("Unknown (newer than us?) format version: " + format);
-
-      version = input.readLong(); // read version
-      counter = input.readInt(); // read counter
-      
-      for (int i = input.readInt(); i > 0; i--) { // read segmentInfos
-        add(new SegmentInfo(directory, format, input, codecs));
-      }
-      
-      userData = input.readStringStringMap();
-
-      final long checksumNow = input.getChecksum();
-      final long checksumThen = input.readLong();
-      if (checksumNow != checksumThen)
-        throw new CorruptIndexException("checksum mismatch in segments file");
-
+      SegmentInfosReader infosReader = codecs.getSegmentInfosReader();
+      infosReader.read(directory, segmentFileName, codecs, this);
       success = true;
     }
     finally {
-      input.close();
       if (!success) {
         // Clear any segment infos we had loaded so we
         // have a clean slate on retry:
@@ -261,6 +251,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
   
   public final void read(Directory directory, final CodecProvider codecs) throws CorruptIndexException, IOException {
     generation = lastGeneration = -1;
+    this.codecs = codecs;
 
     new FindSegmentsFile(directory) {
 
@@ -274,7 +265,7 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
 
   // Only non-null after prepareCommit has been called and
   // before finishCommit is called
-  ChecksumIndexOutput pendingSegnOutput;
+  IndexOutput pendingSegnOutput;
 
   private void write(Directory directory) throws IOException {
 
@@ -287,21 +278,14 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
       generation++;
     }
 
-    ChecksumIndexOutput segnOutput = new ChecksumIndexOutput(directory.createOutput(segmentFileName));
+    IndexOutput segnOutput = null;
 
     boolean success = false;
 
     try {
-      segnOutput.writeInt(CURRENT_FORMAT); // write FORMAT
-      segnOutput.writeLong(++version); // every write changes
-                                   // the index
-      segnOutput.writeInt(counter); // write counter
-      segnOutput.writeInt(size()); // write infos
-      for (SegmentInfo si : this) {
-        si.write(segnOutput);
-      }
-      segnOutput.writeStringStringMap(userData);
-      segnOutput.prepareCommit();
+      SegmentInfosWriter infosWriter = codecs.getSegmentInfosWriter();
+      segnOutput = infosWriter.writeInfos(directory, segmentFileName, this);
+      infosWriter.prepareCommit(segnOutput);
       success = true;
       pendingSegnOutput = segnOutput;
     } finally {
@@ -785,8 +769,8 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
       throw new IllegalStateException("prepareCommit was not called");
     boolean success = false;
     try {
-      pendingSegnOutput.finishCommit();
-      pendingSegnOutput.close();
+      SegmentInfosWriter infosWriter = codecs.getSegmentInfosWriter();
+      infosWriter.finishCommit(pendingSegnOutput);
       pendingSegnOutput = null;
       success = true;
     } finally {

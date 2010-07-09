@@ -55,7 +55,7 @@ public class StandardTermsDictWriter extends FieldsConsumer {
 
   private final DeltaBytesWriter termWriter;
 
-  final IndexOutput out;
+  protected final IndexOutput out;
   final StandardPostingsWriter postingsWriter;
   final FieldInfos fieldInfos;
   FieldInfo currentField;
@@ -77,17 +77,19 @@ public class StandardTermsDictWriter extends FieldsConsumer {
     state.flushedFiles.add(termsFileName);
 
     fieldInfos = state.fieldInfos;
-
-    // Count indexed fields up front
-    CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT); 
-
-    out.writeLong(0);                             // leave space for end index pointer
-
+    writeHeader(out);
     termWriter = new DeltaBytesWriter(out);
     currentField = null;
     this.postingsWriter = postingsWriter;
 
     postingsWriter.start(out);                          // have consumer write its format/header
+  }
+  
+  protected void writeHeader(IndexOutput out) throws IOException {
+    // Count indexed fields up front
+    CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT); 
+
+    out.writeLong(0);                             // leave space for end index pointer    
   }
 
   @Override
@@ -115,8 +117,7 @@ public class StandardTermsDictWriter extends FieldsConsumer {
         out.writeLong(field.numTerms);
         out.writeLong(field.termsStartPointer);
       }
-      out.seek(CodecUtil.headerLength(CODEC_NAME));
-      out.writeLong(dirStart);
+      writeTrailer(dirStart);
     } finally {
       try {
         out.close();
@@ -130,6 +131,12 @@ public class StandardTermsDictWriter extends FieldsConsumer {
     }
   }
 
+  protected void writeTrailer(long dirStart) throws IOException {
+    // TODO Auto-generated method stub
+    out.seek(CodecUtil.headerLength(CODEC_NAME));
+    out.writeLong(dirStart);    
+  }
+  
   class TermsWriter extends TermsConsumer {
     private final FieldInfo fieldInfo;
     private final StandardPostingsWriter postingsWriter;

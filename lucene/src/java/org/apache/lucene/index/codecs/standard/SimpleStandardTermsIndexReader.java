@@ -86,6 +86,9 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
   private PagedBytes.Reader termBytesReader;
 
   final HashMap<FieldInfo,FieldIndexReader> fields = new HashMap<FieldInfo,FieldIndexReader>();
+  
+  // start of the field info data
+  protected long dirOffset;
 
   public SimpleStandardTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, Comparator<BytesRef> termComp)
     throws IOException {
@@ -97,10 +100,8 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
     boolean success = false;
 
     try {
-      CodecUtil.checkHeader(in, SimpleStandardTermsIndexWriter.CODEC_NAME, SimpleStandardTermsIndexWriter.VERSION_START);
-
-      final long dirOffset = in.readLong();
-
+      
+      readHeader(in);
       indexInterval = in.readInt();
       this.indexDivisor = indexDivisor;
 
@@ -110,10 +111,10 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
         // In case terms index gets loaded, later, on demand
         totalIndexInterval = indexInterval * indexDivisor;
       }
+      
+      seekDir(in, dirOffset);
 
       // Read directory
-      in.seek(dirOffset);
-
       final int numFields = in.readInt();
 
       for(int i=0;i<numFields;i++) {
@@ -142,6 +143,11 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
         this.in = in;
       }
     }
+  }
+  
+  protected void readHeader(IndexInput input) throws IOException {
+    CodecUtil.checkHeader(input, SimpleStandardTermsIndexWriter.CODEC_NAME, SimpleStandardTermsIndexWriter.VERSION_START);
+    dirOffset = input.readLong();
   }
 
   private final class FieldIndexReader extends FieldReader {
@@ -444,5 +450,9 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
     if (termBytesReader != null) {
       termBytesReader.close();
     }
+  }
+
+  protected void seekDir(IndexInput input, long dirOffset) throws IOException {
+    input.seek(dirOffset);
   }
 }

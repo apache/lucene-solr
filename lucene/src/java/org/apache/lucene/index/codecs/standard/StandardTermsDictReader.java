@@ -71,6 +71,9 @@ public class StandardTermsDictReader extends FieldsProducer {
 
   // Reads the terms index
   private StandardTermsIndexReader indexReader;
+  
+  // keeps the dirStart offset
+  protected long dirOffset;
 
   // Used as key for the terms cache
   private static class FieldAndTerm extends DoubleBarrelLRUCache.CloneableKey {
@@ -116,15 +119,13 @@ public class StandardTermsDictReader extends FieldsProducer {
 
     boolean success = false;
     try {
-      CodecUtil.checkHeader(in, StandardTermsDictWriter.CODEC_NAME, StandardTermsDictWriter.VERSION_CURRENT);
-
-      final long dirOffset = in.readLong();
+      readHeader(in);
 
       // Have PostingsReader init itself
       postingsReader.init(in);
 
       // Read per-field details
-      in.seek(dirOffset);
+      seekDir(in, dirOffset);
 
       final int numFields = in.readInt();
 
@@ -151,6 +152,16 @@ public class StandardTermsDictReader extends FieldsProducer {
     this.indexReader = indexReader;
   }
 
+  protected void readHeader(IndexInput input) throws IOException {
+    CodecUtil.checkHeader(in, StandardTermsDictWriter.CODEC_NAME, StandardTermsDictWriter.VERSION_CURRENT);
+    dirOffset = in.readLong();    
+  }
+  
+  protected void seekDir(IndexInput input, long dirOffset)
+      throws IOException {
+    input.seek(dirOffset);
+  }
+  
   @Override
   public void loadTermsIndex(int indexDivisor) throws IOException {
     indexReader.loadTermsIndex(indexDivisor);
