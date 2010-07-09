@@ -196,6 +196,8 @@ New Features
     will now return warnings about (gsingers)
 
 * SOLR-1985: FastVectorHighlighter: add wrapper class for Lucene's SingleFragListBuilder (koji)
+
+* SOLR-1984: Add HyphenationCompoundWordTokenFilterFactory. (PB via rmuir)
    
 Optimizations
 ----------------------
