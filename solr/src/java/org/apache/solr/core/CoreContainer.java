@@ -247,18 +247,40 @@ public class CoreContainer
         SolrConfig.severeErrors.add(e);
         SolrException.logOnce(log,null,e);
       }
+      
+      // before looping over each core, let's check the names and fail 
+      // fast if the same one is reused multiple times.
+      { // local scope, won't need these vars again
+        NodeList nodes = (NodeList)cfg.evaluate("solr/cores/core/@name", 
+                                                XPathConstants.NODESET);
+        Set<String> names = new HashSet<String>();
+        for (int i=0; i<nodes.getLength(); i++) {
+          String name = DOMUtil.getText(nodes.item(i));
+          if (names.contains(name)) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                                    "Multiple cores found with same name: " + 
+                                    name);
+          }
+          names.add(name);
+        }
+      }
 
       NodeList nodes = (NodeList)cfg.evaluate("solr/cores/core", XPathConstants.NODESET);
-      boolean defaultCoreFound = false;
       for (int i=0; i<nodes.getLength(); i++) {
         Node node = nodes.item(i);
         try {
           String name = DOMUtil.getAttr(node, "name", null);
-          if(name.equals(defaultCoreName)){
-            if(defaultCoreFound) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Only one 'DEFAULT_CORE' is allowed ");            
-            defaultCoreFound = true;
+          if (null == name) {
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+                                    "Each core in solr.xml must have a 'name'");
+          }
+          if (name.equals(defaultCoreName)){
+            // for the default core we use a blank name,
+            // later on attempts to access it by it's full name will 
+            // be mapped to this.
             name="";
           }
+
           CoreDescriptor p = new CoreDescriptor(this, name, DOMUtil.getAttr(node, "instanceDir", null));
 
           // deal with optional settings

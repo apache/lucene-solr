@@ -364,6 +364,8 @@ Bug Fixes
   values which are Collections or other classes that implement
   Iterable. (noble, hossman)
 
+* SOLR-1981: Solr will now fail correctly if solr.xml attempts to
+  specify multiple cores that have the same name (hossman)
 
 Other Changes
 ----------------------
