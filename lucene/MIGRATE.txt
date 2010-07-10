@@ -22,10 +22,41 @@ LUCENE-2380: FieldCache.getStrings/Index --> FieldCache.getDocTerms/Index
       DocTerms values = FieldCache.DEFAULT.getTerms(reader, field);
       ...
       BytesRef term = new BytesRef();
-      String aValue = values.get(docID, term).utf8ToString();
+      String aValue = values.getTerm(docID, term).utf8ToString();
 
     Note however that it can be costly to convert to String, so it's
     better to work directly with the BytesRef.
+
+  * Similarly, in FieldCache, getStringIndex (returning a StringIndex
+    instance, with direct arrays int[] order and String[] lookup) has
+    been replaced with getTermsIndex (returning a
+    FieldCache.DocTermsIndex instance).  DocTermsIndex provides the
+    getOrd(int docID) method to lookup the int order for a document,
+    lookup(int ord, BytesRef reuse) to lookup the term from a given
+    order, and the sugar method getTerm(int docID, BytesRef reuse)
+    which internally calls getOrd and then lookup.
+
+    If you had code like this before:
+
+      StringIndex idx = FieldCache.DEFAULT.getStringIndex(reader, field);
+      ...
+      int ord = idx.order[docID];
+      String aValue = idx.lookup[ord];
+
+    you can do this instead:
+
+      DocTermsIndex idx = FieldCache.DEFAULT.getTermsIndex(reader, field);
+      ...
+      int ord = idx.getOrd(docID);
+      BytesRef term = new BytesRef();
+      String aValue = idx.lookup(ord, term).utf8ToString();
+
+    Note however that it can be costly to convert to String, so it's
+    better to work directly with the BytesRef.
+
+    DocTermsIndex also has a getTermsEnum() method, which returns an
+    iterator (TermsEnum) over the term values in the index (ie,
+    iterates ord = 0..numOrd()-1).
 
   * StringComparatorLocale is now more CPU costly than it was before
     (it was already very CPU costly since it does not compare using
@@ -100,6 +131,30 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
         if ((doc=td.skipTo(target)) != DocsEnum.NO_MORE_DOCS) {
 	  ...
 	}
+
+      The bulk read API has also changed.  Instead of this:
+
+        int[] docs = new int[256];
+        int[] freqs = new int[256];
+
+        while(true) {
+          int count = td.read(docs, freqs)
+          if (count == 0) {
+            break;
+          }
+          // use docs[i], freqs[i]
+        }
+
+      do this:
+
+        DocsEnum.BulkReadResult bulk = td.getBulkResult();
+        while(true) {
+          int count = td.read();
+          if (count == 0) {
+            break;
+          }
+          // use bulk.docs.ints[i] and bulk.freqs.ints[i]
+        }
 
     * TermPositions is renamed to DocsAndPositionsEnum, and no longer
       extends the docs only enumerator (DocsEnum).
