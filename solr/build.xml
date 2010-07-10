@@ -976,7 +976,7 @@
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/xml-query-parser/classes/java" />
 
   </path>
-  <target name="luke" depends="luke-download">
+  <target name="luke" depends="luke-download, compile-lucene">
     <java fork="true" 
           classname="org.getopt.luke.Luke"
           logError="true"

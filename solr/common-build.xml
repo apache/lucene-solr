@@ -217,6 +217,7 @@
     <ant antfile="build.xml" target="compile" dir="../lucene/contrib/queries"/>
     <ant antfile="build.xml" target="compile" dir="../lucene/contrib/spatial"/>
     <ant antfile="build.xml" target="compile" dir="../lucene/contrib/spellchecker"/>
+    <ant antfile="build.xml" target="compile" dir="../lucene/contrib/xml-query-parser"/>
   </target>
    
    
