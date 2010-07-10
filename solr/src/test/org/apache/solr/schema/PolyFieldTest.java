@@ -22,6 +22,8 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.tier.CartesianPolyFilterBuilder;
 import org.apache.lucene.spatial.tier.Shape;
+import org.apache.lucene.spatial.tier.projections.CartesianTierPlotter;
+import org.apache.lucene.spatial.tier.projections.SinusoidalProjector;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.common.SolrException;
@@ -182,41 +184,6 @@ public class PolyFieldTest extends SolrTestCaseJ4 {
     BooleanQuery bq = (BooleanQuery) q;
     BooleanClause[] clauses = bq.getClauses();
     assertEquals(clauses.length, 2);
-    clearIndex();
-  }
-
-  @Test
-  public void testCartesian() throws Exception {
-    for (int i = 40; i < 50; i++) {
-      for (int j = -85; j < -79; j++) {
-        assertU(adoc("id", "" + i, "home_tier",
-                i + "," + j));
-      }
-    }
-    assertU(commit());
-    CartesianPolyFilterBuilder cpfb = new CartesianPolyFilterBuilder("", 4, 15);
-    //Get the box based on this point and our distance
-    final Shape shape = cpfb.getBoxShape(45, -80, 10);//There's a bit of a bug in here that requires a small tier filter here.
-    final List<Double> boxIds = shape.getArea();
-    //do a box id search
-    StringBuilder qry = new StringBuilder();
-    boolean first = true;
-    for (Double boxId : boxIds) {
-      if (first == true){
-        first = false;
-      } else {
-        qry.append(" OR ");
-      }
-      qry.append("home_tier:");
-      if (boxId < 0) {
-        qry.append('\\').append(boxId);
-      } else {
-        qry.append(boxId);
-      }
-    }
-
-    assertQ(req("fl", "*,score", "indent", "true", "q", qry.toString()),
-            "//*[@numFound='1']");
     clearIndex();
   }
 

@@ -17,21 +17,28 @@
 
 package org.apache.lucene.spatial.tier.projections;
 
+import org.apache.lucene.spatial.tier.DistanceUtils;
+
 /**
  * Based on Sinusoidal Projections
  * Project a latitude / longitude on a 2D cartesian map
+ * <p/>
+ * THIS PROJECTION IS WRONG, but it's not going to be fixed b/c it will break a lot of existing tests, plus we are deprecating
+ * most of the existing spatial and replacing with a more reliable approach.
  *
  * <p><font color="red"><b>NOTE:</b> This API is still in
  * flux and might change in incompatible ways in the next
  * release.</font>
+ *
+ * @deprecated Until we can put in place proper tests and a proper fix. 
  */
 public class SinusoidalProjector implements IProjector {
 
-  
+
   public String coordsAsString(double latitude, double longitude) {
     return null;
   }
-  
+
   public double[] coords(double latitude, double longitude) {
     double rlat = Math.toRadians(latitude);
     double rlong = Math.toRadians(longitude);
@@ -42,3 +49,39 @@ public class SinusoidalProjector implements IProjector {
   }
   
 }
+
+/*
+This whole file should really be:*/
+
+/**
+ * Based on Sinusoidal Projections
+ * Project a latitude / longitude on a 2D cartesian map using the Prime Meridian as the "central meridian"
+ *
+ * See http://en.wikipedia.org/wiki/Sinusoidal_projection
+ *
+ * <p><font color="red"><b>NOTE:</b> This API is still in
+ * flux and might change in incompatible ways in the next
+ * release.</font>
+ */
+/*
+public class SinusoidalProjector implements IProjector {
+
+
+  public String coordsAsString(double latitude, double longitude) {
+    double [] coords = coords(latitude, longitude);
+    return coords[0] + "," + coords[1];
+  }
+
+  public double[] coords(double latitude, double longitude) {
+    double rlat = latitude * DistanceUtils.DEGREES_TO_RADIANS;
+    double rlong = longitude * DistanceUtils.DEGREES_TO_RADIANS;
+    double x = rlong * Math.cos(rlat);
+    return new double[]{x, rlat};
+
+  }
+
+}
+*/
+
+
+

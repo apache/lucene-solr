@@ -16,6 +16,7 @@ package org.apache.solr.search.function.distance;
  * limitations under the License.
  */
 
+import org.apache.lucene.spatial.tier.DistanceUtils;
 import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.MultiValueSource;
 

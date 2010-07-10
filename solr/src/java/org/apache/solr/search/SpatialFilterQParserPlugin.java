@@ -1,3 +1,4 @@
+package org.apache.solr.search;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,36 +15,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.spatial.tier;
 
-import java.text.DecimalFormat;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
+
+/**
+ * Creates a {@link org.apache.solr.search.QParser} that can create Spatial {@link org.apache.lucene.search.Filter}s.
+ * The filters are tied to implementations of {@link org.apache.solr.schema.SpatialQueryable}
+ */
+public class SpatialFilterQParserPlugin extends QParserPlugin {
+  public static String NAME = "sfilt";
 
 
-public class DistanceCheck {
+  @Override
+  public QParser createParser(String qstr, SolrParams localParams,
+                              SolrParams params, SolrQueryRequest req) {
 
-  /**
-   * @param args
-   */
-  public static void main(String[] args) {
-    double lat1 = 0;
-    double long1 = 0;
-    double lat2 = 0;
-    double long2 = 0;
-    
-    for (int i =0; i < 90; i++){
-      double dis = DistanceUtils.getDistanceMi(lat1, long1, lat2, long2);
-      lat1 +=1;
-      lat2 = lat1 + 0.001;
-      
-      System.out.println(lat1+","+long1+","+lat2+","+long2+","+formatDistance(dis));
-      
-    }
+    return new SpatialFilterQParser(qstr, localParams, params, req);
+  }
+
+  public void init(NamedList args) {
 
   }
 
-  public static String formatDistance (Double d){
-    DecimalFormat df1 = new DecimalFormat("####.000000");
-    return df1.format(d);
-  }
-  
 }

@@ -68,7 +68,7 @@ public class DistanceHandler {
     // check to see if we have distances
     // if not calculate the distance
     if(distances == null){
-      return DistanceUtils.getInstance().getDistanceMi(centerLat, centerLng, lat, lng);
+      return DistanceUtils.getDistanceMi(centerLat, centerLng, lat, lng);
     }
     
     // check to see if the doc id has a cached distance
@@ -93,7 +93,7 @@ public class DistanceHandler {
     }
     
     //all else fails calculate the distances    
-    return DistanceUtils.getInstance().getDistanceMi(centerLat, centerLng, lat, lng);
+    return DistanceUtils.getDistanceMi(centerLat, centerLng, lat, lng);
   }
   
   

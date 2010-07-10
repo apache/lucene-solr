@@ -53,6 +53,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.search.QParserPlugin;
 
 /**
  * @since solr 1.3
@@ -645,6 +646,7 @@ public class SolrResourceLoader implements ResourceLoader
         CharFilterFactory.class,
         TokenFilterFactory.class,
         TokenizerFactory.class,
+        QParserPlugin.class,
         FieldType.class
       }
     );

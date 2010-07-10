@@ -23,15 +23,17 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.spatial.tier.DistanceUtils;
+import org.apache.lucene.spatial.tier.InvalidGeoException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.response.XMLWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.SpatialOptions;
 import org.apache.solr.search.function.VectorValueSource;
 import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.function.distance.DistanceUtils;
 
 import java.io.IOException;
 import java.util.Map;
@@ -45,7 +47,7 @@ import java.util.ArrayList;
  * <p/>
  * NOTE: There can only be one sub type
  */
-public class PointType extends CoordinateFieldType {
+public class PointType extends CoordinateFieldType implements SpatialQueryable {
 
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
@@ -71,7 +73,12 @@ public class PointType extends CoordinateFieldType {
 
   @Override
   public Fieldable[] createFields(SchemaField field, String externalVal, float boost) {
-    String[] point = DistanceUtils.parsePoint(null, externalVal, dimension);
+    String[] point = new String[0];
+    try {
+      point = DistanceUtils.parsePoint(null, externalVal, dimension);
+    } catch (InvalidGeoException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
 
     // TODO: this doesn't currently support polyFields as sub-field types
     Fieldable[] f = new Fieldable[ (field.indexed() ? dimension : 0) + (field.stored() ? 1 : 0) ];
@@ -103,7 +110,11 @@ public class PointType extends CoordinateFieldType {
   }
 
 
-  //It never makes sense to create a single field, so make it impossible to happen
+  /**
+   * It never makes sense to create a single field, so make it impossible to happen by
+   * throwing UnsupportedOperationException
+   *
+   */
   @Override
   public Field createField(SchemaField field, String externalVal, float boost) {
     throw new UnsupportedOperationException("PointType uses multiple fields.  field=" + field.getName());
@@ -131,8 +142,14 @@ public class PointType extends CoordinateFieldType {
   public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     //Query could look like: [x1,y1 TO x2,y2] for 2 dimension, but could look like: [x1,y1,z1 TO x2,y2,z2], and can be extrapolated to n-dimensions
     //thus, this query essentially creates a box, cube, etc.
-    String[] p1 = DistanceUtils.parsePoint(null, part1, dimension);
-    String[] p2 = DistanceUtils.parsePoint(null, part2, dimension);
+    String[] p1;
+    String[] p2;
+    try {
+      p1 = DistanceUtils.parsePoint(null, part1, dimension);
+      p2 = DistanceUtils.parsePoint(null, part2, dimension);
+    } catch (InvalidGeoException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
     BooleanQuery result = new BooleanQuery(true);
     for (int i = 0; i < dimension; i++) {
       SchemaField subSF = subField(field, i);
@@ -144,7 +161,12 @@ public class PointType extends CoordinateFieldType {
 
   @Override
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
-    String[] p1 = DistanceUtils.parsePoint(null, externalVal, dimension);
+    String[] p1 = new String[0];
+    try {
+      p1 = DistanceUtils.parsePoint(null, externalVal, dimension);
+    } catch (InvalidGeoException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
     //TODO: should we assert that p1.length == dimension?
     BooleanQuery bq = new BooleanQuery(true);
     for (int i = 0; i < dimension; i++) {
@@ -153,6 +175,43 @@ public class PointType extends CoordinateFieldType {
       bq.add(tq, BooleanClause.Occur.MUST);
     }
     return bq;
+  }
+
+  /**
+   * Calculates the range and creates a RangeQuery (bounding box) wrapped in a BooleanQuery (unless the dimension is 1, one range for every dimension, AND'd together by a Boolean
+   * @param parser The parser
+   * @param options The {@link org.apache.solr.search.SpatialOptions} for this filter.
+   * @return The Query representing the bounding box around the point.
+   */
+  public Query createSpatialQuery(QParser parser, SpatialOptions options) {
+    Query result = null;
+    double [] point = new double[0];
+    try {
+      point = DistanceUtils.parsePointDouble(null, options.pointStr, dimension);
+    } catch (InvalidGeoException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+    if (dimension == 1){
+      //TODO: Handle distance measures
+      String lower = String.valueOf(point[0] - options.distance);
+      String upper = String.valueOf(point[0] + options.distance);
+      SchemaField subSF = subField(options.field, 0);
+      // points must currently be ordered... should we support specifying any two opposite corner points?
+      result = subSF.getType().getRangeQuery(parser, subSF, lower, upper, true, true);
+    } else {
+      BooleanQuery tmp = new BooleanQuery();
+      //TODO: Handle distance measures, as this assumes Euclidean
+      double [] ur = org.apache.lucene.spatial.tier.DistanceUtils.vectorBoxCorner(point, null, options.distance, true);
+      double [] ll = org.apache.lucene.spatial.tier.DistanceUtils.vectorBoxCorner(point, null, options.distance, false);
+      for (int i = 0; i < ur.length; i++) {
+        SchemaField subSF = subField(options.field, i);
+        Query range = subSF.getType().getRangeQuery(parser, subSF, String.valueOf(ll[i]), String.valueOf(ur[i]), true, true);
+        tmp.add(range, BooleanClause.Occur.MUST);
+
+      }
+      result = tmp;
+    }
+    return result;
   }
 }
 

@@ -26,6 +26,7 @@ import org.apache.lucene.search.spell.JaroWinklerDistance;
 import org.apache.lucene.search.spell.LevensteinDistance;
 import org.apache.lucene.search.spell.NGramDistance;
 import org.apache.lucene.search.spell.StringDistance;
+import org.apache.lucene.spatial.tier.DistanceUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.solr.common.SolrException;
@@ -34,7 +35,6 @@ import org.apache.solr.schema.*;
 import org.apache.solr.search.function.*;
 
 import org.apache.solr.search.function.distance.*;
-import org.apache.solr.util.ByteUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 import java.io.IOException;

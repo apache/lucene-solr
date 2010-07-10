@@ -18,6 +18,7 @@ package org.apache.solr.search.function.distance;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Searcher;
+import org.apache.lucene.spatial.tier.DistanceUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.search.function.MultiValueSource;
 import org.apache.solr.search.function.DocValues;

@@ -17,6 +17,7 @@ package org.apache.solr.search.function.distance;
  */
 
 import org.apache.lucene.spatial.geohash.GeoHashUtils;
+import org.apache.lucene.spatial.tier.DistanceUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.BeforeClass;
@@ -55,17 +56,17 @@ public class DistanceFunctionTest extends SolrTestCaseJ4 {
 
     //Geo Hash Haversine
     //Can verify here: http://www.movable-type.co.uk/scripts/latlong.html, but they use a slightly different radius for the earth, so just be close
-    assertQ(req("fl", "*,score", "q", "{!func}ghhsin(" + Constants.EARTH_RADIUS_KM + ", gh_s, \"" + GeoHashUtils.encode(32, -79) +
-            "\",)", "fq", "id:1"), "//float[@name='score']='122.309006'");
+    assertQ(req("fl", "*,score", "q", "{!func}ghhsin(" + DistanceUtils.EARTH_MEAN_RADIUS_KM + ", gh_s, \"" + GeoHashUtils.encode(32, -79) +
+            "\",)", "fq", "id:1"), "//float[@name='score']='122.171875'");
 
-    assertQ(req("fl", "id,point_hash,score", "q", "{!func}recip(ghhsin(" + Constants.EARTH_RADIUS_KM + ", point_hash, \"" + GeoHashUtils.encode(32, -79) + "\"), 1, 1, 0)"),
+    assertQ(req("fl", "id,point_hash,score", "q", "{!func}recip(ghhsin(" + DistanceUtils.EARTH_MEAN_RADIUS_KM + ", point_hash, \"" + GeoHashUtils.encode(32, -79) + "\"), 1, 1, 0)"),
             "//*[@numFound='7']", 
             "//result/doc[1]/float[@name='id'][.='6.0']",
             "//result/doc[2]/float[@name='id'][.='7.0']"//all the rest don't matter
             );
 
 
-    assertQ(req("fl", "*,score", "q", "{!func}ghhsin(" + Constants.EARTH_RADIUS_KM + ", gh_s, geohash(32, -79))", "fq", "id:1"), "//float[@name='score']='122.309006'");
+    assertQ(req("fl", "*,score", "q", "{!func}ghhsin(" + DistanceUtils.EARTH_MEAN_RADIUS_KM + ", gh_s, geohash(32, -79))", "fq", "id:1"), "//float[@name='score']='122.171875'");
   }
 
   @Test

@@ -122,7 +122,7 @@ New Features
 * SOLR-1131: FieldTypes can now output multiple Fields per Type and still be searched.  This can be handy for hiding the details of a particular
   implementation such as in the spatial case. (Chris Mattmann, shalin, noble, gsingers, yonik)
 
-* SOLR-1586: Add support for Geohash and Spatial Tile FieldType (Chris Mattmann, gsingers)
+* SOLR-1586: Add support for Geohash FieldType (Chris Mattmann, gsingers)
 
 * SOLR-1697: PluginInfo should load plugins w/o class attribute also (noble)
 
@@ -198,6 +198,10 @@ New Features
 * SOLR-1985: FastVectorHighlighter: add wrapper class for Lucene's SingleFragListBuilder (koji)
 
 * SOLR-1984: Add HyphenationCompoundWordTokenFilterFactory. (PB via rmuir)
+
+* SOLR-1568: Added "native" filtering support for PointType, GeohashField.  Added LatLonType with filtering support too.  See
+  	     http://wiki.apache.org/solr/SpatialSearch and the example.  Refactored some items in Lucene spatial. 
+	     Removed SpatialTileField as the underlying CartesianTier is broken beyond repair and is going to be moved. (gsingers) 
    
 Optimizations
 ----------------------

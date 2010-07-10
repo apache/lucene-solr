@@ -1,3 +1,4 @@
+package org.apache.solr.schema;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14,36 +15,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.spatial.tier;
-
-import java.text.DecimalFormat;
 
 
-public class DistanceCheck {
+import org.apache.lucene.search.Filter;
+import org.apache.lucene.search.Query;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.SpatialOptions;
 
-  /**
-   * @param args
-   */
-  public static void main(String[] args) {
-    double lat1 = 0;
-    double long1 = 0;
-    double lat2 = 0;
-    double long2 = 0;
-    
-    for (int i =0; i < 90; i++){
-      double dis = DistanceUtils.getDistanceMi(lat1, long1, lat2, long2);
-      lat1 +=1;
-      lat2 = lat1 + 0.001;
-      
-      System.out.println(lat1+","+long1+","+lat2+","+long2+","+formatDistance(dis));
-      
-    }
 
-  }
+/**
+ * Indicate that the implementing class is capable of generating a Query against spatial resources.
+ * For example, the PointType is capable of creating a query that restricts the document space down
+ * to documents that are within a certain distance of a given point. *
+ *
+ **/
+public interface SpatialQueryable {
 
-  public static String formatDistance (Double d){
-    DecimalFormat df1 = new DecimalFormat("####.000000");
-    return df1.format(d);
-  }
-  
+  public Query createSpatialQuery(QParser parser, SpatialOptions options);
 }

@@ -88,7 +88,7 @@ public class LatLongDistanceFilter extends DistanceFilter {
         if (cachedDistance != null){
           d = cachedDistance.doubleValue();
         } else {
-          d = DistanceUtils.getInstance().getDistanceMi(lat, lng, x, y);
+          d = DistanceUtils.getDistanceMi(lat, lng, x, y);
           distanceLookupCache.put(ck, d);
         }
 
