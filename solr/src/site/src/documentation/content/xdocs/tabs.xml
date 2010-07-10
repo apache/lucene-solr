@@ -38,7 +38,7 @@
   -->
 
   <tab id="" label="Main" dir=""/>
-  <tab id="wiki" label="Wiki" href="http://wiki.apache.org/solr"/>
+  <tab id="wiki" label="Wiki" href="http://wiki.apache.org/solr/FrontPage"/>
   
   <!--
   <tab id="samples" label="Samples" dir="samples" indexfile="sample.html">
