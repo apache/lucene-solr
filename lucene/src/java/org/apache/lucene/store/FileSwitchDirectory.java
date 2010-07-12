@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.HashSet;
 
 /**
  * Expert: A Directory instance that switches files between
@@ -76,12 +77,14 @@ public class FileSwitchDirectory extends Directory {
   
   @Override
   public String[] listAll() throws IOException {
-    String[] primaryFiles = primaryDir.listAll();
-    String[] secondaryFiles = secondaryDir.listAll();
-    String[] files = new String[primaryFiles.length + secondaryFiles.length];
-    System.arraycopy(primaryFiles, 0, files, 0, primaryFiles.length);
-    System.arraycopy(secondaryFiles, 0, files, primaryFiles.length, secondaryFiles.length);
-    return files;
+    Set<String> files = new HashSet<String>();
+    for(String f : primaryDir.listAll()) {
+      files.add(f);
+    }
+    for(String f : secondaryDir.listAll()) {
+      files.add(f);
+    }
+    return files.toArray(new String[files.size()]);
   }
 
   /** Utility method to return a file's extension. */

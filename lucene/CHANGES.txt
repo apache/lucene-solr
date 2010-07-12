@@ -407,6 +407,10 @@ Bug fixes
 * LUCENE-2513: when opening writable IndexReader on a not-current
   commit, do not overwrite "future" commits.  (Mike McCandless)
 
+* LUCENE-2533: fix FileSwitchDirectory.listAll to not return dups when
+  primary & secondary dirs share the same underlying directory.
+  (Michael McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
