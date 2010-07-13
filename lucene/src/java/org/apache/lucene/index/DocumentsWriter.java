@@ -42,7 +42,6 @@ import org.apache.lucene.store.RAMFile;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.ThreadInterruptedException;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -509,6 +508,7 @@ final class DocumentsWriter {
         }
 
         deletesInRAM.clear();
+        deletesFlushed.clear();
 
         openFiles.clear();
 

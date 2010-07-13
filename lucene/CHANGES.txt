@@ -419,6 +419,10 @@ Bug fixes
   MultiTermsEnum.docs/AndPositionsEnum.  (Robert Muir, Mike
   McCandless)
 
+* LUCENE-2536: IndexWriter.rollback was failing to properly rollback
+  buffered deletions against segments that were flushed (Mark Harwood
+  via Mike McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
