@@ -20,8 +20,10 @@ import static org.apache.solr.handler.dataimport.RegexTransformer.REGEX;
 import static org.apache.solr.handler.dataimport.RegexTransformer.GROUP_NAMES;
 import static org.apache.solr.handler.dataimport.RegexTransformer.REPLACE_WITH;
 import static org.apache.solr.handler.dataimport.DataImporter.COLUMN;
-import static org.apache.solr.handler.dataimport.AbstractDataImportHandlerTest.createMap;
-import static org.apache.solr.handler.dataimport.AbstractDataImportHandlerTest.getContext;
+import static org.apache.solr.handler.dataimport.AbstractDataImportHandlerTestCase.createMap;
+import static org.apache.solr.handler.dataimport.AbstractDataImportHandlerTestCase.getContext;
+
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -36,14 +38,14 @@ import java.util.Map;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestRegexTransformer {
+public class TestRegexTransformer extends SolrTestCaseJ4 {
 
   @Test
   public void commaSeparated() {
     List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
     // <field column="col1" sourceColName="a" splitBy="," />
     fields.add(getField("col1", "string", null, "a", ","));
-    Context context = AbstractDataImportHandlerTest.getContext(null, null, null, Context.FULL_DUMP, fields, null);
+    Context context = AbstractDataImportHandlerTestCase.getContext(null, null, null, Context.FULL_DUMP, fields, null);
 
     Map<String, Object> src = new HashMap<String, Object>();
     src.put("a", "a,bb,cc,d");
@@ -63,7 +65,7 @@ public class TestRegexTransformer {
     m.put(GROUP_NAMES,",firstName,lastName");
     m.put(REGEX,"(\\w*) (\\w*) (\\w*)");
     fields.add(m);
-    Context context = AbstractDataImportHandlerTest.getContext(null, null, null, Context.FULL_DUMP, fields, null);
+    Context context = AbstractDataImportHandlerTestCase.getContext(null, null, null, Context.FULL_DUMP, fields, null);
     Map<String, Object> src = new HashMap<String, Object>();
     src.put("fullName", "Mr Noble Paul");
 
@@ -91,7 +93,7 @@ public class TestRegexTransformer {
     Map<String, String> fld = getField("name", "string", "'", null, null);
     fld.put(REPLACE_WITH, "''");
     fields.add(fld);
-    Context context = AbstractDataImportHandlerTest.getContext(null, null,
+    Context context = AbstractDataImportHandlerTestCase.getContext(null, null,
             null, Context.FULL_DUMP, fields, null);
 
     Map<String, Object> src = new HashMap<String, Object>();
@@ -139,8 +141,8 @@ public class TestRegexTransformer {
 
     VariableResolverImpl resolver = new VariableResolverImpl();
     resolver.addNamespace("e", row);
-    Map<String, String> eAttrs = AbstractDataImportHandlerTest.createMap("name", "e");
-    Context context = AbstractDataImportHandlerTest.getContext(null, resolver, null, Context.FULL_DUMP, fields, eAttrs);
+    Map<String, String> eAttrs = AbstractDataImportHandlerTestCase.createMap("name", "e");
+    Context context = AbstractDataImportHandlerTestCase.getContext(null, resolver, null, Context.FULL_DUMP, fields, eAttrs);
 
     Map<String, Object> result = new RegexTransformer().transformRow(row, context);
     Assert.assertEquals(5, result.size());

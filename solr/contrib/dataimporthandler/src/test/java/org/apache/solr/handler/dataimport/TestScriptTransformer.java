@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -42,7 +43,7 @@ import java.util.Map;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestScriptTransformer {
+public class TestScriptTransformer extends SolrTestCaseJ4 {
 
   @Test
   @Ignore
@@ -65,7 +66,7 @@ public class TestScriptTransformer {
     entity.put("name", "hello");
     entity.put("transformer", "script:" + funcName);
 
-    AbstractDataImportHandlerTest.TestContext context = AbstractDataImportHandlerTest.getContext(null, null, null,
+    AbstractDataImportHandlerTestCase.TestContext context = AbstractDataImportHandlerTestCase.getContext(null, null, null,
             Context.FULL_DUMP, fields, entity);
     context.script = script;
     context.scriptlang = "JavaScript";

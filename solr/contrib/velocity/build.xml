@@ -40,6 +40,8 @@
 	  <pathelement path="target/classes" />
   	<pathelement path="target/test-classes" />
     <pathelement path="${java.class.path}"/>
+    <pathelement location="${solr-path}/build/tests"/> <!-- include solr test code -->
+    <pathelement location="${solr-path}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
   </path>
 
   <target name="clean">

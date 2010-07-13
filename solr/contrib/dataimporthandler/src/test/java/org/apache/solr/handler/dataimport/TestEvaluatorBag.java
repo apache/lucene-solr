@@ -17,8 +17,9 @@
 package org.apache.solr.handler.dataimport;
 
 import static org.junit.Assert.assertEquals;
+
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.net.URLEncoder;
@@ -33,7 +34,7 @@ import junit.framework.Assert;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestEvaluatorBag {
+public class TestEvaluatorBag extends SolrTestCaseJ4 {
   private static final String ENCODING = "UTF-8";
 
   VariableResolverImpl resolver;
@@ -44,6 +45,7 @@ public class TestEvaluatorBag {
 
   @Before
   public void setUp() throws Exception {
+    super.setUp();
     resolver = new VariableResolverImpl();
 
     sqlTests = new HashMap<String, String>();

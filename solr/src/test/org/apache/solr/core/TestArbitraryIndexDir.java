@@ -47,6 +47,7 @@ import org.xml.sax.SAXException;
 public class TestArbitraryIndexDir extends AbstractSolrTestCase{
 
   public void setUp() throws Exception {
+    super.setUp();
     dataDir = new File(System.getProperty("java.io.tmpdir")
         + System.getProperty("file.separator")
         + getClass().getName() + "-" + System.currentTimeMillis() + System.getProperty("file.separator") + "solr"

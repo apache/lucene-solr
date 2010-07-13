@@ -41,6 +41,8 @@
     <path refid="common.classpath" />
     <pathelement path="${dest}/classes" />
     <pathelement path="${dest}/test-classes" />
+    <pathelement location="${solr-path}/build/tests"/> <!-- include solr test code -->
+    <pathelement location="${solr-path}/../lucene/build/classes/test" />  <!-- include some lucene test code -->
     <pathelement path="${java.class.path}"/>
   </path>
 

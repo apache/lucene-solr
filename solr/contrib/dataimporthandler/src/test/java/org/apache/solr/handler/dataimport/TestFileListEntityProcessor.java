@@ -16,6 +16,7 @@ package org.apache.solr.handler.dataimport;
  * limitations under the License.
  */
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -32,7 +33,7 @@ import java.util.*;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestFileListEntityProcessor {
+public class TestFileListEntityProcessor extends SolrTestCaseJ4 {
 
   @Test
   @SuppressWarnings("unchecked")
@@ -44,10 +45,10 @@ public class TestFileListEntityProcessor {
     createFile(tmpdir, "a.xml", "a.xml".getBytes(), false);
     createFile(tmpdir, "b.xml", "b.xml".getBytes(), false);
     createFile(tmpdir, "c.props", "c.props".getBytes(), false);
-    Map attrs = AbstractDataImportHandlerTest.createMap(
+    Map attrs = AbstractDataImportHandlerTestCase.createMap(
             FileListEntityProcessor.FILE_NAME, "xml$",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath());
-    Context c = AbstractDataImportHandlerTest.getContext(null,
+    Context c = AbstractDataImportHandlerTestCase.getContext(null,
             new VariableResolverImpl(), null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
     FileListEntityProcessor fileListEntityProcessor = new FileListEntityProcessor();
     fileListEntityProcessor.init(c);
@@ -87,7 +88,7 @@ public class TestFileListEntityProcessor {
       minLength = content.length;
       smallestFile = "c.props";
     }
-    Map attrs = AbstractDataImportHandlerTest.createMap(
+    Map attrs = AbstractDataImportHandlerTestCase.createMap(
             FileListEntityProcessor.FILE_NAME, ".*",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.BIGGER_THAN, String.valueOf(minLength));
@@ -97,7 +98,7 @@ public class TestFileListEntityProcessor {
     l.add(new File(tmpdir, "a.xml").getAbsolutePath());
     l.add(new File(tmpdir, "b.xml").getAbsolutePath());
     Assert.assertEquals(l, new HashSet<String>(fList));
-    attrs = AbstractDataImportHandlerTest.createMap(
+    attrs = AbstractDataImportHandlerTestCase.createMap(
             FileListEntityProcessor.FILE_NAME, ".*",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.SMALLER_THAN, String.valueOf(minLength+1));
@@ -105,19 +106,19 @@ public class TestFileListEntityProcessor {
     l.clear();
     l.add(new File(tmpdir, smallestFile).getAbsolutePath());
     Assert.assertEquals(l, new HashSet<String>(fList));
-    attrs = AbstractDataImportHandlerTest.createMap(
+    attrs = AbstractDataImportHandlerTestCase.createMap(
             FileListEntityProcessor.FILE_NAME, ".*",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.SMALLER_THAN, "${a.x}");
     VariableResolverImpl resolver = new VariableResolverImpl();
-    resolver.addNamespace("a", AbstractDataImportHandlerTest.createMap("x", "4"));
+    resolver.addNamespace("a", AbstractDataImportHandlerTestCase.createMap("x", "4"));
     fList = getFiles(resolver, attrs);
     Assert.assertEquals(l, new HashSet<String>(fList));
   }
 
   @SuppressWarnings("unchecked")
   static List<String> getFiles(VariableResolverImpl resolver, Map attrs) {
-    Context c = AbstractDataImportHandlerTest.getContext(null,
+    Context c = AbstractDataImportHandlerTestCase.getContext(null,
             resolver, null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
     FileListEntityProcessor fileListEntityProcessor = new FileListEntityProcessor();
     fileListEntityProcessor.init(c);
@@ -140,13 +141,13 @@ public class TestFileListEntityProcessor {
     createFile(tmpdir, "a.xml", "a.xml".getBytes(), true);
     createFile(tmpdir, "b.xml", "b.xml".getBytes(), true);
     createFile(tmpdir, "c.props", "c.props".getBytes(), true);
-    Map attrs = AbstractDataImportHandlerTest.createMap(
+    Map attrs = AbstractDataImportHandlerTestCase.createMap(
             FileListEntityProcessor.FILE_NAME, "xml$",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.OLDER_THAN, "'NOW'");
     List<String> fList = getFiles(null, attrs);
     Assert.assertEquals(2, fList.size());
-    attrs = AbstractDataImportHandlerTest.createMap(
+    attrs = AbstractDataImportHandlerTestCase.createMap(
             FileListEntityProcessor.FILE_NAME, ".xml$",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.NEWER_THAN, "'NOW-2HOURS'");
@@ -154,13 +155,13 @@ public class TestFileListEntityProcessor {
     Assert.assertEquals(2, fList.size());
 
     // Use a variable for newerThan
-    attrs = AbstractDataImportHandlerTest.createMap(
+    attrs = AbstractDataImportHandlerTestCase.createMap(
             FileListEntityProcessor.FILE_NAME, ".xml$",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.NEWER_THAN, "${a.x}");
     VariableResolverImpl resolver = new VariableResolverImpl();
     String lastMod = DataImporter.DATE_TIME_FORMAT.get().format(new Date(System.currentTimeMillis() - 50000));
-    resolver.addNamespace("a", AbstractDataImportHandlerTest.createMap("x", lastMod));
+    resolver.addNamespace("a", AbstractDataImportHandlerTestCase.createMap("x", lastMod));
     createFile(tmpdir, "t.xml", "t.xml".getBytes(), false);
     fList = getFiles(resolver, attrs);
     Assert.assertEquals(1, fList.size());
@@ -179,7 +180,7 @@ public class TestFileListEntityProcessor {
     createFile(childdir, "a.xml", "a.xml".getBytes(), true);
     createFile(childdir, "b.xml", "b.xml".getBytes(), true);
     createFile(childdir, "c.props", "c.props".getBytes(), true);
-    Map attrs = AbstractDataImportHandlerTest.createMap(
+    Map attrs = AbstractDataImportHandlerTestCase.createMap(
             FileListEntityProcessor.FILE_NAME, "^.*\\.xml$",
             FileListEntityProcessor.BASE_DIR, childdir.getAbsolutePath(),
             FileListEntityProcessor.RECURSIVE, "true");

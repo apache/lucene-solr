@@ -32,7 +32,7 @@ import java.util.List;
  * @version $Id: TestSqlEntityProcessor2.java 723824 2008-12-05 19:14:11Z shalin $
  * @since solr 1.3
  */
-public class TestSqlEntityProcessorDelta extends AbstractDataImportHandlerTest {
+public class TestSqlEntityProcessorDelta extends AbstractDataImportHandlerTestCase {
   private static final String FULLIMPORT_QUERY = "select * from x";
 
   private static final String DELTA_QUERY = "select id from x where last_modified > NOW";

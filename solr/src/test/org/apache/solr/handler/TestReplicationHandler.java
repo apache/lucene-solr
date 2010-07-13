@@ -616,6 +616,7 @@ public class TestReplicationHandler extends TestCase {
     }
 
     public void setUp() throws Exception {
+      super.setUp();
       System.setProperty("solr.test.sys.prop1", "propone");
       System.setProperty("solr.test.sys.prop2", "proptwo");
 
