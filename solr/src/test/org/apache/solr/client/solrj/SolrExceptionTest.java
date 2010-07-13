@@ -21,6 +21,8 @@ import java.net.UnknownHostException;
 
 import junit.framework.TestCase;
 
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrException;
@@ -39,7 +41,10 @@ public class SolrExceptionTest extends TestCase {
     boolean gotExpectedError = false;
     try {
       // switched to a local address to avoid going out on the net, ns lookup issues, etc.
-      SolrServer client = new CommonsHttpSolrServer("http://localhost:11235/solr/");
+      // set a 1ms timeout to let the connection fail faster.
+      HttpClient httpClient = new HttpClient(new MultiThreadedHttpConnectionManager());
+      httpClient.getParams().setParameter("http.connection.timeout", new Integer(1));
+      SolrServer client = new CommonsHttpSolrServer("http://localhost:11235/solr/", httpClient);
       SolrQuery query = new SolrQuery("test123");
       client.query(query);
     } catch (SolrServerException sse) {
