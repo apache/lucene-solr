@@ -37,7 +37,7 @@ import java.util.Map;
  * @version $Id$
  * @since solr 1.3
  */
-public abstract class AbstractDataImportHandlerTest extends
+public abstract class AbstractDataImportHandlerTestCase extends
         AbstractSolrTestCase {
 
   @Override

@@ -23,6 +23,7 @@ import java.util.*;
 
 import javax.sql.DataSource;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
 import org.junit.*;
@@ -39,7 +40,7 @@ import org.junit.*;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestJdbcDataSource {
+public class TestJdbcDataSource extends SolrTestCaseJ4 {
   Driver driver;
   DataSource dataSource;
   Connection connection;
@@ -47,7 +48,7 @@ public class TestJdbcDataSource {
   JdbcDataSource jdbcDataSource = new JdbcDataSource();
   List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
 
-  Context context = AbstractDataImportHandlerTest.getContext(null, null,
+  Context context = AbstractDataImportHandlerTestCase.getContext(null, null,
           jdbcDataSource, Context.FULL_DUMP, fields, null);
 
   Properties props = new Properties();
@@ -55,7 +56,8 @@ public class TestJdbcDataSource {
   String sysProp = System.getProperty("java.naming.factory.initial");
 
   @Before
-  public void SetUp() throws ClassNotFoundException {
+  public void setUp() throws Exception {
+    super.setUp();
     System.setProperty("java.naming.factory.initial",
             MockInitialContextFactory.class.getName());
 
@@ -66,12 +68,13 @@ public class TestJdbcDataSource {
   }
 
   @After
-  public void tearDown() {
+  public void tearDown() throws Exception {
     if (sysProp == null) {
       System.getProperties().remove("java.naming.factory.initial");
     } else {
       System.setProperty("java.naming.factory.initial", sysProp);
     }
+    super.tearDown();
   }
 
   @Test
@@ -161,7 +164,7 @@ public class TestJdbcDataSource {
     f.put("type", "float");
     flds.add(f);
 
-    Context c = AbstractDataImportHandlerTest.getContext(null, null,
+    Context c = AbstractDataImportHandlerTestCase.getContext(null, null,
             dataSource, Context.FULL_DUMP, flds, null);
     dataSource.init(c, p);
     Iterator<Map<String, Object>> i = dataSource

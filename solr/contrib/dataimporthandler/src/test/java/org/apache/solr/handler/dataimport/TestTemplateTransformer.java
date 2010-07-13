@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -32,28 +33,28 @@ import java.util.Arrays;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestTemplateTransformer {
+public class TestTemplateTransformer extends SolrTestCaseJ4 {
 
   @Test
   @SuppressWarnings("unchecked")
   public void testTransformRow() {
     List fields = new ArrayList();
-    fields.add(AbstractDataImportHandlerTest.createMap("column", "firstName"));
-    fields.add(AbstractDataImportHandlerTest.createMap("column", "lastName"));
-    fields.add(AbstractDataImportHandlerTest.createMap("column", "middleName"));
-    fields.add(AbstractDataImportHandlerTest.createMap("column", "name",
+    fields.add(AbstractDataImportHandlerTestCase.createMap("column", "firstName"));
+    fields.add(AbstractDataImportHandlerTestCase.createMap("column", "lastName"));
+    fields.add(AbstractDataImportHandlerTestCase.createMap("column", "middleName"));
+    fields.add(AbstractDataImportHandlerTestCase.createMap("column", "name",
             TemplateTransformer.TEMPLATE,
             "${e.lastName}, ${e.firstName} ${e.middleName}"));
-    fields.add(AbstractDataImportHandlerTest.createMap("column", "emails",
+    fields.add(AbstractDataImportHandlerTestCase.createMap("column", "emails",
             TemplateTransformer.TEMPLATE,
             "${e.mail}"));
 
     // test reuse of template output in another template 
-    fields.add(AbstractDataImportHandlerTest.createMap("column", "mrname",
+    fields.add(AbstractDataImportHandlerTestCase.createMap("column", "mrname",
             TemplateTransformer.TEMPLATE,"Mr ${e.name}"));
 
     List<String> mails = Arrays.asList(new String[]{"a@b.com", "c@d.com"});
-    Map row = AbstractDataImportHandlerTest.createMap(
+    Map row = AbstractDataImportHandlerTestCase.createMap(
             "firstName", "Shalin",
             "middleName", "Shekhar", 
             "lastName", "Mangar",
@@ -61,10 +62,10 @@ public class TestTemplateTransformer {
 
     VariableResolverImpl resolver = new VariableResolverImpl();
     resolver.addNamespace("e", row);
-    Map<String, String> entityAttrs = AbstractDataImportHandlerTest.createMap(
+    Map<String, String> entityAttrs = AbstractDataImportHandlerTestCase.createMap(
             "name", "e");
 
-    Context context = AbstractDataImportHandlerTest.getContext(null, resolver,
+    Context context = AbstractDataImportHandlerTestCase.getContext(null, resolver,
             null, Context.FULL_DUMP, fields, entityAttrs);
     new TemplateTransformer().transformRow(row, context);
     Assert.assertEquals("Mangar, Shalin Shekhar", row.get("name"));

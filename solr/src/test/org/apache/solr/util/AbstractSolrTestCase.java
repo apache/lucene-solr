@@ -19,6 +19,7 @@
 package org.apache.solr.util;
 
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -30,7 +31,6 @@ import org.apache.solr.util.TestHarness;
 import org.xml.sax.SAXException;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
-import junit.framework.TestCase;
 import javax.xml.xpath.XPathExpressionException;
 
 import java.io.*;
@@ -51,7 +51,7 @@ import java.util.ArrayList;
  * @see #setUp
  * @see #tearDown
  */
-public abstract class AbstractSolrTestCase extends TestCase {
+public abstract class AbstractSolrTestCase extends LuceneTestCase {
     protected SolrConfig solrConfig;
   /**
    * Harness initialized by initTestHarness.
@@ -103,6 +103,7 @@ public abstract class AbstractSolrTestCase extends TestCase {
 
   private String factoryProp;
   public void setUp() throws Exception {
+    super.setUp();
     log.info("####SETUP_START " + getName());
     ignoreException("ignore_exception");
     factoryProp = System.getProperty("solr.directoryFactory");
@@ -178,6 +179,7 @@ public abstract class AbstractSolrTestCase extends TestCase {
     }
 
     resetExceptionIgnores();  
+    super.tearDown();
   }
 
   /** Validates an update XML String is successful

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -32,7 +33,7 @@ import java.util.Map;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestEntityProcessorBase {
+public class TestEntityProcessorBase extends SolrTestCaseJ4 {
 
   @Test
   public void multiTransformer() {
@@ -43,7 +44,7 @@ public class TestEntityProcessorBase {
     fields.add(TestRegexTransformer.getField("A", null, null, null, null));
     fields.add(TestRegexTransformer.getField("B", null, null, null, null));
 
-    Context context = AbstractDataImportHandlerTest.getContext(null, null, new MockDataSource(), Context.FULL_DUMP,
+    Context context = AbstractDataImportHandlerTestCase.getContext(null, null, new MockDataSource(), Context.FULL_DUMP,
             fields, entity);
     Map<String, Object> src = new HashMap<String, Object>();
     src.put("A", "NA");

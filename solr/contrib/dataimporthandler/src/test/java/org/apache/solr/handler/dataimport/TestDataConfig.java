@@ -33,7 +33,7 @@ import java.util.List;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestDataConfig extends AbstractDataImportHandlerTest {
+public class TestDataConfig extends AbstractDataImportHandlerTestCase {
 
   @Override
   public void setUp() throws Exception {

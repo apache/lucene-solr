@@ -16,8 +16,9 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
-import static org.apache.solr.handler.dataimport.AbstractDataImportHandlerTest.createMap;
+import static org.apache.solr.handler.dataimport.AbstractDataImportHandlerTestCase.createMap;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -31,7 +32,7 @@ import java.util.*;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestDocBuilder {
+public class TestDocBuilder extends SolrTestCaseJ4 {
 
   @Test
   public void loadClass() throws Exception {
