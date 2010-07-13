@@ -20,9 +20,9 @@ package org.apache.lucene.search;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.RAMDirectory;
@@ -41,6 +41,7 @@ import java.util.BitSet;
 public class TestFilteredQuery extends LuceneTestCase {
 
   private IndexSearcher searcher;
+  private IndexReader reader;
   private RAMDirectory directory;
   private Query query;
   private Filter filter;
@@ -49,7 +50,8 @@ public class TestFilteredQuery extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter (directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter (newRandom(), directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     Document doc = new Document();
     doc.add (new Field("field", "one two three four five", Field.Store.YES, Field.Index.ANALYZED));
@@ -71,10 +73,10 @@ public class TestFilteredQuery extends LuceneTestCase {
     doc.add (new Field("sorter", "c", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument (doc);
 
-    writer.optimize ();
+    reader = writer.getReader();
     writer.close ();
 
-    searcher = new IndexSearcher (directory, true);
+    searcher = new IndexSearcher (reader);
     query = new TermQuery (new Term ("field", "three"));
     filter = newStaticFilterB();
   }
@@ -95,6 +97,7 @@ public class TestFilteredQuery extends LuceneTestCase {
   @Override
   protected void tearDown() throws Exception {
     searcher.close();
+    reader.close();
     directory.close();
     super.tearDown();
   }

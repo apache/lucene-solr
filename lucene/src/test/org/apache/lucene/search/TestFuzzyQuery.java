@@ -25,8 +25,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
@@ -42,7 +42,8 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
   public void testFuzziness() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     addDoc("aaaaa", writer);
     addDoc("aaaab", writer);
     addDoc("aaabb", writer);
@@ -50,9 +51,10 @@ public class TestFuzzyQuery extends LuceneTestCase {
     addDoc("abbbb", writer);
     addDoc("bbbbb", writer);
     addDoc("ddddd", writer);
-    writer.optimize();
+
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = new IndexSearcher(reader);
     writer.close();
-    IndexSearcher searcher = new IndexSearcher(directory, true);
 
     FuzzyQuery query = new FuzzyQuery(new Term("field", "aaaaa"), FuzzyQuery.defaultMinSimilarity, 0);   
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -188,17 +190,20 @@ public class TestFuzzyQuery extends LuceneTestCase {
     assertEquals(0, hits.length);
 
     searcher.close();
+    reader.close();
     directory.close();
   }
 
   public void testFuzzinessLong() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     addDoc("aaaaaaa", writer);
     addDoc("segment", writer);
-    writer.optimize();
+
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = new IndexSearcher(reader);
     writer.close();
-    IndexSearcher searcher = new IndexSearcher(directory, true);
 
     FuzzyQuery query;
     // not similar enough:
@@ -276,17 +281,20 @@ public class TestFuzzyQuery extends LuceneTestCase {
     }
 
     searcher.close();
+    reader.close();
     directory.close();
   }
   
   public void testTokenLengthOpt() throws IOException {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     addDoc("12345678911", writer);
     addDoc("segment", writer);
-    writer.optimize();
+
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = new IndexSearcher(reader);
     writer.close();
-    IndexSearcher searcher = new IndexSearcher(directory, true);
 
     Query query;
     // term not over 10 chars, so optimization shortcuts
@@ -308,20 +316,25 @@ public class TestFuzzyQuery extends LuceneTestCase {
     query = new FuzzyQuery(new Term("field", "sdfsdfsdfsdf"), 0.9f);
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals(0, hits.length);
+    
+    searcher.close();
+    reader.close();
+    directory.close();
   }
   
   /** Test the TopTermsBoostOnlyBooleanQueryRewrite rewrite method. */
   public void testBoostOnlyRewrite() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     addDoc("Lucene", writer);
     addDoc("Lucene", writer);
     addDoc("Lucenne", writer);
-    writer.optimize();
+
+    IndexReader reader = writer.getReader();
+    IndexSearcher searcher = new IndexSearcher(reader);
     writer.close();
-    IndexSearcher searcher = new IndexSearcher(directory, true);
-    IndexReader reader = searcher.getIndexReader();
+    
     FuzzyQuery query = new FuzzyQuery(new Term("field", "Lucene"));
     query.setRewriteMethod(new MultiTermQuery.TopTermsBoostOnlyBooleanQueryRewrite());
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -332,6 +345,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     assertEquals("Lucenne", reader.document(hits[2].doc).get("field"));
     searcher.close();
     reader.close();
+    directory.close();
   }
   
   public void testGiga() throws Exception {
@@ -339,8 +353,8 @@ public class TestFuzzyQuery extends LuceneTestCase {
     MockAnalyzer analyzer = new MockAnalyzer();
 
     Directory index = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(index, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer));
+    RandomIndexWriter w = new RandomIndexWriter(newRandom(), index, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
 
     addDoc("Lucene in Action", w);
     addDoc("Lucene for Dummies", w);
@@ -369,10 +383,12 @@ public class TestFuzzyQuery extends LuceneTestCase {
     ScoreDoc[] hits = searcher.search(q, 10).scoreDocs;
     assertEquals(1, hits.length);
     assertEquals("Giga byte", searcher.doc(hits[0].doc).get("field"));
+    searcher.close();
     r.close();
+    index.close();
   }
 
-  private void addDoc(String text, IndexWriter writer) throws IOException {
+  private void addDoc(String text, RandomIndexWriter writer) throws IOException {
     Document doc = new Document();
     doc.add(new Field("field", text, Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);

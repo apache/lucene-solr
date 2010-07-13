@@ -26,8 +26,11 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -40,13 +43,15 @@ import org.apache.lucene.util._TestUtil;
 public class TestWildcardRandom extends LuceneTestCase {
   private Searcher searcher;
   private Random random;
+  private Directory dir;
   
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new MockAnalyzer(),
-        IndexWriter.MaxFieldLength.UNLIMITED);
+    random = newRandom();
+    dir = new RAMDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     
     Document doc = new Document();
     Field field = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);
@@ -58,9 +63,9 @@ public class TestWildcardRandom extends LuceneTestCase {
       writer.addDocument(doc);
     }
     
-    writer.optimize();
+    IndexReader reader = writer.getReader();
+    searcher = new IndexSearcher(reader);
     writer.close();
-    searcher = new IndexSearcher(dir);
   }
   
   private char N() {
@@ -82,6 +87,7 @@ public class TestWildcardRandom extends LuceneTestCase {
   }
   
   private void assertPatternHits(String pattern, int numHits) throws Exception {
+    // TODO: run with different rewrites
     Query wq = new WildcardQuery(new Term("field", fillPattern(pattern)));
     TopDocs docs = searcher.search(wq, 25);
     assertEquals("Incorrect hits for pattern: " + pattern, numHits, docs.totalHits);
@@ -90,11 +96,11 @@ public class TestWildcardRandom extends LuceneTestCase {
   @Override
   protected void tearDown() throws Exception {
     searcher.close();
+    dir.close();
     super.tearDown();
   }
   
-  public void testWildcards() throws Exception {
-    random = newRandom(System.nanoTime());
+  public void testWildcards() throws Exception {;
     for (int i = 0; i < 100*_TestUtil.getRandomMultiplier(); i++) {
       assertPatternHits("NNNN", 1);
       assertPatternHits("?NNN", 10);

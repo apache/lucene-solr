@@ -40,16 +40,9 @@ import org.apache.lucene.store.RAMDirectory;
  */
 public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
-  public TestFieldCacheRangeFilter(String name) {
-    super(name);
-  }
-  public TestFieldCacheRangeFilter() {
-    super();
-  }
-
   public void testRangeFilterId() throws IOException {
 
-    IndexReader reader = IndexReader.open(signedIndex.index, true);
+    IndexReader reader = signedIndexReader;
     IndexSearcher search = new IndexSearcher(reader);
 
     int medId = ((maxId - minId) / 2);
@@ -133,11 +126,11 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
   public void testFieldCacheRangeFilterRand() throws IOException {
 
-    IndexReader reader = IndexReader.open(signedIndex.index, true);
+    IndexReader reader = signedIndexReader;
     IndexSearcher search = new IndexSearcher(reader);
 
-    String minRP = pad(signedIndex.minR);
-    String maxRP = pad(signedIndex.maxR);
+    String minRP = pad(signedIndexDir.minR);
+    String maxRP = pad(signedIndexDir.maxR);
     
     int numDocs = reader.numDocs();
         
@@ -196,7 +189,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
   public void testFieldCacheRangeFilterShorts() throws IOException {
 
-    IndexReader reader = IndexReader.open(signedIndex.index, true);
+    IndexReader reader = signedIndexReader;
     IndexSearcher search = new IndexSearcher(reader);
 
     int numDocs = reader.numDocs();
@@ -285,7 +278,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
   
   public void testFieldCacheRangeFilterInts() throws IOException {
 
-    IndexReader reader = IndexReader.open(signedIndex.index, true);
+    IndexReader reader = signedIndexReader;
     IndexSearcher search = new IndexSearcher(reader);
 
     int numDocs = reader.numDocs();
@@ -375,7 +368,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
   
   public void testFieldCacheRangeFilterLongs() throws IOException {
 
-    IndexReader reader = IndexReader.open(signedIndex.index, true);
+    IndexReader reader = signedIndexReader;
     IndexSearcher search = new IndexSearcher(reader);
 
     int numDocs = reader.numDocs();
@@ -467,7 +460,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
   
   public void testFieldCacheRangeFilterFloats() throws IOException {
 
-    IndexReader reader = IndexReader.open(signedIndex.index, true);
+    IndexReader reader = signedIndexReader;
     IndexSearcher search = new IndexSearcher(reader);
 
     int numDocs = reader.numDocs();
@@ -495,7 +488,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
   
   public void testFieldCacheRangeFilterDoubles() throws IOException {
 
-    IndexReader reader = IndexReader.open(signedIndex.index, true);
+    IndexReader reader = signedIndexReader;
     IndexSearcher search = new IndexSearcher(reader);
 
     int numDocs = reader.numDocs();

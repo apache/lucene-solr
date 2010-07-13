@@ -26,8 +26,11 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -39,13 +42,17 @@ import org.apache.lucene.util._TestUtil;
  */
 public class TestRegexpRandom extends LuceneTestCase {
   private Searcher searcher;
+  private IndexReader reader;
+  private Directory dir;
   private Random random;
   
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new MockAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    random = newRandom();
+    dir = new RAMDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir,
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     
     Document doc = new Document();
     Field field = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);
@@ -57,9 +64,9 @@ public class TestRegexpRandom extends LuceneTestCase {
       writer.addDocument(doc);
     }
     
-    writer.optimize();
+    reader = writer.getReader();
     writer.close();
-    searcher = new IndexSearcher(dir);
+    searcher = new IndexSearcher(reader);
   }
   
   private char N() {
@@ -89,11 +96,12 @@ public class TestRegexpRandom extends LuceneTestCase {
   @Override
   protected void tearDown() throws Exception {
     searcher.close();
+    reader.close();
+    dir.close();
     super.tearDown();
   }
   
   public void testRegexps() throws Exception {
-    random = newRandom(System.nanoTime());
     for (int i = 0; i < 100*_TestUtil.getRandomMultiplier(); i++) {
       assertPatternHits("NNNN", 1);
       assertPatternHits(".NNN", 10);

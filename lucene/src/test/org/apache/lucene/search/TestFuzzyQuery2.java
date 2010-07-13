@@ -20,12 +20,15 @@ package org.apache.lucene.search;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -55,6 +58,13 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestFuzzyQuery2 extends LuceneTestCase {
   /** epsilon for score comparisons */
   static final float epsilon = 0.00001f;
+  private Random random;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    random = newRandom();
+  }
 
   public void testFromTestData() throws Exception {
     // TODO: randomize!
@@ -78,8 +88,8 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     int terms = (int) Math.pow(2, bits);
     
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new MockAnalyzer(MockTokenizer.KEYWORD, false),
-        IndexWriter.MaxFieldLength.UNLIMITED);
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.KEYWORD, false)));
     
     Document doc = new Document();
     Field field = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);
@@ -88,12 +98,11 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     for (int i = 0; i < terms; i++) {
       field.setValue(mapInt(codePointTable, i));
       writer.addDocument(doc);
-    }
+    }   
     
-    writer.optimize();
-    writer.close();   
-    
-    IndexSearcher searcher = new IndexSearcher(dir);
+    IndexReader r = writer.getReader();
+    IndexSearcher searcher = new IndexSearcher(r);
+    writer.close();
     String line;
     while ((line = reader.readLine()) != null) {
       String params[] = line.split(",");
@@ -113,6 +122,7 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
       }
     }
     searcher.close();
+    r.close();
     dir.close();
   }
   

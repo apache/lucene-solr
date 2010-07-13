@@ -19,12 +19,14 @@ package org.apache.lucene.search;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -47,18 +49,22 @@ public class ChainedFilterTest extends LuceneTestCase {
 
   private RAMDirectory directory;
   private IndexSearcher searcher;
+  private IndexReader reader;
   private Query query;
   // private DateFilter dateFilter;   DateFilter was deprecated and removed
   private TermRangeFilter dateFilter;
   private QueryWrapperFilter bobFilter;
   private QueryWrapperFilter sueFilter;
 
+  private Random random;
+
   @Override
   protected void setUp() throws Exception {
     super.setUp();
+    random = newRandom();
     directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     Calendar cal = new GregorianCalendar();
     cal.clear();
@@ -73,10 +79,10 @@ public class ChainedFilterTest extends LuceneTestCase {
 
       cal.add(Calendar.DATE, 1);
     }
-
+    reader = writer.getReader();
     writer.close();
 
-    searcher = new IndexSearcher(directory, true);
+    searcher = new IndexSearcher(reader);
 
     // query for everything to make life easier
     BooleanQuery bq = new BooleanQuery();
@@ -94,6 +100,14 @@ public class ChainedFilterTest extends LuceneTestCase {
         new TermQuery(new Term("owner", "bob")));
     sueFilter = new QueryWrapperFilter(
         new TermQuery(new Term("owner", "sue")));
+  }
+
+  @Override
+  public void tearDown() throws Exception {
+    searcher.close();
+    reader.close();
+    directory.close();
+    super.tearDown();
   }
 
   private ChainedFilter getChainedFilter(Filter[] chain, int[] logic) {
@@ -186,10 +200,12 @@ public class ChainedFilterTest extends LuceneTestCase {
   
   public void testWithCachingFilter() throws Exception {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexReader reader = writer.getReader();
     writer.close();
   
-    Searcher searcher = new IndexSearcher(dir, true);
+    Searcher searcher = new IndexSearcher(reader);
   
     Query query = new TermQuery(new Term("none", "none"));
   
@@ -206,6 +222,9 @@ public class ChainedFilterTest extends LuceneTestCase {
   
     // throws java.lang.ClassCastException: org.apache.lucene.util.OpenBitSet cannot be cast to java.util.BitSet
     searcher.search(new MatchAllDocsQuery(), cf, 1);
+    searcher.close();
+    reader.close();
+    dir.close();
   }
 
 }

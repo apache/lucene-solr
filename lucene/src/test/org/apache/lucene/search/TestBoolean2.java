@@ -23,8 +23,8 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.ParseException;
@@ -42,6 +42,7 @@ public class TestBoolean2 extends LuceneTestCase {
   private IndexSearcher searcher;
   private IndexSearcher bigSearcher;
   private IndexReader reader;
+  private Random rnd;
   private static int NUM_EXTRA_DOCS = 6000;
 
   public static final String field = "field";
@@ -51,8 +52,9 @@ public class TestBoolean2 extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
+    rnd = newRandom();
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer= new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer= new RandomIndexWriter(rnd, directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(new Field(field, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
@@ -69,14 +71,14 @@ public class TestBoolean2 extends LuceneTestCase {
     int docCount = 0;
     do {
       final Directory copy = new RAMDirectory(dir2);
-      IndexWriter w = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+      RandomIndexWriter w = new RandomIndexWriter(rnd, dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
       w.addIndexes(new Directory[] {copy});
       docCount = w.maxDoc();
       w.close();
       mulFactor *= 2;
     } while(docCount < 3000);
 
-    IndexWriter w = new IndexWriter(dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter w = new RandomIndexWriter(rnd, dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     doc.add(new Field("field2", "xxx", Field.Store.NO, Field.Index.ANALYZED));
     for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {
@@ -87,11 +89,9 @@ public class TestBoolean2 extends LuceneTestCase {
     for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {
       w.addDocument(doc);
     }
-    // optimize to 1 segment
-    w.optimize();
     reader = w.getReader();
-    w.close();
     bigSearcher = new IndexSearcher(reader);
+    w.close();
   }
 
   @Override
@@ -200,8 +200,6 @@ public class TestBoolean2 extends LuceneTestCase {
   }
 
   public void testRandomQueries() throws Exception {
-    Random rnd = newRandom();
-
     String[] vals = {"w1","w2","w3","w4","w5","xx","yy","zzz"};
 
     int tot=0;

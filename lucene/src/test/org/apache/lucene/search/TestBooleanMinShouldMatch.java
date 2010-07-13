@@ -24,8 +24,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -37,16 +37,17 @@ import java.util.Random;
  */
 public class TestBooleanMinShouldMatch extends LuceneTestCase {
 
-
-    public Directory index;
-    public IndexReader r;
-    public IndexSearcher s;
+    private Random rnd;
+    private Directory index;
+    private IndexReader r;
+    private IndexSearcher s;
 
     @Override
     protected void setUp() throws Exception {
         super.setUp();
 
-
+        rnd = newRandom();
+        
         String[] data = new String [] {
             "A 1 2 3 4 5 6",
             "Z       4 5 6",
@@ -59,7 +60,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         };
 
         index = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(index, new IndexWriterConfig(
+        RandomIndexWriter w = new RandomIndexWriter(rnd, index, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
 
         for (int i = 0; i < data.length; i++) {
@@ -69,17 +70,23 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
             if (null != data[i]) {
                 doc.add(new Field("data", data[i], Field.Store.YES, Field.Index.ANALYZED));//Field.Text("data",data[i]));
             }
-            writer.addDocument(doc);
+            w.addDocument(doc);
         }
 
-        writer.optimize();
-        writer.close();
-
-        r = IndexReader.open(index, true);
+        r = w.getReader();
         s = new IndexSearcher(r);
-
+        w.close();
 //System.out.println("Set up " + getName());
     }
+    
+    @Override
+    protected void tearDown() throws Exception {
+      s.close();
+      r.close();
+      index.close();
+      super.tearDown();
+    }
+
 
     public void verifyNrHits(Query q, int expected) throws Exception {
         ScoreDoc[] h = s.search(q, null, 1000).scoreDocs;
@@ -295,8 +302,6 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     }
 
     public void testRandomQueries() throws Exception {
-      final Random rnd = newRandom();
-
       String field="data";
       String[] vals = {"1","2","3","4","5","6","A","Z","B","Y","Z","X","foo"};
       int maxLev=4;

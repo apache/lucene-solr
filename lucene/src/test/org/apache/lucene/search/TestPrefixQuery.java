@@ -19,8 +19,9 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -37,16 +38,17 @@ public class TestPrefixQuery extends LuceneTestCase {
     String[] categories = new String[] {"/Computers",
                                         "/Computers/Mac",
                                         "/Computers/Windows"};
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < categories.length; i++) {
       Document doc = new Document();
       doc.add(new Field("category", categories[i], Field.Store.YES, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
-    writer.close();
+    IndexReader reader = writer.getReader();
 
     PrefixQuery query = new PrefixQuery(new Term("category", "/Computers"));
-    IndexSearcher searcher = new IndexSearcher(directory, true);
+    IndexSearcher searcher = new IndexSearcher(reader);
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("All documents in /Computers category and below", 3, hits.length);
 
@@ -58,5 +60,9 @@ public class TestPrefixQuery extends LuceneTestCase {
     assertFalse(query.getTermsEnum(searcher.getIndexReader()) instanceof PrefixTermsEnum);
     hits = searcher.search(query, null, 1000).scoreDocs;
     assertEquals("everything", 3, hits.length);
+    writer.close();
+    searcher.close();
+    reader.close();
+    directory.close();
   }
 }

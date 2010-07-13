@@ -26,9 +26,10 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Payload;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.IndexSearcher;
@@ -39,6 +40,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
@@ -47,6 +49,8 @@ import org.apache.lucene.search.Explanation.IDFExplanation;
 
 public class TestPayloadNearQuery extends LuceneTestCase {
   private IndexSearcher searcher;
+  private IndexReader reader;
+  private Directory directory;
   private BoostingSimilarity similarity = new BoostingSimilarity();
   private byte[] payload2 = new byte[]{2};
   private byte[] payload4 = new byte[]{4};
@@ -101,9 +105,10 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
+    directory = new RAMDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer())
+        .setSimilarity(similarity));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
@@ -112,11 +117,19 @@ public class TestPayloadNearQuery extends LuceneTestCase {
       doc.add(new Field("field2",  txt, Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
-    writer.optimize();
+    reader = writer.getReader();
     writer.close();
 
-    searcher = new IndexSearcher(directory, true);
+    searcher = new IndexSearcher(reader);
     searcher.setSimilarity(similarity);
+  }
+
+  @Override
+  protected void tearDown() throws Exception {
+    searcher.close();
+    reader.close();
+    directory.close();
+    super.tearDown();
   }
 
   public void test() throws IOException {

@@ -24,8 +24,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.TimeLimitingCollector.TimeExceededException;
 import org.apache.lucene.store.Directory;
@@ -51,6 +51,9 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
   private static final int N_THREADS = 50;
 
   private Searcher searcher;
+  private Directory directory;
+  private IndexReader reader;
+
   private final String FIELD_NAME = "body";
   private Query query;
 
@@ -74,14 +77,16 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
         "blueberry strudel",
         "blueberry pizza",
     };
-    Directory directory = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    directory = new RAMDirectory();
+    RandomIndexWriter iw = new RandomIndexWriter(newRandom(), directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     
     for (int i=0; i<N_DOCS; i++) {
       add(docText[i%docText.length], iw);
     }
+    reader = iw.getReader();
     iw.close();
-    searcher = new IndexSearcher(directory, true);
+    searcher = new IndexSearcher(reader);
 
     String qtxt = "one";
     // start from 1, so that the 0th doc never matches
@@ -99,10 +104,12 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
   @Override
   protected void tearDown() throws Exception {
     searcher.close();
+    reader.close();
+    directory.close();
     super.tearDown();
   }
 
-  private void add(String value, IndexWriter iw) throws IOException {
+  private void add(String value, RandomIndexWriter iw) throws IOException {
     Document d = new Document();
     d.add(new Field(FIELD_NAME, value, Field.Store.NO, Field.Index.ANALYZED));
     iw.addDocument(d);

@@ -17,9 +17,11 @@ package org.apache.lucene.search.regex;
  * limitations under the License.
  */
 
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -33,30 +35,30 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestRegexQuery extends LuceneTestCase {
   private IndexSearcher searcher;
+  private IndexReader reader;
+  private Directory directory;
   private final String FN = "field";
 
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    RAMDirectory directory = new RAMDirectory();
-    try {
-      IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-          TEST_VERSION_CURRENT, new MockAnalyzer()));
-      Document doc = new Document();
-      doc.add(new Field(FN, "the quick brown fox jumps over the lazy dog", Field.Store.NO, Field.Index.ANALYZED));
-      writer.addDocument(doc);
-      writer.optimize();
-      writer.close();
-      searcher = new IndexSearcher(directory, true);
-    } catch (Exception e) {
-      fail(e.toString());
-    }
+    directory = new RAMDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Document doc = new Document();
+    doc.add(new Field(FN, "the quick brown fox jumps over the lazy dog", Field.Store.NO, Field.Index.ANALYZED));
+    writer.addDocument(doc);
+    reader = writer.getReader();
+    writer.close();
+    searcher = new IndexSearcher(reader);
   }
 
   @Override
   protected void tearDown() throws Exception {
     searcher.close();
+    reader.close();
+    directory.close();
     super.tearDown();
   }
 

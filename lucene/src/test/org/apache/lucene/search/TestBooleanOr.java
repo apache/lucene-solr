@@ -16,20 +16,23 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
 public class TestBooleanOr extends LuceneTestCase {
@@ -43,6 +46,9 @@ public class TestBooleanOr extends LuceneTestCase {
   private TermQuery c2 = new TermQuery(new Term(FIELD_C, "optimize"));
 
   private IndexSearcher searcher = null;
+  private Directory dir;
+  private IndexReader reader;
+  
 
   private int search(Query q) throws IOException {
     QueryUtils.check(q,searcher);
@@ -133,10 +139,11 @@ public class TestBooleanOr extends LuceneTestCase {
     super.setUp();
 
     //
-    RAMDirectory rd = new RAMDirectory();
+    dir = new RAMDirectory();
 
+    Random random = newRandom();
     //
-    IndexWriter writer = new IndexWriter(rd, new IndexWriterConfig(
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     //
@@ -154,9 +161,18 @@ public class TestBooleanOr extends LuceneTestCase {
 
     //
     writer.addDocument(d);
-    writer.close();
 
+    reader = writer.getReader();
     //
-    searcher = new IndexSearcher(rd, true);
+    searcher = new IndexSearcher(reader);
+    writer.close();
+  }
+
+  @Override
+  protected void tearDown() throws Exception {
+    searcher.close();
+    reader.close();
+    dir.close();
+    super.tearDown();
   }
 }

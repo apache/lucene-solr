@@ -26,8 +26,9 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -44,7 +45,8 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
     final Random rnd = newRandom();
 
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(rnd, directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     
     DecimalFormat format = new DecimalFormat("00000000000", new DecimalFormatSymbols(Locale.US));
     
@@ -56,10 +58,11 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
         doc.add(new NumericField("trie", Field.Store.NO, true).setIntValue(value));
       }
       writer.addDocument(doc);
-    }  
+    }
+    IndexReader reader = writer.getReader();
     writer.close();
     
-    Searcher searcher=new IndexSearcher(directory, true);
+    Searcher searcher=new IndexSearcher(reader);
     for (int i=0; i<50*_TestUtil.getRandomMultiplier(); i++) {
       int lower=rnd.nextInt(Integer.MAX_VALUE);
       int upper=rnd.nextInt(Integer.MAX_VALUE);
@@ -73,7 +76,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
       assertEquals("Returned count for NumericRangeQuery and TermRangeQuery must be equal", trTopDocs.totalHits, nrTopDocs.totalHits );
     }
     searcher.close();
-
+    reader.close();
     directory.close();
   }
   

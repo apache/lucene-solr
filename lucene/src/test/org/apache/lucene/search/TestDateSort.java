@@ -25,8 +25,9 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -44,14 +45,16 @@ public class TestDateSort extends LuceneTestCase {
   private static final String TEXT_FIELD = "text";
   private static final String DATE_TIME_FIELD = "dateTime";
 
-  private static Directory directory;
+  private Directory directory;
+  private IndexReader reader;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
     // Create an index writer.
     directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     // oldest doc:
     // Add the first document.  text = "Document 1"  dateTime = Oct 10 03:25:22 EDT 2007
@@ -66,12 +69,19 @@ public class TestDateSort extends LuceneTestCase {
     // Add the fifth document.  text = "Document 5"  dateTime = Oct 12 13:25:43 EDT 2007
     writer.addDocument(createDocument("Document 5", 1192209943000L));
 
-    writer.optimize();
+    reader = writer.getReader();
     writer.close();
   }
 
+  @Override
+  protected void tearDown() throws Exception {
+    reader.close();
+    directory.close();
+    super.tearDown();
+  }
+
   public void testReverseDateSort() throws Exception {
-    IndexSearcher searcher = new IndexSearcher(directory, true);
+    IndexSearcher searcher = new IndexSearcher(reader);
 
     Sort sort = new Sort(new SortField(DATE_TIME_FIELD, SortField.STRING, true));
 

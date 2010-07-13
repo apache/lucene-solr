@@ -24,13 +24,14 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -49,12 +50,15 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
   }
 
   protected IndexSearcher searcher;
+  protected Directory directory;
+  protected IndexReader reader;
   
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer= new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    directory = new RAMDirectory();
+    RandomIndexWriter writer= new RandomIndexWriter(newRandom(), directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     
     writer.addDocument(doc(new Field[] { field("id", "0")
                                          ,
@@ -109,14 +113,16 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
                                          field("gender", "male"),
                                          field("first",  "bubba"),
                                          field("last",   "jones")     }));
-    
+    reader = writer.getReader();
     writer.close();
-    searcher = new IndexSearcher(directory, true);
+    searcher = new IndexSearcher(reader);
   }
 
   @Override
   protected void tearDown() throws Exception {
     searcher.close();
+    reader.close();
+    directory.close();
     super.tearDown();
   }
 

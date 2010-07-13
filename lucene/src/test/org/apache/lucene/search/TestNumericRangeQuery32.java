@@ -23,8 +23,10 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
@@ -46,12 +48,15 @@ public class TestNumericRangeQuery32 extends LuceneTestCaseJ4 {
   private static final int noDocs = 10000*_TestUtil.getRandomMultiplier();
   
   private static RAMDirectory directory = null;
+  private static IndexReader reader = null;
   private static IndexSearcher searcher = null;
-  
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Random random = newStaticRandom(TestNumericRangeQuery32.class);
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     
     NumericField
       field8 = new NumericField("field8", 8, Field.Store.YES, true),
@@ -83,15 +88,17 @@ public class TestNumericRangeQuery32 extends LuceneTestCaseJ4 {
       writer.addDocument(doc);
     }
   
-    writer.optimize();
+    reader = writer.getReader();
+    searcher=new IndexSearcher(reader);
     writer.close();
-    searcher=new IndexSearcher(directory, true);
   }
   
   @AfterClass
   public static void afterClass() throws Exception {
     searcher.close();
     searcher = null;
+    reader.close();
+    reader = null;
     directory.close();
     directory = null;
   }
@@ -147,7 +154,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCaseJ4 {
       assertEquals("First doc"+type, 2*distance+startOffset, Integer.parseInt(doc.get(field)) );
       doc=searcher.doc(sd[sd.length-1].doc);
       assertEquals("Last doc"+type, (1+count)*distance+startOffset, Integer.parseInt(doc.get(field)) );
-      if (i>0) {
+      if (i>0 && searcher.getIndexReader().getSequentialSubReaders().length == 1) {
         assertEquals("Distinct term number is equal for all query types", lastTerms, terms);
       }
       lastTerms = terms;
@@ -372,7 +379,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCaseJ4 {
       termCountT += tq.getTotalNumberOfTerms();
       termCountC += cq.getTotalNumberOfTerms();
     }
-    if (precisionStep == Integer.MAX_VALUE) {
+    if (precisionStep == Integer.MAX_VALUE && searcher.getIndexReader().getSequentialSubReaders().length == 1) {
       assertEquals("Total number of terms should be equal for unlimited precStep", termCountT, termCountC);
     } else if (VERBOSE) {
       System.out.println("Average number of terms during random search on '" + field + "':");

@@ -16,9 +16,10 @@ package org.apache.lucene.search;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import org.apache.lucene.index.IndexWriter;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -61,7 +62,7 @@ public class TestBooleanQuery extends LuceneTestCase {
   // LUCENE-1630
   public void testNullOrSubScorer() throws Throwable {
     Directory dir = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
+    RandomIndexWriter w = new RandomIndexWriter(newRandom(), dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     doc.add(new Field("field", "a b c d", Field.Store.NO, Field.Index.ANALYZED));

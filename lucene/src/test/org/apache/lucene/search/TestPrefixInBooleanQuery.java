@@ -21,8 +21,9 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -40,12 +41,15 @@ public class TestPrefixInBooleanQuery extends LuceneTestCase {
 
   private static final String FIELD = "name";
   private RAMDirectory directory = new RAMDirectory();
+  private IndexReader reader;
+  private IndexSearcher searcher;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
     
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     for (int i = 0; i < 5137; ++i) {
       Document doc = new Document();
@@ -73,40 +77,46 @@ public class TestPrefixInBooleanQuery extends LuceneTestCase {
       writer.addDocument(doc);
     }
     
+    reader = writer.getReader();
+    searcher = new IndexSearcher(reader);
     writer.close();
   }
   
+  @Override
+  public void tearDown() throws Exception {
+    searcher.close();
+    reader.close();
+    directory.close();
+    super.tearDown();
+  }
+  
   public void testPrefixQuery() throws Exception {
-    IndexSearcher indexSearcher = new IndexSearcher(directory, true);
     Query query = new PrefixQuery(new Term(FIELD, "tang"));
     assertEquals("Number of matched documents", 2,
-                 indexSearcher.search(query, null, 1000).totalHits);
+                 searcher.search(query, null, 1000).totalHits);
   }
   public void testTermQuery() throws Exception {
-    IndexSearcher indexSearcher = new IndexSearcher(directory, true);
     Query query = new TermQuery(new Term(FIELD, "tangfulin"));
     assertEquals("Number of matched documents", 2,
-                 indexSearcher.search(query, null, 1000).totalHits);
+                 searcher.search(query, null, 1000).totalHits);
   }
   public void testTermBooleanQuery() throws Exception {
-    IndexSearcher indexSearcher = new IndexSearcher(directory, true);
     BooleanQuery query = new BooleanQuery();
     query.add(new TermQuery(new Term(FIELD, "tangfulin")),
               BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term(FIELD, "notexistnames")),
               BooleanClause.Occur.SHOULD);
     assertEquals("Number of matched documents", 2,
-                 indexSearcher.search(query, null, 1000).totalHits);
+                 searcher.search(query, null, 1000).totalHits);
 
   }
   public void testPrefixBooleanQuery() throws Exception {
-    IndexSearcher indexSearcher = new IndexSearcher(directory, true);
     BooleanQuery query = new BooleanQuery();
     query.add(new PrefixQuery(new Term(FIELD, "tang")),
               BooleanClause.Occur.SHOULD);
     query.add(new TermQuery(new Term(FIELD, "notexistnames")),
               BooleanClause.Occur.SHOULD);
     assertEquals("Number of matched documents", 2,
-                 indexSearcher.search(query, null, 1000).totalHits);
+                 searcher.search(query, null, 1000).totalHits);
   }
 }

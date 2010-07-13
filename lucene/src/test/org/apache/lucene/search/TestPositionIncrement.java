@@ -34,9 +34,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.MockRAMDirectory;
@@ -91,15 +91,16 @@ public class TestPositionIncrement extends LuceneTestCase {
       }
     };
     Directory store = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(store, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), store, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document d = new Document();
     d.add(new Field("field", "bogus", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(d);
-    writer.optimize();
+    IndexReader reader = writer.getReader();
     writer.close();
     
 
-    IndexSearcher searcher = new IndexSearcher(store, true);
+    IndexSearcher searcher = new IndexSearcher(reader);
     
     DocsAndPositionsEnum pos = MultiFields.getTermPositionsEnum(searcher.getIndexReader(),
                                                                 MultiFields.getDeletedDocs(searcher.getIndexReader()),
@@ -229,6 +230,10 @@ public class TestPositionIncrement extends LuceneTestCase {
     q = (PhraseQuery) qp.parse("\"1 stop 2\"");
     hits = searcher.search(q, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
+    
+    searcher.close();
+    reader.close();
+    store.close();
   }
 
   // stoplist that accepts case-insensitive "stop"
@@ -237,8 +242,8 @@ public class TestPositionIncrement extends LuceneTestCase {
   
   public void testPayloadsPos0() throws Exception {
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
     Document doc = new Document();
     doc.add(new Field("content", new StringReader(
         "a a b c d e a f g h i j a b k k")));

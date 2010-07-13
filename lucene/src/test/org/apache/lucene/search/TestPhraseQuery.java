@@ -46,12 +46,15 @@ public class TestPhraseQuery extends LuceneTestCase {
   public static final float SCORE_COMP_THRESH = 1e-6f;
   
   private IndexSearcher searcher;
+  private IndexReader reader;
   private PhraseQuery query;
   private RAMDirectory directory;
+  private Random random;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
+    random = newRandom();
     directory = new RAMDirectory();
     Analyzer analyzer = new Analyzer() {
       @Override
@@ -64,7 +67,8 @@ public class TestPhraseQuery extends LuceneTestCase {
         return 100;
       }
     };
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     
     Document doc = new Document();
     doc.add(new Field("field", "one two three four five", Field.Store.YES, Field.Index.ANALYZED));
@@ -82,16 +86,17 @@ public class TestPhraseQuery extends LuceneTestCase {
     doc.add(new Field("nonexist", "phrase exist notexist exist found", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
-    writer.optimize();
+    reader = writer.getReader();
     writer.close();
 
-    searcher = new IndexSearcher(directory, true);
+    searcher = new IndexSearcher(reader);
     query = new PhraseQuery();
   }
 
   @Override
   protected void tearDown() throws Exception {
     searcher.close();
+    reader.close();
     directory.close();
     super.tearDown();
   }
@@ -211,14 +216,15 @@ public class TestPhraseQuery extends LuceneTestCase {
   public void testPhraseQueryWithStopAnalyzer() throws Exception {
     RAMDirectory directory = new RAMDirectory();
     Analyzer stopAnalyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, false);
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        Version.LUCENE_24, stopAnalyzer));
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
+        new IndexWriterConfig(Version.LUCENE_24, stopAnalyzer));
     Document doc = new Document();
     doc.add(new Field("field", "the stop words are here", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
+    IndexReader reader = writer.getReader();
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(directory, true);
+    IndexSearcher searcher = new IndexSearcher(reader);
 
     // valid exact phrase query
     PhraseQuery query = new PhraseQuery();
@@ -239,11 +245,14 @@ public class TestPhraseQuery extends LuceneTestCase {
 
 
     searcher.close();
+    reader.close();
+    directory.close();
   }
   
   public void testPhraseQueryInConjunctionScorer() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     
     Document doc = new Document();
     doc.add(new Field("source", "marketing info", Field.Store.YES, Field.Index.ANALYZED));
@@ -254,10 +263,10 @@ public class TestPhraseQuery extends LuceneTestCase {
     doc.add(new Field("source", "marketing info", Field.Store.YES, Field.Index.ANALYZED)); 
     writer.addDocument(doc);
     
-    writer.optimize();
+    IndexReader reader = writer.getReader();
     writer.close();
     
-    IndexSearcher searcher = new IndexSearcher(directory, true);
+    IndexSearcher searcher = new IndexSearcher(reader);
     
     PhraseQuery phraseQuery = new PhraseQuery();
     phraseQuery.add(new Term("source", "marketing"));
@@ -277,8 +286,10 @@ public class TestPhraseQuery extends LuceneTestCase {
 
     
     searcher.close();
+    reader.close();
     
-    writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
+    writer = new RandomIndexWriter(random, directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
     doc = new Document();
     doc.add(new Field("contents", "map entry woo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
@@ -291,10 +302,10 @@ public class TestPhraseQuery extends LuceneTestCase {
     doc.add(new Field("contents", "map foobarword entry woo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
-    writer.optimize();
+    reader = writer.getReader();
     writer.close();
     
-    searcher = new IndexSearcher(directory, true);
+    searcher = new IndexSearcher(reader);
     
     termQuery = new TermQuery(new Term("contents","woo"));
     phraseQuery = new PhraseQuery();
@@ -322,12 +333,14 @@ public class TestPhraseQuery extends LuceneTestCase {
 
     
     searcher.close();
+    reader.close();
     directory.close();
   }
   
   public void testSlopScoring() throws IOException {
     Directory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     Document doc = new Document();
     doc.add(new Field("field", "foo firstname lastname foo", Field.Store.YES, Field.Index.ANALYZED));
@@ -341,10 +354,10 @@ public class TestPhraseQuery extends LuceneTestCase {
     doc3.add(new Field("field", "foo firstname zzz yyy lastname foo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc3);
     
-    writer.optimize();
+    IndexReader reader = writer.getReader();
     writer.close();
 
-    Searcher searcher = new IndexSearcher(directory, true);
+    Searcher searcher = new IndexSearcher(reader);
     PhraseQuery query = new PhraseQuery();
     query.add(new Term("field", "firstname"));
     query.add(new Term("field", "lastname"));
@@ -359,7 +372,10 @@ public class TestPhraseQuery extends LuceneTestCase {
     assertEquals(1, hits[1].doc);
     assertEquals(0.31, hits[2].score, 0.01);
     assertEquals(2, hits[2].doc);
-    QueryUtils.check(query,searcher);        
+    QueryUtils.check(query,searcher);
+    searcher.close();
+    reader.close();
+    directory.close();
   }
   
   public void testToString() throws Exception {
@@ -587,13 +603,14 @@ public class TestPhraseQuery extends LuceneTestCase {
     Directory dir = new MockRAMDirectory();
     Analyzer analyzer = new MockAnalyzer();
 
-    IndexWriter w  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    RandomIndexWriter w  = new RandomIndexWriter(random, dir, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     List<List<String>> docs = new ArrayList<List<String>>();
     Document d = new Document();
     Field f = new Field("f", "", Field.Store.NO, Field.Index.ANALYZED);
     d.add(f);
 
-    Random r = newRandom();
+    Random r = random;
 
     int NUM_DOCS = 10*_TestUtil.getRandomMultiplier();
     for(int i=0;i<NUM_DOCS;i++) {
@@ -668,7 +685,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     }
 
     reader.close();
-    searcher.close();
+    s.close();
     dir.close();
   }
 }

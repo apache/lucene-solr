@@ -23,8 +23,8 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -40,8 +40,8 @@ public class TestDocBoost extends LuceneTestCase {
 
   public void testDocBoost() throws Exception {
     RAMDirectory store = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(store, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), store, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     Fieldable f1 = new Field("field", "word", Field.Store.YES, Field.Index.ANALYZED);
     Fieldable f2 = new Field("field", "word", Field.Store.YES, Field.Index.ANALYZED);
@@ -63,12 +63,13 @@ public class TestDocBoost extends LuceneTestCase {
     writer.addDocument(d2);
     writer.addDocument(d3);
     writer.addDocument(d4);
-    writer.optimize();
+
+    IndexReader reader = writer.getReader();
     writer.close();
 
     final float[] scores = new float[4];
 
-    new IndexSearcher(store, true).search
+    new IndexSearcher(reader).search
       (new TermQuery(new Term("field", "word")),
        new Collector() {
          private int base = 0;
@@ -97,5 +98,8 @@ public class TestDocBoost extends LuceneTestCase {
       assertTrue(scores[i] > lastScore);
       lastScore = scores[i];
     }
+    
+    reader.close();
+    store.close();
   }
 }

@@ -25,10 +25,12 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
@@ -44,33 +46,36 @@ import org.apache.lucene.util.automaton.RegExp;
  */
 public class TestRegexpRandom2 extends LuceneTestCase {
   private IndexSearcher searcher;
+  private IndexReader reader;
+  private Directory dir;
   private Random random;
   
   @Override
   protected void setUp() throws Exception {
     super.setUp();
     random = newRandom();
-    RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new MockAnalyzer(MockTokenizer.KEYWORD, false),
-        IndexWriter.MaxFieldLength.UNLIMITED);
+    dir = new MockRAMDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new IndexWriterConfig(TEST_VERSION_CURRENT,
+                                                                                        new MockAnalyzer(MockTokenizer.KEYWORD, false)));
     
     Document doc = new Document();
     Field field = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);
     doc.add(field);
-    
+
     for (int i = 0; i < 2000*_TestUtil.getRandomMultiplier(); i++) {
       field.setValue(_TestUtil.randomUnicodeString(random));
       writer.addDocument(doc);
     }
-    
-    writer.optimize();
+    reader = writer.getReader();
+    searcher = new IndexSearcher(reader);
     writer.close();
-    searcher = new IndexSearcher(dir);
   }
 
   @Override
   protected void tearDown() throws Exception {
+    reader.close();
     searcher.close();
+    dir.close();
     super.tearDown();
   }
   

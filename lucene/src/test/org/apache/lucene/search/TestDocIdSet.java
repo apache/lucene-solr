@@ -30,8 +30,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -104,14 +104,16 @@ public class TestDocIdSet extends LuceneTestCase {
     // Tests that if a Filter produces a null DocIdSet, which is given to
     // IndexSearcher, everything works fine. This came up in LUCENE-1754.
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     doc.add(new Field("c", "val", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
     writer.addDocument(doc);
+    IndexReader reader = writer.getReader();
     writer.close();
     
     // First verify the document is searchable.
-    IndexSearcher searcher = new IndexSearcher(dir, true);
+    IndexSearcher searcher = new IndexSearcher(reader);
     Assert.assertEquals(1, searcher.search(new MatchAllDocsQuery(), 10).totalHits);
     
     // Now search w/ a Filter which returns a null DocIdSet
@@ -124,6 +126,8 @@ public class TestDocIdSet extends LuceneTestCase {
     
     Assert.assertEquals(0, searcher.search(new MatchAllDocsQuery(), f, 10).totalHits);
     searcher.close();
+    reader.close();
+    dir.close();
   }
 
 }

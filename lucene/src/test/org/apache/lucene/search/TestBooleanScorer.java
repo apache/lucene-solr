@@ -23,8 +23,9 @@ import java.util.Arrays;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 
@@ -39,37 +40,34 @@ public class TestBooleanScorer extends LuceneTestCase
 
   private static final String FIELD = "category";
   
-  public void testMethod() {
+  public void testMethod() throws Exception {
     RAMDirectory directory = new RAMDirectory();
 
     String[] values = new String[] { "1", "2", "3", "4" };
 
-    try {
-      IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
-      for (int i = 0; i < values.length; i++) {
-        Document doc = new Document();
-        doc.add(new Field(FIELD, values[i], Field.Store.YES, Field.Index.NOT_ANALYZED));
-        writer.addDocument(doc);
-      }
-      writer.close();
-
-      BooleanQuery booleanQuery1 = new BooleanQuery();
-      booleanQuery1.add(new TermQuery(new Term(FIELD, "1")), BooleanClause.Occur.SHOULD);
-      booleanQuery1.add(new TermQuery(new Term(FIELD, "2")), BooleanClause.Occur.SHOULD);
-
-      BooleanQuery query = new BooleanQuery();
-      query.add(booleanQuery1, BooleanClause.Occur.MUST);
-      query.add(new TermQuery(new Term(FIELD, "9")), BooleanClause.Occur.MUST_NOT);
-
-      IndexSearcher indexSearcher = new IndexSearcher(directory, true);
-      ScoreDoc[] hits = indexSearcher.search(query, null, 1000).scoreDocs;
-      assertEquals("Number of matched documents", 2, hits.length);
-
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    for (int i = 0; i < values.length; i++) {
+      Document doc = new Document();
+      doc.add(new Field(FIELD, values[i], Field.Store.YES, Field.Index.NOT_ANALYZED));
+      writer.addDocument(doc);
     }
-    catch (IOException e) {
-      fail(e.getMessage());
-    }
+    IndexReader ir = writer.getReader();
+    writer.close();
 
+    BooleanQuery booleanQuery1 = new BooleanQuery();
+    booleanQuery1.add(new TermQuery(new Term(FIELD, "1")), BooleanClause.Occur.SHOULD);
+    booleanQuery1.add(new TermQuery(new Term(FIELD, "2")), BooleanClause.Occur.SHOULD);
+
+    BooleanQuery query = new BooleanQuery();
+    query.add(booleanQuery1, BooleanClause.Occur.MUST);
+    query.add(new TermQuery(new Term(FIELD, "9")), BooleanClause.Occur.MUST_NOT);
+
+    IndexSearcher indexSearcher = new IndexSearcher(ir);
+    ScoreDoc[] hits = indexSearcher.search(query, null, 1000).scoreDocs;
+    assertEquals("Number of matched documents", 2, hits.length);
+    ir.close();
+    directory.close();
   }
   
   public void testEmptyBucketWithMoreDocs() throws Exception {

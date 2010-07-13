@@ -22,8 +22,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
@@ -40,16 +40,16 @@ public class TestSpanQueryFilter extends LuceneTestCase {
 
   public void testFilterWorks() throws Exception {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < 500; i++) {
       Document document = new Document();
       document.add(new Field("field", English.intToEnglish(i) + " equals " + English.intToEnglish(i),
               Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(document);
     }
+    IndexReader reader = writer.getReader();
     writer.close();
-
-    IndexReader reader = IndexReader.open(dir, true);
 
     SpanTermQuery query = new SpanTermQuery(new Term("field", English.intToEnglish(10).trim()));
     SpanQueryFilter filter = new SpanQueryFilter(query);
@@ -69,6 +69,7 @@ public class TestSpanQueryFilter extends LuceneTestCase {
       assertTrue("info.getPositions() Size: " + info.getPositions().size() + " is not: " + 2, info.getPositions().size() == 2);
     }
     reader.close();
+    dir.close();
   }
   
   int getDocIdSetSize(DocIdSet docIdSet) throws Exception {

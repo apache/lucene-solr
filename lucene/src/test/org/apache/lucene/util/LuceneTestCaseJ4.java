@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.PrintStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.ArrayList;
@@ -330,6 +331,30 @@ public class LuceneTestCaseJ4 {
     return new Random(seed);
   }
 
+  private static Hashtable<Class<?>,Long> staticSeeds = new Hashtable<Class<?>,Long>();
+
+  /**
+   * Returns a {@link Random} instance for generating random numbers from a beforeclass
+   * annotated method.
+   * The random seed is logged during test execution and printed to System.out on any failure
+   * for reproducing the test using {@link #newStaticRandom(Class, long)} with the recorded seed
+   * .
+   */
+  public static Random newStaticRandom(Class<?> clazz) {
+    return newStaticRandom(clazz, seedRnd.nextLong());
+  }
+  
+  /**
+   * Returns a {@link Random} instance for generating random numbers from a beforeclass
+   * annotated method.
+   * If an error occurs in the test that is not reproducible, you can use this method to
+   * initialize the number generator with the seed that was printed out during the failing test.
+   */
+  public static Random newStaticRandom(Class<?> clazz, long seed) {
+    staticSeeds.put(clazz, Long.valueOf(seed));
+    return new Random(seed);
+  }
+
   public String getName() {
     return this.name;
   }
@@ -348,6 +373,11 @@ public class LuceneTestCaseJ4 {
 
   // We get here from InterceptTestCaseEvents on the 'failed' event....
   public void reportAdditionalFailureInfo() {
+    Long staticSeed = staticSeeds.get(getClass());
+    if (staticSeed != null) {
+      System.out.println("NOTE: random static seed of testclass '" + getName() + "' was: " + staticSeed);
+    }
+    
     if (seed != null) {
       System.out.println("NOTE: random seed of testcase '" + getName() + "' was: " + seed);
     }
