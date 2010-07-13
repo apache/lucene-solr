@@ -40,7 +40,12 @@ public final class MultiDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
   MultiDocsAndPositionsEnum reset(final EnumWithSlice[] subs, final int numSubs) throws IOException {
     this.numSubs = numSubs;
-    this.subs = subs;
+    this.subs = new EnumWithSlice[subs.length];
+    for(int i=0;i<subs.length;i++) {
+      this.subs[i] = new EnumWithSlice();
+      this.subs[i].docsAndPositionsEnum = subs[i].docsAndPositionsEnum;
+      this.subs[i].slice = subs[i].slice;
+    }
     upto = -1;
     current = null;
     return this;

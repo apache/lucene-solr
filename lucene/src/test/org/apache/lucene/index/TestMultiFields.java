@@ -115,4 +115,23 @@ public class TestMultiFields extends LuceneTestCase {
     }
     assertEquals(docs.NO_MORE_DOCS, docs.nextDoc());
   }
+
+  public void testSeparateEnums() throws Exception {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Document d = new Document();
+    d.add(new Field("f", "j", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    w.addDocument(d);
+    w.commit();
+    w.addDocument(d);
+    IndexReader r = w.getReader();
+    w.close();
+    DocsEnum d1 = MultiFields.getTermDocsEnum(r, null, "f", new BytesRef("j"));
+    DocsEnum d2 = MultiFields.getTermDocsEnum(r, null, "f", new BytesRef("j"));
+    assertEquals(0, d1.nextDoc());
+    assertEquals(0, d2.nextDoc());
+    r.close();
+    dir.close();
+  }
+    
 }

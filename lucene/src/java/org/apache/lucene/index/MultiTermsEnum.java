@@ -272,9 +272,9 @@ public final class MultiTermsEnum extends TermsEnum {
         b = null;
       }
 
-      final DocsEnum subDocsEnum = entry.terms.docs(b, entry.reuseDocs);
+      final DocsEnum subDocsEnum = entry.terms.docs(b, null);
       if (subDocsEnum != null) {
-        entry.reuseDocs = subDocs[upto].docsEnum = subDocsEnum;
+        subDocs[upto].docsEnum = subDocsEnum;
         subDocs[upto].slice = entry.subSlice;
 
         upto++;
@@ -334,14 +334,14 @@ public final class MultiTermsEnum extends TermsEnum {
         b = null;
       }
 
-      final DocsAndPositionsEnum subPostings = entry.terms.docsAndPositions(b, entry.reusePostings);
+      final DocsAndPositionsEnum subPostings = entry.terms.docsAndPositions(b, null);
 
       if (subPostings != null) {
-        entry.reusePostings = subDocsAndPositions[upto].docsAndPositionsEnum = subPostings;
+        subDocsAndPositions[upto].docsAndPositionsEnum = subPostings;
         subDocsAndPositions[upto].slice = entry.subSlice;
         upto++;
       } else {
-        if (entry.terms.docs(b, entry.reuseDocs) != null) {
+        if (entry.terms.docs(b, null) != null) {
           // At least one of our subs does not store
           // positions -- we can't correctly produce a
           // MultiDocsAndPositions enum
@@ -360,8 +360,6 @@ public final class MultiTermsEnum extends TermsEnum {
   private final static class TermsEnumWithSlice {
     private final ReaderUtil.Slice subSlice;
     private TermsEnum terms;
-    private DocsEnum reuseDocs;
-    private DocsAndPositionsEnum reusePostings;
     public BytesRef current;
 
     public TermsEnumWithSlice(ReaderUtil.Slice subSlice) {
@@ -372,9 +370,6 @@ public final class MultiTermsEnum extends TermsEnum {
     public void reset(TermsEnum terms, BytesRef term) {
       this.terms = terms;
       current = term;
-      // TODO: can we not null these?
-      reuseDocs = null;
-      reusePostings = null;
     }
   }
 

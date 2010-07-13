@@ -411,6 +411,10 @@ Bug fixes
   primary & secondary dirs share the same underlying directory.
   (Michael McCandless)
 
+* LUCENE-2534: fix over-sharing bug in
+  MultiTermsEnum.docs/AndPositionsEnum.  (Robert Muir, Mike
+  McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
