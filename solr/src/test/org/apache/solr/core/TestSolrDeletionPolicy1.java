@@ -17,26 +17,31 @@
 package org.apache.solr.core;
 
 import org.apache.lucene.index.IndexCommit;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 import java.util.Map;
 
 /**
  * @version $Id$
  */
-public class TestSolrDeletionPolicy1 extends AbstractSolrTestCase {
+public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
 
-  @Override
-  public String getSchemaFile() {
-    return "schema.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-delpolicy1.xml","schema.xml");
   }
 
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig-delpolicy1.xml";
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    clearIndex();
   }
-
+  
   private void addDocs() {
 
     assertU(adoc("id", String.valueOf(1),
@@ -110,7 +115,7 @@ public class TestSolrDeletionPolicy1 extends AbstractSolrTestCase {
     Map<Long, IndexCommit> commits = delPolicy.getCommits();
     IndexCommit ic = delPolicy.getLatestCommit();
     String agestr = ((SolrDeletionPolicy) (delPolicy.getWrappedDeletionPolicy())).getMaxCommitAge().replaceAll("[a-zA-Z]", "").replaceAll("-", "");
-    long age = Long.parseLong(agestr) * 1000;
+    long age = Long.parseLong(agestr);
     Thread.sleep(age);
 
     assertU(adoc("id", String.valueOf(6),
