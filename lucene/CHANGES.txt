@@ -728,6 +728,9 @@ Bug fixes
   files when a mergedSegmentWarmer is set on IndexWriter.  (Mike
   McCandless)
 
+* LUCENE-2130: Fix performance issue when FuzzyQuery runs on a
+  multi-segment index (Michael McCandless)
+
 API Changes
 
 * LUCENE-2281: added doBeforeFlush to IndexWriter to allow extensions to perform

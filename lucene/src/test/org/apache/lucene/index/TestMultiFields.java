@@ -88,14 +88,13 @@ public class TestMultiFields extends LuceneTestCase {
         BytesRef term = terms.get(r.nextInt(terms.size()));
         
         DocsEnum docsEnum = terms2.docs(delDocs, term, null);
-        int count = 0;
+        assertNotNull(docsEnum);
+
         for(int docID : docs.get(term)) {
           if (!deleted.contains(docID)) {
             assertEquals(docID, docsEnum.nextDoc());
-            count++;
           }
         }
-        //System.out.println("c=" + count + " t=" + term);
         assertEquals(docsEnum.NO_MORE_DOCS, docsEnum.nextDoc());
       }
 
@@ -104,6 +103,7 @@ public class TestMultiFields extends LuceneTestCase {
     }
   }
 
+  /*
   private void verify(IndexReader r, String term, List<Integer> expected) throws Exception {
     DocsEnum docs = MultiFields.getTermDocsEnum(r,
                                                 MultiFields.getDeletedDocs(r),
@@ -115,6 +115,7 @@ public class TestMultiFields extends LuceneTestCase {
     }
     assertEquals(docs.NO_MORE_DOCS, docs.nextDoc());
   }
+  */
 
   public void testSeparateEnums() throws Exception {
     Directory dir = new MockRAMDirectory();
@@ -133,5 +134,4 @@ public class TestMultiFields extends LuceneTestCase {
     r.close();
     dir.close();
   }
-    
 }
