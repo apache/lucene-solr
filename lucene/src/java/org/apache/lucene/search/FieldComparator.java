@@ -31,6 +31,7 @@ import org.apache.lucene.search.FieldCache.ShortParser;
 import org.apache.lucene.search.FieldCache.DocTermsIndex;
 import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.packed.PackedInts;
 
 /**
  * Expert: a FieldComparator compares hits so as to determine their
@@ -709,23 +710,21 @@ public abstract class FieldComparator {
     private final BytesRef[] values;
     private final int[] readerGen;
 
+    private PackedInts.Reader currentDocToOrd;
     private int currentReaderGen = -1;
     private DocTermsIndex termsIndex;
     private final String field;
 
     private int bottomSlot = -1;
     private int bottomOrd;
+    private boolean bottomSameReader;
     private BytesRef bottomValue;
-    private final boolean reversed;
-    private final int sortPos;
     private final BytesRef tempBR = new BytesRef();
 
     public TermOrdValComparator(int numHits, String field, int sortPos, boolean reversed) {
       ords = new int[numHits];
       values = new BytesRef[numHits];
       readerGen = new int[numHits];
-      this.sortPos = sortPos;
-      this.reversed = reversed;
       this.field = field;
     }
 
@@ -754,59 +753,38 @@ public abstract class FieldComparator {
     @Override
     public int compareBottom(int doc) {
       assert bottomSlot != -1;
-      int order = termsIndex.getOrd(doc);
-      final int cmp = bottomOrd - order;
-      if (cmp != 0) {
-        return cmp;
-      }
-
-      if (bottomValue == null) {
-        if (order == 0) {
-          // unset
-          return 0;
-        }
-        // bottom wins
-        return -1;
-      } else if (order == 0) {
-        // doc wins
-        return 1;
-      }
-      termsIndex.lookup(order, tempBR);
-      return bottomValue.compareTo(tempBR);
-    }
-
-    private void convert(int slot) {
-      readerGen[slot] = currentReaderGen;
-      int index = 0;
-      BytesRef value = values[slot];
-      if (value == null) {
-        // 0 ord is null for all segments
-        assert ords[slot] == 0;
-        return;
-      }
-
-      if (sortPos == 0 && bottomSlot != -1 && bottomSlot != slot) {
-        // Since we are the primary sort, the entries in the
-        // queue are bounded by bottomOrd:
-        if (reversed) {
-          index = binarySearch(tempBR, termsIndex, value, bottomOrd, termsIndex.numOrd()-1);
-        } else {
-          index = binarySearch(tempBR, termsIndex, value, 0, bottomOrd);
-        }
+      if (bottomSameReader) {
+        // ord is precisely comparable, even in the equal case
+        return bottomOrd - (int) currentDocToOrd.get(doc);
       } else {
-        // Full binary search
-        index = binarySearch(tempBR, termsIndex, value);
-      }
+        // ord is only approx comparable: if they are not
+        // equal, we can use that; if they are equal, we
+        // must fallback to compare by value
+        final int order = (int) currentDocToOrd.get(doc);
+        final int cmp = bottomOrd - order;
+        if (cmp != 0) {
+          return cmp;
+        }
 
-      if (index < 0) {
-        index = -index - 2;
+        if (bottomValue == null) {
+          if (order == 0) {
+            // unset
+            return 0;
+          }
+          // bottom wins
+          return -1;
+        } else if (order == 0) {
+          // doc wins
+          return 1;
+        }
+        termsIndex.lookup(order, tempBR);
+        return bottomValue.compareTo(tempBR);
       }
-      ords[slot] = index;
     }
 
     @Override
     public void copy(int slot, int doc) {
-      final int ord = termsIndex.getOrd(doc);
+      final int ord = (int) currentDocToOrd.get(doc);
       if (ord == 0) {
         values[slot] = null;
       } else {
@@ -823,21 +801,34 @@ public abstract class FieldComparator {
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       termsIndex = FieldCache.DEFAULT.getTermsIndex(reader, field);
+      currentDocToOrd = termsIndex.getDocToOrd();
       currentReaderGen++;
       if (bottomSlot != -1) {
-        convert(bottomSlot);
-        bottomOrd = ords[bottomSlot];
+        setBottom(bottomSlot);
       }
     }
     
     @Override
     public void setBottom(final int bottom) {
       bottomSlot = bottom;
-      if (readerGen[bottom] != currentReaderGen) {
-        convert(bottomSlot);
+
+      bottomValue = values[bottomSlot];
+      if (bottomValue == null) {
+        // 0 ord is null for all segments
+        assert ords[bottomSlot] == 0;
+        bottomOrd = 0;
+        bottomSameReader = true;
+      } else {
+        final int index = binarySearch(tempBR, termsIndex, bottomValue);
+        if (index < 0) {
+          bottomOrd = -index - 2;
+          bottomSameReader = false;
+        } else {
+          bottomOrd = index;
+          // exact value match
+          bottomSameReader = true;
+        }
       }
-      bottomOrd = ords[bottom];
-      bottomValue = values[bottom];
     }
 
     @Override

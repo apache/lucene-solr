@@ -197,6 +197,10 @@ Optimizations
 
 * LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.
   (Mike McCandless)
+
+* LUCENE-2531: Fix issue when sorting by a String field that was
+  causing too many fallbacks to compare-by-value (instead of by-ord).
+  (Mike McCandless)
   
 ======================= Lucene 3.x (not yet released) =======================
 
