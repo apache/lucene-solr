@@ -213,6 +213,10 @@ Bug fixes
   primary & secondary dirs share the same underlying directory.
   (Michael McCandless)
 
+* LUCENE-2536: IndexWriter.rollback was failing to properly rollback
+  buffered deletions against segments that were flushed (Mark Harwood
+  via Mike McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
