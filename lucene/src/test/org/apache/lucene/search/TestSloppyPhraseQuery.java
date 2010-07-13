@@ -17,12 +17,16 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.util.Random;
+
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -45,6 +49,13 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
   private static final PhraseQuery QUERY_2 = makePhraseQuery( S_2 );
   private static final PhraseQuery QUERY_4 = makePhraseQuery( "X A A");
 
+  private Random random;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    random = newRandom();
+  }
 
   /**
    * Test DOC_4 and QUERY_4.
@@ -116,18 +127,21 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     query.setSlop(slop);
 
     RAMDirectory ramDir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    RandomIndexWriter writer = new RandomIndexWriter(random, ramDir, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     writer.addDocument(doc);
-    writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(ramDir, true);
+    IndexReader reader = writer.getReader();
+
+    IndexSearcher searcher = new IndexSearcher(reader);
     TopDocs td = searcher.search(query,null,10);
     //System.out.println("slop: "+slop+"  query: "+query+"  doc: "+doc+"  Expecting number of hits: "+expectedNumResults+" maxScore="+td.getMaxScore());
     assertEquals("slop: "+slop+"  query: "+query+"  doc: "+doc+"  Wrong number of hits", expectedNumResults, td.totalHits);
 
     //QueryUtils.check(query,searcher);
-
+    writer.close();
     searcher.close();
+    reader.close();
     ramDir.close();
 
     return td.getMaxScore();

@@ -30,11 +30,16 @@ import org.apache.lucene.util.English;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.SortedSet;
 
 public class TestTermVectors extends LuceneTestCase {
   private IndexSearcher searcher;
+  private IndexReader reader;
   private Directory directory = new MockRAMDirectory();
+
+  private Random random;
+
   public TestTermVectors(String s) {
     super(s);
   }
@@ -42,9 +47,9 @@ public class TestTermVectors extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {                  
     super.setUp();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(
-        TEST_VERSION_CURRENT)));
+    random = newRandom();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
     //writer.setUseCompoundFile(true);
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
@@ -68,8 +73,17 @@ public class TestTermVectors extends LuceneTestCase {
           Field.Store.YES, Field.Index.ANALYZED, termVector));
       writer.addDocument(doc);
     }
+    reader = writer.getReader();
     writer.close();
-    searcher = new IndexSearcher(directory, true);
+    searcher = new IndexSearcher(reader);
+  }
+  
+  @Override
+  protected void tearDown() throws Exception {
+    searcher.close();
+    reader.close();
+    directory.close();
+    super.tearDown();
   }
 
   public void test() {
@@ -95,17 +109,16 @@ public class TestTermVectors extends LuceneTestCase {
   
   public void testTermVectorsFieldOrder() throws IOException {
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(
-        TEST_VERSION_CURRENT)));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
     doc.add(new Field("c", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("a", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("b", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("x", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     writer.addDocument(doc);
+    IndexReader reader = writer.getReader();
     writer.close();
-    IndexReader reader = IndexReader.open(dir, true);
     TermFreqVector[] v = reader.getTermFreqVectors(0);
     assertEquals(4, v.length);
     String[] expectedFields = new String[]{"a", "b", "c", "x"};
@@ -124,65 +137,63 @@ public class TestTermVectors extends LuceneTestCase {
         assertEquals(expectedPositions[j], positions[0]);
       }
     }
+    reader.close();
+    dir.close();
   }
 
-  public void testTermPositionVectors() {
+  public void testTermPositionVectors() throws IOException {
     Query query = new TermQuery(new Term("field", "zero"));
-    try {
-      ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
-      assertEquals(1, hits.length);
+    ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
+    assertEquals(1, hits.length);
+    
+    for (int i = 0; i < hits.length; i++)
+    {
+      TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits[i].doc);
+      assertTrue(vector != null);
+      assertTrue(vector.length == 1);
       
-      for (int i = 0; i < hits.length; i++)
-      {
-        TermFreqVector [] vector = searcher.reader.getTermFreqVectors(hits[i].doc);
-        assertTrue(vector != null);
-        assertTrue(vector.length == 1);
+      boolean shouldBePosVector = (hits[i].doc % 2 == 0) ? true : false;
+      assertTrue((shouldBePosVector == false) || (shouldBePosVector == true && (vector[0] instanceof TermPositionVector == true)));
+      
+      boolean shouldBeOffVector = (hits[i].doc % 3 == 0) ? true : false;
+      assertTrue((shouldBeOffVector == false) || (shouldBeOffVector == true && (vector[0] instanceof TermPositionVector == true)));
+      
+      if(shouldBePosVector || shouldBeOffVector){
+        TermPositionVector posVec = (TermPositionVector)vector[0];
+        String [] terms = posVec.getTerms();
+        assertTrue(terms != null && terms.length > 0);
         
-        boolean shouldBePosVector = (hits[i].doc % 2 == 0) ? true : false;
-        assertTrue((shouldBePosVector == false) || (shouldBePosVector == true && (vector[0] instanceof TermPositionVector == true)));
-       
-        boolean shouldBeOffVector = (hits[i].doc % 3 == 0) ? true : false;
-        assertTrue((shouldBeOffVector == false) || (shouldBeOffVector == true && (vector[0] instanceof TermPositionVector == true)));
-        
-        if(shouldBePosVector || shouldBeOffVector){
-          TermPositionVector posVec = (TermPositionVector)vector[0];
-          String [] terms = posVec.getTerms();
-          assertTrue(terms != null && terms.length > 0);
+        for (int j = 0; j < terms.length; j++) {
+          int [] positions = posVec.getTermPositions(j);
+          TermVectorOffsetInfo [] offsets = posVec.getOffsets(j);
           
-          for (int j = 0; j < terms.length; j++) {
-            int [] positions = posVec.getTermPositions(j);
-            TermVectorOffsetInfo [] offsets = posVec.getOffsets(j);
-            
-            if(shouldBePosVector){
-              assertTrue(positions != null);
-              assertTrue(positions.length > 0);
-            }
-            else
-              assertTrue(positions == null);
-            
-            if(shouldBeOffVector){
-              assertTrue(offsets != null);
-              assertTrue(offsets.length > 0);
-            }
-            else
-              assertTrue(offsets == null);
+          if(shouldBePosVector){
+            assertTrue(positions != null);
+            assertTrue(positions.length > 0);
           }
-        }
-        else{
-          try{
-            assertTrue(false);
-          }
-          catch(ClassCastException ignore){
-            TermFreqVector freqVec = vector[0];
-            String [] terms = freqVec.getTerms();
-            assertTrue(terms != null && terms.length > 0);
-          }
+          else
+            assertTrue(positions == null);
           
+          if(shouldBeOffVector){
+            assertTrue(offsets != null);
+            assertTrue(offsets.length > 0);
+          }
+          else
+            assertTrue(offsets == null);
         }
-       
       }
-    } catch (IOException e) {
-      assertTrue(false);
+      else{
+        try{
+          assertTrue(false);
+        }
+        catch(ClassCastException ignore){
+          TermFreqVector freqVec = vector[0];
+          String [] terms = freqVec.getTerms();
+          assertTrue(terms != null && terms.length > 0);
+        }
+        
+      }
+      
     }
   }
   
@@ -205,7 +216,7 @@ public class TestTermVectors extends LuceneTestCase {
     }
   }
 
-  public void testKnownSetOfDocuments() {
+  public void testKnownSetOfDocuments() throws IOException {
     String test1 = "eating chocolate in a computer lab"; //6 terms
     String test2 = "computer in a computer lab"; //5 terms
     String test3 = "a chocolate lab grows old"; //5 terms
@@ -231,114 +242,112 @@ public class TestTermVectors extends LuceneTestCase {
     setupDoc(testDoc3, test3);
     Document testDoc4 = new Document();
     setupDoc(testDoc4, test4);
-        
+    
     Directory dir = new MockRAMDirectory();
     
-    try {
-      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-          TEST_VERSION_CURRENT, 
-          new SimpleAnalyzer(TEST_VERSION_CURRENT))
-          .setOpenMode(OpenMode.CREATE));
-      writer.addDocument(testDoc1);
-      writer.addDocument(testDoc2);
-      writer.addDocument(testDoc3);
-      writer.addDocument(testDoc4);
-      writer.close();
-      IndexSearcher knownSearcher = new IndexSearcher(dir, true);
-      TermEnum termEnum = knownSearcher.reader.terms();
-      TermDocs termDocs = knownSearcher.reader.termDocs();
-      //System.out.println("Terms: " + termEnum.size() + " Orig Len: " + termArray.length);
-      
-      //Similarity sim = knownSearcher.getSimilarity();
-      while (termEnum.next() == true)
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new IndexWriterConfig(
+        TEST_VERSION_CURRENT, 
+        new SimpleAnalyzer(TEST_VERSION_CURRENT))
+    .setOpenMode(OpenMode.CREATE));
+    writer.addDocument(testDoc1);
+    writer.addDocument(testDoc2);
+    writer.addDocument(testDoc3);
+    writer.addDocument(testDoc4);
+    IndexReader reader = writer.getReader();
+    writer.close();
+    IndexSearcher knownSearcher = new IndexSearcher(reader);
+    TermEnum termEnum = knownSearcher.reader.terms();
+    TermDocs termDocs = knownSearcher.reader.termDocs();
+    //System.out.println("Terms: " + termEnum.size() + " Orig Len: " + termArray.length);
+    
+    //Similarity sim = knownSearcher.getSimilarity();
+    while (termEnum.next() == true)
+    {
+      Term term = termEnum.term();
+      //System.out.println("Term: " + term);
+      termDocs.seek(term);
+      while (termDocs.next())
       {
-        Term term = termEnum.term();
-        //System.out.println("Term: " + term);
-        termDocs.seek(term);
-        while (termDocs.next())
+        int docId = termDocs.doc();
+        int freq = termDocs.freq();
+        //System.out.println("Doc Id: " + docId + " freq " + freq);
+        TermFreqVector vector = knownSearcher.reader.getTermFreqVector(docId, "field");
+        //float tf = sim.tf(freq);
+        //float idf = sim.idf(knownSearcher.docFreq(term), knownSearcher.maxDoc());
+        //float qNorm = sim.queryNorm()
+        //This is fine since we don't have stop words
+        //float lNorm = sim.lengthNorm("field", vector.getTerms().length);
+        //float coord = sim.coord()
+        //System.out.println("TF: " + tf + " IDF: " + idf + " LenNorm: " + lNorm);
+        assertTrue(vector != null);
+        String[] vTerms = vector.getTerms();
+        int [] freqs = vector.getTermFrequencies();
+        for (int i = 0; i < vTerms.length; i++)
         {
-          int docId = termDocs.doc();
-          int freq = termDocs.freq();
-          //System.out.println("Doc Id: " + docId + " freq " + freq);
-          TermFreqVector vector = knownSearcher.reader.getTermFreqVector(docId, "field");
-          //float tf = sim.tf(freq);
-          //float idf = sim.idf(knownSearcher.docFreq(term), knownSearcher.maxDoc());
-          //float qNorm = sim.queryNorm()
-          //This is fine since we don't have stop words
-          //float lNorm = sim.lengthNorm("field", vector.getTerms().length);
-          //float coord = sim.coord()
-          //System.out.println("TF: " + tf + " IDF: " + idf + " LenNorm: " + lNorm);
-          assertTrue(vector != null);
-          String[] vTerms = vector.getTerms();
-          int [] freqs = vector.getTermFrequencies();
-          for (int i = 0; i < vTerms.length; i++)
+          if (term.text().equals(vTerms[i]))
           {
-            if (term.text().equals(vTerms[i]))
-            {
-              assertTrue(freqs[i] == freq);
-            }
+            assertTrue(freqs[i] == freq);
           }
-          
         }
-        //System.out.println("--------");
+        
       }
-      Query query = new TermQuery(new Term("field", "chocolate"));
-      ScoreDoc[] hits = knownSearcher.search(query, null, 1000).scoreDocs;
-      //doc 3 should be the first hit b/c it is the shortest match
-      assertTrue(hits.length == 3);
-      /*System.out.println("Hit 0: " + hits.id(0) + " Score: " + hits.score(0) + " String: " + hits.doc(0).toString());
+      //System.out.println("--------");
+    }
+    Query query = new TermQuery(new Term("field", "chocolate"));
+    ScoreDoc[] hits = knownSearcher.search(query, null, 1000).scoreDocs;
+    //doc 3 should be the first hit b/c it is the shortest match
+    assertTrue(hits.length == 3);
+    /*System.out.println("Hit 0: " + hits.id(0) + " Score: " + hits.score(0) + " String: " + hits.doc(0).toString());
       System.out.println("Explain: " + knownSearcher.explain(query, hits.id(0)));
       System.out.println("Hit 1: " + hits.id(1) + " Score: " + hits.score(1) + " String: " + hits.doc(1).toString());
       System.out.println("Explain: " + knownSearcher.explain(query, hits.id(1)));
       System.out.println("Hit 2: " + hits.id(2) + " Score: " + hits.score(2) + " String: " +  hits.doc(2).toString());
       System.out.println("Explain: " + knownSearcher.explain(query, hits.id(2)));*/
-      assertTrue(hits[0].doc == 2);
-      assertTrue(hits[1].doc == 3);
-      assertTrue(hits[2].doc == 0);
-      TermFreqVector vector = knownSearcher.reader.getTermFreqVector(hits[1].doc, "field");
-      assertTrue(vector != null);
-      //System.out.println("Vector: " + vector);
-      String[] terms = vector.getTerms();
-      int [] freqs = vector.getTermFrequencies();
-      assertTrue(terms != null && terms.length == 10);
-      for (int i = 0; i < terms.length; i++) {
-        String term = terms[i];
-        //System.out.println("Term: " + term);
-        int freq = freqs[i];
-        assertTrue(test4.indexOf(term) != -1);
-        Integer freqInt = test4Map.get(term);
-        assertTrue(freqInt != null);
-        assertTrue(freqInt.intValue() == freq);        
-      }
-      SortedTermVectorMapper mapper = new SortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
-      knownSearcher.reader.getTermFreqVector(hits[1].doc, mapper);
-      SortedSet<TermVectorEntry> vectorEntrySet = mapper.getTermVectorEntrySet();
-      assertTrue("mapper.getTermVectorEntrySet() Size: " + vectorEntrySet.size() + " is not: " + 10, vectorEntrySet.size() == 10);
-      TermVectorEntry last = null;
-      for (final TermVectorEntry tve : vectorEntrySet) {
-        if (tve != null && last != null)
-        {
-          assertTrue("terms are not properly sorted", last.getFrequency() >= tve.getFrequency());
-          Integer expectedFreq =  test4Map.get(tve.getTerm());
-          //we expect double the expectedFreq, since there are two fields with the exact same text and we are collapsing all fields
-          assertTrue("Frequency is not correct:", tve.getFrequency() == 2*expectedFreq.intValue());
-        }
-        last = tve;
-
-      }
-
-      FieldSortedTermVectorMapper fieldMapper = new FieldSortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
-      knownSearcher.reader.getTermFreqVector(hits[1].doc, fieldMapper);
-      Map<String,SortedSet<TermVectorEntry>> map = fieldMapper.getFieldToTerms();
-      assertTrue("map Size: " + map.size() + " is not: " + 2, map.size() == 2);
-      vectorEntrySet = map.get("field");
-      assertTrue("vectorEntrySet is null and it shouldn't be", vectorEntrySet != null);
-      assertTrue("vectorEntrySet Size: " + vectorEntrySet.size() + " is not: " + 10, vectorEntrySet.size() == 10);
-      knownSearcher.close();
-    } catch (IOException e) {
-      e.printStackTrace();
-      assertTrue(false);
+    assertTrue(hits[0].doc == 2);
+    assertTrue(hits[1].doc == 3);
+    assertTrue(hits[2].doc == 0);
+    TermFreqVector vector = knownSearcher.reader.getTermFreqVector(hits[1].doc, "field");
+    assertTrue(vector != null);
+    //System.out.println("Vector: " + vector);
+    String[] terms = vector.getTerms();
+    int [] freqs = vector.getTermFrequencies();
+    assertTrue(terms != null && terms.length == 10);
+    for (int i = 0; i < terms.length; i++) {
+      String term = terms[i];
+      //System.out.println("Term: " + term);
+      int freq = freqs[i];
+      assertTrue(test4.indexOf(term) != -1);
+      Integer freqInt = test4Map.get(term);
+      assertTrue(freqInt != null);
+      assertTrue(freqInt.intValue() == freq);        
     }
+    SortedTermVectorMapper mapper = new SortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
+    knownSearcher.reader.getTermFreqVector(hits[1].doc, mapper);
+    SortedSet<TermVectorEntry> vectorEntrySet = mapper.getTermVectorEntrySet();
+    assertTrue("mapper.getTermVectorEntrySet() Size: " + vectorEntrySet.size() + " is not: " + 10, vectorEntrySet.size() == 10);
+    TermVectorEntry last = null;
+    for (final TermVectorEntry tve : vectorEntrySet) {
+      if (tve != null && last != null)
+      {
+        assertTrue("terms are not properly sorted", last.getFrequency() >= tve.getFrequency());
+        Integer expectedFreq =  test4Map.get(tve.getTerm());
+        //we expect double the expectedFreq, since there are two fields with the exact same text and we are collapsing all fields
+        assertTrue("Frequency is not correct:", tve.getFrequency() == 2*expectedFreq.intValue());
+      }
+      last = tve;
+      
+    }
+    
+    FieldSortedTermVectorMapper fieldMapper = new FieldSortedTermVectorMapper(new TermVectorEntryFreqSortedComparator());
+    knownSearcher.reader.getTermFreqVector(hits[1].doc, fieldMapper);
+    Map<String,SortedSet<TermVectorEntry>> map = fieldMapper.getFieldToTerms();
+    assertTrue("map Size: " + map.size() + " is not: " + 2, map.size() == 2);
+    vectorEntrySet = map.get("field");
+    assertTrue("vectorEntrySet is null and it shouldn't be", vectorEntrySet != null);
+    assertTrue("vectorEntrySet Size: " + vectorEntrySet.size() + " is not: " + 10, vectorEntrySet.size() == 10);
+    knownSearcher.close();
+    reader.close();
+    dir.close();
   } 
   
   private void setupDoc(Document doc, String text)
@@ -352,8 +361,8 @@ public class TestTermVectors extends LuceneTestCase {
 
   // Test only a few docs having vectors
   public void testRareVectors() throws IOException {
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
         .setOpenMode(OpenMode.CREATE));
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
@@ -368,8 +377,9 @@ public class TestTermVectors extends LuceneTestCase {
       writer.addDocument(doc);
     }
 
+    IndexReader reader = writer.getReader();
     writer.close();
-    searcher = new IndexSearcher(directory, true);
+    searcher = new IndexSearcher(reader);
 
     Query query = new TermQuery(new Term("field", "hundred"));
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -379,14 +389,15 @@ public class TestTermVectors extends LuceneTestCase {
       assertTrue(vector != null);
       assertTrue(vector.length == 1);
     }
+    reader.close();
   }
 
 
   // In a single doc, for the same field, mix the term
   // vectors up
   public void testMixedVectrosVectors() throws IOException {
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, 
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, 
         new SimpleAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
     doc.add(new Field("field", "one",
@@ -400,9 +411,10 @@ public class TestTermVectors extends LuceneTestCase {
     doc.add(new Field("field", "one",
                       Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     writer.addDocument(doc);
+    IndexReader reader = writer.getReader();
     writer.close();
 
-    searcher = new IndexSearcher(directory, true);
+    searcher = new IndexSearcher(reader);
 
     Query query = new TermQuery(new Term("field", "one"));
     ScoreDoc[] hits = searcher.search(query, null, 1000).scoreDocs;
@@ -428,5 +440,6 @@ public class TestTermVectors extends LuceneTestCase {
       assertEquals(4*i, offsets[i].getStartOffset());
       assertEquals(4*i+3, offsets[i].getEndOffset());
     }
+    reader.close();
   }
 }

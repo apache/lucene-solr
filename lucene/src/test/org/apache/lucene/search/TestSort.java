@@ -36,6 +36,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -68,6 +69,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   private Query queryG;
   private Sort sort;
 
+  private Random random = newRandom();
 
   public TestSort (String name) {
     super (name);
@@ -107,10 +109,9 @@ public class TestSort extends LuceneTestCase implements Serializable {
   private Searcher getIndex (boolean even, boolean odd)
   throws IOException {
     RAMDirectory indexStore = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(
-        TEST_VERSION_CURRENT)).setMaxBufferedDocs(2));
-    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(1000);
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+
     for (int i=0; i<data.length; ++i) {
       if (((i%2)==0 && even) || ((i%2)==1 && odd)) {
         Document doc = new Document();
@@ -130,9 +131,9 @@ public class TestSort extends LuceneTestCase implements Serializable {
         writer.addDocument (doc);
       }
     }
-    //writer.optimize ();
+    IndexReader reader = writer.getReader();
     writer.close ();
-    IndexSearcher s = new IndexSearcher (indexStore, true);
+    IndexSearcher s = new IndexSearcher (reader);
     s.setDefaultFieldSortScoring(true, true);
     return s;
   }
