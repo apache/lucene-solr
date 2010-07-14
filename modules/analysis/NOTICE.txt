@@ -17,30 +17,29 @@ were developed by Martin Porter and Richard Boulton.
 The full snowball package is available from
   http://snowball.tartarus.org/
 
-The Arabic stemmer (common) comes with a default
-stopword list that is BSD-licensed created by Jacques Savoy.  The file resides in 
-common/src/resources/org/apache/lucene/analysis/ar/stopwords.txt.
+The Arabic,Persian,Romanian,Bulgarian, and Hindi analyzers (common) come with a default
+stopword list that is BSD-licensed created by Jacques Savoy.  These files reside in:
+common/src/resources/org/apache/lucene/analysis/ar/stopwords.txt,
+common/src/resources/org/apache/lucene/analysis/fa/stopwords.txt,
+common/src/resources/org/apache/lucene/analysis/ro/stopwords.txt,
+common/src/resources/org/apache/lucene/analysis/bg/stopwords.txt,
+common/src/resources/org/apache/lucene/analysis/hi/stopwords.txt
 See http://members.unine.ch/jacques.savoy/clef/index.html.
 
-The Persian analyzer (common) comes with a default
-stopword list that is BSD-licensed created by Jacques Savoy.  The file resides in
-common/src/resources/org/apache/lucene/analysis/fa/stopwords.txt.
-See http://members.unine.ch/jacques.savoy/clef/index.html.
-
-The Romanian analyzer (common) comes with a default
-stopword list that is BSD-licensed created by Jacques Savoy.  The file resides in
-common/src/resources/org/apache/lucene/analysis/ro/stopwords.txt.
-See http://members.unine.ch/jacques.savoy/clef/index.html.
-
-The Bulgarian analyzer (common) comes with a default
-stopword list that is BSD-licensed created by Jacques Savoy.  The file resides in
-common/src/resources/org/apache/lucene/analysis/bg/stopwords.txt.
-See http://members.unine.ch/jacques.savoy/clef/index.html.
-
-The Hindi analyzer (common) comes with a default
-stopword list that is BSD-licensed created by Jacques Savoy.  The file resides in
-common/src/resources/org/apache/lucene/analysis/hi/stopwords.txt.
-See http://members.unine.ch/jacques.savoy/clef/index.html.
+The German,Spanish,Finnish,French,Hungarian,Italian,Portuguese,Russian and Swedish light stemmers
+(common) are based on BSD-licensed reference implementations created by Jacques Savoy and
+Ljiljana Dolamic. These files reside in:
+common/src/java/org/apache/lucene/analysis/de/GermanLightStemmer.java
+common/src/java/org/apache/lucene/analysis/de/GermanMinimalStemmer.java
+common/src/java/org/apache/lucene/analysis/es/SpanishLightStemmer.java
+common/src/java/org/apache/lucene/analysis/fi/FinnishLightStemmer.java
+common/src/java/org/apache/lucene/analysis/fr/FrenchLightStemmer.java
+common/src/java/org/apache/lucene/analysis/fr/FrenchMinimalStemmer.java
+common/src/java/org/apache/lucene/analysis/hu/HungarianLightStemmer.java
+common/src/java/org/apache/lucene/analysis/it/ItalianLightStemmer.java
+common/src/java/org/apache/lucene/analysis/pt/PortugueseLightStemmer.java
+common/src/java/org/apache/lucene/analysis/ru/RussianLightStemmer.java
+common/src/java/org/apache/lucene/analysis/sv/SwedishLightStemmer.java
 
 The Stempel analyzer (stempel) includes BSD-licensed software developed 
 by the Egothor project http://egothor.sf.net/, created by Leo Galambos, Martin Kvapil,

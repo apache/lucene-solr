@@ -17,20 +17,21 @@ package org.apache.lucene.analysis.en;
  * limitations under the License.
  */
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.io.Reader;
 import java.io.StringReader;
-import java.util.zip.ZipFile;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.miscellaneous.KeywordMarkerFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
+import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+
+import static org.apache.lucene.analysis.util.VocabularyAssert.*;
 
 /**
  * Test the PorterStemFilter with Martin Porter's test data.
@@ -41,26 +42,16 @@ public class TestPorterStemFilter extends BaseTokenStreamTestCase {
    * The output should be the same as the string in output.txt
    */
   public void testPorterStemFilter() throws Exception {
-    Tokenizer tokenizer = new KeywordTokenizer(new StringReader(""));
-    TokenStream filter = new PorterStemFilter(tokenizer);   
-    ZipFile zipFile = new ZipFile(getDataFile("porterTestData.zip"));
-    InputStream voc = zipFile.getInputStream(zipFile.getEntry("voc.txt"));
-    InputStream out = zipFile.getInputStream(zipFile.getEntry("output.txt"));
-    BufferedReader vocReader = new BufferedReader(new InputStreamReader(
-        voc, "UTF-8"));
-    BufferedReader outputReader = new BufferedReader(new InputStreamReader(
-        out, "UTF-8"));
-    String inputWord = null;
-    while ((inputWord = vocReader.readLine()) != null) {
-      String expectedWord = outputReader.readLine();
-      assertNotNull(expectedWord);
-      tokenizer.reset(new StringReader(inputWord));
-      filter.reset();
-      assertTokenStreamContents(filter, new String[] { expectedWord });
-    }
-    vocReader.close();
-    outputReader.close();
-    zipFile.close();
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName,
+          Reader reader) {
+        Tokenizer t = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(t, new PorterStemFilter(t));
+      }
+    };
+
+    assertVocabulary(a, getDataFile("porterTestData.zip"), "voc.txt", "output.txt");
   }
   
   public void testWithKeywordAttribute() throws IOException {

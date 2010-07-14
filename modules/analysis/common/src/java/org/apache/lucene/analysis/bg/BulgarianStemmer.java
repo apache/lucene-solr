@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.bg;
  * limitations under the License.
  */
 
+import static org.apache.lucene.analysis.util.StemmerUtil.*;
+
 /**
  * Light Stemmer for Bulgarian.
  * <p>
@@ -137,16 +139,5 @@ public class BulgarianStemmer {
     }
     
     return len;
-  }
-  
-  private boolean endsWith(final char s[], final int len, final String suffix) {
-    final int suffixLen = suffix.length();
-    if (suffixLen > len)
-      return false;
-    for (int i = suffixLen - 1; i >= 0; i--)
-      if (s[len -(suffixLen - i)] != suffix.charAt(i))
-        return false;
-    
-    return true;
   }
 }

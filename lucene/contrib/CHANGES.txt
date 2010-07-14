@@ -187,6 +187,9 @@ New features
  * LUCENE-2464: FastVectorHighlighter: add SingleFragListBuilder to return
    entire field contents. (Koji Sekiguchi)
 
+ * LUCENE-2503: Added lighter stemming alternatives for European languages. 
+   (Robert Muir)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 

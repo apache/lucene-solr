@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.id;
  * limitations under the License.
  */
 
+import static org.apache.lucene.analysis.util.StemmerUtil.*;
+
 /**
  * Stemmer for Indonesian.
  * <p>
@@ -266,39 +268,5 @@ public class IndonesianStemmer {
       return length - 1;
     }
     return length;
-  }
-  
-  private boolean startsWith(char s[], int len, String prefix) {
-    final int prefixLen = prefix.length();
-    if (prefixLen > len)
-      return false;
-    for (int i = 0; i < prefixLen; i++)
-      if (s[i] != prefix.charAt(i)) 
-        return false;
-    return true;
-  }
-  
-  private boolean endsWith(char s[], int len, String suffix) {
-    final int suffixLen = suffix.length();
-    if (suffixLen > len)
-      return false;
-    for (int i = suffixLen - 1; i >= 0; i--)
-      if (s[len -(suffixLen - i)] != suffix.charAt(i))
-        return false;
-    
-    return true;
-  }
-  
-  private int deleteN(char s[], int pos, int len, int nChars) {
-    for (int i = 0; i < nChars; i++)
-      len = delete(s, pos, len);
-    return len;
-  }
-  
-  private int delete(char s[], int pos, int len) {
-    if (pos < len) 
-      System.arraycopy(s, pos + 1, s, pos, len - pos - 1);
-    
-    return len - 1;
-  }
+  }  
 }

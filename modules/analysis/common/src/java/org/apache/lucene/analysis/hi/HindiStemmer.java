@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.hi;
  * limitations under the License.
  */
 
+import static org.apache.lucene.analysis.util.StemmerUtil.*;
+
 /**
  * Light Stemmer for Hindi.
  * <p>
@@ -115,16 +117,5 @@ public class HindiStemmer {
        ))
       return len - 1;
     return len;
-  }
-  
-  private boolean endsWith(final char s[], final int len, final String suffix) {
-    final int suffixLen = suffix.length();
-    if (suffixLen > len)
-      return false;
-    for (int i = suffixLen - 1; i >= 0; i--)
-      if (s[len -(suffixLen - i)] != suffix.charAt(i))
-        return false;
-    
-    return true;
   }
 }
