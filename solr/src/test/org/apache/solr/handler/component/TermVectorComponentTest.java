@@ -139,7 +139,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
     NamedList values = rsp.getValues();
     NamedList termVectors = (NamedList) values.get(TermVectorComponent.TERM_VECTORS);
     assertTrue("termVectors is null and it shouldn't be", termVectors != null);
-    System.out.println("TVs:" + termVectors);
+    if (VERBOSE) System.out.println("TVs:" + termVectors);
     NamedList doc = (NamedList) termVectors.getVal(0);
     assertTrue("doc is null and it shouldn't be", doc != null);
     assertEquals(doc.size(), 5);
@@ -242,7 +242,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
     NamedList values = rsp.getValues();
     NamedList termVectors = (NamedList) values.get(TermVectorComponent.TERM_VECTORS);
     assertTrue("termVectors is null and it shouldn't be", termVectors != null);
-    System.out.println("TVs: " + termVectors);
+    if (VERBOSE) System.out.println("TVs: " + termVectors);
     NamedList doc = (NamedList) termVectors.get("doc-0");
     assertTrue("doc is null and it shouldn't be", doc != null);
     assertEquals(doc.size(), 5);
@@ -315,6 +315,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
 
   @Test
   public void testNoFields() throws Exception {
+    ignoreException("undefined field: foo");
     SolrCore core = h.getCore();
     SearchComponent tvComp = core.getSearchComponent("tvComponent");
     assertTrue("tvComp is null and it shouldn't be", tvComp != null);
@@ -332,7 +333,7 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
     handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
     Exception exception = rsp.getException();
     assertNotNull(exception);
-
+    resetExceptionIgnores();
   }
 
 
