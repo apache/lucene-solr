@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.ar;
  * limitations under the License.
  */
 
+import static org.apache.lucene.analysis.util.StemmerUtil.*;
+
 /**
  *  Normalizer for Arabic.
  *  <p>
@@ -96,20 +98,4 @@ public class ArabicNormalizer {
 
     return len;
   }
-
-  /**
-   * Delete a character in-place
-   * 
-   * @param s Input Buffer
-   * @param pos Position of character to delete
-   * @param len length of input buffer
-   * @return length of input buffer after deletion
-   */
-  protected int delete(char s[], int pos, int len) {
-    if (pos < len) 
-      System.arraycopy(s, pos + 1, s, pos, len - pos - 1);
-
-    return len - 1;
-  }
-
 }
