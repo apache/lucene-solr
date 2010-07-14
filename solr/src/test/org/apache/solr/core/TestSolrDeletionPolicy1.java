@@ -105,7 +105,7 @@ public class TestSolrDeletionPolicy1 extends SolrTestCaseJ4 {
     IndexDeletionPolicyWrapper delPolicy = h.getCore().getDeletionPolicy();
     addDocs();
     Map<Long, IndexCommit> commits = delPolicy.getCommits();
-    assertEquals(((SolrDeletionPolicy) (delPolicy.getWrappedDeletionPolicy())).getMaxOptimizedCommitsToKeep(), commits.size());
+    assertTrue(commits.size() <= ((SolrDeletionPolicy) (delPolicy.getWrappedDeletionPolicy())).getMaxOptimizedCommitsToKeep());
   }
 
   @Test
