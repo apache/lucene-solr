@@ -56,6 +56,10 @@ import static org.apache.lucene.analysis.util.StemmerUtil.*;
 
 /**
  * Light Stemmer for Portuguese
+ * <p>
+ * This stemmer implements the "UniNE" algorithm in:
+ * <i>Light Stemming Approaches for the French, Portuguese, German and Hungarian Languages</i>
+ * Jacques Savoy
  */
 public class PortugueseLightStemmer {
   
