@@ -383,6 +383,9 @@ Other Changes
 * SOLR-1938: ElisionFilterFactory will use a default set of French contractions
   if you do not supply a custom articles file.  (rmuir)  
   
+* SOLR-2003: SolrResourceLoader will report any encoding errors, rather than
+  silently using replacement characters for invalid inputs (blargy via rmuir)
+
 Build
 ----------------------
 
