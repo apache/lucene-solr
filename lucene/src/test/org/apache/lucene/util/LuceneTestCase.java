@@ -72,6 +72,9 @@ public abstract class LuceneTestCase extends TestCase {
   
   private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;
   
+  /** Used to track if setUp and tearDown are called correctly from subclasses */
+  private boolean setup;
+
   private static class UncaughtExceptionEntry {
     public final Thread thread;
     public final Throwable exception;
@@ -94,7 +97,8 @@ public abstract class LuceneTestCase extends TestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    
+    assertFalse("ensure your tearDown() calls super.tearDown()!!!", setup);
+    setup = true;
     savedUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
       public void uncaughtException(Thread t, Throwable e) {
@@ -128,6 +132,8 @@ public abstract class LuceneTestCase extends TestCase {
 
   @Override
   protected void tearDown() throws Exception {
+    assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
+    setup = false;
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
 
     try {

@@ -23,6 +23,7 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -107,6 +108,9 @@ public class LuceneTestCaseJ4 {
 
   private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;
   
+  /** Used to track if setUp and tearDown are called correctly from subclasses */
+  private boolean setup;
+
   private static class UncaughtExceptionEntry {
     public final Thread thread;
     public final Throwable exception;
@@ -156,6 +160,8 @@ public class LuceneTestCaseJ4 {
 
   @Before
   public void setUp() throws Exception {
+    Assert.assertFalse("ensure your tearDown() calls super.tearDown()!!!", setup);
+    setup = true;
     savedUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
       public void uncaughtException(Thread t, Throwable e) {
@@ -192,6 +198,8 @@ public class LuceneTestCaseJ4 {
 
   @After
   public void tearDown() throws Exception {
+    Assert.assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
+    setup = false;
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
     try {
 

@@ -67,7 +67,6 @@ public class TestDirectoryReader extends LuceneTestCase {
   }
 
   public void test() throws Exception {
-    setUp();
     doTestDocument();
     doTestUndeleteAll();
   }    
