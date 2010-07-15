@@ -467,6 +467,9 @@ Other Changes
 * SOLR-1946: Misc improvements to the SystemInfoHandler: /admin/system
   (hossman)
 
+* SOLR-2003: SolrResourceLoader will report any encoding errors, rather than
+  silently using replacement characters for invalid inputs (blargy via rmuir)
+
 Build
 ----------------------
 
