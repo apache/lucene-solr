@@ -436,7 +436,7 @@ public class CoreContainer
         schemaFile = new File(solrLoader.getInstanceDir() + "conf" + File.separator + dcore.getSchemaName());
       }
       if(schemaFile. exists()){
-        String key = schemaFile.getAbsolutePath()+":"+new SimpleDateFormat("yyyyMMddhhmmss", Locale.US).format(new Date(schemaFile.lastModified()));
+        String key = schemaFile.getAbsolutePath()+":"+new SimpleDateFormat("yyyyMMddHHmmss", Locale.US).format(new Date(schemaFile.lastModified()));
         schema = indexSchemaCache.get(key);
         if(schema == null){
           log.info("creating new schema object for core: " + dcore.name);

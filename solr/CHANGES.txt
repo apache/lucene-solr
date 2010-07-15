@@ -373,6 +373,9 @@ Bug Fixes
 
 * SOLR-1791: Fix messed up core names on admin gui (yonik via koji)
 
+* SOLR-1995: Change date format from "hour in am/pm" to "hour in day"
+  in CoreContainer and SnapShooter. (Hayato Ito, koji)
+
 Other Changes
 ----------------------
 
