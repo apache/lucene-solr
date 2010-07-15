@@ -143,7 +143,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     
     TopDocs smartDocs = searcher.search(smart, 25);
     TopDocs dumbDocs = searcher.search(dumb, 25);
-    
-    assertEquals("for re:" + regexp, dumbDocs.totalHits, smartDocs.totalHits);
+
+    CheckHits.checkEqual(smart, smartDocs.scoreDocs, dumbDocs.scoreDocs);
   }
 }
