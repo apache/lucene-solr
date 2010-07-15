@@ -55,6 +55,9 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     super.setUp();
     random = newRandom();
     dir = new MockRAMDirectory();
+    // TODO: fix mocktokenizer to not extend chartokenizer, so you can have an 'empty' keyword.
+    // currently, this means 'empty tokens' arent created/tested in the enumeration:
+    // <mikemccand> it's like having a big hairy scary monster in the basement but being upset that it doesn't have fangs
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, new IndexWriterConfig(TEST_VERSION_CURRENT,
                                                                                         new MockAnalyzer(MockTokenizer.KEYWORD, false)));
     
