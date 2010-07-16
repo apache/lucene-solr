@@ -271,22 +271,6 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     assertNotNull("Couldn't upload books.csv", result);
     rsp = server.query( new SolrQuery( "*:*") );
     Assert.assertEquals( 10, rsp.getResults().getNumFound() );
-
-    server.deleteByQuery( "*:*" );// delete everything!
-    server.commit();
-    rsp = server.query( new SolrQuery( "*:*") );
-    Assert.assertEquals( 0, rsp.getResults().getNumFound() );
-
-    up = new ContentStreamUpdateRequest("/update/extract");
-    up.addFile(new File("mailing_lists.pdf"));
-    up.setParam("literal.id", "mailing_lists.pdf");
-    up.setAction(AbstractUpdateRequest.ACTION.COMMIT, true, true);
-    result = server.request(up);
-    assertNotNull("Couldn't upload mailing_lists.pdf", result);
-    rsp = server.query( new SolrQuery( "*:*") );
-    Assert.assertEquals( 1, rsp.getResults().getNumFound() );
-
-
   }
 
 
