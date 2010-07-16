@@ -384,7 +384,7 @@
     </or>
   </condition>
 
-  <target name="junit" depends="compileTests,dist-contrib,junit-mkdir,junit-sequential,junit-parallel"/>
+  <target name="junit" depends="compileTests,junit-mkdir,junit-sequential,junit-parallel"/>
 
   <target name="junit-sequential" if="runsequential">
     <junit-macro/>
