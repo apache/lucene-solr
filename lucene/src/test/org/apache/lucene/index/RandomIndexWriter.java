@@ -108,6 +108,10 @@ public class RandomIndexWriter implements Closeable {
     }
     w.close();
   }
+
+  public void optimize() throws IOException {
+    w.optimize();
+  }
   
   class RandomCodecProvider extends CodecProvider {
     final String codec;

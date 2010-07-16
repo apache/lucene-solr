@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -57,6 +56,11 @@ public class DuplicateFilterTest extends LuceneTestCase {
 		addDoc(writer, "http://www.bar.com", "Dog uses Lucene", "20050101");
 		addDoc(writer, "http://lucene.apache.org", "Lucene 2.0 out", "20050101");
 		addDoc(writer, "http://lucene.apache.org", "Oops. Lucene 2.1 out", "20050102");
+
+                // Until we fix LUCENE-2348, the index must
+                // have only 1 segment:
+                writer.optimize();
+
 		reader = writer.getReader();
 		writer.close();			
 		searcher =new IndexSearcher(reader);
