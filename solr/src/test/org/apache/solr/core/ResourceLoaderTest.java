@@ -31,7 +31,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 
 import java.io.File;
 import java.io.InputStream;
-import java.nio.charset.MalformedInputException;
+import java.nio.charset.CharacterCodingException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -126,6 +126,8 @@ public class ResourceLoaderTest extends TestCase
     try {
       List<String> lines = loader.getLines(wrongEncoding);
       fail();
-    } catch (MalformedInputException expected) {}
+    } catch (SolrException expected) {
+      assertTrue(expected.getCause() instanceof CharacterCodingException);
+    }
   }
 }

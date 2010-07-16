@@ -32,6 +32,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CodingErrorAction;
 import java.lang.reflect.Constructor;
@@ -333,6 +335,9 @@ public class SolrResourceLoader implements ResourceLoader
         if (word.length()==0) continue;
         lines.add(word);
       }
+    } catch (CharacterCodingException ex) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
+          "Error loading resource (wrong encoding?): " + resource, ex);
     } finally {
       if (input != null)
         input.close();
