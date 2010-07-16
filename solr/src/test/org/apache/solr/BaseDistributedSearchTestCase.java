@@ -125,7 +125,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   @Override
   public void tearDown() throws Exception {
     destroyServers();
-    AbstractSolrTestCase.recurseDelete(testDir);
+    if (!AbstractSolrTestCase.recurseDelete(testDir)) {
+      System.err.println("!!!! WARNING: best effort to remove " + testDir.getAbsolutePath() + " FAILED !!!!!");
+    }
     super.tearDown();
   }
 
