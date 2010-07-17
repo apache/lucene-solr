@@ -180,12 +180,14 @@ public class TestNumericUtils extends LuceneTestCase {
   
   // INFO: Tests for trieCodeLong()/trieCodeInt() not needed because implicitely tested by range filter tests
   
-  /** Note: The neededBounds iterator must be unsigned (easier understanding what's happening) */
+  /** Note: The neededBounds Iterable must be unsigned (easier understanding what's happening) */
   private void assertLongRangeSplit(final long lower, final long upper, int precisionStep,
-    final boolean useBitSet, final Iterator<Long> neededBounds, final Iterator<Integer> neededShifts
+    final boolean useBitSet, final Iterable<Long> expectedBounds, final Iterable<Integer> expectedShifts
   ) throws Exception {
     final OpenBitSet bits=useBitSet ? new OpenBitSet(upper-lower+1) : null;
-    
+    final Iterator<Long> neededBounds = (expectedBounds == null) ? null : expectedBounds.iterator();
+    final Iterator<Integer> neededShifts = (expectedShifts == null) ? null : expectedShifts.iterator();
+
     NumericUtils.splitLongRange(new NumericUtils.LongRangeBuilder() {
       @Override
       public void addRange(long min, long max, int shift) {
@@ -200,7 +202,7 @@ public class TestNumericUtils extends LuceneTestCase {
         // make unsigned longs for easier display and understanding
         min ^= 0x8000000000000000L;
         max ^= 0x8000000000000000L;
-        //System.out.println("Long.valueOf(0x"+Long.toHexString(min>>>shift)+"L),Long.valueOf(0x"+Long.toHexString(max>>>shift)+"L)/*shift="+shift+"*/,");
+        //System.out.println("0x"+Long.toHexString(min>>>shift)+"L,0x"+Long.toHexString(max>>>shift)+"L)/*shift="+shift+"*/,");
         assertEquals( "shift", neededShifts.next().intValue(), shift);
         assertEquals( "inner min bound", neededBounds.next().longValue(), min>>>shift);
         assertEquals( "inner max bound", neededBounds.next().longValue(), max>>>shift);
@@ -217,92 +219,92 @@ public class TestNumericUtils extends LuceneTestCase {
   /** LUCENE-2541: NumericRangeQuery errors with endpoints near long min and max values */
   public void testLongExtremeValues() throws Exception {
     // upper end extremes
-    assertLongRangeSplit(Long.MAX_VALUE, Long.MAX_VALUE, 1, true, Arrays.asList(new Long[]{
-      Long.valueOf(0xffffffffffffffffL),Long.valueOf(0xffffffffffffffffL)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0)
-    }).iterator());
-    assertLongRangeSplit(Long.MAX_VALUE, Long.MAX_VALUE, 2, true, Arrays.asList(new Long[]{
-      Long.valueOf(0xffffffffffffffffL),Long.valueOf(0xffffffffffffffffL)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0)
-    }).iterator());
-    assertLongRangeSplit(Long.MAX_VALUE, Long.MAX_VALUE, 4, true, Arrays.asList(new Long[]{
-      Long.valueOf(0xffffffffffffffffL),Long.valueOf(0xffffffffffffffffL)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0)
-    }).iterator());
-    assertLongRangeSplit(Long.MAX_VALUE, Long.MAX_VALUE, 6, true, Arrays.asList(new Long[]{
-      Long.valueOf(0xffffffffffffffffL),Long.valueOf(0xffffffffffffffffL)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0)
-    }).iterator());
-    assertLongRangeSplit(Long.MAX_VALUE, Long.MAX_VALUE, 8, true, Arrays.asList(new Long[]{
-      Long.valueOf(0xffffffffffffffffL),Long.valueOf(0xffffffffffffffffL)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0)
-    }).iterator());
-    assertLongRangeSplit(Long.MAX_VALUE, Long.MAX_VALUE, 64, true, Arrays.asList(new Long[]{
-      Long.valueOf(0xffffffffffffffffL),Long.valueOf(0xffffffffffffffffL)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0)
-    }).iterator());
+    assertLongRangeSplit(Long.MAX_VALUE, Long.MAX_VALUE, 1, true, Arrays.asList(
+      0xffffffffffffffffL,0xffffffffffffffffL
+    ), Arrays.asList(
+      0
+    ));
+    assertLongRangeSplit(Long.MAX_VALUE, Long.MAX_VALUE, 2, true, Arrays.asList(
+      0xffffffffffffffffL,0xffffffffffffffffL
+    ), Arrays.asList(
+      0
+    ));
+    assertLongRangeSplit(Long.MAX_VALUE, Long.MAX_VALUE, 4, true, Arrays.asList(
+      0xffffffffffffffffL,0xffffffffffffffffL
+    ), Arrays.asList(
+      0
+    ));
+    assertLongRangeSplit(Long.MAX_VALUE, Long.MAX_VALUE, 6, true, Arrays.asList(
+      0xffffffffffffffffL,0xffffffffffffffffL
+    ), Arrays.asList(
+      0
+    ));
+    assertLongRangeSplit(Long.MAX_VALUE, Long.MAX_VALUE, 8, true, Arrays.asList(
+      0xffffffffffffffffL,0xffffffffffffffffL
+    ), Arrays.asList(
+      0
+    ));
+    assertLongRangeSplit(Long.MAX_VALUE, Long.MAX_VALUE, 64, true, Arrays.asList(
+      0xffffffffffffffffL,0xffffffffffffffffL
+    ), Arrays.asList(
+      0
+    ));
 
-    assertLongRangeSplit(Long.MAX_VALUE-0xfL, Long.MAX_VALUE, 4, true, Arrays.asList(new Long[]{
-      Long.valueOf(0xfffffffffffffffL),Long.valueOf(0xfffffffffffffffL)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(4)
-    }).iterator());
-    assertLongRangeSplit(Long.MAX_VALUE-0x10L, Long.MAX_VALUE, 4, true, Arrays.asList(new Long[]{
-      Long.valueOf(0xffffffffffffffefL),Long.valueOf(0xffffffffffffffefL),
-      Long.valueOf(0xfffffffffffffffL),Long.valueOf(0xfffffffffffffffL)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0), Integer.valueOf(4),
-    }).iterator());
+    assertLongRangeSplit(Long.MAX_VALUE-0xfL, Long.MAX_VALUE, 4, true, Arrays.asList(
+      0xfffffffffffffffL,0xfffffffffffffffL
+    ), Arrays.asList(
+      4
+    ));
+    assertLongRangeSplit(Long.MAX_VALUE-0x10L, Long.MAX_VALUE, 4, true, Arrays.asList(
+      0xffffffffffffffefL,0xffffffffffffffefL,
+      0xfffffffffffffffL,0xfffffffffffffffL
+    ), Arrays.asList(
+      0, 4
+    ));
 
     // lower end extremes
-    assertLongRangeSplit(Long.MIN_VALUE, Long.MIN_VALUE, 1, true, Arrays.asList(new Long[]{
-      Long.valueOf(0x0000000000000000L),Long.valueOf(0x0000000000000000L)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0)
-    }).iterator());
-    assertLongRangeSplit(Long.MIN_VALUE, Long.MIN_VALUE, 2, true, Arrays.asList(new Long[]{
-      Long.valueOf(0x0000000000000000L),Long.valueOf(0x0000000000000000L)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0)
-    }).iterator());
-    assertLongRangeSplit(Long.MIN_VALUE, Long.MIN_VALUE, 4, true, Arrays.asList(new Long[]{
-      Long.valueOf(0x0000000000000000L),Long.valueOf(0x0000000000000000L)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0)
-    }).iterator());
-    assertLongRangeSplit(Long.MIN_VALUE, Long.MIN_VALUE, 6, true, Arrays.asList(new Long[]{
-      Long.valueOf(0x0000000000000000L),Long.valueOf(0x0000000000000000L)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0)
-    }).iterator());
-    assertLongRangeSplit(Long.MIN_VALUE, Long.MIN_VALUE, 8, true, Arrays.asList(new Long[]{
-      Long.valueOf(0x0000000000000000L),Long.valueOf(0x0000000000000000L)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0)
-    }).iterator());
-    assertLongRangeSplit(Long.MIN_VALUE, Long.MIN_VALUE, 64, true, Arrays.asList(new Long[]{
-      Long.valueOf(0x0000000000000000L),Long.valueOf(0x0000000000000000L)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0)
-    }).iterator());
+    assertLongRangeSplit(Long.MIN_VALUE, Long.MIN_VALUE, 1, true, Arrays.asList(
+      0x0000000000000000L,0x0000000000000000L
+    ), Arrays.asList(
+      0
+    ));
+    assertLongRangeSplit(Long.MIN_VALUE, Long.MIN_VALUE, 2, true, Arrays.asList(
+      0x0000000000000000L,0x0000000000000000L
+    ), Arrays.asList(
+      0
+    ));
+    assertLongRangeSplit(Long.MIN_VALUE, Long.MIN_VALUE, 4, true, Arrays.asList(
+      0x0000000000000000L,0x0000000000000000L
+    ), Arrays.asList(
+      0
+    ));
+    assertLongRangeSplit(Long.MIN_VALUE, Long.MIN_VALUE, 6, true, Arrays.asList(
+      0x0000000000000000L,0x0000000000000000L
+    ), Arrays.asList(
+      0
+    ));
+    assertLongRangeSplit(Long.MIN_VALUE, Long.MIN_VALUE, 8, true, Arrays.asList(
+      0x0000000000000000L,0x0000000000000000L
+    ), Arrays.asList(
+      0
+    ));
+    assertLongRangeSplit(Long.MIN_VALUE, Long.MIN_VALUE, 64, true, Arrays.asList(
+      0x0000000000000000L,0x0000000000000000L
+    ), Arrays.asList(
+      0
+    ));
 
-    assertLongRangeSplit(Long.MIN_VALUE, Long.MIN_VALUE+0xfL, 4, true, Arrays.asList(new Long[]{
-      Long.valueOf(0x000000000000000L),Long.valueOf(0x000000000000000L)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(4)
-    }).iterator());
-    assertLongRangeSplit(Long.MIN_VALUE, Long.MIN_VALUE+0x10L, 4, true, Arrays.asList(new Long[]{
-      Long.valueOf(0x0000000000000010L),Long.valueOf(0x0000000000000010L),
-      Long.valueOf(0x000000000000000L),Long.valueOf(0x000000000000000L)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0), Integer.valueOf(4),
-    }).iterator());
+    assertLongRangeSplit(Long.MIN_VALUE, Long.MIN_VALUE+0xfL, 4, true, Arrays.asList(
+      0x000000000000000L,0x000000000000000L
+    ), Arrays.asList(
+      4
+    ));
+    assertLongRangeSplit(Long.MIN_VALUE, Long.MIN_VALUE+0x10L, 4, true, Arrays.asList(
+      0x0000000000000010L,0x0000000000000010L,
+      0x000000000000000L,0x000000000000000L
+    ), Arrays.asList(
+      0, 4
+    ));
   }
   
   public void testRandomSplit() throws Exception {
@@ -349,81 +351,83 @@ public class TestNumericUtils extends LuceneTestCase {
   
   public void testSplitLongRange() throws Exception {
     // a hard-coded "standard" range
-    assertLongRangeSplit(-5000L, 9500L, 4, true, Arrays.asList(new Long[]{
-      Long.valueOf(0x7fffffffffffec78L),Long.valueOf(0x7fffffffffffec7fL),
-      Long.valueOf(0x8000000000002510L),Long.valueOf(0x800000000000251cL),
-      Long.valueOf(0x7fffffffffffec8L), Long.valueOf(0x7fffffffffffecfL),
-      Long.valueOf(0x800000000000250L), Long.valueOf(0x800000000000250L),
-      Long.valueOf(0x7fffffffffffedL),  Long.valueOf(0x7fffffffffffefL),
-      Long.valueOf(0x80000000000020L),  Long.valueOf(0x80000000000024L),
-      Long.valueOf(0x7ffffffffffffL),   Long.valueOf(0x8000000000001L)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0), Integer.valueOf(0),
-      Integer.valueOf(4), Integer.valueOf(4),
-      Integer.valueOf(8), Integer.valueOf(8),
-      Integer.valueOf(12)
-    }).iterator());
+    assertLongRangeSplit(-5000L, 9500L, 4, true, Arrays.asList(
+      0x7fffffffffffec78L,0x7fffffffffffec7fL,
+      0x8000000000002510L,0x800000000000251cL,
+      0x7fffffffffffec8L, 0x7fffffffffffecfL,
+      0x800000000000250L, 0x800000000000250L,
+      0x7fffffffffffedL,  0x7fffffffffffefL,
+      0x80000000000020L,  0x80000000000024L,
+      0x7ffffffffffffL,   0x8000000000001L
+    ), Arrays.asList(
+      0, 0,
+      4, 4,
+      8, 8,
+      12
+    ));
     
     // the same with no range splitting
-    assertLongRangeSplit(-5000L, 9500L, 64, true, Arrays.asList(new Long[]{
-      Long.valueOf(0x7fffffffffffec78L),Long.valueOf(0x800000000000251cL)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0)
-    }).iterator());
+    assertLongRangeSplit(-5000L, 9500L, 64, true, Arrays.asList(
+      0x7fffffffffffec78L,0x800000000000251cL
+    ), Arrays.asList(
+      0
+    ));
     
     // this tests optimized range splitting, if one of the inner bounds
     // is also the bound of the next lower precision, it should be used completely
-    assertLongRangeSplit(0L, 1024L+63L, 4, true, Arrays.asList(new Long[]{
-      Long.valueOf(0x800000000000040L), Long.valueOf(0x800000000000043L),
-      Long.valueOf(0x80000000000000L),  Long.valueOf(0x80000000000003L)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(4), Integer.valueOf(8)
-    }).iterator());
+    assertLongRangeSplit(0L, 1024L+63L, 4, true, Arrays.asList(
+      0x800000000000040L, 0x800000000000043L,
+      0x80000000000000L,  0x80000000000003L
+    ), Arrays.asList(
+      4, 8
+    ));
     
     // the full long range should only consist of a lowest precision range; no bitset testing here, as too much memory needed :-)
-    assertLongRangeSplit(Long.MIN_VALUE, Long.MAX_VALUE, 8, false, Arrays.asList(new Long[]{
-      Long.valueOf(0x00L),Long.valueOf(0xffL)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(56)
-    }).iterator());
+    assertLongRangeSplit(Long.MIN_VALUE, Long.MAX_VALUE, 8, false, Arrays.asList(
+      0x00L,0xffL
+    ), Arrays.asList(
+      56
+    ));
 
     // the same with precisionStep=4
-    assertLongRangeSplit(Long.MIN_VALUE, Long.MAX_VALUE, 4, false, Arrays.asList(new Long[]{
-      Long.valueOf(0x0L),Long.valueOf(0xfL)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(60)
-    }).iterator());
+    assertLongRangeSplit(Long.MIN_VALUE, Long.MAX_VALUE, 4, false, Arrays.asList(
+      0x0L,0xfL
+    ), Arrays.asList(
+      60
+    ));
 
     // the same with precisionStep=2
-    assertLongRangeSplit(Long.MIN_VALUE, Long.MAX_VALUE, 2, false, Arrays.asList(new Long[]{
-      Long.valueOf(0x0L),Long.valueOf(0x3L)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(62)
-    }).iterator());
+    assertLongRangeSplit(Long.MIN_VALUE, Long.MAX_VALUE, 2, false, Arrays.asList(
+      0x0L,0x3L
+    ), Arrays.asList(
+      62
+    ));
 
     // the same with precisionStep=1
-    assertLongRangeSplit(Long.MIN_VALUE, Long.MAX_VALUE, 1, false, Arrays.asList(new Long[]{
-      Long.valueOf(0x0L),Long.valueOf(0x1L)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(63)
-    }).iterator());
+    assertLongRangeSplit(Long.MIN_VALUE, Long.MAX_VALUE, 1, false, Arrays.asList(
+      0x0L,0x1L
+    ), Arrays.asList(
+      63
+    ));
 
     // a inverse range should produce no sub-ranges
-    assertLongRangeSplit(9500L, -5000L, 4, false, Collections.<Long>emptyList().iterator(), Collections.<Integer>emptyList().iterator());    
+    assertLongRangeSplit(9500L, -5000L, 4, false, Collections.<Long>emptyList(), Collections.<Integer>emptyList());    
 
     // a 0-length range should reproduce the range itsself
-    assertLongRangeSplit(9500L, 9500L, 4, false, Arrays.asList(new Long[]{
-      Long.valueOf(0x800000000000251cL),Long.valueOf(0x800000000000251cL)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0)
-    }).iterator());
+    assertLongRangeSplit(9500L, 9500L, 4, false, Arrays.asList(
+      0x800000000000251cL,0x800000000000251cL
+    ), Arrays.asList(
+      0
+    ));
   }
 
-  /** Note: The neededBounds iterator must be unsigned (easier understanding what's happening) */
+  /** Note: The neededBounds Iterable must be unsigned (easier understanding what's happening) */
   private void assertIntRangeSplit(final int lower, final int upper, int precisionStep,
-    final boolean useBitSet, final Iterator<Integer> neededBounds, final Iterator<Integer> neededShifts
+    final boolean useBitSet, final Iterable<Integer> expectedBounds, final Iterable<Integer> expectedShifts
   ) throws Exception {
     final OpenBitSet bits=useBitSet ? new OpenBitSet(upper-lower+1) : null;
+    final Iterator<Integer> neededBounds = (expectedBounds == null) ? null : expectedBounds.iterator();
+    final Iterator<Integer> neededShifts = (expectedShifts == null) ? null : expectedShifts.iterator();
     
     NumericUtils.splitIntRange(new NumericUtils.IntRangeBuilder() {
       @Override
@@ -439,7 +443,7 @@ public class TestNumericUtils extends LuceneTestCase {
         // make unsigned ints for easier display and understanding
         min ^= 0x80000000;
         max ^= 0x80000000;
-        //System.out.println("Integer.valueOf(0x"+Integer.toHexString(min>>>shift)+"),Integer.valueOf(0x"+Integer.toHexString(max>>>shift)+")/*shift="+shift+"*/,");
+        //System.out.println("0x"+Integer.toHexString(min>>>shift)+",0x"+Integer.toHexString(max>>>shift)+")/*shift="+shift+"*/,");
         assertEquals( "shift", neededShifts.next().intValue(), shift);
         assertEquals( "inner min bound", neededBounds.next().intValue(), min>>>shift);
         assertEquals( "inner max bound", neededBounds.next().intValue(), max>>>shift);
@@ -455,74 +459,74 @@ public class TestNumericUtils extends LuceneTestCase {
   
   public void testSplitIntRange() throws Exception {
     // a hard-coded "standard" range
-    assertIntRangeSplit(-5000, 9500, 4, true, Arrays.asList(new Integer[]{
-      Integer.valueOf(0x7fffec78),Integer.valueOf(0x7fffec7f),
-      Integer.valueOf(0x80002510),Integer.valueOf(0x8000251c),
-      Integer.valueOf(0x7fffec8), Integer.valueOf(0x7fffecf),
-      Integer.valueOf(0x8000250), Integer.valueOf(0x8000250),
-      Integer.valueOf(0x7fffed),  Integer.valueOf(0x7fffef),
-      Integer.valueOf(0x800020),  Integer.valueOf(0x800024),
-      Integer.valueOf(0x7ffff),   Integer.valueOf(0x80001)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0), Integer.valueOf(0),
-      Integer.valueOf(4), Integer.valueOf(4),
-      Integer.valueOf(8), Integer.valueOf(8),
-      Integer.valueOf(12)
-    }).iterator());
+    assertIntRangeSplit(-5000, 9500, 4, true, Arrays.asList(
+      0x7fffec78,0x7fffec7f,
+      0x80002510,0x8000251c,
+      0x7fffec8, 0x7fffecf,
+      0x8000250, 0x8000250,
+      0x7fffed,  0x7fffef,
+      0x800020,  0x800024,
+      0x7ffff,   0x80001
+    ), Arrays.asList(
+      0, 0,
+      4, 4,
+      8, 8,
+      12
+    ));
     
     // the same with no range splitting
-    assertIntRangeSplit(-5000, 9500, 32, true, Arrays.asList(new Integer[]{
-      Integer.valueOf(0x7fffec78),Integer.valueOf(0x8000251c)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0)
-    }).iterator());
+    assertIntRangeSplit(-5000, 9500, 32, true, Arrays.asList(
+      0x7fffec78,0x8000251c
+    ), Arrays.asList(
+      0
+    ));
     
     // this tests optimized range splitting, if one of the inner bounds
     // is also the bound of the next lower precision, it should be used completely
-    assertIntRangeSplit(0, 1024+63, 4, true, Arrays.asList(new Integer[]{
-      Integer.valueOf(0x8000040), Integer.valueOf(0x8000043),
-      Integer.valueOf(0x800000),  Integer.valueOf(0x800003)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(4), Integer.valueOf(8)
-    }).iterator());
+    assertIntRangeSplit(0, 1024+63, 4, true, Arrays.asList(
+      0x8000040, 0x8000043,
+      0x800000,  0x800003
+    ), Arrays.asList(
+      4, 8
+    ));
     
     // the full int range should only consist of a lowest precision range; no bitset testing here, as too much memory needed :-)
-    assertIntRangeSplit(Integer.MIN_VALUE, Integer.MAX_VALUE, 8, false, Arrays.asList(new Integer[]{
-      Integer.valueOf(0x00),Integer.valueOf(0xff)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(24)
-    }).iterator());
+    assertIntRangeSplit(Integer.MIN_VALUE, Integer.MAX_VALUE, 8, false, Arrays.asList(
+      0x00,0xff
+    ), Arrays.asList(
+      24
+    ));
 
     // the same with precisionStep=4
-    assertIntRangeSplit(Integer.MIN_VALUE, Integer.MAX_VALUE, 4, false, Arrays.asList(new Integer[]{
-      Integer.valueOf(0x0),Integer.valueOf(0xf)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(28)
-    }).iterator());
+    assertIntRangeSplit(Integer.MIN_VALUE, Integer.MAX_VALUE, 4, false, Arrays.asList(
+      0x0,0xf
+    ), Arrays.asList(
+      28
+    ));
 
     // the same with precisionStep=2
-    assertIntRangeSplit(Integer.MIN_VALUE, Integer.MAX_VALUE, 2, false, Arrays.asList(new Integer[]{
-      Integer.valueOf(0x0),Integer.valueOf(0x3)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(30)
-    }).iterator());
+    assertIntRangeSplit(Integer.MIN_VALUE, Integer.MAX_VALUE, 2, false, Arrays.asList(
+      0x0,0x3
+    ), Arrays.asList(
+      30
+    ));
 
     // the same with precisionStep=1
-    assertIntRangeSplit(Integer.MIN_VALUE, Integer.MAX_VALUE, 1, false, Arrays.asList(new Integer[]{
-      Integer.valueOf(0x0),Integer.valueOf(0x1)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(31)
-    }).iterator());
+    assertIntRangeSplit(Integer.MIN_VALUE, Integer.MAX_VALUE, 1, false, Arrays.asList(
+      0x0,0x1
+    ), Arrays.asList(
+      31
+    ));
 
     // a inverse range should produce no sub-ranges
-    assertIntRangeSplit(9500, -5000, 4, false, Collections.<Integer>emptyList().iterator(), Collections.<Integer>emptyList().iterator());    
+    assertIntRangeSplit(9500, -5000, 4, false, Collections.<Integer>emptyList(), Collections.<Integer>emptyList());    
 
     // a 0-length range should reproduce the range itsself
-    assertIntRangeSplit(9500, 9500, 4, false, Arrays.asList(new Integer[]{
-      Integer.valueOf(0x8000251c),Integer.valueOf(0x8000251c)
-    }).iterator(), Arrays.asList(new Integer[]{
-      Integer.valueOf(0)
-    }).iterator());
+    assertIntRangeSplit(9500, 9500, 4, false, Arrays.asList(
+      0x8000251c,0x8000251c
+    ), Arrays.asList(
+      0
+    ));
   }
 
 }
