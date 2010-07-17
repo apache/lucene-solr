@@ -423,6 +423,20 @@ Bug fixes
   buffered deletions against segments that were flushed (Mark Harwood
   via Mike McCandless)
 
+* LUCENE-2541: Fixed NumericRangeQuery that returned incorrect results
+  with endpoints near Long.MIN_VALUE and Long.MAX_VALUE:
+  NumericUtils.splitRange() overflowed, if
+  - the range contained a LOWER bound
+    that was greater than (Long.MAX_VALUE - (1L << precisionStep))
+  - the range contained an UPPER bound
+    that was less than (Long.MIN_VALUE + (1L << precisionStep))
+  With standard precision steps around 4, this had no effect on
+  most queries, only those that met the above conditions.
+  Queries with large precision steps failed more easy. Queries with
+  precision step >=64 were not affected. Also 32 bit data types int
+  and float were not affected.
+  (Yonik Seeley, Uwe Schindler)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
