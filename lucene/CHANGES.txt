@@ -437,6 +437,9 @@ Bug fixes
   and float were not affected.
   (Yonik Seeley, Uwe Schindler)
 
+* LUCENE-2549: Fix TimeLimitingCollector#TimeExceededException to record
+  the absolute docid.  (Uwe Schindler)
+  
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
