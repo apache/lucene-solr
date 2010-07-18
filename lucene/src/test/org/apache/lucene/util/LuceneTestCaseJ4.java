@@ -339,7 +339,8 @@ public class LuceneTestCaseJ4 {
     return new Random(seed);
   }
 
-  private static Hashtable<Class<?>,Long> staticSeeds = new Hashtable<Class<?>,Long>();
+  private static final Map<Class<? extends LuceneTestCaseJ4>,Long> staticSeeds =
+    Collections.synchronizedMap(new WeakHashMap<Class<? extends LuceneTestCaseJ4>,Long>());
 
   /**
    * Returns a {@link Random} instance for generating random numbers from a beforeclass
@@ -348,7 +349,7 @@ public class LuceneTestCaseJ4 {
    * for reproducing the test using {@link #newStaticRandom(Class, long)} with the recorded seed
    * .
    */
-  public static Random newStaticRandom(Class<?> clazz) {
+  public static Random newStaticRandom(Class<? extends LuceneTestCaseJ4> clazz) {
     return newStaticRandom(clazz, seedRnd.nextLong());
   }
   
@@ -358,7 +359,7 @@ public class LuceneTestCaseJ4 {
    * If an error occurs in the test that is not reproducible, you can use this method to
    * initialize the number generator with the seed that was printed out during the failing test.
    */
-  public static Random newStaticRandom(Class<?> clazz, long seed) {
+  public static Random newStaticRandom(Class<? extends LuceneTestCaseJ4> clazz, long seed) {
     staticSeeds.put(clazz, Long.valueOf(seed));
     return new Random(seed);
   }
