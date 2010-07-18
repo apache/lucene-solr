@@ -20,7 +20,9 @@ import org.apache.commons.io.IOUtils;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.SimpleFSDirectory;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.TestDistributedSearch;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -34,11 +36,15 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 import java.io.*;
 import java.net.URL;
-
-import junit.framework.TestCase;
 
 /**
  * Test for ReplicationHandler
@@ -46,21 +52,20 @@ import junit.framework.TestCase;
  * @version $Id$
  * @since 1.4
  */
-public class TestReplicationHandler extends TestCase {
+public class TestReplicationHandler extends SolrTestCaseJ4 {
 
 
   private static final String CONF_DIR = "." + File.separator + "solr" + File.separator + "conf" + File.separator;
   private static final String SLAVE_CONFIG = CONF_DIR + "solrconfig-slave.xml";
 
-  JettySolrRunner masterJetty, slaveJetty;
-  SolrServer masterClient, slaveClient;
-  SolrInstance master = null, slave = null;
+  static JettySolrRunner masterJetty, slaveJetty;
+  static SolrServer masterClient, slaveClient;
+  static SolrInstance master = null, slave = null;
 
-  String context = "/solr";
+  static String context = "/solr";
 
-
-  public void setUp() throws Exception {
-    super.setUp();    
+  @BeforeClass
+  public static void beforeClass() throws Exception {
     master = new SolrInstance("master", null);
     master.setUp();
     masterJetty = createJetty(master);
@@ -72,16 +77,26 @@ public class TestReplicationHandler extends TestCase {
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
   }
 
-  @Override
-  public void tearDown() throws Exception {
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    masterClient.deleteByQuery("*:*");
+    masterClient.commit();
+    rQuery(0, "*:*", masterClient);
+    slaveClient.deleteByQuery("*:*");
+    slaveClient.commit();
+    rQuery(0, "*:*", slaveClient);
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
     masterJetty.stop();
     slaveJetty.stop();
     master.tearDown();
     slave.tearDown();
-    super.tearDown();
   }
 
-  private JettySolrRunner createJetty(SolrInstance instance) throws Exception {
+  private static JettySolrRunner createJetty(SolrInstance instance) throws Exception {
     System.setProperty("solr.solr.home", instance.getHomeDir());
     System.setProperty("solr.data.dir", instance.getDataDir());
 
@@ -91,7 +106,7 @@ public class TestReplicationHandler extends TestCase {
     return jetty;
   }
 
-  protected SolrServer createNewSolrServer(int port) {
+  private static SolrServer createNewSolrServer(int port) {
     try {
       // setup the server...
       String url = "http://localhost:" + port + context;
@@ -126,6 +141,21 @@ public class TestReplicationHandler extends TestCase {
     return res;
   }
 
+  /** will sleep up to 30 seconds, looking for expectedDocCount */
+  private NamedList rQuery(int expectedDocCount, String query, SolrServer server) throws Exception {
+    int timeSlept = 0;
+    NamedList res = null;
+    SolrDocumentList docList = null;
+    do {
+      res = query(query, server);
+      docList = (SolrDocumentList) res.get("response");
+      timeSlept += 100;
+      Thread.sleep(100);
+    } while(docList.getNumFound() != expectedDocCount && timeSlept < 30000);
+    return res;
+  }
+
+  @Test
   public void testIndexAndConfigReplication() throws Exception {
 
     //add 500 docs to master
@@ -134,24 +164,13 @@ public class TestReplicationHandler extends TestCase {
 
     masterClient.commit();
 
-    NamedList masterQueryRsp = query("*:*", masterClient);
+    NamedList masterQueryRsp = rQuery(500, "*:*", masterClient);
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(500, masterQueryResult.getNumFound());
 
-    //sleep for pollinterval time 3s, to let slave pull data.
-    Thread.sleep(3000);
     //get docs from slave and check if number is equal to master
-    NamedList slaveQueryRsp = query("*:*", slaveClient);
+    NamedList slaveQueryRsp = rQuery(500, "*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-
-    if (slaveQueryResult.getNumFound() == 0) {
-      //try sleeping again in case of slower comp
-      Thread.sleep(5000);
-
-      slaveQueryRsp = query("*:*", slaveClient);
-      slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    }
-
     assertEquals(500, slaveQueryResult.getNumFound());
 
     //compare results
@@ -180,15 +199,17 @@ public class TestReplicationHandler extends TestCase {
     index(masterClient, "id", "2000", "name", "name = " + 2000, "newname", "newname = " + 2000);
     masterClient.commit();
 
-    //sleep for 3s for replication to happen.
-    Thread.sleep(3000);
+    NamedList masterQueryRsp2 = rQuery(1, "*:*", masterClient);
+    SolrDocumentList masterQueryResult2 = (SolrDocumentList) masterQueryRsp2.get("response");
+    assertEquals(1, masterQueryResult2.getNumFound());
 
-    slaveQueryRsp = query("*:*", slaveClient);
+    slaveQueryRsp = rQuery(1, "*:*", slaveClient);
     SolrDocument d = ((SolrDocumentList) slaveQueryRsp.get("response")).get(0);
     assertEquals("newname = 2000", (String) d.getFieldValue("newname"));
 
   }
 
+  @Test
   public void testIndexAndConfigAliasReplication() throws Exception {
 
     //add 500 docs to master
@@ -197,23 +218,13 @@ public class TestReplicationHandler extends TestCase {
 
     masterClient.commit();
 
-    NamedList masterQueryRsp = query("*:*", masterClient);
+    NamedList masterQueryRsp = rQuery(500, "*:*", masterClient);
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(500, masterQueryResult.getNumFound());
 
-    //sleep for pollinterval time 3s, to let slave pull data.
-    Thread.sleep(3000);
     //get docs from slave and check if number is equal to master
-    NamedList slaveQueryRsp = query("*:*", slaveClient);
+    NamedList slaveQueryRsp = rQuery(500, "*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-
-    if (slaveQueryResult.getNumFound() == 0) {
-      //try sleeping again in case of slower comp
-      Thread.sleep(5000);
-
-      slaveQueryRsp = query("*:*", slaveClient);
-      slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    }
 
     assertEquals(500, slaveQueryResult.getNumFound());
 
@@ -249,20 +260,25 @@ public class TestReplicationHandler extends TestCase {
     //add a doc with new field and commit on master to trigger snappull from slave.
     index(masterClient, "id", "2000", "name", "name = " + 2000, "newname", "newname = " + 2000);
     masterClient.commit();
-
-    //sleep for 3s for replication to happen.
-    Thread.sleep(3000);
+    
+    NamedList masterQueryRsp2 = rQuery(1, "*:*", masterClient);
+    SolrDocumentList masterQueryResult2 = (SolrDocumentList) masterQueryRsp2.get("response");
+    assertEquals(1, masterQueryResult2.getNumFound());
+    
+    NamedList slaveQueryRsp2 = rQuery(1, "*:*", slaveClient);
+    SolrDocumentList slaveQueryResult2 = (SolrDocumentList) slaveQueryRsp2.get("response");
+    assertEquals(1, slaveQueryResult2.getNumFound());
 
     index(slaveClient, "id", "2000", "name", "name = " + 2001, "newname", "newname = " + 2001);
     slaveClient.commit();
 
-    slaveQueryRsp = query("*:*", slaveClient);
+    slaveQueryRsp = rQuery(1, "*:*", slaveClient);
     SolrDocument d = ((SolrDocumentList) slaveQueryRsp.get("response")).get(0);
     assertEquals("newname = 2001", (String) d.getFieldValue("newname"));
 
   }
 
-
+  @Test
   public void testStopPoll() throws Exception {
     // Test:
     // setup master/slave.
@@ -274,14 +290,12 @@ public class TestReplicationHandler extends TestCase {
 
     masterClient.commit();
 
-    NamedList masterQueryRsp = query("*:*", masterClient);
+    NamedList masterQueryRsp = rQuery(500, "*:*", masterClient);
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(500, masterQueryResult.getNumFound());
 
-    //sleep for pollinterval time 3s, to let slave pull data.
-    Thread.sleep(3000);
     //get docs from slave and check if number is equal to master
-    NamedList slaveQueryRsp = query("*:*", slaveClient);
+    NamedList slaveQueryRsp = rQuery(500, "*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(500, slaveQueryResult.getNumFound());
 
@@ -300,18 +314,24 @@ public class TestReplicationHandler extends TestCase {
     }
     index(masterClient, "id", 501, "name", "name = " + 501);
     masterClient.commit();
-    //sleep for pollinterval time 3s, to let slave pull data.
+
+    //get docs from master and check if number is equal to master
+    masterQueryRsp = rQuery(501, "*:*", masterClient);
+    masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+    assertEquals(501, masterQueryResult.getNumFound());
+    
+    // NOTE: this test is wierd, we want to verify it DOESNT replicate...
+    // for now, add a sleep for this.., but the logic is wierd.
     Thread.sleep(3000);
-    //get docs from slave and check if number is equal to master
-    slaveQueryRsp = query("*:*", slaveClient);
+    
+    //get docs from slave and check if number is not equal to master; polling is disabled
+    slaveQueryRsp = rQuery(500, "*:*", slaveClient);
     slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(500, slaveQueryResult.getNumFound());
-    //get docs from slave and check if number is equal to master
-    slaveQueryRsp = query("*:*", masterClient);
-    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    assertEquals(501, slaveQueryResult.getNumFound());
+
   }
 
+  @Test
   public void testSnapPullWithMasterUrl() throws Exception {
     //change solrconfig on slave
     //this has no entry for pollinginterval
@@ -326,7 +346,7 @@ public class TestReplicationHandler extends TestCase {
 
     masterClient.commit();
 
-    NamedList masterQueryRsp = query("*:*", masterClient);
+    NamedList masterQueryRsp = rQuery(500, "*:*", masterClient);
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(500, masterQueryResult.getNumFound());
 
@@ -340,9 +360,9 @@ public class TestReplicationHandler extends TestCase {
     } catch (IOException e) {
       //e.printStackTrace();
     }
-    Thread.sleep(3000);
+
     //get docs from slave and check if number is equal to master
-    NamedList slaveQueryRsp = query("*:*", slaveClient);
+    NamedList slaveQueryRsp = rQuery(500, "*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(500, slaveQueryResult.getNumFound());
     //compare results
@@ -350,6 +370,7 @@ public class TestReplicationHandler extends TestCase {
     assertEquals(null, cmp);
   }
 
+  @Test
   public void testReplicateAfterStartup() throws Exception {
     //stop slave
     slaveJetty.stop();
@@ -360,7 +381,7 @@ public class TestReplicationHandler extends TestCase {
 
     masterClient.commit();
 
-    NamedList masterQueryRsp = query("*:*", masterClient);
+    NamedList masterQueryRsp = rQuery(500, "*:*", masterClient);
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(500, masterQueryResult.getNumFound());
 
@@ -379,10 +400,8 @@ public class TestReplicationHandler extends TestCase {
     slaveJetty = createJetty(slave);
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
 
-    //sleep for pollinterval time 3s, to let slave pull data.
-    Thread.sleep(3000);
     //get docs from slave and check if number is equal to master
-    NamedList slaveQueryRsp = query("*:*", slaveClient);
+    NamedList slaveQueryRsp = rQuery(500, "*:*", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(500, slaveQueryResult.getNumFound());
 
@@ -392,6 +411,7 @@ public class TestReplicationHandler extends TestCase {
 
   }
 
+  @Test
   public void testReplicateAfterWrite2Slave() throws Exception {
     //add 50 docs to master
     int nDocs = 50;
@@ -410,13 +430,13 @@ public class TestReplicationHandler extends TestCase {
 
     masterClient.commit();
 
-    NamedList masterQueryRsp = query("*:*", masterClient);
+    NamedList masterQueryRsp = rQuery(50, "*:*", masterClient);
     SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
     assertEquals(nDocs, masterQueryResult.getNumFound());
 
     // Make sure that both the index version and index generation on the slave is
     // higher than that of the master, just to make the test harder.
-    Thread.sleep(100);
+
     index(slaveClient, "id", 551, "name", "name = " + 551);
     slaveClient.commit(true, true);
     index(slaveClient, "id", 552, "name", "name = " + 552);
@@ -429,7 +449,7 @@ public class TestReplicationHandler extends TestCase {
     slaveClient.commit(true, true);
 
     //this doc is added to slave so it should show an item w/ that result
-    NamedList slaveQueryRsp = query("id:555", slaveClient);
+    NamedList slaveQueryRsp = rQuery(1, "id:555", slaveClient);
     SolrDocumentList slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(1, slaveQueryResult.getNumFound());
 
@@ -442,14 +462,13 @@ public class TestReplicationHandler extends TestCase {
       //e.printStackTrace();
     }
 
-    //sleep for pollinterval time 3s, to let slave pull data.
-    Thread.sleep(3000);
     //the slave should have done a full copy of the index so the doc with id:555 should not be there in the slave now
-    slaveQueryRsp = query("id:555", slaveClient);
+    slaveQueryRsp = rQuery(0, "id:555", slaveClient);
     slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(0, slaveQueryResult.getNumFound());
   }
   
+  @Test
   public void testBackup() throws Exception {
 
     masterJetty.stop();
@@ -543,22 +562,24 @@ public class TestReplicationHandler extends TestCase {
     });
     assertEquals(1, files.length);
     File snapDir = files[0];
-
-    IndexSearcher searcher = new IndexSearcher(new SimpleFSDirectory(snapDir.getAbsoluteFile(), null), true);
+    Directory dir = new SimpleFSDirectory(snapDir.getAbsoluteFile());
+    IndexSearcher searcher = new IndexSearcher(dir, true);
     TopDocs hits = searcher.search(new MatchAllDocsQuery(), 1);
 
     assertEquals(500, hits.totalHits);
+    searcher.close();
+    dir.close();
   }
 
   /* character copy of file using UTF-8 */
-  void copyFile(File src, File dst) throws IOException {
+  private static void copyFile(File src, File dst) throws IOException {
     copyFile(src, dst, null);
   }
 
   /**
    * character copy of file using UTF-8. If port is non-null, will be substituted any time "TEST_PORT" is found.
    */
-  private void copyFile(File src, File dst, Integer port) throws IOException {
+  private static void copyFile(File src, File dst, Integer port) throws IOException {
     BufferedReader in = new BufferedReader(new FileReader(src));
     Writer out = new FileWriter(dst);
 
@@ -572,12 +593,13 @@ public class TestReplicationHandler extends TestCase {
     out.close();
   }
 
-  private class SolrInstance extends AbstractSolrTestCase {
+  private static class SolrInstance {
 
     String name;
     Integer masterPort;
     File homeDir;
     File confDir;
+    File dataDir;
 
     /**
      * if masterPort is null, this instance is a master -- otherwise this instance is a slave, and assumes the master is
@@ -592,7 +614,6 @@ public class TestReplicationHandler extends TestCase {
       return homeDir.toString();
     }
 
-    @Override
     public String getSchemaFile() {
       return CONF_DIR + "schema-replication1.xml";
     }
@@ -605,7 +626,6 @@ public class TestReplicationHandler extends TestCase {
       return dataDir.toString();
     }
 
-    @Override
     public String getSolrConfigFile() {
       String fname = "";
       if (null == masterPort)
@@ -616,7 +636,6 @@ public class TestReplicationHandler extends TestCase {
     }
 
     public void setUp() throws Exception {
-      super.setUp();
       System.setProperty("solr.test.sys.prop1", "propone");
       System.setProperty("solr.test.sys.prop2", "proptwo");
 
@@ -645,7 +664,6 @@ public class TestReplicationHandler extends TestCase {
     }
 
     public void tearDown() throws Exception {
-      super.tearDown();
       AbstractSolrTestCase.recurseDelete(homeDir);
     }
   }
