@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -30,23 +31,31 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * 
  */
-public class SignatureUpdateProcessorFactoryTest extends AbstractSolrTestCase {
+public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
-  @Override
-  public String getSchemaFile() {
-    return "schema12.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema12.xml");
   }
 
   @Override
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    clearIndex();
+    assertU(commit());
   }
-
+  
+  @Test
   public void testDupeDetection() throws Exception {
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain(
@@ -93,6 +102,7 @@ public class SignatureUpdateProcessorFactoryTest extends AbstractSolrTestCase {
     factory.setEnabled(false);
   }
 
+  @Test
   public void testMultiThreaded() throws Exception {
     UpdateRequestProcessorChain chained = h.getCore().getUpdateProcessingChain(
         "dedupe");

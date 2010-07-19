@@ -16,7 +16,7 @@ package org.apache.solr.handler;
  * limitations under the License.
  */
 
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.common.util.ContentStream;
@@ -26,6 +26,11 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.extraction.ExtractingParams;
 import org.apache.solr.handler.extraction.ExtractingRequestHandler;
 import org.apache.solr.handler.extraction.ExtractingDocumentLoader;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 import java.util.List;
 import java.util.ArrayList;
@@ -36,18 +41,20 @@ import java.io.File;
  *
  *
  **/
-public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
-  @Override
-  public String getSchemaFile() {
-    return "schema.xml";
+public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml");
   }
 
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    clearIndex();
+    assertU(commit());
   }
 
-
+  @Test
   public void testExtraction() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
@@ -134,6 +141,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
 
   }
 
+  @Test
   public void testDefaultField() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
@@ -177,7 +185,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
     assertQ(req("+id:simple2 +t_href:[* TO *]"), "//*[@numFound='1']");
   }
 
-
+  @Test
   public void testLiterals() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
@@ -231,7 +239,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
 
   }
 
-
+  @Test
   public void testPlainTextSpecifyingMimeType() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
@@ -250,6 +258,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
     assertQ(req("extractedContent:Apache"), "//*[@numFound='1']");
   }
 
+  @Test
   public void testPlainTextSpecifyingResourceName() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
@@ -271,7 +280,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
   // Note: If you load a plain text file specifying neither MIME type nor filename, extraction will silently fail. This is because Tika's
   // automatic MIME type detection will fail, and it will default to using an empty-string-returning default parser
 
-
+  @Test
   public void testExtractOnly() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
@@ -308,6 +317,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
 
   }
 
+  @Test
   public void testXPath() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
@@ -323,6 +333,7 @@ public class ExtractingRequestHandlerTest extends AbstractSolrTestCase {
   }
 
   /** test arabic PDF extraction is functional */
+  @Test
   public void testArabicPDF() throws Exception {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) 
       h.getCore().getRequestHandler("/update/extract");

@@ -17,8 +17,10 @@
 
 package org.apache.solr.handler;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.util.AbstractSolrTestCase;
+
+import static org.junit.Assert.*;
 
 /**
  * A base class for all analysis request handler tests.
@@ -26,7 +28,7 @@ import org.apache.solr.util.AbstractSolrTestCase;
  * @version $Id$
  * @since solr 1.4
  */
-public abstract class AnalysisRequestHandlerTestBase extends AbstractSolrTestCase {
+public abstract class AnalysisRequestHandlerTestBase extends SolrTestCaseJ4 {
 
   protected void assertToken(NamedList token, TokenInfo info) {
     assertEquals(info.getText(), token.get("text"));
