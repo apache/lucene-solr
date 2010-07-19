@@ -842,7 +842,7 @@ public class SolrPluginUtils {
      * DisjunctionMaxQuery.  (so yes: aliases which point at other
      * aliases should work)
      */
-    protected Query getFieldQuery(String field, String queryText)
+    protected Query getFieldQuery(String field, String queryText, boolean quoted)
       throws ParseException {
             
       if (aliases.containsKey(field)) {
@@ -857,7 +857,7 @@ public class SolrPluginUtils {
                 
         for (String f : a.fields.keySet()) {
 
-          Query sub = getFieldQuery(f,queryText);
+          Query sub = getFieldQuery(f,queryText,quoted);
           if (null != sub) {
             if (null != a.fields.get(f)) {
               sub.setBoost(a.fields.get(f));
@@ -870,7 +870,7 @@ public class SolrPluginUtils {
 
       } else {
         try {
-          return super.getFieldQuery(field, queryText);
+          return super.getFieldQuery(field, queryText, quoted);
         } catch (Exception e) {
           return null;
         }

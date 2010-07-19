@@ -869,7 +869,7 @@ class ExtendedDismaxQParser extends QParser {
     int slop;
 
     @Override
-    protected Query getFieldQuery(String field, String val) throws ParseException {
+    protected Query getFieldQuery(String field, String val, boolean quoted) throws ParseException {
 //System.out.println("getFieldQuery: val="+val);
 
       this.type = QType.FIELD;
@@ -1004,7 +1004,7 @@ class ExtendedDismaxQParser extends QParser {
         switch (type) {
           case FIELD:  // fallthrough
           case PHRASE:
-            Query query = super.getFieldQuery(field, val);
+            Query query = super.getFieldQuery(field, val, type == QType.PHRASE);
             if (query instanceof PhraseQuery) {
               PhraseQuery pq = (PhraseQuery)query;
               if (minClauseSize > 1 && pq.getTerms().length < minClauseSize) return null;

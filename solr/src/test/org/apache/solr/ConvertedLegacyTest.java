@@ -998,7 +998,7 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
     assertQ(req("id:42 AND subword:IBM's")
             ,"*[count(//doc)=1]"
             );
-    assertQ(req("id:42 AND subword:IBM'sx")
+    assertQ(req("id:42 AND subword:\"IBM'sx\"")
             ,"*[count(//doc)=0]"
             );
 
