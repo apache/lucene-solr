@@ -16,30 +16,33 @@
  */
 package org.apache.solr.search;
 
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.response.SolrQueryResponse;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 import java.util.*;
 
 import junit.framework.TestCase;
 
-public class TestRangeQuery extends AbstractSolrTestCase {
+public class TestRangeQuery extends SolrTestCaseJ4 {
 
-  public String getSchemaFile() { return "schema11.xml"; }
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
-  public String getCoreName() { return "basic"; }
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema11.xml");
+  }
 
-
+  @Before
   public void setUp() throws Exception {
     // if you override setUp or tearDown, you better call
     // the super classes version
     super.setUp();
-  }
-  public void tearDown() throws Exception {
-    // if you override setUp or tearDown, you better call
-    // the super classes version
-    super.tearDown();
+    clearIndex();
+    assertU(commit());
   }
 
   Random r = new Random(1);
@@ -69,7 +72,7 @@ public class TestRangeQuery extends AbstractSolrTestCase {
     }
   }
 
-
+  @Test
   public void testRangeQueries() throws Exception {
     // ensure that we aren't losing precision on any fields in addition to testing other non-numeric fields
     // that aren't tested in testRandomRangeQueries()
@@ -197,6 +200,7 @@ public class TestRangeQuery extends AbstractSolrTestCase {
 
   }
 
+  @Test
   public void testRandomRangeQueries() throws Exception {
     String handler="";
     final String[] fields = {"foo_s","foo_i","foo_l","foo_f","foo_d"  // SortableIntField, etc

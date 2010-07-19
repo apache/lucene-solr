@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -31,18 +32,31 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexReader;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * 
  *
  */
-public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
+public class DirectUpdateHandlerTest extends SolrTestCaseJ4 {
 
-  public String getSchemaFile() { return "schema12.xml"; }
-  public String getSolrConfigFile() { return "solrconfig.xml"; }
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema12.xml");
+  }
+
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    clearIndex();
+    assertU(commit());
+  }
   
-
+  @Test
   public void testRequireUniqueKey() throws Exception 
   {
     SolrCore core = h.getCore();
@@ -83,6 +97,7 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
     catch( SolrException ex ) { } // expected
   }
 
+  @Test
   public void testUncommit() throws Exception {
     addSimpleDoc("A");
 
@@ -96,6 +111,7 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
             );
   }
 
+  @Test
   public void testAddCommit() throws Exception {
     addSimpleDoc("A");
 
@@ -117,6 +133,7 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
             );
   }
 
+  @Test
   public void testDeleteCommit() throws Exception {
     addSimpleDoc("A");
     addSimpleDoc("B");
@@ -159,7 +176,12 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
         );
   }
 
+  @Test
   public void testAddRollback() throws Exception {
+    // re-init the core
+    deleteCore();
+    initCore("solrconfig.xml", "schema12.xml");
+
     addSimpleDoc("A");
 
     // commit "A"
@@ -209,7 +231,12 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
             );
   }
 
+  @Test
   public void testDeleteRollback() throws Exception {
+    // re-init the core
+    deleteCore();
+    initCore("solrconfig.xml", "schema12.xml");
+
     addSimpleDoc("A");
     addSimpleDoc("B");
 
@@ -276,6 +303,7 @@ public class DirectUpdateHandlerTest extends AbstractSolrTestCase {
             );
   }
 
+  @Test
   public void testExpungeDeletes() throws Exception {
     assertU(adoc("id","1"));
     assertU(adoc("id","2"));

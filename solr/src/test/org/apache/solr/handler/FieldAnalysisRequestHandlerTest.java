@@ -25,6 +25,11 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.client.solrj.request.FieldAnalysisRequest;
 import org.apache.solr.request.LocalSolrQueryRequest;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 import java.util.List;
 
@@ -39,24 +44,21 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
   private FieldAnalysisRequestHandler handler;
 
   @Override
+  @Before
   public void setUp() throws Exception {
     super.setUp();
     handler = new FieldAnalysisRequestHandler();
   }
 
-  @Override
-  public String getSchemaFile() {
-    return "schema.xml";
-  }
-
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml");
   }
 
   /**
    * Tests the {@link FieldAnalysisRequestHandler#resolveAnalysisRequest(org.apache.solr.request.SolrQueryRequest)}
    */
+  @Test
   public void testResolveAnalysisRequest() throws Exception {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add(AnalysisParams.FIELD_NAME, "text,nametext");
@@ -101,6 +103,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
    * Tests the {@link FieldAnalysisRequestHandler#handleAnalysisRequest(org.apache.solr.client.solrj.request.FieldAnalysisRequest,
    * org.apache.solr.schema.IndexSchema)}
    */
+  @Test
   public void testHandleAnalysisRequest() throws Exception {
 
     FieldAnalysisRequest request = new FieldAnalysisRequest();
@@ -293,6 +296,7 @@ public class FieldAnalysisRequestHandlerTest extends AnalysisRequestHandlerTestB
 
   }
 
+  @Test
   public void testCharFilterAnalysis() throws Exception {
 
     FieldAnalysisRequest request = new FieldAnalysisRequest();

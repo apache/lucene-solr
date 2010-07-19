@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
@@ -31,32 +32,35 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.XmlUpdateRequestHandler;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * 
  */
-public class SignatureUpdateProcessorFactoryTest extends AbstractSolrTestCase {
+public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
   /** modified by tests as needed */
   private String processor = "dedupe";
 
-  @Override
-  public String getSchemaFile() {
-    return "schema12.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema12.xml");
   }
 
   @Override
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
-  }
-
-  @Override
+  @Before
   public void setUp() throws Exception {
     super.setUp();
+    clearIndex();
+    assertU(commit());
     processor = "dedupe"; // set the default that most tests expect
   }
 
+  @Test
   public void testDupeDetection() throws Exception {
     SolrCore core = h.getCore();
     UpdateRequestProcessorChain chained = core.getUpdateProcessingChain(
@@ -103,6 +107,7 @@ public class SignatureUpdateProcessorFactoryTest extends AbstractSolrTestCase {
     factory.setEnabled(false);
   }
 
+  @Test
   public void testMultiThreaded() throws Exception {
     UpdateRequestProcessorChain chained = h.getCore().getUpdateProcessingChain(
         "dedupe");
@@ -182,6 +187,7 @@ public class SignatureUpdateProcessorFactoryTest extends AbstractSolrTestCase {
   /**
    * a non-indexed signatureField is fine as long as overwriteDupes==false
    */
+  @Test
   public void testNonIndexedSignatureField() throws Exception {
     SolrCore core = h.getCore();
 
@@ -197,6 +203,7 @@ public class SignatureUpdateProcessorFactoryTest extends AbstractSolrTestCase {
                  2l, core.getSearcher().get().getReader().numDocs());
   }
 
+  @Test
   public void testFailNonIndexedSigWithOverwriteDupes() throws Exception {
     SolrCore core = h.getCore();
     SignatureUpdateProcessorFactory f = new SignatureUpdateProcessorFactory();

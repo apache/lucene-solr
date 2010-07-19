@@ -26,6 +26,11 @@ import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,17 +45,13 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
 
   private DocumentAnalysisRequestHandler handler;
 
-  @Override
-  public String getSchemaFile() {
-    return "schema.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml");
   }
 
   @Override
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
-  }
-
-  @Override
+  @Before
   public void setUp() throws Exception {
     super.setUp();
     handler = new DocumentAnalysisRequestHandler();
@@ -60,6 +61,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
   /**
    * Tests the {@link DocumentAnalysisRequestHandler#resolveAnalysisRequest(org.apache.solr.request.SolrQueryRequest)}
    */
+  @Test
   public void testResolveAnalysisRequest() throws Exception {
 
     String docsInput =
@@ -108,6 +110,7 @@ public class DocumentAnalysisRequestHandlerTest extends AnalysisRequestHandlerTe
    * Tests the {@link DocumentAnalysisRequestHandler#handleAnalysisRequest(org.apache.solr.client.solrj.request.DocumentAnalysisRequest,
    * org.apache.solr.schema.IndexSchema)}
    */
+  @Test
   public void testHandleAnalysisRequest() throws Exception {
 
     SolrInputDocument document = new SolrInputDocument();
