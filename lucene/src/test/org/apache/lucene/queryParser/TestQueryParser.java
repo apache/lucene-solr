@@ -50,6 +50,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -250,7 +251,77 @@ public class TestQueryParser extends LocalizedTestCase {
 	 assertQueryEquals("term\u3000term\u3000term", null, "term\u0020term\u0020term");
 	 assertQueryEquals("用語\u3000用語\u3000用語", null, "用語\u0020用語\u0020用語");
   }
+
+  public void testCJKTerm() throws Exception {
+    // individual CJK chars as terms
+    StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT); 
+    
+    BooleanQuery expected = new BooleanQuery();
+    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
+    expected.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    
+    assertEquals(expected, getQuery("中国", analyzer));
+  }
   
+  public void testCJKBoostedTerm() throws Exception {
+    // individual CJK chars as terms
+    StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    
+    BooleanQuery expected = new BooleanQuery();
+    expected.setBoost(0.5f);
+    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
+    expected.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    
+    assertEquals(expected, getQuery("中国^0.5", analyzer));
+  }
+  
+  public void testCJKPhrase() throws Exception {
+    // individual CJK chars as terms
+    StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    
+    PhraseQuery expected = new PhraseQuery();
+    expected.add(new Term("field", "中"));
+    expected.add(new Term("field", "国"));
+    
+    assertEquals(expected, getQuery("\"中国\"", analyzer));
+  }
+  
+  public void testCJKBoostedPhrase() throws Exception {
+    // individual CJK chars as terms
+    StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    
+    PhraseQuery expected = new PhraseQuery();
+    expected.setBoost(0.5f);
+    expected.add(new Term("field", "中"));
+    expected.add(new Term("field", "国"));
+    
+    assertEquals(expected, getQuery("\"中国\"^0.5", analyzer));
+  }
+  
+  public void testCJKSloppyPhrase() throws Exception {
+    // individual CJK chars as terms
+    StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    
+    PhraseQuery expected = new PhraseQuery();
+    expected.setSlop(3);
+    expected.add(new Term("field", "中"));
+    expected.add(new Term("field", "国"));
+    
+    assertEquals(expected, getQuery("\"中国\"~3", analyzer));
+  }
+  
+  public void testAutoGeneratePhraseQueriesOn() throws Exception {
+    // individual CJK chars as terms
+    StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+  
+    PhraseQuery expected = new PhraseQuery();
+    expected.add(new Term("field", "中"));
+    expected.add(new Term("field", "国"));
+    QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "field", analyzer);
+    parser.setAutoGeneratePhraseQueries(true);
+    assertEquals(expected, parser.parse("中国"));
+  }
+
   public void testSimple() throws Exception {
     assertQueryEquals("term term term", null, "term term term");
     assertQueryEquals("türm term term", new WhitespaceAnalyzer(TEST_VERSION_CURRENT), "türm term term");
@@ -437,9 +508,9 @@ public class TestQueryParser extends LocalizedTestCase {
     
     assertQueryEquals("drop AND stop AND roll", qpAnalyzer, "+drop +roll");
     assertQueryEquals("term phrase term", qpAnalyzer,
-                      "term \"phrase1 phrase2\" term");
+                      "term (phrase1 phrase2) term");
     assertQueryEquals("term AND NOT phrase term", qpAnalyzer,
-                      "+term -\"phrase1 phrase2\" term");
+                      "+term -(phrase1 phrase2) term");
     assertQueryEquals("stop^3", qpAnalyzer, "");
     assertQueryEquals("stop", qpAnalyzer, "");
     assertQueryEquals("(stop)^3", qpAnalyzer, "");
@@ -913,9 +984,9 @@ public class TestQueryParser extends LocalizedTestCase {
       }
 
       @Override
-      protected Query getFieldQuery(String field, String queryText) throws ParseException {
+      protected Query getFieldQuery(String field, String queryText, boolean quoted) throws ParseException {
         type[0]=3;
-        return super.getFieldQuery(field, queryText);
+        return super.getFieldQuery(field, queryText, quoted);
       }
     };
 

@@ -45,7 +45,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
 
   public void testMultiAnalyzer() throws ParseException {
     
-    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "", new MultiAnalyzer());
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "", new MultiAnalyzer());
 
     // trivial, no multiple tokens:
     assertEquals("foo", qp.parse("foo").toString());
@@ -136,7 +136,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
 
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new StandardTokenizer(Version.LUCENE_CURRENT, reader);
+      TokenStream result = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
       result = new TestFilter(result);
       result = new LowerCaseFilter(result);
       return result;
@@ -204,7 +204,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
 
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      TokenStream result = new StandardTokenizer(Version.LUCENE_CURRENT, reader);
+      TokenStream result = new StandardTokenizer(TEST_VERSION_CURRENT, reader);
       result = new TestPosIncrementFilter(result);
       result = new LowerCaseFilter(result);
       return result;
@@ -243,7 +243,7 @@ public class TestMultiAnalyzer extends BaseTokenStreamTestCase {
     private final static class DumbQueryParser extends QueryParser {
         
         public DumbQueryParser(String f, Analyzer a) {
-            super(Version.LUCENE_CURRENT, f, a);
+            super(TEST_VERSION_CURRENT, f, a);
         }
 
         /** expose super's version */

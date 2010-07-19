@@ -27,6 +27,8 @@ import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.DateTools;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.PhraseQuery;
@@ -279,6 +281,64 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     assertQueryEquals("term 1.0 1 2", a, "term 1.0 1 2");
     assertQueryEquals("term term1 term2", a, "term term1 term2");
   }
+  
+  public void testCJKTerm() throws Exception {
+    // individual CJK chars as terms
+    StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    
+    BooleanQuery expected = new BooleanQuery();
+    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
+    expected.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    
+    assertEquals(expected, getQuery("中国", analyzer));
+  }
+  
+  public void testCJKBoostedTerm() throws Exception {
+    // individual CJK chars as terms
+    StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    
+    BooleanQuery expected = new BooleanQuery();
+    expected.setBoost(0.5f);
+    expected.add(new TermQuery(new Term("field", "中")), BooleanClause.Occur.SHOULD);
+    expected.add(new TermQuery(new Term("field", "国")), BooleanClause.Occur.SHOULD);
+    
+    assertEquals(expected, getQuery("中国^0.5", analyzer));
+  }
+  
+  public void testCJKPhrase() throws Exception {
+    // individual CJK chars as terms
+    StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    
+    PhraseQuery expected = new PhraseQuery();
+    expected.add(new Term("field", "中"));
+    expected.add(new Term("field", "国"));
+    
+    assertEquals(expected, getQuery("\"中国\"", analyzer));
+  }
+  
+  public void testCJKBoostedPhrase() throws Exception {
+    // individual CJK chars as terms
+    StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    
+    PhraseQuery expected = new PhraseQuery();
+    expected.setBoost(0.5f);
+    expected.add(new Term("field", "中"));
+    expected.add(new Term("field", "国"));
+    
+    assertEquals(expected, getQuery("\"中国\"^0.5", analyzer));
+  }
+  
+  public void testCJKSloppyPhrase() throws Exception {
+    // individual CJK chars as terms
+    StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    
+    PhraseQuery expected = new PhraseQuery();
+    expected.setSlop(3);
+    expected.add(new Term("field", "中"));
+    expected.add(new Term("field", "国"));
+    
+    assertEquals(expected, getQuery("\"中国\"~3", analyzer));
+  }
 
   // failing tests disabled since PrecedenceQueryParser
   // is currently unmaintained
@@ -353,11 +413,11 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     assertQueryEquals("term -stop term", qpAnalyzer, "term term");
     assertQueryEquals("drop AND stop AND roll", qpAnalyzer, "+drop +roll");
     assertQueryEquals("term phrase term", qpAnalyzer,
-                      "term \"phrase1 phrase2\" term");
+                      "term (phrase1 phrase2) term");
     // note the parens in this next assertion differ from the original
     // QueryParser behavior
     assertQueryEquals("term AND NOT phrase term", qpAnalyzer,
-                      "(+term -\"phrase1 phrase2\") term");
+                      "(+term -(phrase1 phrase2)) term");
     assertQueryEquals("stop", qpAnalyzer, "");
     assertQueryEquals("stop OR stop AND stop", qpAnalyzer, "");
     assertTrue(getQuery("term term term", qpAnalyzer) instanceof BooleanQuery);
