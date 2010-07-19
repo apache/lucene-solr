@@ -89,7 +89,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
     for (int i = 1; i < docText.length; i++) {
       qtxt += ' ' + docText[i]; // large query so that search will be longer
     }
-    QueryParser queryParser = new QueryParser(Version.LUCENE_CURRENT, FIELD_NAME, new WhitespaceAnalyzer());
+    QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, new WhitespaceAnalyzer());
     query = queryParser.parse(qtxt);
     
     // warm the searcher

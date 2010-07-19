@@ -108,7 +108,7 @@ public class TestSearch extends LuceneTestCase {
       };
       ScoreDoc[] hits = null;
 
-      QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, "contents", analyzer);
+      QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "contents", analyzer);
       parser.setPhraseSlop(4);
       for (int j = 0; j < queries.length; j++) {
         Query query = parser.parse(queries[j]);

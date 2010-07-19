@@ -191,7 +191,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     assertEquals(0, hits.length);
 
     // should not find "1 2" because there is a gap of 1 in the index
-    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "field",
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field",
                                      new StopWhitespaceAnalyzer(false));
     q = (PhraseQuery) qp.parse("\"1 2\"");
     hits = searcher.search(q, null, 1000).scoreDocs;
@@ -215,7 +215,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     assertEquals(0, hits.length);
       
     // when both qp qnd stopFilter propagate increments, we should find the doc.
-    qp = new QueryParser(Version.LUCENE_CURRENT, "field",
+    qp = new QueryParser(TEST_VERSION_CURRENT, "field",
                          new StopWhitespaceAnalyzer(true));
     qp.setEnablePositionIncrements(true);
     q = (PhraseQuery) qp.parse("\"1 stop 2\"");

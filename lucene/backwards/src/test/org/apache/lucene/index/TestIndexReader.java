@@ -77,7 +77,7 @@ public class TestIndexReader extends LuceneTestCase
       commitUserData.put("foo", "fighters");
       
       // set up writer
-      IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
       writer.setMaxBufferedDocs(2);
       for(int i=0;i<27;i++)
         addDocumentWithFields(writer);
@@ -99,7 +99,7 @@ public class TestIndexReader extends LuceneTestCase
       assertTrue(c.equals(r.getIndexCommit()));
 
       // Change the index
-      writer = new IndexWriter(d, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer = new IndexWriter(d, new StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
       writer.setMaxBufferedDocs(2);
       for(int i=0;i<7;i++)
         addDocumentWithFields(writer);
@@ -110,7 +110,7 @@ public class TestIndexReader extends LuceneTestCase
       assertFalse(r2.getIndexCommit().isOptimized());
       r3.close();
 
-      writer = new IndexWriter(d, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer = new IndexWriter(d, new StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
       writer.optimize();
       writer.close();
 
@@ -124,19 +124,19 @@ public class TestIndexReader extends LuceneTestCase
     public void testIsCurrent() throws Exception
     {
       RAMDirectory d = new MockRAMDirectory();
-      IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
       addDocumentWithFields(writer);
       writer.close();
       // set up reader:
       IndexReader reader = IndexReader.open(d, false);
       assertTrue(reader.isCurrent());
       // modify index by adding another document:
-      writer = new IndexWriter(d, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer = new IndexWriter(d, new StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
       addDocumentWithFields(writer);
       writer.close();
       assertFalse(reader.isCurrent());
       // re-create index:
-      writer = new IndexWriter(d, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+      writer = new IndexWriter(d, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
       addDocumentWithFields(writer);
       writer.close();
       assertFalse(reader.isCurrent());
@@ -152,7 +152,7 @@ public class TestIndexReader extends LuceneTestCase
     {
         RAMDirectory d = new MockRAMDirectory();
         // set up writer
-        IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
         addDocumentWithFields(writer);
         writer.close();
         // set up reader
@@ -164,7 +164,7 @@ public class TestIndexReader extends LuceneTestCase
         assertTrue(fieldNames.contains("unstored"));
         reader.close();
         // add more documents
-        writer = new IndexWriter(d, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
+        writer = new IndexWriter(d, new StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
         // want to get some more segments here
         for (int i = 0; i < 5*writer.getMergeFactor(); i++)
         {
@@ -244,7 +244,7 @@ public class TestIndexReader extends LuceneTestCase
   public void testTermVectors() throws Exception {
     RAMDirectory d = new MockRAMDirectory();
     // set up writer
-    IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
     // want to get some more segments here
     // new termvector fields
     for (int i = 0; i < 5 * writer.getMergeFactor(); i++) {
@@ -1420,7 +1420,7 @@ public class TestIndexReader extends LuceneTestCase
       RAMDirectory d = new MockRAMDirectory();
 
       // set up writer
-      IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
       writer.setMaxBufferedDocs(2);
       for(int i=0;i<27;i++)
         addDocumentWithFields(writer);
@@ -1436,7 +1436,7 @@ public class TestIndexReader extends LuceneTestCase
       assertTrue(c.equals(r.getIndexCommit()));
 
       // Change the index
-      writer = new IndexWriter(d, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer = new IndexWriter(d, new StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
       writer.setMaxBufferedDocs(2);
       for(int i=0;i<7;i++)
         addDocumentWithFields(writer);
@@ -1447,7 +1447,7 @@ public class TestIndexReader extends LuceneTestCase
       assertFalse(r2.getIndexCommit().isOptimized());
       r2.close();
 
-      writer = new IndexWriter(d, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer = new IndexWriter(d, new StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
       writer.optimize();
       writer.close();
 
@@ -1461,7 +1461,7 @@ public class TestIndexReader extends LuceneTestCase
 
     public void testReadOnly() throws Throwable {
       RAMDirectory d = new MockRAMDirectory();
-      IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer = new IndexWriter(d, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
       addDocumentWithFields(writer);
       writer.commit();
       addDocumentWithFields(writer);
@@ -1475,7 +1475,7 @@ public class TestIndexReader extends LuceneTestCase
         // expected
       }
       
-      writer = new IndexWriter(d, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer = new IndexWriter(d, new StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
       addDocumentWithFields(writer);
       writer.close();
 
@@ -1492,7 +1492,7 @@ public class TestIndexReader extends LuceneTestCase
         // expected
       }
 
-      writer = new IndexWriter(d, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer = new IndexWriter(d, new StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
       writer.optimize();
       writer.close();
 
@@ -1510,7 +1510,7 @@ public class TestIndexReader extends LuceneTestCase
       }
 
       // Make sure write lock isn't held
-      writer = new IndexWriter(d, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
+      writer = new IndexWriter(d, new StandardAnalyzer(TEST_VERSION_CURRENT), false, IndexWriter.MaxFieldLength.LIMITED);
       writer.close();
 
       r3.close();
@@ -1520,7 +1520,7 @@ public class TestIndexReader extends LuceneTestCase
   // LUCENE-1474
   public void testIndexReader() throws Exception {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT),
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT),
                                          IndexWriter.MaxFieldLength.UNLIMITED);
     writer.addDocument(createDocument("a"));
     writer.addDocument(createDocument("b"));
@@ -1538,7 +1538,7 @@ public class TestIndexReader extends LuceneTestCase
   public void testIndexReaderUnDeleteAll() throws Exception {
     MockRAMDirectory dir = new MockRAMDirectory();
     dir.setPreventDoubleWrite(false);
-    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT),
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT),
                                          IndexWriter.MaxFieldLength.UNLIMITED);
     writer.addDocument(createDocument("a"));
     writer.addDocument(createDocument("b"));
@@ -1580,7 +1580,7 @@ public class TestIndexReader extends LuceneTestCase
 
     Directory dir = new MockRAMDirectory();
     
-    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT),
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT),
                                          IndexWriter.MaxFieldLength.LIMITED);
 
     writer.setMaxBufferedDocs(2);

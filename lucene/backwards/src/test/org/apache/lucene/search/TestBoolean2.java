@@ -107,7 +107,7 @@ public class TestBoolean2 extends LuceneTestCase {
   };
 
   public Query makeQuery(String queryText) throws ParseException {
-    Query q = (new QueryParser(Version.LUCENE_CURRENT, field, new WhitespaceAnalyzer())).parse(queryText);
+    Query q = (new QueryParser(TEST_VERSION_CURRENT, field, new WhitespaceAnalyzer())).parse(queryText);
     return q;
   }
 

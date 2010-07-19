@@ -52,7 +52,7 @@ public class TestExplanations extends LuceneTestCase {
   public static final String KEY = "KEY";
   public static final String FIELD = "field";
   public static final QueryParser qp =
-    new QueryParser(Version.LUCENE_CURRENT, FIELD, new WhitespaceAnalyzer());
+    new QueryParser(TEST_VERSION_CURRENT, FIELD, new WhitespaceAnalyzer());
 
   @Override
   public void tearDown() throws Exception {

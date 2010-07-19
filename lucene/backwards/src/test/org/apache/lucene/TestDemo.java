@@ -45,7 +45,7 @@ public class TestDemo extends LuceneTestCase {
 
   public void testDemo() throws IOException, ParseException {
 
-    Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
 
     // Store the index in memory:
     Directory directory = new RAMDirectory();
@@ -63,7 +63,7 @@ public class TestDemo extends LuceneTestCase {
     // Now search the index:
     IndexSearcher isearcher = new IndexSearcher(directory, true); // read-only=true
     // Parse a simple query that searches for "text":
-    QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, "fieldname", analyzer);
+    QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "fieldname", analyzer);
     Query query = parser.parse("text");
     ScoreDoc[] hits = isearcher.search(query, null, 1000).scoreDocs;
     assertEquals(1, hits.length);

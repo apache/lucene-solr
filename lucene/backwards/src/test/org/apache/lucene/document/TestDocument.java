@@ -154,7 +154,7 @@ public class TestDocument extends LuceneTestCase
     public void testGetValuesForIndexedDocument() throws Exception
     {
         RAMDirectory dir = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+        IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
         writer.addDocument(makeDocumentWithFields());
         writer.close();
 
@@ -225,7 +225,7 @@ public class TestDocument extends LuceneTestCase
       doc.add(new Field("keyword", "test", Field.Store.YES, Field.Index.NOT_ANALYZED));
 
       RAMDirectory dir = new RAMDirectory();
-      IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+      IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
       writer.addDocument(doc);
       field.setValue("id2");
       writer.addDocument(doc);

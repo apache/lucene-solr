@@ -703,7 +703,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     final Directory dir = new MockRAMDirectory();
     final int n = 30;
 
-    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
     for (int i = 0; i < n; i++) {
       writer.addDocument(createDocument(i, 3));
     }
@@ -722,7 +722,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
           modifier.deleteDocument(i % modifier.maxDoc());
           modifier.close();
         } else {
-          IndexWriter modifier = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
+          IndexWriter modifier = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT), IndexWriter.MaxFieldLength.LIMITED);
           modifier.addDocument(createDocument(n + i, 6));
           modifier.close();
         }

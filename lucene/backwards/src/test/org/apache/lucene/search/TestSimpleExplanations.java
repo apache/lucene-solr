@@ -317,8 +317,8 @@ public class TestSimpleExplanations extends TestExplanations {
     Document lDoc3 = new Document();
     lDoc3.add(new Field("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
 
-    IndexWriter writerA = new IndexWriter(indexStoreA, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
-    IndexWriter writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writerA = new IndexWriter(indexStoreA, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writerB = new IndexWriter(indexStoreB, new StandardAnalyzer(TEST_VERSION_CURRENT), true, IndexWriter.MaxFieldLength.LIMITED);
 
     writerA.addDocument(lDoc);
     writerA.addDocument(lDoc2);
@@ -328,7 +328,7 @@ public class TestSimpleExplanations extends TestExplanations {
     writerB.addDocument(lDoc3);
     writerB.close();
 
-    QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, "fulltext", new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
+    QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "fulltext", new StandardAnalyzer(TEST_VERSION_CURRENT));
     Query query = parser.parse("handle:1");
 
     Searcher[] searchers = new Searcher[2];

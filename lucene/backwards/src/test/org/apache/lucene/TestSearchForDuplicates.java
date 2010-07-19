@@ -99,7 +99,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       // try a search without OR
       Searcher searcher = new IndexSearcher(directory, true);
 
-      QueryParser parser = new QueryParser(Version.LUCENE_CURRENT, PRIORITY_FIELD, analyzer);
+      QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, PRIORITY_FIELD, analyzer);
 
       Query query = parser.parse(HIGH_PRIORITY);
       out.println("Query: " + query.toString(PRIORITY_FIELD));
@@ -114,7 +114,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       searcher = new IndexSearcher(directory, true);
       hits = null;
 
-      parser = new QueryParser(Version.LUCENE_CURRENT, PRIORITY_FIELD, analyzer);
+      parser = new QueryParser(TEST_VERSION_CURRENT, PRIORITY_FIELD, analyzer);
 
       query = parser.parse(HIGH_PRIORITY + " OR " + MED_PRIORITY);
       out.println("Query: " + query.toString(PRIORITY_FIELD));

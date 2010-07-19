@@ -452,7 +452,7 @@ public class TestSpans extends LuceneTestCase {
   // LUCENE-1404
   public void testNPESpanQuery() throws Throwable {
     final Directory dir = new MockRAMDirectory();
-    final IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT, Collections.emptySet()), IndexWriter.MaxFieldLength.LIMITED);
+    final IndexWriter writer = new IndexWriter(dir, new StandardAnalyzer(TEST_VERSION_CURRENT, Collections.emptySet()), IndexWriter.MaxFieldLength.LIMITED);
 
     // Add documents
     addDoc(writer, "1", "the big dogs went running to the market");

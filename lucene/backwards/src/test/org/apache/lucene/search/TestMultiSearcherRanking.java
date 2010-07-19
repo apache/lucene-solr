@@ -88,7 +88,7 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
   private void checkQuery(String queryStr) throws IOException, ParseException {
     // check result hit ranking
     if(verbose) System.out.println("Query: " + queryStr);
-      QueryParser queryParser = new QueryParser(Version.LUCENE_CURRENT, FIELD_NAME, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT));
+      QueryParser queryParser = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, new StandardAnalyzer(TEST_VERSION_CURRENT));
     Query query = queryParser.parse(queryStr);
     ScoreDoc[] multiSearcherHits = multiSearcher.search(query, null, 1000).scoreDocs;
     ScoreDoc[] singleSearcherHits = singleSearcher.search(query, null, 1000).scoreDocs;
@@ -115,12 +115,12 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
     super.setUp();
     // create MultiSearcher from two seperate searchers
     Directory d1 = new RAMDirectory();
-    IndexWriter iw1 = new IndexWriter(d1, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true,
+    IndexWriter iw1 = new IndexWriter(d1, new StandardAnalyzer(TEST_VERSION_CURRENT), true,
                                       IndexWriter.MaxFieldLength.LIMITED);
     addCollection1(iw1);
     iw1.close();
     Directory d2 = new RAMDirectory();
-    IndexWriter iw2 = new IndexWriter(d2, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true,
+    IndexWriter iw2 = new IndexWriter(d2, new StandardAnalyzer(TEST_VERSION_CURRENT), true,
                                       IndexWriter.MaxFieldLength.LIMITED);
     addCollection2(iw2);
     iw2.close();
@@ -132,7 +132,7 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
 
     // create IndexSearcher which contains all documents
     Directory d = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(d, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT), true,
+    IndexWriter iw = new IndexWriter(d, new StandardAnalyzer(TEST_VERSION_CURRENT), true,
                                      IndexWriter.MaxFieldLength.LIMITED);
     addCollection1(iw);
     addCollection2(iw);

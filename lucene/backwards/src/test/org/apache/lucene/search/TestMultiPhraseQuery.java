@@ -170,7 +170,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase
     
   public void testPhrasePrefixWithBooleanQuery() throws IOException {
     RAMDirectory indexStore = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(indexStore, new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT, Collections.emptySet()), true, IndexWriter.MaxFieldLength.LIMITED);
+    IndexWriter writer = new IndexWriter(indexStore, new StandardAnalyzer(TEST_VERSION_CURRENT, Collections.emptySet()), true, IndexWriter.MaxFieldLength.LIMITED);
     add("This is a test", "object", writer);
     add("a note", "note", writer);
     writer.close();

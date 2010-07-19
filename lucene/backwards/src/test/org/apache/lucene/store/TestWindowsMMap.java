@@ -72,7 +72,7 @@ public class TestWindowsMMap extends LuceneTestCase {
 
     // plan to add a set of useful stopwords, consider changing some of the
     // interior filters.
-    StandardAnalyzer analyzer = new StandardAnalyzer(org.apache.lucene.util.Version.LUCENE_CURRENT, Collections.emptySet());
+    StandardAnalyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT, Collections.emptySet());
     // TODO: something about lock timeouts and leftover locks.
     IndexWriter writer = new IndexWriter(storeDirectory, analyzer, true, IndexWriter.MaxFieldLength.LIMITED);
     writer.commit();

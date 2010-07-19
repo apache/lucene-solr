@@ -75,7 +75,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   }
 
   public void testStop() throws Exception {
-    Analyzer a = new StopAnalyzer(Version.LUCENE_CURRENT);
+    Analyzer a = new StopAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(a, "foo bar FOO BAR", 
                      new String[] { "foo", "bar", "foo", "bar" });
     assertAnalyzesTo(a, "foo a bar such FOO THESE BAR", 
@@ -123,7 +123,7 @@ public class TestAnalyzers extends BaseTokenStreamTestCase {
   /* StandardAnalyzer was made final in 3.1:
   private static class MyStandardAnalyzer extends StandardAnalyzer {
     public MyStandardAnalyzer() {
-      super(org.apache.lucene.util.Version.LUCENE_CURRENT);
+      super(org.apache.lucene.util.TEST_VERSION_CURRENT);
     }
   
     @Override

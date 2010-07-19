@@ -362,8 +362,8 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testToString() throws Exception {
-    StopAnalyzer analyzer = new StopAnalyzer(Version.LUCENE_CURRENT);
-    QueryParser qp = new QueryParser(Version.LUCENE_CURRENT, "field", analyzer);
+    StopAnalyzer analyzer = new StopAnalyzer(TEST_VERSION_CURRENT);
+    QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", analyzer);
     qp.setEnablePositionIncrements(true);
     PhraseQuery q = (PhraseQuery)qp.parse("\"this hi this is a test is\"");
     assertEquals("field:\"? hi ? ? ? test\"", q.toString());
