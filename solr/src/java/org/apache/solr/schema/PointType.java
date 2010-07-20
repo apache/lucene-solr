@@ -23,7 +23,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import org.apache.lucene.spatial.tier.DistanceUtils;
+import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.lucene.spatial.tier.InvalidGeoException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
@@ -201,8 +201,8 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
     } else {
       BooleanQuery tmp = new BooleanQuery();
       //TODO: Handle distance measures, as this assumes Euclidean
-      double [] ur = org.apache.lucene.spatial.tier.DistanceUtils.vectorBoxCorner(point, null, options.distance, true);
-      double [] ll = org.apache.lucene.spatial.tier.DistanceUtils.vectorBoxCorner(point, null, options.distance, false);
+      double [] ur = DistanceUtils.vectorBoxCorner(point, null, options.distance, true);
+      double [] ll = DistanceUtils.vectorBoxCorner(point, null, options.distance, false);
       for (int i = 0; i < ur.length; i++) {
         SchemaField subSF = subField(options.field, i);
         Query range = subSF.getType().getRangeQuery(parser, subSF, String.valueOf(ll[i]), String.valueOf(ur[i]), true, true);

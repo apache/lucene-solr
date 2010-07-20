@@ -21,7 +21,7 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.spatial.geohash.GeoHashUtils;
-import org.apache.lucene.spatial.tier.DistanceUtils;
+import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.lucene.spatial.tier.InvalidGeoException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
@@ -42,7 +42,7 @@ import java.io.IOException;
  * href="http://en.wikipedia.org/wiki/Geohash">Geohash</a> field. The field is
  * provided as a lat/lon pair and is internally represented as a string.
  *
- * @see org.apache.lucene.spatial.tier.DistanceUtils#parseLatitudeLongitude(double[], String)
+ * @see org.apache.lucene.spatial.DistanceUtils#parseLatitudeLongitude(double[], String)
  */
 public class GeoHashField extends FieldType implements SpatialQueryable {
 

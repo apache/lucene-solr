@@ -16,8 +16,8 @@ package org.apache.solr.search.function.distance;
  * limitations under the License.
  */
 
+import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.lucene.spatial.geohash.GeoHashUtils;
-import org.apache.lucene.spatial.tier.DistanceUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.junit.BeforeClass;

@@ -20,7 +20,7 @@ package org.apache.solr.search;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.spatial.geometry.DistanceUnits;
-import org.apache.lucene.spatial.tier.DistanceUtils;
+import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;

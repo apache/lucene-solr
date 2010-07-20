@@ -40,6 +40,7 @@ import org.apache.lucene.search.function.CustomScoreQuery;
 import org.apache.lucene.search.function.CustomScoreProvider;
 import org.apache.lucene.search.function.FieldScoreQuery;
 import org.apache.lucene.search.function.FieldScoreQuery.Type;
+import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.lucene.spatial.geohash.GeoHashUtils;
 import org.apache.lucene.spatial.geometry.DistanceUnits;
 import org.apache.lucene.spatial.geometry.FloatLatLng;

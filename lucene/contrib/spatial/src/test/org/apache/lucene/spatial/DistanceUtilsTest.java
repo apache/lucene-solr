@@ -1,7 +1,6 @@
 package org.apache.lucene.spatial;
 
 import junit.framework.TestCase;
-import org.apache.lucene.spatial.tier.DistanceUtils;
 import org.apache.lucene.spatial.tier.InvalidGeoException;
 
 
@@ -180,7 +179,7 @@ public class DistanceUtilsTest extends TestCase {
 
 
     try {
-      parse = org.apache.lucene.spatial.tier.DistanceUtils.parsePoint(null, "89.0         ,   ", 3);
+      parse = DistanceUtils.parsePoint(null, "89.0         ,   ", 3);
       assertTrue(false);
     } catch (InvalidGeoException e) {
     }

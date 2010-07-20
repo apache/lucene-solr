@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.spatial.tier;
+package org.apache.lucene.spatial;
 
 import org.apache.lucene.spatial.geometry.DistanceUnits;
 import org.apache.lucene.spatial.geometry.FloatLatLng;
 import org.apache.lucene.spatial.geometry.LatLng;
 import org.apache.lucene.spatial.geometry.shape.LLRect;
 import org.apache.lucene.spatial.geometry.shape.Rectangle;
+import org.apache.lucene.spatial.tier.InvalidGeoException;
 
 /**
  * <p><font color="red"><b>NOTE:</b> This API is still in
@@ -312,9 +313,9 @@ public class DistanceUtils {
    * @param externalVal The value to parse
    * @param dimension   The expected number of values for the point
    * @return An array of the values that make up the point (aka vector)
-   * @throws InvalidGeoException if the dimension specified does not match the number of values in the externalValue.
+   * @throws org.apache.lucene.spatial.tier.InvalidGeoException if the dimension specified does not match the number of values in the externalValue.
    */
-  public static String[] parsePoint(String[] out, String externalVal, int dimension) throws InvalidGeoException{
+  public static String[] parsePoint(String[] out, String externalVal, int dimension) throws InvalidGeoException {
     //TODO: Should we support sparse vectors?
     if (out == null || out.length != dimension) out = new String[dimension];
     int idx = externalVal.indexOf(',');
