@@ -31,11 +31,26 @@ import org.apache.lucene.store.IndexOutput;
  */
 public class DefaultSegmentInfosWriter extends SegmentInfosWriter {
 
+  /** This format adds optional per-segment String
+   *  diagnostics storage, and switches userData to Map */
+  public static final int FORMAT_DIAGNOSTICS = -9;
+
+  /** Each segment records whether its postings are written
+   *  in the new flex format */
+  public static final int FORMAT_4_0 = -10;
+
+  /** This must always point to the most recent file format.
+   * whenever you add a new format, make it 1 smaller (negative version logic)! */
+  public static final int FORMAT_CURRENT = FORMAT_4_0;
+  
+  /** This must always point to the first supported file format. */
+  public static final int FORMAT_MINIMUM = FORMAT_DIAGNOSTICS;
+
   @Override
   public IndexOutput writeInfos(Directory dir, String segmentFileName, SegmentInfos infos)
           throws IOException {
     IndexOutput out = createOutput(dir, segmentFileName);
-    out.writeInt(SegmentInfos.CURRENT_FORMAT); // write FORMAT
+    out.writeInt(FORMAT_CURRENT); // write FORMAT
     out.writeLong(++infos.version); // every write changes
                                  // the index
     out.writeInt(infos.counter); // write counter

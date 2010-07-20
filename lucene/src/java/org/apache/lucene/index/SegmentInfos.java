@@ -53,20 +53,10 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
    * be removed, however the numbers should continue to decrease. 
    */
 
-  /** Used for the segments.gen file only! */
+  /** Used for the segments.gen file only!
+   * Whenever you add a new format, make it 1 smaller (negative version logic)! */
   public static final int FORMAT_SEGMENTS_GEN_CURRENT = -2;
-  
-  /** This format adds optional per-segment String
-   *  diagnostics storage, and switches userData to Map */
-  public static final int FORMAT_DIAGNOSTICS = -9;
-
-  /** Each segment records whether its postings are written
-   *  in the new flex format */
-  public static final int FORMAT_4_0 = -10;
-
-  /* This must always point to the most recent file format. */
-  public static final int CURRENT_FORMAT = FORMAT_4_0;
-  
+    
   public int counter = 0;    // used to name new segments
   
   /**
@@ -556,9 +546,16 @@ public final class SegmentInfos extends Vector<SegmentInfo> {
                     genB = gen0;
                     break;
                   }
+                } else {
+                  /* TODO: Investigate this! 
+                  throw new IndexFormatTooNewException("segments.gen version number invalid: " + version +
+                    " (must be " + FORMAT_SEGMENTS_GEN_CURRENT + ")");
+                  */
                 }
               } catch (IOException err2) {
-                // will retry
+                // rethrow any format exception
+                if (err2 instanceof CorruptIndexException) throw err2;
+                // else will retry
               } finally {
                 genInput.close();
               }

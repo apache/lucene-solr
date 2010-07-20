@@ -21,6 +21,8 @@ package org.apache.lucene.util;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexFormatTooNewException;
+import org.apache.lucene.index.IndexFormatTooOldException;
 
 import java.io.IOException;
 
@@ -48,7 +50,7 @@ public final class CodecUtil {
     return 9+codec.length();
   }
 
-  public static int checkHeader(IndexInput in, String codec, int maxVersion)
+  public static int checkHeader(IndexInput in, String codec, int minVersion, int maxVersion)
     throws IOException {
 
     // Safety to guard against reading a bogus string:
@@ -63,8 +65,11 @@ public final class CodecUtil {
     }
 
     final int actualVersion = in.readInt();
+    if (actualVersion < minVersion) {
+      throw new IndexFormatTooOldException(null, actualVersion, minVersion, maxVersion);
+    }
     if (actualVersion > maxVersion) {
-      throw new CorruptIndexException("version " + actualVersion + " is too new (expected <= version " + maxVersion + ")");
+      throw new IndexFormatTooNewException(null, actualVersion, minVersion, maxVersion);
     }
 
     return actualVersion;

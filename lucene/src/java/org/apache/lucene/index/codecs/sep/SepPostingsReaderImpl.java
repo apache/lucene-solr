@@ -95,7 +95,8 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
   @Override
   public void init(IndexInput termsIn) throws IOException {
     // Make sure we are talking to the matching past writer
-    CodecUtil.checkHeader(termsIn, SepPostingsWriterImpl.CODEC, SepPostingsWriterImpl.VERSION_START);
+    CodecUtil.checkHeader(termsIn, SepPostingsWriterImpl.CODEC,
+      SepPostingsWriterImpl.VERSION_START, SepPostingsWriterImpl.VERSION_START);
     skipInterval = termsIn.readInt();
     maxSkipLevels = termsIn.readInt();
   }

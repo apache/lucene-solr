@@ -42,7 +42,8 @@ public class AppendingTermsDictReader extends StandardTermsDictReader {
   
   @Override
   protected void readHeader(IndexInput in) throws IOException {
-    CodecUtil.checkHeader(in, AppendingTermsDictWriter.CODEC_NAME, StandardTermsDictWriter.VERSION_CURRENT);    
+    CodecUtil.checkHeader(in, AppendingTermsDictWriter.CODEC_NAME,
+      StandardTermsDictWriter.VERSION_START, StandardTermsDictWriter.VERSION_CURRENT);    
   }
 
   @Override

@@ -22,6 +22,8 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexFormatTooOldException;
+import org.apache.lucene.index.IndexFormatTooNewException;
 
 /**
  * @deprecated No longer used with flex indexing, except for
@@ -40,7 +42,11 @@ public final class SegmentTermEnum implements Cloneable {
   public static final int FORMAT_VERSION_UTF8_LENGTH_IN_BYTES = -4;
 
   // NOTE: always change this if you switch to a new format!
+  // whenever you add a new format, make it 1 smaller (negative version logic)!
   public static final int FORMAT_CURRENT = FORMAT_VERSION_UTF8_LENGTH_IN_BYTES;
+  
+  // when removing support for old versions, levae the last supported version here
+  public static final int FORMAT_MINIMUM = FORMAT_VERSION_UTF8_LENGTH_IN_BYTES;
 
   private TermBuffer termBuffer = new TermBuffer();
   private TermBuffer prevBuffer = new TermBuffer();
@@ -78,8 +84,10 @@ public final class SegmentTermEnum implements Cloneable {
       format = firstInt;
 
       // check that it is a format we can understand
-      if (format < FORMAT_CURRENT)
-        throw new CorruptIndexException("Unknown format version:" + format + " expected " + FORMAT_CURRENT + " or higher");
+    if (format > FORMAT_MINIMUM)
+      throw new IndexFormatTooOldException(null, format, FORMAT_MINIMUM, FORMAT_CURRENT);
+    if (format < FORMAT_CURRENT)
+      throw new IndexFormatTooNewException(null, format, FORMAT_MINIMUM, FORMAT_CURRENT);
 
       size = input.readLong();                    // read the size
       

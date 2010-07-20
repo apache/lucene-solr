@@ -37,7 +37,8 @@ public class AppendingTermsIndexReader extends SimpleStandardTermsIndexReader {
   
   @Override
   protected void readHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, AppendingTermsIndexWriter.CODEC_NAME, AppendingTermsIndexWriter.VERSION_START);    
+    CodecUtil.checkHeader(input, AppendingTermsIndexWriter.CODEC_NAME,
+      AppendingTermsIndexWriter.VERSION_START, AppendingTermsIndexWriter.VERSION_START);    
   }
 
   @Override

@@ -146,7 +146,8 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
   }
   
   protected void readHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, SimpleStandardTermsIndexWriter.CODEC_NAME, SimpleStandardTermsIndexWriter.VERSION_START);
+    CodecUtil.checkHeader(input, SimpleStandardTermsIndexWriter.CODEC_NAME,
+      SimpleStandardTermsIndexWriter.VERSION_START, SimpleStandardTermsIndexWriter.VERSION_START);
     dirOffset = input.readLong();
   }
 

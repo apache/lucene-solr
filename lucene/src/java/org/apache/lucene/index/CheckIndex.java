@@ -24,6 +24,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.document.AbstractField;  // for javadocs
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
@@ -343,12 +344,15 @@ public class CheckIndex {
     String sFormat = "";
     boolean skip = false;
 
-    if (format == SegmentInfos.FORMAT_DIAGNOSTICS)
+    if (format == DefaultSegmentInfosWriter.FORMAT_DIAGNOSTICS) {
       sFormat = "FORMAT_DIAGNOSTICS [Lucene 2.9]";
-    else if (format == SegmentInfos.FORMAT_4_0)
-      sFormat = "FORMAT_FLEX_POSTINGS [Lucene 4.0]";
-    else if (format < SegmentInfos.CURRENT_FORMAT) {
-      sFormat = "int=" + format + " [newer version of Lucene than this tool]";
+    } else if (format == DefaultSegmentInfosWriter.FORMAT_4_0) {
+      sFormat = "FORMAT_4_0 [Lucene 4.0]";
+    } else if (format < DefaultSegmentInfosWriter.FORMAT_CURRENT) {
+      sFormat = "int=" + format + " [newer version of Lucene than this tool supports]";
+      skip = true;
+    } else if (format > DefaultSegmentInfosWriter.FORMAT_MINIMUM) {
+      sFormat = "int=" + format + " [older version of Lucene than this tool supports]";
       skip = true;
     }
 

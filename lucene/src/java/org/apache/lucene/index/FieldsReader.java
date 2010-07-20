@@ -100,13 +100,15 @@ final class FieldsReader implements Cloneable {
       fieldInfos = fn;
 
       cloneableFieldsStream = d.openInput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_EXTENSION), readBufferSize);
-      cloneableIndexStream = d.openInput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION), readBufferSize);
+      final String indexStreamFN = IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION);
+      cloneableIndexStream = d.openInput(indexStreamFN, readBufferSize);
       
       format = cloneableIndexStream.readInt();
 
+      if (format < FieldsWriter.FORMAT_MINIMUM)
+        throw new IndexFormatTooOldException(indexStreamFN, format, FieldsWriter.FORMAT_MINIMUM, FieldsWriter.FORMAT_CURRENT);
       if (format > FieldsWriter.FORMAT_CURRENT)
-        throw new CorruptIndexException("Incompatible format version: " + format + " expected " 
-                                        + FieldsWriter.FORMAT_CURRENT + " or lower");
+        throw new IndexFormatTooNewException(indexStreamFN, format, FieldsWriter.FORMAT_MINIMUM, FieldsWriter.FORMAT_CURRENT);
 
       fieldsStream = (IndexInput) cloneableFieldsStream.clone();
 
@@ -185,11 +187,9 @@ final class FieldsReader implements Cloneable {
   }
 
   boolean canReadRawDocs() {
-    // Disable reading raw docs in 2.x format, because of the removal of compressed
-    // fields in 3.0. We don't want rawDocs() to decode field bits to figure out
-    // if a field was compressed, hence we enforce ordinary (non-raw) stored field merges
-    // for <3.0 indexes.
-    return format >= FieldsWriter.FORMAT_LUCENE_3_0_NO_COMPRESSED_FIELDS;
+    // Since we currently only support >3.0 format anymore, always return true!
+    // I leave this method in because it may help for later format changes.
+    return true;
   }
 
   final Document doc(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
@@ -306,7 +306,6 @@ final class FieldsReader implements Cloneable {
 
   private void addField(Document doc, FieldInfo fi, boolean binary, boolean tokenize) throws CorruptIndexException, IOException {
 
-    //we have a binary stored field, and it may be compressed
     if (binary) {
       int toRead = fieldsStream.readVInt();
       final byte[] b = new byte[toRead];

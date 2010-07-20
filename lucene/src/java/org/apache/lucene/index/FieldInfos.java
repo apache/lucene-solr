@@ -39,7 +39,10 @@ public final class FieldInfos {
   // First used in 2.9; prior to 2.9 there was no format header
   public static final int FORMAT_START = -2;
 
-  static final int CURRENT_FORMAT = FORMAT_START;
+  // whenever you add a new format, make it 1 smaller (negative version logic)!
+  static final int FORMAT_CURRENT = FORMAT_START;
+  
+  static final int FORMAT_MINIMUM = FORMAT_START;
   
   static final byte IS_INDEXED = 0x1;
   static final byte STORE_TERMVECTOR = 0x2;
@@ -286,7 +289,7 @@ public final class FieldInfos {
   }
 
   public void write(IndexOutput output) throws IOException {
-    output.writeVInt(CURRENT_FORMAT);
+    output.writeVInt(FORMAT_CURRENT);
     output.writeVInt(size());
     for (int i = 0; i < size(); i++) {
       FieldInfo fi = fieldInfo(i);
@@ -307,8 +310,11 @@ public final class FieldInfos {
   private void read(IndexInput input, String fileName) throws IOException {
     format = input.readVInt();
 
-    if (format > FORMAT_START) {
-      throw new CorruptIndexException("unrecognized format " + format + " in file \"" + fileName + "\"");
+    if (format > FORMAT_MINIMUM) {
+      throw new IndexFormatTooOldException(fileName, format, FORMAT_MINIMUM, FORMAT_CURRENT);
+    }
+    if (format < FORMAT_CURRENT) {
+      throw new IndexFormatTooNewException(fileName, format, FORMAT_MINIMUM, FORMAT_CURRENT);
     }
 
     final int size = input.readVInt(); //read in the size

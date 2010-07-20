@@ -153,7 +153,8 @@ public class StandardTermsDictReader extends FieldsProducer {
   }
 
   protected void readHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(in, StandardTermsDictWriter.CODEC_NAME, StandardTermsDictWriter.VERSION_CURRENT);
+    CodecUtil.checkHeader(in, StandardTermsDictWriter.CODEC_NAME,
+      StandardTermsDictWriter.VERSION_START, StandardTermsDictWriter.VERSION_CURRENT);
     dirOffset = in.readLong();    
   }
   

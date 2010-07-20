@@ -23,6 +23,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
@@ -126,6 +128,74 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                              "31.cfs",
                              "31.nocfs",
   };
+  
+  final String[] unsupportedNames = {"19.cfs",
+                                     "19.nocfs",
+                                     "20.cfs",
+                                     "20.nocfs",
+                                     "21.cfs",
+                                     "21.nocfs",
+                                     "22.cfs",
+                                     "22.nocfs",
+                                     "23.cfs",
+                                     "23.nocfs",
+                                     "24.cfs",
+                                     "24.nocfs",
+                                     "29.cfs",
+                                     "29.nocfs",
+  };
+  
+  /** This test checks that *only* IndexFormatTooOldExceptions are throws when you open and operate on too old indexes! */
+  public void testUnsupportedOldIndexes() throws Exception {
+    for(int i=0;i<unsupportedNames.length;i++) {
+      unzip(getDataFile("unsupported." + unsupportedNames[i] + ".zip"), unsupportedNames[i]);
+
+      String fullPath = fullDir(unsupportedNames[i]);
+      Directory dir = FSDirectory.open(new File(fullPath));
+
+      IndexReader reader = null;
+      IndexWriter writer = null;
+      try {
+        reader = IndexReader.open(dir);
+        MultiFields.getFields(reader).terms("content");
+        reader.document(0); // to catch also 2.9->3.0 stored field change
+        fail("IndexReader.open should not pass for "+unsupportedNames[i]);
+      } catch (IndexFormatTooOldException e) {
+        // pass
+      } finally {
+        if (reader != null) reader.close();
+        reader = null;
+      }
+
+      try {
+        writer = new IndexWriter(dir, new IndexWriterConfig(
+          TEST_VERSION_CURRENT, new MockAnalyzer())
+          .setMergeScheduler(new SerialMergeScheduler()) // no threads!
+        );
+        writer.optimize();
+        reader = writer.getReader();
+        reader.document(0); // to catch also 2.9->3.0 stored field change
+        fail("IndexWriter creation should not pass for "+unsupportedNames[i]);
+      } catch (IndexFormatTooOldException e) {
+        // pass
+      } finally {
+        if (reader != null) reader.close();
+        reader = null;
+        if (writer != null) writer.close();
+        writer = null;
+      }
+      
+      ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+      CheckIndex checker = new CheckIndex(dir);
+      checker.setInfoStream(new PrintStream(bos));
+      CheckIndex.Status indexStatus = checker.checkIndex();
+      assertFalse(indexStatus.clean);
+      assertTrue(bos.toString().contains(IndexFormatTooOldException.class.getName()));
+
+      dir.close();
+      rmDir(unsupportedNames[i]);
+    }
+  }
   
   public void testOptimizeOldIndex() throws Exception {
     for(int i=0;i<oldNames.length;i++) {

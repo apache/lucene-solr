@@ -35,7 +35,11 @@ class TermVectorsReader implements Cloneable {
   static final int FORMAT_UTF8_LENGTH_IN_BYTES = 4;
 
   // NOTE: always change this if you switch to a new format!
+  // whenever you add a new format, make it 1 larger (positive version logic)!
   static final int FORMAT_CURRENT = FORMAT_UTF8_LENGTH_IN_BYTES;
+  
+  // when removing support for old versions, leave the last supported version here
+  static final int FORMAT_MINIMUM = FORMAT_UTF8_LENGTH_IN_BYTES;
 
   //The size in bytes that the FORMAT_VERSION will take up at the beginning of each file 
   static final int FORMAT_SIZE = 4;
@@ -75,11 +79,13 @@ class TermVectorsReader implements Cloneable {
       String idxName = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_INDEX_EXTENSION);
       if (d.fileExists(idxName)) {
         tvx = d.openInput(idxName, readBufferSize);
-        format = checkValidFormat(tvx);
-        tvd = d.openInput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION), readBufferSize);
-        final int tvdFormat = checkValidFormat(tvd);
-        tvf = d.openInput(IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION), readBufferSize);
-        final int tvfFormat = checkValidFormat(tvf);
+        format = checkValidFormat(tvx, idxName);
+        String fn = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
+        tvd = d.openInput(fn, readBufferSize);
+        final int tvdFormat = checkValidFormat(tvd, fn);
+        fn = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION);
+        tvf = d.openInput(fn, readBufferSize);
+        final int tvfFormat = checkValidFormat(tvf, fn);
 
         assert format == tvdFormat;
         assert format == tvfFormat;
@@ -183,13 +189,13 @@ class TermVectorsReader implements Cloneable {
     }
   }
 
-  private int checkValidFormat(IndexInput in) throws CorruptIndexException, IOException
+  private int checkValidFormat(IndexInput in, String fn) throws CorruptIndexException, IOException
   {
     int format = in.readInt();
-    if (format > FORMAT_CURRENT) {
-      throw new CorruptIndexException("Incompatible format version: " + format + " expected " 
-                                      + FORMAT_CURRENT + " or less");
-    }
+    if (format < FORMAT_MINIMUM)
+      throw new IndexFormatTooOldException(fn, format, FORMAT_MINIMUM, FORMAT_CURRENT);
+    if (format > FORMAT_CURRENT)
+      throw new IndexFormatTooNewException(fn, format, FORMAT_MINIMUM, FORMAT_CURRENT);
     return format;
   }
 

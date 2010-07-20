@@ -22,6 +22,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -154,7 +155,7 @@ public final class SegmentInfo {
       docStoreSegment = name;
       docStoreIsCompoundFile = false;
     }
-    if (format > SegmentInfos.FORMAT_4_0) {
+    if (format > DefaultSegmentInfosWriter.FORMAT_4_0) {
       // pre-4.0 indexes write a byte if there is a single norms file
       byte b = input.readByte();
       assert 1 == b;
@@ -177,7 +178,7 @@ public final class SegmentInfo {
     
     // System.out.println(Thread.currentThread().getName() + ": si.read hasProx=" + hasProx + " seg=" + name);
     
-    if (format <= SegmentInfos.FORMAT_4_0)
+    if (format <= DefaultSegmentInfosWriter.FORMAT_4_0)
       codecName = input.readString();
     else
       codecName = "PreFlex";

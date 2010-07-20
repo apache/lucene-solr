@@ -73,7 +73,8 @@ public class StandardPostingsReaderImpl extends StandardPostingsReader {
   public void init(IndexInput termsIn) throws IOException {
 
     // Make sure we are talking to the matching past writer
-    CodecUtil.checkHeader(termsIn, StandardPostingsWriterImpl.CODEC, StandardPostingsWriterImpl.VERSION_START);
+    CodecUtil.checkHeader(termsIn, StandardPostingsWriterImpl.CODEC,
+      StandardPostingsWriterImpl.VERSION_START, StandardPostingsWriterImpl.VERSION_START);
 
     skipInterval = termsIn.readInt();
     maxSkipLevels = termsIn.readInt();

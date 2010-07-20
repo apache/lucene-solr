@@ -20,6 +20,8 @@ package org.apache.lucene.index.codecs;
 import java.io.IOException;
 
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexFormatTooOldException;
+import org.apache.lucene.index.IndexFormatTooNewException;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentInfos;
 import org.apache.lucene.store.ChecksumIndexInput;
@@ -41,8 +43,12 @@ public class DefaultSegmentInfosReader extends SegmentInfosReader {
       int format = input.readInt();
   
       // check that it is a format we can understand
-      if (format < SegmentInfos.CURRENT_FORMAT)
-        throw new CorruptIndexException("Unknown (newer than us?) format version: " + format);
+      if (format > DefaultSegmentInfosWriter.FORMAT_MINIMUM)
+        throw new IndexFormatTooOldException(segmentsFileName, format,
+          DefaultSegmentInfosWriter.FORMAT_MINIMUM, DefaultSegmentInfosWriter.FORMAT_CURRENT);
+      if (format < DefaultSegmentInfosWriter.FORMAT_CURRENT)
+        throw new IndexFormatTooNewException(segmentsFileName, format,
+          DefaultSegmentInfosWriter.FORMAT_MINIMUM, DefaultSegmentInfosWriter.FORMAT_CURRENT);
   
       infos.version = input.readLong(); // read version
       infos.counter = input.readInt(); // read counter

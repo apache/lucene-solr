@@ -51,7 +51,8 @@ public class PulsingPostingsReaderImpl extends StandardPostingsReader {
 
   @Override
   public void init(IndexInput termsIn) throws IOException {
-    CodecUtil.checkHeader(termsIn, PulsingPostingsWriterImpl.CODEC, PulsingPostingsWriterImpl.VERSION_START);
+    CodecUtil.checkHeader(termsIn, PulsingPostingsWriterImpl.CODEC,
+      PulsingPostingsWriterImpl.VERSION_START, PulsingPostingsWriterImpl.VERSION_START);
     maxPulsingDocFreq = termsIn.readVInt();
     wrappedPostingsReader.init(termsIn);
   }
