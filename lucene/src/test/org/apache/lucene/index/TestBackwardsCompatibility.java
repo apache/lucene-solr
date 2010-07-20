@@ -28,6 +28,7 @@ import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Random;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -147,6 +148,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   
   /** This test checks that *only* IndexFormatTooOldExceptions are throws when you open and operate on too old indexes! */
   public void testUnsupportedOldIndexes() throws Exception {
+    final Random rnd = newRandom();
     for(int i=0;i<unsupportedNames.length;i++) {
       unzip(getDataFile("unsupported." + unsupportedNames[i] + ".zip"), unsupportedNames[i]);
 
@@ -157,8 +159,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       IndexWriter writer = null;
       try {
         reader = IndexReader.open(dir);
-        MultiFields.getFields(reader).terms("content");
-        reader.document(0); // to catch also 2.9->3.0 stored field change
         fail("IndexReader.open should not pass for "+unsupportedNames[i]);
       } catch (IndexFormatTooOldException e) {
         // pass
@@ -172,9 +172,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
           TEST_VERSION_CURRENT, new MockAnalyzer())
           .setMergeScheduler(new SerialMergeScheduler()) // no threads!
         );
-        writer.optimize();
-        reader = writer.getReader();
-        reader.document(0); // to catch also 2.9->3.0 stored field change
+        // TODO: Make IndexWriter fail on open!
+        if (rnd.nextBoolean()) {
+          writer.optimize();
+        } else {
+          reader = writer.getReader();
+        }
         fail("IndexWriter creation should not pass for "+unsupportedNames[i]);
       } catch (IndexFormatTooOldException e) {
         // pass
