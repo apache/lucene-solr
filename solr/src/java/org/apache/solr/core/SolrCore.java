@@ -690,17 +690,17 @@ public final class SolrCore implements SolrInfoMBean {
       SolrException.log(log, e);
     }
     try {
+      updateHandler.close();
+    } catch (Exception e) {
+      SolrException.log(log,e);
+    }
+    try {
       closeSearcher();
     } catch (Exception e) {
       SolrException.log(log,e);
     }
     try {
       searcherExecutor.shutdown();
-    } catch (Exception e) {
-      SolrException.log(log,e);
-    }
-    try {
-      updateHandler.close();
     } catch (Exception e) {
       SolrException.log(log,e);
     }

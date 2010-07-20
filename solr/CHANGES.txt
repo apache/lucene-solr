@@ -376,6 +376,11 @@ Bug Fixes
 * SOLR-1995: Change date format from "hour in am/pm" to "hour in day"
   in CoreContainer and SnapShooter. (Hayato Ito, koji)
 
+* SOLR-2008: avoid possible RejectedExecutionException w/autoCommit
+  by making SolreCore close the UpdateHandler before closing the
+  SearchExecutor.  (NarasimhaRaju, hossman)
+  
+
 Other Changes
 ----------------------
 
