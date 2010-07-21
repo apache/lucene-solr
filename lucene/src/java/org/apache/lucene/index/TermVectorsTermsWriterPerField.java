@@ -26,11 +26,10 @@ import org.apache.lucene.util.BytesRef;
 
 final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
-  final TermVectorsTermsWriterPerThread perThread;
   final TermsHashPerField termsHashPerField;
   final TermVectorsTermsWriter termsWriter;
   final FieldInfo fieldInfo;
-  final DocumentsWriter.DocState docState;
+  final DocumentsWriterPerThread.DocState docState;
   final FieldInvertState fieldState;
 
   boolean doVectors;
@@ -40,10 +39,9 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
   int maxNumPostings;
   OffsetAttribute offsetAttribute = null;
   
-  public TermVectorsTermsWriterPerField(TermsHashPerField termsHashPerField, TermVectorsTermsWriterPerThread perThread, FieldInfo fieldInfo) {
+  public TermVectorsTermsWriterPerField(TermsHashPerField termsHashPerField, TermVectorsTermsWriter termsWriter, FieldInfo fieldInfo) {
     this.termsHashPerField = termsHashPerField;
-    this.perThread = perThread;
-    this.termsWriter = perThread.termsWriter;
+    this.termsWriter = termsWriter;
     this.fieldInfo = fieldInfo;
     docState = termsHashPerField.docState;
     fieldState = termsHashPerField.fieldState;
@@ -70,14 +68,14 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     }
 
     if (doVectors) {
-      if (perThread.doc == null) {
-        perThread.doc = termsWriter.getPerDoc();
-        perThread.doc.docID = docState.docID;
-        assert perThread.doc.numVectorFields == 0;
-        assert 0 == perThread.doc.perDocTvf.length();
-        assert 0 == perThread.doc.perDocTvf.getFilePointer();
+      if (termsWriter.doc == null) {
+        termsWriter.doc = termsWriter.getPerDoc();
+        termsWriter.doc.docID = docState.docID;
+        assert termsWriter.doc.numVectorFields == 0;
+        assert 0 == termsWriter.doc.perDocTvf.length();
+        assert 0 == termsWriter.doc.perDocTvf.getFilePointer();
       } else {
-        assert perThread.doc.docID == docState.docID;
+        assert termsWriter.doc.docID == docState.docID;
 
         if (termsHashPerField.numPostings != 0)
           // Only necessary if previous doc hit a
@@ -106,7 +104,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
     final int numPostings = termsHashPerField.numPostings;
 
-    final BytesRef flushTerm = perThread.flushTerm;
+    final BytesRef flushTerm = termsWriter.flushTerm;
 
     assert numPostings >= 0;
 
@@ -116,16 +114,16 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     if (numPostings > maxNumPostings)
       maxNumPostings = numPostings;
 
-    final IndexOutput tvf = perThread.doc.perDocTvf;
+    final IndexOutput tvf = termsWriter.doc.perDocTvf;
 
     // This is called once, after inverting all occurrences
     // of a given field in the doc.  At this point we flush
     // our hash into the DocWriter.
 
     assert fieldInfo.storeTermVector;
-    assert perThread.vectorFieldsInOrder(fieldInfo);
+    assert termsWriter.vectorFieldsInOrder(fieldInfo);
 
-    perThread.doc.addField(termsHashPerField.fieldInfo.number);
+    termsWriter.doc.addField(termsHashPerField.fieldInfo.number);
     TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
 
     // TODO: we may want to make this sort in same order
@@ -144,8 +142,8 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     byte[] lastBytes = null;
     int lastStart = 0;
       
-    final ByteSliceReader reader = perThread.vectorSliceReader;
-    final ByteBlockPool termBytePool = perThread.termsHashPerThread.termBytePool;
+    final ByteSliceReader reader = termsWriter.vectorSliceReader;
+    final ByteBlockPool termBytePool = termsHashPerField.termBytePool;
 
     for(int j=0;j<numPostings;j++) {
       final int termID = termIDs[j];
@@ -188,7 +186,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     }
 
     termsHashPerField.reset();
-    perThread.termsHashPerThread.reset(false);
+    termsHashPerField.termsHash.reset();
   }
 
   void shrinkHash() {
@@ -289,7 +287,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
     @Override
     int bytesPerPosting() {
-      return super.bytesPerPosting() + 3 * DocumentsWriter.INT_NUM_BYTE;
+      return super.bytesPerPosting() + 3 * DocumentsWriterRAMAllocator.INT_NUM_BYTE;
     }
   }
 }

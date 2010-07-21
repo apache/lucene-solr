@@ -17,19 +17,19 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.util.Map;
+
+import org.apache.lucene.index.DocumentsWriterPerThread.DocWriter;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
-
-import java.io.IOException;
-import java.util.Collection;
-
-import java.util.Map;
 
 final class TermVectorsTermsWriter extends TermsHashConsumer {
 
-  final DocumentsWriter docWriter;
+  final DocumentsWriterPerThread docWriter;
   TermVectorsWriter termVectorsWriter;
   PerDoc[] docFreeList = new PerDoc[1];
   int freeCount;
@@ -37,18 +37,21 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
   IndexOutput tvd;
   IndexOutput tvf;
   int lastDocID;
+  
+  final DocumentsWriterPerThread.DocState docState;
+  final BytesRef flushTerm = new BytesRef();
+  TermVectorsTermsWriter.PerDoc doc;
+  
+  // Used by perField when serializing the term vectors
+  final ByteSliceReader vectorSliceReader = new ByteSliceReader();
 
-  public TermVectorsTermsWriter(DocumentsWriter docWriter) {
+  public TermVectorsTermsWriter(DocumentsWriterPerThread docWriter) {
     this.docWriter = docWriter;
+    docState = docWriter.docState;
   }
 
   @Override
-  public TermsHashConsumerPerThread addThread(TermsHashPerThread termsHashPerThread) {
-    return new TermVectorsTermsWriterPerThread(termsHashPerThread, this);
-  }
-
-  @Override
-  synchronized void flush(Map<TermsHashConsumerPerThread,Collection<TermsHashConsumerPerField>> threadsAndFields, final SegmentWriteState state) throws IOException {
+  void flush(Map<FieldInfo, TermsHashConsumerPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
 
     if (tvx != null) {
 
@@ -62,20 +65,15 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       tvf.flush();
     }
 
-    for (Map.Entry<TermsHashConsumerPerThread,Collection<TermsHashConsumerPerField>> entry : threadsAndFields.entrySet()) {
-      for (final TermsHashConsumerPerField field : entry.getValue() ) {
-        TermVectorsTermsWriterPerField perField = (TermVectorsTermsWriterPerField) field;
-        perField.termsHashPerField.reset();
-        perField.shrinkHash();
-      }
-
-      TermVectorsTermsWriterPerThread perThread = (TermVectorsTermsWriterPerThread) entry.getKey();
-      perThread.termsHashPerThread.reset(true);
+    for (final TermsHashConsumerPerField field : fieldsToFlush.values() ) {
+      TermVectorsTermsWriterPerField perField = (TermVectorsTermsWriterPerField) field;
+      perField.termsHashPerField.reset();
+      perField.shrinkHash();
     }
   }
 
   @Override
-  synchronized void closeDocStore(final SegmentWriteState state) throws IOException {
+  void closeDocStore(final SegmentWriteState state) throws IOException {
     if (tvx != null) {
       // At least one doc in this run had term vectors
       // enabled
@@ -105,7 +103,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
 
   int allocCount;
 
-  synchronized PerDoc getPerDoc() {
+  PerDoc getPerDoc() {
     if (freeCount == 0) {
       allocCount++;
       if (allocCount > docFreeList.length) {
@@ -136,7 +134,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     }
   }
 
-  synchronized void initTermVectorsWriter() throws IOException {        
+  void initTermVectorsWriter() throws IOException {        
     if (tvx == null) {
       
       final String docStoreSegment = docWriter.getDocStoreSegment();
@@ -167,7 +165,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     }
   }
 
-  synchronized void finishDocument(PerDoc perDoc) throws IOException {
+  void finishDocument(PerDoc perDoc) throws IOException {
 
     assert docWriter.writer.testPoint("TermVectorsTermsWriter.finishDocument start");
 
@@ -210,6 +208,11 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
 
   @Override
   public void abort() {
+    if (doc != null) {
+      doc.abort();
+      doc = null;
+    }
+
     if (tvx != null) {
       try {
         tvx.close();
@@ -232,16 +235,18 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       tvf = null;
     }
     lastDocID = 0;
+    
+
   }
 
-  synchronized void free(PerDoc doc) {
+  void free(PerDoc doc) {
     assert freeCount < docFreeList.length;
     docFreeList[freeCount++] = doc;
   }
 
-  class PerDoc extends DocumentsWriter.DocWriter {
+  class PerDoc extends DocumentsWriterPerThread.DocWriter {
 
-    final DocumentsWriter.PerDocBuffer buffer = docWriter.newPerDocBuffer();
+    final DocumentsWriterPerThread.PerDocBuffer buffer = docWriter.newPerDocBuffer();
     RAMOutputStream perDocTvf = new RAMOutputStream(buffer);
 
     int numVectorFields;
@@ -256,7 +261,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     }
 
     @Override
-    void abort() {
+    public void abort() {
       reset();
       free(this);
     }
@@ -283,4 +288,47 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       finishDocument(this);
     }
   }
+
+  @Override
+  public TermsHashConsumerPerField addField(TermsHashPerField termsHashPerField, FieldInfo fieldInfo) {
+    return new TermVectorsTermsWriterPerField(termsHashPerField, this, fieldInfo);
+  }
+
+  @Override
+  DocWriter finishDocument() throws IOException {
+    try {
+      return doc;
+    } finally {
+      doc = null;
+    }
+  }
+
+  @Override
+  void startDocument() throws IOException {
+    assert clearLastVectorFieldName();
+    if (doc != null) {
+      doc.reset();
+      doc.docID = docState.docID;
+    }
+  }
+  
+  // Called only by assert
+  final boolean clearLastVectorFieldName() {
+    lastVectorFieldName = null;
+    return true;
+  }
+
+  // Called only by assert
+  String lastVectorFieldName;
+  final boolean vectorFieldsInOrder(FieldInfo fi) {
+    try {
+      if (lastVectorFieldName != null)
+        return lastVectorFieldName.compareTo(fi.name) < 0;
+      else
+        return true;
+    } finally {
+      lastVectorFieldName = fi.name;
+    }
+  }
+
 }

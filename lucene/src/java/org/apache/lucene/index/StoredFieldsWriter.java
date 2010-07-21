@@ -18,6 +18,9 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -26,24 +29,37 @@ import org.apache.lucene.util.RamUsageEstimator;
 final class StoredFieldsWriter {
 
   FieldsWriter fieldsWriter;
-  final DocumentsWriter docWriter;
+  final FieldsWriter localFieldsWriter;
+  final DocumentsWriterPerThread docWriter;
   final FieldInfos fieldInfos;
   int lastDocID;
   private String docStoreSegment;
 
   PerDoc[] docFreeList = new PerDoc[1];
   int freeCount;
+  
+  PerDoc doc;
+  final DocumentsWriterPerThread.DocState docState;
 
-  public StoredFieldsWriter(DocumentsWriter docWriter, FieldInfos fieldInfos) {
+  public StoredFieldsWriter(DocumentsWriterPerThread docWriter, FieldInfos fieldInfos) {
     this.docWriter = docWriter;
     this.fieldInfos = fieldInfos;
+    this.docState = docWriter.docState;
+    localFieldsWriter = new FieldsWriter((IndexOutput) null, (IndexOutput) null, fieldInfos);
   }
 
-  public StoredFieldsWriterPerThread addThread(DocumentsWriter.DocState docState) throws IOException {
-    return new StoredFieldsWriterPerThread(docState, this);
+  public void startDocument() {
+    if (doc != null) {
+      // Only happens if previous document hit non-aborting
+      // exception while writing stored fields into
+      // localFieldsWriter:
+      doc.reset();
+      doc.docID = docState.docID;
+    }
   }
 
-  synchronized public void flush(SegmentWriteState state) throws IOException {
+
+  public void flush(SegmentWriteState state) throws IOException {
 
     if (state.numDocsInStore > 0) {
       // It's possible that all documents seen in this segment
@@ -74,7 +90,7 @@ final class StoredFieldsWriter {
     }
   }
 
-  synchronized public void closeDocStore(SegmentWriteState state) throws IOException {
+  public void closeDocStore(SegmentWriteState state) throws IOException {
     final int inc = state.numDocsInStore - lastDocID;
     if (inc > 0) {
       initFieldsWriter();
@@ -103,7 +119,7 @@ final class StoredFieldsWriter {
 
   int allocCount;
 
-  synchronized PerDoc getPerDoc() {
+  PerDoc getPerDoc() {
     if (freeCount == 0) {
       allocCount++;
       if (allocCount > docFreeList.length) {
@@ -118,7 +134,22 @@ final class StoredFieldsWriter {
       return docFreeList[--freeCount];
   }
 
-  synchronized void abort() {
+  public DocumentsWriterPerThread.DocWriter finishDocument() {
+    // If there were any stored fields in this doc, doc will
+    // be non-null; else it's null.
+    try {
+      return doc;
+    } finally {
+      doc = null;
+    }
+  }
+
+  void abort() {
+    if (doc != null) {
+      doc.abort();
+      doc = null;
+    }
+
     if (fieldsWriter != null) {
       try {
         fieldsWriter.close();
@@ -142,7 +173,7 @@ final class StoredFieldsWriter {
     }
   }
 
-  synchronized void finishDocument(PerDoc perDoc) throws IOException {
+  void finishDocument(PerDoc perDoc) throws IOException {
     assert docWriter.writer.testPoint("StoredFieldsWriter.finishDocument start");
     initFieldsWriter();
 
@@ -156,11 +187,26 @@ final class StoredFieldsWriter {
     assert docWriter.writer.testPoint("StoredFieldsWriter.finishDocument end");
   }
 
+  public void addField(Fieldable field, FieldInfo fieldInfo) throws IOException {
+    if (doc == null) {
+      doc = getPerDoc();
+      doc.docID = docState.docID;
+      localFieldsWriter.setFieldsStream(doc.fdt);
+      assert doc.numStoredFields == 0: "doc.numStoredFields=" + doc.numStoredFields;
+      assert 0 == doc.fdt.length();
+      assert 0 == doc.fdt.getFilePointer();
+    }
+
+    localFieldsWriter.writeField(fieldInfo, field);
+    assert docState.testPoint("StoredFieldsWriterPerThread.processFields.writeField");
+    doc.numStoredFields++;
+  }
+  
   public boolean freeRAM() {
     return false;
   }
 
-  synchronized void free(PerDoc perDoc) {
+  void free(PerDoc perDoc) {
     assert freeCount < docFreeList.length;
     assert 0 == perDoc.numStoredFields;
     assert 0 == perDoc.fdt.length();
@@ -168,8 +214,8 @@ final class StoredFieldsWriter {
     docFreeList[freeCount++] = perDoc;
   }
 
-  class PerDoc extends DocumentsWriter.DocWriter {
-    final DocumentsWriter.PerDocBuffer buffer = docWriter.newPerDocBuffer();
+  class PerDoc extends DocumentsWriterPerThread.DocWriter {
+    final DocumentsWriterPerThread.PerDocBuffer buffer = docWriter.newPerDocBuffer();
     RAMOutputStream fdt = new RAMOutputStream(buffer);
     int numStoredFields;
 
@@ -180,7 +226,7 @@ final class StoredFieldsWriter {
     }
 
     @Override
-    void abort() {
+    public void abort() {
       reset();
       free(this);
     }

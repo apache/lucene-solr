@@ -18,26 +18,31 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Comparator;
 
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.codecs.FieldsConsumer;
+import org.apache.lucene.index.codecs.PostingsConsumer;
+import org.apache.lucene.index.codecs.TermsConsumer;
+import org.apache.lucene.util.BytesRef;
 
 // TODO: break into separate freq and prox writers as
 // codecs; make separate container (tii/tis/skip/*) that can
 // be configured as any number of files 1..N
 final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implements Comparable<FreqProxTermsWriterPerField> {
 
-  final FreqProxTermsWriterPerThread perThread;
+  final FreqProxTermsWriter parent;
   final TermsHashPerField termsHashPerField;
   final FieldInfo fieldInfo;
-  final DocumentsWriter.DocState docState;
+  final DocumentsWriterPerThread.DocState docState;
   final FieldInvertState fieldState;
   boolean omitTermFreqAndPositions;
   PayloadAttribute payloadAttribute;
 
-  public FreqProxTermsWriterPerField(TermsHashPerField termsHashPerField, FreqProxTermsWriterPerThread perThread, FieldInfo fieldInfo) {
+  public FreqProxTermsWriterPerField(TermsHashPerField termsHashPerField, FreqProxTermsWriter parent, FieldInfo fieldInfo) {
     this.termsHashPerField = termsHashPerField;
-    this.perThread = perThread;
+    this.parent = parent;
     this.fieldInfo = fieldInfo;
     docState = termsHashPerField.docState;
     fieldState = termsHashPerField.fieldState;
@@ -205,10 +210,138 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
 
     @Override
     int bytesPerPosting() {
-      return ParallelPostingsArray.BYTES_PER_POSTING + 4 * DocumentsWriter.INT_NUM_BYTE;
+      return ParallelPostingsArray.BYTES_PER_POSTING + 4 * DocumentsWriterRAMAllocator.INT_NUM_BYTE;
     }
   }
   
   public void abort() {}
+  
+  BytesRef payload;
+  
+  /* Walk through all unique text tokens (Posting
+   * instances) found in this field and serialize them
+   * into a single RAM segment. */
+  void flush(FieldsConsumer consumer,  final SegmentWriteState state)
+    throws CorruptIndexException, IOException {
+
+    final TermsConsumer termsConsumer = consumer.addField(fieldInfo);
+    final Comparator<BytesRef> termComp = termsConsumer.getComparator();
+
+    final boolean currentFieldOmitTermFreqAndPositions = fieldInfo.omitTermFreqAndPositions;
+    
+    final int[] termIDs = termsHashPerField.sortPostings(termComp);
+    final int numTerms = termsHashPerField.numPostings;
+    final BytesRef text = new BytesRef();
+    final FreqProxPostingsArray postings = (FreqProxPostingsArray) termsHashPerField.postingsArray;
+    final ByteSliceReader freq = new ByteSliceReader();
+    final ByteSliceReader prox = new ByteSliceReader();
+
+    
+    for (int i = 0; i < numTerms; i++) {
+      final int termID = termIDs[i];
+      // Get BytesRef
+      final int textStart = postings.textStarts[termID];
+      termsHashPerField.bytePool.setBytesRef(text, textStart);
+      
+      termsHashPerField.initReader(freq, termID, 0);
+      if (!fieldInfo.omitTermFreqAndPositions) {
+        termsHashPerField.initReader(prox, termID, 1);
+      }
+  
+      // TODO: really TermsHashPerField should take over most
+      // of this loop, including merge sort of terms from
+      // multiple threads and interacting with the
+      // TermsConsumer, only calling out to us (passing us the
+      // DocsConsumer) to handle delivery of docs/positions
+    
+      final PostingsConsumer postingsConsumer = termsConsumer.startTerm(text);
+  
+      // Now termStates has numToMerge FieldMergeStates
+      // which all share the same term.  Now we must
+      // interleave the docID streams.
+      int numDocs = 0;
+      int docID = 0;
+      int termFreq = 0;
+      
+      while(true) {
+        if (freq.eof()) {
+          if (postings.lastDocCodes[termID] != -1) {
+            // Return last doc
+            docID = postings.lastDocIDs[termID];
+            if (!omitTermFreqAndPositions) {
+              termFreq = postings.docFreqs[termID];
+            }
+            postings.lastDocCodes[termID] = -1;
+          } else {
+            // EOF
+            break;
+          }
+        } else {
+          final int code = freq.readVInt();
+          if (omitTermFreqAndPositions) {
+            docID += code;
+          } else {
+            docID += code >>> 1;
+            if ((code & 1) != 0) {
+              termFreq = 1;
+            } else {
+              termFreq = freq.readVInt();
+            }
+          }
+    
+          assert docID != postings.lastDocIDs[termID];
+        }
+        
+        numDocs++;
+        assert docID < state.numDocs: "doc=" + docID + " maxDoc=" + state.numDocs;
+        final int termDocFreq = termFreq;
+        postingsConsumer.startDoc(docID, termDocFreq);
+    
+        // Carefully copy over the prox + payload info,
+        // changing the format to match Lucene's segment
+        // format.
+        if (!currentFieldOmitTermFreqAndPositions) {
+          // omitTermFreqAndPositions == false so we do write positions &
+          // payload          
+          int position = 0;
+          for(int j=0;j<termDocFreq;j++) {
+            final int code = prox.readVInt();
+            position += code >> 1;
+    
+            final int payloadLength;
+            final BytesRef thisPayload;
+    
+            if ((code & 1) != 0) {
+              // This position has a payload
+              payloadLength = prox.readVInt();  
+              
+              if (payload == null) {
+                payload = new BytesRef();
+                payload.bytes = new byte[payloadLength];
+              } else if (payload.bytes.length < payloadLength) {
+                payload.grow(payloadLength);
+              }
+    
+              prox.readBytes(payload.bytes, 0, payloadLength);
+              payload.length = payloadLength;
+              thisPayload = payload;
+    
+            } else {
+              payloadLength = 0;
+              thisPayload = null;
+            }
+    
+            postingsConsumer.addPosition(position, thisPayload);
+          } 
+    
+          postingsConsumer.finishDoc();
+        }
+      } 
+      termsConsumer.finishTerm(text, numDocs);
+    }
+  
+    termsConsumer.finish();
+  }
+
 }
 

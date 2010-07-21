@@ -50,10 +50,10 @@ final class ByteBlockPool {
   public byte[][] buffers = new byte[10][];
 
   int bufferUpto = -1;                        // Which buffer we are upto
-  public int byteUpto = DocumentsWriter.BYTE_BLOCK_SIZE;             // Where we are in head buffer
+  public int byteUpto = DocumentsWriterRAMAllocator.BYTE_BLOCK_SIZE;             // Where we are in head buffer
 
   public byte[] buffer;                              // Current head buffer
-  public int byteOffset = -DocumentsWriter.BYTE_BLOCK_SIZE;          // Current head offset
+  public int byteOffset = -DocumentsWriterRAMAllocator.BYTE_BLOCK_SIZE;          // Current head offset
 
   private final Allocator allocator;
 
@@ -95,11 +95,11 @@ final class ByteBlockPool {
     bufferUpto++;
 
     byteUpto = 0;
-    byteOffset += DocumentsWriter.BYTE_BLOCK_SIZE;
+    byteOffset += DocumentsWriterRAMAllocator.BYTE_BLOCK_SIZE;
   }
 
   public int newSlice(final int size) {
-    if (byteUpto > DocumentsWriter.BYTE_BLOCK_SIZE-size)
+    if (byteUpto > DocumentsWriterRAMAllocator.BYTE_BLOCK_SIZE-size)
       nextBuffer();
     final int upto = byteUpto;
     byteUpto += size;
@@ -123,7 +123,7 @@ final class ByteBlockPool {
     final int newSize = levelSizeArray[newLevel];
 
     // Maybe allocate another block
-    if (byteUpto > DocumentsWriter.BYTE_BLOCK_SIZE-newSize)
+    if (byteUpto > DocumentsWriterRAMAllocator.BYTE_BLOCK_SIZE-newSize)
       nextBuffer();
 
     final int newUpto = byteUpto;
@@ -151,8 +151,8 @@ final class ByteBlockPool {
   // Fill in a BytesRef from term's length & bytes encoded in
   // byte block
   final BytesRef setBytesRef(BytesRef term, int textStart) {
-    final byte[] bytes = term.bytes = buffers[textStart >> DocumentsWriter.BYTE_BLOCK_SHIFT];
-    int pos = textStart & DocumentsWriter.BYTE_BLOCK_MASK;
+    final byte[] bytes = term.bytes = buffers[textStart >> DocumentsWriterRAMAllocator.BYTE_BLOCK_SHIFT];
+    int pos = textStart & DocumentsWriterRAMAllocator.BYTE_BLOCK_MASK;
     if ((bytes[pos] & 0x80) == 0) {
       // length is 1 byte
       term.length = bytes[pos];

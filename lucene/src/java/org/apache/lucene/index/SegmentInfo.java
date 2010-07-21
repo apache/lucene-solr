@@ -81,6 +81,8 @@ public final class SegmentInfo {
   
   private Codec codec;
 
+  private long minSequenceID = -1;
+  private long maxSequenceID = -1;
 
   private Map<String,String> diagnostics;
 
@@ -120,6 +122,7 @@ public final class SegmentInfo {
     isCompoundFile = src.isCompoundFile;
     delCount = src.delCount;
     codec = src.codec;
+    minSequenceID = src.minSequenceID;
   }
 
   void setDiagnostics(Map<String, String> diagnostics) {
@@ -128,6 +131,24 @@ public final class SegmentInfo {
 
   public Map<String, String> getDiagnostics() {
     return diagnostics;
+  }
+  
+  public long getMinSequenceID() {
+    return this.minSequenceID;
+  }
+  
+  //nocommit - constructor?
+  public void setMinSequenceID(long minID) {
+    this.minSequenceID = minID;
+  }
+  
+  public long getMaxSequenceID() {
+    return this.maxSequenceID;
+  }
+  
+  //nocommit - constructor?
+  public void setMaxSequenceID(long maxID) {
+    this.maxSequenceID = maxID;
   }
 
   /**

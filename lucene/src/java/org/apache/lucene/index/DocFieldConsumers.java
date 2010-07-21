@@ -17,12 +17,9 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.HashMap;
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.HashSet;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -33,10 +30,12 @@ import org.apache.lucene.util.RamUsageEstimator;
 final class DocFieldConsumers extends DocFieldConsumer {
   final DocFieldConsumer one;
   final DocFieldConsumer two;
+  final DocumentsWriterPerThread.DocState docState;
 
-  public DocFieldConsumers(DocFieldConsumer one, DocFieldConsumer two) {
+  public DocFieldConsumers(DocFieldProcessor processor, DocFieldConsumer one, DocFieldConsumer two) {
     this.one = one;
     this.two = two;
+    this.docState = processor.docState;
   }
 
   @Override
@@ -47,33 +46,19 @@ final class DocFieldConsumers extends DocFieldConsumer {
   }
 
   @Override
-  public void flush(Map<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>> threadsAndFields, SegmentWriteState state) throws IOException {
+  public void flush(Map<FieldInfo, DocFieldConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException {
 
-    Map<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>> oneThreadsAndFields = new HashMap<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>>();
-    Map<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>> twoThreadsAndFields = new HashMap<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>>();
+    Map<FieldInfo, DocFieldConsumerPerField> oneFieldsToFlush = new HashMap<FieldInfo, DocFieldConsumerPerField>();
+    Map<FieldInfo, DocFieldConsumerPerField> twoFieldsToFlush = new HashMap<FieldInfo, DocFieldConsumerPerField>();
 
-    for (Map.Entry<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>> entry : threadsAndFields.entrySet()) {
-
-      final DocFieldConsumersPerThread perThread = (DocFieldConsumersPerThread) entry.getKey();
-
-      final Collection<DocFieldConsumerPerField> fields = entry.getValue();
-
-      Iterator<DocFieldConsumerPerField> fieldsIt = fields.iterator();
-      Collection<DocFieldConsumerPerField> oneFields = new HashSet<DocFieldConsumerPerField>();
-      Collection<DocFieldConsumerPerField> twoFields = new HashSet<DocFieldConsumerPerField>();
-      while(fieldsIt.hasNext()) {
-        DocFieldConsumersPerField perField = (DocFieldConsumersPerField) fieldsIt.next();
-        oneFields.add(perField.one);
-        twoFields.add(perField.two);
-      }
-
-      oneThreadsAndFields.put(perThread.one, oneFields);
-      twoThreadsAndFields.put(perThread.two, twoFields);
+    for (Map.Entry<FieldInfo, DocFieldConsumerPerField> fieldToFlush : fieldsToFlush.entrySet()) {
+      DocFieldConsumersPerField perField = (DocFieldConsumersPerField) fieldToFlush.getValue();
+      oneFieldsToFlush.put(fieldToFlush.getKey(), perField.one);
+      twoFieldsToFlush.put(fieldToFlush.getKey(), perField.two);
     }
-    
 
-    one.flush(oneThreadsAndFields, state);
-    two.flush(twoThreadsAndFields, state);
+    one.flush(oneFieldsToFlush, state);
+    two.flush(twoFieldsToFlush, state);
   }
 
   @Override
@@ -101,16 +86,11 @@ final class DocFieldConsumers extends DocFieldConsumer {
     return any;
   }
 
-  @Override
-  public DocFieldConsumerPerThread addThread(DocFieldProcessorPerThread docFieldProcessorPerThread) throws IOException {
-    return new DocFieldConsumersPerThread(docFieldProcessorPerThread, this, one.addThread(docFieldProcessorPerThread), two.addThread(docFieldProcessorPerThread));
-  }
-
   PerDoc[] docFreeList = new PerDoc[1];
   int freeCount;
   int allocCount;
 
-  synchronized PerDoc getPerDoc() {
+  PerDoc getPerDoc() {
     if (freeCount == 0) {
       allocCount++;
       if (allocCount > docFreeList.length) {
@@ -125,15 +105,15 @@ final class DocFieldConsumers extends DocFieldConsumer {
       return docFreeList[--freeCount];
   }
 
-  synchronized void freePerDoc(PerDoc perDoc) {
+  void freePerDoc(PerDoc perDoc) {
     assert freeCount < docFreeList.length;
     docFreeList[freeCount++] = perDoc;
   }
 
-  class PerDoc extends DocumentsWriter.DocWriter {
+  class PerDoc extends DocumentsWriterPerThread.DocWriter {
 
-    DocumentsWriter.DocWriter writerOne;
-    DocumentsWriter.DocWriter writerTwo;
+    DocumentsWriterPerThread.DocWriter writerOne;
+    DocumentsWriterPerThread.DocWriter writerTwo;
 
     @Override
     public long sizeInBytes() {
@@ -166,4 +146,35 @@ final class DocFieldConsumers extends DocFieldConsumer {
       }
     }
   }
+  
+  @Override
+  public DocumentsWriterPerThread.DocWriter finishDocument() throws IOException {
+    final DocumentsWriterPerThread.DocWriter oneDoc = one.finishDocument();
+    final DocumentsWriterPerThread.DocWriter twoDoc = two.finishDocument();
+    if (oneDoc == null)
+      return twoDoc;
+    else if (twoDoc == null)
+      return oneDoc;
+    else {
+      DocFieldConsumers.PerDoc both = getPerDoc();
+      both.docID = docState.docID;
+      assert oneDoc.docID == docState.docID;
+      assert twoDoc.docID == docState.docID;
+      both.writerOne = oneDoc;
+      both.writerTwo = twoDoc;
+      return both;
+    }
+  }
+  
+  @Override
+  public void startDocument() throws IOException {
+    one.startDocument();
+    two.startDocument();
+  }
+  
+  @Override
+  public DocFieldConsumerPerField addField(FieldInfo fi) {
+    return new DocFieldConsumersPerField(this, fi, one.addField(fi), two.addField(fi));
+  }
+
 }

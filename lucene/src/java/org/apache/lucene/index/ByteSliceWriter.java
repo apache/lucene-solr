@@ -42,9 +42,9 @@ final class ByteSliceWriter extends DataOutput {
    * Set up the writer to write at address.
    */
   public void init(int address) {
-    slice = pool.buffers[address >> DocumentsWriter.BYTE_BLOCK_SHIFT];
+    slice = pool.buffers[address >> DocumentsWriterRAMAllocator.BYTE_BLOCK_SHIFT];
     assert slice != null;
-    upto = address & DocumentsWriter.BYTE_BLOCK_MASK;
+    upto = address & DocumentsWriterRAMAllocator.BYTE_BLOCK_MASK;
     offset0 = address;
     assert upto < slice.length;
   }
@@ -80,6 +80,6 @@ final class ByteSliceWriter extends DataOutput {
   }
 
   public int getAddress() {
-    return upto + (offset0 & DocumentsWriter.BYTE_BLOCK_NOT_MASK);
+    return upto + (offset0 & DocumentsWriterRAMAllocator.BYTE_BLOCK_NOT_MASK);
   }
 }

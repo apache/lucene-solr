@@ -30,9 +30,10 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
 
   final TermsHashConsumerPerField consumer;
 
+  final TermsHash termsHash;
+  
   final TermsHashPerField nextPerField;
-  final TermsHashPerThread perThread;
-  final DocumentsWriter.DocState docState;
+  final DocumentsWriterPerThread.DocState docState;
   final FieldInvertState fieldState;
   TermToBytesRefAttribute termAtt;
 
@@ -57,27 +58,27 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   private final BytesRef utf8;
   private Comparator<BytesRef> termComp;
 
-  public TermsHashPerField(DocInverterPerField docInverterPerField, final TermsHashPerThread perThread, final TermsHashPerThread nextPerThread, final FieldInfo fieldInfo) {
-    this.perThread = perThread;
-    intPool = perThread.intPool;
-    bytePool = perThread.bytePool;
-    termBytePool = perThread.termBytePool;
-    docState = perThread.docState;
+  public TermsHashPerField(DocInverterPerField docInverterPerField, final TermsHash termsHash, final TermsHash nextTermsHash, final FieldInfo fieldInfo) {
+    intPool = termsHash.intPool;
+    bytePool = termsHash.bytePool;
+    termBytePool = termsHash.termBytePool;
+    docState = termsHash.docState;
+    this.termsHash = termsHash;
 
     postingsHash = new int[postingsHashSize];
     Arrays.fill(postingsHash, -1);
     bytesUsed(postingsHashSize * RamUsageEstimator.NUM_BYTES_INT);
 
     fieldState = docInverterPerField.fieldState;
-    this.consumer = perThread.consumer.addField(this, fieldInfo);
+    this.consumer = termsHash.consumer.addField(this, fieldInfo);
     initPostingsArray();
 
     streamCount = consumer.getStreamCount();
     numPostingInt = 2*streamCount;
-    utf8 = perThread.utf8;
+    utf8 = termsHash.utf8;
     this.fieldInfo = fieldInfo;
-    if (nextPerThread != null)
-      nextPerField = (TermsHashPerField) nextPerThread.addField(docInverterPerField, fieldInfo);
+    if (nextTermsHash != null)
+      nextPerField = (TermsHashPerField) nextTermsHash.addField(docInverterPerField, fieldInfo);
     else
       nextPerField = null;
   }
@@ -89,8 +90,8 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
 
   // sugar: just forwards to DW
   private void bytesUsed(long size) {
-    if (perThread.termsHash.trackAllocations) {
-      perThread.termsHash.docWriter.bytesUsed(size);
+    if (termsHash.trackAllocations) {
+      termsHash.docWriter.bytesUsed(size);
     }
   }
   
@@ -129,7 +130,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   }
 
   @Override
-  synchronized public void abort() {
+  public void abort() {
     reset();
     if (nextPerField != null)
       nextPerField.abort();
@@ -144,14 +145,14 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   public void initReader(ByteSliceReader reader, int termID, int stream) {
     assert stream < streamCount;
     int intStart = postingsArray.intStarts[termID];
-    final int[] ints = intPool.buffers[intStart >> DocumentsWriter.INT_BLOCK_SHIFT];
-    final int upto = intStart & DocumentsWriter.INT_BLOCK_MASK;
+    final int[] ints = intPool.buffers[intStart >> DocumentsWriterRAMAllocator.INT_BLOCK_SHIFT];
+    final int upto = intStart & DocumentsWriterRAMAllocator.INT_BLOCK_MASK;
     reader.init(bytePool,
                 postingsArray.byteStarts[termID]+stream*ByteBlockPool.FIRST_LEVEL_SIZE,
                 ints[upto+stream]);
   }
 
-  private synchronized void compactPostings() {
+  private void compactPostings() {
     int upto = 0;
     for(int i=0;i<postingsHashSize;i++) {
       if (postingsHash[i] != -1) {
@@ -245,20 +246,20 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       return 0;
     }
 
-    termBytePool.setBytesRef(perThread.tr1, postingsArray.textStarts[term1]);
-    termBytePool.setBytesRef(perThread.tr2, postingsArray.textStarts[term2]);
+    termBytePool.setBytesRef(termsHash.tr1, postingsArray.textStarts[term1]);
+    termBytePool.setBytesRef(termsHash.tr2, postingsArray.textStarts[term2]);
 
-    return termComp.compare(perThread.tr1, perThread.tr2);
+    return termComp.compare(termsHash.tr1, termsHash.tr2);
   }
 
   /** Test whether the text for current RawPostingList p equals
    *  current tokenText in utf8. */
   private boolean postingEquals(final int termID) {
     final int textStart = postingsArray.textStarts[termID];
-    final byte[] text = termBytePool.buffers[textStart >> DocumentsWriter.BYTE_BLOCK_SHIFT];
+    final byte[] text = termBytePool.buffers[textStart >> DocumentsWriterRAMAllocator.BYTE_BLOCK_SHIFT];
     assert text != null;
 
-    int pos = textStart & DocumentsWriter.BYTE_BLOCK_MASK;
+    int pos = textStart & DocumentsWriterRAMAllocator.BYTE_BLOCK_MASK;
     
     final int len;
     if ((text[pos] & 0x80) == 0) {
@@ -354,10 +355,10 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
         rehashPostings(2*postingsHashSize);
 
       // Init stream slices
-      if (numPostingInt + intPool.intUpto > DocumentsWriter.INT_BLOCK_SIZE)
+      if (numPostingInt + intPool.intUpto > DocumentsWriterRAMAllocator.INT_BLOCK_SIZE)
         intPool.nextBuffer();
 
-      if (DocumentsWriter.BYTE_BLOCK_SIZE - bytePool.byteUpto < numPostingInt*ByteBlockPool.FIRST_LEVEL_SIZE)
+      if (DocumentsWriterRAMAllocator.BYTE_BLOCK_SIZE - bytePool.byteUpto < numPostingInt*ByteBlockPool.FIRST_LEVEL_SIZE)
         bytePool.nextBuffer();
 
       intUptos = intPool.buffer;
@@ -376,8 +377,8 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
 
     } else {
       int intStart = postingsArray.intStarts[termID];
-      intUptos = intPool.buffers[intStart >> DocumentsWriter.INT_BLOCK_SHIFT];
-      intUptoStart = intStart & DocumentsWriter.INT_BLOCK_MASK;
+      intUptos = intPool.buffers[intStart >> DocumentsWriterRAMAllocator.INT_BLOCK_SHIFT];
+      intUptoStart = intStart & DocumentsWriterRAMAllocator.INT_BLOCK_MASK;
       consumer.addTerm(termID);
     }
   }
@@ -415,10 +416,10 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       // First time we are seeing this token since we last
       // flushed the hash.
       final int textLen2 = 2+utf8.length;
-      if (textLen2 + bytePool.byteUpto > DocumentsWriter.BYTE_BLOCK_SIZE) {
+      if (textLen2 + bytePool.byteUpto > DocumentsWriterRAMAllocator.BYTE_BLOCK_SIZE) {
         // Not enough room in current block
 
-        if (utf8.length > DocumentsWriter.MAX_TERM_LENGTH_UTF8) {
+        if (utf8.length > DocumentsWriterRAMAllocator.MAX_TERM_LENGTH_UTF8) {
           // Just skip this term, to remain as robust as
           // possible during indexing.  A TokenFilter
           // can be inserted into the analyzer chain if
@@ -427,7 +428,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
           if (docState.maxTermPrefix == null) {
             final int saved = utf8.length;
             try {
-              utf8.length = Math.min(30, DocumentsWriter.MAX_TERM_LENGTH_UTF8);
+              utf8.length = Math.min(30, DocumentsWriterRAMAllocator.MAX_TERM_LENGTH_UTF8);
               docState.maxTermPrefix = utf8.toString();
             } finally {
               utf8.length = saved;
@@ -480,11 +481,11 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       }
 
       // Init stream slices
-      if (numPostingInt + intPool.intUpto > DocumentsWriter.INT_BLOCK_SIZE) {
+      if (numPostingInt + intPool.intUpto > DocumentsWriterRAMAllocator.INT_BLOCK_SIZE) {
         intPool.nextBuffer();
       }
 
-      if (DocumentsWriter.BYTE_BLOCK_SIZE - bytePool.byteUpto < numPostingInt*ByteBlockPool.FIRST_LEVEL_SIZE) {
+      if (DocumentsWriterRAMAllocator.BYTE_BLOCK_SIZE - bytePool.byteUpto < numPostingInt*ByteBlockPool.FIRST_LEVEL_SIZE) {
         bytePool.nextBuffer();
       }
 
@@ -504,8 +505,8 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
 
     } else {
       final int intStart = postingsArray.intStarts[termID];
-      intUptos = intPool.buffers[intStart >> DocumentsWriter.INT_BLOCK_SHIFT];
-      intUptoStart = intStart & DocumentsWriter.INT_BLOCK_MASK;
+      intUptos = intPool.buffers[intStart >> DocumentsWriterRAMAllocator.INT_BLOCK_SHIFT];
+      intUptoStart = intStart & DocumentsWriterRAMAllocator.INT_BLOCK_MASK;
       consumer.addTerm(termID);
     }
 
@@ -518,9 +519,9 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
 
   void writeByte(int stream, byte b) {
     int upto = intUptos[intUptoStart+stream];
-    byte[] bytes = bytePool.buffers[upto >> DocumentsWriter.BYTE_BLOCK_SHIFT];
+    byte[] bytes = bytePool.buffers[upto >> DocumentsWriterRAMAllocator.BYTE_BLOCK_SHIFT];
     assert bytes != null;
-    int offset = upto & DocumentsWriter.BYTE_BLOCK_MASK;
+    int offset = upto & DocumentsWriterRAMAllocator.BYTE_BLOCK_MASK;
     if (bytes[offset] != 0) {
       // End of slice; allocate a new one
       offset = bytePool.allocSlice(bytes, offset);
@@ -566,10 +567,10 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
       int termID = postingsHash[i];
       if (termID != -1) {
         int code;
-        if (perThread.primary) {
+        if (termsHash.primary) {
           final int textStart = postingsArray.textStarts[termID];
-          final int start = textStart & DocumentsWriter.BYTE_BLOCK_MASK;
-          final byte[] text = bytePool.buffers[textStart >> DocumentsWriter.BYTE_BLOCK_SHIFT];
+          final int start = textStart & DocumentsWriterRAMAllocator.BYTE_BLOCK_MASK;
+          final byte[] text = bytePool.buffers[textStart >> DocumentsWriterRAMAllocator.BYTE_BLOCK_SHIFT];
           code = 0;
 
           final int len;

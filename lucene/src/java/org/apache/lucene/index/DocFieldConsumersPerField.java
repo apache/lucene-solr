@@ -24,12 +24,14 @@ final class DocFieldConsumersPerField extends DocFieldConsumerPerField {
 
   final DocFieldConsumerPerField one;
   final DocFieldConsumerPerField two;
-  final DocFieldConsumersPerThread perThread;
+  final DocFieldConsumers parent;
+  final FieldInfo fieldInfo;
 
-  public DocFieldConsumersPerField(DocFieldConsumersPerThread perThread, DocFieldConsumerPerField one, DocFieldConsumerPerField two) {
-    this.perThread = perThread;
+  public DocFieldConsumersPerField(DocFieldConsumers parent, FieldInfo fi, DocFieldConsumerPerField one, DocFieldConsumerPerField two) {
+    this.parent = parent;
     this.one = one;
     this.two = two;
+    this.fieldInfo = fi;
   }
 
   @Override
@@ -45,5 +47,10 @@ final class DocFieldConsumersPerField extends DocFieldConsumerPerField {
     } finally {
       two.abort();
     }
+  }
+
+  @Override
+  FieldInfo getFieldInfo() {
+    return fieldInfo;
   }
 }

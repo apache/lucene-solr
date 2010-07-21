@@ -31,7 +31,7 @@ public class TestByteSlices extends LuceneTestCase {
       final int size = freeByteBlocks.size();
       final byte[] b;
       if (0 == size)
-        b = new byte[DocumentsWriter.BYTE_BLOCK_SIZE];
+        b = new byte[DocumentsWriterRAMAllocator.BYTE_BLOCK_SIZE];
       else
         b =  freeByteBlocks.remove(size-1);
       return b;

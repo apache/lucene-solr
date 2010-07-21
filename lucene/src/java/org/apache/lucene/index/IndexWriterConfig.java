@@ -18,7 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.index.DocumentsWriter.IndexingChain;
+import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.Similarity;
@@ -128,8 +128,8 @@ public final class IndexWriterConfig implements Cloneable {
   private IndexReaderWarmer mergedSegmentWarmer;
   private CodecProvider codecProvider;
   private MergePolicy mergePolicy;
-  private int maxThreadStates;
   private boolean readerPooling;
+  private DocumentsWriterThreadPool indexerThreadPool;
   private int readerTermsIndexDivisor;
   
   // required for clone
@@ -156,12 +156,12 @@ public final class IndexWriterConfig implements Cloneable {
     maxBufferedDeleteTerms = DEFAULT_MAX_BUFFERED_DELETE_TERMS;
     ramBufferSizeMB = DEFAULT_RAM_BUFFER_SIZE_MB;
     maxBufferedDocs = DEFAULT_MAX_BUFFERED_DOCS;
-    indexingChain = DocumentsWriter.defaultIndexingChain;
+    indexingChain = DocumentsWriterPerThread.defaultIndexingChain;
     mergedSegmentWarmer = null;
     codecProvider = DEFAULT_CODEC_PROVIDER;
     mergePolicy = new LogByteSizeMergePolicy();
-    maxThreadStates = DEFAULT_MAX_THREAD_STATES;
     readerPooling = DEFAULT_READER_POOLING;
+    indexerThreadPool = new ThreadAffinityDocumentsWriterThreadPool(DEFAULT_MAX_THREAD_STATES);
     readerTermsIndexDivisor = DEFAULT_READER_TERMS_INDEX_DIVISOR;
   }
   
@@ -548,15 +548,19 @@ public final class IndexWriterConfig implements Cloneable {
    * <code>maxThreadStates</code> will be set to
    * {@link #DEFAULT_MAX_THREAD_STATES}.
    */
-  public IndexWriterConfig setMaxThreadStates(int maxThreadStates) {
-    this.maxThreadStates = maxThreadStates < 1 ? DEFAULT_MAX_THREAD_STATES : maxThreadStates;
+  public IndexWriterConfig setIndexerThreadPool(DocumentsWriterThreadPool threadPool) {
+    this.indexerThreadPool = threadPool;
     return this;
   }
 
+  public DocumentsWriterThreadPool getIndexerThreadPool() {
+    return this.indexerThreadPool;
+  }
+  
   /** Returns the max number of simultaneous threads that
    *  may be indexing documents at once in IndexWriter. */
   public int getMaxThreadStates() {
-    return maxThreadStates;
+    return indexerThreadPool.getMaxThreadStates();
   }
 
   /** By default, IndexWriter does not pool the
@@ -580,7 +584,7 @@ public final class IndexWriterConfig implements Cloneable {
 
   /** Expert: sets the {@link DocConsumer} chain to be used to process documents. */
   IndexWriterConfig setIndexingChain(IndexingChain indexingChain) {
-    this.indexingChain = indexingChain == null ? DocumentsWriter.defaultIndexingChain : indexingChain;
+    this.indexingChain = indexingChain == null ? DocumentsWriterPerThread.defaultIndexingChain : indexingChain;
     return this;
   }
   
@@ -626,7 +630,8 @@ public final class IndexWriterConfig implements Cloneable {
     sb.append("mergedSegmentWarmer=").append(mergedSegmentWarmer).append("\n");
     sb.append("codecProvider=").append(codecProvider).append("\n");
     sb.append("mergePolicy=").append(mergePolicy).append("\n");
-    sb.append("maxThreadStates=").append(maxThreadStates).append("\n");
+    sb.append("indexerThreadPool=").append(indexerThreadPool).append("\n");
+    sb.append("maxThreadStates=").append(indexerThreadPool.getMaxThreadStates()).append("\n");
     sb.append("readerPooling=").append(readerPooling).append("\n");
     sb.append("readerTermsIndexDivisor=").append(readerTermsIndexDivisor).append("\n");
     return sb.toString();

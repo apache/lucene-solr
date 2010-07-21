@@ -24,4 +24,5 @@ abstract class DocFieldConsumerPerField {
   /** Processes all occurrences of a single field */
   abstract void processFields(Fieldable[] fields, int count) throws IOException;
   abstract void abort();
+  abstract FieldInfo getFieldInfo();
 }

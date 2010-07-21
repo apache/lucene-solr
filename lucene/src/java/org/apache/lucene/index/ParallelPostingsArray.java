@@ -21,7 +21,7 @@ import org.apache.lucene.util.ArrayUtil;
 
 
 class ParallelPostingsArray {
-  final static int BYTES_PER_POSTING = 3 * DocumentsWriter.INT_NUM_BYTE;
+  final static int BYTES_PER_POSTING = 3 * DocumentsWriterRAMAllocator.INT_NUM_BYTE;
 
   final int size;
   final int[] textStarts;

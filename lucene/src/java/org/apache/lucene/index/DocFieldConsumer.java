@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Map;
 
 abstract class DocFieldConsumer {
@@ -27,7 +26,7 @@ abstract class DocFieldConsumer {
 
   /** Called when DocumentsWriter decides to create a new
    *  segment */
-  abstract void flush(Map<DocFieldConsumerPerThread,Collection<DocFieldConsumerPerField>> threadsAndFields, SegmentWriteState state) throws IOException;
+  abstract void flush(Map<FieldInfo, DocFieldConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException;
 
   /** Called when DocumentsWriter decides to close the doc
    *  stores */
@@ -36,14 +35,17 @@ abstract class DocFieldConsumer {
   /** Called when an aborting exception is hit */
   abstract void abort();
 
-  /** Add a new thread */
-  abstract DocFieldConsumerPerThread addThread(DocFieldProcessorPerThread docFieldProcessorPerThread) throws IOException;
-
   /** Called when DocumentsWriter is using too much RAM.
    *  The consumer should free RAM, if possible, returning
    *  true if any RAM was in fact freed. */
   abstract boolean freeRAM();
+  
+  abstract void startDocument() throws IOException;
 
+  abstract DocFieldConsumerPerField addField(FieldInfo fi);
+  
+  abstract DocumentsWriterPerThread.DocWriter finishDocument() throws IOException;
+  
   void setFieldInfos(FieldInfos fieldInfos) {
     this.fieldInfos = fieldInfos;
   }

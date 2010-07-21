@@ -48,16 +48,16 @@ final class ByteSliceReader extends DataInput {
     this.endIndex = endIndex;
 
     level = 0;
-    bufferUpto = startIndex / DocumentsWriter.BYTE_BLOCK_SIZE;
-    bufferOffset = bufferUpto * DocumentsWriter.BYTE_BLOCK_SIZE;
+    bufferUpto = startIndex / DocumentsWriterRAMAllocator.BYTE_BLOCK_SIZE;
+    bufferOffset = bufferUpto * DocumentsWriterRAMAllocator.BYTE_BLOCK_SIZE;
     buffer = pool.buffers[bufferUpto];
-    upto = startIndex & DocumentsWriter.BYTE_BLOCK_MASK;
+    upto = startIndex & DocumentsWriterRAMAllocator.BYTE_BLOCK_MASK;
 
     final int firstSize = ByteBlockPool.levelSizeArray[0];
 
     if (startIndex+firstSize >= endIndex) {
       // There is only this one slice to read
-      limit = endIndex & DocumentsWriter.BYTE_BLOCK_MASK;
+      limit = endIndex & DocumentsWriterRAMAllocator.BYTE_BLOCK_MASK;
     } else
       limit = upto+firstSize-4;
   }
@@ -102,11 +102,11 @@ final class ByteSliceReader extends DataInput {
     level = ByteBlockPool.nextLevelArray[level];
     final int newSize = ByteBlockPool.levelSizeArray[level];
 
-    bufferUpto = nextIndex / DocumentsWriter.BYTE_BLOCK_SIZE;
-    bufferOffset = bufferUpto * DocumentsWriter.BYTE_BLOCK_SIZE;
+    bufferUpto = nextIndex / DocumentsWriterRAMAllocator.BYTE_BLOCK_SIZE;
+    bufferOffset = bufferUpto * DocumentsWriterRAMAllocator.BYTE_BLOCK_SIZE;
 
     buffer = pool.buffers[bufferUpto];
-    upto = nextIndex & DocumentsWriter.BYTE_BLOCK_MASK;
+    upto = nextIndex & DocumentsWriterRAMAllocator.BYTE_BLOCK_MASK;
 
     if (nextIndex + newSize >= endIndex) {
       // We are advancing to the final slice

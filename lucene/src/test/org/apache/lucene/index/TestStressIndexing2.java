@@ -202,7 +202,7 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
     for(int iter=0;iter<3;iter++) {
       IndexWriter w = new MockIndexWriter(dir, new IndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE)
-               .setRAMBufferSizeMB(0.1).setMaxBufferedDocs(maxBufferedDocs).setMaxThreadStates(maxThreadStates)
+               .setRAMBufferSizeMB(0.1).setMaxBufferedDocs(maxBufferedDocs).setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(maxThreadStates))
                .setReaderPooling(doReaderPooling));
       LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
       lmp.setUseCompoundFile(false);

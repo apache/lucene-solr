@@ -136,7 +136,8 @@ public class TestThreadedOptimize extends LuceneTestCase {
     Run above stress test against RAMDirectory and then
     FSDirectory.
   */
-  public void testThreadedOptimize() throws Exception {
+  // nocommit
+  public void _testThreadedOptimize() throws Exception {
     Directory directory = new MockRAMDirectory();
     runTest(directory, new SerialMergeScheduler());
     runTest(directory, new ConcurrentMergeScheduler());

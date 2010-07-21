@@ -17,7 +17,10 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -27,14 +30,12 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.index.DocumentsWriter.IndexingChain;
+import org.apache.lucene.index.DocumentsWriterPerThread.IndexingChain;
 import org.apache.lucene.index.IndexWriter.IndexReaderWarmer;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.junit.Test;
 
@@ -48,7 +49,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     // Does not implement anything - used only for type checking on IndexWriterConfig.
 
     @Override
-    DocConsumer getChain(DocumentsWriter documentsWriter) {
+    DocConsumer getChain(DocumentsWriterPerThread documentsWriter) {
       return null;
     }
     
@@ -80,12 +81,13 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     assertEquals(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB, conf.getRAMBufferSizeMB(), 0.0);
     assertEquals(IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS, conf.getMaxBufferedDocs());
     assertEquals(IndexWriterConfig.DEFAULT_READER_POOLING, conf.getReaderPooling());
-    assertTrue(DocumentsWriter.defaultIndexingChain == conf.getIndexingChain());
+    assertTrue(DocumentsWriterPerThread.defaultIndexingChain == conf.getIndexingChain());
     assertNull(conf.getMergedSegmentWarmer());
     assertEquals(IndexWriterConfig.DEFAULT_CODEC_PROVIDER, CodecProvider.getDefault());
     assertEquals(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES, conf.getMaxThreadStates());
     assertEquals(IndexWriterConfig.DEFAULT_READER_TERMS_INDEX_DIVISOR, conf.getReaderTermsIndexDivisor());
     assertEquals(LogByteSizeMergePolicy.class, conf.getMergePolicy().getClass());
+    assertEquals(ThreadAffinityDocumentsWriterThreadPool.class, conf.getIndexerThreadPool().getClass());
     
     // Sanity check - validate that all getters are covered.
     Set<String> getters = new HashSet<String>();
@@ -108,6 +110,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     getters.add("getMergePolicy");
     getters.add("getMaxThreadStates");
     getters.add("getReaderPooling");
+    getters.add("getIndexerThreadPool");
     getters.add("getReaderTermsIndexDivisor");
     for (Method m : IndexWriterConfig.class.getDeclaredMethods()) {
       if (m.getDeclaringClass() == IndexWriterConfig.class && m.getName().startsWith("get")) {
@@ -200,11 +203,11 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     assertTrue(Similarity.getDefault() == conf.getSimilarity());
 
     // Test IndexingChain
-    assertTrue(DocumentsWriter.defaultIndexingChain == conf.getIndexingChain());
+    assertTrue(DocumentsWriterPerThread.defaultIndexingChain == conf.getIndexingChain());
     conf.setIndexingChain(new MyIndexingChain());
     assertEquals(MyIndexingChain.class, conf.getIndexingChain().getClass());
     conf.setIndexingChain(null);
-    assertTrue(DocumentsWriter.defaultIndexingChain == conf.getIndexingChain());
+    assertTrue(DocumentsWriterPerThread.defaultIndexingChain == conf.getIndexingChain());
     
     try {
       conf.setMaxBufferedDeleteTerms(0);
@@ -240,9 +243,9 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     }
 
     assertEquals(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES, conf.getMaxThreadStates());
-    conf.setMaxThreadStates(5);
+    conf.setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(5));
     assertEquals(5, conf.getMaxThreadStates());
-    conf.setMaxThreadStates(0);
+    conf.setIndexerThreadPool(new ThreadAffinityDocumentsWriterThreadPool(0));
     assertEquals(IndexWriterConfig.DEFAULT_MAX_THREAD_STATES, conf.getMaxThreadStates());
     
     // Test MergePolicy
@@ -252,50 +255,4 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     conf.setMergePolicy(null);
     assertEquals(LogByteSizeMergePolicy.class, conf.getMergePolicy().getClass());
   }
-
-  /**
-   * @deprecated should be removed once all the deprecated setters are removed
-   *             from IndexWriter.
-   */
-  @Test
-  public void testIndexWriterSetters() throws Exception {
-    // This test intentionally tests deprecated methods. The purpose is to pass
-    // whatever the user set on IW to IWC, so that if the user calls
-    // iw.getConfig().getXYZ(), he'll get the same value he passed to
-    // iw.setXYZ().
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
-    Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, conf);
-
-    writer.setSimilarity(new MySimilarity());
-    assertEquals(MySimilarity.class, writer.getConfig().getSimilarity().getClass());
-
-    writer.setMaxBufferedDeleteTerms(4);
-    assertEquals(4, writer.getConfig().getMaxBufferedDeleteTerms());
-
-    writer.setMaxBufferedDocs(10);
-    assertEquals(10, writer.getConfig().getMaxBufferedDocs());
-
-    writer.setMaxFieldLength(10);
-    assertEquals(10, writer.getConfig().getMaxFieldLength());
-    
-    writer.setMergeScheduler(new SerialMergeScheduler());
-    assertEquals(SerialMergeScheduler.class, writer.getConfig().getMergeScheduler().getClass());
-    
-    writer.setRAMBufferSizeMB(1.5);
-    assertEquals(1.5, writer.getConfig().getRAMBufferSizeMB(), 0.0);
-    
-    writer.setTermIndexInterval(40);
-    assertEquals(40, writer.getConfig().getTermIndexInterval());
-    
-    writer.setWriteLockTimeout(100);
-    assertEquals(100, writer.getConfig().getWriteLockTimeout());
-    
-    writer.setMergedSegmentWarmer(new MyWarmer());
-    assertEquals(MyWarmer.class, writer.getConfig().getMergedSegmentWarmer().getClass());
-    
-    writer.setMergePolicy(new LogDocMergePolicy());
-    assertEquals(LogDocMergePolicy.class, writer.getConfig().getMergePolicy().getClass());
-  }
-
 }
