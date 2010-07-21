@@ -25,8 +25,11 @@ import org.apache.lucene.util.PriorityQueue;
  * collector allows easy extension by providing a single constructor which
  * accepts a {@link PriorityQueue} as well as protected members for that
  * priority queue and a counter of the number of total hits.<br>
- * Extending classes can override {@link #topDocs(int, int)} and
- * {@link #getTotalHits()} in order to provide their own implementation.
+ * Extending classes can override any of the methods to provide their own
+ * implementation, as well as avoid the use of the priority queue entirely by
+ * passing null to {@link #TopDocsCollector(PriorityQueue)}. In that case
+ * however, you might want to consider overriding all methods, in order to avoid
+ * a NullPointerException.
  */
 public abstract class TopDocsCollector<T extends ScoreDoc> extends Collector {
 
@@ -50,7 +53,7 @@ public abstract class TopDocsCollector<T extends ScoreDoc> extends Collector {
   }
   
   /**
-   * Populates the results array with the ScoreDoc instaces. This can be
+   * Populates the results array with the ScoreDoc instances. This can be
    * overridden in case a different ScoreDoc type should be returned.
    */
   protected void populateResults(ScoreDoc[] results, int howMany) {
@@ -75,7 +78,7 @@ public abstract class TopDocsCollector<T extends ScoreDoc> extends Collector {
   }
   
   /** Returns the top docs that were collected by this collector. */
-  public final TopDocs topDocs() {
+  public TopDocs topDocs() {
     // In case pq was populated with sentinel values, there might be less
     // results than pq.size(). Therefore return all results until either
     // pq.size() or totalHits.
@@ -94,7 +97,7 @@ public abstract class TopDocsCollector<T extends ScoreDoc> extends Collector {
    * with the returned {@link TopDocs} object, which will contain all the
    * results this search execution collected.
    */
-  public final TopDocs topDocs(int start) {
+  public TopDocs topDocs(int start) {
     // In case pq was populated with sentinel values, there might be less
     // results than pq.size(). Therefore return all results until either
     // pq.size() or totalHits.
@@ -115,7 +118,7 @@ public abstract class TopDocsCollector<T extends ScoreDoc> extends Collector {
    * returned {@link TopDocs} object, which will contain all the results this
    * search execution collected.
    */
-  public final TopDocs topDocs(int start, int howMany) {
+  public TopDocs topDocs(int start, int howMany) {
     
     // In case pq was populated with sentinel values, there might be less
     // results than pq.size(). Therefore return all results until either
