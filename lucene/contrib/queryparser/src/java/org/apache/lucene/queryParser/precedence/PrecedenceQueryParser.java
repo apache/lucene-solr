@@ -24,6 +24,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.AttributeSource;
 
 /**
@@ -307,7 +308,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     List<AttributeSource.State> list = new ArrayList<AttributeSource.State>();
     int positionCount = 0;
     boolean severalTokensAtSamePosition = false;
-    CharTermAttribute termAtt = source.addAttribute(CharTermAttribute.class);
+    TermToBytesRefAttribute termAtt = source.addAttribute(TermToBytesRefAttribute.class);
     PositionIncrementAttribute posincrAtt = source.addAttribute(PositionIncrementAttribute.class);
 
     try {
@@ -328,7 +329,9 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
       return null;
     else if (list.size() == 1) {
       source.restoreState(list.get(0));
-      return new TermQuery(new Term(field, termAtt.toString()));
+      BytesRef term = new BytesRef();
+      termAtt.toBytesRef(term);
+      return new TermQuery(new Term(field, term));
     } else {
       if (severalTokensAtSamePosition || !quoted) {
         if (positionCount == 1 || !quoted) {
@@ -339,9 +342,11 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
             BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
 
           for (int i = 0; i < list.size(); i++) {
+            BytesRef term = new BytesRef();
             source.restoreState(list.get(i));
+            termAtt.toBytesRef(term);
             TermQuery currentQuery = new TermQuery(
-                new Term(field, termAtt.toString()));
+                new Term(field, term));
             q.add(currentQuery, occur);
           }
           return q;
@@ -351,12 +356,14 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
           MultiPhraseQuery mpq = new MultiPhraseQuery();
           List<Term> multiTerms = new ArrayList<Term>();
           for (int i = 0; i < list.size(); i++) {
+            BytesRef term = new BytesRef();
             source.restoreState(list.get(i));
             if (posincrAtt.getPositionIncrement() == 1 && multiTerms.size() > 0) {
               mpq.add(multiTerms.toArray(new Term[0]));
               multiTerms.clear();
             }
-            multiTerms.add(new Term(field, termAtt.toString()));
+            termAtt.toBytesRef(term);
+            multiTerms.add(new Term(field, term));
           }
           mpq.add(multiTerms.toArray(new Term[0]));
           return mpq;
@@ -366,8 +373,10 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
         PhraseQuery q = new PhraseQuery();
         q.setSlop(phraseSlop);
         for (int i = 0; i < list.size(); i++) {
+          BytesRef term = new BytesRef();
           source.restoreState(list.get(i));
-          q.add(new Term(field, termAtt.toString()));
+          termAtt.toBytesRef(term);
+          q.add(new Term(field, term));
         }
         return q;
       }

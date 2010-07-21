@@ -17,7 +17,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.document.DateField;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
@@ -33,6 +33,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.VirtualMethod;
 
@@ -574,7 +575,7 @@ public class QueryParser implements QueryParserConstants {
       source = analyzer.tokenStream(field, new StringReader(queryText));
     }
     CachingTokenFilter buffer = new CachingTokenFilter(source);
-    CharTermAttribute termAtt = null;
+    TermToBytesRefAttribute termAtt = null;
     PositionIncrementAttribute posIncrAtt = null;
     int numTokens = 0;
 
@@ -586,8 +587,8 @@ public class QueryParser implements QueryParserConstants {
       // success==false if we hit an exception
     }
     if (success) {
-      if (buffer.hasAttribute(CharTermAttribute.class)) {
-        termAtt = buffer.getAttribute(CharTermAttribute.class);
+      if (buffer.hasAttribute(TermToBytesRefAttribute.class)) {
+        termAtt = buffer.getAttribute(TermToBytesRefAttribute.class);
       }
       if (buffer.hasAttribute(PositionIncrementAttribute.class)) {
         posIncrAtt = buffer.getAttribute(PositionIncrementAttribute.class);
@@ -629,11 +630,11 @@ public class QueryParser implements QueryParserConstants {
     if (numTokens == 0)
       return null;
     else if (numTokens == 1) {
-      String term = null;
+      BytesRef term = new BytesRef();
       try {
         boolean hasNext = buffer.incrementToken();
         assert hasNext == true;
-        term = termAtt.toString();
+        termAtt.toBytesRef(term);
       } catch (IOException e) {
         // safe to ignore, because we know the number of tokens
       }
@@ -648,11 +649,11 @@ public class QueryParser implements QueryParserConstants {
             BooleanClause.Occur.MUST : BooleanClause.Occur.SHOULD;
 
           for (int i = 0; i < numTokens; i++) {
-            String term = null;
+            BytesRef term = new BytesRef();
             try {
               boolean hasNext = buffer.incrementToken();
               assert hasNext == true;
-              term = termAtt.toString();
+              termAtt.toBytesRef(term);
             } catch (IOException e) {
               // safe to ignore, because we know the number of tokens
             }
@@ -670,12 +671,12 @@ public class QueryParser implements QueryParserConstants {
           List<Term> multiTerms = new ArrayList<Term>();
           int position = -1;
           for (int i = 0; i < numTokens; i++) {
-            String term = null;
+            BytesRef term = new BytesRef();
             int positionIncrement = 1;
             try {
               boolean hasNext = buffer.incrementToken();
               assert hasNext == true;
-              term = termAtt.toString();
+              termAtt.toBytesRef(term);
               if (posIncrAtt != null) {
                 positionIncrement = posIncrAtt.getPositionIncrement();
               }
@@ -709,13 +710,13 @@ public class QueryParser implements QueryParserConstants {
 
 
         for (int i = 0; i < numTokens; i++) {
-          String term = null;
+          BytesRef term = new BytesRef();
           int positionIncrement = 1;
 
           try {
             boolean hasNext = buffer.incrementToken();
             assert hasNext == true;
-            term = termAtt.toString();
+            termAtt.toBytesRef(term);
             if (posIncrAtt != null) {
               positionIncrement = posIncrAtt.getPositionIncrement();
             }
@@ -1568,12 +1569,6 @@ public class QueryParser implements QueryParserConstants {
     finally { jj_save(0, xla); }
   }
 
-  private boolean jj_3R_2() {
-    if (jj_scan_token(TERM)) return true;
-    if (jj_scan_token(COLON)) return true;
-    return false;
-  }
-
   private boolean jj_3_1() {
     Token xsp;
     xsp = jj_scanpos;
@@ -1586,6 +1581,12 @@ public class QueryParser implements QueryParserConstants {
 
   private boolean jj_3R_3() {
     if (jj_scan_token(STAR)) return true;
+    if (jj_scan_token(COLON)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_2() {
+    if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
     return false;
   }
