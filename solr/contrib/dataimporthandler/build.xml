@@ -133,6 +133,16 @@
   <target name="testCore" depends="compileTests">
   	<mkdir dir="${junit.output.dir}"/>
   	
+    <condition property="runall">
+      <not>
+        <or>
+          <isset property="testcase"/>
+          <isset property="testpackage"/>
+          <isset property="testpackageroot"/>
+        </or>
+      </not>
+    </condition>
+    
   	<junit printsummary="on"
            haltonfailure="no"
            maxmemory="512M"
@@ -144,11 +154,17 @@
       <formatter type="brief" usefile="false" if="junit.details"/>
       <classpath refid="test.classpath"/>
       <formatter type="xml"/>
-      <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
+      <batchtest fork="yes" todir="${junit.output.dir}" if="runall">
         <fileset dir="src/test/java" includes="${junit.includes}"/>
       </batchtest>
       <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
         <fileset dir="src/test/java" includes="**/${testcase}.java"/>
+      </batchtest>
+      <batchtest fork="yes" todir="${junit.output.dir}" if="testpackage">
+        <fileset dir="src/test/java" includes="**/${testpackage}/**/Test*.java,**/${testpackage}/**/*Test.java"/>
+      </batchtest>
+      <batchtest fork="yes" todir="${junit.output.dir}" if="testpackageroot">
+        <fileset dir="src/test/java" includes="**/${testpackageroot}/Test*.java,**/${testpackageroot}/*Test.java"/>
       </batchtest>
     </junit>
 
@@ -158,6 +174,16 @@
   <target name="testExtras" depends="compileExtrasTests">
   	<mkdir dir="${junit.output.dir}"/>
 
+    <condition property="runall">
+      <not>
+        <or>
+          <isset property="testcase"/>
+          <isset property="testpackage"/>
+          <isset property="testpackageroot"/>
+        </or>
+      </not>
+    </condition>    
+    
   	<junit printsummary="on"
            haltonfailure="no"
            maxmemory="512M"
@@ -172,12 +198,21 @@
         <enable package="org.apache.solr"/>
       </assertions>
       <formatter type="xml"/>
-      <batchtest fork="yes" todir="${junit.output.dir}" unless="testcase">
+  	  
+      <batchtest fork="yes" todir="${junit.output.dir}" if="runall">
         <fileset dir="src/extras/test/java" includes="${junit.includes}"/>
       </batchtest>
       <batchtest fork="yes" todir="${junit.output.dir}" if="testcase">
         <fileset dir="src/extras/test/java" includes="**/${testcase}.java"/>
       </batchtest>
+      <batchtest fork="yes" todir="${junit.output.dir}" if="testpackage">
+        <fileset dir="src/extras/test/java" includes="**/${testpackage}/**/Test*.java,**/${testpackage}/**/*Test.java"/>
+      </batchtest>
+      <batchtest fork="yes" todir="${junit.output.dir}" if="testpackageroot">
+        <fileset dir="src/extras/test/java" includes="**/${testpackageroot}/Test*.java,**/${testpackageroot}/*Test.java"/>
+      </batchtest>
+  	  
+  	  
     </junit>
 
     <fail if="tests.failed">Tests failed!</fail>
