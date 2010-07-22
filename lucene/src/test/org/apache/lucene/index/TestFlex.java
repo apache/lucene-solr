@@ -52,13 +52,9 @@ public class TestFlex extends LuceneTestCase {
       }
 
       IndexReader r = w.getReader();
-      TermEnum terms = r.terms(new Term("field3", "bbb"));
-      // pre-flex API should seek to the next field
-      assertNotNull(terms.term());
-      assertEquals("field4", terms.term().field());
       
-      terms = r.terms(new Term("field5", "abc"));
-      assertNull(terms.term());
+      TermsEnum terms = MultiFields.getTerms(r, "field3").iterator();
+      assertEquals(TermsEnum.SeekStatus.END, terms.seek(new BytesRef("abc")));
       r.close();
     }
 

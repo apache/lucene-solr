@@ -19,13 +19,15 @@ package org.apache.lucene.index;
 
 import java.util.*;
 
+import org.apache.lucene.util.BytesRef;
+
 
 class SegmentTermVector implements TermFreqVector {
   private String field;
-  private String terms[];
+  private BytesRef terms[];
   private int termFreqs[];
   
-  SegmentTermVector(String field, String terms[], int termFreqs[]) {
+  SegmentTermVector(String field, BytesRef terms[], int termFreqs[]) {
     this.field = field;
     this.terms = terms;
     this.termFreqs = termFreqs;
@@ -59,7 +61,7 @@ class SegmentTermVector implements TermFreqVector {
     return terms == null ? 0 : terms.length;
   }
 
-  public String [] getTerms() {
+  public BytesRef [] getTerms() {
     return terms;
   }
 
@@ -67,14 +69,14 @@ class SegmentTermVector implements TermFreqVector {
     return termFreqs;
   }
 
-  public int indexOf(String termText) {
+  public int indexOf(BytesRef termBytes) {
     if(terms == null)
       return -1;
-    int res = Arrays.binarySearch(terms, termText);
+    int res = Arrays.binarySearch(terms, termBytes);
     return res >= 0 ? res : -1;
   }
 
-  public int[] indexesOf(String [] termNumbers, int start, int len) {
+  public int[] indexesOf(BytesRef [] termNumbers, int start, int len) {
     // TODO: there must be a more efficient way of doing this.
     //       At least, we could advance the lower bound of the terms array
     //       as we find valid indexes. Also, it might be possible to leverage

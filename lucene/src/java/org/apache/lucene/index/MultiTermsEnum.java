@@ -42,6 +42,9 @@ public final class MultiTermsEnum extends TermsEnum {
   private final MultiDocsEnum.EnumWithSlice[] subDocs;
   private final MultiDocsAndPositionsEnum.EnumWithSlice[] subDocsAndPositions;
 
+  private BytesRef lastSeek;
+  private final BytesRef lastSeekScratch = new BytesRef();
+
   private int numTop;
   private int numSubs;
   private BytesRef current;
@@ -139,8 +142,40 @@ public final class MultiTermsEnum extends TermsEnum {
   public SeekStatus seek(BytesRef term, boolean useCache) throws IOException {
     queue.clear();
     numTop = 0;
+
+    boolean seekOpt = false;
+    if (lastSeek != null && termComp.compare(lastSeek, term) <= 0) {
+      seekOpt = true;
+    }
+    lastSeekScratch.copy(term);
+    lastSeek = lastSeekScratch;
+
     for(int i=0;i<numSubs;i++) {
-      final SeekStatus status = currentSubs[i].terms.seek(term, useCache);
+      final SeekStatus status;
+      // LUCENE-2130: if we had just seek'd already, prior
+      // to this seek, and the new seek term is after the
+      // previous one, don't try to re-seek this sub if its
+      // current term is already beyond this new seek term.
+      // Doing so is a waste because this sub will simply
+      // seek to the same spot.
+      if (seekOpt) {
+        final BytesRef curTerm = currentSubs[i].current;
+        if (curTerm != null) {
+          final int cmp = termComp.compare(term, curTerm);
+          if (cmp == 0) {
+            status = SeekStatus.FOUND;
+          } else if (cmp < 0) {
+            status = SeekStatus.NOT_FOUND;
+          } else {
+            status = currentSubs[i].terms.seek(term, useCache);
+          }
+        } else {
+          status = SeekStatus.END;
+        }
+      } else {
+        status = currentSubs[i].terms.seek(term, useCache);
+      }
+
       if (status == SeekStatus.FOUND) {
         top[numTop++] = currentSubs[i];
         current = currentSubs[i].current = currentSubs[i].terms.term();
@@ -150,6 +185,7 @@ public final class MultiTermsEnum extends TermsEnum {
         queue.add(currentSubs[i]);
       } else {
         // enum exhausted
+        currentSubs[i].current = null;
       }
     }
 
@@ -205,6 +241,8 @@ public final class MultiTermsEnum extends TermsEnum {
 
   @Override
   public BytesRef next() throws IOException {
+    lastSeek = null;
+
     // restore queue
     pushTop();
 
@@ -272,9 +310,9 @@ public final class MultiTermsEnum extends TermsEnum {
         b = null;
       }
 
-      final DocsEnum subDocsEnum = entry.terms.docs(b, entry.reuseDocs);
+      final DocsEnum subDocsEnum = entry.terms.docs(b, null);
       if (subDocsEnum != null) {
-        entry.reuseDocs = subDocs[upto].docsEnum = subDocsEnum;
+        subDocs[upto].docsEnum = subDocsEnum;
         subDocs[upto].slice = entry.subSlice;
 
         upto++;
@@ -334,14 +372,14 @@ public final class MultiTermsEnum extends TermsEnum {
         b = null;
       }
 
-      final DocsAndPositionsEnum subPostings = entry.terms.docsAndPositions(b, entry.reusePostings);
+      final DocsAndPositionsEnum subPostings = entry.terms.docsAndPositions(b, null);
 
       if (subPostings != null) {
-        entry.reusePostings = subDocsAndPositions[upto].docsAndPositionsEnum = subPostings;
+        subDocsAndPositions[upto].docsAndPositionsEnum = subPostings;
         subDocsAndPositions[upto].slice = entry.subSlice;
         upto++;
       } else {
-        if (entry.terms.docs(b, entry.reuseDocs) != null) {
+        if (entry.terms.docs(b, null) != null) {
           // At least one of our subs does not store
           // positions -- we can't correctly produce a
           // MultiDocsAndPositions enum
@@ -360,8 +398,6 @@ public final class MultiTermsEnum extends TermsEnum {
   private final static class TermsEnumWithSlice {
     private final ReaderUtil.Slice subSlice;
     private TermsEnum terms;
-    private DocsEnum reuseDocs;
-    private DocsAndPositionsEnum reusePostings;
     public BytesRef current;
 
     public TermsEnumWithSlice(ReaderUtil.Slice subSlice) {
@@ -372,9 +408,6 @@ public final class MultiTermsEnum extends TermsEnum {
     public void reset(TermsEnum terms, BytesRef term) {
       this.terms = terms;
       current = term;
-      // TODO: can we not null these?
-      reuseDocs = null;
-      reusePostings = null;
     }
   }
 

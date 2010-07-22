@@ -105,7 +105,7 @@ There are many post tokenization steps that can be done, including (but not limi
     <li>{@link org.apache.lucene.analysis.PerFieldAnalyzerWrapper} &ndash; Most Analyzers perform the same operation on all
       {@link org.apache.lucene.document.Field}s.  The PerFieldAnalyzerWrapper can be used to associate a different Analyzer with different
       {@link org.apache.lucene.document.Field}s.</li>
-    <li>The contrib/analyzers library located at the root of the Lucene distribution has a number of different Analyzer implementations to solve a variety
+    <li>The modules/analysis library located at the root of the Lucene distribution has a number of different Analyzer implementations to solve a variety
     of different problems related to searching.  Many of the Analyzers are designed to analyze non-English languages.</li>
     <li>The contrib/snowball library 
         located at the root of the Lucene distribution has Analyzer and TokenFilter 
@@ -168,7 +168,7 @@ There are many post tokenization steps that can be done, including (but not limi
 <h2>Implementing your own Analyzer</h2>
 <p>Creating your own Analyzer is straightforward. It usually involves either wrapping an existing Tokenizer and  set of TokenFilters to create a new Analyzer
 or creating both the Analyzer and a Tokenizer or TokenFilter.  Before pursuing this approach, you may find it worthwhile
-to explore the contrib/analyzers library and/or ask on the java-user@lucene.apache.org mailing list first to see if what you need already exists.
+to explore the modules/analysis library and/or ask on the java-user@lucene.apache.org mailing list first to see if what you need already exists.
 If you are still committed to creating your own Analyzer or TokenStream derivation (Tokenizer or TokenFilter) have a look at
 the source code of any one of the many samples located in this package.
 </p>

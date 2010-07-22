@@ -17,17 +17,17 @@ package org.apache.lucene.analysis.de;
  * limitations under the License.
  */
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.InputStreamReader;
-import java.io.StringReader;
+import java.io.InputStream;
+import java.io.Reader;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
+import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
+
+import static org.apache.lucene.analysis.util.VocabularyAssert.*;
 
 /**
  * Test the German stemmer. The stemming algorithm is known to work less 
@@ -38,25 +38,18 @@ import org.apache.lucene.analysis.core.LowerCaseFilter;
 public class TestGermanStemFilter extends BaseTokenStreamTestCase {
 
   public void testStemming() throws Exception {
-    Tokenizer tokenizer = new KeywordTokenizer(new StringReader(""));
-    TokenFilter filter = new GermanStemFilter(new LowerCaseFilter(TEST_VERSION_CURRENT, tokenizer));
-    // read test cases from external file:
-    InputStreamReader isr = new InputStreamReader(getClass().getResourceAsStream("data.txt"), "iso-8859-1");
-    BufferedReader breader = new BufferedReader(isr);
-    while(true) {
-      String line = breader.readLine();
-      if (line == null)
-        break;
-      line = line.trim();
-      if (line.startsWith("#") || line.equals(""))
-        continue;    // ignore comments and empty lines
-      String[] parts = line.split(";");
-      //System.out.println(parts[0] + " -- " + parts[1]);
-      tokenizer.reset(new StringReader(parts[0]));
-      filter.reset();
-      assertTokenStreamContents(filter, new String[] { parts[1] });
-    }
-    breader.close();
-    isr.close();
+    Analyzer analyzer = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName,
+          Reader reader) {
+        Tokenizer t = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(t,
+            new GermanStemFilter(new LowerCaseFilter(TEST_VERSION_CURRENT, t)));
+      }
+    };
+    
+    InputStream vocOut = getClass().getResourceAsStream("data.txt");
+    assertVocabulary(analyzer, vocOut);
+    vocOut.close();
   }
 }

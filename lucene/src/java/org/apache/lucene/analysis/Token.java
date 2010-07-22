@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.Payload;
-import org.apache.lucene.index.TermPositions;     // for javadoc
+import org.apache.lucene.index.DocsAndPositionsEnum; // for javadoc
 import org.apache.lucene.util.Attribute;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.AttributeImpl;
@@ -45,8 +45,8 @@ import org.apache.lucene.util.AttributeImpl;
   with type "eos".  The default token type is "word".  
   <p>
   A Token can optionally have metadata (a.k.a. Payload) in the form of a variable
-  length byte array. Use {@link TermPositions#getPayloadLength()} and 
-  {@link TermPositions#getPayload(byte[], int)} to retrieve the payloads from the index.
+  length byte array. Use {@link DocsAndPositionsEnum#getPayloadLength()} and 
+  {@link DocsAndPositionsEnum#getPayload(byte[], int)} to retrieve the payloads from the index.
   
   <br><br>
   

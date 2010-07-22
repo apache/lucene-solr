@@ -86,6 +86,9 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
   private PagedBytes.Reader termBytesReader;
 
   final HashMap<FieldInfo,FieldIndexReader> fields = new HashMap<FieldInfo,FieldIndexReader>();
+  
+  // start of the field info data
+  protected long dirOffset;
 
   public SimpleStandardTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, Comparator<BytesRef> termComp)
     throws IOException {
@@ -97,23 +100,21 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
     boolean success = false;
 
     try {
-      CodecUtil.checkHeader(in, SimpleStandardTermsIndexWriter.CODEC_NAME, SimpleStandardTermsIndexWriter.VERSION_START);
-
-      final long dirOffset = in.readLong();
-
+      
+      readHeader(in);
       indexInterval = in.readInt();
       this.indexDivisor = indexDivisor;
 
-      if (indexDivisor == -1) {
+      if (indexDivisor < 0) {
         totalIndexInterval = indexInterval;
       } else {
         // In case terms index gets loaded, later, on demand
         totalIndexInterval = indexInterval * indexDivisor;
       }
+      
+      seekDir(in, dirOffset);
 
       // Read directory
-      in.seek(dirOffset);
-
       final int numFields = in.readInt();
 
       for(int i=0;i<numFields;i++) {
@@ -131,17 +132,23 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
       }
       success = true;
     } finally {
-      if (indexDivisor != -1) {
+      if (indexDivisor > 0) {
         in.close();
         this.in = null;
         if (success) {
           indexLoaded = true;
         }
-        termBytesReader = termBytes.freeze();
+        termBytesReader = termBytes.freeze(true);
       } else {
         this.in = in;
       }
     }
+  }
+  
+  protected void readHeader(IndexInput input) throws IOException {
+    CodecUtil.checkHeader(input, SimpleStandardTermsIndexWriter.CODEC_NAME,
+      SimpleStandardTermsIndexWriter.VERSION_START, SimpleStandardTermsIndexWriter.VERSION_START);
+    dirOffset = input.readLong();
   }
 
   private final class FieldIndexReader extends FieldReader {
@@ -173,7 +180,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
       // We still create the indexReader when indexDivisor
       // is -1, so that StandardTermsDictReader can call
       // isIndexTerm for each field:
-      if (indexDivisor != -1) {
+      if (indexDivisor > 0) {
         coreIndex = new CoreFieldIndex(indexStart,
                                        termsStart,
                                        packedIndexStart,
@@ -218,7 +225,8 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
 
     @Override
     public void getIndexOffset(long ord, TermsIndexResult result) throws IOException {
-      // You must call loadTermsIndex if you had specified -1 for indexDivisor
+      // You must call loadTermsIndex if you had specified
+      // indexDivisor < 0 to ctor
       if (coreIndex == null) {
         throw new IllegalStateException("terms index was not loaded");
       }
@@ -413,7 +421,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
 
       indexLoaded = true;
       in.close();
-      termBytesReader = termBytes.freeze();
+      termBytesReader = termBytes.freeze(true);
     }
   }
 
@@ -443,5 +451,9 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
     if (termBytesReader != null) {
       termBytesReader.close();
     }
+  }
+
+  protected void seekDir(IndexInput input, long dirOffset) throws IOException {
+    input.seek(dirOffset);
   }
 }

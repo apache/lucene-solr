@@ -20,9 +20,10 @@ package org.apache.lucene.index.codecs.preflex;
 import java.io.IOException;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.index.FieldInfos;
-import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexFormatTooOldException;
+import org.apache.lucene.index.IndexFormatTooNewException;
 
 /**
  * @deprecated No longer used with flex indexing, except for
@@ -30,7 +31,7 @@ import org.apache.lucene.index.CorruptIndexException;
  * @lucene.experimental */
 
 @Deprecated
-public final class SegmentTermEnum extends TermEnum implements Cloneable {
+public final class SegmentTermEnum implements Cloneable {
   private IndexInput input;
   FieldInfos fieldInfos;
   long size;
@@ -41,7 +42,11 @@ public final class SegmentTermEnum extends TermEnum implements Cloneable {
   public static final int FORMAT_VERSION_UTF8_LENGTH_IN_BYTES = -4;
 
   // NOTE: always change this if you switch to a new format!
+  // whenever you add a new format, make it 1 smaller (negative version logic)!
   public static final int FORMAT_CURRENT = FORMAT_VERSION_UTF8_LENGTH_IN_BYTES;
+  
+  // when removing support for old versions, levae the last supported version here
+  public static final int FORMAT_MINIMUM = FORMAT_VERSION_UTF8_LENGTH_IN_BYTES;
 
   private TermBuffer termBuffer = new TermBuffer();
   private TermBuffer prevBuffer = new TermBuffer();
@@ -54,6 +59,7 @@ public final class SegmentTermEnum extends TermEnum implements Cloneable {
   long indexPointer = 0;
   int indexInterval;
   int skipInterval;
+  int newSuffixStart;
   int maxSkipLevels;
   private int formatM1SkipInterval;
 
@@ -78,8 +84,10 @@ public final class SegmentTermEnum extends TermEnum implements Cloneable {
       format = firstInt;
 
       // check that it is a format we can understand
-      if (format < FORMAT_CURRENT)
-        throw new CorruptIndexException("Unknown format version:" + format + " expected " + FORMAT_CURRENT + " or higher");
+    if (format > FORMAT_MINIMUM)
+      throw new IndexFormatTooOldException(null, format, FORMAT_MINIMUM, FORMAT_CURRENT);
+    if (format < FORMAT_CURRENT)
+      throw new IndexFormatTooNewException(null, format, FORMAT_MINIMUM, FORMAT_CURRENT);
 
       size = input.readLong();                    // read the size
       
@@ -128,7 +136,6 @@ public final class SegmentTermEnum extends TermEnum implements Cloneable {
   }
 
   /** Increments the enumeration to the next element.  True if one exists.*/
-  @Override
   public final boolean next() throws IOException {
     if (position++ >= size - 1) {
       prevBuffer.set(termBuffer);
@@ -138,6 +145,7 @@ public final class SegmentTermEnum extends TermEnum implements Cloneable {
 
     prevBuffer.set(termBuffer);
     termBuffer.read(input, fieldInfos);
+    newSuffixStart = termBuffer.newSuffixStart;
 
     termInfo.docFreq = input.readVInt();	  // read doc freq
     termInfo.freqPointer += input.readVLong();	  // read freq pointer
@@ -176,7 +184,6 @@ public final class SegmentTermEnum extends TermEnum implements Cloneable {
 
   /** Returns the current Term in the enumeration.
    Initially invalid, valid after next() called for the first time.*/
-  @Override
   public final Term term() {
     return termBuffer.toTerm();
   }
@@ -200,7 +207,6 @@ public final class SegmentTermEnum extends TermEnum implements Cloneable {
 
   /** Returns the docFreq from the current TermInfo in the enumeration.
    Initially invalid, valid after next() called for the first time.*/
-  @Override
   public final int docFreq() {
     return termInfo.docFreq;
   }
@@ -218,7 +224,6 @@ public final class SegmentTermEnum extends TermEnum implements Cloneable {
   }
 
   /** Closes the enumeration to further activity, freeing resources. */
-  @Override
   public final void close() throws IOException {
     input.close();
   }

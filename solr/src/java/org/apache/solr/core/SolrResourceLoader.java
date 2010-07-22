@@ -32,7 +32,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.CodingErrorAction;
 import java.lang.reflect.Constructor;
 
 import javax.naming.Context;
@@ -53,6 +56,7 @@ import org.apache.solr.schema.FieldType;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.plugin.ResourceLoaderAware;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.solr.search.QParserPlugin;
 
 /**
  * @since solr 1.3
@@ -315,7 +319,9 @@ public class SolrResourceLoader implements ResourceLoader
     ArrayList<String> lines;
     try {
       input = new BufferedReader(new InputStreamReader(openResource(resource),
-          charset));
+          charset.newDecoder()
+          .onMalformedInput(CodingErrorAction.REPORT)
+          .onUnmappableCharacter(CodingErrorAction.REPORT)));
 
       lines = new ArrayList<String>();
       for (String word=null; (word=input.readLine())!=null;) {
@@ -329,6 +335,9 @@ public class SolrResourceLoader implements ResourceLoader
         if (word.length()==0) continue;
         lines.add(word);
       }
+    } catch (CharacterCodingException ex) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, 
+          "Error loading resource (wrong encoding?): " + resource, ex);
     } finally {
       if (input != null)
         input.close();
@@ -645,6 +654,7 @@ public class SolrResourceLoader implements ResourceLoader
         CharFilterFactory.class,
         TokenFilterFactory.class,
         TokenizerFactory.class,
+        QParserPlugin.class,
         FieldType.class
       }
     );

@@ -33,7 +33,7 @@ import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
@@ -135,7 +135,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
       LevenshteinAutomata builder = 
         new LevenshteinAutomata(UnicodeUtil.newString(termText, realPrefixLength, termText.length - realPrefixLength));
 
-      runAutomata = new ArrayList<ByteRunAutomaton>(maxDistance);
+      final ByteRunAutomaton[] ra = new ByteRunAutomaton[maxDistance + 1];
       for (int i = 0; i <= maxDistance; i++) {
         Automaton a = builder.toAutomaton(i);
         // constant prefix
@@ -144,8 +144,9 @@ public final class FuzzyTermsEnum extends TermsEnum {
               UnicodeUtil.newString(termText, 0, realPrefixLength));
           a = BasicOperations.concatenate(prefix, a);
         }
-        runAutomata.add(new ByteRunAutomaton(a));
+        ra[i] = new ByteRunAutomaton(a);
       }
+      runAutomata = Arrays.asList(ra);
     }
   }
 

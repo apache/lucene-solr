@@ -17,8 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.index.DocsAndPositionsEnum;
-
 import java.io.IOException;
 import java.util.HashMap;
 
@@ -28,9 +26,9 @@ final class SloppyPhraseScorer extends PhraseScorer {
     private PhrasePositions tmpPos[]; // for flipping repeating pps.
     private boolean checkedRepeats;
 
-    SloppyPhraseScorer(Weight weight, DocsAndPositionsEnum[] postings, int[] offsets, Similarity similarity,
+    SloppyPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings, Similarity similarity,
                        int slop, byte[] norms) {
-        super(weight, postings, offsets, similarity, norms);
+        super(weight, postings, similarity, norms);
         this.slop = slop;
     }
 
@@ -53,7 +51,7 @@ final class SloppyPhraseScorer extends PhraseScorer {
      * We may want to fix this in the future (currently not, for performance reasons).
      */
     @Override
-    protected final float phraseFreq() throws IOException {
+    protected float phraseFreq() throws IOException {
         int end = initPhrasePositions();
         
         float freq = 0.0f;

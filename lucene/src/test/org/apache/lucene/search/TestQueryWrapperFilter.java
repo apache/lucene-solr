@@ -22,8 +22,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
@@ -34,10 +35,12 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
 
   public void testBasic() throws Exception {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     doc.add(new Field("field", "value", Store.NO, Index.ANALYZED));
     writer.addDocument(doc);
+    IndexReader reader = writer.getReader();
     writer.close();
 
     TermQuery termQuery = new TermQuery(new Term("field", "value"));
@@ -45,7 +48,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     // should not throw exception with primitive query
     QueryWrapperFilter qwf = new QueryWrapperFilter(termQuery);
 
-    IndexSearcher searcher = new IndexSearcher(dir, true);
+    IndexSearcher searcher = new IndexSearcher(reader);
     TopDocs hits = searcher.search(new MatchAllDocsQuery(), qwf, 10);
     assertEquals(1, hits.totalHits);
     hits = searcher.search(new MatchAllDocsQuery(), new CachingWrapperFilter(qwf), 10);
@@ -79,5 +82,8 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     assertEquals(0, hits.totalHits);
     hits = searcher.search(new MatchAllDocsQuery(), new CachingWrapperFilter(qwf), 10);
     assertEquals(0, hits.totalHits);
+    searcher.close();
+    reader.close();
+    dir.close();
   }
 }

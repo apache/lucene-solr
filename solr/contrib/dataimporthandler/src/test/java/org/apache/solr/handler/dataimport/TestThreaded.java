@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Map;
 
 
-public class TestThreaded extends AbstractDataImportHandlerTest {
+public class TestThreaded extends AbstractDataImportHandlerTestCase {
   @Test
   @SuppressWarnings("unchecked")
   public void testCompositePk_FullImport() throws Exception {

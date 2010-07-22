@@ -173,7 +173,7 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
   private void assertAutomaton(Automaton automaton) throws Exception {
     CharacterRunAutomaton cra = new CharacterRunAutomaton(automaton);
     ByteRunAutomaton bra = new ByteRunAutomaton(automaton);
-    final BasicOperations.RandomAcceptedStrings ras = new BasicOperations.RandomAcceptedStrings(automaton);
+    final AutomatonTestUtil.RandomAcceptedStrings ras = new AutomatonTestUtil.RandomAcceptedStrings(automaton);
     
     for (int i = 0; i < 1000*_TestUtil.getRandomMultiplier(); i++) {
       final String string;
@@ -193,8 +193,8 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
           throw e;
         }
       }
-      BytesRef bytesRef = new BytesRef(string);
-      assertEquals(cra.run(string), bra.run(bytesRef.bytes, 0, bytesRef.length));
+      byte bytes[] = string.getBytes("UTF-8");
+      assertEquals(cra.run(string), bra.run(bytes, 0, bytes.length));
     }
   }
 }

@@ -29,6 +29,7 @@ import org.apache.commons.codec.language.Metaphone;
 import org.apache.commons.codec.language.RefinedSoundex;
 import org.apache.commons.codec.language.Soundex;
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.phonetic.PhoneticFilter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 
@@ -96,6 +97,6 @@ public class PhoneticFilterFactory extends BaseTokenFilterFactory
   }
   
   public PhoneticFilter create(TokenStream input) {
-    return new PhoneticFilter(input,encoder,name,inject);
+    return new PhoneticFilter(input,encoder,inject);
   }
 }

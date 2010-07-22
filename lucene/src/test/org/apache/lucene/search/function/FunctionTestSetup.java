@@ -93,7 +93,6 @@ public class FunctionTestSetup extends LuceneTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     // prepare a small index with just a few documents.  
-    super.setUp();
     dir = new RAMDirectory();
     anlzr = new MockAnalyzer();
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, anlzr));

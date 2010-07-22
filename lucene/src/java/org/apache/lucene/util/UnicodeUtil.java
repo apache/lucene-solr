@@ -358,7 +358,6 @@ final public class UnicodeUtil {
         out[outUpto++] = (char) ((chHalf & HALF_MASK) + UNI_SUR_LOW_START);
       }
     }
-
     offsets[upto] = outUpto;
     result.length = outUpto;
   }
@@ -483,7 +482,7 @@ final public class UnicodeUtil {
     }
   }
   */
-  public static final boolean validUTF16String(CharSequence s) {
+  public static boolean validUTF16String(CharSequence s) {
     final int size = s.length();
     for(int i=0;i<size;i++) {
       char ch = s.charAt(i);
@@ -507,7 +506,7 @@ final public class UnicodeUtil {
     return true;
   }
 
-  public static final boolean validUTF16String(char[] s, int size) {
+  public static boolean validUTF16String(char[] s, int size) {
     for(int i=0;i<size;i++) {
       char ch = s[i];
       if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
@@ -559,7 +558,7 @@ final public class UnicodeUtil {
   /** Returns the number of code points in this utf8
    *  sequence.  Behavior is undefined if the utf8 sequence
    *  is invalid.*/
-  public static final int codePointCount(BytesRef utf8) {
+  public static int codePointCount(BytesRef utf8) {
     int upto = utf8.offset;
     final int limit = utf8.offset + utf8.length;
     final byte[] bytes = utf8.bytes;
@@ -672,5 +671,34 @@ final public class UnicodeUtil {
           }
       }
       return new String(chars, 0, w);
+  }
+
+  // for debugging
+  public static String toHexString(String s) {
+    StringBuilder sb = new StringBuilder();
+    for(int i=0;i<s.length();i++) {
+      char ch = s.charAt(i);
+      if (i > 0) {
+        sb.append(' ');
+      }
+      if (ch < 128) {
+        sb.append(ch);
+      } else {
+        if (ch >= UNI_SUR_HIGH_START && ch <= UNI_SUR_HIGH_END) {
+          sb.append("H:");
+        } else if (ch >= UNI_SUR_LOW_START && ch <= UNI_SUR_LOW_END) {
+          sb.append("L:");
+        } else if (ch > UNI_SUR_LOW_END) {
+          if (ch == 0xffff) {
+            sb.append("F:");
+          } else {
+            sb.append("E:");
+          }
+        }
+        
+        sb.append("0x" + Integer.toHexString(ch));
+      }
+    }
+    return sb.toString();
   }
 }

@@ -39,6 +39,9 @@ final class FieldsWriter
   // switch to a new format!
   static final int FORMAT_CURRENT = FORMAT_LUCENE_3_0_NO_COMPRESSED_FIELDS;
   
+  // when removing support for old versions, leave the last supported version here
+  static final int FORMAT_MINIMUM = FORMAT_LUCENE_3_0_NO_COMPRESSED_FIELDS;
+  
     private FieldInfos fieldInfos;
 
     private IndexOutput fieldsStream;

@@ -17,71 +17,35 @@ package org.apache.lucene.analysis.ru;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
 import org.apache.lucene.util.LuceneTestCase;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStreamReader;
-import java.io.FileInputStream;
-import java.util.ArrayList;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Reader;
+
+import static org.apache.lucene.analysis.util.VocabularyAssert.*;
 
 /**
  * @deprecated Remove this test class (and its datafiles!) in Lucene 4.0
  */
 @Deprecated
-public class TestRussianStem extends LuceneTestCase
-{
-    private ArrayList<String> words = new ArrayList<String>();
-    private ArrayList<String> stems = new ArrayList<String>();
-
-    public TestRussianStem(String name)
-    {
-        super(name);
-    }
-
-    /**
-     * @see TestCase#setUp()
-     */
-    @Override
-    protected void setUp() throws Exception {
-        super.setUp();
-        //System.out.println(new java.util.Date());
-        String str;
-        
-        // open and read words into an array list
-        BufferedReader inWords =
-            new BufferedReader(
-                new InputStreamReader(
-                    getClass().getResourceAsStream("wordsUTF8.txt"),
-                    "UTF-8"));
-        while ((str = inWords.readLine()) != null)
-        {
-            words.add(str);
-        }
-        inWords.close();
-
-        // open and read stems into an array list
-        BufferedReader inStems =
-            new BufferedReader(
-                new InputStreamReader(
-                    getClass().getResourceAsStream("stemsUTF8.txt"),
-                    "UTF-8"));
-        while ((str = inStems.readLine()) != null)
-        {
-            stems.add(str);
-        }
-        inStems.close();
-    }
-
-    public void testStem()
-    {
-        for (int i = 0; i < words.size(); i++)
-        {
-            //if ( (i % 100) == 0 ) System.err.println(i);
-            String realStem =
-                RussianStemmer.stemWord(
-                    words.get(i));
-            assertEquals("unicode", stems.get(i), realStem);
-        }
-    }
-
+public class TestRussianStem extends LuceneTestCase {
+  public void testStem() throws IOException {
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName,
+          Reader reader) {
+        Tokenizer t = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(t, new RussianStemFilter(t));
+      }
+    };
+    InputStream voc = getClass().getResourceAsStream("wordsUTF8.txt");
+    InputStream out = getClass().getResourceAsStream("stemsUTF8.txt");
+    assertVocabulary(a, voc, out);
+    voc.close();
+    out.close();
+  }
 }

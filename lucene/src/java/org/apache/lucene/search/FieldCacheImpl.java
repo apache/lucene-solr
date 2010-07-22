@@ -19,17 +19,9 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
+import java.util.*;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.*;
 import org.apache.lucene.util.PagedBytes;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.GrowableWriter;
@@ -642,7 +634,7 @@ class FieldCacheImpl implements FieldCache {
     }
   }
 
-  private static class DocTermsIndexImpl extends DocTermsIndex {
+  public static class DocTermsIndexImpl extends DocTermsIndex {
     private final PagedBytes.Reader bytes;
     private final PackedInts.Reader termOrdToBytesOffset;
     private final PackedInts.Reader docToTermOrd;
@@ -653,6 +645,11 @@ class FieldCacheImpl implements FieldCache {
       this.docToTermOrd = docToTermOrd;
       this.termOrdToBytesOffset = termOrdToBytesOffset;
       this.numOrd = numOrd;
+    }
+
+    @Override
+    public PackedInts.Reader getDocToOrd() {
+      return docToTermOrd;
     }
 
     @Override
@@ -673,6 +670,105 @@ class FieldCacheImpl implements FieldCache {
     @Override
     public BytesRef lookup(int ord, BytesRef ret) {
       return bytes.fillUsingLengthPrefix(ret, termOrdToBytesOffset.get(ord));
+    }
+
+    @Override
+    public TermsEnum getTermsEnum() {
+      return this.new DocTermsIndexEnum();
+    }
+
+    class DocTermsIndexEnum extends TermsEnum {
+      int currentOrd;
+      int currentBlockNumber;
+      int end;  // end position in the current block
+      final byte[][] blocks;
+      final int[] blockEnds;
+
+      final BytesRef term = new BytesRef();
+
+      public DocTermsIndexEnum() {
+        currentOrd = 0;
+        currentBlockNumber = 0;
+        blocks = bytes.getBlocks();
+        blockEnds = bytes.getBlockEnds();
+        currentBlockNumber = bytes.fillUsingLengthPrefix2(term, termOrdToBytesOffset.get(0));
+        end = blockEnds[currentBlockNumber];
+      }
+
+      @Override
+      public SeekStatus seek(BytesRef text, boolean useCache) throws IOException {
+        // TODO - we can support with binary search
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public SeekStatus seek(long ord) throws IOException {
+        assert(ord >= 0 && ord <= numOrd);
+        // TODO: if gap is small, could iterate from current position?  Or let user decide that?
+        currentBlockNumber = bytes.fillUsingLengthPrefix2(term, termOrdToBytesOffset.get((int)ord));
+        end = blockEnds[currentBlockNumber];
+        currentOrd = (int)ord;
+        return SeekStatus.FOUND;
+      }
+
+      @Override
+      public BytesRef next() throws IOException {
+        int start = term.offset + term.length;
+        if (start >= end) {
+          // switch byte blocks
+          if (currentBlockNumber +1 >= blocks.length) {
+            return null;
+          }
+          currentBlockNumber++;
+          term.bytes = blocks[currentBlockNumber];
+          end = blockEnds[currentBlockNumber];
+          start = 0;
+          if (end<=0) return null;  // special case of empty last array
+        }
+
+        currentOrd++;
+
+        byte[] block = term.bytes;
+        if ((block[start] & 128) == 0) {
+          term.length = block[start];
+          term.offset = start+1;
+        } else {
+          term.length = (((int) (block[start] & 0x7f)) << 8) | (block[1+start] & 0xff);
+          term.offset = start+2;
+        }
+
+        return term;
+      }
+
+      @Override
+      public BytesRef term() throws IOException {
+        return term;
+      }
+
+      @Override
+      public long ord() throws IOException {
+        return currentOrd;
+      }
+
+      @Override
+      public int docFreq() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public DocsAndPositionsEnum docsAndPositions(Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public Comparator<BytesRef> getComparator() throws IOException {
+        throw new UnsupportedOperationException();
+      }
     }
   }
 
@@ -706,6 +802,14 @@ class FieldCacheImpl implements FieldCache {
       int startTermsBPV;
       int startNumUniqueTerms;
 
+      int maxDoc = reader.maxDoc();
+      final int termCountHardLimit;
+      if (maxDoc == Integer.MAX_VALUE) {
+        termCountHardLimit = Integer.MAX_VALUE;
+      } else {
+        termCountHardLimit = maxDoc+1;
+      }
+
       if (terms != null) {
         // Try for coarse estimate for number of bits; this
         // should be an underestimate most of the time, which
@@ -717,11 +821,17 @@ class FieldCacheImpl implements FieldCache {
           numUniqueTerms = -1;
         }
         if (numUniqueTerms != -1) {
+
+          if (numUniqueTerms > termCountHardLimit) {
+            // app is misusing the API (there is more than
+            // one term per doc); in this case we make best
+            // effort to load what we can (see LUCENE-2142)
+            numUniqueTerms = termCountHardLimit;
+          }
+
           startBytesBPV = PackedInts.bitsRequired(numUniqueTerms*4);
           startTermsBPV = PackedInts.bitsRequired(numUniqueTerms);
-          if (numUniqueTerms > Integer.MAX_VALUE-1) {
-            throw new IllegalStateException("this field has too many (" + numUniqueTerms + ") unique terms");
-          }
+
           startNumUniqueTerms = (int) numUniqueTerms;
         } else {
           startBytesBPV = 1;
@@ -751,6 +861,10 @@ class FieldCacheImpl implements FieldCache {
           if (term == null) {
             break;
           }
+          if (termOrd >= termCountHardLimit) {
+            break;
+          }
+
           if (termOrd == termOrdToBytesOffset.size()) {
             // NOTE: this code only runs if the incoming
             // reader impl doesn't implement
@@ -775,7 +889,7 @@ class FieldCacheImpl implements FieldCache {
       }
 
       // maybe an int-only impl?
-      return new DocTermsIndexImpl(bytes.freeze(), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd);
+      return new DocTermsIndexImpl(bytes.freeze(true), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd);
     }
   }
 
@@ -829,6 +943,8 @@ class FieldCacheImpl implements FieldCache {
 
       final boolean fasterButMoreRAM = ((Boolean) entryKey.custom).booleanValue();
 
+      final int termCountHardLimit = reader.maxDoc();
+
       // Holds the actual term data, expanded.
       final PagedBytes bytes = new PagedBytes(15);
 
@@ -845,6 +961,9 @@ class FieldCacheImpl implements FieldCache {
           numUniqueTerms = -1;
         }
         if (numUniqueTerms != -1) {
+          if (numUniqueTerms > termCountHardLimit) {
+            numUniqueTerms = termCountHardLimit;
+          }
           startBPV = PackedInts.bitsRequired(numUniqueTerms*4);
         } else {
           startBPV = 1;
@@ -859,10 +978,18 @@ class FieldCacheImpl implements FieldCache {
       bytes.copyUsingLengthPrefix(new BytesRef());
 
       if (terms != null) {
+        int termCount = 0;
         final TermsEnum termsEnum = terms.iterator();
         final Bits delDocs = MultiFields.getDeletedDocs(reader);
         DocsEnum docs = null;
         while(true) {
+          if (termCount++ == termCountHardLimit) {
+            // app is misusing the API (there is more than
+            // one term per doc); in this case we make best
+            // effort to load what we can (see LUCENE-2142)
+            break;
+          }
+
           final BytesRef term = termsEnum.next();
           if (term == null) {
             break;
@@ -880,7 +1007,7 @@ class FieldCacheImpl implements FieldCache {
       }
 
       // maybe an int-only impl?
-      return new DocTermsImpl(bytes.freeze(), docToOffset.getMutable());
+      return new DocTermsImpl(bytes.freeze(true), docToOffset.getMutable());
     }
   }
   private volatile PrintStream infoStream;

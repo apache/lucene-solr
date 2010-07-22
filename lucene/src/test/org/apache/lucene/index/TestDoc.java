@@ -213,15 +213,19 @@ public class TestDoc extends LuceneTestCase {
       for (int i = 0; i < reader.numDocs(); i++)
         out.println(reader.document(i));
 
-      TermEnum tis = reader.terms();
-      while (tis.next()) {
-        out.print(tis.term());
-        out.println(" DF=" + tis.docFreq());
+      FieldsEnum fis = reader.fields().iterator();
+      String field = fis.next();
+      while(field != null)  {
+        TermsEnum tis = fis.terms();
+        while(tis.next() != null) {
 
-        TermPositions positions = reader.termPositions(tis.term());
-        try {
-          while (positions.next()) {
-            out.print(" doc=" + positions.doc());
+          out.print("  term=" + field + ":" + tis.term());
+          out.println("    DF=" + tis.docFreq());
+
+          DocsAndPositionsEnum positions = tis.docsAndPositions(reader.getDeletedDocs(), null);
+
+          while (positions.nextDoc() != positions.NO_MORE_DOCS) {
+            out.print(" doc=" + positions.docID());
             out.print(" TF=" + positions.freq());
             out.print(" pos=");
             out.print(positions.nextPosition());
@@ -229,11 +233,9 @@ public class TestDoc extends LuceneTestCase {
               out.print("," + positions.nextPosition());
             out.println("");
           }
-        } finally {
-          positions.close();
         }
+        field = fis.next();
       }
-      tis.close();
       reader.close();
     }
 }

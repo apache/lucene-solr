@@ -55,11 +55,11 @@ public enum DistanceUnits {
    * @throws IllegalArgumentException if no DistanceUnit which represents the given unit is found
    */
   public static DistanceUnits findDistanceUnit(String unit) {
-    if (MILES.getUnit().equals(unit)) {
+    if (MILES.getUnit().equalsIgnoreCase(unit) || unit.equalsIgnoreCase("mi")) {
       return MILES;
     }
 
-    if (KILOMETERS.getUnit().equals(unit)) {
+    if (KILOMETERS.getUnit().equalsIgnoreCase(unit)) {
       return KILOMETERS;
     }
 

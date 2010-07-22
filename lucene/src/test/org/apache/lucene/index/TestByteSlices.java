@@ -55,7 +55,7 @@ public class TestByteSlices extends LuceneTestCase {
   public void testBasic() throws Throwable {
     ByteBlockPool pool = new ByteBlockPool(new ByteBlockAllocator());
 
-    final int NUM_STREAM = 25;
+    final int NUM_STREAM = 100*_TestUtil.getRandomMultiplier();
 
     ByteSliceWriter writer = new ByteSliceWriter(pool);
 
@@ -91,8 +91,9 @@ public class TestByteSlices extends LuceneTestCase {
         for(int j=0;j<numValue;j++) {
           if (VERBOSE)
             System.out.println("    write " + (counters[stream]+j));
+          // write some large (incl. negative) ints:
+          writer.writeVInt(r.nextInt());
           writer.writeVInt(counters[stream]+j);
-          //writer.writeVInt(ti);
         }
         counters[stream] += numValue;
         uptos[stream] = writer.getAddress();
@@ -104,11 +105,12 @@ public class TestByteSlices extends LuceneTestCase {
         if (VERBOSE)
           System.out.println("  stream=" + stream + " count=" + counters[stream]);
 
-        if (starts[stream] != uptos[stream]) {
+        if (starts[stream] != -1 && starts[stream] != uptos[stream]) {
           reader.init(pool, starts[stream], uptos[stream]);
-          for(int j=0;j<counters[stream];j++) 
-            assertEquals(j, reader.readVInt());
-            //assertEquals(ti, reader.readVInt());
+          for(int j=0;j<counters[stream];j++) {
+            reader.readVInt();
+            assertEquals(j, reader.readVInt()); 
+          }
         }
       }
 

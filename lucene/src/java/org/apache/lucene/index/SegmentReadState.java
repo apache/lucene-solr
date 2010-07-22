@@ -27,6 +27,12 @@ public class SegmentReadState {
   public final SegmentInfo segmentInfo;
   public final FieldInfos fieldInfos;
   public final int readBufferSize;
+
+  // NOTE: if this is < 0, that means "defer terms index
+  // load until needed".  But if the codec must load the
+  // terms index on init (preflex is the only once currently
+  // that must do so), then it should negate this value to
+  // get the app's terms divisor:
   public final int termsIndexDivisor;
 
   public SegmentReadState(Directory dir,

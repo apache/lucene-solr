@@ -22,6 +22,7 @@ import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -154,12 +155,14 @@ public final class SegmentInfo {
   /**
    * Construct a new SegmentInfo instance by reading a
    * previously saved SegmentInfo from input.
+   * <p>Note: this is public only to allow access from
+   * the codecs package.</p>
    *
    * @param dir directory to load from
    * @param format format of the segments info file
    * @param input input handle to read segment info from
    */
-  SegmentInfo(Directory dir, int format, IndexInput input, CodecProvider codecs) throws IOException {
+  public SegmentInfo(Directory dir, int format, IndexInput input, CodecProvider codecs) throws IOException {
     this.dir = dir;
     name = input.readString();
     docCount = input.readInt();
@@ -173,9 +176,10 @@ public final class SegmentInfo {
       docStoreSegment = name;
       docStoreIsCompoundFile = false;
     }
-    if (format > SegmentInfos.FORMAT_4_0) {
+    if (format > DefaultSegmentInfosWriter.FORMAT_4_0) {
       // pre-4.0 indexes write a byte if there is a single norms file
-      assert 1 == input.readByte();
+      byte b = input.readByte();
+      assert 1 == b;
     }
     int numNormGen = input.readInt();
     if (numNormGen == NO) {
@@ -195,7 +199,7 @@ public final class SegmentInfo {
     
     // System.out.println(Thread.currentThread().getName() + ": si.read hasProx=" + hasProx + " seg=" + name);
     
-    if (format <= SegmentInfos.FORMAT_4_0)
+    if (format <= DefaultSegmentInfosWriter.FORMAT_4_0)
       codecName = input.readString();
     else
       codecName = "PreFlex";
@@ -393,7 +397,7 @@ public final class SegmentInfo {
   }
   
   /** Save this segment's info. */
-  void write(IndexOutput output)
+  public void write(IndexOutput output)
     throws IOException {
     assert delCount <= docCount: "delCount=" + delCount + " docCount=" + docCount + " segment=" + name;
     output.writeString(name);

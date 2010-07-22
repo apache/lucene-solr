@@ -24,8 +24,8 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -38,7 +38,7 @@ public class BooleanFilterTest extends LuceneTestCase {
 	protected void setUp() throws Exception {
 	  super.setUp();
 		directory = new RAMDirectory();
-		IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+		RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
 		
 		//Add series of docs with filterable fields : acces rights, prices, dates and "in-stock" flags
@@ -47,12 +47,18 @@ public class BooleanFilterTest extends LuceneTestCase {
 		addDoc(writer, "guest", "020", "20050101","Y");
 		addDoc(writer, "admin", "020", "20050101","Maybe");
 		addDoc(writer, "admin guest", "030", "20050101","N");
-		
-		writer.close();
-		reader=IndexReader.open(directory, true);			
+		reader = writer.getReader();
+		writer.close();	
 	}
 	
-	private void addDoc(IndexWriter writer, String accessRights, String price, String date, String inStock) throws IOException
+	@Override
+	protected void tearDown() throws Exception {
+	  reader.close();
+	  directory.close();
+	  super.tearDown();
+	}
+	
+	private void addDoc(RandomIndexWriter writer, String accessRights, String price, String date, String inStock) throws IOException
 	{
 		Document doc=new Document();
 		doc.add(new Field("accessRights",accessRights,Field.Store.YES,Field.Index.ANALYZED));

@@ -102,6 +102,7 @@ final class IndexFileDeleter {
   private DocumentsWriter docWriter;
 
   final boolean startingCommitDeleted;
+  private SegmentInfos lastSegmentInfos;
 
   /** Change to true to see details of reference counts when
    *  infoStream != null */
@@ -134,8 +135,10 @@ final class IndexFileDeleter {
     this.docWriter = docWriter;
     this.infoStream = infoStream;
 
+    final String currentSegmentsFile = segmentInfos.getCurrentSegmentFileName();
+
     if (infoStream != null)
-      message("init: current segments file is \"" + segmentInfos.getCurrentSegmentFileName() + "\"; deletionPolicy=" + policy);
+      message("init: current segments file is \"" + currentSegmentsFile + "\"; deletionPolicy=" + policy);
 
     this.policy = policy;
     this.directory = directory;
@@ -146,7 +149,6 @@ final class IndexFileDeleter {
     indexFilenameFilter = new IndexFileNameFilter(codecs);
     
     CommitPoint currentCommitPoint = null;
-    boolean seenIndexFiles = false;
     String[] files = null;
     try {
       files = directory.listAll();
@@ -158,7 +160,6 @@ final class IndexFileDeleter {
     for (String fileName : files) {
 
       if ((indexFilenameFilter.accept(null, fileName)) && !fileName.endsWith("write.lock") && !fileName.equals(IndexFileNames.SEGMENTS_GEN)) {
-        seenIndexFiles = true;
         
         // Add this file to refCounts with initial count 0:
         getRefCount(fileName);
@@ -168,43 +169,51 @@ final class IndexFileDeleter {
           // This is a commit (segments or segments_N), and
           // it's valid (<= the max gen).  Load it, then
           // incref all files it refers to:
-          if (SegmentInfos.generationFromSegmentsFileName(fileName) <= currentGen) {
+          if (infoStream != null) {
+            message("init: load commit \"" + fileName + "\"");
+          }
+          SegmentInfos sis = new SegmentInfos();
+          try {
+            sis.read(directory, fileName, codecs);
+          } catch (FileNotFoundException e) {
+            // LUCENE-948: on NFS (and maybe others), if
+            // you have writers switching back and forth
+            // between machines, it's very likely that the
+            // dir listing will be stale and will claim a
+            // file segments_X exists when in fact it
+            // doesn't.  So, we catch this and handle it
+            // as if the file does not exist
             if (infoStream != null) {
-              message("init: load commit \"" + fileName + "\"");
+              message("init: hit FileNotFoundException when loading commit \"" + fileName + "\"; skipping this commit point");
             }
-            SegmentInfos sis = new SegmentInfos();
-            try {
-              sis.read(directory, fileName, codecs);
-            } catch (FileNotFoundException e) {
-              // LUCENE-948: on NFS (and maybe others), if
-              // you have writers switching back and forth
-              // between machines, it's very likely that the
-              // dir listing will be stale and will claim a
-              // file segments_X exists when in fact it
-              // doesn't.  So, we catch this and handle it
-              // as if the file does not exist
-              if (infoStream != null) {
-                message("init: hit FileNotFoundException when loading commit \"" + fileName + "\"; skipping this commit point");
-              }
+            sis = null;
+          } catch (IOException e) {
+            if (SegmentInfos.generationFromSegmentsFileName(fileName) <= currentGen) {
+              throw e;
+            } else {
+              // Most likely we are opening an index that
+              // has an aborted "future" commit, so suppress
+              // exc in this case
               sis = null;
             }
-            if (sis != null) {
-              CommitPoint commitPoint = new CommitPoint(commitsToDelete, directory, sis);
-              if (sis.getGeneration() == segmentInfos.getGeneration()) {
-                currentCommitPoint = commitPoint;
-              }
-              commits.add(commitPoint);
-              incRef(sis, true);
+          }
+          if (sis != null) {
+            CommitPoint commitPoint = new CommitPoint(commitsToDelete, directory, sis);
+            if (sis.getGeneration() == segmentInfos.getGeneration()) {
+              currentCommitPoint = commitPoint;
+            }
+            commits.add(commitPoint);
+            incRef(sis, true);
+
+            if (lastSegmentInfos == null || sis.getGeneration() > lastSegmentInfos.getGeneration()) {
+              lastSegmentInfos = sis;
             }
           }
         }
       }
     }
 
-    // If we haven't seen any Lucene files, then currentCommitPoint is expected
-    // to be null, because it means it's a fresh Directory. Therefore it cannot
-    // be any NFS cache issues - so just ignore.
-    if (currentCommitPoint == null && seenIndexFiles) {
+    if (currentCommitPoint == null && currentSegmentsFile != null) {
       // We did not in fact see the segments_N file
       // corresponding to the segmentInfos that was passed
       // in.  Yet, it must exist, because our caller holds
@@ -214,7 +223,7 @@ final class IndexFileDeleter {
       // try now to explicitly open this commit point:
       SegmentInfos sis = new SegmentInfos();
       try {
-        sis.read(directory, segmentInfos.getCurrentSegmentFileName(), codecs);
+        sis.read(directory, currentSegmentsFile, codecs);
       } catch (IOException e) {
         throw new CorruptIndexException("failed to locate current segments_N file");
       }
@@ -244,7 +253,7 @@ final class IndexFileDeleter {
 
     // Finally, give policy a chance to remove things on
     // startup:
-    if (seenIndexFiles) {
+    if (currentSegmentsFile != null) {
       policy.onInit(commits);
     }
 
@@ -255,6 +264,10 @@ final class IndexFileDeleter {
     startingCommitDeleted = currentCommitPoint == null ? false : currentCommitPoint.isDeleted();
 
     deleteCommits();
+  }
+
+  public SegmentInfos getLastSegmentInfos() {
+    return lastSegmentInfos;
   }
 
   /**

@@ -157,7 +157,7 @@ public class PackedInts {
    * @lucene.internal
    */
   public static Reader getReader(IndexInput in) throws IOException {
-    CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START);
+    CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_START);
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
     final int valueCount = in.readVInt();
@@ -188,7 +188,7 @@ public class PackedInts {
    * @lucene.internal
    */
   public static ReaderIterator getReaderIterator(IndexInput in) throws IOException {
-    CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START);
+    CodecUtil.checkHeader(in, CODEC_NAME, VERSION_START, VERSION_START);
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
     final int valueCount = in.readVInt();

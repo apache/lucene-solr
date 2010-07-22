@@ -18,22 +18,28 @@
 package org.apache.solr.update;
 
 import org.apache.lucene.document.Document;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.schema.FieldType;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * 
  *
  */
-public class DocumentBuilderTest extends AbstractSolrTestCase {
+public class DocumentBuilderTest extends SolrTestCaseJ4 {
 
-  @Override public String getSchemaFile() { return "schema.xml"; }
-  @Override public String getSolrConfigFile() { return "solrconfig.xml"; }
-  
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml");
+  }
 
+  @Test
   public void testBuildDocument() throws Exception 
   {
     SolrCore core = h.getCore();
@@ -50,6 +56,7 @@ public class DocumentBuilderTest extends AbstractSolrTestCase {
     }
   }
 
+  @Test
   public void testNullField() 
   {
     SolrCore core = h.getCore();
@@ -61,6 +68,7 @@ public class DocumentBuilderTest extends AbstractSolrTestCase {
     assertNull( out.get( "name" ) );
   }
 
+  @Test
   public void testMultiField() throws Exception {
     SolrCore core = h.getCore();
 

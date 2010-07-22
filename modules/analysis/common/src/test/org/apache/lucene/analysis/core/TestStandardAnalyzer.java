@@ -12,10 +12,13 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermPositions;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.MultiFields;
 
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util.BytesRef;
 
 
 /**
@@ -279,8 +282,11 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
 
     // Make sure position is still incremented when
     // massive term is skipped:
-    TermPositions tps = reader.termPositions(new Term("content", "another"));
-    assertTrue(tps.next());
+    DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(reader,
+                                                                MultiFields.getDeletedDocs(reader),
+                                                                "content",
+                                                                new BytesRef("another"));
+    assertTrue(tps.nextDoc() != DocsEnum.NO_MORE_DOCS);
     assertEquals(1, tps.freq());
     assertEquals(3, tps.nextPosition());
 

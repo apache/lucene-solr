@@ -19,25 +19,32 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.io.IOException;
+import java.util.Random;
 
 /**
  * TestWildcard tests the '*' and '?' wildcard characters.
  */
 public class TestWildcard
     extends LuceneTestCase {
+  private Random random;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    random = newRandom();
+  }
+
   public void testEquals() {
     WildcardQuery wq1 = new WildcardQuery(new Term("field", "b*a"));
     WildcardQuery wq2 = new WildcardQuery(new Term("field", "b*a"));
@@ -195,14 +202,13 @@ public class TestWildcard
   private RAMDirectory getIndexStore(String field, String[] contents)
       throws IOException {
     RAMDirectory indexStore = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < contents.length; ++i) {
       Document doc = new Document();
       doc.add(new Field(field, contents[i], Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
-    writer.optimize();
     writer.close();
 
     return indexStore;
@@ -253,7 +259,8 @@ public class TestWildcard
 
     // prepare the index
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < docs.length; i++) {
       Document doc = new Document();
       doc.add(new Field(field,docs[i],Store.NO,Index.ANALYZED));
@@ -308,63 +315,5 @@ public class TestWildcard
     }
 
     searcher.close();
-  }
-  @Deprecated
-  private static final class OldWildcardQuery extends MultiTermQuery {
-    final Term term;
-  
-    OldWildcardQuery(Term term) {
-      this.term = term;
-    }
-      
-    @Override
-    protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
-      return new WildcardTermEnum(reader, term);
-    }
-    
-    @Override
-    public String toString(String field) {
-      return "OldWildcard(" + term.toString()+ ")";
-    }
-  }
-  
-  @Deprecated
-  public void testDeprecatedTermEnum() throws Exception {
-    RAMDirectory indexStore = getIndexStore("body", new String[]
-    {"metal", "metals"});
-    IndexSearcher searcher = new IndexSearcher(indexStore, true);
-    Query query1 = new TermQuery(new Term("body", "metal"));
-    Query query2 = new OldWildcardQuery(new Term("body", "metal*"));
-    Query query3 = new OldWildcardQuery(new Term("body", "m*tal"));
-    Query query4 = new OldWildcardQuery(new Term("body", "m*tal*"));
-    Query query5 = new OldWildcardQuery(new Term("body", "m*tals"));
-
-    BooleanQuery query6 = new BooleanQuery();
-    query6.add(query5, BooleanClause.Occur.SHOULD);
-
-    BooleanQuery query7 = new BooleanQuery();
-    query7.add(query3, BooleanClause.Occur.SHOULD);
-    query7.add(query5, BooleanClause.Occur.SHOULD);
-
-    // Queries do not automatically lower-case search terms:
-    Query query8 = new OldWildcardQuery(new Term("body", "M*tal*"));
-
-    assertMatches(searcher, query1, 1);
-    assertMatches(searcher, query2, 2);
-    assertMatches(searcher, query3, 1);
-    assertMatches(searcher, query4, 2);
-    assertMatches(searcher, query5, 1);
-    assertMatches(searcher, query6, 1);
-    assertMatches(searcher, query7, 2);
-    assertMatches(searcher, query8, 0);
-    assertMatches(searcher, new OldWildcardQuery(new Term("body", "*tall")), 0);
-    assertMatches(searcher, new OldWildcardQuery(new Term("body", "*tal")), 1);
-    assertMatches(searcher, new OldWildcardQuery(new Term("body", "*tal*")), 2);
-  }
-  
-  @Deprecated
-  public void testBackwardsLayer() {
-    assertTrue(new WildcardQuery(new Term("body", "metal*")).hasNewAPI);
-    assertFalse(new OldWildcardQuery(new Term("body", "metal*")).hasNewAPI);
   }
 }

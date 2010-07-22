@@ -43,6 +43,7 @@ import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.RubyResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.response.VelocityResponseWriter;
 import org.apache.solr.response.XMLResponseWriter;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.search.QParserPlugin;
@@ -689,17 +690,17 @@ public final class SolrCore implements SolrInfoMBean {
       SolrException.log(log, e);
     }
     try {
+      updateHandler.close();
+    } catch (Exception e) {
+      SolrException.log(log,e);
+    }
+    try {
       closeSearcher();
     } catch (Exception e) {
       SolrException.log(log,e);
     }
     try {
       searcherExecutor.shutdown();
-    } catch (Exception e) {
-      SolrException.log(log,e);
-    }
-    try {
-      updateHandler.close();
     } catch (Exception e) {
       SolrException.log(log,e);
     }
@@ -1406,6 +1407,7 @@ public final class SolrCore implements SolrInfoMBean {
     m.put("ruby", new RubyResponseWriter());
     m.put("raw", new RawResponseWriter());
     m.put("javabin", new BinaryResponseWriter());
+    m.put("velocity", new VelocityResponseWriter());
     DEFAULT_RESPONSE_WRITERS = Collections.unmodifiableMap(m);
   }
   

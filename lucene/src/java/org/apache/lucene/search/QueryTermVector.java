@@ -29,14 +29,16 @@ import java.util.Map;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.util.BytesRef;
 
 /**
  *
  *
  **/
 public class QueryTermVector implements TermFreqVector {
-  private String [] terms = new String[0];
+  private BytesRef [] terms = new BytesRef[0];
   private int [] termFreqs = new int[0];
 
   public String getField() { return null;  }
@@ -45,7 +47,7 @@ public class QueryTermVector implements TermFreqVector {
    * 
    * @param queryTerms The original list of terms from the query, can contain duplicates
    */ 
-  public QueryTermVector(String [] queryTerms) {
+  public QueryTermVector(BytesRef [] queryTerms) {
 
     processTerms(queryTerms);
   }
@@ -56,35 +58,37 @@ public class QueryTermVector implements TermFreqVector {
       TokenStream stream = analyzer.tokenStream("", new StringReader(queryString));
       if (stream != null)
       {
-        List<String> terms = new ArrayList<String>();
+        List<BytesRef> terms = new ArrayList<BytesRef>();
         try {
           boolean hasMoreTokens = false;
           
           stream.reset(); 
-          final CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
+          final TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
 
           hasMoreTokens = stream.incrementToken();
           while (hasMoreTokens) {
-            terms.add(termAtt.toString());
+            BytesRef bytes = new BytesRef();
+            termAtt.toBytesRef(bytes);
+            terms.add(bytes);
             hasMoreTokens = stream.incrementToken();
           }
-          processTerms(terms.toArray(new String[terms.size()]));
+          processTerms(terms.toArray(new BytesRef[terms.size()]));
         } catch (IOException e) {
         }
       }
     }                                                              
   }
   
-  private void processTerms(String[] queryTerms) {
+  private void processTerms(BytesRef[] queryTerms) {
     if (queryTerms != null) {
       Arrays.sort(queryTerms);
-      Map<String,Integer> tmpSet = new HashMap<String,Integer>(queryTerms.length);
+      Map<BytesRef,Integer> tmpSet = new HashMap<BytesRef,Integer>(queryTerms.length);
       //filter out duplicates
-      List<String> tmpList = new ArrayList<String>(queryTerms.length);
+      List<BytesRef> tmpList = new ArrayList<BytesRef>(queryTerms.length);
       List<Integer> tmpFreqs = new ArrayList<Integer>(queryTerms.length);
       int j = 0;
       for (int i = 0; i < queryTerms.length; i++) {
-        String term = queryTerms[i];
+        BytesRef term = queryTerms[i];
         Integer position = tmpSet.get(term);
         if (position == null) {
           tmpSet.put(term, Integer.valueOf(j++));
@@ -112,7 +116,7 @@ public class QueryTermVector implements TermFreqVector {
         sb.append('{');
         for (int i=0; i<terms.length; i++) {
             if (i>0) sb.append(", ");
-            sb.append(terms[i]).append('/').append(termFreqs[i]);
+            sb.append(terms[i].utf8ToString()).append('/').append(termFreqs[i]);
         }
         sb.append('}');
         return sb.toString();
@@ -123,7 +127,7 @@ public class QueryTermVector implements TermFreqVector {
     return terms.length;
   }
 
-  public String[] getTerms() {
+  public BytesRef[] getTerms() {
     return terms;
   }
 
@@ -131,12 +135,12 @@ public class QueryTermVector implements TermFreqVector {
     return termFreqs;
   }
 
-  public int indexOf(String term) {
+  public int indexOf(BytesRef term) {
     int res = Arrays.binarySearch(terms, term);
         return res >= 0 ? res : -1;
   }
 
-  public int[] indexesOf(String[] terms, int start, int len) {
+  public int[] indexesOf(BytesRef[] terms, int start, int len) {
     int res[] = new int[len];
 
     for (int i=0; i < len; i++) {

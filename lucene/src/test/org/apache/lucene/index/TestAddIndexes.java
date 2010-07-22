@@ -464,7 +464,7 @@ public class TestAddIndexes extends LuceneTestCase {
   private void verifyTermDocs(Directory dir, Term term, int numDocs)
       throws IOException {
     IndexReader reader = IndexReader.open(dir, true);
-    DocsEnum docsEnum = MultiFields.getTermDocsEnum(reader, null, term.field, new BytesRef(term.text));
+    DocsEnum docsEnum = MultiFields.getTermDocsEnum(reader, null, term.field, term.bytes);
     int count = 0;
     while (docsEnum.nextDoc() != DocIdSetIterator.NO_MORE_DOCS)
       count++;

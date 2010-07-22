@@ -420,9 +420,4 @@ public class TestTermRangeQuery extends LuceneTestCase {
     //assertEquals("C added => A,B,<empty string>,C in range", 3, hits.length());
      searcher.close();
   }
-  
-  @Deprecated
-  public void testBackwardsLayer() {
-    assertTrue(new TermRangeQuery("dummy", null, null, true, true).hasNewAPI);
-  }
 }

@@ -29,7 +29,7 @@
 #   ant run-task -Dtask.alg=conf/indexLineFile.alg
 #
 
-analyzer=org.apache.lucene.analysis.SimpleAnalyzer
+analyzer=org.apache.lucene.analysis.core.SimpleAnalyzer
 
 # Feed that knows how to process the line file format:
 content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource

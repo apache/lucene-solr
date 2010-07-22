@@ -5,12 +5,13 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.xmlparser.DOMUtils;
 import org.apache.lucene.xmlparser.ParserException;
 import org.apache.lucene.xmlparser.QueryBuilder;
@@ -57,16 +58,18 @@ public class TermsQueryBuilder implements QueryBuilder {
 		TokenStream ts = analyzer.tokenStream(fieldName, new StringReader(text));
 		try
 		{
-		  CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+		  TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
 			Term term = null;
 			while (ts.incrementToken()) {
+        BytesRef bytes = new BytesRef();
+        termAtt.toBytesRef(bytes);
 				if (term == null)
 				{
-					term = new Term(fieldName, termAtt.toString());
+					term = new Term(fieldName, bytes);
 				} else
 				{
 //					 create from previous to save fieldName.intern overhead
-					term = term.createTerm(termAtt.toString()); 
+					term = term.createTerm(bytes); 
 				}
 				bq.add(new BooleanClause(new TermQuery(term),BooleanClause.Occur.SHOULD));
 			}

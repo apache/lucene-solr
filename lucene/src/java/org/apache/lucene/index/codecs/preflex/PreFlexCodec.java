@@ -33,7 +33,7 @@ import org.apache.lucene.index.codecs.FieldsProducer;
  *  written segments should use StandardCodec.
  *
  * @deprecated This is only used to read indexes created
- * before 3.1.
+ * before 4.0.
  * @lucene.experimental
  */
 @Deprecated

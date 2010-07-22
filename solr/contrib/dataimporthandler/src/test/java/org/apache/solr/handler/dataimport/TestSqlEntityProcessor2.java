@@ -32,7 +32,7 @@ import java.text.ParseException;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTest {
+public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
   @Override
   public String getSchemaFile() {
     return "dataimport-schema.xml";

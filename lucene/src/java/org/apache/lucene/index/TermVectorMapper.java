@@ -1,4 +1,7 @@
 package org.apache.lucene.index;
+
+import org.apache.lucene.util.BytesRef;
+
 /**
  * Copyright 2007 The Apache Software Foundation
  *
@@ -62,7 +65,7 @@ public abstract class TermVectorMapper {
    * @param offsets null if the offset is not specified, otherwise the offset into the field of the term
    * @param positions null if the position is not specified, otherwise the position in the field of the term
    */
-  public abstract void map(String term, int frequency, TermVectorOffsetInfo [] offsets, int [] positions);
+  public abstract void map(BytesRef term, int frequency, TermVectorOffsetInfo [] offsets, int [] positions);
 
   /**
    * Indicate to Lucene that even if there are positions stored, this mapper is not interested in them and they

@@ -23,6 +23,7 @@ import java.util.Collection;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.RAMDirectory;
@@ -64,8 +65,9 @@ public class TestSimilarity extends LuceneTestCase {
 
   public void testSimilarity() throws Exception {
     RAMDirectory store = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(store, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()).setSimilarity(new SimpleSimilarity()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), store, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
+        .setSimilarity(new SimpleSimilarity()));
     
     Document d1 = new Document();
     d1.add(new Field("field", "a c", Field.Store.YES, Field.Index.ANALYZED));
@@ -75,10 +77,10 @@ public class TestSimilarity extends LuceneTestCase {
     
     writer.addDocument(d1);
     writer.addDocument(d2);
-    writer.optimize();
+    IndexReader reader = writer.getReader();
     writer.close();
 
-    Searcher searcher = new IndexSearcher(store, true);
+    Searcher searcher = new IndexSearcher(reader);
     searcher.setSimilarity(new SimpleSimilarity());
 
     Term a = new Term("field", "a");
@@ -173,5 +175,9 @@ public class TestSimilarity extends LuceneTestCase {
         return true;
       }
     });
+
+    searcher.close();
+    reader.close();
+    store.close();
   }
 }

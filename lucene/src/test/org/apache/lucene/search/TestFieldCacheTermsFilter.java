@@ -23,8 +23,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.MockRAMDirectory;
 
 import java.util.ArrayList;
@@ -39,16 +39,17 @@ public class TestFieldCacheTermsFilter extends LuceneTestCase {
   public void testMissingTerms() throws Exception {
     String fieldName = "field1";
     MockRAMDirectory rd = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(rd, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter w = new RandomIndexWriter(newRandom(), rd, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
       int term = i * 10; //terms are units of 10;
       doc.add(new Field(fieldName, "" + term, Field.Store.YES, Field.Index.NOT_ANALYZED));
       w.addDocument(doc);
     }
+    IndexReader reader = w.getReader();
     w.close();
 
-    IndexReader reader = IndexReader.open(rd, true);
     IndexSearcher searcher = new IndexSearcher(reader);
     int numDocs = reader.numDocs();
     ScoreDoc[] results;

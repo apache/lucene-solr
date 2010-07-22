@@ -229,7 +229,7 @@ public final class PulsingPostingsWriterImpl extends StandardPostingsWriter {
 
   @Override
   public void finishDoc() {
-    assert currentDoc.numPositions == currentDoc.termDocFreq;
+    assert omitTF || currentDoc.numPositions == currentDoc.termDocFreq;
   }
 
   boolean pendingIsIndexTerm;

@@ -33,15 +33,18 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.FieldsEnum;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
-import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Asserts equality of content and behaviour of two index readers.
@@ -120,131 +123,69 @@ public class TestIndicesEquals extends LuceneTestCase {
     // test seek
 
     Term t = new Term("c", "danny");
-    TermEnum aprioriTermEnum = aprioriReader.terms(t);
-    TermEnum testTermEnum = testReader.terms(t);
-
+    TermsEnum aprioriTermEnum = MultiFields.getTerms(aprioriReader, t.field()).iterator();
+    aprioriTermEnum.seek(new BytesRef(t.text()));
+    TermsEnum testTermEnum = MultiFields.getTerms(testReader, t.field()).iterator();
+    testTermEnum.seek(new BytesRef(t.text()));
     assertEquals(aprioriTermEnum.term(), testTermEnum.term());
 
-    t = aprioriTermEnum.term();
+    DocsEnum aprioriTermDocs = aprioriTermEnum.docs(MultiFields.getDeletedDocs(aprioriReader), null);
+    DocsEnum testTermDocs = testTermEnum.docs(MultiFields.getDeletedDocs(testReader), null);
 
-    aprioriTermEnum.close();
-    testTermEnum.close();
-
-    TermDocs aprioriTermDocs = aprioriReader.termDocs(t);
-    TermDocs testTermDocs = testReader.termDocs(t);
-
-    assertEquals(aprioriTermDocs.next(), testTermDocs.next());
+    assertEquals(aprioriTermDocs.nextDoc(), testTermDocs.nextDoc());
     assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
-    assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
 
-    if (aprioriTermDocs.skipTo(4)) {
-      assertTrue(testTermDocs.skipTo(4));
+    if (aprioriTermDocs.advance(4) != DocsEnum.NO_MORE_DOCS) {
+      assertTrue(testTermDocs.advance(4) != DocsEnum.NO_MORE_DOCS);
       assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
-      assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
+      assertEquals(aprioriTermDocs.docID(), testTermDocs.docID());
     } else {
-      assertFalse(testTermDocs.skipTo(4));
+      assertEquals(DocsEnum.NO_MORE_DOCS, testTermDocs.advance(4));
     }
 
-    if (aprioriTermDocs.next()) {
-      assertTrue(testTermDocs.next());
+    if (aprioriTermDocs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+      assertTrue(testTermDocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
       assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
-      assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
+      assertEquals(aprioriTermDocs.docID(), testTermDocs.docID());
     } else {
-      assertFalse(testTermDocs.next());
+      assertEquals(DocsEnum.NO_MORE_DOCS, testTermDocs.nextDoc());
     }
 
 
     // beyond this point all next and skipto will return false
 
-    if (aprioriTermDocs.skipTo(100)) {
-      assertTrue(testTermDocs.skipTo(100));
+    if (aprioriTermDocs.advance(100) != DocsEnum.NO_MORE_DOCS) {
+      assertTrue(testTermDocs.advance(100) != DocsEnum.NO_MORE_DOCS);
       assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
-      assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
+      assertEquals(aprioriTermDocs.docID(), testTermDocs.docID());
     } else {
-      assertFalse(testTermDocs.skipTo(100));
+      assertEquals(DocsEnum.NO_MORE_DOCS, testTermDocs.advance(100));
     }
-
-
-    if (aprioriTermDocs.next()) {
-      assertTrue(testTermDocs.next());
-      assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
-      assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
-    } else {
-      assertFalse(testTermDocs.next());
-    }
-
-    if (aprioriTermDocs.skipTo(110)) {
-      assertTrue(testTermDocs.skipTo(110));
-      assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
-      assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
-    } else {
-      assertFalse(testTermDocs.skipTo(110));
-    }
-
-    if (aprioriTermDocs.skipTo(10)) {
-      assertTrue(testTermDocs.skipTo(10));
-      assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
-      assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
-    } else {
-      assertFalse(testTermDocs.skipTo(10));
-    }
-
-
-    if (aprioriTermDocs.skipTo(210)) {
-      assertTrue(testTermDocs.skipTo(210));
-      assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
-      assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
-    } else {
-      assertFalse(testTermDocs.skipTo(210));
-    }
-
-    aprioriTermDocs.close();
-    testTermDocs.close();
-
-
-
-    // test seek null (AllTermDocs)
-    aprioriTermDocs = aprioriReader.termDocs(null);
-    testTermDocs = testReader.termDocs(null);
-
-    while (aprioriTermDocs.next()) {
-      assertTrue(testTermDocs.next());
-      assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
-      assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
-    }
-    assertFalse(testTermDocs.next());
-
-
-    aprioriTermDocs.close();
-    testTermDocs.close();
-
-
-    // test seek default
-    aprioriTermDocs = aprioriReader.termDocs();
-    testTermDocs = testReader.termDocs();
-
-    // this is invalid use of the API,
-    // but if the response differs then it's an indication that something might have changed.
-    // in 2.9 and 3.0 the two TermDocs-implementations returned different values at this point.
-//    assertEquals("Descripency during invalid use of the TermDocs API, see comments in test code for details.",
-//        aprioriTermDocs.next(), testTermDocs.next());
 
     // start using the API the way one is supposed to use it
 
     t = new Term("", "");
-    aprioriTermDocs.seek(t);
-    testTermDocs.seek(t);
+    FieldsEnum apFieldsEnum = MultiFields.getFields(aprioriReader).iterator();
+    String apFirstField = apFieldsEnum.next();
 
-    while (aprioriTermDocs.next()) {
-      assertTrue(testTermDocs.next());
+    FieldsEnum testFieldsEnum = MultiFields.getFields(testReader).iterator();
+    String testFirstField = testFieldsEnum.next();
+    assertEquals(apFirstField, testFirstField);
+
+    aprioriTermEnum = apFieldsEnum.terms();
+    testTermEnum = testFieldsEnum.terms();
+    
+    assertEquals(aprioriTermEnum.next(), testTermEnum.next());
+    
+    aprioriTermDocs = aprioriTermEnum.docs(MultiFields.getDeletedDocs(aprioriReader), aprioriTermDocs);
+    testTermDocs = testTermEnum.docs(MultiFields.getDeletedDocs(testReader), testTermDocs);
+
+    while (aprioriTermDocs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+      assertTrue(testTermDocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
       assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
-      assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
+      assertEquals(aprioriTermDocs.docID(), testTermDocs.docID());
     }
-    assertFalse(testTermDocs.next());
-
-    aprioriTermDocs.close();
-    testTermDocs.close();
-
+    assertEquals(DocsEnum.NO_MORE_DOCS, testTermDocs.nextDoc());
 
     // clean up
     aprioriReader.close();
@@ -443,98 +384,85 @@ public class TestIndicesEquals extends LuceneTestCase {
 
     // compare term enumeration stepping
 
-    TermEnum aprioriTermEnum = aprioriReader.terms();
-    TermEnum testTermEnum = testReader.terms();
+    FieldsEnum aprioriFieldsEnum = MultiFields.getFields(aprioriReader).iterator();
+    FieldsEnum testFieldsEnum = MultiFields.getFields(testReader).iterator();
 
+    String aprioriField;
+    while((aprioriField = aprioriFieldsEnum.next()) != null) {
+      String testField = testFieldsEnum.next();
+      assertEquals(aprioriField, testField);
 
-    while (true) {
+      TermsEnum aprioriTermEnum = aprioriFieldsEnum.terms();
+      TermsEnum testTermEnum = testFieldsEnum.terms();
 
-      if (!aprioriTermEnum.next()) {
-        assertFalse(testTermEnum.next());
-        break;
-      }
-      assertTrue(testTermEnum.next());
+      BytesRef aprioriText;
+      while((aprioriText = aprioriTermEnum.next()) != null) {
+        assertEquals(aprioriText, testTermEnum.next());
 
-      assertEquals(aprioriTermEnum.term(), testTermEnum.term());
-      assertTrue(aprioriTermEnum.docFreq() == testTermEnum.docFreq());
+        assertTrue(aprioriTermEnum.docFreq() == testTermEnum.docFreq());
 
-      // compare termDocs seeking
+        // compare termDocs seeking
 
-      TermDocs aprioriTermDocsSeeker = aprioriReader.termDocs(aprioriTermEnum.term());
-      TermDocs testTermDocsSeeker = testReader.termDocs(testTermEnum.term());
-
-      while (aprioriTermDocsSeeker.next()) {
-        assertTrue(testTermDocsSeeker.skipTo(aprioriTermDocsSeeker.doc()));
-        assertEquals(aprioriTermDocsSeeker.doc(), testTermDocsSeeker.doc());
-      }
-
-      aprioriTermDocsSeeker.close();
-      testTermDocsSeeker.close();
-
-      // compare documents per term
-
-      assertEquals(aprioriReader.docFreq(aprioriTermEnum.term()), testReader.docFreq(testTermEnum.term()));
-
-      TermDocs aprioriTermDocs = aprioriReader.termDocs(aprioriTermEnum.term());
-      TermDocs testTermDocs = testReader.termDocs(testTermEnum.term());
-
-      while (true) {
-        if (!aprioriTermDocs.next()) {
-          assertFalse(testTermDocs.next());
-          break;
+        DocsEnum aprioriTermDocs = aprioriTermEnum.docs(MultiFields.getDeletedDocs(aprioriReader), null);
+        DocsEnum testTermDocs = testTermEnum.docs(MultiFields.getDeletedDocs(testReader), null);
+        
+        while (aprioriTermDocs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+          assertTrue(testTermDocs.advance(aprioriTermDocs.docID()) != DocsEnum.NO_MORE_DOCS);
+          assertEquals(aprioriTermDocs.docID(), testTermDocs.docID());
         }
-        assertTrue(testTermDocs.next());
+        
+        // compare documents per term
+        
+        assertEquals(aprioriReader.docFreq(aprioriField, aprioriTermEnum.term()), testReader.docFreq(aprioriField, testTermEnum.term()));
 
-        assertEquals(aprioriTermDocs.doc(), testTermDocs.doc());
-        assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
-      }
+        aprioriTermDocs = aprioriTermEnum.docs(MultiFields.getDeletedDocs(aprioriReader), aprioriTermDocs);
+        testTermDocs = testTermEnum.docs(MultiFields.getDeletedDocs(testReader), testTermDocs);
 
-      aprioriTermDocs.close();
-      testTermDocs.close();
+        while (true) {
+          if (aprioriTermDocs.nextDoc() == DocsEnum.NO_MORE_DOCS) {
+            assertEquals(DocsEnum.NO_MORE_DOCS, testTermDocs.nextDoc());
+            break;
+          }
+          assertTrue(testTermDocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
 
-      // compare term positions
+          assertEquals(aprioriTermDocs.docID(), testTermDocs.docID());
+          assertEquals(aprioriTermDocs.freq(), testTermDocs.freq());
+        }
 
-      TermPositions testTermPositions = testReader.termPositions(testTermEnum.term());
-      TermPositions aprioriTermPositions = aprioriReader.termPositions(aprioriTermEnum.term());
+        // compare term positions
 
-      if (aprioriTermPositions != null) {
+        DocsAndPositionsEnum aprioriTermPositions = aprioriTermEnum.docsAndPositions(MultiFields.getDeletedDocs(aprioriReader), null);
+        DocsAndPositionsEnum testTermPositions = testTermEnum.docsAndPositions(MultiFields.getDeletedDocs(testReader), null);
 
-        for (int docIndex = 0; docIndex < aprioriReader.maxDoc(); docIndex++) {
-          boolean hasNext = aprioriTermPositions.next();
-          if (hasNext) {
-            assertTrue(testTermPositions.next());
+        if (aprioriTermPositions != null) {
 
-            assertEquals(aprioriTermPositions.freq(), testTermPositions.freq());
+          for (int docIndex = 0; docIndex < aprioriReader.maxDoc(); docIndex++) {
+            boolean hasNext = aprioriTermPositions.nextDoc() != DocsEnum.NO_MORE_DOCS;
+            if (hasNext) {
+              assertTrue(testTermPositions.nextDoc() != DocsEnum.NO_MORE_DOCS);
+              
+              assertEquals(aprioriTermPositions.freq(), testTermPositions.freq());
 
+              for (int termPositionIndex = 0; termPositionIndex < aprioriTermPositions.freq(); termPositionIndex++) {
+                int aprioriPos = aprioriTermPositions.nextPosition();
+                int testPos = testTermPositions.nextPosition();
 
-            for (int termPositionIndex = 0; termPositionIndex < aprioriTermPositions.freq(); termPositionIndex++) {
-              int aprioriPos = aprioriTermPositions.nextPosition();
-              int testPos = testTermPositions.nextPosition();
-
-              if (aprioriPos != testPos) {
                 assertEquals(aprioriPos, testPos);
-              }
 
-
-              assertEquals(aprioriTermPositions.isPayloadAvailable(), testTermPositions.isPayloadAvailable());
-              if (aprioriTermPositions.isPayloadAvailable()) {
-                assertEquals(aprioriTermPositions.getPayloadLength(), testTermPositions.getPayloadLength());
-                byte[] aprioriPayloads = aprioriTermPositions.getPayload(new byte[aprioriTermPositions.getPayloadLength()], 0);
-                byte[] testPayloads = testTermPositions.getPayload(new byte[testTermPositions.getPayloadLength()], 0);
-                for (int i = 0; i < aprioriPayloads.length; i++) {
-                  assertEquals(aprioriPayloads[i], testPayloads[i]);
+                assertEquals(aprioriTermPositions.hasPayload(), testTermPositions.hasPayload());
+                if (aprioriTermPositions.hasPayload()) {
+                  BytesRef apPayload = aprioriTermPositions.getPayload();
+                  BytesRef testPayload = testTermPositions.getPayload();
+                  assertEquals(apPayload, testPayload);
                 }
               }
-
             }
           }
         }
-
-        aprioriTermPositions.close();
-        testTermPositions.close();
-
       }
+      assertNull(testTermEnum.next());
     }
+    assertNull(testFieldsEnum.next());
 
     // compare term vectors and position vectors
 
@@ -589,11 +517,7 @@ public class TestIndicesEquals extends LuceneTestCase {
 
         }
       }
-
     }
-
-    aprioriTermEnum.close();
-    testTermEnum.close();
 
     aprioriReader.close();
     testReader.close();

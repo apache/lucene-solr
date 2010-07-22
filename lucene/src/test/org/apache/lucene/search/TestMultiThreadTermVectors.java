@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
@@ -175,11 +176,11 @@ class MultiThreadTermVectorsReader implements Runnable {
   
   private void verifyVectors(TermFreqVector[] vectors, int num) {
     StringBuilder temp = new StringBuilder();
-    String[] terms = null;
+    BytesRef[] terms = null;
     for (int i = 0; i < vectors.length; i++) {
       terms = vectors[i].getTerms();
       for (int z = 0; z < terms.length; z++) {
-        temp.append(terms[z]);
+        temp.append(terms[z].utf8ToString());
       }
     }
     

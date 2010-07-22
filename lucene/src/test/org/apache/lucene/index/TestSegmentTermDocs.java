@@ -24,6 +24,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 
@@ -56,11 +57,12 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     SegmentReader reader = SegmentReader.get(true, info, indexDivisor);
     assertTrue(reader != null);
     assertEquals(indexDivisor, reader.getTermInfosIndexDivisor());
-    TermDocs termDocs = reader.termDocs();
-    assertTrue(termDocs != null);
-    termDocs.seek(new Term(DocHelper.TEXT_FIELD_2_KEY, "field"));
-    if (termDocs.next() == true)    {
-      int docId = termDocs.doc();
+
+    TermsEnum terms = reader.fields().terms(DocHelper.TEXT_FIELD_2_KEY).iterator();
+    terms.seek(new BytesRef("field"));
+    DocsEnum termDocs = terms.docs(reader.getDeletedDocs(), null);
+    if (termDocs.nextDoc() != DocsEnum.NO_MORE_DOCS)    {
+      int docId = termDocs.docID();
       assertTrue(docId == 0);
       int freq = termDocs.freq();
       assertTrue(freq == 3);  
@@ -77,20 +79,21 @@ public class TestSegmentTermDocs extends LuceneTestCase {
       //After adding the document, we should be able to read it back in
       SegmentReader reader = SegmentReader.get(true, info, indexDivisor);
       assertTrue(reader != null);
-      TermDocs termDocs = reader.termDocs();
-      assertTrue(termDocs != null);
-      termDocs.seek(new Term("textField2", "bad"));
-      assertTrue(termDocs.next() == false);
+      DocsEnum termDocs = reader.termDocsEnum(reader.getDeletedDocs(),
+                                              "textField2",
+                                              new BytesRef("bad"));
+
+      assertNull(termDocs);
       reader.close();
     }
     {
       //After adding the document, we should be able to read it back in
       SegmentReader reader = SegmentReader.get(true, info, indexDivisor);
       assertTrue(reader != null);
-      TermDocs termDocs = reader.termDocs();
-      assertTrue(termDocs != null);
-      termDocs.seek(new Term("junk", "bad"));
-      assertTrue(termDocs.next() == false);
+      DocsEnum termDocs = reader.termDocsEnum(reader.getDeletedDocs(),
+                                              "junk",
+                                              new BytesRef("bad"));
+      assertNull(termDocs);
       reader.close();
     }
   }
@@ -121,105 +124,125 @@ public class TestSegmentTermDocs extends LuceneTestCase {
     
     IndexReader reader = IndexReader.open(dir, null, true, indexDivisor);
 
-    TermDocs tdocs = reader.termDocs();
+    DocsEnum tdocs = MultiFields.getTermDocsEnum(reader,
+                                                 MultiFields.getDeletedDocs(reader),
+                                                 ta.field(),
+                                                 new BytesRef(ta.text()));
     
     // without optimization (assumption skipInterval == 16)
     
     // with next
-    tdocs.seek(ta);
-    assertTrue(tdocs.next());
-    assertEquals(0, tdocs.doc());
+    assertTrue(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertEquals(0, tdocs.docID());
     assertEquals(4, tdocs.freq());
-    assertTrue(tdocs.next());
-    assertEquals(1, tdocs.doc());
+    assertTrue(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertEquals(1, tdocs.docID());
     assertEquals(4, tdocs.freq());
-    assertTrue(tdocs.skipTo(0));
-    assertEquals(2, tdocs.doc());
-    assertTrue(tdocs.skipTo(4));
-    assertEquals(4, tdocs.doc());
-    assertTrue(tdocs.skipTo(9));
-    assertEquals(9, tdocs.doc());
-    assertFalse(tdocs.skipTo(10));
+    assertTrue(tdocs.advance(0) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(2, tdocs.docID());
+    assertTrue(tdocs.advance(4) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(4, tdocs.docID());
+    assertTrue(tdocs.advance(9) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(9, tdocs.docID());
+    assertFalse(tdocs.advance(10) != DocsEnum.NO_MORE_DOCS);
     
     // without next
-    tdocs.seek(ta);
-    assertTrue(tdocs.skipTo(0));
-    assertEquals(0, tdocs.doc());
-    assertTrue(tdocs.skipTo(4));
-    assertEquals(4, tdocs.doc());
-    assertTrue(tdocs.skipTo(9));
-    assertEquals(9, tdocs.doc());
-    assertFalse(tdocs.skipTo(10));
+    tdocs = MultiFields.getTermDocsEnum(reader,
+                                        MultiFields.getDeletedDocs(reader),
+                                        ta.field(),
+                                        new BytesRef(ta.text()));
+    
+    assertTrue(tdocs.advance(0) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(0, tdocs.docID());
+    assertTrue(tdocs.advance(4) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(4, tdocs.docID());
+    assertTrue(tdocs.advance(9) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(9, tdocs.docID());
+    assertFalse(tdocs.advance(10) != DocsEnum.NO_MORE_DOCS);
     
     // exactly skipInterval documents and therefore with optimization
     
     // with next
-    tdocs.seek(tb);
-    assertTrue(tdocs.next());
-    assertEquals(10, tdocs.doc());
+    tdocs = MultiFields.getTermDocsEnum(reader,
+                                        MultiFields.getDeletedDocs(reader),
+                                        tb.field(),
+                                        new BytesRef(tb.text()));
+
+    assertTrue(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertEquals(10, tdocs.docID());
     assertEquals(4, tdocs.freq());
-    assertTrue(tdocs.next());
-    assertEquals(11, tdocs.doc());
+    assertTrue(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertEquals(11, tdocs.docID());
     assertEquals(4, tdocs.freq());
-    assertTrue(tdocs.skipTo(5));
-    assertEquals(12, tdocs.doc());
-    assertTrue(tdocs.skipTo(15));
-    assertEquals(15, tdocs.doc());
-    assertTrue(tdocs.skipTo(24));
-    assertEquals(24, tdocs.doc());
-    assertTrue(tdocs.skipTo(25));
-    assertEquals(25, tdocs.doc());
-    assertFalse(tdocs.skipTo(26));
+    assertTrue(tdocs.advance(5) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(12, tdocs.docID());
+    assertTrue(tdocs.advance(15) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(15, tdocs.docID());
+    assertTrue(tdocs.advance(24) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(24, tdocs.docID());
+    assertTrue(tdocs.advance(25) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(25, tdocs.docID());
+    assertFalse(tdocs.advance(26) != DocsEnum.NO_MORE_DOCS);
     
     // without next
-    tdocs.seek(tb);
-    assertTrue(tdocs.skipTo(5));
-    assertEquals(10, tdocs.doc());
-    assertTrue(tdocs.skipTo(15));
-    assertEquals(15, tdocs.doc());
-    assertTrue(tdocs.skipTo(24));
-    assertEquals(24, tdocs.doc());
-    assertTrue(tdocs.skipTo(25));
-    assertEquals(25, tdocs.doc());
-    assertFalse(tdocs.skipTo(26));
+    tdocs = MultiFields.getTermDocsEnum(reader,
+                                        MultiFields.getDeletedDocs(reader),
+                                        tb.field(),
+                                        new BytesRef(tb.text()));
+    
+    assertTrue(tdocs.advance(5) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(10, tdocs.docID());
+    assertTrue(tdocs.advance(15) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(15, tdocs.docID());
+    assertTrue(tdocs.advance(24) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(24, tdocs.docID());
+    assertTrue(tdocs.advance(25) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(25, tdocs.docID());
+    assertFalse(tdocs.advance(26) != DocsEnum.NO_MORE_DOCS);
     
     // much more than skipInterval documents and therefore with optimization
     
     // with next
-    tdocs.seek(tc);
-    assertTrue(tdocs.next());
-    assertEquals(26, tdocs.doc());
+    tdocs = MultiFields.getTermDocsEnum(reader,
+                                        MultiFields.getDeletedDocs(reader),
+                                        tc.field(),
+                                        new BytesRef(tc.text()));
+
+    assertTrue(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertEquals(26, tdocs.docID());
     assertEquals(4, tdocs.freq());
-    assertTrue(tdocs.next());
-    assertEquals(27, tdocs.doc());
+    assertTrue(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertEquals(27, tdocs.docID());
     assertEquals(4, tdocs.freq());
-    assertTrue(tdocs.skipTo(5));
-    assertEquals(28, tdocs.doc());
-    assertTrue(tdocs.skipTo(40));
-    assertEquals(40, tdocs.doc());
-    assertTrue(tdocs.skipTo(57));
-    assertEquals(57, tdocs.doc());
-    assertTrue(tdocs.skipTo(74));
-    assertEquals(74, tdocs.doc());
-    assertTrue(tdocs.skipTo(75));
-    assertEquals(75, tdocs.doc());
-    assertFalse(tdocs.skipTo(76));
+    assertTrue(tdocs.advance(5) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(28, tdocs.docID());
+    assertTrue(tdocs.advance(40) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(40, tdocs.docID());
+    assertTrue(tdocs.advance(57) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(57, tdocs.docID());
+    assertTrue(tdocs.advance(74) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(74, tdocs.docID());
+    assertTrue(tdocs.advance(75) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(75, tdocs.docID());
+    assertFalse(tdocs.advance(76) != DocsEnum.NO_MORE_DOCS);
     
     //without next
-    tdocs.seek(tc);
-    assertTrue(tdocs.skipTo(5));
-    assertEquals(26, tdocs.doc());
-    assertTrue(tdocs.skipTo(40));
-    assertEquals(40, tdocs.doc());
-    assertTrue(tdocs.skipTo(57));
-    assertEquals(57, tdocs.doc());
-    assertTrue(tdocs.skipTo(74));
-    assertEquals(74, tdocs.doc());
-    assertTrue(tdocs.skipTo(75));
-    assertEquals(75, tdocs.doc());
-    assertFalse(tdocs.skipTo(76));
+    tdocs = MultiFields.getTermDocsEnum(reader,
+                                        MultiFields.getDeletedDocs(reader),
+                                        tc.field(),
+                                        new BytesRef(tc.text()));
+    assertTrue(tdocs.advance(5) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(26, tdocs.docID());
+    assertTrue(tdocs.advance(40) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(40, tdocs.docID());
+    assertTrue(tdocs.advance(57) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(57, tdocs.docID());
+    assertTrue(tdocs.advance(74) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(74, tdocs.docID());
+    assertTrue(tdocs.advance(75) != DocsEnum.NO_MORE_DOCS);
+    assertEquals(75, tdocs.docID());
+    assertFalse(tdocs.advance(76) != DocsEnum.NO_MORE_DOCS);
     
-    tdocs.close();
     reader.close();
     dir.close();
   }

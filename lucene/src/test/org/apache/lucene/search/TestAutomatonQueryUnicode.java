@@ -18,12 +18,16 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.Automaton;
@@ -35,15 +39,18 @@ import org.apache.lucene.util.automaton.RegExp;
  * and the differences between UTF-8/UTF-32 and UTF-16 binary sort order.
  */
 public class TestAutomatonQueryUnicode extends LuceneTestCase {
+  private IndexReader reader;
   private IndexSearcher searcher;
+  private Directory directory;
 
   private final String FN = "field";
 
   public void setUp() throws Exception {
     super.setUp();
-    RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new MockAnalyzer(), true,
-        IndexWriter.MaxFieldLength.LIMITED);
+    Random random = newRandom();
+    directory = new RAMDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     Field titleField = new Field("title", "some title", Field.Store.NO,
         Field.Index.ANALYZED);
@@ -79,13 +86,15 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
     writer.addDocument(doc);
     field.setValue("\uFFFD\uFFFD");
     writer.addDocument(doc);
-    writer.optimize();
+    reader = writer.getReader();
+    searcher = new IndexSearcher(reader);
     writer.close();
-    searcher = new IndexSearcher(directory, true);
   }
 
   public void tearDown() throws Exception {
     searcher.close();
+    reader.close();
+    directory.close();
     super.tearDown();
   }
 

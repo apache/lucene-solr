@@ -55,6 +55,8 @@ import org.apache.lucene.store.NoSuchDirectoryException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Bits;
 
 public class TestIndexReader extends LuceneTestCase
 {
@@ -287,22 +289,17 @@ public class TestIndexReader extends LuceneTestCase
                                      int expected)
     throws IOException
     {
-        TermDocs tdocs = null;
-
-        try {
-            tdocs = reader.termDocs(term);
-            assertNotNull(msg + ", null TermDocs", tdocs);
-            int count = 0;
-            while(tdocs.next()) {
-                count++;
-            }
-            assertEquals(msg + ", count mismatch", expected, count);
-
-        } finally {
-            if (tdocs != null)
-                tdocs.close();
+        DocsEnum tdocs = MultiFields.getTermDocsEnum(reader,
+                                                     MultiFields.getDeletedDocs(reader),
+                                                     term.field(),
+                                                     new BytesRef(term.text()));
+        int count = 0;
+        if (tdocs != null) {
+          while(tdocs.nextDoc()!= tdocs.NO_MORE_DOCS) {
+            count++;
+          }
         }
-
+        assertEquals(msg + ", count mismatch", expected, count);
     }
 
     public void testBasicDelete() throws IOException {
@@ -1348,21 +1345,26 @@ public class TestIndexReader extends LuceneTestCase
       }
       
       // check dictionary and posting lists
-      TermEnum enum1 = index1.terms();
-      TermEnum enum2 = index2.terms();
-      TermPositions tp1 = index1.termPositions();
-      TermPositions tp2 = index2.termPositions();
-      while(enum1.next()) {
-        assertTrue(enum2.next());
-        assertEquals("Different term in dictionary.", enum1.term(), enum2.term());
-        tp1.seek(enum1.term());
-        tp2.seek(enum1.term());
-        while(tp1.next()) {
-          assertTrue(tp2.next());
-          assertEquals("Different doc id in postinglist of term " + enum1.term() + ".", tp1.doc(), tp2.doc());
-          assertEquals("Different term frequence in postinglist of term " + enum1.term() + ".", tp1.freq(), tp2.freq());
-          for (int i = 0; i < tp1.freq(); i++) {
-            assertEquals("Different positions in postinglist of term " + enum1.term() + ".", tp1.nextPosition(), tp2.nextPosition());
+      FieldsEnum fenum1 = MultiFields.getFields(index1).iterator();
+      FieldsEnum fenum2 = MultiFields.getFields(index1).iterator();
+      String field1 = null;
+      Bits delDocs = MultiFields.getDeletedDocs(index1);
+      while((field1=fenum1.next()) != null) {
+        assertEquals("Different fields", field1, fenum2.next());
+        TermsEnum enum1 = fenum1.terms();
+        TermsEnum enum2 = fenum2.terms();
+        while(enum1.next() != null) {
+          assertEquals("Different terms", enum1.term(), enum2.next());
+          DocsAndPositionsEnum tp1 = enum1.docsAndPositions(delDocs, null);
+          DocsAndPositionsEnum tp2 = enum2.docsAndPositions(delDocs, null);
+
+          while(tp1.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+            assertTrue(tp2.nextDoc() != DocsEnum.NO_MORE_DOCS);
+            assertEquals("Different doc id in postinglist of term " + enum1.term() + ".", tp1.docID(), tp2.docID());
+            assertEquals("Different term frequence in postinglist of term " + enum1.term() + ".", tp1.freq(), tp2.freq());
+            for (int i = 0; i < tp1.freq(); i++) {
+              assertEquals("Different positions in postinglist of term " + enum1.term() + ".", tp1.nextPosition(), tp2.nextPosition());
+            }
           }
         }
       }

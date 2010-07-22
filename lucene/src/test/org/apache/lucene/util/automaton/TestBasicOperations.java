@@ -95,7 +95,7 @@ public class TestBasicOperations extends LuceneTestCase {
       final Automaton a = re.toAutomaton();
       assertFalse(BasicOperations.isEmpty(a));
 
-      final BasicOperations.RandomAcceptedStrings rx = new BasicOperations.RandomAcceptedStrings(a);
+      final AutomatonTestUtil.RandomAcceptedStrings rx = new AutomatonTestUtil.RandomAcceptedStrings(a);
       for(int j=0;j<ITER2;j++) {
         int[] acc = null;
         try {

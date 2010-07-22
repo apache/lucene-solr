@@ -24,8 +24,9 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -33,13 +34,15 @@ import org.apache.lucene.util.LuceneTestCase;
 public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 	private RAMDirectory directory;
 	private IndexSearcher searcher;
+	private IndexReader reader;
 	private Analyzer analyzer=new MockAnalyzer();
 
 	@Override
 	protected void setUp() throws Exception	{
 	  super.setUp();
 		directory = new RAMDirectory();
-		IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+		RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
+		    new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
 		
 		//Add series of docs with misspelt names
 		addDoc(writer, "jonathon smythe","1");
@@ -48,12 +51,20 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 		addDoc(writer, "johnny smith","4" );
 		addDoc(writer, "jonny smith","5" );
 		addDoc(writer, "johnathon smythe","6");
-	
+		reader = writer.getReader();
 		writer.close();
-		searcher=new IndexSearcher(directory, true);			
+		searcher=new IndexSearcher(reader);			
 	}
 	
-	private void addDoc(IndexWriter writer, String name, String id) throws IOException
+	@Override
+	protected void tearDown() throws Exception {
+	  searcher.close();
+	  reader.close();
+	  directory.close();
+	  super.tearDown();
+	}
+	
+	private void addDoc(RandomIndexWriter writer, String name, String id) throws IOException
 	{
 		Document doc=new Document();
 		doc.add(new Field("name",name,Field.Store.YES,Field.Index.ANALYZED));

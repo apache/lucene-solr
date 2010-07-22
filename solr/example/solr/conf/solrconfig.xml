@@ -23,14 +23,6 @@
      the configuration.  See https://issues.apache.org/jira/browse/SOLR-1167
 -->
 <config>
-  <!-- Set this to 'false' if you want solr to continue working after it has 
-       encountered an severe configuration error.  In a production environment, 
-       you may want solr to keep working even if one handler is mis-configured.
-
-       You may also set this to false using by setting the system property:
-         -Dsolr.abortOnConfigurationError=false
-     -->
-  <abortOnConfigurationError>${solr.abortOnConfigurationError:true}</abortOnConfigurationError>
   
   <!--
     Controls what version of Lucene various components of Solr adhere to. Generally, you want
@@ -55,7 +47,6 @@
        classpath, this is useful for including all jars in a directory.
     -->
   <lib dir="../../contrib/extraction/lib" />
-  <lib dir="../../contrib/velocity/src/main/solr/lib" />
   <!-- When a regex is specified in addition to a directory, only the files in that
        directory which completely match the regex (anchored on both ends)
        will be included.
@@ -509,6 +500,51 @@
         -->
      </lst>
   </requestHandler>
+  
+  <!-- 
+  -->
+  <requestHandler name="/browse" class="solr.SearchHandler">
+     <lst name="defaults">
+
+       <!-- VelocityResponseWriter settings -->
+       <str name="wt">velocity</str>
+       <str name="v.template">browse</str>
+       <str name="v.layout">layout</str>
+       <str name="title">Solritas</str>
+
+       <!-- Query settings -->
+       <str name="defType">dismax</str>
+       <str name="qf">
+          text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
+       </str>
+       <str name="q.alt">*:*</str>
+       <str name="rows">10</str>
+       <str name="fl">*,score</str>
+
+       <!-- Faceting defaults -->
+       <str name="facet">on</str>
+       <str name="facet.field">cat</str>
+       <str name="facet.field">manu_exact</str>
+       <str name="facet.mincount">1</str>
+
+       <!-- Highlighting defaults -->
+       <str name="hl">on</str>
+       <str name="hl.fl">text features name</str>
+       <str name="f.name.hl.fragsize">0</str>
+       <str name="f.name.hl.alternateField">name</str>
+
+       <!-- Spell checking defaults -->
+       <str name="spellcheck">on</str>
+       <str name="spellcheck.collate">true</str>
+       <str name="spellcheck.onlyMorePopular">false</str>
+       <str name="spellcheck.extendedResults">false</str>
+       <str name="spellcheck.count">3</str>
+     </lst>
+     <arr name="last-components">
+       <str>spellcheck</str>
+     </arr>
+  </requestHandler>
+  
 
 <!-- Please refer to http://wiki.apache.org/solr/SolrReplication for details on configuring replication -->
 <!-- remove the <lst name="master"> section if this is just a slave -->
@@ -975,6 +1011,9 @@
    <!-- Configure the standard fragListBuilder -->
    <fragListBuilder name="simple" class="org.apache.solr.highlight.SimpleFragListBuilder" default="true"/>
 
+   <!-- Configure the single fragListBuilder -->
+   <fragListBuilder name="single" class="org.apache.solr.highlight.SingleFragListBuilder"/>
+
    <!-- multi-colored tag FragmentsBuilder -->
    <fragmentsBuilder name="colored" class="org.apache.solr.highlight.MultiColoredScoreOrderFragmentsBuilder" default="true"/>
   </highlighting>
@@ -1022,13 +1061,12 @@
     <queryResponseWriter name="ruby" class="solr.RubyResponseWriter"/>
     <queryResponseWriter name="php" class="solr.PHPResponseWriter"/>
     <queryResponseWriter name="phps" class="solr.PHPSerializedResponseWriter"/>
+    <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter"/>
 
       Custom response writers can be declared as needed...
     
     <queryResponseWriter name="custom" class="com.example.MyResponseWriter"/>
   -->
-
-  <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter"/>
 
   <!-- XSLT response writer transforms the XML output by any xslt file found
        in Solr's conf/xslt directory.  Changes to xslt files are checked for

@@ -62,7 +62,7 @@
     <echo message="Use 'ant dist' to build the project WAR and JAR files." />
     <echo message="Use 'ant generate-maven-artifacts' to generate maven artifacts." />
     <echo message="Use 'ant package' to generate zip, tgz, and maven artifacts for distribution." />
-    <echo message="Use 'ant luke' to start luke.  see: http://www.getopt.org/luke/" />
+    <echo message="Use 'ant luke' to start luke.  see: http://luke.googlecode.com" />
     <echo message="Use 'ant test' to run unit tests." />
   </target>
 
@@ -89,16 +89,16 @@
     <!-- no description, don't advertise -->
 
     <!-- Building off Lucene trunk, we don't need this
-    <available file="lib/lucene-core-${lucene_version}.jar"
+    <available file="lib/lucene-core-${version}.jar"
                property="lucene-version-ok-m2deploy-wont-fail" />
     <fail unless="lucene-version-ok-m2deploy-wont-fail">
-      lib/lucene-core-${lucene_version}.jar Missing
+      lib/lucene-core-${version}.jar Missing
 
-      lib/lucene-core-${lucene_version}.jar does not exist.
+      lib/lucene-core-${version}.jar does not exist.
       This will cause problems with m2-deploy later, so fail fast now.
       
       Probably cause: lucene jars were upgraded w/o modifying the
-      'lucene_version' property in common-build.xml
+      'version' property in common-build.xml
     </fail>
     -->
     
@@ -221,13 +221,13 @@
           <packageset dir="${src}/java" />
           <packageset dir="${src}/webapp/src" />
           <packageset dir="contrib/dataimporthandler/src/main/java" />
-          <packageset dir="contrib/clustering/src/main/java" />
+          <!--<packageset dir="contrib/clustering/src/main/java" />-->
           <packageset dir="contrib/extraction/src/main/java" />
           <group title="Core" packages="org.apache.*" />
           <group title="Common" packages="org.apache.solr.common.*" />
           <group title="SolrJ" packages="org.apache.solr.client.solrj*" />
           <group title="contrib: DataImportHandler" packages="org.apache.solr.handler.dataimport*" />
-          <group title="contrib: Clustering" packages="org.apache.solr.handler.clustering*" />
+          <!--<group title="contrib: Clustering" packages="org.apache.solr.handler.clustering*" />-->
           <group title="contrib: Solr Cell" packages="org.apache.solr.handler.extraction*" />
         </sources>
       </invoke-javadoc>
@@ -384,7 +384,7 @@
     </or>
   </condition>
 
-  <target name="junit" depends="compileTests,dist-contrib,junit-mkdir,junit-sequential,junit-parallel"/>
+  <target name="junit" depends="compileTests,junit-mkdir,junit-sequential,junit-parallel"/>
 
   <target name="junit-sequential" if="runsequential">
     <junit-macro/>
@@ -602,10 +602,8 @@
 
     <solr-jar destfile="${dist}/apache-solr-cell-src-${version}.jar"
               basedir="contrib/extraction/src" />
-    <solr-jar destfile="${dist}/apache-solr-velocity-src-${version}.jar"
-              basedir="contrib/velocity/src" />
-    <solr-jar destfile="${dist}/apache-solr-clustering-src-${version}.jar"
-              basedir="contrib/clustering/src" />
+    <!--<solr-jar destfile="${dist}/apache-solr-clustering-src-${version}.jar"
+              basedir="contrib/clustering/src" />-->
   </target>
 
   <target name="dist-javadoc" description="Creates the Solr javadoc distribution files"
@@ -618,10 +616,8 @@
               basedir="${build.javadoc}/solrj" />
     <solr-jar destfile="${dist}/apache-solr-dataimporthandler-docs-${version}.jar"
               basedir="${build.javadoc}/contrib-solr-dataimporthandler" />
-    <solr-jar destfile="${dist}/apache-solr-clustering-docs-${version}.jar"
-              basedir="${build.javadoc}/contrib-solr-clustering" />
-    <solr-jar destfile="${dist}/apache-solr-velocity-docs-${version}.jar"
-              basedir="${build.javadoc}/contrib-solr-velocity" />
+    <!--<solr-jar destfile="${dist}/apache-solr-clustering-docs-${version}.jar"
+              basedir="${build.javadoc}/contrib-solr-clustering" />-->
     <solr-jar destfile="${dist}/apache-solr-cell-docs-${version}.jar"
               basedir="${build.javadoc}/contrib-solr-cell" />
   </target>
@@ -663,7 +659,7 @@
 
   <target name="example" 
           description="Creates a runnable example configuration."
-          depends="init-forrest-entities,dist-contrib,dist-war,example-contrib">
+          depends="init-forrest-entities,compile-lucene,dist-contrib,dist-war,example-contrib">
     <copy file="${dist}/${fullnamever}.war"
           tofile="${example}/webapps/${ant.project.name}.war"/>
     <jar destfile="${example}/exampledocs/post.jar"
@@ -682,7 +678,8 @@
     <echo>See ${example}/README.txt for how to run the Solr example configuration.</echo>
   </target>
 	
-  <target name="run-example" depends="example">
+  <target name="run-example" depends="example"
+          description="Run Solr interactively, via Jetty.  -Dexample.debug=true to enable JVM debugger">
     <property name="example.solr.home" location="example/solr"/>
     <property name="example.data.dir" location="example/solr/data"/>
     <property name="example.debug.suspend" value="n"/>
@@ -802,7 +799,7 @@
     <sign-maven-artifacts artifact.id="solr-core" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-dataimporthandler" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-dataimporthandler-extras" gpg.passphrase="${gpg.passphrase}"/>
-    <sign-maven-artifacts artifact.id="solr-clustering" gpg.passphrase="${gpg.passphrase}"/>
+    <!--<sign-maven-artifacts artifact.id="solr-clustering" gpg.passphrase="${gpg.passphrase}"/>-->
 
     <sign-maven-artifacts artifact.id="solr-cell" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-dependency-artifacts artifact.id="solr-lucene-analyzers" gpg.passphrase="${gpg.passphrase}"/>
@@ -812,11 +809,10 @@
     <sign-maven-dependency-artifacts artifact.id="solr-lucene-snowball" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-dependency-artifacts artifact.id="solr-lucene-spellchecker" gpg.passphrase="${gpg.passphrase}"/>
     <sign-maven-artifacts artifact.id="solr-solrj" gpg.passphrase="${gpg.passphrase}"/>
-    <sign-maven-artifacts artifact.id="solr-velocity" gpg.passphrase="${gpg.passphrase}"/>
 
     <!-- Thes are special since there are no jars, just poms -->
-    <sign-artifact input.file="${maven.dist.prefix}/solr-parent/${maven_version}/solr-parent-${maven_version}.pom" gpg.passphrase="${gpg.passphrase}"/>
-    <sign-artifact input.file="${maven.dist.prefix}/solr-lucene-contrib/${maven_version}/solr-lucene-contrib-${maven_version}.pom" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-artifact input.file="${maven.dist.prefix}/solr-parent/${version}/solr-parent-${version}.pom" gpg.passphrase="${gpg.passphrase}"/>
+    <sign-artifact input.file="${maven.dist.prefix}/solr-lucene-contrib/${version}/solr-lucene-contrib-${version}.pom" gpg.passphrase="${gpg.passphrase}"/>
 
   </target>
 
@@ -882,26 +878,17 @@
         </artifact-attachments>
       </m2-deploy>
 
-      <m2-deploy pom.xml="contrib/clustering/solr-clustering-pom.xml.template"
+      <!--<m2-deploy pom.xml="contrib/clustering/solr-clustering-pom.xml.template"
       jar.file="${dist}/apache-solr-clustering-${version}.jar">
 
         <artifact-attachments>
           <attach file="${dist}/apache-solr-clustering-src-${version}.jar" classifier="sources"/>
           <attach file="${dist}/apache-solr-clustering-docs-${version}.jar" classifier="javadoc"/>
         </artifact-attachments>
-      </m2-deploy>
+      </m2-deploy>-->
       <!-- Clustring specific -->
       <!-- TODO: MORE NEEDED HERE ONCE WE FINALIZE THE LIBS FOR CARROT -->
       <!-- end clustering specific -->
-
-      <m2-deploy pom.xml="contrib/velocity/solr-velocity-pom.xml.template"
-      jar.file="contrib/velocity/src/main/solr/lib/apache-solr-velocity-${version}.jar">
-
-        <artifact-attachments>
-          <attach file="${dist}/apache-solr-velocity-src-${version}.jar" classifier="sources"/>
-          <attach file="${dist}/apache-solr-velocity-docs-${version}.jar" classifier="javadoc"/>
-        </artifact-attachments>
-      </m2-deploy>
 
       <m2-deploy pom.xml="src/maven/solr-core-pom.xml.template"
                  jar.file="${dist}/apache-solr-core-${version}.jar">

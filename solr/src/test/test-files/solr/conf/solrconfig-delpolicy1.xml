@@ -97,7 +97,7 @@
 	
 		<str name="keepOptimizedOnly">true</str>
         <str name="maxCommitsToKeep">3</str>
-        <str name="maxCommitAge">5SECONDS</str>
+        <str name="maxCommitAge">100MILLISECONDS</str>
 		
 	</deletionPolicy>
 

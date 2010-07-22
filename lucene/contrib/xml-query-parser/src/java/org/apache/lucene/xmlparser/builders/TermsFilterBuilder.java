@@ -5,10 +5,11 @@ import java.io.StringReader;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
+import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.TermsFilter;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.xmlparser.DOMUtils;
 import org.apache.lucene.xmlparser.FilterBuilder;
 import org.apache.lucene.xmlparser.ParserException;
@@ -57,19 +58,21 @@ public class TermsFilterBuilder implements FilterBuilder
 		String text = DOMUtils.getNonBlankTextOrFail(e);
 		String fieldName = DOMUtils.getAttributeWithInheritanceOrFail(e, "fieldName");
 		TokenStream ts = analyzer.tokenStream(fieldName, new StringReader(text));
-    CharTermAttribute termAtt = ts.addAttribute(CharTermAttribute.class);
+    TermToBytesRefAttribute termAtt = ts.addAttribute(TermToBytesRefAttribute.class);
     
 		try
 		{
 			Term term = null;
 	      while (ts.incrementToken()) {
+	        BytesRef bytes = new BytesRef();
+	        termAtt.toBytesRef(bytes);
 				if (term == null)
 				{
-					term = new Term(fieldName, termAtt.toString());
+					term = new Term(fieldName, bytes);
 				} else
 				{
 //					 create from previous to save fieldName.intern overhead
-					term = term.createTerm(termAtt.toString()); 
+					term = term.createTerm(bytes); 
 				}
 				tf.addTerm(term);
 			}

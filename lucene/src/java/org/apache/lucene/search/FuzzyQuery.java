@@ -130,14 +130,6 @@ public class FuzzyQuery extends MultiTermQuery {
     return prefixLength;
   }
 
-  @Override @Deprecated
-  protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
-    if (!termLongEnough) {  // can only match if it's exact
-      return new SingleTermEnum(reader, term);
-    }
-    return new FuzzyTermEnum(reader, getTerm(), minimumSimilarity, prefixLength);
-  }
-  
   @Override
   protected TermsEnum getTermsEnum(IndexReader reader) throws IOException {
     if (!termLongEnough) {  // can only match if it's exact

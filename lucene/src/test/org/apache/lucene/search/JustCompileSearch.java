@@ -24,7 +24,6 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -298,30 +297,11 @@ final class JustCompileSearch {
     
   }
 
-  static final class JustCompileFilteredTermEnum extends FilteredTermEnum {
-
-    @Override
-    public float difference() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    protected boolean endEnum() {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-
-    @Override
-    protected boolean termCompare(Term term) {
-      throw new UnsupportedOperationException(UNSUPPORTED_MSG);
-    }
-    
-  }
-
   static final class JustCompilePhraseScorer extends PhraseScorer {
 
-    JustCompilePhraseScorer(Weight weight, DocsAndPositionsEnum[] docs, int[] offsets,
+    JustCompilePhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
         Similarity similarity, byte[] norms) {
-      super(weight, docs, offsets, similarity, norms);
+      super(weight, postings, similarity, norms);
     }
 
     @Override
@@ -447,6 +427,21 @@ final class JustCompileSearch {
       throw new UnsupportedOperationException(UNSUPPORTED_MSG);
     }
 
+    @Override
+    public TopDocs topDocs() {
+        throw new UnsupportedOperationException( UNSUPPORTED_MSG );
+    }
+
+    @Override
+    public TopDocs topDocs( int start ) {
+        throw new UnsupportedOperationException( UNSUPPORTED_MSG );
+    }
+
+    @Override
+    public TopDocs topDocs( int start, int end ) {
+        throw new UnsupportedOperationException( UNSUPPORTED_MSG );
+    }
+    
   }
 
   static final class JustCompileWeight extends Weight {

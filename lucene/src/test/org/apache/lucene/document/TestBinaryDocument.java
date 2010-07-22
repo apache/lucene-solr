@@ -4,8 +4,8 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.MockRAMDirectory;
 
 /**
@@ -58,13 +58,12 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     /** add the doc to a ram index */
     MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     writer.addDocument(doc);
-    writer.close();
     
     /** open a reader and fetch the document */ 
-    IndexReader reader = IndexReader.open(dir, false);
+    IndexReader reader = writer.getReader();
     Document docFromReader = reader.document(0);
     assertTrue(docFromReader != null);
     
@@ -76,6 +75,10 @@ public class TestBinaryDocument extends LuceneTestCase {
     String stringFldStoredTest = docFromReader.get("stringStored");
     assertTrue(stringFldStoredTest.equals(binaryValStored));
     
+    writer.close();    
+    reader.close();
+    
+    reader = IndexReader.open(dir, false);
     /** delete the document from index */
     reader.deleteDocument(0);
     assertEquals(0, reader.numDocs());
@@ -95,13 +98,12 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     /** add the doc to a ram index */
     MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     writer.addDocument(doc);
-    writer.close();
     
     /** open a reader and fetch the document */ 
-    IndexReader reader = IndexReader.open(dir, false);
+    IndexReader reader = writer.getReader();
     Document docFromReader = reader.document(0);
     assertTrue(docFromReader != null);
     
@@ -110,6 +112,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     assertTrue(binaryFldCompressedTest.equals(binaryValCompressed));
     assertTrue(CompressionTools.decompressString(docFromReader.getBinaryValue("stringCompressed")).equals(binaryValCompressed));
 
+    writer.close();
     reader.close();
     dir.close();
   }

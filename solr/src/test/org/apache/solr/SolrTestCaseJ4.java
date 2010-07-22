@@ -483,6 +483,7 @@ public class SolrTestCaseJ4 extends LuceneTestCaseJ4 {
     if (f.isDirectory()) {
       for (File sub : f.listFiles()) {
         if (!recurseDelete(sub)) {
+          System.err.println("!!!! WARNING: best effort to remove " + sub.getAbsolutePath() + " FAILED !!!!!");
           return false;
         }
       }

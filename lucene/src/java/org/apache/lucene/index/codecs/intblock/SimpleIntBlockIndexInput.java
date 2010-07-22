@@ -37,7 +37,8 @@ public class SimpleIntBlockIndexInput extends FixedIntBlockIndexInput {
 
   public SimpleIntBlockIndexInput(Directory dir, String fileName, int readBufferSize) throws IOException {
     IndexInput in = dir.openInput(fileName, readBufferSize);
-    CodecUtil.checkHeader(in, SimpleIntBlockIndexOutput.CODEC, SimpleIntBlockIndexOutput.VERSION_START);
+    CodecUtil.checkHeader(in, SimpleIntBlockIndexOutput.CODEC,
+      SimpleIntBlockIndexOutput.VERSION_START, SimpleIntBlockIndexOutput.VERSION_START);
     init(in);
   }
 

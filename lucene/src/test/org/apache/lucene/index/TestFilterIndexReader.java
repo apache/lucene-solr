@@ -159,26 +159,19 @@ public class TestFilterIndexReader extends LuceneTestCase {
 
     assertTrue(reader.isOptimized());
     
-    TermEnum terms = reader.terms();
-    while (terms.next()) {
-      assertTrue(terms.term().text().indexOf('e') != -1);
+    TermsEnum terms = MultiFields.getTerms(reader, "default").iterator();
+    while (terms.next() != null) {
+      assertTrue(terms.term().utf8ToString().indexOf('e') != -1);
     }
-    terms.close();
     
-    TermPositions positions = reader.termPositions(new Term("default", "one"));
-    while (positions.next()) {
-      assertTrue((positions.doc() % 2) == 1);
+    assertEquals(TermsEnum.SeekStatus.FOUND, terms.seek(new BytesRef("one")));
+    
+    DocsAndPositionsEnum positions = terms.docsAndPositions(MultiFields.getDeletedDocs(reader),
+                                                            null);
+    while (positions.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+      assertTrue((positions.docID() % 2) == 1);
     }
 
-    int NUM_DOCS = 3;
-
-    TermDocs td = reader.termDocs(null);
-    for(int i=0;i<NUM_DOCS;i++) {
-      assertTrue(td.next());
-      assertEquals(i, td.doc());
-      assertEquals(1, td.freq());
-    }
-    td.close();
     reader.close();
     directory.close();
   }

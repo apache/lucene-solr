@@ -32,6 +32,7 @@ import java.io.IOException;
  * <p>@lucene.internal</p>*/
 public final class PagedBytes {
   private final List<byte[]> blocks = new ArrayList<byte[]>();
+  private final List<Integer> blockEnd = new ArrayList<Integer>();
   private final int blockSize;
   private final int blockBits;
   private final int blockMask;
@@ -42,6 +43,7 @@ public final class PagedBytes {
 
   public final static class Reader implements Closeable {
     private final byte[][] blocks;
+    private final int[] blockEnds;
     private final int blockBits;
     private final int blockMask;
     private final int blockSize;
@@ -51,6 +53,10 @@ public final class PagedBytes {
       blocks = new byte[pagedBytes.blocks.size()][];
       for(int i=0;i<blocks.length;i++) {
         blocks[i] = pagedBytes.blocks.get(i);
+      }
+      blockEnds = new int[blocks.length];
+      for(int i=0;i< blockEnds.length;i++) {
+        blockEnds[i] = pagedBytes.blockEnd.get(i);
       }
       blockBits = pagedBytes.blockBits;
       blockMask = pagedBytes.blockMask;
@@ -102,6 +108,54 @@ public final class PagedBytes {
       return b;
     }
 
+    /** @lucene.internal  Reads length as 1 or 2 byte vInt prefix, starting @ start.  Returns the block number of the term. */
+    public int fillUsingLengthPrefix2(BytesRef b, long start) {
+      final int index = (int) (start >> blockBits);
+      final int offset = (int) (start & blockMask);
+      final byte[] block = b.bytes = blocks[index];
+
+      if ((block[offset] & 128) == 0) {
+        b.length = block[offset];
+        b.offset = offset+1;
+      } else {
+        b.length = (((int) (block[offset] & 0x7f)) << 8) | (block[1+offset] & 0xff);
+        b.offset = offset+2;
+        assert b.length > 0;
+      }
+      return index;
+    }
+
+    /** @lucene.internal  Reads length as 1 or 2 byte vInt prefix, starting @ start. 
+     * Returns the start offset of the next part, suitable as start parameter on next call
+     * to sequentially read all BytesRefs. */
+    public long fillUsingLengthPrefix3(BytesRef b, long start) {
+      final int index = (int) (start >> blockBits);
+      final int offset = (int) (start & blockMask);
+      final byte[] block = b.bytes = blocks[index];
+
+      if ((block[offset] & 128) == 0) {
+        b.length = block[offset];
+        b.offset = offset+1;
+        start += 1L + b.length;
+      } else {
+        b.length = (((int) (block[offset] & 0x7f)) << 8) | (block[1+offset] & 0xff);
+        b.offset = offset+2;
+        start += 2L + b.length;
+        assert b.length > 0;
+      }
+      return start;
+    }
+
+    /** @lucene.internal */
+    public byte[][] getBlocks() {
+      return blocks;
+    }
+
+    /** @lucene.internal */
+    public int[] getBlockEnds() {
+      return blockEnds;
+    }
+
     public void close() {
       threadBuffers.close();
     }
@@ -123,6 +177,7 @@ public final class PagedBytes {
       if (left == 0) {
         if (currentBlock != null) {
           blocks.add(currentBlock);
+          blockEnd.add(upto);
         }
         currentBlock = new byte[blockSize];
         upto = 0;
@@ -149,6 +204,7 @@ public final class PagedBytes {
       if (left == 0) {
         if (currentBlock != null) {
           blocks.add(currentBlock);
+          blockEnd.add(upto);          
         }
         currentBlock = new byte[blockSize];
         upto = 0;
@@ -167,9 +223,34 @@ public final class PagedBytes {
     }
   }
 
-  /** Commits final byte[], trimming it if necessary. */
-  public Reader freeze() {
-    if (upto < blockSize) {
+  /** Copy BytesRef in, setting BytesRef out to the result.
+   * Do not use this if you will use freeze(true).
+   * This only supports bytes.length <= blockSize */
+  public void copy(BytesRef bytes, BytesRef out) throws IOException {
+    int left = blockSize - upto;
+    if (bytes.length > left) {
+      if (currentBlock != null) {
+        blocks.add(currentBlock);
+        blockEnd.add(upto);
+      }
+      currentBlock = new byte[blockSize];
+      upto = 0;
+      left = blockSize;
+      assert bytes.length <= blockSize;
+      // TODO: we could also support variable block sizes
+    }
+
+    out.bytes = currentBlock;
+    out.offset = upto;
+    out.length = bytes.length;
+
+    System.arraycopy(bytes.bytes, bytes.offset, currentBlock, upto, bytes.length);
+    upto += bytes.length;
+  }
+
+  /** Commits final byte[], trimming it if necessary and if trim=true */
+  public Reader freeze(boolean trim) {
+    if (trim && upto < blockSize) {
       final byte[] newBlock = new byte[upto];
       System.arraycopy(currentBlock, 0, newBlock, 0, upto);
       currentBlock = newBlock;
@@ -178,6 +259,7 @@ public final class PagedBytes {
       currentBlock = EMPTY_BYTES;
     }
     blocks.add(currentBlock);
+    blockEnd.add(upto); 
     currentBlock = null;
     return new Reader(this);
   }
@@ -200,6 +282,7 @@ public final class PagedBytes {
       }
       if (currentBlock != null) {
         blocks.add(currentBlock);
+        blockEnd.add(upto);        
       }
       currentBlock = new byte[blockSize];
       upto = 0;

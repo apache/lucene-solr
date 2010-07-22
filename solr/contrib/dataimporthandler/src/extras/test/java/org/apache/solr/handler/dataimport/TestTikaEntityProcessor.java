@@ -23,7 +23,7 @@ import org.junit.Before;
  * @version $Id$
  * @since solr 1.5 
  */
-public class TestTikaEntityProcessor extends AbstractDataImportHandlerTest {
+public class TestTikaEntityProcessor extends AbstractDataImportHandlerTestCase {
 
   @Before
   public void setUp() throws Exception {

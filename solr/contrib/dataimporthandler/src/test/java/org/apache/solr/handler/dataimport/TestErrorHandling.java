@@ -29,7 +29,7 @@ import java.util.Properties;
  * @version $Id$
  * @since solr 1.4
  */
-public class TestErrorHandling extends AbstractDataImportHandlerTest {
+public class TestErrorHandling extends AbstractDataImportHandlerTestCase {
 
   public void testMalformedStreamingXml() throws Exception {
     StringDataSource.xml = malformedXml;

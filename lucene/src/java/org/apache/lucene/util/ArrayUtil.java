@@ -327,6 +327,29 @@ public final class ArrayUtil {
       return array;
   }
 
+  public static boolean[] grow(boolean[] array, int minSize) {
+    if (array.length < minSize) {
+      boolean[] newArray = new boolean[oversize(minSize, 1)];
+      System.arraycopy(array, 0, newArray, 0, array.length);
+      return newArray;
+    } else
+      return array;
+  }
+
+  public static boolean[] grow(boolean[] array) {
+    return grow(array, 1 + array.length);
+  }
+
+  public static boolean[] shrink(boolean[] array, int targetSize) {
+    final int newSize = getShrinkSize(array.length, targetSize, 1);
+    if (newSize != array.length) {
+      boolean[] newArray = new boolean[newSize];
+      System.arraycopy(array, 0, newArray, 0, newSize);
+      return newArray;
+    } else
+      return array;
+  }
+
   public static char[] grow(char[] array, int minSize) {
     if (array.length < minSize) {
       char[] newArray = new char[oversize(minSize, RamUsageEstimator.NUM_BYTES_CHAR)];

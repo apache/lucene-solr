@@ -17,6 +17,8 @@ package org.apache.lucene.analysis.cz;
  * limitations under the License.
  */
 
+import static org.apache.lucene.analysis.util.StemmerUtil.*;
+
 /**
  * Light Stemmer for Czech.
  * <p>
@@ -165,17 +167,5 @@ public class CzechStemmer {
     }
 
     return len;
-  }
-  
-  private boolean endsWith(char s[], int len, String suffix) {
-    int suffixLen = suffix.length();
-    if (suffixLen > len)
-      return false;
-    
-    for (int i = suffixLen - 1; i >= 0; i--)
-      if (s[len - (suffixLen - i)] != suffix.charAt(i))
-        return false;
-    
-    return true;
   }
 }

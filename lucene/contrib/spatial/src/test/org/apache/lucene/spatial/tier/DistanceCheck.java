@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.spatial.tier;
 
+import org.apache.lucene.spatial.DistanceUtils;
+
 import java.text.DecimalFormat;
 
 
@@ -31,7 +33,7 @@ public class DistanceCheck {
     double long2 = 0;
     
     for (int i =0; i < 90; i++){
-      double dis = DistanceUtils.getInstance().getDistanceMi(lat1, long1, lat2, long2);
+      double dis = DistanceUtils.getDistanceMi(lat1, long1, lat2, long2);
       lat1 +=1;
       lat2 = lat1 + 0.001;
       

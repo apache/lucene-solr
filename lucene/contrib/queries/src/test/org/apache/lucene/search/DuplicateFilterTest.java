@@ -24,12 +24,14 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermDocs;
+import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.BytesRef;
 
 public class DuplicateFilterTest extends LuceneTestCase {
 	private static final String KEY_FIELD = "url";
@@ -42,8 +44,8 @@ public class DuplicateFilterTest extends LuceneTestCase {
 	protected void setUp() throws Exception {
     super.setUp();
 		directory = new RAMDirectory();
-		IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+		RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
+		    new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
 		
 		//Add series of docs with filterable fields : url, text and dates  flags
 		addDoc(writer, "http://lucene.apache.org", "lucene 1.4.3 available", "20040101");
@@ -54,9 +56,13 @@ public class DuplicateFilterTest extends LuceneTestCase {
 		addDoc(writer, "http://www.bar.com", "Dog uses Lucene", "20050101");
 		addDoc(writer, "http://lucene.apache.org", "Lucene 2.0 out", "20050101");
 		addDoc(writer, "http://lucene.apache.org", "Oops. Lucene 2.1 out", "20050102");
-		
-		writer.close();
-		reader=IndexReader.open(directory, true);			
+
+                // Until we fix LUCENE-2348, the index must
+                // have only 1 segment:
+                writer.optimize();
+
+		reader = writer.getReader();
+		writer.close();			
 		searcher =new IndexSearcher(reader);
 		
 	}
@@ -69,7 +75,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
 		super.tearDown();
 	}
 
-	private void addDoc(IndexWriter writer, String url, String text, String date) throws IOException
+	private void addDoc(RandomIndexWriter writer, String url, String text, String date) throws IOException
 	{
 		Document doc=new Document();
 		doc.add(new Field(KEY_FIELD,url,Field.Store.YES,Field.Index.NOT_ANALYZED));
@@ -134,11 +140,14 @@ public class DuplicateFilterTest extends LuceneTestCase {
 		{
 			Document d=searcher.doc(hits[i].doc);
 			String url=d.get(KEY_FIELD);
-			TermDocs td = reader.termDocs(new Term(KEY_FIELD,url));
+                        DocsEnum td = MultiFields.getTermDocsEnum(reader,
+                                                                  MultiFields.getDeletedDocs(reader),
+                                                                  KEY_FIELD,
+                                                                  new BytesRef(url));
 			int lastDoc=0;
-			while(td.next())
+			while(td.nextDoc() != DocsEnum.NO_MORE_DOCS)
 			{
-				lastDoc=td.doc();
+				lastDoc=td.docID();
 			}
 			assertEquals("Duplicate urls should return last doc",lastDoc, hits[i].doc);
 		}
@@ -155,10 +164,13 @@ public class DuplicateFilterTest extends LuceneTestCase {
 		{
 			Document d=searcher.doc(hits[i].doc);
 			String url=d.get(KEY_FIELD);
-			TermDocs td = reader.termDocs(new Term(KEY_FIELD,url));
+                        DocsEnum td = MultiFields.getTermDocsEnum(reader,
+                                                                  MultiFields.getDeletedDocs(reader),
+                                                                  KEY_FIELD,
+                                                                  new BytesRef(url));
 			int lastDoc=0;
-			td.next();
-			lastDoc=td.doc();
+			td.nextDoc();
+			lastDoc=td.docID();
 			assertEquals("Duplicate urls should return first doc",lastDoc, hits[i].doc);
 		}
 	}	

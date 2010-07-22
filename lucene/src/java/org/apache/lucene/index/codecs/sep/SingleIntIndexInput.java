@@ -36,7 +36,8 @@ public class SingleIntIndexInput extends IntIndexInput {
   public SingleIntIndexInput(Directory dir, String fileName, int readBufferSize)
     throws IOException {
     in = dir.openInput(fileName, readBufferSize);
-    CodecUtil.checkHeader(in, SingleIntIndexOutput.CODEC, SingleIntIndexOutput.VERSION_START);
+    CodecUtil.checkHeader(in, SingleIntIndexOutput.CODEC,
+      SingleIntIndexOutput.VERSION_START, SingleIntIndexOutput.VERSION_START);
   }
 
   @Override

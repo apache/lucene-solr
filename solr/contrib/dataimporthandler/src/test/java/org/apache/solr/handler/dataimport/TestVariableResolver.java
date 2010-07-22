@@ -18,6 +18,7 @@ package org.apache.solr.handler.dataimport;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.DateMathParser;
 
 import java.text.SimpleDateFormat;
@@ -31,7 +32,7 @@ import java.util.*;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestVariableResolver {
+public class TestVariableResolver extends SolrTestCaseJ4 {
 
   @Test
   public void testSimpleNamespace() {

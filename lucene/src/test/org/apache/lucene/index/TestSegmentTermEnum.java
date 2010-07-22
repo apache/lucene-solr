@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -83,36 +84,32 @@ public class TestSegmentTermEnum extends LuceneTestCase {
       throws IOException
   {
       IndexReader reader = IndexReader.open(dir, true);
-      TermEnum termEnum = null;
+      TermsEnum termEnum = MultiFields.getTerms(reader, "content").iterator();
 
     // create enumeration of all terms
-    termEnum = reader.terms();
     // go to the first term (aaa)
     termEnum.next();
     // assert that term is 'aaa'
-    assertEquals("aaa", termEnum.term().text());
+    assertEquals("aaa", termEnum.term().utf8ToString());
     assertEquals(200, termEnum.docFreq());
     // go to the second term (bbb)
     termEnum.next();
     // assert that term is 'bbb'
-    assertEquals("bbb", termEnum.term().text());
+    assertEquals("bbb", termEnum.term().utf8ToString());
     assertEquals(100, termEnum.docFreq());
 
-    termEnum.close();
 
-
-    // create enumeration of terms after term 'aaa', including 'aaa'
-    termEnum = reader.terms(new Term("content", "aaa"));
+    // create enumeration of terms after term 'aaa',
+    // including 'aaa'
+    termEnum.seek(new BytesRef("aaa"));
     // assert that term is 'aaa'
-    assertEquals("aaa", termEnum.term().text());
+    assertEquals("aaa", termEnum.term().utf8ToString());
     assertEquals(200, termEnum.docFreq());
     // go to term 'bbb'
     termEnum.next();
     // assert that term is 'bbb'
-    assertEquals("bbb", termEnum.term().text());
+    assertEquals("bbb", termEnum.term().utf8ToString());
     assertEquals(100, termEnum.docFreq());
-
-    termEnum.close();
   }
 
   private void addDoc(IndexWriter writer, String value) throws IOException

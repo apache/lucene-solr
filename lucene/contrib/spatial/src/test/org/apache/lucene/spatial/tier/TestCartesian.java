@@ -40,6 +40,7 @@ import org.apache.lucene.search.function.CustomScoreQuery;
 import org.apache.lucene.search.function.CustomScoreProvider;
 import org.apache.lucene.search.function.FieldScoreQuery;
 import org.apache.lucene.search.function.FieldScoreQuery.Type;
+import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.lucene.spatial.geohash.GeoHashUtils;
 import org.apache.lucene.spatial.geometry.DistanceUnits;
 import org.apache.lucene.spatial.geometry.FloatLatLng;
@@ -278,8 +279,8 @@ public class TestCartesian extends LuceneTestCase {
       double rsLng = Double.parseDouble(d.get(lngField));
       Double geo_distance = distances.get(scoreDocs[i].doc);
 
-      double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
-      double llm = DistanceUtils.getInstance().getLLMDistance(lat, lng, rsLat, rsLng);
+      double distance = DistanceUtils.getDistanceMi(lat, lng, rsLat, rsLng);
+      double llm = DistanceUtils.getLLMDistance(lat, lng, rsLat, rsLng);
       if (VERBOSE) System.out.println("Name: "+ name +", Distance "+ distance); //(res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ hits.score(i));
       assertTrue(Math.abs((distance - llm)) < 1);
       assertTrue((distance < miles ));
@@ -372,8 +373,8 @@ public class TestCartesian extends LuceneTestCase {
       double rsLng = Double.parseDouble(d.get(lngField));
       Double geo_distance = distances.get(scoreDocs[i].doc);
 
-      double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
-      double llm = DistanceUtils.getInstance().getLLMDistance(lat, lng, rsLat, rsLng);
+      double distance = DistanceUtils.getDistanceMi(lat, lng, rsLat, rsLng);
+      double llm = DistanceUtils.getLLMDistance(lat, lng, rsLat, rsLng);
       if (VERBOSE) System.out.println("Name: "+ name +", Distance "+ distance); //(res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ hits.score(i));
       assertTrue(Math.abs((distance - llm)) < 1);
       if (VERBOSE) System.out.println("checking limit "+ distance + " < " + miles);
@@ -467,8 +468,8 @@ public class TestCartesian extends LuceneTestCase {
         double rsLng = Double.parseDouble(d.get(lngField)); 
         Double geo_distance = distances.get(scoreDocs[i].doc);
       
-        double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
-        double llm = DistanceUtils.getInstance().getLLMDistance(lat, lng, rsLat, rsLng);
+        double distance = DistanceUtils.getDistanceMi(lat, lng, rsLat, rsLng);
+        double llm = DistanceUtils.getLLMDistance(lat, lng, rsLat, rsLng);
         if (VERBOSE) System.out.println("Name: "+ name +", Distance "+ distance); //(res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ hits.score(i));
         assertTrue(Math.abs((distance - llm)) < 1);
         assertTrue((distance < miles ));
@@ -561,8 +562,8 @@ public class TestCartesian extends LuceneTestCase {
         double rsLng = Double.parseDouble(d.get(lngField)); 
         Double geo_distance = distances.get(scoreDocs[i].doc);
 	      
-        double distance = DistanceUtils.getInstance().getDistanceMi(lat, lng, rsLat, rsLng);
-        double llm = DistanceUtils.getInstance().getLLMDistance(lat, lng, rsLat, rsLng);
+        double distance = DistanceUtils.getDistanceMi(lat, lng, rsLat, rsLng);
+        double llm = DistanceUtils.getLLMDistance(lat, lng, rsLat, rsLng);
         if (VERBOSE) System.out.println("Name: "+ name +", Distance (res, ortho, harvesine):"+ distance +" |"+ geo_distance +"|"+ llm +" | score "+ scoreDocs[i].score);
         assertTrue(Math.abs((distance - llm)) < 1);
         assertTrue((distance < miles ));

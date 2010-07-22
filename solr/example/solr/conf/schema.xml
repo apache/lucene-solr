@@ -416,15 +416,11 @@
    -->
     <fieldtype name="geohash" class="solr.GeoHashField"/>
 
-    <!--
-      A SpatialTileField is like a set of zoom levels on an interactive map (i.e. Google Maps or MapQuest).  It takes a lat/lon
-      field and indexes it into (end - start) different fields, each representing a different zoom level.
-      This can then be leveraged to quickly narrow the search space by creating a filter, at an appropriate tier level,
-      that only has to enumerate a minimum number of terms.
 
-      See http://wiki.apache.org/solr/SpatialSearch
+    <!--
+
      -->
-    <fieldType name="tile" class="solr.SpatialTileField" start="4" end="15" subFieldSuffix="_tiled"/>
+    <fieldType name="latLon" class="solr.LatLonType" subFieldSuffix="_latLon"/>
     
  </types>
 
@@ -467,9 +463,14 @@
    <field name="popularity" type="int" indexed="true" stored="true" />
    <field name="inStock" type="boolean" indexed="true" stored="true" />
 
+   <!--
+   The following store examples are used to demonstrate the various ways one might _CHOOSE_ to
+    implement spatial.  It is highly unlikely that you would ever have ALL of these fields defined.
+    -->
    <field name="store" type="location" indexed="true" stored="true"/>
+   <field name="store_lat_lon" type="latLon" indexed="true" stored="true"/>
    <field name="store_hash" type="geohash" indexed="true" stored="false"/>
-   <field name="store_tiles" type="tile" indexed="true" stored="false"/>
+
 
    <!-- Common metadata fields, named specifically to match up with
      SolrCell metadata when parsing rich documents such as Word, PDF.
@@ -490,7 +491,7 @@
 
    <!-- catchall field, containing all other searchable text fields (implemented
         via copyField further on in this schema  -->
-   <field name="text" type="text" indexed="true" stored="false" multiValued="true"/>
+   <field name="text" type="text" indexed="true" stored="true" multiValued="true" termVectors="true"/>
 
    <!-- catchall text field that indexes tokens both normally and in reverse for efficient
         leading wildcard queries. -->
@@ -525,7 +526,7 @@
    <dynamicField name="*_f"  type="float"  indexed="true"  stored="true"/>
    <dynamicField name="*_d"  type="double" indexed="true"  stored="true"/>
 
-   <dynamicField name="*_tiled"  type="double" indexed="true"  stored="false"/>
+   <dynamicField name="*_latLon"  type="double" indexed="true"  stored="false"/>
 
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
    <dynamicField name="*_p"  type="location" indexed="true" stored="true"/>
@@ -569,7 +570,7 @@
 
    <copyField source="cat" dest="text"/>
    <copyField source="store" dest="store_hash"/>
-   <copyField source="store" dest="store_tiles"/>
+  <copyField source="store" dest="store_lat_lon"/>
    <copyField source="name" dest="text"/>
    <copyField source="manu" dest="text"/>
    <copyField source="features" dest="text"/>

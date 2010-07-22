@@ -17,38 +17,21 @@ package org.apache.lucene.analysis.snowball;
  * limitations under the License.
  */
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.StringReader;
-import java.util.zip.ZipFile;
+import java.io.Reader;
 
-import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
+import org.apache.lucene.analysis.util.ReusableAnalyzerBase;
+import org.apache.lucene.util.LuceneTestCase;
+
+import static org.apache.lucene.analysis.util.VocabularyAssert.*;
 
 /**
  * Test the snowball filters against the snowball data tests
  */
-public class TestSnowballVocab extends BaseTokenStreamTestCase {
-  private Tokenizer tokenizer = new KeywordTokenizer(new StringReader(""));
-  ZipFile zipFile = null;
-  
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-    this.zipFile = new ZipFile(getDataFile("TestSnowballVocabData.zip"));
-  }
-  
-  @Override
-  protected void tearDown() throws Exception {
-    this.zipFile.close();
-    this.zipFile = null;
-    super.tearDown();
-  }
-
+public class TestSnowballVocab extends LuceneTestCase {
   /**
    * Run all languages against their snowball vocabulary tests.
    */
@@ -82,25 +65,20 @@ public class TestSnowballVocab extends BaseTokenStreamTestCase {
    * For the supplied language, run the stemmer against all strings in voc.txt
    * The output should be the same as the string in output.txt
    */
-  private void assertCorrectOutput(String snowballLanguage, String dataDirectory)
+  private void assertCorrectOutput(final String snowballLanguage, String dataDirectory)
       throws IOException {
     if (VERBOSE) System.out.println("checking snowball language: " + snowballLanguage);
-    TokenStream filter = new SnowballFilter(tokenizer, snowballLanguage);
-    InputStream voc = zipFile.getInputStream(zipFile.getEntry(dataDirectory + "/voc.txt"));
-    InputStream out = zipFile.getInputStream(zipFile.getEntry(dataDirectory + "/output.txt"));
-    BufferedReader vocReader = new BufferedReader(new InputStreamReader(
-        voc, "UTF-8"));
-    BufferedReader outputReader = new BufferedReader(new InputStreamReader(
-        out, "UTF-8"));
-    String inputWord = null;
-    while ((inputWord = vocReader.readLine()) != null) {
-      String expectedWord = outputReader.readLine();
-      assertNotNull(expectedWord);
-      tokenizer.reset(new StringReader(inputWord));
-      filter.reset();
-      assertTokenStreamContents(filter, new String[] {expectedWord});
-    }
-    vocReader.close();
-    outputReader.close();
+    
+    Analyzer a = new ReusableAnalyzerBase() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName,
+          Reader reader) {
+        Tokenizer t = new KeywordTokenizer(reader);
+        return new TokenStreamComponents(t, new SnowballFilter(t, snowballLanguage));
+      }  
+    };
+    
+    assertVocabulary(a, getDataFile("TestSnowballVocabData.zip"), 
+        dataDirectory + "/voc.txt", dataDirectory + "/output.txt");
   }
 }

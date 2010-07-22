@@ -863,8 +863,6 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     assertReaderClosed(reader, true, true);
     assertReaderClosed(firstReader, true, true);
 
-    FlexTestUtil.verifyFlexVsPreFlex(rnd, dir);
-
     dir.close();
   }
   

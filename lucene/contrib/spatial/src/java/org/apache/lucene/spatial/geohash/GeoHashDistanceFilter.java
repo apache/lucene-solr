@@ -25,9 +25,9 @@ import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.FilteredDocIdSet;
+import org.apache.lucene.spatial.DistanceUtils;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.spatial.tier.DistanceFilter;
-import org.apache.lucene.spatial.tier.DistanceUtils;
 
 
 /** <p><font color="red"><b>NOTE:</b> This API is still in
@@ -90,7 +90,7 @@ public class GeoHashDistanceFilter extends DistanceFilter {
         if (cachedDistance != null) {
           d = cachedDistance.doubleValue();
         } else {
-          d = DistanceUtils.getInstance().getDistanceMi(lat, lng, x, y);
+          d = DistanceUtils.getDistanceMi(lat, lng, x, y);
           distanceLookupCache.put(geoHash, d);
         }
 

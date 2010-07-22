@@ -38,6 +38,7 @@ import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 public class TestIndexWriterReader extends LuceneTestCase {
@@ -63,12 +64,16 @@ public class TestIndexWriterReader extends LuceneTestCase {
   
   public static int count(Term t, IndexReader r) throws IOException {
     int count = 0;
-    TermDocs td = r.termDocs(t);
-    while (td.next()) {
-      td.doc();
-      count++;
+    DocsEnum td = MultiFields.getTermDocsEnum(r,
+                                              MultiFields.getDeletedDocs(r),
+                                              t.field(), new BytesRef(t.text()));
+
+    if (td != null) {
+      while (td.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+        td.docID();
+        count++;
+      }
     }
-    td.close();
     return count;
   }
 

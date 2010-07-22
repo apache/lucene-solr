@@ -129,12 +129,6 @@ public class TermRangeQuery extends MultiTermQuery {
   /** Returns the collator used to determine range inclusion, if any. */
   public Collator getCollator() { return collator; }
   
-  @Override @Deprecated
-  protected FilteredTermEnum getEnum(IndexReader reader) throws IOException {
-    return new TermRangeTermEnum(reader, field, lowerTerm,
-        upperTerm, includeLower, includeUpper, collator);
-  }
-
   @Override
   protected TermsEnum getTermsEnum(IndexReader reader) throws IOException {
     if (collator == null && lowerTerm != null && upperTerm != null && lowerTerm.compareTo(upperTerm) > 0) {

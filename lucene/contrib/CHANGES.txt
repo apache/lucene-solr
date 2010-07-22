@@ -7,6 +7,19 @@ Build
  * LUCENE-2413: Moved the demo out of lucene core and into contrib/demo.
    (Robert Muir)
 
+New Features
+
+  * LUCENE-2500: Added DirectIOLinuxDirectory, a Linux-specific
+    Directory impl that uses the O_DIRECT flag to bypass the buffer
+    cache.  This is useful to prevent segment merging from evicting
+    pages from the buffer cache, since fadvise/madvise do not seem.
+    (Michael McCandless)
+
+  * LUCENE-2373: Added a Codec implementation that works with append-only
+    filesystems (such as e.g. Hadoop DFS). SegmentInfos writing/reading
+    code is refactored to support append-only FS, and to allow for future
+    customization of per-segment information. (Andrzej Bialecki)
+
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy
@@ -78,6 +91,9 @@ Bug fixes
  * LUCENE-2404: Fix bugs with position increment and empty tokens in ThaiWordFilter.
    For matchVersion >= 3.1 the filter also no longer lowercases. ThaiAnalyzer
    will use a separate LowerCaseFilter instead. (Uwe Schindler, Robert Muir)
+
+* LUCENE-2524: FastVectorHighlighter: use mod for getting colored tag.
+  (Koji Sekiguchi)
    
 API Changes
 
@@ -168,6 +184,12 @@ New features
  * LUCENE-1287: Allow usage of HyphenationCompoundWordTokenFilter without dictionary.
    (Thomas Peuss via Robert Muir)
 
+ * LUCENE-2464: FastVectorHighlighter: add SingleFragListBuilder to return
+   entire field contents. (Koji Sekiguchi)
+
+ * LUCENE-2503: Added lighter stemming alternatives for European languages. 
+   (Robert Muir)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
@@ -217,6 +239,10 @@ Other
 
  * LUCENE-2415: Use reflection instead of a shim class to access Jakarta
    Regex prefix.  (Uwe Schindler)
+
+================== Release 2.9.3 / 3.0.2 2010-06-18 ====================
+
+No changes.
 
 ================== Release 2.9.2 / 3.0.1 2010-02-26 ====================
 

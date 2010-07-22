@@ -37,7 +37,7 @@ public class TestMultiFields extends LuceneTestCase {
       Set<Integer> deleted = new HashSet<Integer>();
       List<BytesRef> terms = new ArrayList<BytesRef>();
 
-      int numDocs = r.nextInt(100*_TestUtil.getRandomMultiplier());
+      int numDocs = _TestUtil.nextInt(r, 1, 100*_TestUtil.getRandomMultiplier());
       Document doc = new Document();
       Field f = new Field("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
       doc.add(f);
@@ -88,14 +88,13 @@ public class TestMultiFields extends LuceneTestCase {
         BytesRef term = terms.get(r.nextInt(terms.size()));
         
         DocsEnum docsEnum = terms2.docs(delDocs, term, null);
-        int count = 0;
+        assertNotNull(docsEnum);
+
         for(int docID : docs.get(term)) {
           if (!deleted.contains(docID)) {
             assertEquals(docID, docsEnum.nextDoc());
-            count++;
           }
         }
-        //System.out.println("c=" + count + " t=" + term);
         assertEquals(docsEnum.NO_MORE_DOCS, docsEnum.nextDoc());
       }
 
@@ -104,6 +103,7 @@ public class TestMultiFields extends LuceneTestCase {
     }
   }
 
+  /*
   private void verify(IndexReader r, String term, List<Integer> expected) throws Exception {
     DocsEnum docs = MultiFields.getTermDocsEnum(r,
                                                 MultiFields.getDeletedDocs(r),
@@ -114,5 +114,24 @@ public class TestMultiFields extends LuceneTestCase {
       assertEquals(docID, docs.nextDoc());
     }
     assertEquals(docs.NO_MORE_DOCS, docs.nextDoc());
+  }
+  */
+
+  public void testSeparateEnums() throws Exception {
+    Directory dir = new MockRAMDirectory();
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Document d = new Document();
+    d.add(new Field("f", "j", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    w.addDocument(d);
+    w.commit();
+    w.addDocument(d);
+    IndexReader r = w.getReader();
+    w.close();
+    DocsEnum d1 = MultiFields.getTermDocsEnum(r, null, "f", new BytesRef("j"));
+    DocsEnum d2 = MultiFields.getTermDocsEnum(r, null, "f", new BytesRef("j"));
+    assertEquals(0, d1.nextDoc());
+    assertEquals(0, d2.nextDoc());
+    r.close();
+    dir.close();
   }
 }

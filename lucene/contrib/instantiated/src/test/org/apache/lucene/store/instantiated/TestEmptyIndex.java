@@ -23,8 +23,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
@@ -84,11 +84,11 @@ public class TestEmptyIndex extends LuceneTestCase {
     }
   }
 
-  public void testTermEnum() throws Exception {
+  public void testTermsEnum() throws Exception {
 
     InstantiatedIndex ii = new InstantiatedIndex();
     IndexReader r = new InstantiatedIndexReader(ii);
-    termEnumTest(r);
+    termsEnumTest(r);
     r.close();
     ii.close();
 
@@ -97,17 +97,13 @@ public class TestEmptyIndex extends LuceneTestCase {
     Directory d = new RAMDirectory();
     new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())).close();
     r = IndexReader.open(d, false);
-    termEnumTest(r);
+    termsEnumTest(r);
     r.close();
     d.close();
   }
 
-  public void termEnumTest(IndexReader r) throws Exception {
-    TermEnum terms = r.terms();
-
-    assertNull(terms.term());
-    assertFalse(terms.next());
-
+  public void termsEnumTest(IndexReader r) throws Exception {
+    assertNull(MultiFields.getFields(r));
   }
 
 }

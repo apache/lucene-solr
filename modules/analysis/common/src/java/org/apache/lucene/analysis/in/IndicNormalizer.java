@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.in;
 import java.util.BitSet;
 import java.util.IdentityHashMap;
 import static java.lang.Character.UnicodeBlock.*;
+import static org.apache.lucene.analysis.util.StemmerUtil.*;
 
 /**
  * Normalizes the Unicode representation of text in Indian languages.
@@ -289,15 +290,5 @@ public class IndicNormalizer {
       }
     
     return len;
-  }
-  
-  /**
-   * Delete a character in-place
-   */
-  private int delete(char s[], int pos, int len) {
-    if (pos < len) 
-      System.arraycopy(s, pos + 1, s, pos, len - pos - 1);
-    
-    return len - 1;
   }
 }

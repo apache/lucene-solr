@@ -36,7 +36,7 @@ import java.io.File;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestDocBuilder2 extends AbstractDataImportHandlerTest {
+public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
 
   @Before
   public void setUp() throws Exception {

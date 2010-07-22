@@ -22,6 +22,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
+import org.apache.lucene.analysis.phonetic.DoubleMetaphoneFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 public class DoubleMetaphoneFilterFactoryTest extends BaseTokenTestCase {

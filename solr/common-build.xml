@@ -118,14 +118,6 @@
 
   <property name="maven.dist.prefix" value="${maven.dist.dir}/org/apache/solr"/>
 
-  <!-- 
-       The version suffix of the Lucene artifacts checked into "lib" 
-       IF YOU CHANGE THIS, SANITY CHECK "javadoc.link.lucene"
-  -->
-  <property name="lucene_version" value="${version}"/>
-  <!-- The version number to assign to the Maven artifacts. -->
-  <property name="maven_version" value="4.0-SNAPSHOT"/>
-
   <!-- By default, "deploy" to a temporary directory (as well as installing
        into your local repository).  If you wish to deploy to a remote
        repository, set this property to the URL of that repository.  In
@@ -155,6 +147,7 @@
   <path id="lucene.classpath">
     <pathelement location="${common-solr.dir}/../lucene/build/classes/java" />
     <pathelement location="${common-solr.dir}/../modules/analysis/build/common/classes/java" />
+    <pathelement location="${common-solr.dir}/../modules/analysis/build/phonetic/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/highlighter/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/memory/classes/java" />
     <pathelement location="${common-solr.dir}/../lucene/build/contrib/misc/classes/java" />
@@ -170,6 +163,7 @@
       </subant>
       <subant target="jar" inheritall="false" failonerror="true">
         <fileset dir="../modules/analysis/common" includes="build.xml" />
+        <fileset dir="../modules/analysis/phonetic" includes="build.xml" />
         <fileset dir="../lucene/contrib/highlighter" includes="build.xml" />
         <fileset dir="../lucene/contrib/memory" includes="build.xml" />
         <fileset dir="../lucene/contrib/misc" includes="build.xml" />
@@ -184,28 +178,31 @@
     <mkdir dir="${lucene-libs}"/>
     <copy todir="${lucene-libs}" preservelastmodified="true" flatten="true" failonerror="true" overwrite="true">
       <fileset dir="../lucene/build/">
-        <include name="lucene-core-${lucene_version}.jar" />
+        <include name="lucene-core-${version}.jar" />
       </fileset>
       <fileset dir="../modules/analysis/build/common">
-        <include name="lucene-analyzers-common-${lucene_version}.jar" />
+        <include name="lucene-analyzers-common-${version}.jar" />
+      </fileset>
+      <fileset dir="../modules/analysis/build/phonetic">
+        <include name="lucene-analyzers-phonetic-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/highlighter">
-        <include name="lucene-highlighter-${lucene_version}.jar" />
+        <include name="lucene-highlighter-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/memory">
-        <include name="lucene-memory-${lucene_version}.jar" />
+        <include name="lucene-memory-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/misc">
-        <include name="lucene-misc-${lucene_version}.jar" />
+        <include name="lucene-misc-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/queries">
-        <include name="lucene-queries-${lucene_version}.jar" />
+        <include name="lucene-queries-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/spatial">
-        <include name="lucene-spatial-${lucene_version}.jar" />
+        <include name="lucene-spatial-${version}.jar" />
       </fileset>
       <fileset dir="../lucene/build/contrib/spellchecker">
-        <include name="lucene-spellchecker-${lucene_version}.jar" />
+        <include name="lucene-spellchecker-${version}.jar" />
       </fileset>
       </copy>
   </target>  
@@ -214,6 +211,7 @@
     <property name="lucene-compiled" value="true"/>
     <subant target="default">
       <fileset dir="../modules/analysis/common" includes="build.xml"/>
+      <fileset dir="../modules/analysis/phonetic" includes="build.xml"/>
       <fileset dir="../lucene/contrib/highlighter" includes="build.xml"/>
       <fileset dir="../lucene/contrib/memory" includes="build.xml"/>
       <fileset dir="../lucene/contrib/misc" includes="build.xml"/>
@@ -347,7 +345,7 @@
     <sequential>
       <copy file="@{pom.xml}" tofile="${maven.build.dir}/@{pom.xml}">
         <filterset begintoken="@" endtoken="@">
-          <filter token="maven_version" value="${maven_version}"/>
+          <filter token="version" value="${version}"/>
         </filterset>
       </copy>
       <artifact:install-provider artifactId="wagon-ssh" version="1.0-beta-2"/>
@@ -391,7 +389,7 @@
   <macrodef name="sign-maven-artifacts" description="Signs maven artifacts">
     <attribute name="artifact.id"/>
     <attribute name="prefix.dir" default="${maven.dist.prefix}"/>
-    <attribute name="maven.version" default="${maven_version}"/>
+    <attribute name="maven.version" default="${version}"/>
     <attribute name="gpg.passphrase"/>
     <sequential>
       <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.jar" gpg.passphrase="@{gpg.passphrase}"/>
@@ -404,7 +402,7 @@
   <macrodef name="sign-maven-dependency-artifacts" description="Signs maven artifacts">
     <attribute name="artifact.id"/>
     <attribute name="prefix.dir" default="${maven.dist.prefix}"/>
-    <attribute name="maven.version" default="${maven_version}"/>
+    <attribute name="maven.version" default="${version}"/>
     <attribute name="gpg.passphrase"/>
     <sequential>
       <sign-artifact input.file="@{prefix.dir}/@{artifact.id}/@{maven.version}/@{artifact.id}-@{maven.version}.jar"  gpg.passphrase="@{gpg.passphrase}"/>

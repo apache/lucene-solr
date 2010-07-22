@@ -27,6 +27,7 @@ Versions of Major Components
 Apache Lucene trunk
 Apache Tika 0.6
 Carrot2 3.1.0
+Velocity 1.6.1
 
 
 Upgrading from Solr 1.4
@@ -121,13 +122,13 @@ New Features
 * SOLR-1131: FieldTypes can now output multiple Fields per Type and still be searched.  This can be handy for hiding the details of a particular
   implementation such as in the spatial case. (Chris Mattmann, shalin, noble, gsingers, yonik)
 
-* SOLR-1586: Add support for Geohash and Spatial Tile FieldType (Chris Mattmann, gsingers)
+* SOLR-1586: Add support for Geohash FieldType (Chris Mattmann, gsingers)
 
 * SOLR-1697: PluginInfo should load plugins w/o class attribute also (noble)
 
 * SOLR-1268: Incorporate FastVectorHighlighter (koji)
 
-* SOLR-1750: SystemInfoRequestHandler added for simpler programmatic access
+* SOLR-1750: SolrInfoMBeanHandler added for simpler programmatic access
   to info currently available from registry.jsp and stats.jsp
   (ehatcher, hossman)
 
@@ -176,6 +177,31 @@ New Features
 * SOLR-1915: DebugComponent now supports using a NamedList to model
   Explanation objects in it's responses instead of
   Explanation.toString  (hossman) 
+
+* SOLR-1932: New relevancy function queries: termfreq, tf, docfreq, idf
+  norm, maxdoc, numdocs. (yonik)
+  
+* SOLR-1957: The VelocityResponseWriter contrib moved to core.
+             Example search UI now available at http://localhost:8983/solr/browse
+             (ehatcher)
+
+* SOLR-1974: Add LimitTokenCountFilterFactory. (koji)
+
+* SOLR-1966: QueryElevationComponent can now return just the included results in the elevation file (gsingers, yonik)
+
+* SOLR-1556: TermVectorComponent now supports per field overrides.  Also, it now throws an error
+ if passed in fields do not exist and warnings
+  if fields that do not have term vector options (termVectors, offsets, positions)
+   that align with the schema declaration. It also
+    will now return warnings about (gsingers)
+
+* SOLR-1985: FastVectorHighlighter: add wrapper class for Lucene's SingleFragListBuilder (koji)
+
+* SOLR-1984: Add HyphenationCompoundWordTokenFilterFactory. (PB via rmuir)
+
+* SOLR-1568: Added "native" filtering support for PointType, GeohashField.  Added LatLonType with filtering support too.  See
+  	     http://wiki.apache.org/solr/SpatialSearch and the example.  Refactored some items in Lucene spatial. 
+	     Removed SpatialTileField as the underlying CartesianTier is broken beyond repair and is going to be moved. (gsingers) 
    
 Optimizations
 ----------------------
@@ -199,6 +225,11 @@ Optimizations
   Solr will use it as the root name for all MBeans Solr exposes via
   JMX.  The default root name is "solr" followed by the core name.
   (Constantijn Visinescu, hossman)
+
+* SOLR-1968: speed up initial filter cache population for facet.method=enum and
+  also big terms for multi-valued facet.method=fc.  The resulting speedup
+  for the first facet request is anywhere from 30% to 32x, depending on how many
+  terms are in the field and how many documents match per term.  (yonik) 
 
 Bug Fixes
 ----------------------
@@ -275,8 +306,10 @@ Bug Fixes
   (Robert Muir via shalin)
 
 * SOLR-1711: SolrJ - StreamingUpdateSolrServer had a race condition that
-  could halt the streaming of documents. (Attila Babo via yonik)
-  
+  could halt the streaming of documents. The original patch to fix this
+  (never officially released) introduced another hanging bug due to
+  connections not being released.  (Attila Babo, Erik Hetzner via yonik)  
+
 * SOLR-1748, SOLR-1747, SOLR-1746, SOLR-1745, SOLR-1744: Streams and Readers
   retrieved from ContentStreams are not closed in various places, resulting
   in file descriptor leaks.
@@ -328,6 +361,25 @@ Bug Fixes
 * SOLR-1914: Change the JSON response format to output float/double
   values of NaN,Infinity,-Infinity as strings. (yonik)
 
+* SOLR-1948: PatternTokenizerFactory should use parent's args (koji)
+
+* SOLR-1870: Indexing documents using the 'javabin' format no longer
+  fails with a ClassCastException whenSolrInputDocuments contain field
+  values which are Collections or other classes that implement
+  Iterable. (noble, hossman)
+
+* SOLR-1981: Solr will now fail correctly if solr.xml attempts to
+  specify multiple cores that have the same name (hossman)
+
+* SOLR-1791: Fix messed up core names on admin gui (yonik via koji)
+
+* SOLR-1995: Change date format from "hour in am/pm" to "hour in day"
+  in CoreContainer and SnapShooter. (Hayato Ito, koji)
+
+* SOLR-2008: avoid possible RejectedExecutionException w/autoCommit
+  by making SolreCore close the UpdateHandler before closing the
+  SearchExecutor.  (NarasimhaRaju, hossman)
+  
 
 Other Changes
 ----------------------
@@ -416,6 +468,12 @@ Other Changes
 * SOLR-1889: The default logic for the 'mm' param of DismaxQParser and
   ExtendedDismaxQParser has been changed to be determined based on the
   effective value of the 'q.op' param (hossman)
+
+* SOLR-1946: Misc improvements to the SystemInfoHandler: /admin/system
+  (hossman)
+
+* SOLR-2003: SolrResourceLoader will report any encoding errors, rather than
+  silently using replacement characters for invalid inputs (blargy via rmuir)
 
 Build
 ----------------------

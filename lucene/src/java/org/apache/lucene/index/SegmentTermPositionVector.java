@@ -1,5 +1,7 @@
 package org.apache.lucene.index;
 
+import org.apache.lucene.util.BytesRef;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -22,7 +24,7 @@ class SegmentTermPositionVector extends SegmentTermVector implements TermPositio
   protected TermVectorOffsetInfo[][] offsets;
   public static final int[] EMPTY_TERM_POS = new int[0];
   
-  public SegmentTermPositionVector(String field, String terms[], int termFreqs[], int[][] positions, TermVectorOffsetInfo[][] offsets) {
+  public SegmentTermPositionVector(String field, BytesRef terms[], int termFreqs[], int[][] positions, TermVectorOffsetInfo[][] offsets) {
     super(field, terms, termFreqs);
     this.offsets = offsets;
     this.positions = positions;

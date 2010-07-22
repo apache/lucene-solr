@@ -17,11 +17,12 @@
 package org.apache.solr.handler.dataimport;
 
 import junit.framework.Assert;
-import static org.apache.solr.handler.dataimport.AbstractDataImportHandlerTest.createMap;
+import static org.apache.solr.handler.dataimport.AbstractDataImportHandlerTestCase.createMap;
+
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -32,7 +33,7 @@ import java.util.Map;
  * @see org.apache.solr.handler.dataimport.FieldReaderDataSource
  * @since 1.4
  */
-public class TestFieldReader {
+public class TestFieldReader extends SolrTestCaseJ4 {
 
   @Test
   public void simple() {

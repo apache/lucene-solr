@@ -446,8 +446,11 @@ public final class NumericUtils {
       final long
         nextMinBound = (hasLower ? (minBound + diff) : minBound) & ~mask,
         nextMaxBound = (hasUpper ? (maxBound - diff) : maxBound) & ~mask;
-
-      if (shift+precisionStep>=valSize || nextMinBound>nextMaxBound) {
+      final boolean
+        lowerWrapped = nextMinBound < minBound,
+        upperWrapped = nextMaxBound > maxBound;
+      
+      if (shift+precisionStep>=valSize || nextMinBound>nextMaxBound || lowerWrapped || upperWrapped) {
         // We are in the lowest precision or the next precision is not available.
         addRange(builder, valSize, minBound, maxBound, shift);
         // exit the split recursion loop

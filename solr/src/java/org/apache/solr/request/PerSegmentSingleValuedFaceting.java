@@ -1,11 +1,16 @@
 package org.apache.solr.request;
 
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.packed.Direct16;
+import org.apache.lucene.util.packed.Direct32;
+import org.apache.lucene.util.packed.Direct8;
+import org.apache.lucene.util.packed.PackedInts;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.util.NamedList;
@@ -137,7 +142,9 @@ class PerSegmentSingleValuedFaceting {
           seg.pos = seg.startTermIndex;
         }
         if (seg.pos < seg.endTermIndex) {
-          seg.si.lookup(seg.pos, seg.tempBR);
+          seg.tenum = seg.si.getTermsEnum();          
+          seg.tenum.seek(seg.pos);
+          seg.tempBR = seg.tenum.term();
           queue.add(seg);
         }
       }
@@ -156,7 +163,6 @@ class PerSegmentSingleValuedFaceting {
       SegFacet seg = queue.top();
 
       // make a shallow copy
-      // Is this always safe? Or could the byte[] be changed?
       val.bytes = seg.tempBR.bytes;
       val.offset = seg.tempBR.offset;
       val.length = seg.tempBR.length;
@@ -173,7 +179,7 @@ class PerSegmentSingleValuedFaceting {
           queue.pop();
           seg = queue.top();
         }  else {
-          seg.si.lookup(seg.pos, seg.tempBR);          
+          seg.tempBR = seg.tenum.next();
           seg = queue.updateTop();
         }
       } while (seg != null && val.compareTo(seg.tempBR) == 0);
@@ -215,9 +221,10 @@ class PerSegmentSingleValuedFaceting {
     int endTermIndex;
     int[] counts;
 
-    int pos; // only used during merge with other segments
+    int pos; // only used when merging
+    TermsEnum tenum; // only used when merging
 
-    final BytesRef tempBR = new BytesRef();
+    BytesRef tempBR = new BytesRef();
 
     void countTerms() throws IOException {
       si = FieldCache.DEFAULT.getTermsIndex(reader, fieldName);
@@ -245,21 +252,66 @@ class PerSegmentSingleValuedFaceting {
         DocIdSet idSet = baseSet.getDocIdSet(reader);
         DocIdSetIterator iter = idSet.iterator();
 
-        if (startTermIndex==0 && endTermIndex==si.numOrd()) {
-          // specialized version when collecting counts for all terms
-          int doc;
-          while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-            counts[si.getOrd(doc)]++;
+
+        ////
+        PackedInts.Reader ordReader = si.getDocToOrd();
+        int doc;
+
+        if (ordReader instanceof Direct32) {
+          int[] ords = ((Direct32)ordReader).getArray();
+          if (prefix==null) {
+            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
+              counts[ords[doc]]++;
+            }
+          } else {
+            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
+              int term = ords[doc];
+              int arrIdx = term-startTermIndex;
+              if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+            }
+          }
+        } else if (ordReader instanceof Direct16) {
+          short[] ords = ((Direct16)ordReader).getArray();
+          if (prefix==null) {
+            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
+              counts[ords[doc] & 0xffff]++;
+            }
+          } else {
+            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
+              int term = ords[doc] & 0xffff;
+              int arrIdx = term-startTermIndex;
+              if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+            }
+          }
+        } else if (ordReader instanceof Direct8) {
+          byte[] ords = ((Direct8)ordReader).getArray();
+          if (prefix==null) {
+            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
+              counts[ords[doc] & 0xff]++;
+            }
+          } else {
+            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
+              int term = ords[doc] & 0xff;
+              int arrIdx = term-startTermIndex;
+              if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+            }
           }
         } else {
-          // version that adjusts term numbers because we aren't collecting the full range
-          int doc;
-          while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
-            int term = si.getOrd(doc);
-            int arrIdx = term-startTermIndex;
-            if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+          if (prefix==null) {
+            // specialized version when collecting counts for all terms
+            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
+              counts[si.getOrd(doc)]++;
+            }
+          } else {
+            // version that adjusts term numbers because we aren't collecting the full range
+            while ((doc = iter.nextDoc()) < DocIdSetIterator.NO_MORE_DOCS) {
+              int term = si.getOrd(doc);
+              int arrIdx = term-startTermIndex;
+              if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+            }
           }
         }
+
       }
     }
   }

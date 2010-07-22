@@ -22,8 +22,9 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spans.SpanFirstQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -31,6 +32,7 @@ import org.apache.lucene.search.spans.SpanNotQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -48,7 +50,9 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestExplanations extends LuceneTestCase {
   protected IndexSearcher searcher;
-
+  protected IndexReader reader;
+  protected Directory directory;
+  
   public static final String KEY = "KEY";
   public static final String FIELD = "field";
   public static final QueryParser qp =
@@ -57,22 +61,26 @@ public class TestExplanations extends LuceneTestCase {
   @Override
   protected void tearDown() throws Exception {
     searcher.close();
+    reader.close();
+    directory.close();
     super.tearDown();
   }
   
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer= new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    directory = new RAMDirectory();
+    RandomIndexWriter writer= new RandomIndexWriter(newRandom(), directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(new Field(KEY, ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
       doc.add(new Field(FIELD, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
+    reader = writer.getReader();
     writer.close();
-    searcher = new IndexSearcher(directory, true);
+    searcher = new IndexSearcher(reader);
   }
 
   protected String[] docFields = {

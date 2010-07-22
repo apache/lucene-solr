@@ -43,8 +43,10 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermEnum;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FieldsEnum;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.IndexReader.FieldOption;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.queryParser.MultiFieldQueryParser;
@@ -58,6 +60,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Various methods that interact with Lucene and provide info about the 
@@ -342,13 +345,21 @@ class LuceneMethods {
   public void terms(String field) throws IOException {
     TreeMap<String,Integer> termMap = new TreeMap<String,Integer>();
     IndexReader indexReader = IndexReader.open(indexName, true);
-    TermEnum terms = indexReader.terms();
-    while (terms.next()) {
-      Term term = terms.term();
-      //message(term.field() + ":" + term.text() + " freq:" + terms.docFreq());
-      //if we're either not looking by field or we're matching the specific field
-      if ((field == null) || field.equals(term.field()))
-        termMap.put(term.field() + ":" + term.text(), Integer.valueOf((terms.docFreq())));
+    Fields fields = MultiFields.getFields(indexReader);
+    if (fields != null) {
+      FieldsEnum fieldsEnum = fields.iterator();
+      String curField;
+      while((curField = fieldsEnum.next()) != null) {
+        TermsEnum terms = fieldsEnum.terms();
+        BytesRef text;
+        while ((text = terms.next()) != null) {
+          //message(term.field() + ":" + term.text() + " freq:" + terms.docFreq());
+          //if we're either not looking by field or we're matching the specific field
+          if ((field == null) || field.equals(curField)) {
+            termMap.put(curField + ":" + text.utf8ToString(), Integer.valueOf((terms.docFreq())));
+          }
+        }
+      }
     }
 
     Iterator<String> termIterator = termMap.keySet().iterator();

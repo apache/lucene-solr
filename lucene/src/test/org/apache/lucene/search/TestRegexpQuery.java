@@ -23,9 +23,11 @@ import java.util.Arrays;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.Automaton;
@@ -39,25 +41,29 @@ import org.apache.lucene.util.automaton.RegExp;
  */
 public class TestRegexpQuery extends LuceneTestCase {
   private IndexSearcher searcher;
+  private IndexReader reader;
+  private Directory directory;
   private final String FN = "field";
   
   public void setUp() throws Exception {
     super.setUp();
-    RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new MockAnalyzer(),
-        true, IndexWriter.MaxFieldLength.LIMITED);
+    directory = new RAMDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     doc.add(new Field(FN,
         "the quick brown fox jumps over the lazy ??? dog 493432 49344",
         Field.Store.NO, Field.Index.ANALYZED));
     writer.addDocument(doc);
-    writer.optimize();
+    reader = writer.getReader();
     writer.close();
-    searcher = new IndexSearcher(directory, true);
+    searcher = new IndexSearcher(reader);
   }
   
   public void tearDown() throws Exception {
     searcher.close();
+    reader.close();
+    directory.close();
     super.tearDown();
   }
   
@@ -119,10 +125,5 @@ public class TestRegexpQuery extends LuceneTestCase {
    */
   public void testBacktracking() throws IOException {
     assertEquals(1, regexQueryNrHits("4934[314]"));
-  }
-  
-  @Deprecated
-  public void testBackwardsLayer() {
-    assertTrue(new RegexpQuery(newTerm(".*")).hasNewAPI);
   }
 }

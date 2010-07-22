@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -30,7 +31,7 @@ import java.util.Map;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestXPathRecordReader {
+public class TestXPathRecordReader extends SolrTestCaseJ4 {
   @Test
   public void basic() {
     String xml="<root>\n"

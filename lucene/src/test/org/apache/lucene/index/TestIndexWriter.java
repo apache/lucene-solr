@@ -743,6 +743,7 @@ public class TestIndexWriter extends LuceneTestCase {
         try {
           writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
         } catch (Exception e) {
+          e.printStackTrace(System.out);
           fail("writer failed to open on a crashed index");
         }
 
@@ -1379,8 +1380,11 @@ public class TestIndexWriter extends LuceneTestCase {
       assertEquals(1, reader.numDocs());
       Term t = new Term("field", "a");
       assertEquals(1, reader.docFreq(t));
-      TermDocs td = reader.termDocs(t);
-      td.next();
+      DocsEnum td = MultiFields.getTermDocsEnum(reader,
+                                                MultiFields.getDeletedDocs(reader),
+                                                "field",
+                                                new BytesRef("a"));
+      td.nextDoc();
       assertEquals(128*1024, td.freq());
       reader.close();
       dir.close();
@@ -1701,9 +1705,13 @@ public class TestIndexWriter extends LuceneTestCase {
 
     // Make sure the doc that hit the exception was marked
     // as deleted:
-    TermDocs tdocs = reader.termDocs(t);
+    DocsEnum tdocs = MultiFields.getTermDocsEnum(reader,
+                                              MultiFields.getDeletedDocs(reader),
+                                              t.field(),
+                                              new BytesRef(t.text()));
+
     int count = 0;
-    while(tdocs.next()) {
+    while(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
       count++;
     }
     assertEquals(2, count);
@@ -2244,9 +2252,12 @@ public class TestIndexWriter extends LuceneTestCase {
 
       // Quick test to make sure index is not corrupt:
       IndexReader reader = IndexReader.open(dir, true);
-      TermDocs tdocs = reader.termDocs(new Term("field", "aaa"));
+      DocsEnum tdocs = MultiFields.getTermDocsEnum(reader,
+                                                  MultiFields.getDeletedDocs(reader),
+                                                  "field",
+                                                  new BytesRef("aaa"));
       int count = 0;
-      while(tdocs.next()) {
+      while(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
         count++;
       }
       assertTrue(count > 0);
@@ -3454,8 +3465,13 @@ public class TestIndexWriter extends LuceneTestCase {
     Query q = new SpanTermQuery(new Term("field", "a"));
     hits = s.search(q, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
-    TermPositions tps = s.getIndexReader().termPositions(new Term("field", "a"));
-    assertTrue(tps.next());
+
+    DocsAndPositionsEnum tps = MultiFields.getTermPositionsEnum(s.getIndexReader(),
+                                                                MultiFields.getDeletedDocs(s.getIndexReader()),
+                                                                "field",
+                                                                new BytesRef("a"));
+
+    assertTrue(tps.nextDoc() != DocsEnum.NO_MORE_DOCS);
     assertEquals(1, tps.freq());
     assertEquals(0, tps.nextPosition());
     w.close();
@@ -4465,12 +4481,12 @@ public class TestIndexWriter extends LuceneTestCase {
 
 
     // test that the terms were indexed.
-    assertTrue(ir.termDocs(new Term("binary","doc1field1")).next());
-    assertTrue(ir.termDocs(new Term("binary","doc2field1")).next());
-    assertTrue(ir.termDocs(new Term("binary","doc3field1")).next());
-    assertTrue(ir.termDocs(new Term("string","doc1field2")).next());
-    assertTrue(ir.termDocs(new Term("string","doc2field2")).next());
-    assertTrue(ir.termDocs(new Term("string","doc3field2")).next());
+    assertTrue(MultiFields.getTermDocsEnum(ir, null, "binary", new BytesRef("doc1field1")).nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(MultiFields.getTermDocsEnum(ir, null, "binary", new BytesRef("doc2field1")).nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(MultiFields.getTermDocsEnum(ir, null, "binary", new BytesRef("doc3field1")).nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(MultiFields.getTermDocsEnum(ir, null, "string", new BytesRef("doc1field2")).nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(MultiFields.getTermDocsEnum(ir, null, "string", new BytesRef("doc2field2")).nextDoc() != DocsEnum.NO_MORE_DOCS);
+    assertTrue(MultiFields.getTermDocsEnum(ir, null, "string", new BytesRef("doc3field2")).nextDoc() != DocsEnum.NO_MORE_DOCS);
 
     ir.close();
     dir.close();
@@ -4606,38 +4622,22 @@ public class TestIndexWriter extends LuceneTestCase {
   private void checkTermsOrder(IndexReader r, Set<String> allTerms, boolean isTop) throws IOException {
     TermsEnum terms = MultiFields.getFields(r).terms("f").iterator();
 
-    char[] last = new char[2];
-    int lastLength = 0;
+    BytesRef last = new BytesRef();
 
     Set<String> seenTerms = new HashSet<String>();
 
-    UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
     while(true) {
       final BytesRef term = terms.next();
       if (term == null) {
         break;
       }
-      UnicodeUtil.UTF8toUTF16(term.bytes, term.offset, term.length, utf16);
-      assertTrue(utf16.length <= 2);
 
-      // Make sure last term comes before current one, in
-      // UTF16 sort order
-      int i = 0;
-      for(i=0;i<lastLength && i<utf16.length;i++) {
-        assertTrue("UTF16 code unit " + termDesc(new String(utf16.result, 0, utf16.length)) + " incorrectly sorted after code unit " + termDesc(new String(last, 0, lastLength)), last[i] <= utf16.result[i]);
-        if (last[i] < utf16.result[i]) {
-          break;
-        }
-      }
-      // Terms should not have been identical
-      assertTrue(lastLength != utf16.length || i < lastLength);
+      assertTrue(last.compareTo(term) < 0);
+      last.copy(term);
 
-      final String s = new String(utf16.result, 0, utf16.length);
+      final String s = term.utf8ToString();
       assertTrue("term " + termDesc(s) + " was not added to index (count=" + allTerms.size() + ")", allTerms.contains(s));
       seenTerms.add(s);
-
-      System.arraycopy(utf16.result, 0, last, 0, utf16.length);
-      lastLength = utf16.length;
     }
 
     if (isTop) {
@@ -4955,5 +4955,105 @@ public class TestIndexWriter extends LuceneTestCase {
     writer.close();
     assertEquals("expected a no-op close after IW.rollback()", 0, dir.listAll().length);
   }
-  
+
+  public void testNoSegmentFile() throws IOException {
+    File tempDir = _TestUtil.getTempDir("noSegmentFile");
+    try {
+      Directory dir = FSDirectory.open(tempDir);
+      dir.setLockFactory(NoLockFactory.getNoLockFactory());
+      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
+          TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
+
+      Document doc = new Document();
+      doc.add(new Field("c", "val", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
+      w.addDocument(doc);
+      w.addDocument(doc);
+      IndexWriter w2 = new IndexWriter(dir, new IndexWriterConfig(
+          TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2)
+          .setOpenMode(OpenMode.CREATE));
+
+      w2.close();
+      // If we don't do that, the test fails on Windows
+      w.rollback();
+      dir.close();
+    } finally {
+      _TestUtil.rmDir(tempDir);
+    }
+  }
+
+  public void testFutureCommit() throws Exception {
+    Directory dir = new MockRAMDirectory();
+
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
+    Document doc = new Document();
+    w.addDocument(doc);
+
+    // commit to "first"
+    Map<String,String> commitData = new HashMap<String,String>();
+    commitData.put("tag", "first");
+    w.commit(commitData);
+
+    // commit to "second"
+    w.addDocument(doc);
+    commitData.put("tag", "second");
+    w.commit(commitData);
+    w.close();
+
+    // open "first" with IndexWriter
+    IndexCommit commit = null;
+    for(IndexCommit c : IndexReader.listCommits(dir)) {
+      if (c.getUserData().get("tag").equals("first")) {
+        commit = c;
+        break;
+      }
+    }
+
+    assertNotNull(commit);
+
+    w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE).setIndexCommit(commit));
+
+    assertEquals(1, w.numDocs());
+    
+    // commit IndexWriter to "third"
+    w.addDocument(doc);
+    commitData.put("tag", "third");
+    w.commit(commitData);
+    w.close();
+
+    // make sure "second" commit is still there
+    commit = null;
+    for(IndexCommit c : IndexReader.listCommits(dir)) {
+      if (c.getUserData().get("tag").equals("second")) {
+        commit = c;
+        break;
+      }
+    }
+
+    assertNotNull(commit);
+
+    IndexReader r = IndexReader.open(commit, true);
+    assertEquals(2, r.numDocs());
+    r.close();
+
+    // open "second", w/ writeable IndexReader & commit
+    r = IndexReader.open(commit, NoDeletionPolicy.INSTANCE, false);
+    assertEquals(2, r.numDocs());
+    r.deleteDocument(0);
+    r.deleteDocument(1);
+    commitData.put("tag", "fourth");
+    r.commit(commitData);
+    r.close();
+
+    // make sure "third" commit is still there
+    commit = null;
+    for(IndexCommit c : IndexReader.listCommits(dir)) {
+      if (c.getUserData().get("tag").equals("third")) {
+        commit = c;
+        break;
+      }
+    }
+    assertNotNull(commit);
+
+    dir.close();
+  }
 }

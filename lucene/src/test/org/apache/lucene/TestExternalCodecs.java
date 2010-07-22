@@ -179,7 +179,7 @@ public class TestExternalCodecs extends LuceneTestCase {
       
       @Override
       public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUTF16Comparator();
+        return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
 
       @Override
@@ -263,7 +263,7 @@ public class TestExternalCodecs extends LuceneTestCase {
       
       @Override
       public Comparator<BytesRef> getComparator() {
-        return BytesRef.getUTF8SortedAsUTF16Comparator();
+        return BytesRef.getUTF8SortedAsUnicodeComparator();
       }
 
       @Override

@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -29,7 +30,7 @@ import java.util.*;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestSqlEntityProcessor {
+public class TestSqlEntityProcessor extends SolrTestCaseJ4 {
   private static ThreadLocal<Integer> local = new ThreadLocal<Integer>();
 
   @Test
@@ -39,7 +40,7 @@ public class TestSqlEntityProcessor {
     VariableResolverImpl vr = new VariableResolverImpl();
     HashMap<String, String> ea = new HashMap<String, String>();
     ea.put("query", "SELECT * FROM A");
-    Context c = AbstractDataImportHandlerTest.getContext(null, vr, getDs(rows),
+    Context c = AbstractDataImportHandlerTestCase.getContext(null, vr, getDs(rows),
             Context.FULL_DUMP, null, ea);
     sep.init(c);
     int count = 0;
@@ -62,7 +63,7 @@ public class TestSqlEntityProcessor {
     ea.put("query", "SELECT * FROM A");
     ea.put("transformer", T.class.getName());
 
-    sep.init(AbstractDataImportHandlerTest.getContext(null, vr, getDs(rows),
+    sep.init(AbstractDataImportHandlerTestCase.getContext(null, vr, getDs(rows),
             Context.FULL_DUMP, null, ea));
     List<Map<String, Object>> rs = new ArrayList<Map<String, Object>>();
     Map<String, Object> r = null;
@@ -86,7 +87,7 @@ public class TestSqlEntityProcessor {
     ea.put("query", "SELECT * FROM A");
     ea.put("transformer", T3.class.getName());
 
-    sep.init(AbstractDataImportHandlerTest.getContext(null, vr, getDs(rows),
+    sep.init(AbstractDataImportHandlerTestCase.getContext(null, vr, getDs(rows),
             Context.FULL_DUMP, null, ea));
     List<Map<String, Object>> rs = new ArrayList<Map<String, Object>>();
     Map<String, Object> r = null;
@@ -110,7 +111,7 @@ public class TestSqlEntityProcessor {
     HashMap<String, String> ea = new HashMap<String, String>();
     ea.put("query", "SELECT * FROM A");
     ea.put("transformer", T2.class.getName());
-    sep.init(AbstractDataImportHandlerTest.getContext(null, vr, getDs(rows),
+    sep.init(AbstractDataImportHandlerTestCase.getContext(null, vr, getDs(rows),
             Context.FULL_DUMP, null, ea));
 
     local.set(0);

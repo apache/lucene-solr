@@ -36,7 +36,7 @@ public class PrefixTermsEnum extends FilteredTermsEnum {
 
   public PrefixTermsEnum(IndexReader reader, Term prefix) throws IOException {
     super(reader, prefix.field());
-    setInitialSeekTerm(prefixRef = new BytesRef(prefix.text()));
+    setInitialSeekTerm(prefixRef = prefix.bytes());
   }
 
   @Override

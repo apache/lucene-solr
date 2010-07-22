@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -87,18 +86,13 @@ public class TestOmitTf extends LuceneTestCase {
     f2.setOmitTermFreqAndPositions(false);        
     d.add(f2);
         
-    Random rnd = newRandom();
-
     writer.addDocument(d);
-    FlexTestUtil.verifyFlexVsPreFlex(rnd, writer);
 
     // force merge
     writer.optimize();
     // flush
     writer.close();
     _TestUtil.checkIndex(ram);
-
-    FlexTestUtil.verifyFlexVsPreFlex(rnd, ram);
 
     SegmentReader reader = SegmentReader.getOnlySegmentReader(ram);
     FieldInfos fi = reader.fieldInfos();
@@ -145,12 +139,8 @@ public class TestOmitTf extends LuceneTestCase {
     for(int i=0;i<30;i++)
       writer.addDocument(d);
         
-    Random rnd = newRandom();
-    FlexTestUtil.verifyFlexVsPreFlex(rnd, writer);
-
     // force merge
     writer.optimize();
-    FlexTestUtil.verifyFlexVsPreFlex(rnd, writer);
     // flush
     writer.close();
 

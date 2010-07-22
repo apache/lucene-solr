@@ -144,8 +144,7 @@ public abstract class TermsEnum {
 
     @Override
     public Comparator<BytesRef> getComparator() {
-      // return an unused dummy to prevent NPE
-      return BytesRef.getUTF8SortedAsUTF16Comparator();
+      return null;
     }
       
     @Override

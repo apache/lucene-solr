@@ -1,5 +1,7 @@
 package org.apache.lucene.index;
 
+import org.apache.lucene.util.BytesRef;
+
 /**
  * Copyright 2007 The Apache Software Foundation
  * <p/>
@@ -21,7 +23,7 @@ package org.apache.lucene.index;
  */
 public class TermVectorEntry {
   private String field;
-  private String term;
+  private BytesRef term;
   private int frequency;
   private TermVectorOffsetInfo [] offsets;
   int [] positions;
@@ -30,7 +32,7 @@ public class TermVectorEntry {
   public TermVectorEntry() {
   }
 
-  public TermVectorEntry(String field, String term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
+  public TermVectorEntry(String field, BytesRef term, int frequency, TermVectorOffsetInfo[] offsets, int[] positions) {
     this.field = field;
     this.term = term;
     this.frequency = frequency;
@@ -55,7 +57,7 @@ public class TermVectorEntry {
     return positions;
   }
 
-  public String getTerm() {
+  public BytesRef getTerm() {
     return term;
   }
 

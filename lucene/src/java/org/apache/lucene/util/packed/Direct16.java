@@ -25,9 +25,10 @@ import java.util.Arrays;
 
 /**
  * Direct wrapping of 16 bit values to a backing array of shorts.
+ * @lucene.internal
  */
 
-class Direct16 extends PackedInts.ReaderImpl
+public class Direct16 extends PackedInts.ReaderImpl
         implements PackedInts.Mutable {
   private short[] values;
   private static final int BITS_PER_VALUE = 16;
@@ -65,6 +66,10 @@ class Direct16 extends PackedInts.ReaderImpl
   public Direct16(short[] values) {
     super(values.length, BITS_PER_VALUE);
     this.values = values;
+  }
+
+  public short[] getArray() {
+    return values;
   }
 
   public long get(final int index) {

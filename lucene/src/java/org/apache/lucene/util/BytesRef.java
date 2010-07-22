@@ -77,6 +77,16 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
     this();
     copy(text);
   }
+  
+  /**
+   * @param text Initialize the byte[] from the UTF8 bytes
+   * for the provided array.  This must be well-formed
+   * unicode text, with no unpaired surrogates or U+FFFF.
+   */
+  public BytesRef(char text[], int offset, int length) {
+    this(length * 4);
+    copy(text, offset, length);
+  }
 
   public BytesRef(BytesRef other) {
     this();
@@ -106,6 +116,15 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
     UnicodeUtil.UTF16toUTF8(text, 0, text.length(), this);
   }
 
+  /**
+   * Copies the UTF8 bytes for this string.
+   * 
+   * @param text Must be well-formed unicode text, with no
+   * unpaired surrogates or invalid UTF16 code units.
+   */
+  public void copy(char text[], int offset, int length) {
+    UnicodeUtil.UTF16toUTF8(text, offset, length, this);
+  }
   public boolean bytesEquals(BytesRef other) {
     if (length == other.length) {
       int otherUpto = other.offset;
@@ -217,14 +236,7 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
     bytes = ArrayUtil.grow(bytes, newLength);
   }
 
-  private final static Comparator<BytesRef> utf8SortedAsUTF16SortOrder = new UTF8SortedAsUTF16Comparator();
-
-  public static Comparator<BytesRef> getUTF8SortedAsUTF16Comparator() {
-    return utf8SortedAsUTF16SortOrder;
-  }
-
   /** Unsigned byte order comparison */
-  /*
   public int compareTo(BytesRef other) {
     if (this == other) return 0;
 
@@ -245,44 +257,49 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
     // One is a prefix of the other, or, they are equal:
     return this.length - other.length;
   }
-  */
 
-  /** Lucene default index order. Currently the same as String.compareTo() (UTF16) but will change
-   * in the future to unsigned byte comparison. */
-  public int compareTo(BytesRef other) {
-    if (this == other) return 0;
+  private final static Comparator<BytesRef> utf8SortedAsUnicodeSortOrder = new UTF8SortedAsUnicodeComparator();
 
-    final byte[] aBytes = this.bytes;
-    int aUpto = this.offset;
-    final byte[] bBytes = other.bytes;
-    int bUpto = other.offset;
+  public static Comparator<BytesRef> getUTF8SortedAsUnicodeComparator() {
+    return utf8SortedAsUnicodeSortOrder;
+  }
 
-    final int aStop = aUpto + Math.min(this.length, other.length);
+  private static class UTF8SortedAsUnicodeComparator implements Comparator<BytesRef> {
+    // Only singleton
+    private UTF8SortedAsUnicodeComparator() {};
 
-    while(aUpto < aStop) {
-      int aByte = aBytes[aUpto++] & 0xff;
-      int bByte = bBytes[bUpto++] & 0xff;
-      if (aByte != bByte) {
-
-        // See http://icu-project.org/docs/papers/utf16_code_point_order.html#utf-8-in-utf-16-order
-
-        // We know the terms are not equal, but, we may
-        // have to carefully fixup the bytes at the
-        // difference to match UTF16's sort order:
-        if (aByte >= 0xee && bByte >= 0xee) {
-          if ((aByte & 0xfe) == 0xee) {
-            aByte += 0x10;
-          }
-          if ((bByte&0xfe) == 0xee) {
-            bByte += 0x10;
-          }
-        }
-        return aByte - bByte;
+    public int compare(BytesRef a, BytesRef b) {
+      final byte[] aBytes = a.bytes;
+      int aUpto = a.offset;
+      final byte[] bBytes = b.bytes;
+      int bUpto = b.offset;
+      
+      final int aStop;
+      if (a.length < b.length) {
+        aStop = aUpto + a.length;
+      } else {
+        aStop = aUpto + b.length;
       }
-    }
 
-    // One is a prefix of the other, or, they are equal:
-    return this.length - other.length;
+      while(aUpto < aStop) {
+        int aByte = aBytes[aUpto++] & 0xff;
+        int bByte = bBytes[bUpto++] & 0xff;
+
+        int diff = aByte - bByte;
+        if (diff != 0) {
+          return diff;
+        }
+      }
+
+      // One is a prefix of the other, or, they are equal:
+      return a.length - b.length;
+    }    
+  }
+
+  private final static Comparator<BytesRef> utf8SortedAsUTF16SortOrder = new UTF8SortedAsUTF16Comparator();
+
+  public static Comparator<BytesRef> getUTF8SortedAsUTF16Comparator() {
+    return utf8SortedAsUTF16SortOrder;
   }
 
   private static class UTF8SortedAsUTF16Comparator implements Comparator<BytesRef> {
@@ -352,7 +369,7 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
       bytes = new byte[length];
       in.read(bytes, 0, length);
     } else {
-      bytes = null;
+      bytes = EMPTY_BYTES;
     }
   }
 }

@@ -1,6 +1,7 @@
 package org.apache.lucene.store.instantiated;
 
 import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.util.BytesRef;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -34,18 +35,18 @@ public class InstantiatedTermFreqVector
 
   private final List<InstantiatedTermDocumentInformation> termDocumentInformations;
   private final String field;
-  private final String terms[];
+  private final BytesRef terms[];
   private final int termFrequencies[];
 
   public InstantiatedTermFreqVector(InstantiatedDocument document, String field) {
     this.field = field;
     termDocumentInformations = document.getVectorSpace().get(field);
-    terms = new String[termDocumentInformations.size()];
+    terms = new BytesRef[termDocumentInformations.size()];
     termFrequencies = new int[termDocumentInformations.size()];
 
     for (int i = 0; i < termDocumentInformations.size(); i++) {
       InstantiatedTermDocumentInformation termDocumentInformation = termDocumentInformations.get(i);
-      terms[i] = termDocumentInformation.getTerm().text();
+      terms[i] = termDocumentInformation.getTerm().getTerm().bytes();
       termFrequencies[i] = termDocumentInformation.getTermPositions().length;
     }
   }
@@ -77,7 +78,7 @@ public class InstantiatedTermFreqVector
     return terms == null ? 0 : terms.length;
   }
 
-  public String[] getTerms() {
+  public BytesRef[] getTerms() {
     return terms;
   }
 
@@ -85,14 +86,14 @@ public class InstantiatedTermFreqVector
     return termFrequencies;
   }
 
-  public int indexOf(String termText) {
+  public int indexOf(BytesRef termText) {
     if (terms == null)
       return -1;
     int res = Arrays.binarySearch(terms, termText);
     return res >= 0 ? res : -1;
   }
 
-  public int[] indexesOf(String[] termNumbers, int start, int len) {
+  public int[] indexesOf(BytesRef[] termNumbers, int start, int len) {
     // TODO: there must be a more efficient way of doing this.
     //       At least, we could advance the lower bound of the terms array
     //       as we find valid indices. Also, it might be possible to leverage

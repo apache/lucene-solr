@@ -16,6 +16,7 @@ package org.apache.solr.handler.dataimport;
  * limitations under the License.
  */
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -31,7 +32,7 @@ import java.util.*;
  * @version $Id$
  * @since solr 1.4
  */
-public class TestLineEntityProcessor {
+public class TestLineEntityProcessor extends SolrTestCaseJ4 {
 
   @Test
   /************************************************************************/
@@ -44,13 +45,13 @@ public class TestLineEntityProcessor {
      *           />
      */
 
-    Map attrs = AbstractDataImportHandlerTest.createMap(
+    Map attrs = AbstractDataImportHandlerTestCase.createMap(
             LineEntityProcessor.URL, "dummy.lis",
             LineEntityProcessor.ACCEPT_LINE_REGEX, null,
             LineEntityProcessor.SKIP_LINE_REGEX, null
     );
 
-    Context c = AbstractDataImportHandlerTest.getContext(
+    Context c = AbstractDataImportHandlerTestCase.getContext(
             null,                          //parentEntity
             new VariableResolverImpl(),  //resolver
             getDataSource(filecontents),   //parentDataSource
@@ -84,13 +85,13 @@ public class TestLineEntityProcessor {
      *           acceptLineRegex="xml"
      *           />
      */
-    Map attrs = AbstractDataImportHandlerTest.createMap(
+    Map attrs = AbstractDataImportHandlerTestCase.createMap(
             LineEntityProcessor.URL, "dummy.lis",
             LineEntityProcessor.ACCEPT_LINE_REGEX, "xml",
             LineEntityProcessor.SKIP_LINE_REGEX, null
     );
 
-    Context c = AbstractDataImportHandlerTest.getContext(
+    Context c = AbstractDataImportHandlerTestCase.getContext(
             null,                          //parentEntity
             new VariableResolverImpl(),  //resolver
             getDataSource(filecontents),   //parentDataSource
@@ -122,13 +123,13 @@ public class TestLineEntityProcessor {
      *           omitLineRegex="\\.xsd"
      *           />
      */
-    Map attrs = AbstractDataImportHandlerTest.createMap(
+    Map attrs = AbstractDataImportHandlerTestCase.createMap(
             LineEntityProcessor.URL, "dummy.lis",
             LineEntityProcessor.ACCEPT_LINE_REGEX, "\\.xml",
             LineEntityProcessor.SKIP_LINE_REGEX, "\\.xsd"
     );
 
-    Context c = AbstractDataImportHandlerTest.getContext(
+    Context c = AbstractDataImportHandlerTestCase.getContext(
             null,                          //parentEntity
             new VariableResolverImpl(),  //resolver
             getDataSource(filecontents),   //parentDataSource
@@ -159,12 +160,12 @@ public class TestLineEntityProcessor {
      *           omitLineRegex="\\.xsd"
      *           />
      */
-    Map attrs = AbstractDataImportHandlerTest.createMap(
+    Map attrs = AbstractDataImportHandlerTestCase.createMap(
             LineEntityProcessor.URL, "dummy.lis",
             LineEntityProcessor.SKIP_LINE_REGEX, "\\.xsd"
     );
 
-    Context c = AbstractDataImportHandlerTest.getContext(
+    Context c = AbstractDataImportHandlerTestCase.getContext(
             null,                          //parentEntity
             new VariableResolverImpl(),  //resolver
             getDataSource(filecontents),   //parentDataSource

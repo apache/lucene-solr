@@ -22,8 +22,8 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -93,10 +93,11 @@ public class TestTopDocsCollector extends LuceneTestCase {
   private static final float MAX_SCORE = 9.17561f;
   
   private Directory dir = new RAMDirectory();
+  private IndexReader reader;
 
   private TopDocsCollector<ScoreDoc> doSearch(int numResults) throws IOException {
     Query q = new MatchAllDocsQuery();
-    IndexSearcher searcher = new IndexSearcher(dir, true);
+    IndexSearcher searcher = new IndexSearcher(reader);
     TopDocsCollector<ScoreDoc> tdc = new MyTopsDocCollector(numResults);
     searcher.search(q, tdc);
     searcher.close();
@@ -109,15 +110,17 @@ public class TestTopDocsCollector extends LuceneTestCase {
     
     // populate an index with 30 documents, this should be enough for the test.
     // The documents have no content - the test uses MatchAllDocsQuery().
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < 30; i++) {
       writer.addDocument(new Document());
     }
+    reader = writer.getReader();
     writer.close();
   }
   
   @Override
   protected void tearDown() throws Exception {
+    reader.close();
     dir.close();
     dir = null;
     super.tearDown();

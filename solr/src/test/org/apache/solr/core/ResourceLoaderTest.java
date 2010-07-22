@@ -31,6 +31,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 
 import java.io.File;
 import java.io.InputStream;
+import java.nio.charset.CharacterCodingException;
 import java.util.Arrays;
 import java.util.List;
 
@@ -116,5 +117,17 @@ public class ResourceLoaderTest extends TestCase
     List<String> lines = loader.getLines(fileWithBom);
     assertEquals(1, lines.size());
     assertEquals("BOMsAreEvil", lines.get(0));
+  }
+  
+  public void testWrongEncoding() throws Exception {
+    String wrongEncoding = "stopwordsWrongEncoding.txt";
+    SolrResourceLoader loader = new SolrResourceLoader(null);
+    // ensure we get our exception
+    try {
+      List<String> lines = loader.getLines(wrongEncoding);
+      fail();
+    } catch (SolrException expected) {
+      assertTrue(expected.getCause() instanceof CharacterCodingException);
+    }
   }
 }

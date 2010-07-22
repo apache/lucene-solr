@@ -33,32 +33,44 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
-import java.util.Collections;
 
 public class TestSpans extends LuceneTestCase {
   private IndexSearcher searcher;
+  private IndexReader reader;
+  private Directory directory;
 
   public static final String field = "field";
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer= new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    directory = new RAMDirectory();
+    RandomIndexWriter writer= new RandomIndexWriter(newRandom(), directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(new Field(field, docFields[i], Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
+    reader = writer.getReader();
     writer.close();
-    searcher = new IndexSearcher(directory, true);
+    searcher = new IndexSearcher(reader);
   }
-
+  
+  @Override
+  protected void tearDown() throws Exception {
+    searcher.close();
+    reader.close();
+    directory.close();
+    super.tearDown();
+  }
+  
   private String[] docFields = {
     "w1 w2 w3 w4 w5",
     "w1 w3 w2 w3",

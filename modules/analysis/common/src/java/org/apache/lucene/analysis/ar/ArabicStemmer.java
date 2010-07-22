@@ -1,4 +1,6 @@
 package org.apache.lucene.analysis.ar;
+
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -15,6 +17,8 @@ package org.apache.lucene.analysis.ar;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+import static org.apache.lucene.analysis.util.StemmerUtil.*;
 
 /**
  *  Stemmer for Arabic.
@@ -86,7 +90,7 @@ public class ArabicStemmer {
    */
   public int stemPrefix(char s[], int len) {
     for (int i = 0; i < prefixes.length; i++) 
-      if (startsWith(s, len, prefixes[i]))
+      if (startsWithCheckLength(s, len, prefixes[i]))
         return deleteN(s, 0, len, prefixes[i].length);
     return len;
   }
@@ -99,7 +103,7 @@ public class ArabicStemmer {
    */
   public int stemSuffix(char s[], int len) {
     for (int i = 0; i < suffixes.length; i++) 
-      if (endsWith(s, len, suffixes[i]))
+      if (endsWithCheckLength(s, len, suffixes[i]))
         len = deleteN(s, len - suffixes[i].length, len, suffixes[i].length);
     return len;
   }
@@ -111,7 +115,7 @@ public class ArabicStemmer {
    * @param prefix prefix to check
    * @return true if the prefix matches and can be stemmed
    */
-  boolean startsWith(char s[], int len, char prefix[]) {
+  boolean startsWithCheckLength(char s[], int len, char prefix[]) {
     if (prefix.length == 1 && len < 4) { // wa- prefix requires at least 3 characters
       return false;
     } else if (len < prefix.length + 2) { // other prefixes require only 2.
@@ -132,7 +136,7 @@ public class ArabicStemmer {
    * @param suffix suffix to check
    * @return true if the suffix matches and can be stemmed
    */
-  boolean endsWith(char s[], int len, char suffix[]) {
+  boolean endsWithCheckLength(char s[], int len, char suffix[]) {
     if (len < suffix.length + 2) { // all suffixes require at least 2 characters after stemming
       return false;
     } else {
@@ -142,37 +146,5 @@ public class ArabicStemmer {
         
       return true;
     }
-  }
-  
-  
-  /**
-   * Delete n characters in-place
-   * 
-   * @param s Input Buffer
-   * @param pos Position of character to delete
-   * @param len Length of input buffer
-   * @param nChars number of characters to delete
-   * @return length of input buffer after deletion
-   */
-  protected int deleteN(char s[], int pos, int len, int nChars) {
-    for (int i = 0; i < nChars; i++)
-      len = delete(s, pos, len);
-    return len;
-  }
-  
-  /**
-   * Delete a character in-place
-   * 
-   * @param s Input Buffer
-   * @param pos Position of character to delete
-   * @param len length of input buffer
-   * @return length of input buffer after deletion
-   */
-  protected int delete(char s[], int pos, int len) {
-    if (pos < len) 
-      System.arraycopy(s, pos + 1, s, pos, len - pos - 1);
-    
-    return len - 1;
-  }
-  
+  }  
 }

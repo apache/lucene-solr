@@ -19,8 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.DocsAndPositionsEnum;
-
 /** Expert: Scoring functionality for phrase queries.
  * <br>A document is considered matching if it contains the phrase-query terms  
  * at "valid" positions. What "valid positions" are
@@ -43,7 +41,7 @@ abstract class PhraseScorer extends Scorer {
 
   private float freq; //phrase frequency in current doc as computed by phraseFreq().
 
-  PhraseScorer(Weight weight, DocsAndPositionsEnum[] postings, int[] offsets,
+  PhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
       Similarity similarity, byte[] norms) {
     super(similarity);
     this.norms = norms;
@@ -56,7 +54,7 @@ abstract class PhraseScorer extends Scorer {
     // this allows to easily identify a matching (exact) phrase 
     // when all PhrasePositions have exactly the same position.
     for (int i = 0; i < postings.length; i++) {
-      PhrasePositions pp = new PhrasePositions(postings[i], offsets[i]);
+      PhrasePositions pp = new PhrasePositions(postings[i].postings, postings[i].position);
       if (last != null) {			  // add next to end of list
         last.next = pp;
       } else {

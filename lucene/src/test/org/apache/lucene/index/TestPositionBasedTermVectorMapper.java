@@ -15,6 +15,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
@@ -65,7 +66,7 @@ public class TestPositionBasedTermVectorMapper extends LuceneTestCase {
     //Test single position
     for (int i = 0; i < tokens.length; i++) {
       String token = tokens[i];
-      mapper.map(token, 1, null, thePositions[i]);
+      mapper.map(new BytesRef(token), 1, null, thePositions[i]);
 
     }
     Map<String,Map<Integer,PositionBasedTermVectorMapper.TVPositionInfo>> map = mapper.getFieldToTerms();

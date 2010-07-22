@@ -43,7 +43,7 @@
   </path>
 
   <patternset id="src.dist.patterns"
-              includes="src/,build.xml,*build*.xml,docs/,*.txt,contrib/,*pom.xml*,lib/"
+              includes="src/,build.xml,*build*.xml,docs/,*.txt,contrib/,*pom.xml*,lib/,backwards/"
               excludes="contrib/db/*/lib/,contrib/*/ext-libs/,src/site/build/,contrib/benchmark/temp/,contrib/benchmark/work/"
   />
   <patternset id="binary.build.dist.patterns"
@@ -65,13 +65,11 @@
           description="Runs all unit tests (core, contrib and back-compat)"
   />
 
-  <path id="backwards.compile.classpath">
-    <pathelement location="${build.dir.backwards}/classes/java"/>
-  </path>
-	
   <path id="backwards.test.compile.classpath">
     <path refid="junit-path"/>
-    <pathelement location="${build.dir.backwards}/classes/java"/>
+    <fileset dir="${backwards.dir}/lib">
+      <include name="lucene-core*.jar"/>
+    </fileset>
   </path>
 	
   <path id="backwards.junit.classpath">
@@ -81,31 +79,15 @@
     <pathelement path="${java.class.path}"/>
   </path>
 
-  <available property="backwards.available" file="${backwards.dir}/src"/>
-  
   <!-- remove this -->
   <target name="test-tag" depends="test-backwards" description="deprecated"/>
   
-  <target name="test-backwards-message" unless="backwards.available">
-<echo level="warning">WARNING: Backwards compatibility tests can only be run from SVN checkout.
-The source distribution does not contain sources of the previous Lucene Java version.</echo>
-  </target>
-
-  <target name="compile-backwards" depends="compile-core, jar-core, test-backwards-message"
-  	description="Runs tests of a previous Lucene version." if="backwards.available">
+  <target name="compile-backwards" depends="compile-core, jar-core"
+  	description="Runs tests of a previous Lucene version.">
 	<sequential>
       <mkdir dir="${build.dir.backwards}"/>	  
-
-	  <!-- first compile branch classes -->
-	  <compile
-        srcdir="${backwards.dir}/src/java"
-        destdir="${build.dir.backwards}/classes/java"
-        javac.source="${javac.source.backwards}" javac.target="${javac.target.backwards}"
-      >
-        <classpath refid="backwards.compile.classpath"/>
-	  </compile>
-		  	
-      <!-- compile branch tests against branch classpath -->	
+          
+      <!-- compile branch tests against previous version JAR file -->	
       <compile-test-macro srcdir="${backwards.dir}/src/test" destdir="${build.dir.backwards}/classes/test"
                   test.classpath="backwards.test.compile.classpath" javac.source="${javac.source.backwards}" javac.target="${javac.target.backwards}"/>
       
@@ -113,10 +95,10 @@ The source distribution does not contain sources of the previous Lucene Java ver
   	</sequential>
   </target>	
 
-  <target name="test-backwards" depends="compile-backwards, junit-backwards-mkdir, junit-backwards-sequential, junit-backwards-parallel" if="backwards.available"/>
+  <target name="test-backwards" /><!--add here after 4.0: depends="compile-backwards, junit-backwards-mkdir, junit-backwards-sequential, junit-backwards-parallel"-->
 
   <target name="junit-backwards-mkdir">
-	<mkdir dir="${build.dir.backwards}/test"/>
+    <mkdir dir="${build.dir.backwards}/test"/>
   </target>
 
   <macrodef name="backwards-test-macro">
@@ -134,20 +116,11 @@ The source distribution does not contain sources of the previous Lucene Java ver
   	</sequential>
   </macrodef>
 
-  <target name="check-backwards-cond">
-    <condition property="run-backwards-sequential">
-      <and>
-        <isset property="backwards.available"/>
-        <isset property="runsequential"/>
-      </and>
-    </condition>
-  </target>
-
-  <target name="junit-backwards-sequential" depends="check-backwards-cond" if="run-backwards-sequential">
+  <target name="junit-backwards-sequential" if="runsequential">
     <backwards-test-macro/>
   </target>
 
-  <target name="junit-backwards-parallel" unless="runsequential" if="backwards.available">
+  <target name="junit-backwards-parallel" unless="runsequential">
     <parallel threadsPerProcessor="${threadsPerProcessor}">
      <backwards-test-macro threadNum="1" threadTotal="8"/>
      <backwards-test-macro threadNum="2" threadTotal="8"/>

@@ -24,13 +24,14 @@ import java.util.Properties;
 
 import junit.framework.Assert;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
-public class TestURLDataSource {
+public class TestURLDataSource extends SolrTestCaseJ4 {
   private List<Map<String, String>> fields = new ArrayList<Map<String, String>>();
   private URLDataSource dataSource = new URLDataSource();
   private VariableResolverImpl variableResolver = new VariableResolverImpl();
-  private Context context = AbstractDataImportHandlerTest.getContext(null, variableResolver,
+  private Context context = AbstractDataImportHandlerTestCase.getContext(null, variableResolver,
       dataSource, Context.FULL_DUMP, fields, null);
   private Properties initProps = new Properties();
   

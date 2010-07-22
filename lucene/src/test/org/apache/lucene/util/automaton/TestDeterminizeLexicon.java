@@ -35,7 +35,7 @@ public class TestDeterminizeLexicon extends LuceneTestCase {
   private List<String> terms = new ArrayList<String>();
   private Random random;
   
-  public void testLexicon() {
+  public void testLexicon() throws Exception {
     random = newRandom();
     for (int i = 0; i < 3*_TestUtil.getRandomMultiplier(); i++) {
       automata.clear();
@@ -49,7 +49,7 @@ public class TestDeterminizeLexicon extends LuceneTestCase {
     }
   }
   
-  public void assertLexicon() {
+  public void assertLexicon() throws Exception {
     Collections.shuffle(automata, random);
     final Automaton lex = BasicOperations.union(automata);
     lex.determinize();
@@ -59,8 +59,8 @@ public class TestDeterminizeLexicon extends LuceneTestCase {
     }
     final ByteRunAutomaton lexByte = new ByteRunAutomaton(lex);
     for (String s : terms) {
-      BytesRef termByte = new BytesRef(s);
-      assertTrue(lexByte.run(termByte.bytes, 0, termByte.length));
+      byte bytes[] = s.getBytes("UTF-8");
+      assertTrue(lexByte.run(bytes, 0, bytes.length));
     }
   }
 }

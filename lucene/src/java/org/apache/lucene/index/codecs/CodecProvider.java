@@ -38,6 +38,8 @@ import org.apache.lucene.index.codecs.standard.StandardCodec;
  *  @lucene.experimental */
 
 public abstract class CodecProvider {
+  private SegmentInfosWriter infosWriter = new DefaultSegmentInfosWriter();
+  private SegmentInfosReader infosReader = new DefaultSegmentInfosReader();
 
   private final HashMap<String, Codec> codecs = new HashMap<String, Codec>();
 
@@ -72,6 +74,14 @@ public abstract class CodecProvider {
   }
 
   public abstract Codec getWriter(SegmentWriteState state);
+  
+  public SegmentInfosWriter getSegmentInfosWriter() {
+    return infosWriter;
+  }
+  
+  public SegmentInfosReader getSegmentInfosReader() {
+    return infosReader;
+  }
 
   static private final CodecProvider defaultCodecs = new DefaultCodecProvider();
 

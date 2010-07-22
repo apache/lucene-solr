@@ -22,6 +22,7 @@ import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -111,7 +112,11 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
     String url = "http://www.apache.org/dist/lucene/solr/";
     String txt = null;
     try {
-      txt = IOUtils.toString( new URL(url).openStream() );
+      URLConnection connection = new URL(url).openConnection();
+      connection.setConnectTimeout(5000);
+      connection.setReadTimeout(5000);
+      connection.connect();
+      txt = IOUtils.toString( connection.getInputStream());
     }
     catch( Exception ex ) {
       // TODO - should it fail/skip?

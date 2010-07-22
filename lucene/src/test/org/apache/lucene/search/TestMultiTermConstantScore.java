@@ -22,8 +22,8 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
@@ -38,15 +38,8 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   /** threshold for comparing floats */
   public static final float SCORE_COMP_THRESH = 1e-6f;
 
-  public TestMultiTermConstantScore(String name) {
-    super(name);
-  }
-
-  public TestMultiTermConstantScore() {
-    super();
-  }
-
   Directory small;
+  IndexReader reader;
 
   void assertEquals(String m, float e, float a) {
     assertEquals(m, e, a, SCORE_COMP_THRESH);
@@ -59,13 +52,13 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-
     String[] data = new String[] { "A 1 2 3 4 5 6", "Z       4 5 6", null,
         "B   2   4 5 6", "Y     3   5 6", null, "C     3     6",
         "X       4 5 6" };
 
     small = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(small, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
+    RandomIndexWriter writer = new RandomIndexWriter(rand, small, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
 
     for (int i = 0; i < data.length; i++) {
       Document doc = new Document();
@@ -81,8 +74,15 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
       writer.addDocument(doc);
     }
 
-    writer.optimize();
+    reader = writer.getReader();
     writer.close();
+  }
+
+  @Override
+  protected void tearDown() throws Exception {
+    reader.close();
+    small.close();
+    super.tearDown();
   }
 
   /** macro for readability */
@@ -146,7 +146,6 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public void testEqualScores() throws IOException {
     // NOTE: uses index build in *this* setUp
 
-    IndexReader reader = IndexReader.open(small, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     ScoreDoc[] result;
@@ -175,7 +174,6 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public void testBoost() throws IOException {
     // NOTE: uses index build in *this* setUp
 
-    IndexReader reader = IndexReader.open(small, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     // test for correct application of query normalization
@@ -247,7 +245,6 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public void testBooleanOrderUnAffected() throws IOException {
     // NOTE: uses index build in *this* setUp
 
-    IndexReader reader = IndexReader.open(small, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     // first do a regular TermRangeQuery which uses term expansion so
@@ -278,7 +275,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public void testRangeQueryId() throws IOException {
     // NOTE: uses index build in *super* setUp
 
-    IndexReader reader = IndexReader.open(signedIndex.index, true);
+    IndexReader reader = signedIndexReader;
     IndexSearcher search = new IndexSearcher(reader);
 
     int medId = ((maxId - minId) / 2);
@@ -405,7 +402,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public void testRangeQueryIdCollating() throws IOException {
     // NOTE: uses index build in *super* setUp
 
-    IndexReader reader = IndexReader.open(signedIndex.index, true);
+    IndexReader reader = signedIndexReader;
     IndexSearcher search = new IndexSearcher(reader);
 
     int medId = ((maxId - minId) / 2);
@@ -488,11 +485,11 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public void testRangeQueryRand() throws IOException {
     // NOTE: uses index build in *super* setUp
 
-    IndexReader reader = IndexReader.open(signedIndex.index, true);
+    IndexReader reader = signedIndexReader;
     IndexSearcher search = new IndexSearcher(reader);
 
-    String minRP = pad(signedIndex.minR);
-    String maxRP = pad(signedIndex.maxR);
+    String minRP = pad(signedIndexDir.minR);
+    String maxRP = pad(signedIndexDir.maxR);
 
     int numDocs = reader.numDocs();
 
@@ -551,11 +548,11 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     // NOTE: uses index build in *super* setUp
 
     // using the unsigned index because collation seems to ignore hyphens
-    IndexReader reader = IndexReader.open(unsignedIndex.index, true);
+    IndexReader reader = unsignedIndexReader;
     IndexSearcher search = new IndexSearcher(reader);
 
-    String minRP = pad(unsignedIndex.minR);
-    String maxRP = pad(unsignedIndex.maxR);
+    String minRP = pad(unsignedIndexDir.minR);
+    String maxRP = pad(unsignedIndexDir.maxR);
 
     int numDocs = reader.numDocs();
 
@@ -615,8 +612,8 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
 
     /* build an index */
     RAMDirectory farsiIndex = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(farsiIndex, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true)));
+    RandomIndexWriter writer = new RandomIndexWriter(rand, farsiIndex, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true)));
     Document doc = new Document();
     doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
         Field.Index.NOT_ANALYZED));
@@ -625,10 +622,9 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
             Field.Index.NOT_ANALYZED));
     writer.addDocument(doc);
 
-    writer.optimize();
+    IndexReader reader = writer.getReader();
     writer.close();
 
-    IndexReader reader = IndexReader.open(farsiIndex, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     // Neither Java 1.4.2 nor 1.5.0 has Farsi Locale collation available in
@@ -649,14 +645,16 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
         1000).scoreDocs;
     assertEquals("The index Term should be included.", 1, result.length);
     search.close();
+    reader.close();
+    farsiIndex.close();
   }
 
   public void testDanish() throws Exception {
 
     /* build an index */
     RAMDirectory danishIndex = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(danishIndex, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true)));
+    RandomIndexWriter writer = new RandomIndexWriter(rand, danishIndex, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true)));
 
     // Danish collation orders the words below in the given order
     // (example taken from TestSort.testInternationalSort() ).
@@ -669,10 +667,9 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
                         Field.Store.YES, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
-    writer.optimize();
+    IndexReader reader = writer.getReader();
     writer.close();
 
-    IndexReader reader = IndexReader.open(danishIndex, true);
     IndexSearcher search = new IndexSearcher(reader);
 
     Collator c = Collator.getInstance(new Locale("da", "dk"));
@@ -687,5 +684,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
       (csrq("content", "H\u00C5T", "MAND", F, F, c), null, 1000).scoreDocs;
     assertEquals("The index Term should not be included.", 0, result.length);
     search.close();
+    reader.close();
+    danishIndex.close();
   }
 }

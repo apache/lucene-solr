@@ -17,6 +17,8 @@
 package org.apache.solr.handler.dataimport;
 
 import junit.framework.Assert;
+
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -45,7 +47,7 @@ import java.util.Map;
  * @see org.apache.solr.handler.dataimport.MailEntityProcessor
  * @since solr 1.4
  */
-public class TestMailEntityProcessor {
+public class TestMailEntityProcessor extends SolrTestCaseJ4 {
 
   // Credentials
   private static final String user = "user";

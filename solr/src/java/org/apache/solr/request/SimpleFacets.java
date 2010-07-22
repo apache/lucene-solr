@@ -21,6 +21,10 @@ import org.apache.lucene.index.*;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.packed.Direct16;
+import org.apache.lucene.util.packed.Direct32;
+import org.apache.lucene.util.packed.Direct8;
+import org.apache.lucene.util.packed.PackedInts;
 import org.apache.noggit.CharArr;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.FacetParams;
@@ -400,7 +404,7 @@ public class SimpleFacets {
       assert endTermIndex < 0;
       endTermIndex = -endTermIndex-1;
     } else {
-      startTermIndex=1;
+      startTermIndex=0;
       endTermIndex=si.numOrd();
     }
 
@@ -415,10 +419,53 @@ public class SimpleFacets {
       final int[] counts = new int[nTerms];
 
       DocIterator iter = docs.iterator();
-      while (iter.hasNext()) {
-        int term = si.getOrd(iter.nextDoc());
-        int arrIdx = term-startTermIndex;
-        if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+
+      PackedInts.Reader ordReader = si.getDocToOrd();
+      if (ordReader instanceof Direct32) {
+        int[] ords = ((Direct32)ordReader).getArray();
+        if (prefix==null) {
+          while (iter.hasNext()) {
+            counts[ords[iter.nextDoc()]]++;
+          }
+        } else {
+          while (iter.hasNext()) {
+            int term = ords[iter.nextDoc()];
+            int arrIdx = term-startTermIndex;
+            if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+          }
+        }
+      } else if (ordReader instanceof Direct16) {
+        short[] ords = ((Direct16)ordReader).getArray();
+        if (prefix==null) {
+          while (iter.hasNext()) {
+            counts[ords[iter.nextDoc()] & 0xffff]++;
+          }
+        } else {
+          while (iter.hasNext()) {
+            int term = ords[iter.nextDoc()] & 0xffff;
+            int arrIdx = term-startTermIndex;
+            if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+          }
+        }
+      } else if (ordReader instanceof Direct8) {
+        byte[] ords = ((Direct8)ordReader).getArray();
+        if (prefix==null) {
+          while (iter.hasNext()) {
+            counts[ords[iter.nextDoc()] & 0xff]++;
+          }
+        } else {
+          while (iter.hasNext()) {
+            int term = ords[iter.nextDoc()] & 0xff;
+            int arrIdx = term-startTermIndex;
+            if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+          }
+        }
+      } else {
+        while (iter.hasNext()) {
+          int term = si.getOrd(iter.nextDoc());
+          int arrIdx = term-startTermIndex;
+          if (arrIdx>=0 && arrIdx<nTerms) counts[arrIdx]++;
+        }
       }
 
       // IDEA: we could also maintain a count of "other"... everything that fell outside
@@ -432,7 +479,7 @@ public class SimpleFacets {
         maxsize = Math.min(maxsize, nTerms);
         final BoundedTreeSet<CountPair<BytesRef,Integer>> queue = new BoundedTreeSet<CountPair<BytesRef,Integer>>(maxsize);
         int min=mincount-1;  // the smallest value in the top 'N' values
-        for (int i=0; i<nTerms; i++) {
+        for (int i=(startTermIndex==0)?1:0; i<nTerms; i++) {
           int c = counts[i];
           if (c>min) {
             // NOTE: we use c>min rather than c>=min as an optimization because we are going in
@@ -452,11 +499,11 @@ public class SimpleFacets {
         }
       } else {
         // add results in index order
-        int i=0;
+        int i=(startTermIndex==0)?1:0;
         if (mincount<=0) {
           // if mincount<=0, then we won't discard any terms and we know exactly
           // where to start.
-          i=off;
+          i+=off;
           off=0;
         }
 
@@ -530,7 +577,7 @@ public class SimpleFacets {
     Fields fields = MultiFields.getFields(r);
     Terms terms = fields==null ? null : fields.terms(field);
     TermsEnum termsEnum = null;
-
+    SolrIndexSearcher.DocsEnumState deState = null;
     BytesRef term = null;
     if (terms != null) {
       termsEnum = terms.iterator();
@@ -574,7 +621,17 @@ public class SimpleFacets {
             spare.reset();
             ByteUtils.UTF8toUTF16(term, spare);
             Term t = template.createTerm(spare.toString());
-            c = searcher.numDocs(new TermQuery(t), docs);
+
+            if (deState==null) {
+              deState = new SolrIndexSearcher.DocsEnumState();
+              deState.deletedDocs = MultiFields.getDeletedDocs(r);
+              deState.termsEnum = termsEnum;
+              deState.reuse = docsEnum;
+            }
+
+            c = searcher.numDocs(new TermQuery(t), docs, deState);
+
+            docsEnum = deState.reuse;
           } else {
             // iterate over TermDocs to calculate the intersection
 
@@ -582,20 +639,43 @@ public class SimpleFacets {
             // TODO: do this per-segment for better efficiency (MultiDocsEnum just uses base class impl)
             // TODO: would passing deleted docs lead to better efficiency over checking the fastForRandomSet?
             docsEnum = termsEnum.docs(null, docsEnum);
-
-            // this should be the same bulk result object if sharing of the docsEnum succeeded
-            DocsEnum.BulkReadResult bulk = docsEnum.getBulkResult();
-
             c=0;
-            for (;;) {
-              int nDocs = docsEnum.read();
-              if (nDocs == 0) break;
-              int[] docArr = bulk.docs.ints;  // this might be movable outside the loop, but perhaps not worth the risk.
-              int end = bulk.docs.offset + nDocs;
-              for (int i=bulk.docs.offset; i<end; i++) {
-                if (fastForRandomSet.exists(docArr[i])) c++;
+
+            if (docsEnum instanceof MultiDocsEnum) {
+              MultiDocsEnum.EnumWithSlice[] subs = ((MultiDocsEnum)docsEnum).getSubs();
+              int numSubs = ((MultiDocsEnum)docsEnum).getNumSubs();
+              for (int subindex = 0; subindex<numSubs; subindex++) {
+                MultiDocsEnum.EnumWithSlice sub = subs[subindex];
+                if (sub.docsEnum == null) continue;
+                DocsEnum.BulkReadResult bulk = sub.docsEnum.getBulkResult();
+                int base = sub.slice.start;
+                for (;;) {
+                  int nDocs = sub.docsEnum.read();
+                  if (nDocs == 0) break;
+                  int[] docArr = bulk.docs.ints;  // this might be movable outside the loop, but perhaps not worth the risk.
+                  int end = bulk.docs.offset + nDocs;
+                  for (int i=bulk.docs.offset; i<end; i++) {
+                    if (fastForRandomSet.exists(docArr[i]+base)) c++;
+                  }
+                }
+              }
+            } else {
+
+              // this should be the same bulk result object if sharing of the docsEnum succeeded
+              DocsEnum.BulkReadResult bulk = docsEnum.getBulkResult();
+
+              for (;;) {
+                int nDocs = docsEnum.read();
+                if (nDocs == 0) break;
+                int[] docArr = bulk.docs.ints;  // this might be movable outside the loop, but perhaps not worth the risk.
+                int end = bulk.docs.offset + nDocs;
+                for (int i=bulk.docs.offset; i<end; i++) {
+                  if (fastForRandomSet.exists(docArr[i])) c++;
+                }
               }
             }
+            
+
           }
 
           if (sortByCount) {

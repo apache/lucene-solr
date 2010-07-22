@@ -19,21 +19,31 @@ Changes in backwards compatibility policy
     3.1 you can start indexing new documents into an existing index.
     But for best performance you should fully reindex.
 
+  - The postings APIs (TermEnum, TermDocsEnum, TermPositionsEnum)
+    have been removed in favor of the new flexible
+    indexing (flex) APIs (Fields, FieldsEnum, Terms, TermsEnum,
+    DocsEnum, DocsAndPositionsEnum). One big difference is that field
+    and terms are now enumerated separately: a TermsEnum provides a
+    BytesRef (wraps a byte[]) per term within a single field, not a
+    Term.  Another is that when asking for a Docs/AndPositionsEnum, you
+    now specify the skipDocs explicitly (typically this will be the
+    deleted docs, but in general you can provide any Bits).
+
   - MultiReader ctor now throws IOException
 
   - Directory.copy/Directory.copyTo now copies all files (not just
     index files), since what is and isn't and index file is now
-    dependent on the codecs used. (Mike McCandless)
+    dependent on the codecs used.
 
   - UnicodeUtil now uses BytesRef for UTF-8 output, and some method
     signatures have changed to CharSequence.  These are internal APIs
-    and subject to change suddenly.  (Robert Muir, Mike McCandless)
+    and subject to change suddenly.
 
   - Positional queries (PhraseQuery, *SpanQuery) will now throw an
     exception if use them on a field that omits positions during
     indexing (previously they silently returned no results).
 
-  - FieldCache.(Byte,Short,Int,Long,Float,Double}Parser's API has
+  - FieldCache.{Byte,Short,Int,Long,Float,Double}Parser's API has
     changed -- each parse method now takes a BytesRef instead of a
     String.  If you have an existing Parser, a simple way to fix it is
     invoke BytesRef.utf8ToString, and pass that String to your
@@ -57,6 +67,8 @@ Changes in backwards compatibility policy
     an IllegalArgumentException, because the NTS does not support
     TermAttribute/CharTermAttribute. If you want to further filter
     or attach Payloads to NTS, use the new NumericTermAttribute.
+    
+  (Mike McCandless, Robert Muir, Uwe Schindler, Mark Miller, Michael Busch)
 
 * LUCENE-2386: IndexWriter no longer performs an empty commit upon new index
   creation. Previously, if you passed an empty Directory and set OpenMode to
@@ -79,7 +91,7 @@ Changes in backwards compatibility policy
   (getTerms, getTermsIndex).  Also, the sort values (returned in
   FieldDoc.fields) when sorting by SortField.STRING or
   SortField.STRING_VAL are now BytesRef instances.  See MIGRATE.txt
-  for more details. (Mike McCandless)
+  for more details. (yonik, Mike McCandless)
  
 * LUCENE-2480: Though not a change in backwards compatibility policy, pre-3.0 
   indexes are no longer supported. You should upgrade to 3.x first, then run
@@ -88,23 +100,16 @@ Changes in backwards compatibility policy
 * LUCENE-2484: Removed deprecated TermAttribute. Use CharTermAttribute
   and TermToBytesRefAttribute instead.  (Uwe Schindler)
 
-Changes in runtime behavior
-
-* LUCENE-2421: NativeFSLockFactory does not throw LockReleaseFailedException if 
-  it cannot delete the lock file, since obtaining the lock does not fail if the 
-  file is there. (Shai Erera)
-
 API Changes
 
-* LUCENE-1458, LUCENE-2111: The postings APIs (TermEnum, TermDocsEnum,
-  TermPositionsEnum) have been deprecated in favor of the new flexible
-  indexing (flex) APIs (Fields, FieldsEnum, Terms, TermsEnum,
-  DocsEnum, DocsAndPositionsEnum). One big difference is that field
-  and terms are now enumerated separately: a TermsEnum provides a
-  BytesRef (wraps a byte[]) per term within a single field, not a
-  Term.  Another is that when asking for a Docs/AndPositionsEnum, you
-  now specify the skipDocs explicitly (typically this will be the
-  deleted docs, but in general you can provide any Bits).
+* LUCENE-2302, LUCENE-1458, LUCENE-2111, LUCENE-2514: Terms are no longer
+  required to be character based. Lucene views a term as an arbitrary byte[]:
+  during analysis, character-based terms are converted to UTF8 byte[],
+  but analyzers are free to directly create terms as byte[]
+  (NumericField does this, for example).  The term data is buffered as
+  byte[] during indexing, written as byte[] into the terms dictionary,
+  and iterated as byte[] (wrapped in a BytesRef) by IndexReader for
+  searching.
 
 * LUCENE-1458, LUCENE-2111: IndexReader now directly exposes its
   deleted docs (getDeletedDocs), providing a new Bits interface to
@@ -116,11 +121,6 @@ API Changes
   commit points when they are not needed anymore (instead of waiting for the 
   next commit). (Shai Erera)
 
-* LUCENE-2356: Add IndexWriterConfig.set/getReaderTermsIndexDivisor,
-  to set what IndexWriter passes for termsIndexDivisor to the readers
-  it opens internally when applying deletions or creating a
-  near-real-time reader.  (Earwin Burrfoot via Mike McCandless)
-
 New features
 
 * LUCENE-1606, LUCENE-2089: Adds AutomatonQuery, a MultiTermQuery that 
@@ -130,7 +130,7 @@ New features
 
 * LUCENE-1990: Adds internal packed ints implementation, to be used
   for more efficient storage of int arrays when the values are
-  bounded, for example for storing the terms dict index Toke Toke
+  bounded, for example for storing the terms dict index (Toke
   Eskildsen via Mike McCandless)
 
 * LUCENE-2321: Cutover to a more RAM efficient packed-ints based
@@ -155,15 +155,6 @@ New features
   data and payloads in 5 separate files instead of the 2 used by
   standard codec), and int block (really a "base" for using
   block-based compressors like PForDelta for storing postings data).
-
-* LUCENE-2302, LUCENE-1458, LUCENE-2111: Terms are no longer required
-  to be character based.  Lucene views a term as an arbitrary byte[]:
-  during analysis, character-based terms are converted to UTF8 byte[],
-  but analyzers are free to directly create terms as byte[]
-  (NumericField does this, for example).  The term data is buffered as
-  byte[] during indexing, written as byte[] into the terms dictionary,
-  and iterated as byte[] (wrapped in a BytesRef) by IndexReader for
-  searching.
 
 * LUCENE-2385: Moved NoDeletionPolicy from benchmark to core. NoDeletionPolicy
   can be used to prevent commits from ever getting deleted from the index.
@@ -194,6 +185,22 @@ New features
 
 * LUCENE-2489: Added PerFieldCodecWrapper (in oal.index.codecs) which
   lets you set the Codec per field (Mike McCandless)
+
+* LUCENE-1810: Added FieldSelectorResult.LATENT to not cache lazy loaded fields
+  (Tim Smith, Grant Ingersoll)
+
+* LUCENE-2373: Extend CodecProvider to use SegmentInfosWriter and
+  SegmentInfosReader to allow customization of SegmentInfos data.
+  (Andrzej Bialecki)
+
+Optimizations
+
+* LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.
+  (Mike McCandless)
+
+* LUCENE-2531: Fix issue when sorting by a String field that was
+  causing too many fallbacks to compare-by-value (instead of by-ord).
+  (Mike McCandless)
   
 ======================= Lucene 3.x (not yet released) =======================
 
@@ -202,10 +209,6 @@ Changes in backwards compatibility policy
 * LUCENE-1483: Removed utility class oal.util.SorterTemplate; this
   class is no longer used by Lucene.  (Gunnar Wagenknecht via Mike
   McCandless)
-
-* LUCENE-2135: Added FieldCache.purge(IndexReader) method to the
-  interface.  Anyone implementing FieldCache externally will need to
-  fix their code to implement this, on upgrading.  (Mike McCandless)
 
 * LUCENE-1923: Renamed SegmentInfo & SegmentInfos segString method to
   toString.  These are advanced APIs and subject to change suddenly.
@@ -222,7 +225,8 @@ Changes in backwards compatibility policy
   the IndexWriter for a MergePolicy exactly once. You can change references to
   'writer' from <code>writer.doXYZ()</code> to <code>writer.get().doXYZ()</code>
   (it is also advisable to add an <code>assert writer != null;</code> before you
-  access the wrapped IndexWriter.
+  access the wrapped IndexWriter.)
+
   In addition, MergePolicy only exposes a default constructor, and the one that
   took IndexWriter as argument has been removed from all MergePolicy extensions.
   (Shai Erera via Mike McCandless)
@@ -265,10 +269,6 @@ Changes in runtime behavior
 * LUCENE-2179: CharArraySet.clear() is now functional.
   (Robert Muir, Uwe Schindler)
 
-* LUCENE-2421: NativeFSLockFactory does not throw LockReleaseFailedException if 
-  it cannot delete the lock file, since obtaining the lock does not fail if the 
-  file is there. (Shai Erera)
-
 * LUCENE-2455: IndexWriter.addIndexes no longer optimizes the target index 
   before it adds the new ones. Also, the existing segments are not merged and so
   the index will not end up with a single segment (unless it was empty before).
@@ -276,6 +276,7 @@ Changes in runtime behavior
   invokes a merge on the incoming and target segments, but instead copies the
   segments to the target index. You can call maybeMerge or optimize after this
   method completes, if you need to.
+  
   In addition, Directory.copyTo* were removed in favor of copy which takes the
   target Directory, source and target files as arguments, and copies the source
   file to the target Directory under the target file name. (Shai Erera)
@@ -312,10 +313,6 @@ API Changes
   files itself; this method just lets you do so when you know the
   files are no longer open by IndexReaders. (luocanrao via Mike
   McCandless)
-
-* LUCENE-2281: added doBeforeFlush to IndexWriter to allow extensions to perform
-  operations before flush starts. Also exposed doAfterFlush as protected instead
-  of package-private. (Shai Erera via Mike McCandless)
 
 * LUCENE-2282: IndexFileNames is exposed as a public class allowing for easier 
   use by external code. In addition it offers a matchExtension method which 
@@ -368,9 +365,9 @@ API Changes
   next commit). (Shai Erera)
 
 * LUCENE-2455: IndexWriter.addIndexesNoOptimize was renamed to addIndexes.
-  IndexFileNames.segmentFileName now takes another parameter to accomodate
+  IndexFileNames.segmentFileName now takes another parameter to accommodate
   custom file names. You should use this method to name all your files.
-  (Shai Erera) 
+  (Shai Erera)
   
 * LUCENE-2481: SnapshotDeletionPolicy.snapshot() and release() were replaced
   with equivalent ones that take a String (id) as argument. You can pass
@@ -378,16 +375,6 @@ API Changes
   (Shai Erera)
   
 Bug fixes
-
-* LUCENE-2119: Don't throw NegativeArraySizeException if you pass
-  Integer.MAX_VALUE as nDocs to IndexSearcher search methods.  (Paul
-  Taylor via Mike McCandless)
-
-* LUCENE-2142: FieldCacheImpl.getStringIndex no longer throws an
-  exception when term count exceeds doc count.  (Mike McCandless)
-
-* LUCENE-2104: NativeFSLock.release() would silently fail if the lock is held by 
-  another thread/process.  (Shai Erera via Uwe Schindler)
 
 * LUCENE-2216: OpenBitSet.hashCode returned different hash codes for
   sets that only differed by trailing zeros. (Dawid Weiss, yonik)
@@ -402,17 +389,6 @@ Bug fixes
   incorrectly and lead to ConcurrentModificationException.
   (Uwe Schindler, Robert Muir)
 
-* LUCENE-2283: Use shared memory pool for term vector and stored
-  fields buffers. This memory will be reclaimed if needed according to
-  the configured RAM Buffer Size for the IndexWriter.  This also fixes
-  potentially excessive memory usage when many threads are indexing a
-  mix of small and large documents.  (Tim Smith via Mike McCandless)
-
-* LUCENE-2300: If IndexWriter is pooling reader (because NRT reader
-  has been obtained), and addIndexes* is run, do not pool the
-  readers from the external directory.  This is harmless (NRT reader is
-  correct), but a waste of resources.  (Mike McCandless)
-
 * LUCENE-2328: Index files fsync tracking moved from
   IndexWriter/IndexReader to Directory, and it no longer leaks memory.
   (Earwin Burrfoot via Mike McCandless)
@@ -424,63 +400,53 @@ Bug fixes
 * LUCENE-2074: Reduce buffer size of lexer back to default on reset.
   (Ruben Laguna, Shai Erera via Uwe Schindler)
   
-* LUCENE-2422: Don't reuse byte[] in IndexInput/Output -- it gains
-  little performance, and ties up possibly large amounts of memory for
-  apps that index large docs.  (Ross Woolf via Mike McCandless)
-
-* LUCENE-2387: Don't hang onto Fieldables from the last doc indexed,
-  in IndexWriter, nor the Reader in Tokenizer after close is
-  called.  (Ruben Laguna, Uwe Schindler, Mike McCandless)
-  
-* LUCENE-2417: IndexCommit did not implement hashCode() and equals() 
-  consistently. Now they both take Directory and version into consideration. In
-  addition, all of IndexComnmit methods which threw 
-  UnsupportedOperationException are now abstract. (Shai Erera)
-
-* LUCENE-2467: Fixed memory leaks in IndexWriter when large documents
-  are indexed.  (Mike McCandless)
-
-* LUCENE-2473: Clicking on the "More Results" link in the luceneweb.war
-  demo resulted in ArrayIndexOutOfBoundsException.  
-  (Sami Siren via Robert Muir)
-
-* LUCENE-2476: If any exception is hit init'ing IW, release the write
-  lock (previously we only released on IOException).  (Tamas Cservenak
-  via Mike McCandless)
-
-* LUCENE-2478: Fix CachingWrapperFilter to not throw NPE when
-  Filter.getDocIdSet() returns null.  (Uwe Schindler, Daniel Noll)
-
-* LUCENE-2468: Allow specifying how new deletions should be handled in
-  CachingWrapperFilter and CachingSpanFilter.  By default, new
-  deletions are ignored in CachingWrapperFilter, since typically this
-  filter is AND'd with a query that correctly takes new deletions into
-  account.  This should be a performance gain (higher cache hit rate)
-  in apps that reopen readers, or use near-real-time reader
-  (IndexWriter.getReader()), but may introduce invalid search results
-  (allowing deleted docs to be returned) for certain cases, so a new
-  expert ctor was added to CachingWrapperFilter to enforce deletions
-  at a performance cost.  CachingSpanFilter by default recaches if
-  there are new deletions (Shay Banon via Mike McCandless)
-
-* LUCENE-2299: If you open an NRT reader while addIndexes* is running,
-  it may miss some segments (Earwin Burrfoot via Mike McCandless)
-
-* LUCENE-2397: Don't throw NPE from SnapshotDeletionPolicy.snapshot if
-  there are no commits yet (Shai Erera)
-
-* LUCENE-2424: Fix FieldDoc.toString to actually return its fields
-  (Stephen Green via Mike McCandless)
-
-* LUCENE-2311: Always pass a "fully loaded" (terms index & doc stores)
-  SegmentsReader to IndexWriter's mergedSegmentWarmer (if set), so
-  that warming is free to do whatever it needs to.  (Earwin Burrfoot
-  via Mike McCandless)
-
-* LUCENE-2486: Fixed intermittent FileNotFoundException on doc store
-  files when a mergedSegmentWarmer is set on IndexWriter.  (Mike
+* LUCENE-2496: Don't throw NPE if IndexWriter is opened with CREATE on
+  a prior (corrupt) index missing its segments_N file.  (Mike
   McCandless)
 
+* LUCENE-2142 (correct fix): FieldCacheImpl.getStringIndex no longer
+  throws an exception when term count exceeds doc count.
+  (Mike McCandless, Uwe Schindler)
+
+* LUCENE-2513: when opening writable IndexReader on a not-current
+  commit, do not overwrite "future" commits.  (Mike McCandless)
+
+* LUCENE-2533: fix FileSwitchDirectory.listAll to not return dups when
+  primary & secondary dirs share the same underlying directory.
+  (Michael McCandless)
+
+* LUCENE-2534: fix over-sharing bug in
+  MultiTermsEnum.docs/AndPositionsEnum.  (Robert Muir, Mike
+  McCandless)
+
+* LUCENE-2536: IndexWriter.rollback was failing to properly rollback
+  buffered deletions against segments that were flushed (Mark Harwood
+  via Mike McCandless)
+
+* LUCENE-2541: Fixed NumericRangeQuery that returned incorrect results
+  with endpoints near Long.MIN_VALUE and Long.MAX_VALUE:
+  NumericUtils.splitRange() overflowed, if
+  - the range contained a LOWER bound
+    that was greater than (Long.MAX_VALUE - (1L << precisionStep))
+  - the range contained an UPPER bound
+    that was less than (Long.MIN_VALUE + (1L << precisionStep))
+  With standard precision steps around 4, this had no effect on
+  most queries, only those that met the above conditions.
+  Queries with large precision steps failed more easy. Queries with
+  precision step >=64 were not affected. Also 32 bit data types int
+  and float were not affected.
+  (Yonik Seeley, Uwe Schindler)
+
+* LUCENE-2549: Fix TimeLimitingCollector#TimeExceededException to record
+  the absolute docid.  (Uwe Schindler)
+
+* LUCENE-2458: QueryParser no longer automatically forms phrase queries,
+  assuming whitespace tokenization. Previously all CJK queries, for example,
+  would be turned into phrase queries. The old behavior is preserved with
+  the matchVersion parameter for previous versions. Additionally, you can
+  explicitly enable the old behavior with setAutoGeneratePhraseQueries(true) 
+  (Robert Muir)
+  
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
@@ -556,6 +522,9 @@ New features
   to wrap any other Analyzer and provide the same functionality as
   MaxFieldLength provided on IndexWriter.  This patch also fixes a bug
   in the offset calculation in CharTokenizer. (Uwe Schindler, Shai Erera)
+
+* LUCENE-2526: Don't throw NPE from MultiPhraseQuery.toString when
+  it's empty.  (Ross Woolf via Mike McCandless)
   
 Optimizations
 
@@ -579,13 +548,6 @@ Optimizations
   the maxExpansions parameter to FuzzyQuery, but the default is limited to
   BooleanQuery.maxClauseCount() as before. 
   (Uwe Schindler, Robert Muir, Mike McCandless)
-
-* LUCENE-2135: On IndexReader.close, forcefully evict any entries from
-  the FieldCache rather than waiting for the WeakHashMap to release
-  the reference (Mike McCandless)
-
-* LUCENE-2161: Improve concurrency of IndexReader, especially in the
-  context of near real-time readers.  (Mike McCandless)
 
 * LUCENE-2164: ConcurrentMergeScheduler has more control over merge
   threads.  First, it gives smaller merges higher thread priority than
@@ -624,9 +586,6 @@ Optimizations
   because then it will make sense to make the RAM buffers as large as 
   possible. (Mike McCandless, Michael Busch)
 
-* LUCENE-2360: Small speedup to recycling of reused per-doc RAM in
-  IndexWriter (Robert Muir, Mike McCandless)
-
 * LUCENE-2380: The terms field cache methods (getTerms,
   getTermsIndex), which replace the older String equivalents
   (getStrings, getStringIndex), consume quite a bit less RAM in most
@@ -649,7 +608,11 @@ Build
   can force them to run sequentially by passing -Drunsequential=1 on the command
   line. The number of threads that are spwaned per CPU defaults to '1'. If you 
   wish to change that, you can run the tests with -DthreadsPerProcessor=[num].
-  (Robert Muir, Shai Erera, Peter Kofler) 
+  (Robert Muir, Shai Erera, Peter Kofler)
+
+* LUCENE-2516: Backwards tests are now compiled against released lucene-core.jar
+  from tarball of previous version. Backwards tests are now packaged together
+  with src distribution.  (Uwe Schindler)
 
 Test Cases
 
@@ -687,6 +650,147 @@ Test Cases
 
 * LUCENE-2398: Improve tests to work better from IDEs such as Eclipse.
   (Paolo Castagna via Robert Muir)
+
+================== Release 2.9.3 / 3.0.2 2010-06-18 ====================
+
+Changes in backwards compatibility policy
+
+* LUCENE-2135: Added FieldCache.purge(IndexReader) method to the
+  interface.  Anyone implementing FieldCache externally will need to
+  fix their code to implement this, on upgrading.  (Mike McCandless)
+
+Changes in runtime behavior
+
+* LUCENE-2421: NativeFSLockFactory does not throw LockReleaseFailedException if 
+  it cannot delete the lock file, since obtaining the lock does not fail if the 
+  file is there. (Shai Erera)
+
+* LUCENE-2060 (2.9.3 only): Changed ConcurrentMergeScheduler's default for
+  maxNumThreads from 3 to 1, because in practice we get the most gains
+  from running a single merge in the backround.  More than one
+  concurrent merge causes alot of thrashing (though it's possible on
+  SSD storage that there would be net gains).  (Jason Rutherglen, Mike
+  McCandless)
+
+Bug fixes
+
+* LUCENE-2046 (2.9.3 only): IndexReader should not see the index as changed, after
+  IndexWriter.prepareCommit has been called but before
+  IndexWriter.commit is called. (Peter Keegan via Mike McCandless)
+
+* LUCENE-2119: Don't throw NegativeArraySizeException if you pass
+  Integer.MAX_VALUE as nDocs to IndexSearcher search methods.  (Paul
+  Taylor via Mike McCandless)
+
+* LUCENE-2142: FieldCacheImpl.getStringIndex no longer throws an
+  exception when term count exceeds doc count.  (Mike McCandless)
+
+* LUCENE-2104: NativeFSLock.release() would silently fail if the lock is held by 
+  another thread/process.  (Shai Erera via Uwe Schindler)
+  
+* LUCENE-2283: Use shared memory pool for term vector and stored
+  fields buffers. This memory will be reclaimed if needed according to
+  the configured RAM Buffer Size for the IndexWriter.  This also fixes
+  potentially excessive memory usage when many threads are indexing a
+  mix of small and large documents.  (Tim Smith via Mike McCandless)
+
+* LUCENE-2300: If IndexWriter is pooling reader (because NRT reader
+  has been obtained), and addIndexes* is run, do not pool the
+  readers from the external directory.  This is harmless (NRT reader is
+  correct), but a waste of resources.  (Mike McCandless)
+
+* LUCENE-2422: Don't reuse byte[] in IndexInput/Output -- it gains
+  little performance, and ties up possibly large amounts of memory
+  for apps that index large docs.  (Ross Woolf via Mike McCandless)
+
+* LUCENE-2387: Don't hang onto Fieldables from the last doc indexed,
+  in IndexWriter, nor the Reader in Tokenizer after close is
+  called.  (Ruben Laguna, Uwe Schindler, Mike McCandless)
+
+* LUCENE-2417: IndexCommit did not implement hashCode() and equals() 
+  consistently. Now they both take Directory and version into consideration. In
+  addition, all of IndexComnmit methods which threw 
+  UnsupportedOperationException are now abstract. (Shai Erera)
+
+* LUCENE-2467: Fixed memory leaks in IndexWriter when large documents
+  are indexed.  (Mike McCandless)
+
+* LUCENE-2473: Clicking on the "More Results" link in the luceneweb.war
+  demo resulted in ArrayIndexOutOfBoundsException.
+  (Sami Siren via Robert Muir)
+
+* LUCENE-2476: If any exception is hit init'ing IW, release the write
+  lock (previously we only released on IOException).  (Tamas Cservenak
+  via Mike McCandless)
+
+* LUCENE-2478: Fix CachingWrapperFilter to not throw NPE when
+  Filter.getDocIdSet() returns null.  (Uwe Schindler, Daniel Noll)
+
+* LUCENE-2468: Allow specifying how new deletions should be handled in
+  CachingWrapperFilter and CachingSpanFilter.  By default, new
+  deletions are ignored in CachingWrapperFilter, since typically this
+  filter is AND'd with a query that correctly takes new deletions into
+  account.  This should be a performance gain (higher cache hit rate)
+  in apps that reopen readers, or use near-real-time reader
+  (IndexWriter.getReader()), but may introduce invalid search results
+  (allowing deleted docs to be returned) for certain cases, so a new
+  expert ctor was added to CachingWrapperFilter to enforce deletions
+  at a performance cost.  CachingSpanFilter by default recaches if
+  there are new deletions (Shay Banon via Mike McCandless)
+
+* LUCENE-2299: If you open an NRT reader while addIndexes* is running,
+  it may miss some segments (Earwin Burrfoot via Mike McCandless)
+
+* LUCENE-2397: Don't throw NPE from SnapshotDeletionPolicy.snapshot if
+  there are no commits yet (Shai Erera)
+
+* LUCENE-2424: Fix FieldDoc.toString to actually return its fields
+  (Stephen Green via Mike McCandless)
+
+* LUCENE-2311: Always pass a "fully loaded" (terms index & doc stores)
+  SegmentsReader to IndexWriter's mergedSegmentWarmer (if set), so
+  that warming is free to do whatever it needs to.  (Earwin Burrfoot
+  via Mike McCandless)
+
+* LUCENE-2486: Fixed intermittent FileNotFoundException on doc store
+  files when a mergedSegmentWarmer is set on IndexWriter.  (Mike
+  McCandless)
+
+* LUCENE-2130: Fix performance issue when FuzzyQuery runs on a
+  multi-segment index (Michael McCandless)
+
+API Changes
+
+* LUCENE-2281: added doBeforeFlush to IndexWriter to allow extensions to perform
+  operations before flush starts. Also exposed doAfterFlush as protected instead
+  of package-private. (Shai Erera via Mike McCandless)
+
+* LUCENE-2356: Add IndexWriter.set/getReaderTermsIndexDivisor, to set
+  what IndexWriter passes for termsIndexDivisor to the readers it
+  opens internally when applying deletions or creating a
+  near-real-time reader.  (Earwin Burrfoot via Mike McCandless)
+
+Optimizations
+
+* LUCENE-2494 (3.0.2 only): Use CompletionService in ParallelMultiSearcher
+  instead of simple polling for results. (Edward Drapkin, Simon Willnauer) 
+
+* LUCENE-2135: On IndexReader.close, forcefully evict any entries from
+  the FieldCache rather than waiting for the WeakHashMap to release
+  the reference (Mike McCandless)
+
+* LUCENE-2161: Improve concurrency of IndexReader, especially in the
+  context of near real-time readers.  (Mike McCandless)
+
+* LUCENE-2360: Small speedup to recycling of reused per-doc RAM in
+  IndexWriter (Robert Muir, Mike McCandless)
+
+Build
+
+* LUCENE-2488 (2.9.3 only): Support build with JDK 1.4 and exclude Java 1.5
+  contrib modules on request (pass '-Dforce.jdk14.build=true') when
+  compiling/testing/packaging. This marks the benchmark contrib also
+  as Java 1.5, as it depends on fast-vector-highlighter. (Uwe Schindler)
 
 ================== Release 2.9.2 / 3.0.1 2010-02-26 ====================
 
@@ -763,8 +867,6 @@ API Changes
    (Robert Muir)
 
 Optimizations
- * LUCENE-2494: Use CompletionService in ParallelMultiSearcher instead of
-   simple polling for resutls. (Edward Drapkin, Simon Willnauer) 
 
  * LUCENE-2086: When resolving deleted terms, do so in term sort order
    for better performance (Bogdan Ghidireac via Mike McCandless)

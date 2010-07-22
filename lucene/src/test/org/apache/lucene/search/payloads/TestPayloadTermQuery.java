@@ -34,9 +34,10 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Payload;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.document.Document;
@@ -52,6 +53,7 @@ import java.io.IOException;
  **/
 public class TestPayloadTermQuery extends LuceneTestCase {
   private IndexSearcher searcher;
+  private IndexReader reader;
   private BoostingSimilarity similarity = new BoostingSimilarity();
   private byte[] payloadField = new byte[]{1};
   private byte[] payloadMultiField1 = new byte[]{2};
@@ -110,9 +112,9 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     directory = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(
-        similarity));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer())
+        .setSimilarity(similarity));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
@@ -123,11 +125,19 @@ public class TestPayloadTermQuery extends LuceneTestCase {
       doc.add(new Field("multiField", English.intToEnglish(i) + "  " + English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
-    writer.optimize();
+    reader = writer.getReader();
     writer.close();
 
-    searcher = new IndexSearcher(directory, true);
+    searcher = new IndexSearcher(reader);
     searcher.setSimilarity(similarity);
+  }
+
+  @Override
+  protected void tearDown() throws Exception {
+    searcher.close();
+    reader.close();
+    directory.close();
+    super.tearDown();
   }
 
   public void test() throws IOException {

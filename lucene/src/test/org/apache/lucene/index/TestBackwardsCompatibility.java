@@ -23,10 +23,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.Arrays;
-import java.util.Random;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Random;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -128,21 +130,86 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
                              "31.nocfs",
   };
   
+  final String[] unsupportedNames = {"19.cfs",
+                                     "19.nocfs",
+                                     "20.cfs",
+                                     "20.nocfs",
+                                     "21.cfs",
+                                     "21.nocfs",
+                                     "22.cfs",
+                                     "22.nocfs",
+                                     "23.cfs",
+                                     "23.nocfs",
+                                     "24.cfs",
+                                     "24.nocfs",
+                                     "29.cfs",
+                                     "29.nocfs",
+  };
+  
+  /** This test checks that *only* IndexFormatTooOldExceptions are throws when you open and operate on too old indexes! */
+  public void testUnsupportedOldIndexes() throws Exception {
+    final Random rnd = newRandom();
+    for(int i=0;i<unsupportedNames.length;i++) {
+      unzip(getDataFile("unsupported." + unsupportedNames[i] + ".zip"), unsupportedNames[i]);
+
+      String fullPath = fullDir(unsupportedNames[i]);
+      Directory dir = FSDirectory.open(new File(fullPath));
+
+      IndexReader reader = null;
+      IndexWriter writer = null;
+      try {
+        reader = IndexReader.open(dir);
+        fail("IndexReader.open should not pass for "+unsupportedNames[i]);
+      } catch (IndexFormatTooOldException e) {
+        // pass
+      } finally {
+        if (reader != null) reader.close();
+        reader = null;
+      }
+
+      try {
+        writer = new IndexWriter(dir, new IndexWriterConfig(
+          TEST_VERSION_CURRENT, new MockAnalyzer())
+          .setMergeScheduler(new SerialMergeScheduler()) // no threads!
+        );
+        // TODO: Make IndexWriter fail on open!
+        if (rnd.nextBoolean()) {
+          writer.optimize();
+        } else {
+          reader = writer.getReader();
+        }
+        fail("IndexWriter creation should not pass for "+unsupportedNames[i]);
+      } catch (IndexFormatTooOldException e) {
+        // pass
+      } finally {
+        if (reader != null) reader.close();
+        reader = null;
+        if (writer != null) writer.close();
+        writer = null;
+      }
+      
+      ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
+      CheckIndex checker = new CheckIndex(dir);
+      checker.setInfoStream(new PrintStream(bos));
+      CheckIndex.Status indexStatus = checker.checkIndex();
+      assertFalse(indexStatus.clean);
+      assertTrue(bos.toString().contains(IndexFormatTooOldException.class.getName()));
+
+      dir.close();
+      rmDir(unsupportedNames[i]);
+    }
+  }
+  
   public void testOptimizeOldIndex() throws Exception {
-    Random rand = newRandom();
-    
     for(int i=0;i<oldNames.length;i++) {
       unzip(getDataFile("index." + oldNames[i] + ".zip"), oldNames[i]);
 
       String fullPath = fullDir(oldNames[i]);
       Directory dir = FSDirectory.open(new File(fullPath));
 
-      FlexTestUtil.verifyFlexVsPreFlex(rand, dir);
-
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer()));
       w.optimize();
-      FlexTestUtil.verifyFlexVsPreFlex(rand, w);
       w.close();
 
       _TestUtil.checkIndex(dir);
@@ -241,30 +308,24 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       if (!reader.isDeleted(i)) {
         Document d = reader.document(i);
         List<Fieldable> fields = d.getFields();
-        if (!oldName.startsWith("19.") &&
-            !oldName.startsWith("20.") &&
-            !oldName.startsWith("21.") &&
-            !oldName.startsWith("22.")) {
+        if (d.getField("content3") == null) {
+          final int numFields = 5;
+          assertEquals(numFields, fields.size());
+          Field f =  d.getField("id");
+          assertEquals(""+i, f.stringValue());
 
-          if (d.getField("content3") == null) {
-            final int numFields = 5;
-            assertEquals(numFields, fields.size());
-            Field f =  d.getField("id");
-            assertEquals(""+i, f.stringValue());
+          f = d.getField("utf8");
+          assertEquals("Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", f.stringValue());
 
-            f = d.getField("utf8");
-            assertEquals("Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", f.stringValue());
+          f =  d.getField("autf8");
+          assertEquals("Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", f.stringValue());
+      
+          f = d.getField("content2");
+          assertEquals("here is more content with aaa aaa aaa", f.stringValue());
 
-            f =  d.getField("autf8");
-            assertEquals("Lu\uD834\uDD1Ece\uD834\uDD60ne \u0000 \u2620 ab\ud917\udc17cd", f.stringValue());
-        
-            f = d.getField("content2");
-            assertEquals("here is more content with aaa aaa aaa", f.stringValue());
-
-            f = d.getField("fie\u2C77ld");
-            assertEquals("field with non-ascii name", f.stringValue());
-          }
-        }       
+          f = d.getField("fie\u2C77ld");
+          assertEquals("field with non-ascii name", f.stringValue());
+        }
       } else
         // Only ID 7 is deleted
         assertEquals(7, i);
@@ -279,18 +340,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     doTestHits(hits, 34, searcher.getIndexReader());
 
-    if (!oldName.startsWith("19.") &&
-        !oldName.startsWith("20.") &&
-        !oldName.startsWith("21.") &&
-        !oldName.startsWith("22.")) {
-      // Test on indices >= 2.3
-      hits = searcher.search(new TermQuery(new Term("utf8", "\u0000")), null, 1000).scoreDocs;
-      assertEquals(34, hits.length);
-      hits = searcher.search(new TermQuery(new Term("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne")), null, 1000).scoreDocs;
-      assertEquals(34, hits.length);
-      hits = searcher.search(new TermQuery(new Term("utf8", "ab\ud917\udc17cd")), null, 1000).scoreDocs;
-      assertEquals(34, hits.length);
-    }
+    hits = searcher.search(new TermQuery(new Term("utf8", "\u0000")), null, 1000).scoreDocs;
+    assertEquals(34, hits.length);
+    hits = searcher.search(new TermQuery(new Term("utf8", "Lu\uD834\uDD1Ece\uD834\uDD60ne")), null, 1000).scoreDocs;
+    assertEquals(34, hits.length);
+    hits = searcher.search(new TermQuery(new Term("utf8", "ab\ud917\udc17cd")), null, 1000).scoreDocs;
+    assertEquals(34, hits.length);
 
     searcher.close();
     dir.close();
@@ -569,12 +624,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   public static String fullDir(String dirName) throws IOException {
     return new File(TEMP_DIR, dirName).getCanonicalPath();
   }
-
-  static final String TEXT_TO_COMPRESS = "this is a compressed field and should appear in 3.0 as an uncompressed field after merge";
-
-  // FieldSelectorResult.SIZE returns compressed size for compressed fields, which are internally handled as binary;
-  // do it in the same way like FieldsWriter, do not use CompressionTools.compressString() for compressed fields:
-  static final byte[] BINARY_TO_COMPRESS = new byte[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20};
 
   private int countDocs(DocsEnum docs) throws IOException {
     int count = 0;

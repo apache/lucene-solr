@@ -22,6 +22,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
@@ -48,7 +50,8 @@ public class TestFieldCache extends LuceneTestCase {
     Random r = newRandom();
     NUM_DOCS = 1000 * _TestUtil.getRandomMultiplier();
     RAMDirectory directory = new RAMDirectory();
-    IndexWriter writer= new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(500));
+    RandomIndexWriter writer= new RandomIndexWriter(r, directory, 
+        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;
     byte theByte = Byte.MAX_VALUE;
@@ -167,6 +170,20 @@ public class TestFieldCache extends LuceneTestCase {
       final String s = term == null ? null : term.utf8ToString();
       assertTrue("for doc " + i + ": " + s + " does not equal: " + unicodeStrings[i], unicodeStrings[i] == null || unicodeStrings[i].equals(s));
     }
+
+    int nTerms = termsIndex.numOrd();
+    // System.out.println("nTerms="+nTerms);
+
+    TermsEnum tenum = termsIndex.getTermsEnum();
+    BytesRef val = new BytesRef();
+    for (int i=1; i<nTerms; i++) {
+      BytesRef val1 = tenum.next();
+      BytesRef val2 = termsIndex.lookup(i,val);
+      // System.out.println("i="+i);
+      assertEquals(val2, val1);
+    }
+
+
     // test bad field
     termsIndex = cache.getTermsIndex(reader, "bogusfield");
 

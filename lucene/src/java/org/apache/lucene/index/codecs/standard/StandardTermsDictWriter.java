@@ -55,41 +55,48 @@ public class StandardTermsDictWriter extends FieldsConsumer {
 
   private final DeltaBytesWriter termWriter;
 
-  final IndexOutput out;
+  protected final IndexOutput out;
   final StandardPostingsWriter postingsWriter;
   final FieldInfos fieldInfos;
   FieldInfo currentField;
-  private final StandardTermsIndexWriter indexWriter;
+  private final StandardTermsIndexWriter termsIndexWriter;
   private final List<TermsConsumer> fields = new ArrayList<TermsConsumer>();
   private final Comparator<BytesRef> termComp;
 
-  public StandardTermsDictWriter(StandardTermsIndexWriter indexWriter, SegmentWriteState state, StandardPostingsWriter postingsWriter, Comparator<BytesRef> termComp) throws IOException {
+  public StandardTermsDictWriter(
+      StandardTermsIndexWriter termsIndexWriter,
+      SegmentWriteState state,
+      StandardPostingsWriter postingsWriter,
+      Comparator<BytesRef> termComp) throws IOException
+  {
     final String termsFileName = IndexFileNames.segmentFileName(state.segmentName, "", StandardCodec.TERMS_EXTENSION);
-    this.indexWriter = indexWriter;
+    this.termsIndexWriter = termsIndexWriter;
     this.termComp = termComp;
     out = state.directory.createOutput(termsFileName);
-    indexWriter.setTermsOutput(out);
+    termsIndexWriter.setTermsOutput(out);
     state.flushedFiles.add(termsFileName);
 
     fieldInfos = state.fieldInfos;
-
-    // Count indexed fields up front
-    CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT); 
-
-    out.writeLong(0);                             // leave space for end index pointer
-
+    writeHeader(out);
     termWriter = new DeltaBytesWriter(out);
     currentField = null;
     this.postingsWriter = postingsWriter;
 
     postingsWriter.start(out);                          // have consumer write its format/header
   }
+  
+  protected void writeHeader(IndexOutput out) throws IOException {
+    // Count indexed fields up front
+    CodecUtil.writeHeader(out, CODEC_NAME, VERSION_CURRENT); 
+
+    out.writeLong(0);                             // leave space for end index pointer    
+  }
 
   @Override
   public TermsConsumer addField(FieldInfo field) {
     assert currentField == null || currentField.name.compareTo(field.name) < 0;
     currentField = field;
-    StandardTermsIndexWriter.FieldWriter fieldIndexWriter = indexWriter.addField(field);
+    StandardTermsIndexWriter.FieldWriter fieldIndexWriter = termsIndexWriter.addField(field);
     TermsConsumer terms = new TermsWriter(fieldIndexWriter, field, postingsWriter);
     fields.add(terms);
     return terms;
@@ -110,8 +117,7 @@ public class StandardTermsDictWriter extends FieldsConsumer {
         out.writeLong(field.numTerms);
         out.writeLong(field.termsStartPointer);
       }
-      out.seek(CodecUtil.headerLength(CODEC_NAME));
-      out.writeLong(dirStart);
+      writeTrailer(dirStart);
     } finally {
       try {
         out.close();
@@ -119,12 +125,18 @@ public class StandardTermsDictWriter extends FieldsConsumer {
         try {
           postingsWriter.close();
         } finally {
-          indexWriter.close();
+          termsIndexWriter.close();
         }
       }
     }
   }
 
+  protected void writeTrailer(long dirStart) throws IOException {
+    // TODO Auto-generated method stub
+    out.seek(CodecUtil.headerLength(CODEC_NAME));
+    out.writeLong(dirStart);    
+  }
+  
   class TermsWriter extends TermsConsumer {
     private final FieldInfo fieldInfo;
     private final StandardPostingsWriter postingsWriter;
@@ -132,7 +144,11 @@ public class StandardTermsDictWriter extends FieldsConsumer {
     private long numTerms;
     private final StandardTermsIndexWriter.FieldWriter fieldIndexWriter;
 
-    TermsWriter(StandardTermsIndexWriter.FieldWriter fieldIndexWriter, FieldInfo fieldInfo, StandardPostingsWriter postingsWriter) {
+    TermsWriter(
+        StandardTermsIndexWriter.FieldWriter fieldIndexWriter,
+        FieldInfo fieldInfo,
+        StandardPostingsWriter postingsWriter) 
+    {
       this.fieldInfo = fieldInfo;
       this.fieldIndexWriter = fieldIndexWriter;
 

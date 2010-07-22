@@ -189,7 +189,7 @@ public final class TermInfosReader {
 
     while (hi >= lo) {
       int mid = (lo + hi) >>> 1;
-      int delta = term.compareTo(indexTerms[mid]);
+      int delta = term.compareToUTF16(indexTerms[mid]);
       if (delta < 0)
 	hi = mid - 1;
       else if (delta > 0)
@@ -234,17 +234,17 @@ public final class TermInfosReader {
 
     // optimize sequential access: first try scanning cached enum w/o seeking
     if (enumerator.term() != null                 // term is at or past current
-	&& ((enumerator.prev() != null && term.compareTo(enumerator.prev())> 0)
-	    || term.compareTo(enumerator.term()) >= 0)) {
+	&& ((enumerator.prev() != null && term.compareToUTF16(enumerator.prev())> 0)
+	    || term.compareToUTF16(enumerator.term()) >= 0)) {
       int enumOffset = (int)(enumerator.position/totalIndexInterval)+1;
       if (indexTerms.length == enumOffset	  // but before end of block
-    || term.compareTo(indexTerms[enumOffset]) < 0) {
+    || term.compareToUTF16(indexTerms[enumOffset]) < 0) {
        // no need to seek
 
         final TermInfo ti;
 
         int numScans = enumerator.scanTo(term);
-        if (enumerator.term() != null && term.compareTo(enumerator.term()) == 0) {
+        if (enumerator.term() != null && term.compareToUTF16(enumerator.term()) == 0) {
           ti = enumerator.termInfo();
           if (numScans > 1) {
             // we only  want to put this TermInfo into the cache if
@@ -279,7 +279,7 @@ public final class TermInfosReader {
     seekEnum(enumerator, indexPos);
     enumerator.scanTo(term);
     final TermInfo ti;
-    if (enumerator.term() != null && term.compareTo(enumerator.term()) == 0) {
+    if (enumerator.term() != null && term.compareToUTF16(enumerator.term()) == 0) {
       ti = enumerator.termInfo();
       if (tiOrd == null) {
         termsCache.put(new CloneableTerm(term), new TermInfoAndOrd(ti, (int) enumerator.position));
@@ -328,9 +328,9 @@ public final class TermInfosReader {
     SegmentTermEnum enumerator = getThreadResources().termEnum;
     seekEnum(enumerator, indexOffset);
 
-    while(term.compareTo(enumerator.term()) > 0 && enumerator.next()) {}
+    while(term.compareToUTF16(enumerator.term()) > 0 && enumerator.next()) {}
 
-    if (term.compareTo(enumerator.term()) == 0)
+    if (term.compareToUTF16(enumerator.term()) == 0)
       return enumerator.position;
     else
       return -1;

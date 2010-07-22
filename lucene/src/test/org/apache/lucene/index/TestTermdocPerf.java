@@ -30,6 +30,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.BytesRef;
 
 class RepeatingTokenStream extends TokenStream {
   public int num;
@@ -94,16 +95,18 @@ public class TestTermdocPerf extends LuceneTestCase {
     if (VERBOSE) System.out.println("milliseconds for creation of " + ndocs + " docs = " + (end-start));
 
     IndexReader reader = IndexReader.open(dir, true);
-    TermEnum tenum = reader.terms(new Term("foo","val"));
-    TermDocs tdocs = reader.termDocs();
+
+    TermsEnum tenum = MultiFields.getTerms(reader, "foo").iterator();
 
     start = System.currentTimeMillis();
 
     int ret=0;
+    DocsEnum tdocs = null;
     for (int i=0; i<iter; i++) {
-      tdocs.seek(tenum);
-      while (tdocs.next()) {
-        ret += tdocs.doc();
+      tenum.seek(new BytesRef("val"));
+      tdocs = tenum.docs(MultiFields.getDeletedDocs(reader), tdocs);
+      while (tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+        ret += tdocs.docID();
       }
     }
 

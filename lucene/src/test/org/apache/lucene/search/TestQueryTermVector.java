@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 
@@ -28,12 +29,14 @@ public class TestQueryTermVector extends LuceneTestCase {
   }
 
   public void testConstructor() {
-    String [] queryTerm = {"foo", "bar", "foo", "again", "foo", "bar", "go", "go", "go"};
+    BytesRef [] queryTerm = {new BytesRef("foo"), new BytesRef("bar"), new BytesRef("foo"), 
+        new BytesRef("again"), new BytesRef("foo"), new BytesRef("bar"), new BytesRef("go"),
+        new BytesRef("go"), new BytesRef("go")};
     //Items are sorted lexicographically
-    String [] gold = {"again", "bar", "foo", "go"};
+    BytesRef [] gold = {new BytesRef("again"), new BytesRef("bar"), new BytesRef("foo"), new BytesRef("go")};
     int [] goldFreqs = {1, 2, 3, 3};
     QueryTermVector result = new QueryTermVector(queryTerm);
-    String [] terms = result.getTerms();
+    BytesRef [] terms = result.getTerms();
     assertTrue(terms.length == 4);
     int [] freq = result.getTermFrequencies();
     assertTrue(freq.length == 4);
@@ -49,7 +52,7 @@ public class TestQueryTermVector extends LuceneTestCase {
     checkGold(terms, gold, freq, goldFreqs);
   }
 
-  private void checkGold(String[] terms, String[] gold, int[] freq, int[] goldFreqs) {
+  private void checkGold(BytesRef[] terms, BytesRef[] gold, int[] freq, int[] goldFreqs) {
     for (int i = 0; i < terms.length; i++) {
       assertTrue(terms[i].equals(gold[i]));
       assertTrue(freq[i] == goldFreqs[i]);

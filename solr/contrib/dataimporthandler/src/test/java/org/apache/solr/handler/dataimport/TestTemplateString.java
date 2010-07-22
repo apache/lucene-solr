@@ -16,6 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -32,7 +33,7 @@ import java.util.regex.Pattern;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestTemplateString {
+public class TestTemplateString extends SolrTestCaseJ4 {
   @Test
   public void testSimple() {
     VariableResolverImpl vri = new VariableResolverImpl();

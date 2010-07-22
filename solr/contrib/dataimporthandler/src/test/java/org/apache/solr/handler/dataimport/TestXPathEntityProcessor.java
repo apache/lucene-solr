@@ -16,7 +16,9 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import static org.apache.solr.handler.dataimport.AbstractDataImportHandlerTest.createMap;
+import static org.apache.solr.handler.dataimport.AbstractDataImportHandlerTestCase.createMap;
+
+import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -37,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestXPathEntityProcessor {
+public class TestXPathEntityProcessor extends SolrTestCaseJ4 {
   boolean simulateSlowReader;
   boolean simulateSlowResultProcessor;
   int rowsToRead = -1;
@@ -56,7 +58,7 @@ public class TestXPathEntityProcessor {
     fields.add(createMap("column", "title", "xpath", "/catalog/cd/title"));
     fields.add(createMap("column", "artist", "xpath", "/catalog/cd/artist"));
     fields.add(createMap("column", "year", "xpath", "/catalog/cd/year"));
-    Context c = AbstractDataImportHandlerTest.getContext(null,
+    Context c = AbstractDataImportHandlerTestCase.getContext(null,
             new VariableResolverImpl(), getDataSource(cdData), Context.FULL_DUMP, fields, entityAttrs);
     XPathEntityProcessor xPathEntityProcessor = new XPathEntityProcessor();
     xPathEntityProcessor.init(c);
@@ -79,7 +81,7 @@ public class TestXPathEntityProcessor {
             XPathEntityProcessor.FOR_EACH, "/root");
     List fields = new ArrayList();
     fields.add(createMap("column", "a", "xpath", "/root/a", DataImporter.MULTI_VALUED, "true"));
-    Context c = AbstractDataImportHandlerTest.getContext(null,
+    Context c = AbstractDataImportHandlerTestCase.getContext(null,
             new VariableResolverImpl(), getDataSource(testXml), Context.FULL_DUMP, fields, entityAttrs);
     XPathEntityProcessor xPathEntityProcessor = new XPathEntityProcessor();
     xPathEntityProcessor.init(c);
@@ -99,7 +101,7 @@ public class TestXPathEntityProcessor {
             XPathEntityProcessor.FOR_EACH, "/root");
     List fields = new ArrayList();
     fields.add(createMap("column", "a", "xpath", "/root/a" ,"flatten","true"));
-    Context c = AbstractDataImportHandlerTest.getContext(null,
+    Context c = AbstractDataImportHandlerTestCase.getContext(null,
             new VariableResolverImpl(), getDataSource(testXmlFlatten), Context.FULL_DUMP, fields, entityAttrs);
     XPathEntityProcessor xPathEntityProcessor = new XPathEntityProcessor();
     xPathEntityProcessor.init(c);
@@ -124,7 +126,7 @@ public class TestXPathEntityProcessor {
     fields.add(createMap("column", "title", "xpath", "/catalog/cd/title"));
     fields.add(createMap("column", "artist", "xpath", "/catalog/cd/artist"));
     fields.add(createMap("column", "year", "xpath", "/catalog/cd/year"));
-    Context c = AbstractDataImportHandlerTest.getContext(null,
+    Context c = AbstractDataImportHandlerTestCase.getContext(null,
         new VariableResolverImpl(), getDataSource(cdData), Context.FULL_DUMP, fields, entityAttrs);
     XPathEntityProcessor xPathEntityProcessor = new XPathEntityProcessor() {
       private int count;
@@ -219,7 +221,7 @@ public class TestXPathEntityProcessor {
     Map entityAttrs = createMap("name", "e",
             XPathEntityProcessor.USE_SOLR_ADD_SCHEMA, "true", "xsl", ""
             + new File(tmpdir, "x.xsl").getAbsolutePath(), "url", "cd.xml");
-    Context c = AbstractDataImportHandlerTest.getContext(null,
+    Context c = AbstractDataImportHandlerTestCase.getContext(null,
             new VariableResolverImpl(), getDataSource(cdData), Context.FULL_DUMP, null, entityAttrs);
     XPathEntityProcessor xPathEntityProcessor = new XPathEntityProcessor();
     xPathEntityProcessor.init(c);
