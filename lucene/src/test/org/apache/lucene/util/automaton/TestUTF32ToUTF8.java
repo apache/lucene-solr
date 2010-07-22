@@ -193,8 +193,8 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
           throw e;
         }
       }
-      BytesRef bytesRef = new BytesRef(string);
-      assertEquals(cra.run(string), bra.run(bytesRef.bytes, 0, bytesRef.length));
+      byte bytes[] = string.getBytes("UTF-8");
+      assertEquals(cra.run(string), bra.run(bytes, 0, bytes.length));
     }
   }
 }
