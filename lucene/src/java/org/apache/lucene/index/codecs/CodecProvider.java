@@ -61,6 +61,21 @@ public abstract class CodecProvider {
       throw new IllegalArgumentException("codec '" + codec.name + "' is already registered as a different codec instance");
     }
   }
+  
+  /** @lucene.internal */
+  public void unregister(Codec codec) {
+    if (codec.name == null) {
+      throw new IllegalArgumentException("code.name is null");
+    }
+    // nocommit
+    if (codecs.containsKey(codec.name)) {
+      Codec c = codecs.get(codec.name);
+      if (codec.getClass().isAssignableFrom(c.getClass()))
+          codecs.remove(codec.name);
+      else
+        throw new IllegalArgumentException("codec '" + codec.name + "' is being impersonated by a different codec instance!!!");
+    }
+  }
 
   public Collection<String> getAllExtensions() {
     return knownExtensions;

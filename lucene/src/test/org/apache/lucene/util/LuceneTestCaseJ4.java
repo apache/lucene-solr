@@ -134,15 +134,24 @@ public class LuceneTestCaseJ4 {
   
   // saves default codec: we do this statically as many build indexes in @beforeClass
   private static String savedDefaultCodec;
+  private static String codec;
   
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
     savedDefaultCodec = CodecProvider.getDefaultCodec();
-    CodecProvider.setDefaultCodec(_TestUtil.getTestCodec());
+    codec = _TestUtil.getTestCodec();
+    //nocommit
+    if (codec.equals("PreFlex")) {
+        CodecProvider.getDefault().register(new PreFlexRWCodec());
+    } 
+    CodecProvider.setDefaultCodec(codec);
   }
   
   @AfterClass
   public static void afterClassLuceneTestCaseJ4() {
+    //nocommit
+    if (codec.equals("PreFlex"))
+        CodecProvider.getDefault().unregister(new PreFlexRWCodec());
     CodecProvider.setDefaultCodec(savedDefaultCodec);
   }
 
@@ -423,9 +432,4 @@ public class LuceneTestCaseJ4 {
   private static final Random seedRnd = new Random();
 
   private String name = "<unknown>";
-
-  // register PreFlexRWCodec statically
-  static {
-    CodecProvider.getDefault().register(new PreFlexRWCodec());
-  }
 }

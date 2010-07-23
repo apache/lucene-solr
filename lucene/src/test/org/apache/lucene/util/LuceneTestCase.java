@@ -75,6 +75,7 @@ public abstract class LuceneTestCase extends TestCase {
   private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;
   
   private String savedDefaultCodec;
+  private String codec;
 
   /** Used to track if setUp and tearDown are called correctly from subclasses */
   private boolean setup;
@@ -115,7 +116,12 @@ public abstract class LuceneTestCase extends TestCase {
     ConcurrentMergeScheduler.setTestMode();
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
     savedDefaultCodec = CodecProvider.getDefaultCodec();
-    CodecProvider.setDefaultCodec(_TestUtil.getTestCodec());
+    codec = _TestUtil.getTestCodec();
+    //nocommit
+    if (codec.equals("PreFlex")) {
+        CodecProvider.getDefault().register(new PreFlexRWCodec());
+    } 
+    CodecProvider.setDefaultCodec(codec);
   }
 
   /**
@@ -141,6 +147,10 @@ public abstract class LuceneTestCase extends TestCase {
     assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
     setup = false;
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
+    // nocommit
+    if (codec.equals("PreFlex")) {
+        CodecProvider.getDefault().unregister(new PreFlexRWCodec());
+    } 
     CodecProvider.setDefaultCodec(savedDefaultCodec);
     
     try {
@@ -305,10 +315,4 @@ public abstract class LuceneTestCase extends TestCase {
   
   // static members
   private static final Random seedRnd = new Random();
-
-  // register preflex-rw statically.
-  static {
-    CodecProvider.getDefault().register(new PreFlexRWCodec());
-  }
-
 }
