@@ -19,6 +19,9 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Random;
+import java.util.Collections;
+import java.util.List;
+import java.util.ArrayList;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -53,6 +56,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
+    // nocommit seed
     random = newRandom();
     dir = new MockRAMDirectory();
     // TODO: fix mocktokenizer to not extend chartokenizer, so you can have an 'empty' keyword.
@@ -64,11 +68,23 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     Document doc = new Document();
     Field field = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);
     doc.add(field);
-
+    List<String> terms = new ArrayList<String>();
     for (int i = 0; i < 2000*_TestUtil.getRandomMultiplier(); i++) {
-      field.setValue(_TestUtil.randomUnicodeString(random));
+      String s = _TestUtil.randomUnicodeString(random);
+      field.setValue(s);
+      terms.add(s);
       writer.addDocument(doc);
     }
+
+    if (VERBOSE) {
+      // utf16 order
+      Collections.sort(terms);
+      System.out.println("UTF16 order:");
+      for(String s : terms) {
+        System.out.println("  " + UnicodeUtil.toHexString(s));
+      }
+    }
+    
     reader = writer.getReader();
     searcher = new IndexSearcher(reader);
     writer.close();
@@ -122,8 +138,11 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   
   /** test a bunch of random regular expressions */
   public void testRegexps() throws Exception {
-      for (int i = 0; i < 1000*_TestUtil.getRandomMultiplier(); i++)
-        assertSame(AutomatonTestUtil.randomRegexp(random).toString());
+
+    for (int i = 0; i < 1000*_TestUtil.getRandomMultiplier(); i++) {
+      String reg = AutomatonTestUtil.randomRegexp(random).toString();
+      assertSame(reg);
+    }
   }
   
   /** check that the # of hits is the same as from a very
