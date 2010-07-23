@@ -43,6 +43,24 @@ public class RandomIndexWriter implements Closeable {
   int docCount;
   int flushAt;
 
+  // Randomly calls Thread.yield so we mixup thread scheduling
+  private static final class MockIndexWriter extends IndexWriter {
+
+    private final Random r;
+
+    public MockIndexWriter(Random r,Directory dir, IndexWriterConfig conf) throws IOException {
+      super(dir, conf);
+      this.r = r;
+    }
+
+    @Override
+    boolean testPoint(String name) {
+      if (r.nextInt(4) == 2)
+        Thread.yield();
+      return true;
+    }
+  }
+
   /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT and MockAnalyzer */
   public RandomIndexWriter(Random r, Directory dir) throws IOException {
     this(r, dir, LuceneTestCaseJ4.newIndexWriterConfig(r, LuceneTestCaseJ4.TEST_VERSION_CURRENT, new MockAnalyzer()));
@@ -61,7 +79,7 @@ public class RandomIndexWriter implements Closeable {
   /** create a RandomIndexWriter with the provided config */
   public RandomIndexWriter(Random r, Directory dir, IndexWriterConfig c) throws IOException {
     this.r = r;
-    w = new IndexWriter(dir, c);
+    w = new MockIndexWriter(r, dir, c);
     flushAt = _TestUtil.nextInt(r, 10, 1000);
   } 
 

@@ -428,6 +428,7 @@ public class LuceneTestCaseJ4 {
       logmp.setUseCompoundDocStore(r.nextBoolean());
       logmp.setUseCompoundFile(r.nextBoolean());
       logmp.setCalibrateSizeByDeletes(r.nextBoolean());
+      logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 20));
     }
     
     c.setReaderPooling(r.nextBoolean());

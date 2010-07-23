@@ -252,11 +252,17 @@ public class _TestUtil {
 
       @Override
       public Codec lookup(String name) {
+        // can't do this until we fix PreFlexRW to not
+        //impersonate PreFlex:
+        //return CodecProvider.getDefault().lookup(name);
         return c;
       }
     };
   }
 
+  /** Return a CodecProvider that can read any of the
+   *  default codecs, but always writes in the specified
+   *  codec. */
   public static CodecProvider alwaysCodec(final String codec) {
     return alwaysCodec(CodecProvider.getDefault().lookup(codec));
   }
