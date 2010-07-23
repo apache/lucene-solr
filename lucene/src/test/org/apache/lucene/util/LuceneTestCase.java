@@ -35,6 +35,7 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 
 /** 
@@ -117,6 +118,8 @@ public abstract class LuceneTestCase extends TestCase {
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
     savedDefaultCodec = CodecProvider.getDefaultCodec();
     codec = _TestUtil.getTestCodec();
+    if (codec.equals("random"))
+      codec = CodecProvider.CORE_CODECS[seedRnd.nextInt(CodecProvider.CORE_CODECS.length)];
     //nocommit
     if (codec.equals("PreFlex")) {
         CodecProvider.getDefault().register(new PreFlexRWCodec());
@@ -150,6 +153,7 @@ public abstract class LuceneTestCase extends TestCase {
     // nocommit
     if (codec.equals("PreFlex")) {
         CodecProvider.getDefault().unregister(new PreFlexRWCodec());
+        CodecProvider.getDefault().register(new PreFlexCodec());
     } 
     CodecProvider.setDefaultCodec(savedDefaultCodec);
     
@@ -301,6 +305,9 @@ public abstract class LuceneTestCase extends TestCase {
       seed = null;
       super.runBare();
     } catch (Throwable e) {
+      if (_TestUtil.getTestCodec().equals("random")) {
+        System.out.println("NOTE: random codec of testcase '" + getName() + "' was: " + codec);
+      }
       if (seed != null) {
         System.out.println("NOTE: random seed of testcase '" + getName() + "' was: " + seed);
       }
