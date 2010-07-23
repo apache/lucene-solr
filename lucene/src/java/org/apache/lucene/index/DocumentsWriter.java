@@ -1095,7 +1095,7 @@ final class DocumentsWriter {
           continue;
         }
         assert checkDeleteTerm(term);
-          
+
         if (termsEnum.seek(term.bytes(), false) == TermsEnum.SeekStatus.FOUND) {
           DocsEnum docsEnum = termsEnum.docs(reader.getDeletedDocs(), docs);
             

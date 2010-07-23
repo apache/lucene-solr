@@ -132,18 +132,21 @@ public final class SegmentTermEnum implements Cloneable {
     position = p;
     termBuffer.set(t);
     prevBuffer.reset();
+    //System.out.println("  ste doSeek prev=" + prevBuffer.toTerm() + " this=" + this);
     termInfo.set(ti);
   }
 
   /** Increments the enumeration to the next element.  True if one exists.*/
   public final boolean next() throws IOException {
+    prevBuffer.set(termBuffer);
+    //System.out.println("  ste setPrev=" + prev() + " this=" + this);
+
     if (position++ >= size - 1) {
-      prevBuffer.set(termBuffer);
       termBuffer.reset();
+      //System.out.println("    EOF");
       return false;
     }
 
-    prevBuffer.set(termBuffer);
     termBuffer.read(input, fieldInfos);
     newSuffixStart = termBuffer.newSuffixStart;
 
@@ -168,6 +171,7 @@ public final class SegmentTermEnum implements Cloneable {
     if (isIndex)
       indexPointer += input.readVLong();	  // read index pointer
 
+    //System.out.println("  ste ret term=" + term());
     return true;
   }
 

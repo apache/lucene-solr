@@ -792,6 +792,7 @@ class FieldCacheImpl implements FieldCache {
         throws IOException {
 
       String field = StringHelper.intern(entryKey.field);
+
       Terms terms = MultiFields.getTerms(reader, field);
 
       final boolean fasterButMoreRAM = ((Boolean) entryKey.custom).booleanValue();

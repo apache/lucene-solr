@@ -47,14 +47,14 @@ public abstract class CodecProvider {
 
   private static String defaultCodec = "Standard";
 
-  public final static String[] CORE_CODECS = new String[] {"Standard", "Sep", "Pulsing", "IntBlock"};
+  public final static String[] CORE_CODECS = new String[] {"Standard", "Sep", "Pulsing", "IntBlock", "PreFlex"};
 
   public void register(Codec codec) {
     if (codec.name == null) {
       throw new IllegalArgumentException("code.name is null");
     }
-
-    if (!codecs.containsKey(codec.name)) {
+    // nocommit
+    if (!codecs.containsKey(codec.name) || codec.name.equals("PreFlex")) {
       codecs.put(codec.name, codec);
       codec.getExtensions(knownExtensions);
     } else if (codecs.get(codec.name) != codec) {

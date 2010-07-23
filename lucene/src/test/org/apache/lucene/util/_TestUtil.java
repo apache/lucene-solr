@@ -23,6 +23,9 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.CheckIndex;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.Directory;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -129,8 +132,24 @@ public class _TestUtil {
     }
     final char[] buffer = new char[end];
     for (int i = 0; i < end; i++) {
+
       int t = r.nextInt(5);
+
       //buffer[i] = (char) (97 + r.nextInt(26));
+
+      /*
+      if (0 == t && i < end - 1) {
+        // hi
+        buffer[i++] = (char) 0xd800;
+        // lo
+        buffer[i] = (char) 0xdc00;
+      } else if (t <= 3) {
+        buffer[i] = 'a';
+      }  else if (4 == t) {
+        buffer[i] = 0xe000;
+      }
+      */
+
       if (0 == t && i < end - 1) {
         // Make a surrogate pair
         // High surrogate
@@ -217,5 +236,28 @@ public class _TestUtil {
    *  random tests: multiply it by the number of iterations */
   public static int getRandomMultiplier() {
     return Integer.parseInt(System.getProperty("random.multiplier", "1"));
+  }
+
+  /** gets the codec to run tests with */
+  public static String getTestCodec() {
+    return System.getProperty("tests.codec", "Standard");
+  }
+
+  public static CodecProvider alwaysCodec(final Codec c) {
+    return new CodecProvider() {
+      @Override
+      public Codec getWriter(SegmentWriteState state) {
+        return c;
+      }
+
+      @Override
+      public Codec lookup(String name) {
+        return c;
+      }
+    };
+  }
+
+  public static CodecProvider alwaysCodec(final String codec) {
+    return alwaysCodec(CodecProvider.getDefault().lookup(codec));
   }
 }

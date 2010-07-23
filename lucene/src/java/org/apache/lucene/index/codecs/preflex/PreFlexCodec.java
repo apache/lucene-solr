@@ -40,16 +40,16 @@ import org.apache.lucene.index.codecs.FieldsProducer;
 public class PreFlexCodec extends Codec {
 
   /** Extension of terms file */
-  static final String TERMS_EXTENSION = "tis";
+  public static final String TERMS_EXTENSION = "tis";
 
   /** Extension of terms index file */
-  static final String TERMS_INDEX_EXTENSION = "tii";
+  public static final String TERMS_INDEX_EXTENSION = "tii";
 
   /** Extension of freq postings file */
-  static final String FREQ_EXTENSION = "frq";
+  public static final String FREQ_EXTENSION = "frq";
 
   /** Extension of prox postings file */
-  static final String PROX_EXTENSION = "prx";
+  public static final String PROX_EXTENSION = "prx";
 
   public PreFlexCodec() {
     name = "PreFlex";
@@ -62,7 +62,7 @@ public class PreFlexCodec extends Codec {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new PreFlexFields(state.dir, state.fieldInfos, state.segmentInfo, state.readBufferSize, state.termsIndexDivisor);
+    return new PreFlexFields(state.dir, state.fieldInfos, state.segmentInfo, state.readBufferSize, state.termsIndexDivisor, true);
   }
 
   @Override

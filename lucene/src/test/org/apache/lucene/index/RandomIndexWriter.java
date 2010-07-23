@@ -28,6 +28,7 @@ import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.intblock.IntBlockCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
+import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
 import org.apache.lucene.index.codecs.sep.SepCodec;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
@@ -94,6 +95,16 @@ public class RandomIndexWriter implements Closeable {
   }
 
   public IndexReader getReader() throws IOException {
+    // nocommit: hack!
+    if (w.codecs.getWriter(null).name.equals("PreFlex")) {
+      w.commit();
+      return IndexReader.open(w.getDirectory(),
+          null,
+          false,
+          _TestUtil.nextInt(r, 1, 10),
+          _TestUtil.alwaysCodec(new PreFlexCodec()));
+    }
+    
     if (r.nextBoolean()) {
       return w.getReader();
     } else {
@@ -119,10 +130,15 @@ public class RandomIndexWriter implements Closeable {
     RandomCodecProvider(Random random) {
       register(new StandardCodec());
       register(new IntBlockCodec());
-      register(new PreFlexCodec());
+      // nocommit
+      //register(new PreFlexCodec());
+      register(new PreFlexRWCodec());
       register(new PulsingCodec());
       register(new SepCodec());
-      codec = CodecProvider.CORE_CODECS[random.nextInt(CodecProvider.CORE_CODECS.length)];
+      // nocommit
+      //codec =
+      //CodecProvider.CORE_CODECS[random.nextInt(CodecProvider.CORE_CODECS.length)];
+      codec = "PreFlex";
     }
     
     @Override

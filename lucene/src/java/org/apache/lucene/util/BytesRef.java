@@ -333,10 +333,12 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
           // difference to match UTF16's sort order:
           if (aByte >= 0xee && bByte >= 0xee) {
             if ((aByte & 0xfe) == 0xee) {
-              aByte += 0x10;
+              // nocommit
+              aByte += 0xe;
             }
             if ((bByte&0xfe) == 0xee) {
-              bByte += 0x10;
+              // nocommit
+              bByte += 0xe;
             }
           }
           return aByte - bByte;
@@ -345,10 +347,6 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
 
       // One is a prefix of the other, or, they are equal:
       return a.length - b.length;
-    }
-
-    public boolean equals(Object other) {
-      return this == other;
     }
   }
 

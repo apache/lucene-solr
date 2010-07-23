@@ -22,9 +22,14 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
+
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatchman;
@@ -127,6 +132,20 @@ public class LuceneTestCaseJ4 {
   private static final Map<Class<? extends LuceneTestCaseJ4>,Object> checkedClasses =
     Collections.synchronizedMap(new WeakHashMap<Class<? extends LuceneTestCaseJ4>,Object>());
   
+  // saves default codec: we do this statically as many build indexes in @beforeClass
+  private static String savedDefaultCodec;
+  
+  @BeforeClass
+  public static void beforeClassLuceneTestCaseJ4() {
+    savedDefaultCodec = CodecProvider.getDefaultCodec();
+    CodecProvider.setDefaultCodec(_TestUtil.getTestCodec());
+  }
+  
+  @AfterClass
+  public static void afterClassLuceneTestCaseJ4() {
+    CodecProvider.setDefaultCodec(savedDefaultCodec);
+  }
+
   // This is how we get control when errors occur.
   // Think of this as start/end/success/failed
   // events.
@@ -405,4 +424,8 @@ public class LuceneTestCaseJ4 {
 
   private String name = "<unknown>";
 
+  // register PreFlexRWCodec statically
+  static {
+    CodecProvider.getDefault().register(new PreFlexRWCodec());
+  }
 }

@@ -493,14 +493,21 @@ public class TestCodecs extends MultiCodecTestCase {
         // Test random seek by ord:
         final int idx = TestCodecs.this.nextInt(field.terms.length);
         term = field.terms[idx];
-        status = termsEnum.seek(idx);
-        assertEquals(status, TermsEnum.SeekStatus.FOUND);
-        assertTrue(termsEnum.term().bytesEquals(new BytesRef(term.text2)));
-        assertEquals(term.docs.length, termsEnum.docFreq());
-        if (field.omitTF) {
-          this.verifyDocs(term.docs, term.positions, termsEnum.docs(null, null), false);
-        } else {
-          this.verifyDocs(term.docs, term.positions, termsEnum.docsAndPositions(null, null), true);
+        try {
+          status = termsEnum.seek(idx);
+        } catch (UnsupportedOperationException uoe) {
+          // ok -- skip it
+          status = null;
+        }
+        if (status != null) {
+          assertEquals(status, TermsEnum.SeekStatus.FOUND);
+          assertTrue(termsEnum.term().bytesEquals(new BytesRef(term.text2)));
+          assertEquals(term.docs.length, termsEnum.docFreq());
+          if (field.omitTF) {
+            this.verifyDocs(term.docs, term.positions, termsEnum.docs(null, null), false);
+          } else {
+            this.verifyDocs(term.docs, term.positions, termsEnum.docsAndPositions(null, null), true);
+          }
         }
 
         // Test seek to non-existent terms:
@@ -520,9 +527,12 @@ public class TestCodecs extends MultiCodecTestCase {
 
         // Seek to each term by ord, backwards
         for(int i=field.terms.length-1;i>=0;i--) {
-          assertEquals(Thread.currentThread().getName() + ": field=" + field.fieldInfo.name + " term=" + field.terms[i].text2, TermsEnum.SeekStatus.FOUND, termsEnum.seek(i));
-          assertEquals(field.terms[i].docs.length, termsEnum.docFreq());
-          assertTrue(termsEnum.term().bytesEquals(new BytesRef(field.terms[i].text2)));
+          try {
+            assertEquals(Thread.currentThread().getName() + ": field=" + field.fieldInfo.name + " term=" + field.terms[i].text2, TermsEnum.SeekStatus.FOUND, termsEnum.seek(i));
+            assertEquals(field.terms[i].docs.length, termsEnum.docFreq());
+            assertTrue(termsEnum.term().bytesEquals(new BytesRef(field.terms[i].text2)));
+          } catch (UnsupportedOperationException uoe) {
+          }
         }
 
         // Seek to non-existent empty-string term

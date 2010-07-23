@@ -34,6 +34,8 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 
 /** 
  * Base class for all Lucene unit tests.  
@@ -72,6 +74,8 @@ public abstract class LuceneTestCase extends TestCase {
   
   private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;
   
+  private String savedDefaultCodec;
+
   /** Used to track if setUp and tearDown are called correctly from subclasses */
   private boolean setup;
 
@@ -110,6 +114,8 @@ public abstract class LuceneTestCase extends TestCase {
     
     ConcurrentMergeScheduler.setTestMode();
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
+    savedDefaultCodec = CodecProvider.getDefaultCodec();
+    CodecProvider.setDefaultCodec(_TestUtil.getTestCodec());
   }
 
   /**
@@ -135,7 +141,8 @@ public abstract class LuceneTestCase extends TestCase {
     assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
     setup = false;
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
-
+    CodecProvider.setDefaultCodec(savedDefaultCodec);
+    
     try {
       Thread.setDefaultUncaughtExceptionHandler(savedUncaughtExceptionHandler);
       if (!uncaughtExceptions.isEmpty()) {
@@ -298,4 +305,10 @@ public abstract class LuceneTestCase extends TestCase {
   
   // static members
   private static final Random seedRnd = new Random();
+
+  // register preflex-rw statically.
+  static {
+    CodecProvider.getDefault().register(new PreFlexRWCodec());
+  }
+
 }

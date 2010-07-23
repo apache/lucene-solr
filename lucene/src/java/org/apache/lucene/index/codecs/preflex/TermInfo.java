@@ -23,30 +23,30 @@ package org.apache.lucene.index.codecs.preflex;
  * indexing. */
 
 @Deprecated
-class TermInfo {
+public class TermInfo {
   /** The number of documents which contain the term. */
-  int docFreq = 0;
+  public int docFreq = 0;
 
-  long freqPointer = 0;
-  long proxPointer = 0;
-  int skipOffset;
+  public long freqPointer = 0;
+  public long proxPointer = 0;
+  public int skipOffset;
 
-  TermInfo() {}
+  public TermInfo() {}
 
-  TermInfo(int df, long fp, long pp) {
+  public TermInfo(int df, long fp, long pp) {
     docFreq = df;
     freqPointer = fp;
     proxPointer = pp;
   }
 
-  TermInfo(TermInfo ti) {
+  public TermInfo(TermInfo ti) {
     docFreq = ti.docFreq;
     freqPointer = ti.freqPointer;
     proxPointer = ti.proxPointer;
     skipOffset = ti.skipOffset;
   }
 
-  final void set(int docFreq,
+  public final void set(int docFreq,
                  long freqPointer, long proxPointer, int skipOffset) {
     this.docFreq = docFreq;
     this.freqPointer = freqPointer;
@@ -54,7 +54,7 @@ class TermInfo {
     this.skipOffset = skipOffset;
   }
 
-  final void set(TermInfo ti) {
+  public final void set(TermInfo ti) {
     docFreq = ti.docFreq;
     freqPointer = ti.freqPointer;
     proxPointer = ti.proxPointer;
