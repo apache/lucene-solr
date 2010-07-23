@@ -54,8 +54,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
   public static void beforeClass() throws Exception {
     directory = new RAMDirectory();
     Random random = newStaticRandom(TestNumericRangeQuery64.class);
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     
     NumericField
       field8 = new NumericField("field8", 8, Field.Store.YES, true),

@@ -21,11 +21,9 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Random;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -63,9 +61,7 @@ public class ChainedFilterTest extends LuceneTestCase {
     super.setUp();
     random = newRandom();
     directory = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
-
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     Calendar cal = new GregorianCalendar();
     cal.clear();
     cal.setTimeInMillis(1041397200000L); // 2003 January 01
@@ -200,8 +196,7 @@ public class ChainedFilterTest extends LuceneTestCase {
   
   public void testWithCachingFilter() throws Exception {
     Directory dir = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     IndexReader reader = writer.getReader();
     writer.close();
   

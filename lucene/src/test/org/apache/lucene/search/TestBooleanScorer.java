@@ -20,11 +20,9 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
@@ -45,8 +43,7 @@ public class TestBooleanScorer extends LuceneTestCase
 
     String[] values = new String[] { "1", "2", "3", "4" };
 
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
     for (int i = 0; i < values.length; i++) {
       Document doc = new Document();
       doc.add(new Field(FIELD, values[i], Field.Store.YES, Field.Index.NOT_ANALYZED));

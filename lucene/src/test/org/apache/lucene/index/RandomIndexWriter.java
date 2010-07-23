@@ -21,9 +21,13 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.Random;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 
 /** Silly class that randomizes the indexing experience.  EG
@@ -39,29 +43,24 @@ public class RandomIndexWriter implements Closeable {
   int docCount;
   int flushAt;
 
+  /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT and MockAnalyzer */
+  public RandomIndexWriter(Random r, Directory dir) throws IOException {
+    this(r, dir, LuceneTestCaseJ4.newIndexWriterConfig(r, LuceneTestCaseJ4.TEST_VERSION_CURRENT, new MockAnalyzer()));
+  }
+  
+  /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT */
+  public RandomIndexWriter(Random r, Directory dir, Analyzer a) throws IOException {
+    this(r, dir, LuceneTestCaseJ4.newIndexWriterConfig(r, LuceneTestCaseJ4.TEST_VERSION_CURRENT, a));
+  }
+  
+  /** create a RandomIndexWriter with a random config */
+  public RandomIndexWriter(Random r, Directory dir, Version v, Analyzer a) throws IOException {
+    this(r, dir, LuceneTestCaseJ4.newIndexWriterConfig(r, v, a));
+  }
+  
+  /** create a RandomIndexWriter with the provided config */
   public RandomIndexWriter(Random r, Directory dir, IndexWriterConfig c) throws IOException {
     this.r = r;
-    if (r.nextBoolean()) {
-      c.setMergePolicy(new LogDocMergePolicy());
-    }
-    if (r.nextBoolean()) {
-      c.setMergeScheduler(new SerialMergeScheduler());
-    }
-    if (r.nextBoolean()) {
-      c.setMaxBufferedDocs(_TestUtil.nextInt(r, 2, 1000));
-    }
-    if (r.nextBoolean()) {
-      c.setTermIndexInterval(_TestUtil.nextInt(r, 1, 1000));
-    }
-    
-    if (c.getMergePolicy() instanceof LogMergePolicy) {
-      LogMergePolicy logmp = (LogMergePolicy) c.getMergePolicy();
-      logmp.setUseCompoundDocStore(r.nextBoolean());
-      logmp.setUseCompoundFile(r.nextBoolean());
-      logmp.setCalibrateSizeByDeletes(r.nextBoolean());
-    }
-    
-    c.setReaderPooling(r.nextBoolean());
     w = new IndexWriter(dir, c);
     flushAt = _TestUtil.nextInt(r, 10, 1000);
   } 

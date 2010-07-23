@@ -17,7 +17,12 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogDocMergePolicy;
+import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
@@ -400,6 +405,33 @@ public class LuceneTestCaseJ4 {
     staticSeeds.put(clazz, Long.valueOf(seed));
     System.out.println("WARNING: random static seed of testclass '" + clazz + "' is fixed to: " + seed);
     return new Random(seed);
+  }
+
+  /** create a new index writer config with random defaults */
+  public static IndexWriterConfig newIndexWriterConfig(Random r, Version v, Analyzer a) {
+    IndexWriterConfig c = new IndexWriterConfig(v, a);
+    if (r.nextBoolean()) {
+      c.setMergePolicy(new LogDocMergePolicy());
+    }
+    if (r.nextBoolean()) {
+      c.setMergeScheduler(new SerialMergeScheduler());
+    }
+    if (r.nextBoolean()) {
+      c.setMaxBufferedDocs(_TestUtil.nextInt(r, 2, 1000));
+    }
+    if (r.nextBoolean()) {
+      c.setTermIndexInterval(_TestUtil.nextInt(r, 1, 1000));
+    }
+    
+    if (c.getMergePolicy() instanceof LogMergePolicy) {
+      LogMergePolicy logmp = (LogMergePolicy) c.getMergePolicy();
+      logmp.setUseCompoundDocStore(r.nextBoolean());
+      logmp.setUseCompoundFile(r.nextBoolean());
+      logmp.setCalibrateSizeByDeletes(r.nextBoolean());
+    }
+    
+    c.setReaderPooling(r.nextBoolean());
+    return c;
   }
 
   public String getName() {

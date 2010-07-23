@@ -22,13 +22,13 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 
 import java.text.DecimalFormat;
+import java.util.Random;
 import java.io.IOException;
 
 /**
@@ -80,8 +80,9 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     super.setUp();
     
     index = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), index,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
+    Random random = newRandom();
+    RandomIndexWriter writer = new RandomIndexWriter(random, index,
+        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
             .setSimilarity(sim));
     
     // hed is the most important field, dek is secondary

@@ -31,7 +31,7 @@ public class TestRollback extends LuceneTestCase {
   // LUCENE-2536
   public void testRollbackIntegrityWithBufferFlush() throws Exception {
     Directory dir = new MockRAMDirectory();
-    RandomIndexWriter rw = new RandomIndexWriter(newRandom(), dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter rw = new RandomIndexWriter(newRandom(), dir);
     for (int i = 0; i < 5; i++) {
       Document doc = new Document();
       doc.add(new Field("pk", Integer.toString(i), Store.YES, Index.ANALYZED_NO_NORMS));

@@ -18,13 +18,13 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
@@ -38,8 +38,7 @@ public class BooleanFilterTest extends LuceneTestCase {
 	protected void setUp() throws Exception {
 	  super.setUp();
 		directory = new RAMDirectory();
-		RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
+		RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
 		
 		//Add series of docs with filterable fields : acces rights, prices, dates and "in-stock" flags
 		addDoc(writer, "admin guest", "010", "20040101","Y");

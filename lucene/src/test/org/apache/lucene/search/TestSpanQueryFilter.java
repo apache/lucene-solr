@@ -18,11 +18,9 @@ package org.apache.lucene.search;
 
 import java.util.List;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spans.SpanTermQuery;
@@ -40,8 +38,7 @@ public class TestSpanQueryFilter extends LuceneTestCase {
 
   public void testFilterWorks() throws Exception {
     Directory dir = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
     for (int i = 0; i < 500; i++) {
       Document document = new Document();
       document.add(new Field("field", English.intToEnglish(i) + " equals " + English.intToEnglish(i),

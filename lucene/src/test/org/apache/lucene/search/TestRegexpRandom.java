@@ -51,8 +51,7 @@ public class TestRegexpRandom extends LuceneTestCase {
     super.setUp();
     random = newRandom();
     dir = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     
     Document doc = new Document();
     Field field = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);

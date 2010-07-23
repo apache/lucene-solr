@@ -50,8 +50,7 @@ public class TestFieldCache extends LuceneTestCase {
     Random r = newRandom();
     NUM_DOCS = 1000 * _TestUtil.getRandomMultiplier();
     RAMDirectory directory = new RAMDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(r, directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer= new RandomIndexWriter(r, directory);
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;
     byte theByte = Byte.MAX_VALUE;

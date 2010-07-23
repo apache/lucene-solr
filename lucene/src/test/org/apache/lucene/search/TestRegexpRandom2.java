@@ -28,7 +28,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -62,8 +61,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     // TODO: fix mocktokenizer to not extend chartokenizer, so you can have an 'empty' keyword.
     // currently, this means 'empty tokens' arent created/tested in the enumeration:
     // <mikemccand> it's like having a big hairy scary monster in the basement but being upset that it doesn't have fangs
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new IndexWriterConfig(TEST_VERSION_CURRENT,
-                                                                                        new MockAnalyzer(MockTokenizer.KEYWORD, false)));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(MockTokenizer.KEYWORD, false));
     
     Document doc = new Document();
     Field field = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);

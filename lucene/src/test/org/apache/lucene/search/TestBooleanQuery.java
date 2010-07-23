@@ -18,9 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.MockRAMDirectory;
@@ -62,8 +60,7 @@ public class TestBooleanQuery extends LuceneTestCase {
   // LUCENE-1630
   public void testNullOrSubScorer() throws Throwable {
     Directory dir = new MockRAMDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(newRandom(), dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter w = new RandomIndexWriter(newRandom(), dir);
     Document doc = new Document();
     doc.add(new Field("field", "a b c d", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);

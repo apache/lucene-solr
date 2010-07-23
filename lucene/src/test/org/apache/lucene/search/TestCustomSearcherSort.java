@@ -24,12 +24,10 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -59,8 +57,7 @@ public class TestCustomSearcherSort extends LuceneTestCase implements
     super.setUp();
     Random rand = newRandom();
     index = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(rand, index, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(rand, index);
     RandomGen random = new RandomGen(rand);
     for (int i = 0; i < INDEX_SIZE; ++i) { // don't decrease; if to low the
                                            // problem doesn't show up

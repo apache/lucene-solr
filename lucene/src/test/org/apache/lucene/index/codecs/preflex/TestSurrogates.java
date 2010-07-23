@@ -21,7 +21,6 @@ import org.apache.lucene.store.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.codecs.*;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.util.*;
 
@@ -272,7 +271,7 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
     Directory dir = new MockRAMDirectory();
     RandomIndexWriter w = new RandomIndexWriter(r,
                                                 dir,
-                                                new IndexWriterConfig(TEST_VERSION_CURRENT,
+                                                newIndexWriterConfig(r, TEST_VERSION_CURRENT,
                                                                       new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec(new PreFlexRWCodec())));
 
     final int numField = _TestUtil.nextInt(r, 2, 5);
