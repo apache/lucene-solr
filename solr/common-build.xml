@@ -44,6 +44,8 @@
   <!-- TODO: measure toning this down by default to 1 -->
   <property name="threadsPerProcessor" value="2"/>
 
+  <property name="tests.codec" value="Standard" />
+
   <!-- Example directory -->
   <property name="example" value="${common-solr.dir}/example" />
   <!-- 
