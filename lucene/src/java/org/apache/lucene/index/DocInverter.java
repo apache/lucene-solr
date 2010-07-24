@@ -95,18 +95,11 @@ final class DocInverter extends DocFieldConsumer {
   }
 
   @Override
-  public DocumentsWriterPerThread.DocWriter finishDocument() throws IOException {
+  public void finishDocument() throws IOException {
     // TODO: allow endConsumer.finishDocument to also return
     // a DocWriter
     endConsumer.finishDocument();
-    return consumer.finishDocument();
-  }
-
-
-  @Override
-  public void closeDocStore(SegmentWriteState state) throws IOException {
-    consumer.closeDocStore(state);
-    endConsumer.closeDocStore(state);
+    consumer.finishDocument();
   }
 
   @Override

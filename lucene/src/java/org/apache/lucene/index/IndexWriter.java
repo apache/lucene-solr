@@ -413,7 +413,7 @@ public class IndexWriter implements Closeable {
     // this method is called:
     poolReaders = true;
 
-    flush(true, true, false);
+    flush(true, false);
     
     // Prevent segmentInfos from changing while opening the
     // reader; in theory we could do similar retry logic,
@@ -1440,7 +1440,7 @@ public class IndexWriter implements Closeable {
       // Only allow a new merge to be triggered if we are
       // going to wait for merges:
       if (!hitOOM) {
-        flush(waitForMerges, true, true);
+        flush(waitForMerges, true);
       }
 
       if (waitForMerges)
@@ -1961,7 +1961,7 @@ public class IndexWriter implements Closeable {
     if (infoStream != null)
       message("optimize: index now " + segString());
 
-    flush(true, false, true);
+    flush(true, true);
 
     synchronized(this) {
       resetMergeExceptions();
@@ -2490,7 +2490,7 @@ public class IndexWriter implements Closeable {
     try {
       if (infoStream != null)
         message("flush at addIndexes(Directory...)");
-      flush(true, false, true);
+      flush(true, true);
 
       int docCount = 0;
       List<SegmentInfo> infos = new ArrayList<SegmentInfo>();
@@ -2537,7 +2537,7 @@ public class IndexWriter implements Closeable {
           }
 
           // Update SI appropriately
-          info.setDocStore(info.getDocStoreOffset(), newDsName, info.getDocStoreIsCompoundFile());
+          info.setDocStoreSegment(newDsName);
           info.dir = directory;
           info.name = newSegName;
 
@@ -2595,8 +2595,7 @@ public class IndexWriter implements Closeable {
       
       SegmentInfo info = null;
       synchronized(this) {
-        info = new SegmentInfo(mergedName, docCount, directory, false, -1,
-            null, false, merger.hasProx(), merger.getCodec());
+        info = new SegmentInfo(mergedName, docCount, directory, false, merger.hasProx(), merger.getCodec());
         setDiagnostics(info, "addIndexes(IndexReader...)");
         segmentInfos.add(info);
         checkpoint();
@@ -2705,7 +2704,7 @@ public class IndexWriter implements Closeable {
     if (infoStream != null)
       message("prepareCommit: flush");
 
-    flush(true, true, true);
+    flush(true, true);
 
     startCommit(0, commitUserData);
   }
@@ -2826,18 +2825,18 @@ public class IndexWriter implements Closeable {
    * @param flushDeletes whether pending deletes should also
    *  be flushed
    */
-  protected final void flush(boolean triggerMerge, boolean flushDocStores, boolean flushDeletes) throws CorruptIndexException, IOException {
+  protected final void flush(boolean triggerMerge, boolean flushDeletes) throws CorruptIndexException, IOException {
     // We can be called during close, when closing==true, so we must pass false to ensureOpen:
     ensureOpen(false);
-    if (doFlush(flushDocStores, flushDeletes) && triggerMerge)
+    if (doFlush(flushDeletes) && triggerMerge)
       maybeMerge();
   }
 
   // TODO: this method should not have to be entirely
   // synchronized, ie, merges should be allowed to commit
   // even while a flush is happening
-  private synchronized final boolean doFlush(boolean flushDocStores, boolean flushDeletes) throws CorruptIndexException, IOException {
-    return docWriter.flushAllThreads(flushDocStores, flushDeletes);
+  private synchronized final boolean doFlush(boolean flushDeletes) throws CorruptIndexException, IOException {
+    return docWriter.flushAllThreads(flushDeletes);
     // nocommit
 //    try {
 //      try {
@@ -2998,7 +2997,6 @@ public class IndexWriter implements Closeable {
     // nocommit
     //docWriter.remapDeletes(segmentInfos, merger.getDocMaps(), merger.getDelCounts(), merge, mergedDocCount);
       
-    setMergeDocStoreIsCompoundFile(merge);
     merge.info.setHasProx(merger.hasProx());
 
     segmentInfos.subList(start, start + merge.segments.size()).clear();
@@ -3199,108 +3197,13 @@ public class IndexWriter implements Closeable {
     final SegmentInfos sourceSegments = merge.segments;
     final int end = sourceSegments.size();
 
-    // Check whether this merge will allow us to skip
-    // merging the doc stores (stored field & vectors).
-    // This is a very substantial optimization (saves tons
-    // of IO).
-
-    Directory lastDir = directory;
-    String lastDocStoreSegment = null;
-    int next = -1;
-
-    boolean mergeDocStores = false;
-    boolean doFlushDocStore = false;
-    // nocommit
-    //final String currentDocStoreSegment = docWriter.getDocStoreSegment();
-
-    // Test each segment to be merged: check if we need to
-    // flush/merge doc stores
-    for (int i = 0; i < end; i++) {
-      SegmentInfo si = sourceSegments.info(i);
-
-      // If it has deletions we must merge the doc stores
-      if (si.hasDeletions())
-        mergeDocStores = true;
-
-      // If it has its own (private) doc stores we must
-      // merge the doc stores
-      if (-1 == si.getDocStoreOffset())
-        mergeDocStores = true;
-
-      // If it has a different doc store segment than
-      // previous segments, we must merge the doc stores
-      String docStoreSegment = si.getDocStoreSegment();
-      if (docStoreSegment == null)
-        mergeDocStores = true;
-      else if (lastDocStoreSegment == null)
-        lastDocStoreSegment = docStoreSegment;
-      else if (!lastDocStoreSegment.equals(docStoreSegment))
-        mergeDocStores = true;
-
-      // Segments' docScoreOffsets must be in-order,
-      // contiguous.  For the default merge policy now
-      // this will always be the case but for an arbitrary
-      // merge policy this may not be the case
-      if (-1 == next)
-        next = si.getDocStoreOffset() + si.docCount;
-      else if (next != si.getDocStoreOffset())
-        mergeDocStores = true;
-      else
-        next = si.getDocStoreOffset() + si.docCount;
-      
-      // If the segment comes from a different directory
-      // we must merge
-      if (lastDir != si.dir)
-        mergeDocStores = true;
-
-      // If the segment is referencing the current "live"
-      // doc store outputs then we must merge
-      // nocommit
-//      if (si.getDocStoreOffset() != -1 && currentDocStoreSegment != null && si.getDocStoreSegment().equals(currentDocStoreSegment)) {
-//        doFlushDocStore = true;
-//      }
-    }
-
-    final int docStoreOffset;
-    final String docStoreSegment;
-    final boolean docStoreIsCompoundFile;
-
-    if (mergeDocStores) {
-      docStoreOffset = -1;
-      docStoreSegment = null;
-      docStoreIsCompoundFile = false;
-    } else {
-      SegmentInfo si = sourceSegments.info(0);        
-      docStoreOffset = si.getDocStoreOffset();
-      docStoreSegment = si.getDocStoreSegment();
-      docStoreIsCompoundFile = si.getDocStoreIsCompoundFile();
-    }
-
-    if (mergeDocStores && doFlushDocStore) {
-      // SegmentMerger intends to merge the doc stores
-      // (stored fields, vectors), and at least one of the
-      // segments to be merged refers to the currently
-      // live doc stores.
-
-      // TODO: if we know we are about to merge away these
-      // newly flushed doc store files then we should not
-      // make compound file out of them...
-      if (infoStream != null)
-        message("now flush at merge");
-      doFlush(true, false);
-    }
-
     merge.increfDone = true;
-
-    merge.mergeDocStores = mergeDocStores;
 
     // Bind a new segment name here so even with
     // ConcurrentMergePolicy we keep deterministic segment
     // names.
     merge.info = new SegmentInfo(newSegmentName(), 0,
-                                 directory, false, docStoreOffset,
-                                 docStoreSegment,
-                                 docStoreIsCompoundFile,
+                                 directory, false,
                                  false,
                                  null);
 
@@ -3308,7 +3211,6 @@ public class IndexWriter implements Closeable {
     Map<String,String> details = new HashMap<String,String>();
     details.put("optimize", Boolean.toString(merge.optimize));
     details.put("mergeFactor", Integer.toString(end));
-    details.put("mergeDocStores", Boolean.toString(mergeDocStores));
     setDiagnostics(merge.info, "merge", details);
 
     // Also enroll the merged segment into mergingSegments;
@@ -3368,23 +3270,6 @@ public class IndexWriter implements Closeable {
     runningMerges.remove(merge);
   }
 
-  private synchronized void setMergeDocStoreIsCompoundFile(MergePolicy.OneMerge merge) {
-    final String mergeDocStoreSegment = merge.info.getDocStoreSegment(); 
-    if (mergeDocStoreSegment != null && !merge.info.getDocStoreIsCompoundFile()) {
-      final int size = segmentInfos.size();
-      for(int i=0;i<size;i++) {
-        final SegmentInfo info = segmentInfos.info(i);
-        final String docStoreSegment = info.getDocStoreSegment();
-        if (docStoreSegment != null &&
-            docStoreSegment.equals(mergeDocStoreSegment) && 
-            info.getDocStoreIsCompoundFile()) {
-          merge.info.setDocStoreIsCompoundFile(true);
-          break;
-        }
-      }
-    }
-  }        
-
   /** Does the actual (time-consuming) work of the merge,
    *  but without holding synchronized lock on IndexWriter
    *  instance */
@@ -3410,10 +3295,6 @@ public class IndexWriter implements Closeable {
     merge.readers = new SegmentReader[numSegments];
     merge.readersClone = new SegmentReader[numSegments];
 
-    boolean mergeDocStores = false;
-
-    final Set<String> dss = new HashSet<String>();
-    
     // This is try/finally to make sure merger's readers are
     // closed:
     boolean success = false;
@@ -3426,7 +3307,7 @@ public class IndexWriter implements Closeable {
 
         // Hold onto the "live" reader; we will use this to
         // commit merged deletes
-        SegmentReader reader = merge.readers[i] = readerPool.get(info, merge.mergeDocStores,
+        SegmentReader reader = merge.readers[i] = readerPool.get(info, true,
                                                                  MERGE_READ_BUFFER_SIZE,
                                                                  -config.getReaderTermsIndexDivisor());
 
@@ -3435,14 +3316,6 @@ public class IndexWriter implements Closeable {
         // need readers that will not change
         SegmentReader clone = merge.readersClone[i] = (SegmentReader) reader.clone(true);
         merger.add(clone);
-
-        if (clone.hasDeletions()) {
-          mergeDocStores = true;
-        }
-        
-        if (info.getDocStoreOffset() != -1) {
-          dss.add(info.getDocStoreSegment());
-        }
 
         totDocCount += clone.numDocs();
       }
@@ -3453,40 +3326,12 @@ public class IndexWriter implements Closeable {
 
       merge.checkAborted(directory);
 
-      // If deletions have arrived and it has now become
-      // necessary to merge doc stores, go and open them:
-      if (mergeDocStores && !merge.mergeDocStores) {
-        merge.mergeDocStores = true;
-        synchronized(this) {
-
-          // If 1) we must now merge doc stores, and 2) at
-          // least one of the segments we are merging uses
-          // the doc store we are now writing to, we must at
-          // this point force this doc store closed (by
-          // calling flush).  If we didn't do this then the
-          // readers will attempt to open an IndexInput
-          // on files that have still-open IndexOutputs
-          // against them:
-          // nocommit
-//          if (dss.contains(docWriter.getDocStoreSegment())) {
-//            if (infoStream != null)
-//              message("now flush at mergeMiddle");
-//            doFlush(true, false);
-//          }
-        }
-
-        for(int i=0;i<numSegments;i++) {
-          merge.readersClone[i].openDocStores();
-        }
-
-        // Clear DSS
-        synchronized(this) {
-          merge.info.setDocStore(-1, null, false);
-        }
+      for(int i=0;i<numSegments;i++) {
+        merge.readersClone[i].openDocStores();
       }
 
       // This is where all the work happens:
-      mergedDocCount = merge.info.docCount = merger.merge(merge.mergeDocStores);
+      mergedDocCount = merge.info.docCount = merger.merge();
 
       // Record which codec was used to write the segment
       merge.info.setCodec(merger.getCodec());
@@ -3507,11 +3352,6 @@ public class IndexWriter implements Closeable {
       final boolean loadDocStores;
 
       synchronized(this) {
-        // If the doc store we are using has been closed and
-        // is in now compound format (but wasn't when we
-        // started), then we will switch to the compound
-        // format as well:
-        setMergeDocStoreIsCompoundFile(merge);
         assert merge.mergeFiles == null;
         merge.mergeFiles = merge.info.files();
         deleter.incRef(merge.mergeFiles);

@@ -20,9 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Map;
 
-import org.apache.lucene.index.DocumentsWriterPerThread.DocWriter;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -31,7 +29,6 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
 
   final DocumentsWriterPerThread docWriter;
   TermVectorsWriter termVectorsWriter;
-  PerDoc[] docFreeList = new PerDoc[1];
   int freeCount;
   IndexOutput tvx;
   IndexOutput tvd;
@@ -40,7 +37,6 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
   
   final DocumentsWriterPerThread.DocState docState;
   final BytesRef flushTerm = new BytesRef();
-  TermVectorsTermsWriter.PerDoc doc;
   
   // Used by perField when serializing the term vectors
   final ByteSliceReader vectorSliceReader = new ByteSliceReader();
@@ -55,40 +51,26 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
 
     if (tvx != null) {
 
-      if (state.numDocsInStore > 0)
+      if (state.numDocs > 0) {
         // In case there are some final documents that we
         // didn't see (because they hit a non-aborting exception):
-        fill(state.numDocsInStore - docWriter.getDocStoreOffset());
+        fill(state.numDocs);
+      }
 
       tvx.flush();
       tvd.flush();
       tvf.flush();
-    }
-
-    for (final TermsHashConsumerPerField field : fieldsToFlush.values() ) {
-      TermVectorsTermsWriterPerField perField = (TermVectorsTermsWriterPerField) field;
-      perField.termsHashPerField.reset();
-      perField.shrinkHash();
-    }
-  }
-
-  @Override
-  void closeDocStore(final SegmentWriteState state) throws IOException {
-    if (tvx != null) {
-      // At least one doc in this run had term vectors
-      // enabled
-      fill(state.numDocsInStore - docWriter.getDocStoreOffset());
+      
       tvx.close();
       tvf.close();
       tvd.close();
       tvx = null;
-      assert state.docStoreSegmentName != null;
-      String idxName = IndexFileNames.segmentFileName(state.docStoreSegmentName, "", IndexFileNames.VECTORS_INDEX_EXTENSION);
-      if (4+((long) state.numDocsInStore)*16 != state.directory.fileLength(idxName))
-        throw new RuntimeException("after flush: tvx size mismatch: " + state.numDocsInStore + " docs vs " + state.directory.fileLength(idxName) + " length in bytes of " + idxName + " file exists?=" + state.directory.fileExists(idxName));
+      String idxName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.VECTORS_INDEX_EXTENSION);
+      if (4+((long) state.numDocs)*16 != state.directory.fileLength(idxName))
+        throw new RuntimeException("after flush: tvx size mismatch: " + state.numDocs + " docs vs " + state.directory.fileLength(idxName) + " length in bytes of " + idxName + " file exists?=" + state.directory.fileExists(idxName));
 
-      String fldName = IndexFileNames.segmentFileName(state.docStoreSegmentName, "", IndexFileNames.VECTORS_FIELDS_EXTENSION);
-      String docName = IndexFileNames.segmentFileName(state.docStoreSegmentName, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
+      String fldName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.VECTORS_FIELDS_EXTENSION);
+      String docName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
       state.flushedFiles.add(idxName);
       state.flushedFiles.add(fldName);
       state.flushedFiles.add(docName);
@@ -98,31 +80,20 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       docWriter.removeOpenFile(docName);
 
       lastDocID = 0;
-    }    
-  }
 
-  int allocCount;
+    }
 
-  PerDoc getPerDoc() {
-    if (freeCount == 0) {
-      allocCount++;
-      if (allocCount > docFreeList.length) {
-        // Grow our free list up front to make sure we have
-        // enough space to recycle all outstanding PerDoc
-        // instances
-        assert allocCount == 1+docFreeList.length;
-        docFreeList = new PerDoc[ArrayUtil.oversize(allocCount, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
-      }
-      return new PerDoc();
-    } else
-      return docFreeList[--freeCount];
+    for (final TermsHashConsumerPerField field : fieldsToFlush.values() ) {
+      TermVectorsTermsWriterPerField perField = (TermVectorsTermsWriterPerField) field;
+      perField.termsHashPerField.reset();
+      perField.shrinkHash();
+    }
   }
 
   /** Fills in no-term-vectors for all docs we haven't seen
    *  since the last doc that had term vectors. */
   void fill(int docID) throws IOException {
-    final int docStoreOffset = docWriter.getDocStoreOffset();
-    final int end = docID+docStoreOffset;
+    final int end = docID;
     if (lastDocID < end) {
       final long tvfPosition = tvf.getFilePointer();
       while(lastDocID < end) {
@@ -137,18 +108,18 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
   void initTermVectorsWriter() throws IOException {        
     if (tvx == null) {
       
-      final String docStoreSegment = docWriter.getDocStoreSegment();
+      final String segment = docWriter.getSegment();
 
-      if (docStoreSegment == null)
+      if (segment == null)
         return;
 
       // If we hit an exception while init'ing the term
       // vector output files, we must abort this segment
       // because those files will be in an unknown
       // state:
-      String idxName = IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_INDEX_EXTENSION);
-      String docName = IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
-      String fldName = IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION);
+      String idxName = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_INDEX_EXTENSION);
+      String docName = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION);
+      String fldName = IndexFileNames.segmentFileName(segment, "", IndexFileNames.VECTORS_FIELDS_EXTENSION);
       tvx = docWriter.directory.createOutput(idxName);
       tvd = docWriter.directory.createOutput(docName);
       tvf = docWriter.directory.createOutput(fldName);
@@ -165,53 +136,44 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     }
   }
 
-  void finishDocument(PerDoc perDoc) throws IOException {
+  @Override
+  void finishDocument(TermsHash termsHash) throws IOException {
 
     assert docWriter.writer.testPoint("TermVectorsTermsWriter.finishDocument start");
 
     initTermVectorsWriter();
 
-    fill(perDoc.docID);
-
+    fill(docState.docID);
+    
     // Append term vectors to the real outputs:
     tvx.writeLong(tvd.getFilePointer());
     tvx.writeLong(tvf.getFilePointer());
-    tvd.writeVInt(perDoc.numVectorFields);
-    if (perDoc.numVectorFields > 0) {
-      for(int i=0;i<perDoc.numVectorFields;i++)
-        tvd.writeVInt(perDoc.fieldNumbers[i]);
-      assert 0 == perDoc.fieldPointers[0];
-      long lastPos = perDoc.fieldPointers[0];
-      for(int i=1;i<perDoc.numVectorFields;i++) {
-        long pos = perDoc.fieldPointers[i];
+    tvd.writeVInt(numVectorFields);
+    if (numVectorFields > 0) {
+      for(int i=0;i<numVectorFields;i++) {
+        tvd.writeVInt(perFields[i].fieldInfo.number);
+      }
+      long lastPos = tvf.getFilePointer();
+      perFields[0].finishDocument();
+      for(int i=1;i<numVectorFields;i++) {
+        long pos = tvf.getFilePointer();
         tvd.writeVLong(pos-lastPos);
         lastPos = pos;
+        perFields[i].finishDocument();
       }
-      perDoc.perDocTvf.writeTo(tvf);
-      perDoc.numVectorFields = 0;
     }
 
-    assert lastDocID == perDoc.docID + docWriter.getDocStoreOffset();
+    assert lastDocID == docState.docID;
 
     lastDocID++;
 
-    perDoc.reset();
-    free(perDoc);
+    termsHash.reset();
+    reset();
     assert docWriter.writer.testPoint("TermVectorsTermsWriter.finishDocument end");
-  }
-
-  public boolean freeRAM() {
-    // We don't hold any state beyond one doc, so we don't
-    // free persistent RAM here
-    return false;
   }
 
   @Override
   public void abort() {
-    if (doc != null) {
-      doc.abort();
-      doc = null;
-    }
 
     if (tvx != null) {
       try {
@@ -239,54 +201,13 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
 
   }
 
-  void free(PerDoc doc) {
-    assert freeCount < docFreeList.length;
-    docFreeList[freeCount++] = doc;
-  }
+  int numVectorFields;
 
-  class PerDoc extends DocumentsWriterPerThread.DocWriter {
+  TermVectorsTermsWriterPerField[] perFields;
 
-    final DocumentsWriterPerThread.PerDocBuffer buffer = docWriter.newPerDocBuffer();
-    RAMOutputStream perDocTvf = new RAMOutputStream(buffer);
-
-    int numVectorFields;
-
-    int[] fieldNumbers = new int[1];
-    long[] fieldPointers = new long[1];
-
-    void reset() {
-      perDocTvf.reset();
-      buffer.recycle();
-      numVectorFields = 0;
-    }
-
-    @Override
-    public void abort() {
-      reset();
-      free(this);
-    }
-
-    void addField(final int fieldNumber) {
-      if (numVectorFields == fieldNumbers.length) {
-        fieldNumbers = ArrayUtil.grow(fieldNumbers);
-      }
-      if (numVectorFields == fieldPointers.length) {
-        fieldPointers = ArrayUtil.grow(fieldPointers);
-      }
-      fieldNumbers[numVectorFields] = fieldNumber;
-      fieldPointers[numVectorFields] = perDocTvf.getFilePointer();
-      numVectorFields++;
-    }
-
-    @Override
-    public long sizeInBytes() {
-      return buffer.getSizeInBytes();
-    }
-
-    @Override
-    public void finish() throws IOException {
-      finishDocument(this);
-    }
+  void reset() {
+    numVectorFields = 0;
+    perFields = new TermVectorsTermsWriterPerField[1];
   }
 
   @Override
@@ -294,22 +215,22 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     return new TermVectorsTermsWriterPerField(termsHashPerField, this, fieldInfo);
   }
 
-  @Override
-  DocWriter finishDocument() throws IOException {
-    try {
-      return doc;
-    } finally {
-      doc = null;
+  void addFieldToFlush(TermVectorsTermsWriterPerField fieldToFlush) {
+    if (numVectorFields == perFields.length) {
+      int newSize = ArrayUtil.oversize(numVectorFields + 1, RamUsageEstimator.NUM_BYTES_OBJ_REF);
+      TermVectorsTermsWriterPerField[] newArray = new TermVectorsTermsWriterPerField[newSize];
+      System.arraycopy(perFields, 0, newArray, 0, numVectorFields);
+      perFields = newArray;
     }
-  }
 
+    perFields[numVectorFields++] = fieldToFlush;
+  }
+  
   @Override
   void startDocument() throws IOException {
     assert clearLastVectorFieldName();
-    if (doc != null) {
-      doc.reset();
-      doc.docID = docState.docID;
-    }
+    perFields = new TermVectorsTermsWriterPerField[1];
+    reset();
   }
   
   // Called only by assert

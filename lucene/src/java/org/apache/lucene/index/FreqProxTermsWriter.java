@@ -20,20 +20,13 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.index.DocumentsWriterPerThread.DocWriter;
 import org.apache.lucene.index.codecs.FieldsConsumer;
-import org.apache.lucene.index.codecs.PostingsConsumer;
-import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.util.BytesRef;
 
 final class FreqProxTermsWriter extends TermsHashConsumer {
-
-  @Override
-  void closeDocStore(SegmentWriteState state) {}
 
   @Override
   void abort() {}
@@ -112,8 +105,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
   }
 
   @Override
-  DocWriter finishDocument() throws IOException {
-    return null;
+  void finishDocument(TermsHash termsHash) throws IOException {
   }
 
   @Override

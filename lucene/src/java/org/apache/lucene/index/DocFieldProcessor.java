@@ -26,8 +26,6 @@ import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.RamUsageEstimator;
 
 
 /**
@@ -67,12 +65,6 @@ final class DocFieldProcessor extends DocConsumer {
   }
 
   @Override
-  public void closeDocStore(SegmentWriteState state) throws IOException {
-    consumer.closeDocStore(state);
-    fieldsWriter.closeDocStore(state);
-  }
-
-  @Override
   public void flush(SegmentWriteState state) throws IOException {
 
     Map<FieldInfo, DocFieldConsumerPerField> childFields = new HashMap<FieldInfo, DocFieldConsumerPerField>();
@@ -105,8 +97,11 @@ final class DocFieldProcessor extends DocConsumer {
       }
     }
 
-    fieldsWriter.abort();
-    consumer.abort();
+    try {
+      fieldsWriter.abort();
+    } finally {
+      consumer.abort();
+    }
   }
 
   @Override
@@ -190,7 +185,7 @@ final class DocFieldProcessor extends DocConsumer {
   }
 
   @Override
-  public DocumentsWriterPerThread.DocWriter processDocument() throws IOException {
+  public void processDocument() throws IOException {
 
     consumer.startDocument();
     fieldsWriter.startDocument();
@@ -259,14 +254,9 @@ final class DocFieldProcessor extends DocConsumer {
         fields[fieldCount++] = fp;
         fp.lastGen = thisFieldGen;
       }
+      
+      fp.addField(field);
 
-      if (fp.fieldCount == fp.fields.length) {
-        Fieldable[] newArray = new Fieldable[fp.fields.length*2];
-        System.arraycopy(fp.fields, 0, newArray, 0, fp.fieldCount);
-        fp.fields = newArray;
-      }
-
-      fp.fields[fp.fieldCount++] = field;
       if (field.isStored()) {
         fieldsWriter.addField(field, fp.fieldInfo);
       }
@@ -287,23 +277,17 @@ final class DocFieldProcessor extends DocConsumer {
       docState.infoStream.println("WARNING: document contains at least one immense term (whose UTF8 encoding is longer than the max length " + DocumentsWriterRAMAllocator.MAX_TERM_LENGTH_UTF8 + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + docState.maxTermPrefix + "...'"); 
       docState.maxTermPrefix = null;
     }
-
-    final DocumentsWriterPerThread.DocWriter one = fieldsWriter.finishDocument();
-    final DocumentsWriterPerThread.DocWriter two = consumer.finishDocument();
-    if (one == null) {
-      return two;
-    } else if (two == null) {
-      return one;
-    } else {
-      PerDoc both = getPerDoc();
-      both.docID = docState.docID;
-      assert one.docID == docState.docID;
-      assert two.docID == docState.docID;
-      both.one = one;
-      both.two = two;
-      return both;
+  }
+  
+  @Override
+  void finishDocument() throws IOException {
+    try {
+      fieldsWriter.finishDocument();
+    } finally {
+      consumer.finishDocument();
     }
   }
+
 
   void quickSort(DocFieldProcessorPerField[] array, int lo, int hi) {
     if (lo >= hi)
@@ -364,66 +348,5 @@ final class DocFieldProcessor extends DocConsumer {
 
     quickSort(array, lo, left);
     quickSort(array, left + 1, hi);
-  }
-
-  PerDoc[] docFreeList = new PerDoc[1];
-  int freeCount;
-  int allocCount;
-
-  PerDoc getPerDoc() {
-    if (freeCount == 0) {
-      allocCount++;
-      if (allocCount > docFreeList.length) {
-        // Grow our free list up front to make sure we have
-        // enough space to recycle all outstanding PerDoc
-        // instances
-        assert allocCount == 1+docFreeList.length;
-        docFreeList = new PerDoc[ArrayUtil.oversize(allocCount, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
-      }
-      return new PerDoc();
-    } else
-      return docFreeList[--freeCount];
-  }
-
-  void freePerDoc(PerDoc perDoc) {
-    assert freeCount < docFreeList.length;
-    docFreeList[freeCount++] = perDoc;
-  }
-
-  class PerDoc extends DocumentsWriterPerThread.DocWriter {
-
-    DocumentsWriterPerThread.DocWriter one;
-    DocumentsWriterPerThread.DocWriter two;
-
-    @Override
-    public long sizeInBytes() {
-      return one.sizeInBytes() + two.sizeInBytes();
-    }
-
-    @Override
-    public void finish() throws IOException {
-      try {
-        try {
-          one.finish();
-        } finally {
-          two.finish();
-        }
-      } finally {
-        freePerDoc(this);
-      }
-    }
-
-    @Override
-    public void abort() {
-      try {
-        try {
-          one.abort();
-        } finally {
-          two.abort();
-        }
-      } finally {
-        freePerDoc(this);
-      }
-    }
   }
 }

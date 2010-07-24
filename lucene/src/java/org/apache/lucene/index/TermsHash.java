@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.index.DocumentsWriterPerThread.DocWriter;
 import org.apache.lucene.util.BytesRef;
 
 /** This class implements {@link InvertedDocConsumer}, which
@@ -99,14 +98,6 @@ final class TermsHash extends InvertedDocConsumer {
     }
   }
 
-
-  @Override
-  void closeDocStore(SegmentWriteState state) throws IOException {
-    consumer.closeDocStore(state);
-    if (nextTermsHash != null)
-      nextTermsHash.closeDocStore(state);
-  }
-
   @Override
   void flush(Map<FieldInfo,InvertedDocConsumerPerField> fieldsToFlush, final SegmentWriteState state) throws IOException {
     Map<FieldInfo,TermsHashConsumerPerField> childFields = new HashMap<FieldInfo,TermsHashConsumerPerField>();
@@ -144,20 +135,13 @@ final class TermsHash extends InvertedDocConsumer {
   }
 
   @Override
-  DocWriter finishDocument() throws IOException {
-    final DocumentsWriterPerThread.DocWriter doc = consumer.finishDocument();
-
-    final DocumentsWriterPerThread.DocWriter doc2;
-    if (nextTermsHash != null) {
-      doc2 = nextTermsHash.consumer.finishDocument();
-    } else {
-      doc2 = null;
-    }
-    if (doc == null) {
-      return doc2;
-    } else {
-      doc.setNext(doc2);
-      return doc;
+  void finishDocument() throws IOException {
+    try {
+      consumer.finishDocument(this);
+    } finally {
+      if (nextTermsHash != null) {
+        nextTermsHash.consumer.finishDocument(nextTermsHash);
+      }
     }
   }
 

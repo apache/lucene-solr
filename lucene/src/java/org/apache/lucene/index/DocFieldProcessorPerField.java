@@ -18,6 +18,8 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Holds all per thread, per field state.
@@ -39,6 +41,17 @@ final class DocFieldProcessorPerField {
     this.fieldInfo = fieldInfo;
   }
 
+  public void addField(Fieldable field) {
+    if (fieldCount == fields.length) {
+      int newSize = ArrayUtil.oversize(fieldCount + 1, RamUsageEstimator.NUM_BYTES_OBJ_REF);
+      Fieldable[] newArray = new Fieldable[newSize];
+      System.arraycopy(fields, 0, newArray, 0, fieldCount);
+      fields = newArray;
+    }
+
+    fields[fieldCount++] = field;
+  }
+  
   public void abort() {
     consumer.abort();
   }

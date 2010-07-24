@@ -27,10 +27,6 @@ abstract class DocFieldConsumer {
   /** Called when DocumentsWriter decides to create a new
    *  segment */
   abstract void flush(Map<FieldInfo, DocFieldConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException;
-
-  /** Called when DocumentsWriter decides to close the doc
-   *  stores */
-  abstract void closeDocStore(SegmentWriteState state) throws IOException;
   
   /** Called when an aborting exception is hit */
   abstract void abort();
@@ -44,7 +40,7 @@ abstract class DocFieldConsumer {
 
   abstract DocFieldConsumerPerField addField(FieldInfo fi);
   
-  abstract DocumentsWriterPerThread.DocWriter finishDocument() throws IOException;
+  abstract void finishDocument() throws IOException;
   
   void setFieldInfos(FieldInfos fieldInfos) {
     this.fieldInfos = fieldInfos;

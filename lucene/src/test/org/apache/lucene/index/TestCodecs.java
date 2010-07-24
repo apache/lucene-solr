@@ -281,7 +281,7 @@ public class TestCodecs extends MultiCodecTestCase {
 
     final Directory dir = new MockRAMDirectory();
     this.write(fieldInfos, dir, fields);
-    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, -1, SEGMENT, false, true, CodecProvider.getDefault().getWriter(null));
+    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, true, CodecProvider.getDefault().getWriter(null));
     si.setHasProx(false);
 
     final FieldsProducer reader = si.getCodec().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, 64, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR));
@@ -319,7 +319,7 @@ public class TestCodecs extends MultiCodecTestCase {
     final Directory dir = new MockRAMDirectory();
 
     this.write(fieldInfos, dir, fields);
-    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, -1, SEGMENT, false, true, CodecProvider.getDefault().getWriter(null));
+    final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, true, CodecProvider.getDefault().getWriter(null));
 
     final FieldsProducer terms = si.getCodec().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, 1024, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR));
 
@@ -602,7 +602,7 @@ public class TestCodecs extends MultiCodecTestCase {
 
     final int termIndexInterval = this.nextInt(13, 27);
 
-    final SegmentWriteState state = new SegmentWriteState(null, dir, SEGMENT, fieldInfos, null, 10000, 10000, termIndexInterval,
+    final SegmentWriteState state = new SegmentWriteState(null, dir, SEGMENT, fieldInfos, 10000, termIndexInterval,
                                                     CodecProvider.getDefault());
 
     final FieldsConsumer consumer = state.codec.fieldsConsumer(state);

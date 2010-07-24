@@ -20,8 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
@@ -29,39 +27,38 @@ import org.apache.lucene.util.RamUsageEstimator;
 final class StoredFieldsWriter {
 
   FieldsWriter fieldsWriter;
-  final FieldsWriter localFieldsWriter;
   final DocumentsWriterPerThread docWriter;
   final FieldInfos fieldInfos;
   int lastDocID;
-  private String docStoreSegment;
+  private String segment;
 
-  PerDoc[] docFreeList = new PerDoc[1];
   int freeCount;
   
-  PerDoc doc;
   final DocumentsWriterPerThread.DocState docState;
 
   public StoredFieldsWriter(DocumentsWriterPerThread docWriter, FieldInfos fieldInfos) {
     this.docWriter = docWriter;
     this.fieldInfos = fieldInfos;
     this.docState = docWriter.docState;
-    localFieldsWriter = new FieldsWriter((IndexOutput) null, (IndexOutput) null, fieldInfos);
+  }
+  
+  private int numStoredFields;
+  private Fieldable[] storedFields;
+  private int[] fieldNumbers;
+
+  public void reset() {
+    numStoredFields = 0;
+    storedFields = new Fieldable[1];
+    fieldNumbers = new int[1];
   }
 
   public void startDocument() {
-    if (doc != null) {
-      // Only happens if previous document hit non-aborting
-      // exception while writing stored fields into
-      // localFieldsWriter:
-      doc.reset();
-      doc.docID = docState.docID;
-    }
+    reset();
   }
-
-
+  
   public void flush(SegmentWriteState state) throws IOException {
 
-    if (state.numDocsInStore > 0) {
+    if (state.numDocs > 0) {
       // It's possible that all documents seen in this segment
       // hit non-aborting exceptions, in which case we will
       // not have yet init'd the FieldsWriter:
@@ -69,86 +66,47 @@ final class StoredFieldsWriter {
 
       // Fill fdx file to include any final docs that we
       // skipped because they hit non-aborting exceptions
-      fill(state.numDocsInStore - docWriter.getDocStoreOffset());
-    }
-
-    if (fieldsWriter != null)
-      fieldsWriter.flush();
-  }
-
-  private synchronized void initFieldsWriter() throws IOException {
-    if (fieldsWriter == null) {
-      docStoreSegment = docWriter.getDocStoreSegment();
-      if (docStoreSegment != null) {
-        fieldsWriter = new FieldsWriter(docWriter.directory,
-                                        docStoreSegment,
-                                        fieldInfos);
-        docWriter.addOpenFile(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.FIELDS_EXTENSION));
-        docWriter.addOpenFile(IndexFileNames.segmentFileName(docStoreSegment, "", IndexFileNames.FIELDS_INDEX_EXTENSION));
-        lastDocID = 0;
-      }
-    }
-  }
-
-  public void closeDocStore(SegmentWriteState state) throws IOException {
-    final int inc = state.numDocsInStore - lastDocID;
-    if (inc > 0) {
-      initFieldsWriter();
-      fill(state.numDocsInStore - docWriter.getDocStoreOffset());
+      fill(state.numDocs);
     }
 
     if (fieldsWriter != null) {
+      fieldsWriter.flush();
       fieldsWriter.close();
       fieldsWriter = null;
-      assert docStoreSegment != null;
-      assert state.docStoreSegmentName != null;
-      assert docStoreSegment.equals(state.docStoreSegmentName): "fieldsWriter wrote to segment=" + docStoreSegment + " vs SegmentWriteState segment=" + state.docStoreSegmentName;
       lastDocID = 0;
-      String fieldsName = IndexFileNames.segmentFileName(state.docStoreSegmentName, "", IndexFileNames.FIELDS_EXTENSION);
-      String fieldsIdxName = IndexFileNames.segmentFileName(state.docStoreSegmentName, "", IndexFileNames.FIELDS_INDEX_EXTENSION);
+      String fieldsName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.FIELDS_EXTENSION);
+      String fieldsIdxName = IndexFileNames.segmentFileName(state.segmentName, "", IndexFileNames.FIELDS_INDEX_EXTENSION);
       state.flushedFiles.add(fieldsName);
       state.flushedFiles.add(fieldsIdxName);
 
       docWriter.removeOpenFile(fieldsName);
       docWriter.removeOpenFile(fieldsIdxName);
 
-      if (4+((long) state.numDocsInStore)*8 != state.directory.fileLength(fieldsIdxName))
-        throw new RuntimeException("after flush: fdx size mismatch: " + state.numDocsInStore + " docs vs " + state.directory.fileLength(fieldsIdxName) + " length in bytes of " + fieldsIdxName + " file exists?=" + state.directory.fileExists(fieldsIdxName));
+      if (4+((long) state.numDocs)*8 != state.directory.fileLength(fieldsIdxName)) {
+        throw new RuntimeException("after flush: fdx size mismatch: " + state.numDocs + " docs vs " + state.directory.fileLength(fieldsIdxName) + " length in bytes of " + fieldsIdxName + " file exists?=" + state.directory.fileExists(fieldsIdxName));
+      }
+    }
+
+  }
+
+  private void initFieldsWriter() throws IOException {
+    if (fieldsWriter == null) {
+      segment = docWriter.getSegment();
+      if (segment != null) {
+        fieldsWriter = new FieldsWriter(docWriter.directory,
+                                        segment,
+                                        fieldInfos);
+        docWriter.addOpenFile(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_EXTENSION));
+        docWriter.addOpenFile(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION));
+        lastDocID = 0;
+      }
     }
   }
 
   int allocCount;
 
-  PerDoc getPerDoc() {
-    if (freeCount == 0) {
-      allocCount++;
-      if (allocCount > docFreeList.length) {
-        // Grow our free list up front to make sure we have
-        // enough space to recycle all outstanding PerDoc
-        // instances
-        assert allocCount == 1+docFreeList.length;
-        docFreeList = new PerDoc[ArrayUtil.oversize(allocCount, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
-      }
-      return new PerDoc();
-    } else
-      return docFreeList[--freeCount];
-  }
-
-  public DocumentsWriterPerThread.DocWriter finishDocument() {
-    // If there were any stored fields in this doc, doc will
-    // be non-null; else it's null.
-    try {
-      return doc;
-    } finally {
-      doc = null;
-    }
-  }
-
   void abort() {
-    if (doc != null) {
-      doc.abort();
-      doc = null;
-    }
+    reset();
 
     if (fieldsWriter != null) {
       try {
@@ -162,83 +120,50 @@ final class StoredFieldsWriter {
 
   /** Fills in any hole in the docIDs */
   void fill(int docID) throws IOException {
-    final int docStoreOffset = docWriter.getDocStoreOffset();
-
     // We must "catch up" for all docs before us
     // that had no stored fields:
-    final int end = docID+docStoreOffset;
+    final int end = docID;
     while(lastDocID < end) {
       fieldsWriter.skipDocument();
       lastDocID++;
     }
   }
 
-  void finishDocument(PerDoc perDoc) throws IOException {
+  void finishDocument() throws IOException {
     assert docWriter.writer.testPoint("StoredFieldsWriter.finishDocument start");
+
     initFieldsWriter();
-
-    fill(perDoc.docID);
-
-    // Append stored fields to the real FieldsWriter:
-    fieldsWriter.flushDocument(perDoc.numStoredFields, perDoc.fdt);
-    lastDocID++;
-    perDoc.reset();
-    free(perDoc);
+    fill(docState.docID);
+  
+    if (fieldsWriter != null && numStoredFields > 0) {  
+      fieldsWriter.startDocument(numStoredFields);
+      for (int i = 0; i < numStoredFields; i++) {
+        fieldsWriter.writeField(fieldNumbers[i], storedFields[i]);
+      }
+      lastDocID++;
+    }
+    
+    reset();
     assert docWriter.writer.testPoint("StoredFieldsWriter.finishDocument end");
   }
 
-  public void addField(Fieldable field, FieldInfo fieldInfo) throws IOException {
-    if (doc == null) {
-      doc = getPerDoc();
-      doc.docID = docState.docID;
-      localFieldsWriter.setFieldsStream(doc.fdt);
-      assert doc.numStoredFields == 0: "doc.numStoredFields=" + doc.numStoredFields;
-      assert 0 == doc.fdt.length();
-      assert 0 == doc.fdt.getFilePointer();
-    }
-
-    localFieldsWriter.writeField(fieldInfo, field);
-    assert docState.testPoint("StoredFieldsWriterPerThread.processFields.writeField");
-    doc.numStoredFields++;
-  }
   
-  public boolean freeRAM() {
-    return false;
-  }
-
-  void free(PerDoc perDoc) {
-    assert freeCount < docFreeList.length;
-    assert 0 == perDoc.numStoredFields;
-    assert 0 == perDoc.fdt.length();
-    assert 0 == perDoc.fdt.getFilePointer();
-    docFreeList[freeCount++] = perDoc;
-  }
-
-  class PerDoc extends DocumentsWriterPerThread.DocWriter {
-    final DocumentsWriterPerThread.PerDocBuffer buffer = docWriter.newPerDocBuffer();
-    RAMOutputStream fdt = new RAMOutputStream(buffer);
-    int numStoredFields;
-
-    void reset() {
-      fdt.reset();
-      buffer.recycle();
-      numStoredFields = 0;
+  public void addField(Fieldable field, FieldInfo fieldInfo) throws IOException {
+    if (numStoredFields == storedFields.length) {
+      int newSize = ArrayUtil.oversize(numStoredFields + 1, RamUsageEstimator.NUM_BYTES_OBJ_REF);
+      Fieldable[] newArray = new Fieldable[newSize];
+      System.arraycopy(storedFields, 0, newArray, 0, numStoredFields);
+      storedFields = newArray;
     }
-
-    @Override
-    public void abort() {
-      reset();
-      free(this);
+    
+    if (numStoredFields == fieldNumbers.length) {
+      fieldNumbers = ArrayUtil.grow(fieldNumbers);
     }
-
-    @Override
-    public long sizeInBytes() {
-      return buffer.getSizeInBytes();
-    }
-
-    @Override
-    public void finish() throws IOException {
-      finishDocument(this);
-    }
+    
+    storedFields[numStoredFields] = field;
+    fieldNumbers[numStoredFields] = fieldInfo.number;
+    numStoredFields++;
+    
+    assert docState.testPoint("StoredFieldsWriterPerThread.processFields.writeField");
   }
 }

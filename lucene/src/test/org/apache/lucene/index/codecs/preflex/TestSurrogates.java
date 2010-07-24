@@ -134,7 +134,7 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
     dir.createOutput(segName + ".frq").close();
 
     // !!hack alert!! stuffing uniqueTermCount in as docCount
-    return new SegmentInfo(segName, uniqueTermCount, dir, false, -1, null, false, true, codec);
+    return new SegmentInfo(segName, uniqueTermCount, dir, false, true, codec);
   }
 
   private String toHexString(Term t) {

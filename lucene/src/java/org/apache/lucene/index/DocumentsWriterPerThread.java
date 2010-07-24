@@ -10,7 +10,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMFile;
 import org.apache.lucene.util.ArrayUtil;
 
 public class DocumentsWriterPerThread {
@@ -94,10 +93,6 @@ public class DocumentsWriterPerThread {
       } catch (Throwable t) {
       }
 
-      docStoreSegment = null;
-      numDocsInStore = 0;
-      docStoreOffset = 0;
-
       // Reset all postings data
       doAfterFlush();
 
@@ -121,18 +116,14 @@ public class DocumentsWriterPerThread {
   private DocFieldProcessor docFieldProcessor;
   
   String segment;                         // Current segment we are working on
-  private String docStoreSegment;         // Current doc-store segment we are writing
-  private int docStoreOffset;                     // Current starting doc-store offset of current segment
   boolean aborting;               // True if an abort is pending
   
   private final PrintStream infoStream;
   private int numDocsInRAM;
-  private int numDocsInStore;
   private int flushedDocCount;
   SegmentWriteState flushState;
 
   long[] sequenceIDs = new long[8];
-  
   final List<String> closedFiles = new ArrayList<String>();
   
   long numBytesUsed;
@@ -161,13 +152,15 @@ public class DocumentsWriterPerThread {
     docState.doc = doc;
     docState.analyzer = analyzer;
     docState.docID = numDocsInRAM;
-    initSegmentName(false);
+    if (segment == null) {
+      // this call is synchronized on IndexWriter.segmentInfos
+      segment = writer.newSegmentName();
+      assert numDocsInRAM == 0;
+    }
   
-    final DocWriter perDoc;
-    
     boolean success = false;
     try {
-      perDoc = consumer.processDocument();
+      consumer.processDocument();
       
       success = true;
     } finally {
@@ -181,9 +174,7 @@ public class DocumentsWriterPerThread {
 
     success = false;
     try {
-      if (perDoc != null) {
-        perDoc.finish();
-      }
+      consumer.finishDocument();
       
       success = true;
     } finally {
@@ -201,7 +192,6 @@ public class DocumentsWriterPerThread {
     
     sequenceIDs[numDocsInRAM] = sequenceID;
     numDocsInRAM++;
-    numDocsInStore++;
   }
   
   int getNumDocsInRAM() {
@@ -226,26 +216,6 @@ public class DocumentsWriterPerThread {
     return flushState.codec;
   }
   
-  void initSegmentName(boolean onlyDocStore) {
-    if (segment == null && (!onlyDocStore || docStoreSegment == null)) {
-      // this call is synchronized on IndexWriter.segmentInfos
-      segment = writer.newSegmentName();
-      assert numDocsInRAM == 0;
-    }
-    if (docStoreSegment == null) {
-      docStoreSegment = segment;
-      assert numDocsInStore == 0;
-    }
-  }
-
-  
-  private void initFlushState(boolean onlyDocStore) {
-    initSegmentName(onlyDocStore);
-    flushState = new SegmentWriteState(infoStream, directory, segment, docFieldProcessor.fieldInfos,
-                                       docStoreSegment, numDocsInRAM, numDocsInStore, writer.getConfig().getTermIndexInterval(),
-                                       writer.codecs);
-  }
-  
   /** Reset after a flush */
   private void doAfterFlush() throws IOException {
     segment = null;
@@ -253,12 +223,12 @@ public class DocumentsWriterPerThread {
   }
     
   /** Flush all pending docs to a new segment */
-  SegmentInfo flush(boolean closeDocStore) throws IOException {
+  SegmentInfo flush() throws IOException {
     assert numDocsInRAM > 0;
 
-    initFlushState(closeDocStore);
-
-    docStoreOffset = numDocsInStore;
+    flushState = new SegmentWriteState(infoStream, directory, segment, docFieldProcessor.fieldInfos,
+        numDocsInRAM, writer.getConfig().getTermIndexInterval(),
+        writer.codecs);
 
     if (infoStream != null) {
       message("flush postings as segment " + flushState.segmentName + " numDocs=" + numDocsInRAM);
@@ -267,22 +237,12 @@ public class DocumentsWriterPerThread {
     boolean success = false;
 
     try {
-
-      if (closeDocStore) {
-        assert flushState.docStoreSegmentName != null;
-        assert flushState.docStoreSegmentName.equals(flushState.segmentName);
-        closeDocStore();
-        flushState.numDocsInStore = 0;
-      }
-      
       consumer.flush(flushState);
 
       if (infoStream != null) {
         SegmentInfo si = new SegmentInfo(flushState.segmentName,
             flushState.numDocs,
             directory, false,
-            docStoreOffset, flushState.docStoreSegmentName,
-            false,    
             hasProx(),
             getCodec());
 
@@ -305,8 +265,6 @@ public class DocumentsWriterPerThread {
       SegmentInfo newSegment = new SegmentInfo(flushState.segmentName,
                                    flushState.numDocs,
                                    directory, false,
-                                   docStoreOffset, flushState.docStoreSegmentName,
-                                   false,    
                                    hasProx(),
                                    getCodec());
 
@@ -325,62 +283,17 @@ public class DocumentsWriterPerThread {
     }
   }
 
-  /** Closes the current open doc stores an returns the doc
-   *  store segment name.  This returns null if there are *
-   *  no buffered documents. */
-  String closeDocStore() throws IOException {
-
-    // nocommit
-//    if (infoStream != null)
-//      message("closeDocStore: " + openFiles.size() + " files to flush to segment " + docStoreSegment + " numDocs=" + numDocsInStore);
-    
-    boolean success = false;
-
-    try {
-      initFlushState(true);
-      closedFiles.clear();
-
-      consumer.closeDocStore(flushState);
-      // nocommit
-      //assert 0 == openFiles.size();
-
-      String s = docStoreSegment;
-      docStoreSegment = null;
-      docStoreOffset = 0;
-      numDocsInStore = 0;
-      success = true;
-      return s;
-    } finally {
-      if (!success) {
-        parent.abort();
-      }
-    }
-  }
-
-  
   /** Get current segment name we are writing. */
   String getSegment() {
     return segment;
   }
   
-  /** Returns the current doc store segment we are writing
-   *  to. */
-  String getDocStoreSegment() {
-    return docStoreSegment;
-  }
-
-  /** Returns the doc offset into the shared doc store for
-   *  the current buffered docs. */
-  int getDocStoreOffset() {
-    return docStoreOffset;
-  }
-
-
   @SuppressWarnings("unchecked")
   List<String> closedFiles() {
     return (List<String>) ((ArrayList<String>) closedFiles).clone();
   }
 
+  
   void addOpenFile(String name) {
     synchronized(parent.openFiles) {
       assert !parent.openFiles.contains(name);
@@ -394,58 +307,6 @@ public class DocumentsWriterPerThread {
       parent.openFiles.remove(name);
     }
     closedFiles.add(name);
-  }
-  
-  /** Consumer returns this on each doc.  This holds any
-   *  state that must be flushed synchronized "in docID
-   *  order".  We gather these and flush them in order. */
-  abstract static class DocWriter {
-    DocWriter next;
-    int docID;
-    abstract void finish() throws IOException;
-    abstract void abort();
-    abstract long sizeInBytes();
-
-    void setNext(DocWriter next) {
-      this.next = next;
-    }
-  }
-
-  /**
-   * Create and return a new DocWriterBuffer.
-   */
-  PerDocBuffer newPerDocBuffer() {
-    return new PerDocBuffer();
-  }
-
-  /**
-   * RAMFile buffer for DocWriters.
-   */
-  class PerDocBuffer extends RAMFile {
-    
-    /**
-     * Allocate bytes used from shared pool.
-     */
-    protected byte[] newBuffer(int size) {
-      assert size == DocumentsWriterRAMAllocator.PER_DOC_BLOCK_SIZE;
-      return ramAllocator.perDocAllocator.getByteBlock();
-    }
-    
-    /**
-     * Recycle the bytes used.
-     */
-    synchronized void recycle() {
-      if (buffers.size() > 0) {
-        setLength(0);
-        
-        // Recycle the blocks
-        ramAllocator.perDocAllocator.recycleByteBlocks(buffers);
-        buffers.clear();
-        sizeInBytes = 0;
-        
-        assert numBuffers() == 0;
-      }
-    }
   }
   
   void bytesUsed(long numBytes) {

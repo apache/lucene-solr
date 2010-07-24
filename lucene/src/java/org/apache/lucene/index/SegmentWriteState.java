@@ -33,9 +33,7 @@ public class SegmentWriteState {
   public final Directory directory;
   public final String segmentName;
   public final FieldInfos fieldInfos;
-  public final String docStoreSegmentName;
   public final int numDocs;
-  public int numDocsInStore;
   public final Collection<String> flushedFiles;
 
   // Actual codec used
@@ -61,16 +59,12 @@ public class SegmentWriteState {
   public final int maxSkipLevels = 10;
 
   public SegmentWriteState(PrintStream infoStream, Directory directory, String segmentName, FieldInfos fieldInfos,
-                           String docStoreSegmentName, int numDocs,
-                           int numDocsInStore, int termIndexInterval,
-                           CodecProvider codecs) {
+                           int numDocs, int termIndexInterval, CodecProvider codecs) {
     this.infoStream = infoStream;
     this.directory = directory;
     this.segmentName = segmentName;
     this.fieldInfos = fieldInfos;
-    this.docStoreSegmentName = docStoreSegmentName;
     this.numDocs = numDocs;
-    this.numDocsInStore = numDocsInStore;
     this.termIndexInterval = termIndexInterval;
     this.codec = codecs.getWriter(this);
     flushedFiles = new HashSet<String>();

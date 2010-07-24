@@ -28,14 +28,11 @@ abstract class InvertedDocConsumer {
   /** Flush a new segment */
   abstract void flush(Map<FieldInfo, InvertedDocConsumerPerField> fieldsToFlush, SegmentWriteState state) throws IOException;
 
-  /** Close doc stores */
-  abstract void closeDocStore(SegmentWriteState state) throws IOException;
-
   abstract InvertedDocConsumerPerField addField(DocInverterPerField docInverterPerField, FieldInfo fieldInfo);
   
   abstract void startDocument() throws IOException;
   
-  abstract DocumentsWriterPerThread.DocWriter finishDocument() throws IOException;
+  abstract void finishDocument() throws IOException;
   
   /** Attempt to free RAM, returning true if any RAM was
    *  freed */

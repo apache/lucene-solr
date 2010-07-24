@@ -144,5 +144,4 @@ class DocumentsWriterRAMAllocator {
   String toMB(long v) {
     return nf.format(v/1024./1024.);
   }
-
 }

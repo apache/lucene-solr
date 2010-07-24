@@ -21,9 +21,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.RamUsageEstimator;
-
 /** This is just a "splitter" class: it lets you wrap two
  *  DocFieldConsumer instances as a single consumer. */
 
@@ -62,15 +59,6 @@ final class DocFieldConsumers extends DocFieldConsumer {
   }
 
   @Override
-  public void closeDocStore(SegmentWriteState state) throws IOException {      
-    try {
-      one.closeDocStore(state);
-    } finally {
-      two.closeDocStore(state);
-    }
-  }
-
-  @Override
   public void abort() {
     try {
       one.abort();
@@ -86,83 +74,12 @@ final class DocFieldConsumers extends DocFieldConsumer {
     return any;
   }
 
-  PerDoc[] docFreeList = new PerDoc[1];
-  int freeCount;
-  int allocCount;
-
-  PerDoc getPerDoc() {
-    if (freeCount == 0) {
-      allocCount++;
-      if (allocCount > docFreeList.length) {
-        // Grow our free list up front to make sure we have
-        // enough space to recycle all outstanding PerDoc
-        // instances
-        assert allocCount == 1+docFreeList.length;
-        docFreeList = new PerDoc[ArrayUtil.oversize(allocCount, RamUsageEstimator.NUM_BYTES_OBJECT_REF)];
-      }
-      return new PerDoc();
-    } else
-      return docFreeList[--freeCount];
-  }
-
-  void freePerDoc(PerDoc perDoc) {
-    assert freeCount < docFreeList.length;
-    docFreeList[freeCount++] = perDoc;
-  }
-
-  class PerDoc extends DocumentsWriterPerThread.DocWriter {
-
-    DocumentsWriterPerThread.DocWriter writerOne;
-    DocumentsWriterPerThread.DocWriter writerTwo;
-
-    @Override
-    public long sizeInBytes() {
-      return writerOne.sizeInBytes() + writerTwo.sizeInBytes();
-    }
-
-    @Override
-    public void finish() throws IOException {
-      try {
-        try {
-          writerOne.finish();
-        } finally {
-          writerTwo.finish();
-        }
-      } finally {
-        freePerDoc(this);
-      }
-    }
-
-    @Override
-    public void abort() {
-      try {
-        try {
-          writerOne.abort();
-        } finally {
-          writerTwo.abort();
-        }
-      } finally {
-        freePerDoc(this);
-      }
-    }
-  }
-  
   @Override
-  public DocumentsWriterPerThread.DocWriter finishDocument() throws IOException {
-    final DocumentsWriterPerThread.DocWriter oneDoc = one.finishDocument();
-    final DocumentsWriterPerThread.DocWriter twoDoc = two.finishDocument();
-    if (oneDoc == null)
-      return twoDoc;
-    else if (twoDoc == null)
-      return oneDoc;
-    else {
-      DocFieldConsumers.PerDoc both = getPerDoc();
-      both.docID = docState.docID;
-      assert oneDoc.docID == docState.docID;
-      assert twoDoc.docID == docState.docID;
-      both.writerOne = oneDoc;
-      both.writerTwo = twoDoc;
-      return both;
+  public void finishDocument() throws IOException {
+    try {
+      one.finishDocument();
+    } finally {
+      two.finishDocument();  
     }
   }
   

@@ -70,11 +70,11 @@ public final class SegmentInfo {
 
   long sizeInBytes = -1;                          // total byte size of all of our files (computed on demand)
 
-  private int docStoreOffset;                     // if this segment shares stored fields & vectors, this
+  @Deprecated private int docStoreOffset;                     // if this segment shares stored fields & vectors, this
                                                   // offset is where in that file this segment's docs begin
-  private String docStoreSegment;                 // name used to derive fields/vectors file we share with
+  @Deprecated private String docStoreSegment;                 // name used to derive fields/vectors file we share with
                                                   // other segments
-  private boolean docStoreIsCompoundFile;         // whether doc store files are stored in compound file (*.cfx)
+  @Deprecated private boolean docStoreIsCompoundFile;         // whether doc store files are stored in compound file (*.cfx)
 
   private int delCount;                           // How many deleted docs in this segment
 
@@ -87,20 +87,23 @@ public final class SegmentInfo {
 
   private Map<String,String> diagnostics;
 
-  public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, int docStoreOffset, 
-                     String docStoreSegment, boolean docStoreIsCompoundFile, boolean hasProx, Codec codec) { 
+  public SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, boolean hasProx, Codec codec) {
+    this(name, docCount, dir, isCompoundFile, -1, null, false, hasProx, codec);
+  }
+  
+  private SegmentInfo(String name, int docCount, Directory dir, boolean isCompoundFile, int docStoreOffset, 
+                            String docStoreSegment, boolean docStoreIsCompoundFile, boolean hasProx, Codec codec) {
     this.name = name;
     this.docCount = docCount;
     this.dir = dir;
     delGen = NO;
     this.isCompoundFile = isCompoundFile;
-    this.docStoreOffset = docStoreOffset;
-    this.docStoreSegment = docStoreSegment;
-    this.docStoreIsCompoundFile = docStoreIsCompoundFile;
     this.hasProx = hasProx;
     this.codec = codec;
     delCount = 0;
-    assert docStoreOffset == -1 || docStoreSegment != null: "dso=" + docStoreOffset + " dss=" + docStoreSegment + " docCount=" + docCount;
+    this.docStoreOffset = docStoreOffset;
+    this.docStoreIsCompoundFile = docStoreIsCompoundFile;
+    this.docStoreSegment = docStoreSegment;
   }
 
   /**
@@ -176,11 +179,13 @@ public final class SegmentInfo {
       docStoreSegment = name;
       docStoreIsCompoundFile = false;
     }
+
     if (format > DefaultSegmentInfosWriter.FORMAT_4_0) {
       // pre-4.0 indexes write a byte if there is a single norms file
       byte b = input.readByte();
       assert 1 == b;
     }
+
     int numNormGen = input.readInt();
     if (numNormGen == NO) {
       normGen = null;
@@ -367,32 +372,24 @@ public final class SegmentInfo {
     assert delCount <= docCount;
   }
 
+  @Deprecated
   public int getDocStoreOffset() {
     return docStoreOffset;
   }
   
+  @Deprecated
   public boolean getDocStoreIsCompoundFile() {
     return docStoreIsCompoundFile;
   }
   
-  void setDocStoreIsCompoundFile(boolean v) {
-    docStoreIsCompoundFile = v;
-    clearFiles();
-  }
-  
+  @Deprecated
   public String getDocStoreSegment() {
     return docStoreSegment;
   }
-  
-  void setDocStoreOffset(int offset) {
-    docStoreOffset = offset;
-    clearFiles();
-  }
 
-  void setDocStore(int offset, String segment, boolean isCompoundFile) {        
-    docStoreOffset = offset;
-    docStoreSegment = segment;
-    docStoreIsCompoundFile = isCompoundFile;
+  @Deprecated
+  public void setDocStoreSegment(String docStoreSegment) {
+    this.docStoreSegment = docStoreSegment;
     clearFiles();
   }
   
@@ -403,11 +400,13 @@ public final class SegmentInfo {
     output.writeString(name);
     output.writeInt(docCount);
     output.writeLong(delGen);
+
     output.writeInt(docStoreOffset);
     if (docStoreOffset != -1) {
       output.writeString(docStoreSegment);
       output.writeByte((byte) (docStoreIsCompoundFile ? 1:0));
     }
+
 
     if (normGen == null) {
       output.writeInt(NO);

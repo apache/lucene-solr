@@ -103,10 +103,6 @@ final class NormsWriter extends InvertedDocEndConsumer {
   }
 
   @Override
-  void closeDocStore(SegmentWriteState state) {}
-
-  
-  @Override
   void finishDocument() throws IOException {}
 
   @Override

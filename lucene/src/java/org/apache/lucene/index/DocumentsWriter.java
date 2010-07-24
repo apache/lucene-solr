@@ -130,7 +130,7 @@ final class DocumentsWriter {
   long updateDocument(final Term delTerm, final Document doc, final Analyzer analyzer)
       throws CorruptIndexException, IOException {
 
-    return threadPool.executePerThread(this, doc,
+    long seqID = threadPool.executePerThread(this, doc,
         new DocumentsWriterThreadPool.PerThreadTask<Long>() {
           @Override
           public Long process(final DocumentsWriterPerThread perThread) throws IOException {
@@ -156,11 +156,14 @@ final class DocumentsWriter {
 
             if (finishAddDocument(perThread, perThreadRAMUsedBeforeAdd)) {
               super.clearThreadBindings();
-              indexWriter.maybeMerge();
             }
             return sequenceID;
           }
         });
+    
+    indexWriter.maybeMerge();
+    
+    return seqID;
   }
 
   private final boolean finishAddDocument(DocumentsWriterPerThread perThread,
@@ -252,7 +255,7 @@ final class DocumentsWriter {
     this.flushedSequenceID = newFlushedID;
   }
 
-  final boolean flushAllThreads(final boolean flushDocStores, final boolean flushDeletes)
+  final boolean flushAllThreads(final boolean flushDeletes)
       throws IOException {
     return threadPool.executeAllThreads(new DocumentsWriterThreadPool.AllThreadsTask<Boolean>() {
       @Override
@@ -260,60 +263,28 @@ final class DocumentsWriter {
         boolean anythingFlushed = false;
         
         if (flushDeletes) {
-          synchronized (indexWriter) {
-            if (applyDeletes(indexWriter.segmentInfos)) {
-              indexWriter.checkpoint();
-            }
+          if (applyDeletes(indexWriter.segmentInfos)) {
+            indexWriter.checkpoint();
           }
         }
 
         while (threadsIterator.hasNext()) {
-          boolean perThreadFlushDocStores = flushDocStores;
           DocumentsWriterPerThread perThread = threadsIterator.next();
           final int numDocs = perThread.getNumDocsInRAM();
           
           // Always flush docs if there are any
           boolean flushDocs = numDocs > 0;
           
-          String docStoreSegment = perThread.getDocStoreSegment();
-          if (docStoreSegment == null) {
-            perThreadFlushDocStores = false;
-          }
-          int docStoreOffset = perThread.getDocStoreOffset();
-          boolean docStoreIsCompoundFile = false;
-          if (perThreadFlushDocStores
-              && (!flushDocs || !perThread.getSegment().equals(perThread.getDocStoreSegment()))) {
-            // We must separately flush the doc store
-            if (infoStream != null) {
-              message("  flush shared docStore segment " + docStoreSegment);
-            }
-            docStoreIsCompoundFile = flushDocStores(perThread);
-            flushDocStores(perThread);
-            perThreadFlushDocStores = false;
-          }
-
           String segment = perThread.getSegment();
 
           // If we are flushing docs, segment must not be null:
           assert segment != null || !flushDocs;
     
           if (flushDocs) {
-            SegmentInfo newSegment = perThread.flush(perThreadFlushDocStores);
+            SegmentInfo newSegment = perThread.flush();
             
             if (newSegment != null) {
               anythingFlushed = true;
-              
-              if (0 == docStoreOffset && perThreadFlushDocStores) {
-                // This means we are flushing private doc stores
-                // with this segment, so it will not be shared
-                // with other segments
-                assert docStoreSegment != null;
-                assert docStoreSegment.equals(segment);
-                docStoreOffset = -1;
-                docStoreSegment = null;
-                docStoreIsCompoundFile = false;
-              }
-              newSegment.setDocStore(docStoreOffset, docStoreSegment, docStoreIsCompoundFile);
               
               IndexWriter.setDiagnostics(newSegment, "flush");
               finishFlushedSegment(newSegment, perThread);
@@ -361,6 +332,7 @@ final class DocumentsWriter {
     synchronized(indexWriter) {
       indexWriter.segmentInfos.add(newSegment);
       indexWriter.checkpoint();
+    
       SegmentReader reader = indexWriter.readerPool.get(newSegment, false);
       boolean any = false;
       try {
@@ -389,84 +361,15 @@ final class DocumentsWriter {
           }
         }
   
-        newSegment.setUseCompoundFile(true);
-        indexWriter.checkpoint();
-      }
-    }
-  }
-
-  
-  private boolean flushDocStores(DocumentsWriterPerThread perThread) throws IOException {
-      boolean useCompoundDocStore = false;
-  
-      String docStoreSegment;
-      
-      boolean success = false;
-      try {
-        docStoreSegment = perThread.closeDocStore();
-        success = true;
-      } finally {
-        if (!success && infoStream != null) {
-          message("hit exception closing doc store segment");
-        }
-      }
-  
-      useCompoundDocStore = indexWriter.mergePolicy.useCompoundDocStore(indexWriter.segmentInfos);
-  
-      if (useCompoundDocStore && docStoreSegment != null && perThread.closedFiles().size() != 0) {
-        // Now build compound doc store file
-  
-        if (infoStream != null) {
-          message("create compound file "
-              + IndexFileNames.segmentFileName(docStoreSegment, "",
-                  IndexFileNames.COMPOUND_FILE_STORE_EXTENSION));
-        }
-  
-        success = false;
-  
-        final int numSegments = indexWriter.segmentInfos.size();
-        final String compoundFileName = IndexFileNames.segmentFileName(docStoreSegment, "",
-            IndexFileNames.COMPOUND_FILE_STORE_EXTENSION);
-  
-        try {
-          CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, compoundFileName);
-          for (final String file : perThread.closedFiles()) {
-            cfsWriter.addFile(file);
-          }
-  
-          // Perform the merge
-          cfsWriter.close();
-          success = true;
-  
-        } finally {
-          if (!success) {
-            if (infoStream != null)
-              message("hit exception building compound file doc store for segment " + docStoreSegment);
-            synchronized(indexWriter) {
-              indexWriter.deleter.deleteFile(compoundFileName);
-            }
-            abort();
-          }
-        }
-  
         synchronized(indexWriter) {
-          for (int i = 0; i < numSegments; i++) {
-            SegmentInfo si = indexWriter.segmentInfos.info(i);
-            if (si.getDocStoreOffset() != -1 &&
-                  si.getDocStoreSegment().equals(docStoreSegment))
-              si.setDocStoreIsCompoundFile(true);
-          }
-    
+          newSegment.setUseCompoundFile(true);
           indexWriter.checkpoint();
-    
           // In case the files we just merged into a CFS were
           // not previously checkpointed:
           indexWriter.deleter.deleteNewFiles(perThread.closedFiles());
         }
       }
-  
-      return useCompoundDocStore;
-    
+    }
   }
   
   // Returns true if an abort is in progress
@@ -495,7 +398,7 @@ final class DocumentsWriter {
 
   private final boolean maybeFlushPerThread(DocumentsWriterPerThread perThread) throws IOException {
     if (perThread.getNumDocsInRAM() == maxBufferedDocs) {
-      flushSegment(perThread, false);
+      flushSegment(perThread);
       assert perThread.getNumDocsInRAM() == 0;
       return true;
     }
@@ -503,18 +406,15 @@ final class DocumentsWriter {
     return false;
   }
 
-  private boolean flushSegment(DocumentsWriterPerThread perThread, boolean flushDocStores)
+  private boolean flushSegment(DocumentsWriterPerThread perThread)
       throws IOException {
-    if (perThread.getNumDocsInRAM() == 0 && !flushDocStores) {
+    if (perThread.getNumDocsInRAM() == 0) {
       return false;
     }
 
-    int docStoreOffset = perThread.getDocStoreOffset();
-    String docStoreSegment = perThread.getDocStoreSegment();
-    SegmentInfo newSegment = perThread.flush(flushDocStores);
+    SegmentInfo newSegment = perThread.flush();
     
     if (newSegment != null) {
-      newSegment.setDocStore(docStoreOffset, docStoreSegment, false);
       finishFlushedSegment(newSegment, perThread);
       return true;
     }

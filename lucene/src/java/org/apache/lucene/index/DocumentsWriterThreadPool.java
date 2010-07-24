@@ -121,8 +121,8 @@ abstract class DocumentsWriterThreadPool {
         throw new ThreadInterruptedException(ie);
       }
       
-      globalLock = true;
       pauseAllThreads();
+      globalLock = true;
     } finally {
       lock.unlock();
     }

@@ -68,15 +68,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     }
 
     if (doVectors) {
-      if (termsWriter.doc == null) {
-        termsWriter.doc = termsWriter.getPerDoc();
-        termsWriter.doc.docID = docState.docID;
-        assert termsWriter.doc.numVectorFields == 0;
-        assert 0 == termsWriter.doc.perDocTvf.length();
-        assert 0 == termsWriter.doc.perDocTvf.getFilePointer();
-      } else {
-        assert termsWriter.doc.docID == docState.docID;
-
+      if (termsWriter.tvx != null) {
         if (termsHashPerField.numPostings != 0)
           // Only necessary if previous doc hit a
           // non-aborting exception while writing vectors in
@@ -93,13 +85,15 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
   public void abort() {}
 
-  /** Called once per field per document if term vectors
-   *  are enabled, to write the vectors to
-   *  RAMOutputStream, which is then quickly flushed to
-   *  * the real term vectors files in the Directory. */
   @Override
   void finish() throws IOException {
+    if (!doVectors || termsHashPerField.numPostings == 0)
+      return;
 
+    termsWriter.addFieldToFlush(this);
+  }
+  
+  void finishDocument() throws IOException {
     assert docState.testPoint("TermVectorsTermsWriterPerField.finish start");
 
     final int numPostings = termsHashPerField.numPostings;
@@ -108,13 +102,8 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
     assert numPostings >= 0;
 
-    if (!doVectors || numPostings == 0)
-      return;
-
     if (numPostings > maxNumPostings)
       maxNumPostings = numPostings;
-
-    final IndexOutput tvf = termsWriter.doc.perDocTvf;
 
     // This is called once, after inverting all occurrences
     // of a given field in the doc.  At this point we flush
@@ -123,8 +112,8 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     assert fieldInfo.storeTermVector;
     assert termsWriter.vectorFieldsInOrder(fieldInfo);
 
-    termsWriter.doc.addField(termsHashPerField.fieldInfo.number);
     TermVectorsPostingsArray postings = (TermVectorsPostingsArray) termsHashPerField.postingsArray;
+    final IndexOutput tvf = termsWriter.tvf;
 
     // TODO: we may want to make this sort in same order
     // as Codec's terms dict?
@@ -186,7 +175,6 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
     }
 
     termsHashPerField.reset();
-    termsHashPerField.termsHash.reset();
   }
 
   void shrinkHash() {

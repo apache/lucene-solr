@@ -117,10 +117,9 @@ final class FieldsWriter
     // and adds a new entry for this document into the index
     // stream.  This assumes the buffer was already written
     // in the correct fields format.
-    void flushDocument(int numStoredFields, RAMOutputStream buffer) throws IOException {
+    void startDocument(int numStoredFields) throws IOException {
       indexStream.writeLong(fieldsStream.getFilePointer());
       fieldsStream.writeVInt(numStoredFields);
-      buffer.writeTo(fieldsStream);
     }
 
     void skipDocument() throws IOException {
@@ -169,8 +168,8 @@ final class FieldsWriter
       }
     }
 
-    final void writeField(FieldInfo fi, Fieldable field) throws IOException {
-      fieldsStream.writeVInt(fi.number);
+    final void writeField(int fieldNumber, Fieldable field) throws IOException {
+      fieldsStream.writeVInt(fieldNumber);
       byte bits = 0;
       if (field.isTokenized())
         bits |= FieldsWriter.FIELD_IS_TOKENIZED;
@@ -226,7 +225,7 @@ final class FieldsWriter
 
         for (Fieldable field : fields) {
             if (field.isStored())
-              writeField(fieldInfos.fieldInfo(field.name()), field);
+              writeField(fieldInfos.fieldInfo(field.name()).number, field);
         }
     }
 }
