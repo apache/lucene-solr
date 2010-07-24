@@ -240,8 +240,10 @@ public class _TestUtil {
 
   /** gets the codec to run tests with */
   public static String getTestCodec() {
-    // nocommit: should we default to random?
-    return System.getProperty("tests.codec", "Standard");
+    // by default we randomly pick a different codec for
+    // each test case (non-J4 tests) and each test class (J4
+    // tests)
+    return System.getProperty("tests.codec", "random");
   }
 
   public static CodecProvider alwaysCodec(final Codec c) {
