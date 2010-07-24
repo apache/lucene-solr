@@ -240,6 +240,7 @@ public class _TestUtil {
 
   /** gets the codec to run tests with */
   public static String getTestCodec() {
+    // nocommit: should we default to random?
     return System.getProperty("tests.codec", "Standard");
   }
 
@@ -254,8 +255,11 @@ public class _TestUtil {
       public Codec lookup(String name) {
         // can't do this until we fix PreFlexRW to not
         //impersonate PreFlex:
-        //return CodecProvider.getDefault().lookup(name);
-        return c;
+        if (name.equals(c.name)) {
+          return c;
+        } else {
+          return CodecProvider.getDefault().lookup(name);
+        }
       }
     };
   }

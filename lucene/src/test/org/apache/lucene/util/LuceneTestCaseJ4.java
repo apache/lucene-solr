@@ -45,7 +45,6 @@ import java.io.File;
 import java.io.PrintStream;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.ArrayList;
@@ -148,19 +147,22 @@ public class LuceneTestCaseJ4 {
     codec = _TestUtil.getTestCodec();
     if (codec.equals("random"))
       codec = CodecProvider.CORE_CODECS[seedRnd.nextInt(CodecProvider.CORE_CODECS.length)];
-    //nocommit
+
+    // If we're running w/ PreFlex codec we must swap in the
+    // test-only PreFlexRW codec (since core PreFlex can
+    // only read segments):
     if (codec.equals("PreFlex")) {
-        CodecProvider.getDefault().register(new PreFlexRWCodec());
+      CodecProvider.getDefault().register(new PreFlexRWCodec(null));
     } 
     CodecProvider.setDefaultCodec(codec);
   }
   
   @AfterClass
   public static void afterClassLuceneTestCaseJ4() {
-    //nocommit
+    // Restore read-only PreFlex codec:
     if (codec.equals("PreFlex")) {
-        CodecProvider.getDefault().unregister(new PreFlexRWCodec());
-        CodecProvider.getDefault().register(new PreFlexCodec());
+      CodecProvider.getDefault().unregister(new PreFlexRWCodec(null));
+      CodecProvider.getDefault().register(new PreFlexCodec());
     }
     CodecProvider.setDefaultCodec(savedDefaultCodec);
   }

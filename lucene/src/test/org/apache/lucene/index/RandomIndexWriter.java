@@ -24,7 +24,7 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.apache.lucene.util.Version;
@@ -81,6 +81,10 @@ public class RandomIndexWriter implements Closeable {
     this.r = r;
     w = new MockIndexWriter(r, dir, c);
     flushAt = _TestUtil.nextInt(r, 10, 1000);
+    if (LuceneTestCaseJ4.VERBOSE) {
+      System.out.println("RIW config=" + w.getConfig());
+      System.out.println("codec default=" + CodecProvider.getDefaultCodec());
+    }
   } 
 
   public void addDocument(Document doc) throws IOException {
@@ -99,24 +103,27 @@ public class RandomIndexWriter implements Closeable {
     w.deleteDocuments(term);
   }
   
+  public void commit() throws CorruptIndexException, IOException {
+    w.commit();
+  }
+  
   public int maxDoc() {
     return w.maxDoc();
   }
 
   public IndexReader getReader() throws IOException {
-    // nocommit: hack!
-    if (w.codecs.getWriter(null).name.equals("PreFlex")) {
-      w.commit();
-      return IndexReader.open(w.getDirectory(),
-          null,
-          false,
-          _TestUtil.nextInt(r, 1, 10),
-          _TestUtil.alwaysCodec(new PreFlexCodec()));
-    }
-    
-    if (r.nextBoolean()) {
+    // If we are writing with PreFlexRW, force a full
+    // IndexReader.open so terms are sorted in codepoint
+    // order during searching:
+    if (!w.codecs.getWriter(null).name.equals("PreFlex") && r.nextBoolean()) {
+      if (LuceneTestCaseJ4.VERBOSE) {
+        System.out.println("RIW.getReader: use NRT reader");
+      }
       return w.getReader();
     } else {
+      if (LuceneTestCaseJ4.VERBOSE) {
+        System.out.println("RIW.getReader: open new reader");
+      }
       w.commit();
       return IndexReader.open(w.getDirectory(), new KeepOnlyLastCommitDeletionPolicy(), r.nextBoolean(), _TestUtil.nextInt(r, 1, 10));
     }

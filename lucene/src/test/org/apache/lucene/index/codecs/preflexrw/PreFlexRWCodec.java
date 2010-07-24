@@ -33,20 +33,46 @@ import org.apache.lucene.index.codecs.FieldsProducer;
  */
 public class PreFlexRWCodec extends PreFlexCodec {
 
-  public PreFlexRWCodec() {
-    // NOTE: we use same name as core PreFlex codec so that
-    // it can read the segments we write!
+  private final String termSortOrder;
+
+  // termSortOrder should be null (dynamically deteremined
+  // by stack), "codepoint" or "utf16" 
+  public PreFlexRWCodec(String termSortOrder) {
+    // NOTE: we impersonate the PreFlex codec so that it can
+    // read the segments we write!
     super();
+    this.termSortOrder = termSortOrder;
   }
   
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
+    System.out.println("PFW");
     return new PreFlexFieldsWriter(state);
   }
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    //System.out.println("preflexrw");
-    return new PreFlexFields(state.dir, state.fieldInfos, state.segmentInfo, state.readBufferSize, state.termsIndexDivisor, false);
+
+    // Whenever IW opens readers, eg for merging, we have to
+    // keep terms order in UTF16:
+
+    boolean unicodeSortOrder;
+    if (termSortOrder == null) {
+      unicodeSortOrder = true;
+
+      StackTraceElement[] trace = new Exception().getStackTrace();
+      for (int i = 0; i < trace.length; i++) {
+        //System.out.println(trace[i].getClassName());
+        if ("org.apache.lucene.index.IndexWriter".equals(trace[i].getClassName())) {
+          unicodeSortOrder = false;
+          break;
+        }
+      }
+      //System.out.println("PRW: " + unicodeSortOrder);
+    } else {
+      unicodeSortOrder = termSortOrder.equals("codepoint");
+    }
+
+    return new PreFlexFields(state.dir, state.fieldInfos, state.segmentInfo, state.readBufferSize, state.termsIndexDivisor, unicodeSortOrder);
   }
 }

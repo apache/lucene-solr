@@ -86,7 +86,6 @@ public class TestMultiFields extends LuceneTestCase {
         }
       }
 
-      // nocommit
       IndexReader reader = w.getReader();
       w.close();
       //System.out.println("TEST reader=" + reader);

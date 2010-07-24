@@ -272,7 +272,7 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
     RandomIndexWriter w = new RandomIndexWriter(r,
                                                 dir,
                                                 newIndexWriterConfig(r, TEST_VERSION_CURRENT,
-                                                                      new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec(new PreFlexRWCodec())));
+                                                                      new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec(new PreFlexRWCodec(null))));
 
     final int numField = _TestUtil.nextInt(r, 2, 5);
 
@@ -284,8 +284,6 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
 
     for(int f=0;f<numField;f++) {
       String field = "f" + f;
-      Term protoTerm = new Term(field);
-
       final int numTerms = 10000*_TestUtil.getRandomMultiplier();
 
       final Set<String> uniqueTerms = new HashSet<String>();

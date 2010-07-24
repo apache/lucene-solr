@@ -4670,18 +4670,16 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   // Make sure terms, including ones with surrogate pairs,
-  // sort in UTF16 sort order by default
+  // sort in codepoint sort order by default
   public void testTermUTF16SortOrder() throws Throwable {
+    Random rnd = newRandom();
     Directory dir = new MockRAMDirectory();
-    // nocommit -- allow preflexrw but must force preflex
-    // for reading
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
+    RandomIndexWriter writer = new RandomIndexWriter(rnd, dir);
     Document d = new Document();
     // Single segment
     Field f = new Field("f", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
     d.add(f);
     char[] chars = new char[2];
-    Random rnd = newRandom();
     final Set<String> allTerms = new HashSet<String>();
 
     for(int i=0;i<10*_TestUtil.getRandomMultiplier();i++) {

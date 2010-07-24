@@ -32,9 +32,6 @@ import junit.framework.TestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.LogDocMergePolicy;
-import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
@@ -122,12 +119,16 @@ public abstract class LuceneTestCase extends TestCase {
     ConcurrentMergeScheduler.setTestMode();
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
     savedDefaultCodec = CodecProvider.getDefaultCodec();
+
     codec = _TestUtil.getTestCodec();
     if (codec.equals("random"))
       codec = CodecProvider.CORE_CODECS[seedRnd.nextInt(CodecProvider.CORE_CODECS.length)];
-    //nocommit
+
+    // If we're running w/ PreFlex codec we must swap in the
+    // test-only PreFlexRW codec (since core PreFlex can
+    // only read segments):
     if (codec.equals("PreFlex")) {
-        CodecProvider.getDefault().register(new PreFlexRWCodec());
+      CodecProvider.getDefault().register(new PreFlexRWCodec(null));
     } 
     CodecProvider.setDefaultCodec(codec);
   }
@@ -155,10 +156,10 @@ public abstract class LuceneTestCase extends TestCase {
     assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
     setup = false;
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
-    // nocommit
+    // Restore read-only PreFlex codec:
     if (codec.equals("PreFlex")) {
-        CodecProvider.getDefault().unregister(new PreFlexRWCodec());
-        CodecProvider.getDefault().register(new PreFlexCodec());
+      CodecProvider.getDefault().unregister(new PreFlexRWCodec(null));
+      CodecProvider.getDefault().register(new PreFlexCodec());
     } 
     CodecProvider.setDefaultCodec(savedDefaultCodec);
     

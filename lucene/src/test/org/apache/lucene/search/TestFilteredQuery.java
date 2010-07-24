@@ -48,6 +48,7 @@ public class TestFilteredQuery extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     directory = new RAMDirectory();
+    // nocommit seed
     RandomIndexWriter writer = new RandomIndexWriter (newRandom(), directory);
 
     Document doc = new Document();
@@ -69,6 +70,11 @@ public class TestFilteredQuery extends LuceneTestCase {
     doc.add (new Field("field", "one two x", Field.Store.YES, Field.Index.ANALYZED));
     doc.add (new Field("sorter", "c", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument (doc);
+
+    // tests here require single segment (eg try seed
+    // 8239472272678419952L), because SingleDocTestFilter(x)
+    // blindly accepts that docID in any sub-segment
+    writer.optimize();
 
     reader = writer.getReader();
     writer.close ();

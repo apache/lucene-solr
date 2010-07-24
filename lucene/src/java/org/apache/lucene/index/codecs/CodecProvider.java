@@ -71,7 +71,7 @@ public abstract class CodecProvider {
     if (codecs.containsKey(codec.name)) {
       Codec c = codecs.get(codec.name);
       if (codec.getClass().isAssignableFrom(c.getClass()))
-          codecs.remove(codec.name);
+        codecs.remove(codec.name);
       else
         throw new IllegalArgumentException("codec '" + codec.name + "' is being impersonated by a different codec instance!!!");
     }
