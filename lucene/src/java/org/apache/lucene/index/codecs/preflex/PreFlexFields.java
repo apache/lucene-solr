@@ -58,19 +58,11 @@ public class PreFlexFields extends FieldsProducer {
   private final Directory dir;
   private final int readBufferSize;
   private Directory cfsReader;
-  private final boolean unicodeSortOrder;
 
-  // If unicodeSortOrder is true, we do the surrogates dance
-  // so that the terms are sorted by unicode sort order.
-  // This should be true when segments are used for "normal"
-  // searching; it's only false during testing, to create a
-  // pre-flex index, using the preflexrw codec under
-  // src/test.
-  public PreFlexFields(Directory dir, FieldInfos fieldInfos, SegmentInfo info, int readBufferSize, int indexDivisor, boolean unicodeSortOrder)
+  public PreFlexFields(Directory dir, FieldInfos fieldInfos, SegmentInfo info, int readBufferSize, int indexDivisor)
     throws IOException {
 
     si = info;
-    this.unicodeSortOrder = unicodeSortOrder;
 
     // NOTE: we must always load terms index, even for
     // "sequential" scan during merging, because what is
@@ -112,6 +104,15 @@ public class PreFlexFields extends FieldsProducer {
     }
 
     this.dir = dir;
+  }
+
+  // If this returns, we do the surrogates dance so that the
+  // terms are sorted by unicode sort order.  This should be
+  // true when segments are used for "normal" searching;
+  // it's only false during testing, to create a pre-flex
+  // index, using the test-only PreFlexRW.
+  protected boolean sortTermsByUnicode() {
+    return true;
   }
 
   static void files(Directory dir, SegmentInfo info, Collection<String> files) throws IOException {
@@ -241,7 +242,7 @@ public class PreFlexFields extends FieldsProducer {
     public Comparator<BytesRef> getComparator() {
       // Pre-flex indexes always sorted in UTF16 order, but
       // we remap on-the-fly to unicode order
-      if (unicodeSortOrder) {
+      if (sortTermsByUnicode()) {
         return BytesRef.getUTF8SortedAsUnicodeComparator();
       } else {
         return BytesRef.getUTF8SortedAsUTF16Comparator();
@@ -692,6 +693,8 @@ public class PreFlexFields extends FieldsProducer {
       }
     }
 
+    private boolean unicodeSortOrder;
+
     void reset(FieldInfo fieldInfo) throws IOException {
       //System.out.println("pff.reset te=" + termEnum);
       this.fieldInfo = fieldInfo;
@@ -704,6 +707,8 @@ public class PreFlexFields extends FieldsProducer {
         getTermsDict().seekEnum(termEnum, protoTerm);
       }
       skipNext = true;
+
+      unicodeSortOrder = sortTermsByUnicode();
 
       final Term t = termEnum.term();
       if (t != null && t.field() == fieldInfo.name) {

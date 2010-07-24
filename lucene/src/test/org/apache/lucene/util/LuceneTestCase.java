@@ -128,7 +128,7 @@ public abstract class LuceneTestCase extends TestCase {
     // test-only PreFlexRW codec (since core PreFlex can
     // only read segments):
     if (codec.equals("PreFlex")) {
-      CodecProvider.getDefault().register(new PreFlexRWCodec(null));
+      CodecProvider.getDefault().register(new PreFlexRWCodec());
     } 
     CodecProvider.setDefaultCodec(codec);
   }
@@ -158,7 +158,7 @@ public abstract class LuceneTestCase extends TestCase {
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
     // Restore read-only PreFlex codec:
     if (codec.equals("PreFlex")) {
-      CodecProvider.getDefault().unregister(new PreFlexRWCodec(null));
+      CodecProvider.getDefault().unregister(new PreFlexRWCodec());
       CodecProvider.getDefault().register(new PreFlexCodec());
     } 
     CodecProvider.setDefaultCodec(savedDefaultCodec);

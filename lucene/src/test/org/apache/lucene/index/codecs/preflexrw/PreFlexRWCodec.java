@@ -25,6 +25,7 @@ import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexFields;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.util.LuceneTestCaseJ4;
 
 /** Codec, only for testing, that can write and read the
  *  pre-flex index format.
@@ -33,20 +34,14 @@ import org.apache.lucene.index.codecs.FieldsProducer;
  */
 public class PreFlexRWCodec extends PreFlexCodec {
 
-  private final String termSortOrder;
-
-  // termSortOrder should be null (dynamically deteremined
-  // by stack), "codepoint" or "utf16" 
-  public PreFlexRWCodec(String termSortOrder) {
+  public PreFlexRWCodec() {
     // NOTE: we impersonate the PreFlex codec so that it can
     // read the segments we write!
     super();
-    this.termSortOrder = termSortOrder;
   }
   
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    System.out.println("PFW");
     return new PreFlexFieldsWriter(state);
   }
 
@@ -56,23 +51,27 @@ public class PreFlexRWCodec extends PreFlexCodec {
     // Whenever IW opens readers, eg for merging, we have to
     // keep terms order in UTF16:
 
-    boolean unicodeSortOrder;
-    if (termSortOrder == null) {
-      unicodeSortOrder = true;
+    return new PreFlexFields(state.dir, state.fieldInfos, state.segmentInfo, state.readBufferSize, state.termsIndexDivisor) {
+      @Override
+      protected boolean sortTermsByUnicode() {
+        // We carefully peek into stack track above us: if
+        // we are part of a "merge", we must sort by UTF16:
+        boolean unicodeSortOrder = true;
 
-      StackTraceElement[] trace = new Exception().getStackTrace();
-      for (int i = 0; i < trace.length; i++) {
-        //System.out.println(trace[i].getClassName());
-        if ("org.apache.lucene.index.IndexWriter".equals(trace[i].getClassName())) {
-          unicodeSortOrder = false;
-          break;
+        StackTraceElement[] trace = new Exception().getStackTrace();
+        for (int i = 0; i < trace.length; i++) {
+          //System.out.println(trace[i].getClassName());
+          if ("merge".equals(trace[i].getMethodName())) {
+            unicodeSortOrder = false;
+            if (LuceneTestCaseJ4.VERBOSE) {
+              System.out.println("NOTE: PreFlexRW codec: forcing legacy UTF16 term sort order");
+            }
+            break;
+          }
         }
-      }
-      //System.out.println("PRW: " + unicodeSortOrder);
-    } else {
-      unicodeSortOrder = termSortOrder.equals("codepoint");
-    }
 
-    return new PreFlexFields(state.dir, state.fieldInfos, state.segmentInfo, state.readBufferSize, state.termsIndexDivisor, unicodeSortOrder);
+        return unicodeSortOrder;
+      }
+    };
   }
 }

@@ -152,7 +152,7 @@ public class LuceneTestCaseJ4 {
     // test-only PreFlexRW codec (since core PreFlex can
     // only read segments):
     if (codec.equals("PreFlex")) {
-      CodecProvider.getDefault().register(new PreFlexRWCodec(null));
+      CodecProvider.getDefault().register(new PreFlexRWCodec());
     } 
     CodecProvider.setDefaultCodec(codec);
   }
@@ -161,7 +161,7 @@ public class LuceneTestCaseJ4 {
   public static void afterClassLuceneTestCaseJ4() {
     // Restore read-only PreFlex codec:
     if (codec.equals("PreFlex")) {
-      CodecProvider.getDefault().unregister(new PreFlexRWCodec(null));
+      CodecProvider.getDefault().unregister(new PreFlexRWCodec());
       CodecProvider.getDefault().register(new PreFlexCodec());
     }
     CodecProvider.setDefaultCodec(savedDefaultCodec);

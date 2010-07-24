@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import org.apache.lucene.util.*;
-import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 
 import junit.framework.Assert;
 
@@ -263,10 +262,7 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
   }
   
   public static void verifyEquals(Random r, IndexReader r1, Directory dir2, String idField) throws Throwable {
-    // When we're testing w/ PreFlex codec, we must open
-    // this reader with UTF16 terms since incoming NRT
-    // reader is sorted this way:
-    IndexReader r2 = IndexReader.open(dir2, null, true, _TestUtil.nextInt(r, 1, 3), _TestUtil.alwaysCodec(new PreFlexRWCodec("utf16")));
+    IndexReader r2 = IndexReader.open(dir2);
     verifyEquals(r1, r2, idField);
     r2.close();
   }

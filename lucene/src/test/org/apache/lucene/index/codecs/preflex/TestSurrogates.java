@@ -63,10 +63,14 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
 
   private String getRandomString(Random r) {
     String s;
-    if (r.nextInt(3) == 1) {
-      s = makeDifficultRandomUnicodeString(r);
+    if (r.nextInt(5) == 1) {
+      if (r.nextInt(3) == 1) {
+        s = makeDifficultRandomUnicodeString(r);
+      } else {
+        s = _TestUtil.randomUnicodeString(r);
+      }
     } else {
-      s = _TestUtil.randomUnicodeString(r);
+      s = _TestUtil.randomRealisticUnicodeString(r);
     }
     return s;
   }
@@ -272,7 +276,7 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
     RandomIndexWriter w = new RandomIndexWriter(r,
                                                 dir,
                                                 newIndexWriterConfig(r, TEST_VERSION_CURRENT,
-                                                                      new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec(new PreFlexRWCodec(null))));
+                                                                      new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec(new PreFlexRWCodec())));
 
     final int numField = _TestUtil.nextInt(r, 2, 5);
 
