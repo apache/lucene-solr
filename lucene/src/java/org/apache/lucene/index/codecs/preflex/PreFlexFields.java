@@ -432,13 +432,9 @@ public class PreFlexFields extends FieldsProducer {
           isNonBMPChar(prevTerm.bytes, newSuffixStart) &&
           isHighBMPChar(scratchTerm.bytes, newSuffixStart)) {
 
-        // Seek type 2 -- put U+FFFF at this position:
-        // nocommit -- can we somehow use 0xff???
+        // Seek type 2 -- put 0xFF at this position:
         scratchTerm.bytes[newSuffixStart] = (byte) 0xff;
-        //scratchTerm.bytes[newSuffixStart] = (byte) 0xef;
-        scratchTerm.bytes[newSuffixStart+1] = (byte) 0xbf;
-        scratchTerm.bytes[newSuffixStart+2] = (byte) 0xbf;
-        scratchTerm.length = newSuffixStart+3;
+        scratchTerm.length = newSuffixStart+1;
 
         if (DEBUG_SURROGATES) {
           System.out.println("    seek to term=" + UnicodeUtil.toHexString(scratchTerm.utf8ToString()) + " " + scratchTerm.toString());
