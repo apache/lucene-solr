@@ -247,7 +247,8 @@ public abstract class LuceneTestCase extends TestCase {
     if (seed != null) {
       throw new IllegalStateException("please call LuceneTestCase.newRandom only once per test");
     }
-    return newRandom(seedRnd.nextLong());
+    this.seed = Long.valueOf(seedRnd.nextLong());
+    return new Random(seed);
   }
   
   /**
@@ -259,6 +260,7 @@ public abstract class LuceneTestCase extends TestCase {
     if (this.seed != null) {
       throw new IllegalStateException("please call LuceneTestCase.newRandom only once per test");
     }
+    System.out.println("WARNING: random seed of testcase '" + getName() + "' is fixed to: " + seed);
     this.seed = Long.valueOf(seed);
     return new Random(seed);
   }

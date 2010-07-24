@@ -323,7 +323,8 @@ public class LuceneTestCaseJ4 {
     if (seed != null) {
       throw new IllegalStateException("please call LuceneTestCaseJ4.newRandom only once per test");
     }
-    return newRandom(seedRnd.nextLong());
+    this.seed = Long.valueOf(seedRnd.nextLong());
+    return new Random(seed);
   }
 
   /**
@@ -335,6 +336,7 @@ public class LuceneTestCaseJ4 {
     if (this.seed != null) {
       throw new IllegalStateException("please call LuceneTestCaseJ4.newRandom only once per test");
     }
+    System.out.println("WARNING: random seed of testcase '" + getName() + "' is fixed to: " + seed);
     this.seed = Long.valueOf(seed);
     return new Random(seed);
   }
@@ -350,7 +352,9 @@ public class LuceneTestCaseJ4 {
    * .
    */
   public static Random newStaticRandom(Class<? extends LuceneTestCaseJ4> clazz) {
-    return newStaticRandom(clazz, seedRnd.nextLong());
+    Long seed = seedRnd.nextLong();
+    staticSeeds.put(clazz, seed);
+    return new Random(seed);
   }
   
   /**
@@ -361,6 +365,7 @@ public class LuceneTestCaseJ4 {
    */
   public static Random newStaticRandom(Class<? extends LuceneTestCaseJ4> clazz, long seed) {
     staticSeeds.put(clazz, Long.valueOf(seed));
+    System.out.println("WARNING: random static seed of testclass '" + clazz + "' is fixed to: " + seed);
     return new Random(seed);
   }
 
