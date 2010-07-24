@@ -79,6 +79,7 @@ public class SolrQueryParser extends QueryParser {
     this.defaultField = defaultField;
     setLowercaseExpandedTerms(false);
     setEnablePositionIncrements(true);
+    setAutoGeneratePhraseQueries(true);
     checkAllowLeadingWildcards();
   }
 
@@ -93,6 +94,7 @@ public class SolrQueryParser extends QueryParser {
     this.defaultField = defaultField;
     setLowercaseExpandedTerms(false);
     setEnablePositionIncrements(true);
+    setAutoGeneratePhraseQueries(true);    
     checkAllowLeadingWildcards();
   }
 
