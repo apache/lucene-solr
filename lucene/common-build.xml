@@ -56,7 +56,7 @@
   <property name="args" value=""/>
   <property name="threadsPerProcessor" value="1" />
   <property name="random.multiplier" value="1" />
-  <property name="tests.codec" value="Standard" />
+  <property name="tests.codec" value="random" />
     
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
