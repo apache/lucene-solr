@@ -142,11 +142,15 @@ public class SolrQueryParser extends QueryParser {
         return parser.subQuery(queryText, null).getQuery();
       }
     }
-    //Intercept poly fields, as they get expanded by default to an OR clause of
-    SchemaField sf = schema.getField(field);
-    //TODO: is there anyway to avoid this instance of check?
-    if (sf != null&& !(sf.getType() instanceof TextField)){//we have a poly field, deal with it specially by delegating to the FieldType
-      return sf.getType().getFieldQuery(parser, sf, queryText); 
+    SchemaField sf = schema.getFieldOrNull(field);
+    if (sf != null) {
+      FieldType ft = sf.getType();
+      // delegate to type for everything except TextField
+      if (ft instanceof TextField) {
+        return super.getFieldQuery(field, queryText, quoted || ((TextField)ft).getAutoGeneratePhraseQueries());
+      } else {
+        return sf.getType().getFieldQuery(parser, sf, queryText);
+      }
     }
 
     // default to a normal field query
