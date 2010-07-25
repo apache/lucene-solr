@@ -56,7 +56,6 @@ public class SolrIndexConfig {
     writeLockTimeout = -1;
     commitLockTimeout = -1;
     lockType = null;
-    luceneAutoCommit = false;
     termIndexInterval = IndexWriter.DEFAULT_TERM_INDEX_INTERVAL;
     mergePolicyInfo = null;
     mergeSchedulerInfo = null;
@@ -75,7 +74,6 @@ public class SolrIndexConfig {
   public final String lockType;
   public final PluginInfo mergePolicyInfo;
   public final PluginInfo mergeSchedulerInfo;
-  public final boolean luceneAutoCommit;
   public final int termIndexInterval;
   
   public String infoStreamFile = null;
@@ -119,7 +117,11 @@ public class SolrIndexConfig {
       mergePolicyInfo = getPluginInfo(prefix + "/mergePolicy", solrConfig, def.mergePolicyInfo);
     }
     
-    luceneAutoCommit = solrConfig.getBool(prefix + "/luceneAutoCommit", def.luceneAutoCommit);
+    Object luceneAutoCommit = solrConfig.get(prefix + "/luceneAutoCommit", null);
+    if(luceneAutoCommit != null) {
+      log.warn("found deprecated option : luceneAutoCommit no longer has any affect - it is always false");
+    }
+    
     termIndexInterval = solrConfig.getInt(prefix + "/termIndexInterval", def.termIndexInterval);
     
     boolean infoStreamEnabled = solrConfig.getBool(prefix + "/infoStream", false);
