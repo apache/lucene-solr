@@ -46,11 +46,19 @@ import java.io.StringReader;
  * @version $Id$
  */
 public class TextField extends FieldType {
+  protected boolean autoGeneratePhraseQueries = true;
+
   protected void init(IndexSchema schema, Map<String,String> args) {
     properties |= TOKENIZED;
     if (schema.getVersion()> 1.1f) properties &= ~OMIT_TF_POSITIONS;
-    
+    String autoGeneratePhraseQueriesStr = args.remove("autoGeneratePhraseQueries");
+    if (autoGeneratePhraseQueriesStr != null)
+      autoGeneratePhraseQueries = Boolean.parseBoolean(autoGeneratePhraseQueriesStr);
     super.init(schema, args);    
+  }
+
+  public boolean getAutoGeneratePhraseQueries() {
+    return autoGeneratePhraseQueries;
   }
 
   public SortField getSortField(SchemaField field, boolean reverse) {

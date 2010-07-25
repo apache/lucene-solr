@@ -213,8 +213,12 @@
         words on case-change, alpha numeric boundaries, and non-alphanumeric chars,
         so that a query of "wifi" or "wi fi" could match a document containing "Wi-Fi".
         Synonyms and stopwords are customized by external files, and stemming is enabled.
+        The attribute autoGeneratePhraseQueries="true" (the default) causes words that get split to
+        form phrase queries. For example, WordDelimiterFilter splitting text:pdp-11 will cause the parser
+        to generate text:"pdp 11" rather than (text:PDP OR text:11).
+        NOTE: autoGeneratePhraseQueries="true" tends to not work well for non whitespace delimited languages.
         -->
-    <fieldType name="text" class="solr.TextField" positionIncrementGap="100">
+    <fieldType name="text" class="solr.TextField" positionIncrementGap="100" autoGeneratePhraseQueries="true">
       <analyzer type="index">
         <tokenizer class="solr.WhitespaceTokenizerFactory"/>
         <!-- in this example, we will only use synonyms at query time
