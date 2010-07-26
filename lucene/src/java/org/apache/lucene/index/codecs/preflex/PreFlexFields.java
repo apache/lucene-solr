@@ -290,9 +290,10 @@ public class PreFlexFields extends FieldsProducer {
       // unicode character:
       assert isHighBMPChar(term.bytes, pos);
 
-      // TODO: understand why this assert sometimes (rarely)
-      // trips!
-      // assert term.length >= pos + 3: "term.length=" + term.length + " pos+3=" + (pos+3);
+      // NOTE: we cannot make this assert, because
+      // AutomatonQuery legitimately sends us malformed UTF8
+      // (eg the UTF8 bytes with just 0xee)
+      // assert term.length >= pos + 3: "term.length=" + term.length + " pos+3=" + (pos+3) + " byte=" + Integer.toHexString(term.bytes[pos]) + " term=" + term.toString();
 
       // Save the bytes && length, since we need to
       // restore this if seek "back" finds no matching
