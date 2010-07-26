@@ -20,11 +20,12 @@ package org.apache.lucene.index;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.util.IOUtils;
+
 import java.util.LinkedList;
 import java.util.HashSet;
 
 import java.io.IOException;
-
 
 /**
  * Combines multiple files into a single compound file.
@@ -142,20 +143,17 @@ final class CompoundFileWriter {
      */
     public void close() throws IOException {
         if (merged)
-            throw new IllegalStateException(
-                "Merge already performed");
+            throw new IllegalStateException("Merge already performed");
 
         if (entries.isEmpty())
-            throw new IllegalStateException(
-                "No entries to merge have been defined");
+            throw new IllegalStateException("No entries to merge have been defined");
 
         merged = true;
 
         // open the compound stream
-        IndexOutput os = null;
+        IndexOutput os = directory.createOutput(fileName);
+        IOException priorException = null;
         try {
-            os = directory.createOutput(fileName);
-
             // Write the Version info - must be a VInt because CFR reads a VInt
             // in older versions!
             os.writeVInt(FORMAT_CURRENT);
@@ -185,10 +183,9 @@ final class CompoundFileWriter {
 
             // Open the files and copy their data into the stream.
             // Remember the locations of each file's data section.
-            byte buffer[] = new byte[16384];
             for (FileEntry fe : entries) {
                 fe.dataOffset = os.getFilePointer();
-                copyFile(fe, os, buffer);
+                copyFile(fe, os);
             }
 
             // Write the data offsets into the directory of the compound stream
@@ -206,56 +203,37 @@ final class CompoundFileWriter {
             IndexOutput tmp = os;
             os = null;
             tmp.close();
-
+        } catch (IOException e) {
+          priorException = e;
         } finally {
-            if (os != null) try { os.close(); } catch (IOException e) { }
+          IOUtils.closeSafely(priorException, os);
         }
     }
 
-    /** Copy the contents of the file with specified extension into the
-     *  provided output stream. Use the provided buffer for moving data
-     *  to reduce memory allocation.
-     */
-    private void copyFile(FileEntry source, IndexOutput os, byte buffer[])
-    throws IOException
-    {
-        IndexInput is = null;
-        try {
-            long startPtr = os.getFilePointer();
+  /**
+   * Copy the contents of the file with specified extension into the provided
+   * output stream.
+   */
+  private void copyFile(FileEntry source, IndexOutput os) throws IOException {
+    IndexInput is = directory.openInput(source.file);
+    try {
+      long startPtr = os.getFilePointer();
+      long length = is.length();
+      os.copyBytes(is, length);
 
-            is = directory.openInput(source.file);
-            long length = is.length();
-            long remainder = length;
-            int chunk = buffer.length;
+      if (checkAbort != null) {
+        checkAbort.work(length);
+      }
 
-            while(remainder > 0) {
-                int len = (int) Math.min(chunk, remainder);
-                is.readBytes(buffer, 0, len, false);
-                os.writeBytes(buffer, len);
-                remainder -= len;
-                if (checkAbort != null)
-                  // Roughly every 2 MB we will check if
-                  // it's time to abort
-                  checkAbort.work(80);
-            }
+      // Verify that the output length diff is equal to original file
+      long endPtr = os.getFilePointer();
+      long diff = endPtr - startPtr;
+      if (diff != length)
+        throw new IOException("Difference in the output file offsets " + diff
+            + " does not match the original file length " + length);
 
-            // Verify that remainder is 0
-            if (remainder != 0)
-                throw new IOException(
-                    "Non-zero remainder length after copying: " + remainder
-                    + " (id: " + source.file + ", length: " + length
-                    + ", buffer size: " + chunk + ")");
-
-            // Verify that the output length diff is equal to original file
-            long endPtr = os.getFilePointer();
-            long diff = endPtr - startPtr;
-            if (diff != length)
-                throw new IOException(
-                    "Difference in the output file offsets " + diff
-                    + " does not match the original file length " + length);
-
-        } finally {
-            if (is != null) is.close();
-        }
+    } finally {
+      is.close();
     }
+  }
 }
