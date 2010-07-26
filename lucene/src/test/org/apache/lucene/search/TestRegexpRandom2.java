@@ -55,7 +55,6 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    // nocommit seed
     random = newRandom();
     dir = new MockRAMDirectory();
     // TODO: fix mocktokenizer to not extend chartokenizer, so you can have an 'empty' keyword.

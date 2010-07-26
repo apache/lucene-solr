@@ -48,7 +48,6 @@ public class TestFilteredQuery extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     directory = new RAMDirectory();
-    // nocommit seed
     RandomIndexWriter writer = new RandomIndexWriter (newRandom(), directory);
 
     Document doc = new Document();

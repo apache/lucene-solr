@@ -37,8 +37,7 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
-import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
+import org.apache.lucene.index.codecs.Codec;
 
 /** 
  * Base class for all Lucene unit tests.  
@@ -79,6 +78,7 @@ public abstract class LuceneTestCase extends TestCase {
   
   private String savedDefaultCodec;
   private String codec;
+  private Codec preFlexSav;
 
   /** Used to track if setUp and tearDown are called correctly from subclasses */
   private boolean setup;
@@ -128,7 +128,7 @@ public abstract class LuceneTestCase extends TestCase {
     // test-only PreFlexRW codec (since core PreFlex can
     // only read segments):
     if (codec.equals("PreFlex")) {
-      CodecProvider.getDefault().register(new PreFlexRWCodec());
+      preFlexSav = LuceneTestCaseJ4.installPreFlexRW();
     } 
     CodecProvider.setDefaultCodec(codec);
   }
@@ -158,8 +158,7 @@ public abstract class LuceneTestCase extends TestCase {
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
     // Restore read-only PreFlex codec:
     if (codec.equals("PreFlex")) {
-      CodecProvider.getDefault().unregister(new PreFlexRWCodec());
-      CodecProvider.getDefault().register(new PreFlexCodec());
+      LuceneTestCaseJ4.restorePreFlex(preFlexSav);
     } 
     CodecProvider.setDefaultCodec(savedDefaultCodec);
     

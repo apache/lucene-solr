@@ -290,7 +290,8 @@ public class PreFlexFields extends FieldsProducer {
       // unicode character:
       assert isHighBMPChar(term.bytes, pos);
 
-      // nocommit -- why does this trip?
+      // TODO: understand why this assert sometimes (rarely)
+      // trips!
       // assert term.length >= pos + 3: "term.length=" + term.length + " pos+3=" + (pos+3);
 
       // Save the bytes && length, since we need to
@@ -597,7 +598,7 @@ public class PreFlexFields extends FieldsProducer {
             (upTo > newSuffixStart ||
              (upTo >= prevTerm.length ||
               (!isNonBMPChar(prevTerm.bytes, upTo) &&
-               !isHighBMPChar(prevTerm.bytes, upTo))))) {  // nocommit -- we can't cmp to prevTerm if we'd done a seek 3 or seek 2 before?
+               !isHighBMPChar(prevTerm.bytes, upTo))))) {
 
           // A non-BMP char (4 bytes UTF8) starts here:
           assert scratchTerm.length >= upTo + 4;
@@ -760,8 +761,8 @@ public class PreFlexFields extends FieldsProducer {
         return SeekStatus.FOUND;
       } else if (t == null || t.field() != fieldInfo.name) {
 
-        // nocommit -- why can't we handle this like the
-        // next() into null?  set term as prevTerm then dance?
+        // TODO: maybe we can handle this like the next()
+        // into null?  set term as prevTerm then dance?
 
         if (DEBUG_SURROGATES) {
           System.out.println("  seek hit EOF");

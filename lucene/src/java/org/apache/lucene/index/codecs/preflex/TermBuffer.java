@@ -69,8 +69,8 @@ final class TermBuffer implements Cloneable {
 
   public void set(TermBuffer other) {
     field = other.field;
-    // nocommit -- right?
-    //term = other.term;
+    // dangerous to copy Term over, since the underlying
+    // BytesRef could subsequently be modified:
     term = null;
     bytes.copy(other.bytes);
   }

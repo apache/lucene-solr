@@ -53,8 +53,7 @@ public abstract class CodecProvider {
     if (codec.name == null) {
       throw new IllegalArgumentException("code.name is null");
     }
-    // nocommit
-    if (!codecs.containsKey(codec.name) || codec.name.equals("PreFlex")) {
+    if (!codecs.containsKey(codec.name)) {
       codecs.put(codec.name, codec);
       codec.getExtensions(knownExtensions);
     } else if (codecs.get(codec.name) != codec) {
@@ -67,13 +66,13 @@ public abstract class CodecProvider {
     if (codec.name == null) {
       throw new IllegalArgumentException("code.name is null");
     }
-    // nocommit
     if (codecs.containsKey(codec.name)) {
       Codec c = codecs.get(codec.name);
-      if (codec.getClass().isAssignableFrom(c.getClass()))
+      if (codec == c) {
         codecs.remove(codec.name);
-      else
+      } else {
         throw new IllegalArgumentException("codec '" + codec.name + "' is being impersonated by a different codec instance!!!");
+      }
     }
   }
 
@@ -126,8 +125,5 @@ class DefaultCodecProvider extends CodecProvider {
   @Override
   public Codec getWriter(SegmentWriteState state) {
     return lookup(CodecProvider.getDefaultCodec());
-    //return lookup("Pulsing");
-    //return lookup("Sep");
-    //return lookup("IntBlock");
   }
 }

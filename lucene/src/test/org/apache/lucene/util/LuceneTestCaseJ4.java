@@ -28,7 +28,7 @@ import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 
 import org.junit.After;
@@ -140,7 +140,27 @@ public class LuceneTestCaseJ4 {
   // saves default codec: we do this statically as many build indexes in @beforeClass
   private static String savedDefaultCodec;
   private static String codec;
+  private static Codec preFlexSav;
   
+  // returns current PreFlex codec
+  public static Codec installPreFlexRW() {
+    final Codec preFlex = CodecProvider.getDefault().lookup("PreFlex");
+    if (preFlex != null) {
+      CodecProvider.getDefault().unregister(preFlex);
+    }
+    CodecProvider.getDefault().register(new PreFlexRWCodec());
+    return preFlex;
+  }
+
+  // returns current PreFlex codec
+  public static void restorePreFlex(Codec preFlex) {
+    Codec preFlexRW = CodecProvider.getDefault().lookup("PreFlex");
+    if (preFlexRW != null) {
+      CodecProvider.getDefault().unregister(preFlexRW);
+    }
+    CodecProvider.getDefault().register(preFlex);
+  }
+
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
     savedDefaultCodec = CodecProvider.getDefaultCodec();
@@ -152,8 +172,9 @@ public class LuceneTestCaseJ4 {
     // test-only PreFlexRW codec (since core PreFlex can
     // only read segments):
     if (codec.equals("PreFlex")) {
-      CodecProvider.getDefault().register(new PreFlexRWCodec());
+      preFlexSav = installPreFlexRW();
     } 
+
     CodecProvider.setDefaultCodec(codec);
   }
   
@@ -161,9 +182,8 @@ public class LuceneTestCaseJ4 {
   public static void afterClassLuceneTestCaseJ4() {
     // Restore read-only PreFlex codec:
     if (codec.equals("PreFlex")) {
-      CodecProvider.getDefault().unregister(new PreFlexRWCodec());
-      CodecProvider.getDefault().register(new PreFlexCodec());
-    }
+      restorePreFlex(preFlexSav);
+    } 
     CodecProvider.setDefaultCodec(savedDefaultCodec);
   }
 
