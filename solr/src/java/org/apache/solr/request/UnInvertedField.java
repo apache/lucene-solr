@@ -1126,10 +1126,6 @@ class TermIndex {
         return br;
       }
 
-      public BytesRef skipTo(Term target) throws IOException {
-        throw new UnsupportedOperationException();
-      }
-
       public BytesRef skipTo(int termNumber) throws IOException {
         throw new UnsupportedOperationException();
       }
