@@ -4559,7 +4559,7 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
   
-    // LUCENE-2095: make sure with multiple threads commit
+  // LUCENE-2095: make sure with multiple threads commit
   // doesn't return until all changes are in fact in the
   // index
   public void testCommitThreadSafety() throws Throwable {
@@ -4670,16 +4670,16 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   // Make sure terms, including ones with surrogate pairs,
-  // sort in UTF16 sort order by default
+  // sort in codepoint sort order by default
   public void testTermUTF16SortOrder() throws Throwable {
+    Random rnd = newRandom();
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new MockAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    RandomIndexWriter writer = new RandomIndexWriter(rnd, dir);
     Document d = new Document();
     // Single segment
     Field f = new Field("f", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
     d.add(f);
     char[] chars = new char[2];
-    Random rnd = newRandom();
     final Set<String> allTerms = new HashSet<String>();
 
     for(int i=0;i<200*_TestUtil.getRandomMultiplier();i++) {
@@ -4705,14 +4705,13 @@ public class TestIndexWriter extends LuceneTestCase {
       allTerms.add(s);
       f.setValue(s);
 
-      //System.out.println("add " + termDesc(s));
       writer.addDocument(d);
 
       if ((1+i) % 42 == 0) {
         writer.commit();
       }
     }
-    
+
     IndexReader r = writer.getReader();
 
     // Test each sub-segment

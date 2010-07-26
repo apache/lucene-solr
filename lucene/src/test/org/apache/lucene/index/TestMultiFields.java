@@ -27,11 +27,12 @@ public class TestMultiFields extends LuceneTestCase {
 
   public void testRandom() throws Exception {
 
+    Random r = newRandom();
+
     for(int iter=0;iter<2*_TestUtil.getRandomMultiplier();iter++) {
       Directory dir = new MockRAMDirectory();
-      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
 
-      Random r = new Random();
+      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
 
       Map<BytesRef,List<Integer>> docs = new HashMap<BytesRef,List<Integer>>();
       Set<Integer> deleted = new HashSet<Integer>();
@@ -45,7 +46,7 @@ public class TestMultiFields extends LuceneTestCase {
       doc.add(id);
 
       boolean onlyUniqueTerms = r.nextBoolean();
-
+      Set<BytesRef> uniqueTerms = new HashSet<BytesRef>();
       for(int i=0;i<numDocs;i++) {
 
         if (!onlyUniqueTerms && r.nextBoolean() && terms.size() > 0) {
@@ -61,6 +62,7 @@ public class TestMultiFields extends LuceneTestCase {
           }
           docs.get(term).add(i);
           terms.add(term);
+          uniqueTerms.add(term);
           f.setValue(s);
         }
         id.setValue(""+i);
@@ -75,8 +77,18 @@ public class TestMultiFields extends LuceneTestCase {
         }
       }
 
+      if (VERBOSE) {
+        List<BytesRef> termsList = new ArrayList<BytesRef>(uniqueTerms);
+        Collections.sort(termsList, BytesRef.getUTF8SortedAsUTF16Comparator());
+        System.out.println("UTF16 order:");
+        for(BytesRef b : termsList) {
+          System.out.println("  " + UnicodeUtil.toHexString(b.utf8ToString()));
+        }
+      }
+
       IndexReader reader = w.getReader();
       w.close();
+      //System.out.println("TEST reader=" + reader);
 
       Bits delDocs = MultiFields.getDeletedDocs(reader);
       for(int delDoc : deleted) {

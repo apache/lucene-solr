@@ -25,8 +25,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.RAMDirectory;
@@ -104,7 +102,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
   private IndexReader build(Random random, TestIndex index) throws IOException {
     /* build an index */
     RandomIndexWriter writer = new RandomIndexWriter(random, index.index, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
+        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
     .setOpenMode(OpenMode.CREATE));
     
     for (int d = minId; d <= maxId; d++) {

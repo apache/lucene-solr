@@ -84,26 +84,16 @@ public final class SegmentTermEnum implements Cloneable {
       format = firstInt;
 
       // check that it is a format we can understand
-    if (format > FORMAT_MINIMUM)
-      throw new IndexFormatTooOldException(null, format, FORMAT_MINIMUM, FORMAT_CURRENT);
-    if (format < FORMAT_CURRENT)
-      throw new IndexFormatTooNewException(null, format, FORMAT_MINIMUM, FORMAT_CURRENT);
+      if (format > FORMAT_MINIMUM)
+        throw new IndexFormatTooOldException(null, format, FORMAT_MINIMUM, FORMAT_CURRENT);
+      if (format < FORMAT_CURRENT)
+        throw new IndexFormatTooNewException(null, format, FORMAT_MINIMUM, FORMAT_CURRENT);
 
       size = input.readLong();                    // read the size
       
-      if(format == -1){
-        if (!isIndex) {
-          indexInterval = input.readInt();
-          formatM1SkipInterval = input.readInt();
-        }
-        // switch off skipTo optimization for file format prior to 1.4rc2 in order to avoid a bug in 
-        // skipTo implementation of these versions
-        skipInterval = Integer.MAX_VALUE;
-      } else {
-        indexInterval = input.readInt();
-        skipInterval = input.readInt();
-        maxSkipLevels = input.readInt();
-      }
+      indexInterval = input.readInt();
+      skipInterval = input.readInt();
+      maxSkipLevels = input.readInt();
       assert indexInterval > 0: "indexInterval=" + indexInterval + " is negative; must be > 0";
       assert skipInterval > 0: "skipInterval=" + skipInterval + " is negative; must be > 0";
     }
@@ -132,18 +122,21 @@ public final class SegmentTermEnum implements Cloneable {
     position = p;
     termBuffer.set(t);
     prevBuffer.reset();
+    //System.out.println("  ste doSeek prev=" + prevBuffer.toTerm() + " this=" + this);
     termInfo.set(ti);
   }
 
   /** Increments the enumeration to the next element.  True if one exists.*/
   public final boolean next() throws IOException {
+    prevBuffer.set(termBuffer);
+    //System.out.println("  ste setPrev=" + prev() + " this=" + this);
+
     if (position++ >= size - 1) {
-      prevBuffer.set(termBuffer);
       termBuffer.reset();
+      //System.out.println("    EOF");
       return false;
     }
 
-    prevBuffer.set(termBuffer);
     termBuffer.read(input, fieldInfos);
     newSuffixStart = termBuffer.newSuffixStart;
 
@@ -168,6 +161,7 @@ public final class SegmentTermEnum implements Cloneable {
     if (isIndex)
       indexPointer += input.readVLong();	  // read index pointer
 
+    //System.out.println("  ste ret term=" + term());
     return true;
   }
 

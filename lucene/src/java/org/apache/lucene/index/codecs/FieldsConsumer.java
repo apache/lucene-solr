@@ -22,6 +22,7 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FieldsEnum;
 
 import java.io.IOException;
+import java.io.Closeable;
 
 /** Abstract API that consumes terms, doc, freq, prox and
  *  payloads postings.  Concrete implementations of this
@@ -30,7 +31,7 @@ import java.io.IOException;
  *
  * @lucene.experimental
  */
-public abstract class FieldsConsumer {
+public abstract class FieldsConsumer implements Closeable {
 
   /** Add a new field */
   public abstract TermsConsumer addField(FieldInfo field) throws IOException;

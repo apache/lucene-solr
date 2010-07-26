@@ -29,11 +29,15 @@ import java.util.Collections;
 
 import junit.framework.TestCase;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
 
 /** 
  * Base class for all Lucene unit tests.  
@@ -72,6 +76,10 @@ public abstract class LuceneTestCase extends TestCase {
   
   private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;
   
+  private String savedDefaultCodec;
+  private String codec;
+  private Codec preFlexSav;
+
   /** Used to track if setUp and tearDown are called correctly from subclasses */
   private boolean setup;
 
@@ -110,6 +118,19 @@ public abstract class LuceneTestCase extends TestCase {
     
     ConcurrentMergeScheduler.setTestMode();
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
+    savedDefaultCodec = CodecProvider.getDefaultCodec();
+
+    codec = _TestUtil.getTestCodec();
+    if (codec.equals("random"))
+      codec = CodecProvider.CORE_CODECS[seedRnd.nextInt(CodecProvider.CORE_CODECS.length)];
+
+    // If we're running w/ PreFlex codec we must swap in the
+    // test-only PreFlexRW codec (since core PreFlex can
+    // only read segments):
+    if (codec.equals("PreFlex")) {
+      preFlexSav = LuceneTestCaseJ4.installPreFlexRW();
+    } 
+    CodecProvider.setDefaultCodec(codec);
   }
 
   /**
@@ -135,7 +156,12 @@ public abstract class LuceneTestCase extends TestCase {
     assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
     setup = false;
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
-
+    // Restore read-only PreFlex codec:
+    if (codec.equals("PreFlex")) {
+      LuceneTestCaseJ4.restorePreFlex(preFlexSav);
+    } 
+    CodecProvider.setDefaultCodec(savedDefaultCodec);
+    
     try {
       Thread.setDefaultUncaughtExceptionHandler(savedUncaughtExceptionHandler);
       if (!uncaughtExceptions.isEmpty()) {
@@ -267,7 +293,12 @@ public abstract class LuceneTestCase extends TestCase {
     this.seed = Long.valueOf(seed);
     return new Random(seed);
   }
-  
+
+  /** create a new index writer config with random defaults */
+  public static IndexWriterConfig newIndexWriterConfig(Random r, Version v, Analyzer a) {
+    return LuceneTestCaseJ4.newIndexWriterConfig(r, v, a);
+  }
+
   /** Gets a resource from the classpath as {@link File}. This method should only be used,
    * if a real file is needed. To get a stream, code should prefer
    * {@link Class#getResourceAsStream} using {@code this.getClass()}.
@@ -287,6 +318,9 @@ public abstract class LuceneTestCase extends TestCase {
       seed = null;
       super.runBare();
     } catch (Throwable e) {
+      if (_TestUtil.getTestCodec().equals("random")) {
+        System.out.println("NOTE: random codec of testcase '" + getName() + "' was: " + codec);
+      }
       if (seed != null) {
         System.out.println("NOTE: random seed of testcase '" + getName() + "' was: " + seed);
       }

@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
@@ -42,8 +41,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
   public void testFuzziness() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
     addDoc("aaaaa", writer);
     addDoc("aaaab", writer);
     addDoc("aaabb", writer);
@@ -196,8 +194,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
   public void testFuzzinessLong() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
     addDoc("aaaaaaa", writer);
     addDoc("segment", writer);
 
@@ -287,8 +284,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   
   public void testTokenLengthOpt() throws IOException {
     RAMDirectory directory = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
     addDoc("12345678911", writer);
     addDoc("segment", writer);
 
@@ -325,8 +321,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   /** Test the TopTermsBoostOnlyBooleanQueryRewrite rewrite method. */
   public void testBoostOnlyRewrite() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
     addDoc("Lucene", writer);
     addDoc("Lucene", writer);
     addDoc("Lucenne", writer);
@@ -353,8 +348,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     MockAnalyzer analyzer = new MockAnalyzer();
 
     Directory index = new MockRAMDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(newRandom(), index, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    RandomIndexWriter w = new RandomIndexWriter(newRandom(), index);
 
     addDoc("Lucene in Action", w);
     addDoc("Lucene for Dummies", w);

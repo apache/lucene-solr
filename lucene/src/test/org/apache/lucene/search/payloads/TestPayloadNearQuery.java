@@ -18,6 +18,7 @@ package org.apache.lucene.search.payloads;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Collection;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -106,8 +107,9 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     directory = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer())
+    Random random = newRandom();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
+        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new PayloadAnalyzer())
         .setSimilarity(similarity));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {

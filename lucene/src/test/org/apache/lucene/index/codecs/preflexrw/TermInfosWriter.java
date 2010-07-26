@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.preflex;
+package org.apache.lucene.index.codecs.preflexrw;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -19,9 +19,12 @@ package org.apache.lucene.index.codecs.preflex;
 
 
 import java.io.IOException;
-import org.apache.lucene.store.*;
-import org.apache.lucene.index.*;
-import org.apache.lucene.util.*;
+import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.index.FieldInfos;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.index.codecs.preflex.TermInfo;
 
 
 /** This stores a monotonically increasing set of <Term, TermInfo> pairs in a
@@ -71,8 +74,7 @@ final class TermInfosWriter {
 
   private long lastIndexPointer;
   private boolean isIndex;
-  private byte[] lastTermBytes = new byte[10];
-  private int lastTermBytesLength = 0;
+  private final BytesRef lastTerm = new BytesRef();
   private int lastFieldNumber = -1;
 
   private TermInfosWriter other;
@@ -104,13 +106,10 @@ final class TermInfosWriter {
     assert initUTF16Results();
   }
 
-  void add(Term term, TermInfo ti) throws IOException {
-    add(fieldInfos.fieldNumber(term.field()), term.bytes().bytes, term.bytes().length, ti);
-  }
-
   // Currently used only by assert statements
   UnicodeUtil.UTF16Result utf16Result1;
   UnicodeUtil.UTF16Result utf16Result2;
+  private final BytesRef scratchBytes = new BytesRef();
 
   // Currently used only by assert statements
   private boolean initUTF16Results() {
@@ -120,7 +119,7 @@ final class TermInfosWriter {
   }
 
   // Currently used only by assert statement
-  private int compareToLastTerm(int fieldNumber, byte[] termBytes, int termBytesLength) {
+  private int compareToLastTerm(int fieldNumber, BytesRef term) {
 
     if (lastFieldNumber != fieldNumber) {
       final int cmp = fieldInfos.fieldName(lastFieldNumber).compareTo(fieldInfos.fieldName(fieldNumber));
@@ -132,8 +131,13 @@ final class TermInfosWriter {
         return cmp;
     }
 
-    UnicodeUtil.UTF8toUTF16(lastTermBytes, 0, lastTermBytesLength, utf16Result1);
-    UnicodeUtil.UTF8toUTF16(termBytes, 0, termBytesLength, utf16Result2);
+    scratchBytes.copy(term);
+    assert lastTerm.offset == 0;
+    UnicodeUtil.UTF8toUTF16(lastTerm.bytes, 0, lastTerm.length, utf16Result1);
+
+    assert scratchBytes.offset == 0;
+    UnicodeUtil.UTF8toUTF16(scratchBytes.bytes, 0, scratchBytes.length, utf16Result2);
+
     final int len;
     if (utf16Result1.length < utf16Result2.length)
       len = utf16Result1.length;
@@ -152,22 +156,22 @@ final class TermInfosWriter {
   /** Adds a new <<fieldNumber, termBytes>, TermInfo> pair to the set.
     Term must be lexicographically greater than all previous Terms added.
     TermInfo pointers must be positive and greater than all previous.*/
-  void add(int fieldNumber, byte[] termBytes, int termBytesLength, TermInfo ti)
+  public void add(int fieldNumber, BytesRef term, TermInfo ti)
     throws IOException {
 
-    assert compareToLastTerm(fieldNumber, termBytes, termBytesLength) < 0 ||
-      (isIndex && termBytesLength == 0 && lastTermBytesLength == 0) :
+    assert compareToLastTerm(fieldNumber, term) < 0 ||
+      (isIndex && term.length == 0 && lastTerm.length == 0) :
       "Terms are out of order: field=" + fieldInfos.fieldName(fieldNumber) + " (number " + fieldNumber + ")" +
         " lastField=" + fieldInfos.fieldName(lastFieldNumber) + " (number " + lastFieldNumber + ")" +
-        " text=" + new String(termBytes, 0, termBytesLength, "UTF-8") + " lastText=" + new String(lastTermBytes, 0, lastTermBytesLength, "UTF-8");
+        " text=" + term.utf8ToString() + " lastText=" + lastTerm.utf8ToString();
 
     assert ti.freqPointer >= lastTi.freqPointer: "freqPointer out of order (" + ti.freqPointer + " < " + lastTi.freqPointer + ")";
     assert ti.proxPointer >= lastTi.proxPointer: "proxPointer out of order (" + ti.proxPointer + " < " + lastTi.proxPointer + ")";
 
     if (!isIndex && size % indexInterval == 0)
-      other.add(lastFieldNumber, lastTermBytes, lastTermBytesLength, lastTi);                      // add an index term
+      other.add(lastFieldNumber, lastTerm, lastTi);                      // add an index term
 
-    writeTerm(fieldNumber, termBytes, termBytesLength);                        // write term
+    writeTerm(fieldNumber, term);                        // write term
 
     output.writeVInt(ti.docFreq);                       // write doc freq
     output.writeVLong(ti.freqPointer - lastTi.freqPointer); // write pointers
@@ -187,29 +191,27 @@ final class TermInfosWriter {
     size++;
   }
 
-  private void writeTerm(int fieldNumber, byte[] termBytes, int termBytesLength)
+  private void writeTerm(int fieldNumber, BytesRef term)
        throws IOException {
+
+    //System.out.println("  tiw.write field=" + fieldNumber + " term=" + term.utf8ToString());
 
     // TODO: UTF16toUTF8 could tell us this prefix
     // Compute prefix in common with last term:
     int start = 0;
-    final int limit = termBytesLength < lastTermBytesLength ? termBytesLength : lastTermBytesLength;
+    final int limit = term.length < lastTerm.length ? term.length : lastTerm.length;
     while(start < limit) {
-      if (termBytes[start] != lastTermBytes[start])
+      if (term.bytes[start+term.offset] != lastTerm.bytes[start+lastTerm.offset])
         break;
       start++;
     }
 
-    final int length = termBytesLength - start;
+    final int length = term.length - start;
     output.writeVInt(start);                     // write shared prefix length
     output.writeVInt(length);                  // write delta length
-    output.writeBytes(termBytes, start, length);  // write delta bytes
+    output.writeBytes(term.bytes, start+term.offset, length);  // write delta bytes
     output.writeVInt(fieldNumber); // write field num
-    if (lastTermBytes.length < termBytesLength) {
-      lastTermBytes = ArrayUtil.grow(lastTermBytes, termBytesLength);
-    }
-    System.arraycopy(termBytes, start, lastTermBytes, start, length);
-    lastTermBytesLength = termBytesLength;
+    lastTerm.copy(term);
   }
 
   /** Called to complete TermInfos creation. */

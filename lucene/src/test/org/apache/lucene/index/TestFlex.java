@@ -20,6 +20,8 @@ package org.apache.lucene.index;
 import java.io.*;
 import java.util.*;
 import org.apache.lucene.store.*;
+import org.apache.lucene.index.codecs.*;
+import org.apache.lucene.index.codecs.standard.*;
 import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.*;
@@ -64,7 +66,8 @@ public class TestFlex extends LuceneTestCase {
 
   public void testTermOrd() throws Exception {
     Directory d = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(d, new MockAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT,
+                                                             new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
     Document doc = new Document();
     doc.add(new Field("f", "a b c", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);

@@ -17,20 +17,18 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.Random;
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Random;
 
-import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.store.Directory;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.intblock.IntBlockCodec;
-import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
-import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
-import org.apache.lucene.index.codecs.sep.SepCodec;
-import org.apache.lucene.index.codecs.standard.StandardCodec;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.Version;
+import org.apache.lucene.util._TestUtil;
 
 /** Silly class that randomizes the indexing experience.  EG
  *  it may swap in a different merge policy/scheduler; may
@@ -45,32 +43,48 @@ public class RandomIndexWriter implements Closeable {
   int docCount;
   int flushAt;
 
+  // Randomly calls Thread.yield so we mixup thread scheduling
+  private static final class MockIndexWriter extends IndexWriter {
+
+    private final Random r;
+
+    public MockIndexWriter(Random r,Directory dir, IndexWriterConfig conf) throws IOException {
+      super(dir, conf);
+      this.r = r;
+    }
+
+    @Override
+    boolean testPoint(String name) {
+      if (r.nextInt(4) == 2)
+        Thread.yield();
+      return true;
+    }
+  }
+
+  /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT and MockAnalyzer */
+  public RandomIndexWriter(Random r, Directory dir) throws IOException {
+    this(r, dir, LuceneTestCaseJ4.newIndexWriterConfig(r, LuceneTestCaseJ4.TEST_VERSION_CURRENT, new MockAnalyzer()));
+  }
+  
+  /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT */
+  public RandomIndexWriter(Random r, Directory dir, Analyzer a) throws IOException {
+    this(r, dir, LuceneTestCaseJ4.newIndexWriterConfig(r, LuceneTestCaseJ4.TEST_VERSION_CURRENT, a));
+  }
+  
+  /** create a RandomIndexWriter with a random config */
+  public RandomIndexWriter(Random r, Directory dir, Version v, Analyzer a) throws IOException {
+    this(r, dir, LuceneTestCaseJ4.newIndexWriterConfig(r, v, a));
+  }
+  
+  /** create a RandomIndexWriter with the provided config */
   public RandomIndexWriter(Random r, Directory dir, IndexWriterConfig c) throws IOException {
     this.r = r;
-    if (r.nextBoolean()) {
-      c.setMergePolicy(new LogDocMergePolicy());
-    }
-    if (r.nextBoolean()) {
-      c.setMergeScheduler(new SerialMergeScheduler());
-    }
-    if (r.nextBoolean()) {
-      c.setMaxBufferedDocs(_TestUtil.nextInt(r, 2, 1000));
-    }
-    if (r.nextBoolean()) {
-      c.setTermIndexInterval(_TestUtil.nextInt(r, 1, 1000));
-    }
-    
-    if (c.getMergePolicy() instanceof LogMergePolicy) {
-      LogMergePolicy logmp = (LogMergePolicy) c.getMergePolicy();
-      logmp.setUseCompoundDocStore(r.nextBoolean());
-      logmp.setUseCompoundFile(r.nextBoolean());
-      logmp.setCalibrateSizeByDeletes(r.nextBoolean());
-    }
-    
-    c.setReaderPooling(r.nextBoolean());
-    c.setCodecProvider(new RandomCodecProvider(r));
-    w = new IndexWriter(dir, c);
+    w = new MockIndexWriter(r, dir, c);
     flushAt = _TestUtil.nextInt(r, 10, 1000);
+    if (LuceneTestCaseJ4.VERBOSE) {
+      System.out.println("RIW config=" + w.getConfig());
+      System.out.println("codec default=" + CodecProvider.getDefaultCodec());
+    }
   } 
 
   public void addDocument(Document doc) throws IOException {
@@ -89,14 +103,27 @@ public class RandomIndexWriter implements Closeable {
     w.deleteDocuments(term);
   }
   
+  public void commit() throws CorruptIndexException, IOException {
+    w.commit();
+  }
+  
   public int maxDoc() {
     return w.maxDoc();
   }
 
   public IndexReader getReader() throws IOException {
-    if (r.nextBoolean()) {
+    // If we are writing with PreFlexRW, force a full
+    // IndexReader.open so terms are sorted in codepoint
+    // order during searching:
+    if (!w.codecs.getWriter(null).name.equals("PreFlex") && r.nextBoolean()) {
+      if (LuceneTestCaseJ4.VERBOSE) {
+        System.out.println("RIW.getReader: use NRT reader");
+      }
       return w.getReader();
     } else {
+      if (LuceneTestCaseJ4.VERBOSE) {
+        System.out.println("RIW.getReader: open new reader");
+      }
       w.commit();
       return IndexReader.open(w.getDirectory(), new KeepOnlyLastCommitDeletionPolicy(), r.nextBoolean(), _TestUtil.nextInt(r, 1, 10));
     }
@@ -111,23 +138,5 @@ public class RandomIndexWriter implements Closeable {
 
   public void optimize() throws IOException {
     w.optimize();
-  }
-  
-  class RandomCodecProvider extends CodecProvider {
-    final String codec;
-    
-    RandomCodecProvider(Random random) {
-      register(new StandardCodec());
-      register(new IntBlockCodec());
-      register(new PreFlexCodec());
-      register(new PulsingCodec());
-      register(new SepCodec());
-      codec = CodecProvider.CORE_CODECS[random.nextInt(CodecProvider.CORE_CODECS.length)];
-    }
-    
-    @Override
-    public Codec getWriter(SegmentWriteState state) {
-      return lookup(codec);
-    }
   }
 }

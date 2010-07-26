@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.RAMDirectory;
@@ -40,8 +39,7 @@ public class TestNot extends LuceneTestCase {
 
   public void testNot() throws Exception {
     RAMDirectory store = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), store, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), store);
 
     Document d1 = new Document();
     d1.add(new Field("field", "a b", Field.Store.YES, Field.Index.ANALYZED));

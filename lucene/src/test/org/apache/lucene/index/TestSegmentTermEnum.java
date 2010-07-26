@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -64,7 +65,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
   public void testPrevTermAtEnd() throws IOException
   {
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
     addDoc(writer, "aaa bbb");
     writer.close();
     SegmentReader reader = SegmentReader.getOnlySegmentReader(dir);

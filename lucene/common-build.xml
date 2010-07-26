@@ -56,6 +56,7 @@
   <property name="args" value=""/>
   <property name="threadsPerProcessor" value="1" />
   <property name="random.multiplier" value="1" />
+  <property name="tests.codec" value="random" />
     
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
@@ -434,6 +435,8 @@
 	
 	      <!-- allow tests to control debug prints -->
 	      <sysproperty key="tests.verbose" value="${tests.verbose}"/>
+              <!-- set the codec tests should run with -->
+	      <sysproperty key="tests.codec" value="${tests.codec}"/>
 	
 	      <!-- TODO: create propertyset for test properties, so each project can have its own set -->
               <sysproperty key="random.multiplier" value="${random.multiplier}"/>

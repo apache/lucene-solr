@@ -2,9 +2,7 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.MockRAMDirectory;
 
@@ -58,8 +56,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     /** add the doc to a ram index */
     MockRAMDirectory dir = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
     writer.addDocument(doc);
     
     /** open a reader and fetch the document */ 
@@ -98,8 +95,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     /** add the doc to a ram index */
     MockRAMDirectory dir = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
     writer.addDocument(doc);
     
     /** open a reader and fetch the document */ 

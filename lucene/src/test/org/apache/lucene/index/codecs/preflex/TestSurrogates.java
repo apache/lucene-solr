@@ -18,8 +18,10 @@ package org.apache.lucene.index.codecs.preflex;
  */
 
 import org.apache.lucene.store.*;
+import org.apache.lucene.document.*;
+import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.codecs.*;
+import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.util.*;
 
 import java.util.*;
@@ -30,8 +32,6 @@ import org.junit.Test;
 
 public class TestSurrogates extends LuceneTestCaseJ4 {
 
-  // chooses from a very limited alphabet to exacerbate the
-  // surrogate seeking required
   private static String makeDifficultRandomUnicodeString(Random r) {
     final int end = r.nextInt(20);
     if (end == 0) {
@@ -44,154 +44,297 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
 
       if (0 == t && i < end - 1) {
         // hi
-        buffer[i++] = (char) 0xd800;
+        buffer[i++] = (char) (0xd800 + r.nextInt(2));
         // lo
-        buffer[i] = (char) 0xdc00;
+        buffer[i] = (char) (0xdc00 + r.nextInt(2));
       } else if (t <= 3) {
-        buffer[i] = 'a';
+        buffer[i] = (char) ('a' + r.nextInt(2));
       }  else if (4 == t) {
-        buffer[i] = 0xe000;
+        buffer[i] = (char) (0xe000 + r.nextInt(2));
       }
     }
 
     return new String(buffer, 0, end);
   }
 
-  private SegmentInfo makePreFlexSegment(Random r, String segName, Directory dir, FieldInfos fieldInfos, Codec codec, List<Term> fieldTerms) throws IOException {
-
-    final int numField = _TestUtil.nextInt(r, 2, 5);
-
-    List<Term> terms = new ArrayList<Term>();
-
-    int tc = 0;
-
-    for(int f=0;f<numField;f++) {
-      String field = "f" + f;
-      Term protoTerm = new Term(field);
-
-      fieldInfos.add(field, true, false, false, false, false, false, false);
-      final int numTerms = 10000*_TestUtil.getRandomMultiplier();
-      for(int i=0;i<numTerms;i++) {
-        String s;
-        if (r.nextInt(3) == 1) {
-          s = makeDifficultRandomUnicodeString(r);
-        } else {
-          s = _TestUtil.randomUnicodeString(r);
-
-          // The surrogate dance uses 0xffff to seek-to-end
-          // of blocks.  Also, pre-4.0 indices are already
-          // guaranteed to not contain the char 0xffff since
-          // it's mapped during indexing:
-          s = s.replace((char) 0xffff, (char) 0xfffe);
-        }
-        terms.add(protoTerm.createTerm(s + "_" + (tc++)));
-      }
-    }
-
-    fieldInfos.write(dir, segName);
-
-    // sorts in UTF16 order, just like preflex:
-    Collections.sort(terms, new Comparator<Term>() {
-      public int compare(Term o1, Term o2) {
-        return o1.compareToUTF16(o2);
-      }
-    });
-
-    TermInfosWriter w = new TermInfosWriter(dir, segName, fieldInfos, 128);
-    TermInfo ti = new TermInfo();
-    String lastText = null;
-    int uniqueTermCount = 0;
-    if (VERBOSE) {
-      System.out.println("TEST: utf16 order:");
-    }
-    for(Term t : terms) {
-      FieldInfo fi = fieldInfos.fieldInfo(t.field());
-
-      String text = t.text();
-      if (lastText != null && lastText.equals(text)) {
-        continue;
-      }
-      fieldTerms.add(t);
-      uniqueTermCount++;
-      lastText = text;
-
-      if (VERBOSE) {
-        System.out.println("  " + toHexString(t));
-      }
-      w.add(fi.number, t.bytes().bytes, t.bytes().length, ti);
-    }
-    w.close();
-
-    Collections.sort(fieldTerms);
-    if (VERBOSE) {
-      System.out.println("\nTEST: codepoint order");
-      for(Term t: fieldTerms) {
-        System.out.println("  " + t.field() + ":" + toHexString(t));
-      }
-    }
-
-    dir.createOutput(segName + ".prx").close();
-    dir.createOutput(segName + ".frq").close();
-
-    // !!hack alert!! stuffing uniqueTermCount in as docCount
-    return new SegmentInfo(segName, uniqueTermCount, dir, false, -1, null, false, true, codec);
-  }
-
   private String toHexString(Term t) {
     return t.field() + ":" + UnicodeUtil.toHexString(t.text());
   }
-  
-  @Test
-  public void testSurrogatesOrder() throws Exception {
-    Directory dir = new MockRAMDirectory();
 
-    Codec codec = new PreFlexCodec();
+  private String getRandomString(Random r) {
+    String s;
+    if (r.nextInt(5) == 1) {
+      if (r.nextInt(3) == 1) {
+        s = makeDifficultRandomUnicodeString(r);
+      } else {
+        s = _TestUtil.randomUnicodeString(r);
+      }
+    } else {
+      s = _TestUtil.randomRealisticUnicodeString(r);
+    }
+    return s;
+  }
 
-    Random r = newRandom();
-    FieldInfos fieldInfos = new FieldInfos();
-    List<Term> fieldTerms = new ArrayList<Term>();
-    SegmentInfo si = makePreFlexSegment(r, "_0", dir, fieldInfos, codec, fieldTerms);
+  private static class SortTermAsUTF16Comparator implements Comparator<Term> {
+    public int compare(Term o1, Term o2) {
+      return o1.compareToUTF16(o2);
+    }
+  }
 
-    // hack alert!!
-    int uniqueTermCount = si.docCount;
+  private static final SortTermAsUTF16Comparator termAsUTF16Comparator = new SortTermAsUTF16Comparator();
 
-    FieldsProducer fields = codec.fieldsProducer(new SegmentReadState(dir, si, fieldInfos, 1024, 1));
-    assertNotNull(fields);
+  // single straight enum
+  private void doTestStraightEnum(List<Term> fieldTerms, IndexReader reader, int uniqueTermCount) throws IOException {
 
     if (VERBOSE) {
-      System.out.println("\nTEST: now enum");
+      System.out.println("\nTEST: top now enum reader=" + reader);
     }
-    FieldsEnum fieldsEnum = fields.iterator();
-    String field;
-    UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
+    FieldsEnum fieldsEnum = MultiFields.getFields(reader).iterator();
 
-    int termCount = 0;
-    while((field = fieldsEnum.next()) != null) {
-      TermsEnum termsEnum = fieldsEnum.terms();
-      BytesRef text;
-      BytesRef lastText = null;
-      while((text = termsEnum.next()) != null) {
+    {
+      // Test straight enum:
+      String field;
+      int termCount = 0;
+      while((field = fieldsEnum.next()) != null) {
+        TermsEnum termsEnum = fieldsEnum.terms();
+        BytesRef text;
+        BytesRef lastText = null;
+        while((text = termsEnum.next()) != null) {
+          Term exp = fieldTerms.get(termCount);
+          if (VERBOSE) {
+            System.out.println("  got term=" + field + ":" + UnicodeUtil.toHexString(text.utf8ToString()));
+            System.out.println("       exp=" + exp.field() + ":" + UnicodeUtil.toHexString(exp.text().toString()));
+            System.out.println();
+          }
+          if (lastText == null) {
+            lastText = new BytesRef(text);
+          } else {
+            assertTrue(lastText.compareTo(text) < 0);
+            lastText.copy(text);
+          }
+          assertEquals(exp.field(), field);
+          assertEquals(exp.bytes(), text);
+          termCount++;
+        }
         if (VERBOSE) {
-          UnicodeUtil.UTF8toUTF16(text.bytes, text.offset, text.length, utf16);
-          System.out.println("got term=" + field + ":" + UnicodeUtil.toHexString(new String(utf16.result, 0, utf16.length)));
-          System.out.println();
+          System.out.println("  no more terms for field=" + field);
         }
-        if (lastText == null) {
-          lastText = new BytesRef(text);
-        } else {
-          assertTrue(lastText.compareTo(text) < 0);
-          lastText.copy(text);
-        }
-        assertEquals(fieldTerms.get(termCount).field(), field);
-        assertEquals(fieldTerms.get(termCount).bytes(), text);
-        termCount++;
       }
+      assertEquals(uniqueTermCount, termCount);
+    }
+  }
+
+  // randomly seeks to term that we know exists, then next's
+  // from there
+  private void doTestSeekExists(Random r, List<Term> fieldTerms, IndexReader reader) throws IOException {
+
+    final Map<String,TermsEnum> tes = new HashMap<String,TermsEnum>();
+
+    // Test random seek to existing term, then enum:
+    if (VERBOSE) {
+      System.out.println("\nTEST: top now seek");
+    }
+
+    for(int iter=0;iter<100*_TestUtil.getRandomMultiplier();iter++) {
+
+      // pick random field+term
+      int spot = r.nextInt(fieldTerms.size());
+      Term term = fieldTerms.get(spot);
+      String field = term.field();
+
       if (VERBOSE) {
-        System.out.println("  no more terms for field=" + field);
+        System.out.println("TEST: exist seek field=" + field + " term=" + UnicodeUtil.toHexString(term.text()));
+      }
+
+      // seek to it
+      TermsEnum te = tes.get(field);
+      if (te == null) {
+        te = MultiFields.getTerms(reader, field).iterator();
+        tes.put(field, te);
+      }
+
+      if (VERBOSE) {
+        System.out.println("  done get enum");
+      }
+
+      // seek should find the term
+      assertEquals(TermsEnum.SeekStatus.FOUND,
+                   te.seek(term.bytes()));
+      
+      // now .next() this many times:
+      int ct = _TestUtil.nextInt(r, 5, 100);
+      for(int i=0;i<ct;i++) {
+        if (VERBOSE) {
+          System.out.println("TEST: now next()");
+        }
+        if (1+spot+i >= fieldTerms.size()) {
+          break;
+        }
+        term = fieldTerms.get(1+spot+i);
+        if (term.field() != field) {
+          assertNull(te.next());
+          break;
+        } else {
+          BytesRef t = te.next();
+
+          if (VERBOSE) {
+            System.out.println("  got term=" + (t == null ? null : UnicodeUtil.toHexString(t.utf8ToString())));
+            System.out.println("       exp=" + UnicodeUtil.toHexString(term.text().toString()));
+          }
+
+          assertEquals(term.bytes(), t);
+        }
       }
     }
-    assertEquals(uniqueTermCount, termCount);
+  }
 
-    fields.close();
+  private void doTestSeekDoesNotExist(Random r, int numField, List<Term> fieldTerms, Term[] fieldTermsArray, IndexReader reader) throws IOException {
+
+    final Map<String,TermsEnum> tes = new HashMap<String,TermsEnum>();
+
+    if (VERBOSE) {
+      System.out.println("TEST: top random seeks");
+    }
+
+    {
+      for(int iter=0;iter<100*_TestUtil.getRandomMultiplier();iter++) {
+      
+        // seek to random spot
+        String field = ("f" + r.nextInt(numField)).intern();
+        Term tx = new Term(field, getRandomString(r));
+
+        int spot = Arrays.binarySearch(fieldTermsArray, tx);
+
+        if (spot < 0) {
+          if (VERBOSE) {
+            System.out.println("TEST: non-exist seek to " + field + ":" + UnicodeUtil.toHexString(tx.text()));
+          }
+
+          // term does not exist:
+          TermsEnum te = tes.get(field);
+          if (te == null) {
+            te = MultiFields.getTerms(reader, field).iterator();
+            tes.put(field, te);
+          }
+
+          if (VERBOSE) {
+            System.out.println("  got enum");
+          }
+
+          spot = -spot - 1;
+
+          if (spot == fieldTerms.size() || fieldTerms.get(spot).field() != field) {
+            assertEquals(TermsEnum.SeekStatus.END, te.seek(tx.bytes()));
+          } else {
+            assertEquals(TermsEnum.SeekStatus.NOT_FOUND, te.seek(tx.bytes()));
+
+            if (VERBOSE) {
+              System.out.println("  got term=" + UnicodeUtil.toHexString(te.term().utf8ToString()));
+              System.out.println("  exp term=" + UnicodeUtil.toHexString(fieldTerms.get(spot).text()));
+            }
+
+            assertEquals(fieldTerms.get(spot).bytes(),
+                         te.term());
+
+            // now .next() this many times:
+            int ct = _TestUtil.nextInt(r, 5, 100);
+            for(int i=0;i<ct;i++) {
+              if (VERBOSE) {
+                System.out.println("TEST: now next()");
+              }
+              if (1+spot+i >= fieldTerms.size()) {
+                break;
+              }
+              Term term = fieldTerms.get(1+spot+i);
+              if (term.field() != field) {
+                assertNull(te.next());
+                break;
+              } else {
+                BytesRef t = te.next();
+
+                if (VERBOSE) {
+                  System.out.println("  got term=" + (t == null ? null : UnicodeUtil.toHexString(t.utf8ToString())));
+                  System.out.println("       exp=" + UnicodeUtil.toHexString(term.text().toString()));
+                }
+
+                assertEquals(term.bytes(), t);
+              }
+            }
+
+          }
+        }
+      }
+    }
+  }
+
+
+  @Test
+  public void testSurrogatesOrder() throws Exception {
+    Random r = newRandom();
+
+    Directory dir = new MockRAMDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(r,
+                                                dir,
+                                                newIndexWriterConfig(r, TEST_VERSION_CURRENT,
+                                                                      new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec(new PreFlexRWCodec())));
+
+    final int numField = _TestUtil.nextInt(r, 2, 5);
+
+    int uniqueTermCount = 0;
+
+    int tc = 0;
+
+    List<Term> fieldTerms = new ArrayList<Term>();
+
+    for(int f=0;f<numField;f++) {
+      String field = "f" + f;
+      final int numTerms = 10000*_TestUtil.getRandomMultiplier();
+
+      final Set<String> uniqueTerms = new HashSet<String>();
+
+      for(int i=0;i<numTerms;i++) {
+        String term = getRandomString(r) + "_ " + (tc++);
+        uniqueTerms.add(term);
+        fieldTerms.add(new Term(field, term));
+        Document doc = new Document();
+        doc.add(new Field(field, term, Field.Store.NO, Field.Index.NOT_ANALYZED));
+        w.addDocument(doc);
+      }
+      uniqueTermCount += uniqueTerms.size();
+    }
+
+    IndexReader reader = w.getReader();
+
+    if (VERBOSE) {
+      Collections.sort(fieldTerms, termAsUTF16Comparator);
+
+      System.out.println("\nTEST: UTF16 order");
+      for(Term t: fieldTerms) {
+        System.out.println("  " + toHexString(t));
+      }
+    }
+
+    // sorts in code point order:
+    Collections.sort(fieldTerms);
+
+    if (VERBOSE) {
+      System.out.println("\nTEST: codepoint order");
+      for(Term t: fieldTerms) {
+        System.out.println("  " + toHexString(t));
+      }
+    }
+
+    Term[] fieldTermsArray = fieldTerms.toArray(new Term[fieldTerms.size()]);
+
+    //SegmentInfo si = makePreFlexSegment(r, "_0", dir, fieldInfos, codec, fieldTerms);
+
+    //FieldsProducer fields = codec.fieldsProducer(new SegmentReadState(dir, si, fieldInfos, 1024, 1));
+    //assertNotNull(fields);
+
+    doTestStraightEnum(fieldTerms, reader, uniqueTermCount);
+    doTestSeekExists(r, fieldTerms, reader);
+    doTestSeekDoesNotExist(r, numField, fieldTerms, fieldTermsArray, reader);
+
+    reader.close();
   }
 }

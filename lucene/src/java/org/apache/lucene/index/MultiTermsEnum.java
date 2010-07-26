@@ -116,7 +116,7 @@ public final class MultiTermsEnum extends TermsEnum {
         // different TermComps
         final Comparator<BytesRef> subTermComp = termsEnumIndex.termsEnum.getComparator();
         if (subTermComp != null && !subTermComp.equals(termComp)) {
-          throw new IllegalStateException("sub-readers have different BytesRef.Comparators; cannot merge");
+          throw new IllegalStateException("sub-readers have different BytesRef.Comparators: " + subTermComp + " vs " + termComp + "; cannot merge");
         }
       }
 

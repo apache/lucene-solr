@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -139,7 +138,6 @@ public class TestAddIndexes extends LuceneTestCase {
 
     setUpDirs(dir, aux);
     IndexWriter writer = newWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
-
     writer.addIndexes(new Directory[] {aux});
 
     // Adds 10 docs, then replaces them with another 10

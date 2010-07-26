@@ -23,6 +23,9 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.CheckIndex;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.Directory;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -130,7 +133,7 @@ public class _TestUtil {
     final char[] buffer = new char[end];
     for (int i = 0; i < end; i++) {
       int t = r.nextInt(5);
-      //buffer[i] = (char) (97 + r.nextInt(26));
+
       if (0 == t && i < end - 1) {
         // Make a surrogate pair
         // High surrogate
@@ -217,5 +220,40 @@ public class _TestUtil {
    *  random tests: multiply it by the number of iterations */
   public static int getRandomMultiplier() {
     return Integer.parseInt(System.getProperty("random.multiplier", "1"));
+  }
+
+  /** gets the codec to run tests with */
+  public static String getTestCodec() {
+    // by default we randomly pick a different codec for
+    // each test case (non-J4 tests) and each test class (J4
+    // tests)
+    return System.getProperty("tests.codec", "random");
+  }
+
+  public static CodecProvider alwaysCodec(final Codec c) {
+    return new CodecProvider() {
+      @Override
+      public Codec getWriter(SegmentWriteState state) {
+        return c;
+      }
+
+      @Override
+      public Codec lookup(String name) {
+        // can't do this until we fix PreFlexRW to not
+        //impersonate PreFlex:
+        if (name.equals(c.name)) {
+          return c;
+        } else {
+          return CodecProvider.getDefault().lookup(name);
+        }
+      }
+    };
+  }
+
+  /** Return a CodecProvider that can read any of the
+   *  default codecs, but always writes in the specified
+   *  codec. */
+  public static CodecProvider alwaysCodec(final String codec) {
+    return alwaysCodec(CodecProvider.getDefault().lookup(codec));
   }
 }

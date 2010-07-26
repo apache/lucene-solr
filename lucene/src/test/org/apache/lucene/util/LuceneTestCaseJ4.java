@@ -17,14 +17,25 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogDocMergePolicy;
+import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
+
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatchman;
@@ -34,7 +45,6 @@ import java.io.File;
 import java.io.PrintStream;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.ArrayList;
@@ -127,6 +137,56 @@ public class LuceneTestCaseJ4 {
   private static final Map<Class<? extends LuceneTestCaseJ4>,Object> checkedClasses =
     Collections.synchronizedMap(new WeakHashMap<Class<? extends LuceneTestCaseJ4>,Object>());
   
+  // saves default codec: we do this statically as many build indexes in @beforeClass
+  private static String savedDefaultCodec;
+  private static String codec;
+  private static Codec preFlexSav;
+  
+  // returns current PreFlex codec
+  public static Codec installPreFlexRW() {
+    final Codec preFlex = CodecProvider.getDefault().lookup("PreFlex");
+    if (preFlex != null) {
+      CodecProvider.getDefault().unregister(preFlex);
+    }
+    CodecProvider.getDefault().register(new PreFlexRWCodec());
+    return preFlex;
+  }
+
+  // returns current PreFlex codec
+  public static void restorePreFlex(Codec preFlex) {
+    Codec preFlexRW = CodecProvider.getDefault().lookup("PreFlex");
+    if (preFlexRW != null) {
+      CodecProvider.getDefault().unregister(preFlexRW);
+    }
+    CodecProvider.getDefault().register(preFlex);
+  }
+
+  @BeforeClass
+  public static void beforeClassLuceneTestCaseJ4() {
+    savedDefaultCodec = CodecProvider.getDefaultCodec();
+    codec = _TestUtil.getTestCodec();
+    if (codec.equals("random"))
+      codec = CodecProvider.CORE_CODECS[seedRnd.nextInt(CodecProvider.CORE_CODECS.length)];
+
+    // If we're running w/ PreFlex codec we must swap in the
+    // test-only PreFlexRW codec (since core PreFlex can
+    // only read segments):
+    if (codec.equals("PreFlex")) {
+      preFlexSav = installPreFlexRW();
+    } 
+
+    CodecProvider.setDefaultCodec(codec);
+  }
+  
+  @AfterClass
+  public static void afterClassLuceneTestCaseJ4() {
+    // Restore read-only PreFlex codec:
+    if (codec.equals("PreFlex")) {
+      restorePreFlex(preFlexSav);
+    } 
+    CodecProvider.setDefaultCodec(savedDefaultCodec);
+  }
+
   // This is how we get control when errors occur.
   // Think of this as start/end/success/failed
   // events.
@@ -372,6 +432,34 @@ public class LuceneTestCaseJ4 {
     return new Random(seed);
   }
 
+  /** create a new index writer config with random defaults */
+  public static IndexWriterConfig newIndexWriterConfig(Random r, Version v, Analyzer a) {
+    IndexWriterConfig c = new IndexWriterConfig(v, a);
+    if (r.nextBoolean()) {
+      c.setMergePolicy(new LogDocMergePolicy());
+    }
+    if (r.nextBoolean()) {
+      c.setMergeScheduler(new SerialMergeScheduler());
+    }
+    if (r.nextBoolean()) {
+      c.setMaxBufferedDocs(_TestUtil.nextInt(r, 2, 1000));
+    }
+    if (r.nextBoolean()) {
+      c.setTermIndexInterval(_TestUtil.nextInt(r, 1, 1000));
+    }
+    
+    if (c.getMergePolicy() instanceof LogMergePolicy) {
+      LogMergePolicy logmp = (LogMergePolicy) c.getMergePolicy();
+      logmp.setUseCompoundDocStore(r.nextBoolean());
+      logmp.setUseCompoundFile(r.nextBoolean());
+      logmp.setCalibrateSizeByDeletes(r.nextBoolean());
+      logmp.setMergeFactor(_TestUtil.nextInt(r, 2, 20));
+    }
+    
+    c.setReaderPooling(r.nextBoolean());
+    return c;
+  }
+
   public String getName() {
     return this.name;
   }
@@ -395,6 +483,10 @@ public class LuceneTestCaseJ4 {
       System.out.println("NOTE: random static seed of testclass '" + getName() + "' was: " + staticSeed);
     }
     
+    if (_TestUtil.getTestCodec().equals("random")) {
+      System.out.println("NOTE: random codec of testcase '" + getName() + "' was: " + codec);
+    }
+
     if (seed != null) {
       System.out.println("NOTE: random seed of testcase '" + getName() + "' was: " + seed);
     }
@@ -407,5 +499,4 @@ public class LuceneTestCaseJ4 {
   private static final Random seedRnd = new Random();
 
   private String name = "<unknown>";
-
 }

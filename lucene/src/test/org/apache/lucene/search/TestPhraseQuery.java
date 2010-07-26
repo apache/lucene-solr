@@ -67,8 +67,7 @@ public class TestPhraseQuery extends LuceneTestCase {
         return 100;
       }
     };
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, analyzer);
     
     Document doc = new Document();
     doc.add(new Field("field", "one two three four five", Field.Store.YES, Field.Index.ANALYZED));
@@ -217,7 +216,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     RAMDirectory directory = new RAMDirectory();
     Analyzer stopAnalyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, false);
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        new IndexWriterConfig(Version.LUCENE_24, stopAnalyzer));
+        newIndexWriterConfig(random, Version.LUCENE_24, stopAnalyzer));
     Document doc = new Document();
     doc.add(new Field("field", "the stop words are here", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
@@ -251,8 +250,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   
   public void testPhraseQueryInConjunctionScorer() throws Exception {
     RAMDirectory directory = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     
     Document doc = new Document();
     doc.add(new Field("source", "marketing info", Field.Store.YES, Field.Index.ANALYZED));
@@ -289,7 +287,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     reader.close();
     
     writer = new RandomIndexWriter(random, directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
+        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
     doc = new Document();
     doc.add(new Field("contents", "map entry woo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
@@ -339,8 +337,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   
   public void testSlopScoring() throws IOException {
     Directory directory = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
 
     Document doc = new Document();
     doc.add(new Field("field", "foo firstname lastname foo", Field.Store.YES, Field.Index.ANALYZED));
@@ -603,8 +600,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     Directory dir = new MockRAMDirectory();
     Analyzer analyzer = new MockAnalyzer();
 
-    RandomIndexWriter w  = new RandomIndexWriter(random, dir, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    RandomIndexWriter w  = new RandomIndexWriter(random, dir, analyzer);
     List<List<String>> docs = new ArrayList<List<String>>();
     Document d = new Document();
     Field f = new Field("f", "", Field.Store.NO, Field.Index.ANALYZED);
