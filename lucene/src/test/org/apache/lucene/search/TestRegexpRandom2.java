@@ -86,9 +86,9 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   private class DumbRegexpQuery extends MultiTermQuery {
     private final Automaton automaton;
     
-    DumbRegexpQuery(Term term) {
+    DumbRegexpQuery(Term term, int flags) {
       super(term.field());
-      RegExp re = new RegExp(term.text());
+      RegExp re = new RegExp(term.text(), flags);
       automaton = re.toAutomaton();
     }
     
@@ -130,8 +130,8 @@ public class TestRegexpRandom2 extends LuceneTestCase {
    * simple regexpquery implementation.
    */
   private void assertSame(String regexp) throws IOException {   
-    RegexpQuery smart = new RegexpQuery(new Term("field", regexp));
-    DumbRegexpQuery dumb = new DumbRegexpQuery(new Term("field", regexp));
+    RegexpQuery smart = new RegexpQuery(new Term("field", regexp), RegExp.NONE);
+    DumbRegexpQuery dumb = new DumbRegexpQuery(new Term("field", regexp), RegExp.NONE);
     
     // we can't compare the two if automaton rewrites to a simpler enum.
     // for example: "a\uda07\udcc7?.*?" gets rewritten to a simpler query:

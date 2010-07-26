@@ -40,7 +40,9 @@ public class AutomatonTestUtil {
       if (!UnicodeUtil.validUTF16String(regexp))
         continue;
       try {
-        return new RegExp(regexp, RegExp.NONE);
+        // NOTE: we parse-tostring-parse again, because we are
+        // really abusing RegExp.toString() here (its just for debugging)
+        return new RegExp(new RegExp(regexp, RegExp.NONE).toString(), RegExp.NONE);
       } catch (Exception e) {}
     }
   }
