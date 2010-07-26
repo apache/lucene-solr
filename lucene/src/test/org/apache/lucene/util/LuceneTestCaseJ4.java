@@ -324,6 +324,9 @@ public class LuceneTestCaseJ4 {
       throw new IllegalStateException("please call LuceneTestCaseJ4.newRandom only once per test");
     }
     this.seed = Long.valueOf(seedRnd.nextLong());
+    if (VERBOSE) {
+      System.out.println("NOTE: random seed of testcase '" + getName() + "' is: " + this.seed);
+    }
     return new Random(seed);
   }
 

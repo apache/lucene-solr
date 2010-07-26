@@ -46,15 +46,44 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
   private void testOne(Random r, ByteRunAutomaton a, int startCode, int endCode, int iters) {
 
     // Verify correct ints are accepted
+    final int nonSurrogateCount;
+    final boolean ovSurStart;
+    if (endCode < UnicodeUtil.UNI_SUR_HIGH_START ||
+        startCode > UnicodeUtil.UNI_SUR_LOW_END) {
+      // no overlap w/ surrogates
+      nonSurrogateCount = endCode - startCode + 1;
+      ovSurStart = false;
+    } else if (isSurrogate(startCode)) {
+      // start of range overlaps surrogates
+      nonSurrogateCount = endCode - startCode + 1 - (UnicodeUtil.UNI_SUR_LOW_END - startCode + 1);
+      ovSurStart = false;
+    } else if (isSurrogate(endCode)) {
+      // end of range overlaps surrogates
+      ovSurStart = true;
+      nonSurrogateCount = endCode - startCode + 1 - (endCode - UnicodeUtil.UNI_SUR_HIGH_START + 1);
+    } else {
+      // range completely subsumes surrogates
+      ovSurStart = true;
+      nonSurrogateCount = endCode - startCode + 1 - (UnicodeUtil.UNI_SUR_LOW_END - UnicodeUtil.UNI_SUR_HIGH_START + 1);
+    }
+
+    assert nonSurrogateCount > 0;
+        
     for(int iter=0;iter<iters;iter++) {
       // pick random code point in-range
 
-      final int code = _TestUtil.nextInt(r, startCode, endCode);
-      if ((code >= UnicodeUtil.UNI_SUR_HIGH_START && code <= UnicodeUtil.UNI_SUR_HIGH_END) |
-          (code >= UnicodeUtil.UNI_SUR_LOW_START && code <= UnicodeUtil.UNI_SUR_LOW_END)) {
-        iter--;
-        continue;
+      int code = startCode + r.nextInt(nonSurrogateCount);
+      if (isSurrogate(code)) {
+        if (ovSurStart) {
+          code = UnicodeUtil.UNI_SUR_LOW_END + 1 + (code - UnicodeUtil.UNI_SUR_HIGH_START);
+        } else {
+          code = UnicodeUtil.UNI_SUR_LOW_END + 1 + (code - startCode);
+        }
       }
+
+      assert code >= startCode && code <= endCode: "code=" + code + " start=" + startCode + " end=" + endCode;
+      assert !isSurrogate(code);
+
       assertTrue("DFA for range " + startCode + "-" + endCode + " failed to match code=" + code, 
                  matches(a, code));
     }
@@ -97,6 +126,10 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
     }
   }
 
+  private static boolean isSurrogate(int code) {
+    return code >= UnicodeUtil.UNI_SUR_HIGH_START && code <= UnicodeUtil.UNI_SUR_LOW_END;
+  }
+
   public void testRandomRanges() throws Exception {
     final Random r = random;
     int ITERS = 10*_TestUtil.getRandomMultiplier();
@@ -112,6 +145,11 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
       } else {
         startCode = x2;
         endCode = x1;
+      }
+
+      if (isSurrogate(startCode) && isSurrogate(endCode)) {
+        iter--;
+        continue;
       }
       
       final Automaton a = new Automaton();
@@ -166,8 +204,9 @@ public class TestUTF32ToUTF8 extends LuceneTestCase {
   }
   
   public void testRandomRegexes() throws Exception {
-    for (int i = 0; i < 250*_TestUtil.getRandomMultiplier(); i++)
+    for (int i = 0; i < 250*_TestUtil.getRandomMultiplier(); i++) {
       assertAutomaton(AutomatonTestUtil.randomRegexp(random).toAutomaton());
+    }
   }
   
   private void assertAutomaton(Automaton automaton) throws Exception {

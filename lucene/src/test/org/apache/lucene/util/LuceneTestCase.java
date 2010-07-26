@@ -248,6 +248,9 @@ public abstract class LuceneTestCase extends TestCase {
       throw new IllegalStateException("please call LuceneTestCase.newRandom only once per test");
     }
     this.seed = Long.valueOf(seedRnd.nextLong());
+    if (VERBOSE) {
+      System.out.println("NOTE: random seed of testcase '" + getName() + "' is: " + this.seed);
+    }
     return new Random(seed);
   }
   
