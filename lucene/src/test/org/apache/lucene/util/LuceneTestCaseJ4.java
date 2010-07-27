@@ -104,6 +104,18 @@ public class LuceneTestCaseJ4 {
     TEMP_DIR = new File(s);
   }
 
+  // by default we randomly pick a different codec for
+  // each test case (non-J4 tests) and each test class (J4
+  // tests)
+  /** Gets the codec to run tests with. */
+  static final String TEST_CODEC = System.getProperty("tests.codec", "random");
+
+  /**
+   * A random multiplier which you should use when writing random tests:
+   * multiply it by the number of iterations
+   */
+  public static final int RANDOM_MULTIPLIER = Integer.parseInt(System.getProperty("random.multiplier", "1"));
+  
   private int savedBoolMaxClauseCount;
 
   private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;

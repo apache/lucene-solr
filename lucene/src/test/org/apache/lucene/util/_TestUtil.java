@@ -38,18 +38,19 @@ public class _TestUtil {
 
   public static void rmDir(File dir) throws IOException {
     if (dir.exists()) {
-      File[] files = dir.listFiles();
-      for (int i = 0; i < files.length; i++) {
-        if (!files[i].delete()) {
-          throw new IOException("could not delete " + files[i]);
+      for (File f : dir.listFiles()) {
+        if (f.isDirectory()) {
+          rmDir(f);
+        } else {
+          if (!f.delete()) {
+            throw new IOException("could not delete " + f);
+          }
         }
       }
-      dir.delete();
+      if (!dir.delete()) {
+        throw new IOException("could not delete " + dir);
+      }
     }
-  }
-
-  public static void rmDir(String dir) throws IOException {
-    rmDir(new File(dir));
   }
 
   public static void syncConcurrentMerges(IndexWriter writer) {
@@ -110,12 +111,6 @@ public class _TestUtil {
     }
     buf.append("]");
     return buf.toString();
-  }
-
-  /** gets a random multiplier, which you should use when writing
-   *  random tests: multiply it by the number of iterations */
-  public static int getRandomMultiplier() {
-    return Integer.parseInt(System.getProperty("random.multiplier", "1"));
   }
 
   /** Returns random string, including full unicode range. */

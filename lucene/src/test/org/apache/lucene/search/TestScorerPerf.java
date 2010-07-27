@@ -2,7 +2,6 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 import java.util.Random;
 import java.util.BitSet;
@@ -319,9 +318,9 @@ public class TestScorerPerf extends LuceneTestCase {
     r = newRandom();
     createDummySearcher();
     validate=true;
-    sets=randBitSets(1000*_TestUtil.getRandomMultiplier(),10*_TestUtil.getRandomMultiplier());
-    doConjunctions(10000*_TestUtil.getRandomMultiplier(),5*_TestUtil.getRandomMultiplier());
-    doNestedConjunctions(10000*_TestUtil.getRandomMultiplier(),3*_TestUtil.getRandomMultiplier(),3*_TestUtil.getRandomMultiplier());
+    sets=randBitSets(1000 * RANDOM_MULTIPLIER, 10 * RANDOM_MULTIPLIER);
+    doConjunctions(10000 * RANDOM_MULTIPLIER, 5 * RANDOM_MULTIPLIER);
+    doNestedConjunctions(10000 * RANDOM_MULTIPLIER, 3 * RANDOM_MULTIPLIER, 3 * RANDOM_MULTIPLIER);
     s.close();
   }
 

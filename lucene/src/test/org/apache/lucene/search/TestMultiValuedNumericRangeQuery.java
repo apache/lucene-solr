@@ -31,7 +31,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
 
@@ -40,7 +39,6 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
    * NumericRangeQuery (see SOLR-1322 for discussion) and the multiple precision terms per numeric value
    * do not interfere with multiple numeric values.
    */
-
   public void testMultiValuedNRQ() throws Exception {
     final Random rnd = newRandom();
 
@@ -50,7 +48,8 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
     
     DecimalFormat format = new DecimalFormat("00000000000", new DecimalFormatSymbols(Locale.US));
     
-    for (int l=0; l<5000*_TestUtil.getRandomMultiplier(); l++) {
+    int num = 5000 * RANDOM_MULTIPLIER;
+    for (int l = 0; l < num; l++) {
       Document doc = new Document();
       for (int m=0, c=rnd.nextInt(10); m<=c; m++) {
         int value = rnd.nextInt(Integer.MAX_VALUE);
@@ -63,7 +62,8 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
     writer.close();
     
     Searcher searcher=new IndexSearcher(reader);
-    for (int i=0; i<50*_TestUtil.getRandomMultiplier(); i++) {
+    num = 50 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
       int lower=rnd.nextInt(Integer.MAX_VALUE);
       int upper=rnd.nextInt(Integer.MAX_VALUE);
       if (lower>upper) {

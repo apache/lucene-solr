@@ -45,7 +45,6 @@ import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 /**
  * Unit tests for sorting code.
@@ -57,7 +56,7 @@ import org.apache.lucene.util._TestUtil;
 
 public class TestSort extends LuceneTestCase implements Serializable {
 
-  private static final int NUM_STRINGS = 6000*_TestUtil.getRandomMultiplier();
+  private static final int NUM_STRINGS = 6000 * RANDOM_MULTIPLIER;
   private Searcher full;
   private Searcher searchX;
   private Searcher searchY;

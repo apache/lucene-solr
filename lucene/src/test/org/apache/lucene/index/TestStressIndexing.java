@@ -32,7 +32,7 @@ public class TestStressIndexing extends LuceneTestCase {
   private static abstract class TimedThread extends Thread {
     volatile boolean failed;
     int count;
-    private static int RUN_TIME_SEC = 1*_TestUtil.getRandomMultiplier();
+    private static int RUN_TIME_SEC = 1 * RANDOM_MULTIPLIER;
     private TimedThread[] allThreads;
 
     abstract public void doWork() throws Throwable;

@@ -17,9 +17,14 @@
 
 package org.apache.lucene.analysis;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Random;
+
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 public class TestCharArrayMap extends LuceneTestCase {
   Random r = newRandom();
@@ -56,7 +61,8 @@ public class TestCharArrayMap extends LuceneTestCase {
   }
 
   public void testCharArrayMap() {
-    for (int i=0; i<5*_TestUtil.getRandomMultiplier(); i++) {  // pump this up for more random testing
+    int num = 5 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) { // pump this up for more random testing
       doRandom(1000,false);
       doRandom(1000,true);      
     }
