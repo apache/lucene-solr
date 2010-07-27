@@ -70,18 +70,18 @@ public class CSVRequestHandler extends ContentStreamHandlerBase {
 
 
 abstract class CSVLoader extends ContentStreamLoader {
-  static String SEPARATOR="separator";
-  static String FIELDNAMES="fieldnames";
-  static String HEADER="header";
-  static String SKIP="skip";
-  static String SKIPLINES="skipLines";
-  static String MAP="map";
-  static String TRIM="trim";
-  static String EMPTY="keepEmpty";
-  static String SPLIT="split";
-  static String ENCAPSULATOR="encapsulator";
-  static String ESCAPE="escape";
-  static String OVERWRITE="overwrite";
+  public static final String SEPARATOR="separator";
+  public static final String FIELDNAMES="fieldnames";
+  public static final String HEADER="header";
+  public static final String SKIP="skip";
+  public static final String SKIPLINES="skipLines";
+  public static final String MAP="map";
+  public static final String TRIM="trim";
+  public static final String EMPTY="keepEmpty";
+  public static final String SPLIT="split";
+  public static final String ENCAPSULATOR="encapsulator";
+  public static final String ESCAPE="escape";
+  public static final String OVERWRITE="overwrite";
 
   private static Pattern colonSplit = Pattern.compile(":");
   private static Pattern commaSplit = Pattern.compile(",");
@@ -219,7 +219,7 @@ abstract class CSVLoader extends ContentStreamLoader {
 
     // if only encapsulator or escape is set, disable the other escaping mechanism
     if (encapsulator == null && escape != null) {
-      strategy.setEncapsulator((char)-2);  // TODO: add CSVStrategy.ENCAPSULATOR_DISABLED      
+      strategy.setEncapsulator( CSVStrategy.ENCAPSULATOR_DISABLED);     
       strategy.setEscape(escape.charAt(0));
     } else {
       if (encapsulator != null) {

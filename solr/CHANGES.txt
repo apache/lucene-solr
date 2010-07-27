@@ -210,7 +210,10 @@ New Features
   will cause the parser to generate text:"pdp 11" rather than (text:PDP OR text:11).
   Note that autoGeneratePhraseQueries="true" tends to not work well for non whitespace
   delimited languages. (yonik)
- 
+
+* SOLR-1925: Add CSVResponseWriter (use wt=csv) that returns the list of documents
+  in CSV format. (Chris Mattmann, yonik)
+
 
 Optimizations
 ----------------------

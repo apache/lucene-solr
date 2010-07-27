@@ -1062,6 +1062,7 @@
     <queryResponseWriter name="php" class="solr.PHPResponseWriter"/>
     <queryResponseWriter name="phps" class="solr.PHPSerializedResponseWriter"/>
     <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter"/>
+    <queryResponseWriter name="csv" class="solr.CSVResponseWriter"/>
 
       Custom response writers can be declared as needed...
     
