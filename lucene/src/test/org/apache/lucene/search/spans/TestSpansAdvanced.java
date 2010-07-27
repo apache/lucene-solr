@@ -28,7 +28,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
@@ -62,9 +61,8 @@ public class TestSpansAdvanced extends LuceneTestCase {
     // create test index
     mDirectory = new RAMDirectory();
     final RandomIndexWriter writer = new RandomIndexWriter(random,
-        mDirectory, new IndexWriterConfig(TEST_VERSION_CURRENT,
-            new MockAnalyzer(MockTokenizer.SIMPLE, true,
-                MockTokenFilter.ENGLISH_STOPSET, true)));
+        mDirectory, new MockAnalyzer(MockTokenizer.SIMPLE, true,
+                MockTokenFilter.ENGLISH_STOPSET, true));
     addDocument(writer, "1", "I think it should work.");
     addDocument(writer, "2", "I think it should work.");
     addDocument(writer, "3", "I think it should work.");

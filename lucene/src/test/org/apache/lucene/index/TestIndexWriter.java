@@ -52,6 +52,7 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -1711,7 +1712,7 @@ public class TestIndexWriter extends LuceneTestCase {
                                               new BytesRef(t.text()));
 
     int count = 0;
-    while(tdocs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+    while(tdocs.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
       count++;
     }
     assertEquals(2, count);
@@ -3355,7 +3356,8 @@ public class TestIndexWriter extends LuceneTestCase {
     BytesRef utf8 = new BytesRef(20);
     UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
 
-    for(int iter=0;iter<100000*_TestUtil.getRandomMultiplier();iter++) {
+    int num = 100000 * RANDOM_MULTIPLIER;
+    for (int iter = 0; iter < num; iter++) {
       boolean hasIllegal = fillUnicode(buffer, expected, 0, 20);
 
       UnicodeUtil.UTF16toUTF8(buffer, 0, 20, utf8);
@@ -3386,7 +3388,8 @@ public class TestIndexWriter extends LuceneTestCase {
     boolean hasIllegal = false;
     byte[] last = new byte[60];
 
-    for(int iter=0;iter<100000*_TestUtil.getRandomMultiplier();iter++) {
+    int num = 100000 * RANDOM_MULTIPLIER;
+    for (int iter = 0; iter < num; iter++) {
 
       final int prefix;
 
@@ -4560,7 +4563,7 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
   }
   
-    // LUCENE-2095: make sure with multiple threads commit
+  // LUCENE-2095: make sure with multiple threads commit
   // doesn't return until all changes are in fact in the
   // index
   public void testCommitThreadSafety() throws Throwable {
@@ -4671,19 +4674,20 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   // Make sure terms, including ones with surrogate pairs,
-  // sort in UTF16 sort order by default
+  // sort in codepoint sort order by default
   public void testTermUTF16SortOrder() throws Throwable {
+    Random rnd = newRandom();
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new MockAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    RandomIndexWriter writer = new RandomIndexWriter(rnd, dir);
     Document d = new Document();
     // Single segment
     Field f = new Field("f", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
     d.add(f);
     char[] chars = new char[2];
-    Random rnd = newRandom();
     final Set<String> allTerms = new HashSet<String>();
 
-    for(int i=0;i<200*_TestUtil.getRandomMultiplier();i++) {
+    int num = 200 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
 
       final String s;
       if (rnd.nextBoolean()) {
@@ -4706,14 +4710,13 @@ public class TestIndexWriter extends LuceneTestCase {
       allTerms.add(s);
       f.setValue(s);
 
-      //System.out.println("add " + termDesc(s));
       writer.addDocument(d);
 
       if ((1+i) % 42 == 0) {
         writer.commit();
       }
     }
-    
+
     IndexReader r = writer.getReader();
 
     // Test each sub-segment
@@ -4875,7 +4878,8 @@ public class TestIndexWriter extends LuceneTestCase {
     //w.setInfoStream(System.out);
     Document doc = new Document();
     doc.add(new Field("field", "go 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20", Field.Store.NO, Field.Index.ANALYZED));
-    for(int iter=0;iter<6*_TestUtil.getRandomMultiplier();iter++) {
+    int num = 6 * RANDOM_MULTIPLIER;
+    for (int iter = 0; iter < num; iter++) {
       int count = 0;
 
       final boolean doIndexing = r.nextBoolean();

@@ -20,7 +20,6 @@ package org.apache.lucene.util.automaton;
 import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 /**
  * Not thorough, but tries to test determinism correctness
@@ -37,7 +36,8 @@ public class TestDeterminism extends LuceneTestCase {
   
   /** test a bunch of random regular expressions */
   public void testRegexps() throws Exception {
-      for (int i = 0; i < 500*_TestUtil.getRandomMultiplier(); i++)
+      int num = 500 * RANDOM_MULTIPLIER;
+      for (int i = 0; i < num; i++)
         assertAutomaton(AutomatonTestUtil.randomRegexp(random).toAutomaton());
   }
   

@@ -24,7 +24,6 @@ import java.io.Reader;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.compound.CompoundWordTokenFilterBase;
-import org.apache.lucene.analysis.compound.DictionaryCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.HyphenationCompoundWordTokenFilter;
 import org.apache.lucene.analysis.compound.hyphenation.HyphenationTree;
 import org.apache.lucene.analysis.util.CharArraySet;
@@ -36,7 +35,7 @@ import org.apache.solr.util.plugin.ResourceLoaderAware;
 import java.util.Map;
 
 /**
- * Factory for {@link DictionaryCompoundWordTokenFilter}
+ * Factory for {@link HyphenationCompoundWordTokenFilter}
  * <p>
  * This factory accepts the following parameters:
  * <ul>

@@ -205,7 +205,7 @@ public class SolrPluginUtils {
       // TODO - should field order be maintained?
       String[] flst = split(fl);
       if (flst.length > 0 && !(flst.length==1 && flst[0].length()==0)) {
-        Set<String> set = new HashSet<String>();
+        Set<String> set = new LinkedHashSet<String>();
         for (String fname : flst) {
           if("score".equalsIgnoreCase(fname))
             flags |= SolrIndexSearcher.GET_SCORES;

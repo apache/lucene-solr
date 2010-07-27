@@ -122,7 +122,8 @@ public class TestUnicodeUtil extends LuceneTestCase {
   public void testCodePointCount() {
     final Random r = newRandom();
     BytesRef utf8 = new BytesRef(20);
-    for(int i=0;i<50000*_TestUtil.getRandomMultiplier();i++) {
+    int num = 50000 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
       final String s = _TestUtil.randomUnicodeString(r);
       UnicodeUtil.UTF16toUTF8(s, 0, s.length(), utf8);
       assertEquals(s.codePointCount(0, s.length()),
@@ -135,7 +136,8 @@ public class TestUnicodeUtil extends LuceneTestCase {
     BytesRef utf8 = new BytesRef(20);
     IntsRef utf32 = new IntsRef(20);
     int[] codePoints = new int[20];
-    for(int i=0;i<50000*_TestUtil.getRandomMultiplier();i++) {
+    int num = 50000 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
       final String s = _TestUtil.randomUnicodeString(r);
       UnicodeUtil.UTF16toUTF8(s, 0, s.length(), utf8);
       UnicodeUtil.UTF8toUTF32(utf8, utf32);

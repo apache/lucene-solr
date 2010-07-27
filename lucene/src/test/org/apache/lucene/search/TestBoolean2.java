@@ -54,7 +54,7 @@ public class TestBoolean2 extends LuceneTestCase {
     super.setUp();
     rnd = newRandom();
     RAMDirectory directory = new RAMDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(rnd, directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer= new RandomIndexWriter(rnd, directory);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(new Field(field, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
@@ -71,14 +71,14 @@ public class TestBoolean2 extends LuceneTestCase {
     int docCount = 0;
     do {
       final Directory copy = new RAMDirectory(dir2);
-      RandomIndexWriter w = new RandomIndexWriter(rnd, dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+      RandomIndexWriter w = new RandomIndexWriter(rnd, dir2);
       w.addIndexes(new Directory[] {copy});
       docCount = w.maxDoc();
       w.close();
       mulFactor *= 2;
     } while(docCount < 3000);
 
-    RandomIndexWriter w = new RandomIndexWriter(rnd, dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter w = new RandomIndexWriter(rnd, dir2);
     Document doc = new Document();
     doc.add(new Field("field2", "xxx", Field.Store.NO, Field.Index.ANALYZED));
     for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {
@@ -208,7 +208,8 @@ public class TestBoolean2 extends LuceneTestCase {
     try {
 
       // increase number of iterations for more complete testing
-      for (int i=0; i<50*_TestUtil.getRandomMultiplier(); i++) {
+      int num = 50 * RANDOM_MULTIPLIER;
+      for (int i=0; i<num; i++) {
         int level = rnd.nextInt(3);
         q1 = randBoolQuery(new Random(rnd.nextLong()), rnd.nextBoolean(), level, field, vals, null);
         

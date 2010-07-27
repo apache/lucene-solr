@@ -19,10 +19,8 @@ package org.apache.lucene.search;
 
 import java.util.Random;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
@@ -42,8 +40,7 @@ public class TestTopScoreDocCollector extends LuceneTestCase {
 
     Directory dir = new RAMDirectory();
     Random random = newRandom();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     for (int i = 0; i < 10; i++) {
       writer.addDocument(new Document());
     }

@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
@@ -62,7 +61,7 @@ public class TestBasics extends LuceneTestCase {
     super.setUp();
     directory = new RAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true)));
+        new MockAnalyzer(MockTokenizer.SIMPLE, true));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();

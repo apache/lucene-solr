@@ -47,18 +47,32 @@ public abstract class CodecProvider {
 
   private static String defaultCodec = "Standard";
 
-  public final static String[] CORE_CODECS = new String[] {"Standard", "Sep", "Pulsing", "IntBlock"};
+  public final static String[] CORE_CODECS = new String[] {"Standard", "Sep", "Pulsing", "IntBlock", "PreFlex"};
 
   public void register(Codec codec) {
     if (codec.name == null) {
       throw new IllegalArgumentException("code.name is null");
     }
-
     if (!codecs.containsKey(codec.name)) {
       codecs.put(codec.name, codec);
       codec.getExtensions(knownExtensions);
     } else if (codecs.get(codec.name) != codec) {
       throw new IllegalArgumentException("codec '" + codec.name + "' is already registered as a different codec instance");
+    }
+  }
+  
+  /** @lucene.internal */
+  public void unregister(Codec codec) {
+    if (codec.name == null) {
+      throw new IllegalArgumentException("code.name is null");
+    }
+    if (codecs.containsKey(codec.name)) {
+      Codec c = codecs.get(codec.name);
+      if (codec == c) {
+        codecs.remove(codec.name);
+      } else {
+        throw new IllegalArgumentException("codec '" + codec.name + "' is being impersonated by a different codec instance!!!");
+      }
     }
   }
 
@@ -111,8 +125,5 @@ class DefaultCodecProvider extends CodecProvider {
   @Override
   public Codec getWriter(SegmentWriteState state) {
     return lookup(CodecProvider.getDefaultCodec());
-    //return lookup("Pulsing");
-    //return lookup("Sep");
-    //return lookup("IntBlock");
   }
 }

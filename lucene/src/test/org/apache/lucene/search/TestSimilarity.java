@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Random;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -65,8 +66,9 @@ public class TestSimilarity extends LuceneTestCase {
 
   public void testSimilarity() throws Exception {
     RAMDirectory store = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), store, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
+    Random random = newRandom();
+    RandomIndexWriter writer = new RandomIndexWriter(random, store, 
+        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
         .setSimilarity(new SimpleSimilarity()));
     
     Document d1 = new Document();

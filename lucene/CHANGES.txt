@@ -447,6 +447,9 @@ Bug fixes
   explicitly enable the old behavior with setAutoGeneratePhraseQueries(true) 
   (Robert Muir)
   
+* LUCENE-2537: FSDirectory.copy() implementation was unsafe and could result in 
+  OOM if a large file was copied. (Shai Erera)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight

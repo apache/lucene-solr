@@ -23,6 +23,9 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.CheckIndex;
+import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.Codec;
+import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.Directory;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -38,18 +41,19 @@ public class _TestUtil {
 
   public static void rmDir(File dir) throws IOException {
     if (dir.exists()) {
-      File[] files = dir.listFiles();
-      for (int i = 0; i < files.length; i++) {
-        if (!files[i].delete()) {
-          throw new IOException("could not delete " + files[i]);
+      for (File f : dir.listFiles()) {
+        if (f.isDirectory()) {
+          rmDir(f);
+        } else {
+          if (!f.delete()) {
+            throw new IOException("could not delete " + f);
+          }
         }
       }
-      dir.delete();
+      if (!dir.delete()) {
+        throw new IOException("could not delete " + dir);
+      }
     }
-  }
-
-  public static void rmDir(String dir) throws IOException {
-    rmDir(new File(dir));
   }
 
   public static void syncConcurrentMerges(IndexWriter writer) {
@@ -78,39 +82,6 @@ public class _TestUtil {
       return true;
   }
 
-  /** Use only for testing.
-   *  @deprecated -- in 3.0 we can use Arrays.toString
-   *  instead */
-  @Deprecated
-  public static String arrayToString(int[] array) {
-    StringBuilder buf = new StringBuilder();
-    buf.append("[");
-    for(int i=0;i<array.length;i++) {
-      if (i > 0) {
-        buf.append(" ");
-      }
-      buf.append(array[i]);
-    }
-    buf.append("]");
-    return buf.toString();
-  }
-
-  /** Use only for testing.
-   *  @deprecated -- in 3.0 we can use Arrays.toString
-   *  instead */
-  @Deprecated
-  public static String arrayToString(Object[] array) {
-    StringBuilder buf = new StringBuilder();
-    buf.append("[");
-    for(int i=0;i<array.length;i++) {
-      if (i > 0) {
-        buf.append(" ");
-      }
-      buf.append(array[i]);
-    }
-    buf.append("]");
-    return buf.toString();
-  }
   /** start and end are BOTH inclusive */
   public static int nextInt(Random r, int start, int end) {
     return start + r.nextInt(end-start+1);
@@ -130,7 +101,7 @@ public class _TestUtil {
     final char[] buffer = new char[end];
     for (int i = 0; i < end; i++) {
       int t = r.nextInt(5);
-      //buffer[i] = (char) (97 + r.nextInt(26));
+
       if (0 == t && i < end - 1) {
         // Make a surrogate pair
         // High surrogate
@@ -162,7 +133,7 @@ public class _TestUtil {
     0x3300, 0x3400, 0x4DC0, 0x4E00, 0xA000, 0xA490, 0xA4D0, 0xA500, 0xA640, 
     0xA6A0, 0xA700, 0xA720, 0xA800, 0xA830, 0xA840, 0xA880, 0xA8E0, 0xA900, 
     0xA930, 0xA960, 0xA980, 0xAA00, 0xAA60, 0xAA80, 0xABC0, 0xAC00, 0xD7B0, 
-    0xD800, 0xDB80, 0xDC00, 0xE000, 0xF900, 0xFB00, 0xFB50, 0xFE00, 0xFE10, 
+    0xE000, 0xF900, 0xFB00, 0xFB50, 0xFE00, 0xFE10, 
     0xFE20, 0xFE30, 0xFE50, 0xFE70, 0xFF00, 0xFFF0, 
     0x10000, 0x10080, 0x10100, 0x10140, 0x10190, 0x101D0, 0x10280, 0x102A0, 
     0x10300, 0x10330, 0x10380, 0x103A0, 0x10400, 0x10450, 0x10480, 0x10800, 
@@ -188,7 +159,7 @@ public class _TestUtil {
     0x33FF, 0x4DBF, 0x4DFF, 0x9FFF, 0xA48F, 0xA4CF, 0xA4FF, 0xA63F, 0xA69F, 
     0xA6FF, 0xA71F, 0xA7FF, 0xA82F, 0xA83F, 0xA87F, 0xA8DF, 0xA8FF, 0xA92F, 
     0xA95F, 0xA97F, 0xA9DF, 0xAA5F, 0xAA7F, 0xAADF, 0xABFF, 0xD7AF, 0xD7FF, 
-    0xDB7F, 0xDBFF, 0xDFFF, 0xF8FF, 0xFAFF, 0xFB4F, 0xFDFF, 0xFE0F, 0xFE1F, 
+    0xF8FF, 0xFAFF, 0xFB4F, 0xFDFF, 0xFE0F, 0xFE1F, 
     0xFE2F, 0xFE4F, 0xFE6F, 0xFEFF, 0xFFEF, 0xFFFF, 
     0x1007F, 0x100FF, 0x1013F, 0x1018F, 0x101CF, 0x101FF, 0x1029F, 0x102DF, 
     0x1032F, 0x1034F, 0x1039F, 0x103DF, 0x1044F, 0x1047F, 0x104AF, 0x1083F, 
@@ -213,9 +184,30 @@ public class _TestUtil {
     return sb.toString();
   }
 
-  /** gets a random multiplier, which you should use when writing
-   *  random tests: multiply it by the number of iterations */
-  public static int getRandomMultiplier() {
-    return Integer.parseInt(System.getProperty("random.multiplier", "1"));
+  public static CodecProvider alwaysCodec(final Codec c) {
+    return new CodecProvider() {
+      @Override
+      public Codec getWriter(SegmentWriteState state) {
+        return c;
+      }
+
+      @Override
+      public Codec lookup(String name) {
+        // can't do this until we fix PreFlexRW to not
+        //impersonate PreFlex:
+        if (name.equals(c.name)) {
+          return c;
+        } else {
+          return CodecProvider.getDefault().lookup(name);
+        }
+      }
+    };
+  }
+
+  /** Return a CodecProvider that can read any of the
+   *  default codecs, but always writes in the specified
+   *  codec. */
+  public static CodecProvider alwaysCodec(final String codec) {
+    return alwaysCodec(CodecProvider.getDefault().lookup(codec));
   }
 }

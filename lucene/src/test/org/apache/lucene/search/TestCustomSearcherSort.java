@@ -24,32 +24,24 @@ import java.util.Map;
 import java.util.Random;
 import java.util.TreeMap;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
-/**
- * Unit test for sorting code.
- * 
- */
-
-public class TestCustomSearcherSort extends LuceneTestCase implements
-    Serializable {
+/** Unit test for sorting code. */
+public class TestCustomSearcherSort extends LuceneTestCase implements Serializable {
   
   private Directory index = null;
   private IndexReader reader;
   private Query query = null;
   // reduced from 20000 to 2000 to speed up test...
-  private final static int INDEX_SIZE = 2000 * _TestUtil.getRandomMultiplier();
+  private final static int INDEX_SIZE = 2000 * RANDOM_MULTIPLIER;
   
   /**
    * Create index and query for test cases.
@@ -59,8 +51,7 @@ public class TestCustomSearcherSort extends LuceneTestCase implements
     super.setUp();
     Random rand = newRandom();
     index = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(rand, index, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(rand, index);
     RandomGen random = new RandomGen(rand);
     for (int i = 0; i < INDEX_SIZE; ++i) { // don't decrease; if to low the
                                            // problem doesn't show up

@@ -33,6 +33,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
@@ -47,7 +48,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
   private Set<String> queries = new HashSet<String>();
   private Random random;
   
-  public static final int ITERATIONS = 100*_TestUtil.getRandomMultiplier();
+  public static final int ITERATIONS = 100 * RANDOM_MULTIPLIER;
 
   @Override
   public void setUp() throws Exception {
@@ -92,14 +93,14 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     StringBuilder termField = new StringBuilder();
  
     // add up to 250 terms to field "foo"
-    final int numFooTerms = random.nextInt(250*_TestUtil.getRandomMultiplier());
+    final int numFooTerms = random.nextInt(250 * RANDOM_MULTIPLIER);
     for (int i = 0; i < numFooTerms; i++) {
       fooField.append(" ");
       fooField.append(randomTerm());
     }
 
     // add up to 250 terms to field "term"
-    final int numTermTerms = random.nextInt(250*_TestUtil.getRandomMultiplier());
+    final int numTermTerms = random.nextInt(250 * RANDOM_MULTIPLIER);
     for (int i = 0; i < numTermTerms; i++) {
       termField.append(" ");
       termField.append(randomTerm());
@@ -107,8 +108,8 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     
     RAMDirectory ramdir = new RAMDirectory();
     Analyzer analyzer = randomAnalyzer();
-    IndexWriter writer = new IndexWriter(ramdir, analyzer,
-        IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(ramdir,
+                                         new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
     Document doc = new Document();
     Field field1 = new Field("foo", fooField.toString(), Field.Store.NO, Field.Index.ANALYZED);
     Field field2 = new Field("term", termField.toString(), Field.Store.NO, Field.Index.ANALYZED);

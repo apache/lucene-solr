@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -37,7 +36,8 @@ public class TestDeterminizeLexicon extends LuceneTestCase {
   
   public void testLexicon() throws Exception {
     random = newRandom();
-    for (int i = 0; i < 3*_TestUtil.getRandomMultiplier(); i++) {
+    int num = 3 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
       automata.clear();
       terms.clear();
       for (int j = 0; j < 5000; j++) {

@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -51,14 +50,14 @@ public class TestPrefixRandom extends LuceneTestCase {
     random = newRandom();
     dir = new MockRAMDirectory();
     // TODO: fix mocktokenizer to not extend chartokenizer, so you can have an 'empty' keyword.
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.KEYWORD, false)));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(MockTokenizer.KEYWORD, false));
     
     Document doc = new Document();
     Field field = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);
     doc.add(field);
 
-    for (int i = 0; i < 2000*_TestUtil.getRandomMultiplier(); i++) {
+    int num = 2000 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
       field.setValue(_TestUtil.randomUnicodeString(random, 10));
       writer.addDocument(doc);
     }
@@ -113,7 +112,8 @@ public class TestPrefixRandom extends LuceneTestCase {
   
   /** test a bunch of random prefixes */
   public void testPrefixes() throws Exception {
-      for (int i = 0; i < 1000*_TestUtil.getRandomMultiplier(); i++)
+      int num = 1000 * RANDOM_MULTIPLIER;
+      for (int i = 0; i < num; i++)
         assertSame(_TestUtil.randomUnicodeString(random, 5));
   }
   

@@ -19,11 +19,9 @@ package org.apache.lucene.search;
 
 import java.util.HashSet;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
@@ -53,8 +51,7 @@ public class TermsFilterTest extends LuceneTestCase {
 	public void testMissingTerms() throws Exception {
 		String fieldName="field1";
 		RAMDirectory rd=new RAMDirectory();
-		RandomIndexWriter w = new RandomIndexWriter(newRandom(), rd, 
-		    new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+		RandomIndexWriter w = new RandomIndexWriter(newRandom(), rd);
 		for (int i = 0; i < 100; i++) {
 			Document doc=new Document();
 			int term=i*10; //terms are units of 10;

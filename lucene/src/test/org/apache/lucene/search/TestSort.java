@@ -48,7 +48,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 /**
  * Unit tests for sorting code.
@@ -60,7 +59,7 @@ import org.apache.lucene.util._TestUtil;
 
 public class TestSort extends LuceneTestCase implements Serializable {
 
-  private static final int NUM_STRINGS = 6000*_TestUtil.getRandomMultiplier();
+  private static final int NUM_STRINGS = 6000 * RANDOM_MULTIPLIER;
   private Searcher full;
   private Searcher searchX;
   private Searcher searchY;
@@ -112,8 +111,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   private Searcher getIndex (boolean even, boolean odd)
   throws IOException {
     RAMDirectory indexStore = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
 
     for (int i=0; i<data.length; ++i) {
       if (((i%2)==0 && even) || ((i%2)==1 && odd)) {

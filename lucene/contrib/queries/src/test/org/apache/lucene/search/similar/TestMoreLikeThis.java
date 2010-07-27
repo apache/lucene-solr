@@ -28,7 +28,6 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -46,8 +45,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     directory = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
     
     // Add series of docs with specific information for MoreLikeThis
     addDoc(writer, "lucene");

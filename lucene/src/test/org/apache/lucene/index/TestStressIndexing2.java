@@ -68,10 +68,10 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
     
     // TODO: verify equals using IW.getReader
     DocsAndWriter dw = indexRandomIWReader(5, 3, 100, dir);
-    IndexReader r = dw.writer.getReader();
+    IndexReader reader = dw.writer.getReader();
     dw.writer.commit();
-    verifyEquals(r, dir, "id");
-    r.close();
+    verifyEquals(r, reader, dir, "id");
+    reader.close();
     dw.writer.close();
     dir.close();
   }
@@ -99,7 +99,8 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
 
     r = newRandom();
 
-    for (int i=0; i<3*_TestUtil.getRandomMultiplier(); i++) {  // increase iterations for better testing
+    int num = 3 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) { // increase iterations for better testing
       sameFieldOrder=r.nextBoolean();
       mergeFactor=r.nextInt(3)+2;
       maxBufferedDocs=r.nextInt(3)+2;
@@ -261,8 +262,8 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
     w.close();
   }
   
-  public static void verifyEquals(IndexReader r1, Directory dir2, String idField) throws Throwable {
-    IndexReader r2 = IndexReader.open(dir2, true);
+  public static void verifyEquals(Random r, IndexReader r1, Directory dir2, String idField) throws Throwable {
+    IndexReader r2 = IndexReader.open(dir2);
     verifyEquals(r1, r2, idField);
     r2.close();
   }

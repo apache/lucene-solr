@@ -22,7 +22,6 @@ import java.util.*;
 import org.apache.lucene.analysis.util.CharArrayMap;
 import org.apache.lucene.analysis.util.CharArraySet;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 public class TestCharArrayMap extends LuceneTestCase {
   Random r = newRandom();
@@ -59,7 +58,8 @@ public class TestCharArrayMap extends LuceneTestCase {
   }
 
   public void testCharArrayMap() {
-    for (int i=0; i<5*_TestUtil.getRandomMultiplier(); i++) {  // pump this up for more random testing
+    int num = 5 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) { // pump this up for more random testing
       doRandom(1000,false);
       doRandom(1000,true);      
     }

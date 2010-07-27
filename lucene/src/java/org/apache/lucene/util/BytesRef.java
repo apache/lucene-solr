@@ -331,12 +331,17 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
           // We know the terms are not equal, but, we may
           // have to carefully fixup the bytes at the
           // difference to match UTF16's sort order:
+          
+          // NOTE: instead of moving supplementary code points (0xee and 0xef) to the unused 0xfe and 0xff, 
+          // we move them to the unused 0xfc and 0xfd [reserved for future 6-byte character sequences]
+          // this reserves 0xff for preflex's term reordering (surrogate dance), and if unicode grows such
+          // that 6-byte sequences are needed we have much bigger problems anyway.
           if (aByte >= 0xee && bByte >= 0xee) {
             if ((aByte & 0xfe) == 0xee) {
-              aByte += 0x10;
+              aByte += 0xe;
             }
             if ((bByte&0xfe) == 0xee) {
-              bByte += 0x10;
+              bByte += 0xe;
             }
           }
           return aByte - bByte;
@@ -345,10 +350,6 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
 
       // One is a prefix of the other, or, they are equal:
       return a.length - b.length;
-    }
-
-    public boolean equals(Object other) {
-      return this == other;
     }
   }
 

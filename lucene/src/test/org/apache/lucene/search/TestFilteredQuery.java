@@ -17,11 +17,9 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
@@ -50,8 +48,7 @@ public class TestFilteredQuery extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     directory = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter (newRandom(), directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter (newRandom(), directory);
 
     Document doc = new Document();
     doc.add (new Field("field", "one two three four five", Field.Store.YES, Field.Index.ANALYZED));
@@ -72,6 +69,11 @@ public class TestFilteredQuery extends LuceneTestCase {
     doc.add (new Field("field", "one two x", Field.Store.YES, Field.Index.ANALYZED));
     doc.add (new Field("sorter", "c", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument (doc);
+
+    // tests here require single segment (eg try seed
+    // 8239472272678419952L), because SingleDocTestFilter(x)
+    // blindly accepts that docID in any sub-segment
+    writer.optimize();
 
     reader = writer.getReader();
     writer.close ();

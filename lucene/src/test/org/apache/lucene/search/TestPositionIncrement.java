@@ -35,7 +35,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
@@ -91,8 +90,7 @@ public class TestPositionIncrement extends LuceneTestCase {
       }
     };
     Directory store = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), store, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), store, analyzer);
     Document d = new Document();
     d.add(new Field("field", "bogus", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(d);
@@ -242,8 +240,7 @@ public class TestPositionIncrement extends LuceneTestCase {
   
   public void testPayloadsPos0() throws Exception {
     Directory dir = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir, new TestPayloadAnalyzer());
     Document doc = new Document();
     doc.add(new Field("content", new StringReader(
         "a a b c d e a f g h i j a b k k")));

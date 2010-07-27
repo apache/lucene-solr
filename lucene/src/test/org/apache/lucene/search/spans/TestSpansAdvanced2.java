@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -47,7 +46,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
     
     // create test index
     final RandomIndexWriter writer = new RandomIndexWriter(random, mDirectory,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(
+        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(
             MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true))
             .setOpenMode(OpenMode.APPEND));
     addDocument(writer, "A", "Should we, could we, would we?");

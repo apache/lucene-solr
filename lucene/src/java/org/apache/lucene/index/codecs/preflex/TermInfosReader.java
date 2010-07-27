@@ -119,9 +119,12 @@ public final class TermInfosReader {
           indexTerms = new Term[indexSize];
           indexInfos = new TermInfo[indexSize];
           indexPointers = new long[indexSize];
-        
-          for (int i = 0; indexEnum.next(); i++) {
+
+          for (int i=0;indexEnum.next(); i++) {
             indexTerms[i] = indexEnum.term();
+            assert indexTerms[i] != null;
+            assert indexTerms[i].text() != null;
+            assert indexTerms[i].field() != null;
             indexInfos[i] = indexEnum.termInfo();
             indexPointers[i] = indexEnum.indexPointer;
         
@@ -160,14 +163,14 @@ public final class TermInfosReader {
     return origEnum.maxSkipLevels;
   }
 
-  final void close() throws IOException {
+  void close() throws IOException {
     if (origEnum != null)
       origEnum.close();
     threadResources.close();
   }
 
   /** Returns the number of term/value pairs in the set. */
-  final long size() {
+  long size() {
     return size;
   }
 
@@ -183,12 +186,13 @@ public final class TermInfosReader {
 
 
   /** Returns the offset of the greatest index entry which is less than or equal to term.*/
-  private final int getIndexOffset(Term term) {
+  private int getIndexOffset(Term term) {
     int lo = 0;					  // binary search indexTerms[]
     int hi = indexTerms.length - 1;
 
     while (hi >= lo) {
       int mid = (lo + hi) >>> 1;
+      assert indexTerms[mid] != null : "indexTerms = " + indexTerms.length + " mid=" + mid;
       int delta = term.compareToUTF16(indexTerms[mid]);
       if (delta < 0)
 	hi = mid - 1;
@@ -200,7 +204,7 @@ public final class TermInfosReader {
     return hi;
   }
 
-  private final void seekEnum(SegmentTermEnum enumerator, int indexOffset) throws IOException {
+  private void seekEnum(SegmentTermEnum enumerator, int indexOffset) throws IOException {
     enumerator.seek(indexPointers[indexOffset],
                     ((long) indexOffset * totalIndexInterval) - 1,
                     indexTerms[indexOffset], indexInfos[indexOffset]);
@@ -231,6 +235,9 @@ public final class TermInfosReader {
   }
 
   TermInfo seekEnum(SegmentTermEnum enumerator, Term term, TermInfoAndOrd tiOrd) throws IOException {
+    if (size == 0) {
+      return null;
+    }
 
     // optimize sequential access: first try scanning cached enum w/o seeking
     if (enumerator.term() != null                 // term is at or past current
@@ -242,7 +249,6 @@ public final class TermInfosReader {
        // no need to seek
 
         final TermInfo ti;
-
         int numScans = enumerator.scanTo(term);
         if (enumerator.term() != null && term.compareToUTF16(enumerator.term()) == 0) {
           ti = enumerator.termInfo();
@@ -279,6 +285,7 @@ public final class TermInfosReader {
     seekEnum(enumerator, indexPos);
     enumerator.scanTo(term);
     final TermInfo ti;
+
     if (enumerator.term() != null && term.compareToUTF16(enumerator.term()) == 0) {
       ti = enumerator.termInfo();
       if (tiOrd == null) {
@@ -294,7 +301,7 @@ public final class TermInfosReader {
   }
 
   // called only from asserts
-  private final boolean sameTermInfo(TermInfo ti1, TermInfo ti2, SegmentTermEnum enumerator) {
+  private boolean sameTermInfo(TermInfo ti1, TermInfo ti2, SegmentTermEnum enumerator) {
     if (ti1.docFreq != ti2.docFreq) {
       return false;
     }
@@ -319,7 +326,7 @@ public final class TermInfosReader {
   }
 
   /** Returns the position of a Term in the set or -1. */
-  final long getPosition(Term term) throws IOException {
+  long getPosition(Term term) throws IOException {
     if (size == 0) return -1;
 
     ensureIndexIsRead();

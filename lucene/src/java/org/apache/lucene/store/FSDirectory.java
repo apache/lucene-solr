@@ -33,6 +33,8 @@ import java.util.Collections;
 import static java.util.Collections.synchronizedSet;
 import java.util.HashSet;
 import java.util.Set;
+
+import org.apache.lucene.store.SimpleFSDirectory.SimpleFSIndexInput;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.Constants;
@@ -125,6 +127,12 @@ public abstract class FSDirectory extends Directory {
   protected final File directory; // The underlying filesystem directory
   protected final Set<String> staleFiles = synchronizedSet(new HashSet<String>()); // Files written, but not yet sync'ed
   private int chunkSize = DEFAULT_READ_CHUNK_SIZE; // LUCENE-1566
+
+  /**
+   * Chunk size used to read when using FileChannel API. If an attempt to read a
+   * large file is made without limiting the chunk size, an OOM may occur.
+   */
+  private static final long CHANNEL_CHUNK_SIZE = 1 << 21; // Use 2MB chunk size - LUCENE-2537
 
   // returns the canonical version of the directory, creating it if it doesn't exist.
   private static File getCanonicalPath(File file) throws IOException {
@@ -441,7 +449,7 @@ public abstract class FSDirectory extends Directory {
       try {
         input = new FileInputStream(new File(directory, src)).getChannel();
         output = new FileOutputStream(new File(target.directory, dest)).getChannel();
-        output.transferFrom(input, 0, input.size());
+        copy(input, output, input.size());
       } catch (IOException ioe) {
         priorException = ioe;
       } finally {
@@ -450,6 +458,25 @@ public abstract class FSDirectory extends Directory {
     } else {
       super.copy(to, src, dest);
     }
+  }
+
+  /**
+   * Copies the content of a given {@link FileChannel} to a destination one. The
+   * copy is done in chunks of 2MB because if transferFrom is used without a
+   * limit when copying a very large file, then an OOM may be thrown (depends on
+   * the state of the RAM in the machine, as well as the OS used). Performance
+   * measurements showed that chunk sizes larger than 2MB do not result in much
+   * faster file copy, therefore we limit the size to be safe with different
+   * file sizes and systems.
+   */
+  static void copy(FileChannel input, FileChannel output, long numBytes) throws IOException {
+    long pos = output.position();
+    long writeTo = numBytes + pos;
+    while (pos < writeTo) {
+      pos += output.transferFrom(input, pos, Math.min(CHANNEL_CHUNK_SIZE, writeTo - pos));
+    }
+    // transferFrom does not change the position of the channel. Need to change it manually
+    output.position(pos);
   }
   
   protected static class FSIndexOutput extends BufferedIndexOutput {
@@ -471,6 +498,28 @@ public abstract class FSDirectory extends Directory {
       file.write(b, offset, size);
     }
 
+    @Override
+    public void copyBytes(DataInput input, long numBytes) throws IOException {
+      // Optimized copy only if the number of bytes to copy is larger than the
+      // buffer size, and the given IndexInput supports FileChannel copying ..
+      // NOTE: the below check relies on NIOIndexInput extending Simple. If that
+      // changes in the future, we should change the check as well.
+      if (numBytes > BUFFER_SIZE && input instanceof SimpleFSIndexInput) {
+        // flush any bytes in the buffer
+        flush();
+        // do the optimized copy
+        FileChannel in = ((SimpleFSIndexInput) input).file.getChannel();
+        FileChannel out = file.getChannel();
+        copy(in, out, numBytes);
+        // corrects the position in super (BufferedIndexOutput), so that calls
+        // to getFilePointer will return the correct pointer.
+        // Perhaps a specific method is better?
+        super.seek(out.position());
+      } else {
+        super.copyBytes(input, numBytes);
+      }
+    }
+    
     @Override
     public void close() throws IOException {
       // only close the file if it has not been closed yet
