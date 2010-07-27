@@ -27,9 +27,9 @@ public class FastWriter extends Writer {
   // use default BUFSIZE of BufferedWriter so if we wrap that
   // it won't cause double buffering.
   private static final int BUFSIZE = 8192;
-  private final Writer sink;
-  private final char[] buf;
-  private int pos;
+  protected final Writer sink;
+  protected final char[] buf;
+  protected int pos;
 
   public FastWriter(Writer w) {
     this(w, new char[BUFSIZE], 0);

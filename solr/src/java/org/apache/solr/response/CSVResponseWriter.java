@@ -1,0 +1,536 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.apache.solr.response;
+
+import org.apache.commons.csv.CSVPrinter;
+import org.apache.commons.csv.CSVStrategy;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Fieldable;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.DateUtil;
+import org.apache.solr.common.util.FastWriter;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.StrField;
+import org.apache.solr.search.DocIterator;
+import org.apache.solr.search.DocList;
+import org.apache.solr.search.SolrIndexSearcher;
+
+import java.io.CharArrayWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.*;
+
+/**
+ * @version $Id$
+ */
+
+public class CSVResponseWriter implements QueryResponseWriter {
+
+  public void init(NamedList n) {
+  }
+
+  public void write(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) throws IOException {
+    CSVWriter w = new CSVWriter(writer, req, rsp);
+    try {
+      w.writeResponse();
+    } finally {
+      w.close();
+    }
+  }
+
+  public String getContentType(SolrQueryRequest request, SolrQueryResponse response) {
+    // using the text/plain allows this to be viewed in the browser easily
+    return CONTENT_TYPE_TEXT_UTF8;
+  }
+}
+
+
+class CSVWriter extends TextResponseWriter {
+  static String SEPARATOR = "separator";
+  static String ENCAPSULATOR = "encapsulator";
+  static String ESCAPE = "escape";
+
+  static String CSV = "csv.";
+  static String CSV_SEPARATOR = CSV + SEPARATOR;
+  static String CSV_ENCAPSULATOR = CSV + ENCAPSULATOR;
+  static String CSV_ESCAPE = CSV + ESCAPE;
+
+  static String MV = CSV+"mv.";
+  static String MV_SEPARATOR = MV + SEPARATOR;
+  static String MV_ENCAPSULATOR = MV + ENCAPSULATOR;
+  static String MV_ESCAPE = MV + ESCAPE;
+
+  static String CSV_NULL = CSV + "null";
+  static String CSV_HEADER = CSV + "header";
+  static String CSV_NEWLINE = CSV + "newline";
+
+  char[] sharedCSVBuf = new char[8192];
+
+  // prevent each instance from creating it's own buffer
+  class CSVSharedBufPrinter extends CSVPrinter {
+    public CSVSharedBufPrinter(Writer out, CSVStrategy strategy) {
+      super(out, strategy);
+      super.buf = sharedCSVBuf;
+    }
+
+    public void reset() {
+      super.newLine = true;
+      // update our shared buf in case a new bigger one was allocated
+      sharedCSVBuf = super.buf;
+    }
+  }
+
+  // allows access to internal buf w/o copying it
+  static class OpenCharArrayWriter extends CharArrayWriter {
+    public char[]  getInternalBuf() { return buf; }
+  }
+
+  // Writes all data to a char array,
+  // allows access to internal buffer, and allows fast resetting.
+  static class ResettableFastWriter extends FastWriter {
+    OpenCharArrayWriter cw = new OpenCharArrayWriter();
+    char[] result;
+    int resultLen;
+
+    public ResettableFastWriter() {
+      super(new OpenCharArrayWriter());
+      cw = (OpenCharArrayWriter)sink;
+    }
+
+    public void reset() {
+      cw.reset();
+      pos=0;
+    }
+
+    public void freeze() throws IOException {
+      if (cw.size() > 0) {
+        flush();
+        result = cw.getInternalBuf();
+        resultLen = cw.size();
+      } else {
+        result = buf;
+        resultLen = pos;
+      }
+    }
+
+    public int getFrozenSize() { return resultLen; }
+    public char[] getFrozenBuf() { return result; }
+  }
+
+
+  static class CSVField {
+    String name;
+    SchemaField sf;
+    CSVSharedBufPrinter mvPrinter;  // printer used to encode multiple values in a single CSV value
+
+    // used to collect values
+    List<Fieldable> values = new ArrayList<Fieldable>(1);  // low starting amount in case there are many fields
+    int tmp;
+  }
+
+  int pass;
+  Map<String,CSVField> csvFields = new LinkedHashMap<String,CSVField>();
+
+  Calendar cal;  // for formatting date objects
+
+  CSVStrategy strategy;  // strategy for encoding the fields of documents
+  CSVPrinter printer;
+  ResettableFastWriter mvWriter = new ResettableFastWriter();  // writer used for multi-valued fields
+
+  String NullValue;
+  boolean returnScore = false;
+
+
+  public CSVWriter(Writer writer, SolrQueryRequest req, SolrQueryResponse rsp) {
+    super(writer, req, rsp);
+  }
+
+  public void writeResponse() throws IOException {
+    SolrParams params = req.getParams();
+
+    strategy = new CSVStrategy(',', '"', CSVStrategy.COMMENTS_DISABLED, CSVStrategy.ESCAPE_DISABLED, false, false, false, true);
+    CSVStrategy strat = strategy;
+
+    String sep = params.get(CSV_SEPARATOR);
+    if (sep!=null) {
+      if (sep.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid separator:'"+sep+"'");
+      strat.setDelimiter(sep.charAt(0));
+    }
+
+    String nl = params.get(CSV_NEWLINE);
+    if (nl!=null) {
+      if (nl.length()==0) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid newline:'"+nl+"'");
+      strat.setPrinterNewline(nl);
+    }
+
+    String encapsulator = params.get(CSV_ENCAPSULATOR);
+    String escape = params.get(CSV_ESCAPE);
+    if (encapsulator!=null) {
+      if (encapsulator.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid encapsulator:'"+encapsulator+"'");
+      strat.setEncapsulator(encapsulator.charAt(0));
+    }
+
+    if (escape!=null) {
+      if (escape.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid escape:'"+escape+"'");
+      strat.setEscape(escape.charAt(0));
+      if (encapsulator == null) {
+        strat.setEncapsulator( CSVStrategy.ENCAPSULATOR_DISABLED);
+      }
+    }
+
+    if (strat.getEscape() == '\\') {
+      // If the escape is the standard backslash, then also enable
+      // unicode escapes (it's harmless since 'u' would not otherwise
+      // be escaped.
+      strat.setUnicodeEscapeInterpretation(true);
+    }
+
+    printer = new CSVPrinter(writer, strategy);
+    
+
+    CSVStrategy mvStrategy = new CSVStrategy(strategy.getDelimiter(), CSVStrategy.ENCAPSULATOR_DISABLED, CSVStrategy.COMMENTS_DISABLED, '\\', false, false, false, false);
+    strat = mvStrategy;
+
+    sep = params.get(MV_SEPARATOR);
+    if (sep!=null) {
+      if (sep.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid mv separator:'"+sep+"'");
+      strat.setDelimiter(sep.charAt(0));
+    }
+
+    encapsulator = params.get(MV_ENCAPSULATOR);
+    escape = params.get(MV_ESCAPE);
+
+    if (encapsulator!=null) {
+      if (encapsulator.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid mv encapsulator:'"+encapsulator+"'");
+      strat.setEncapsulator(encapsulator.charAt(0));
+      if (escape == null) {
+        strat.setEscape(CSVStrategy.ESCAPE_DISABLED);
+      }
+    }
+
+    escape = params.get(MV_ESCAPE);
+    if (escape!=null) {
+      if (escape.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid mv escape:'"+escape+"'");
+      strat.setEscape(escape.charAt(0));
+      // encapsulator will already be disabled if it wasn't specified
+    }
+
+    returnScore = returnFields != null && returnFields.contains("score");
+    boolean needListOfFields = returnFields==null || returnFields.size()==0 || (returnFields.size()==1 && returnScore) || returnFields.contains("*");
+    Collection<String> fields = returnFields;
+
+    Object responseObj = rsp.getValues().get("response");
+    if (needListOfFields) {
+      if (responseObj instanceof SolrDocumentList) {
+        // get the list of fields from the SolrDocumentList
+        fields = new LinkedHashSet<String>();
+        for (SolrDocument sdoc: (SolrDocumentList)responseObj) {
+          fields.addAll(sdoc.getFieldNames());
+        }
+      } else {
+        // get the list of fields from the index
+        fields = req.getSearcher().getFieldNames();
+      }
+      if (returnScore) {
+        fields.add("score");
+      } else {
+        fields.remove("score");
+      }
+    }
+
+    CSVSharedBufPrinter csvPrinterMV = new CSVSharedBufPrinter(mvWriter, mvStrategy);
+
+    for (String field : fields) {
+      if (field.equals("score")) {
+        CSVField csvField = new CSVField();
+        csvField.name = "score";
+        csvFields.put("score", csvField);
+        continue;
+      }
+
+      SchemaField sf = schema.getFieldOrNull(field);
+      if (sf == null) {
+        FieldType ft = new StrField();
+        sf = new SchemaField(field, ft);
+      }
+
+      // if we got the list of fields from the index, only list stored fields
+      if (returnFields==null && sf != null && !sf.stored()) {
+        continue;
+      }
+
+      // check for per-field overrides
+      sep = params.get("f." + field + '.' + CSV_SEPARATOR);
+      encapsulator = params.get("f." + field + '.' + CSV_ENCAPSULATOR);
+      escape = params.get("f." + field + '.' + CSV_ESCAPE);
+
+      CSVSharedBufPrinter csvPrinter = csvPrinterMV;
+      if (sep != null || encapsulator != null || escape != null) {
+        // create a new strategy + printer if there were any per-field overrides
+        strat = (CSVStrategy)mvStrategy.clone();
+        if (sep!=null) {
+          if (sep.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid mv separator:'"+sep+"'");
+          strat.setDelimiter(sep.charAt(0));
+        }
+        if (encapsulator!=null) {
+          if (encapsulator.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid mv encapsulator:'"+encapsulator+"'");
+          strat.setEncapsulator(encapsulator.charAt(0));
+          if (escape == null) {
+            strat.setEscape(CSVStrategy.ESCAPE_DISABLED);
+          }
+        }
+        if (escape!=null) {
+          if (escape.length()!=1) throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,"Invalid mv escape:'"+escape+"'");
+          strat.setEscape(escape.charAt(0));
+          if (encapsulator == null) {
+            strat.setEncapsulator(CSVStrategy.ENCAPSULATOR_DISABLED);
+          }
+        }        
+        csvPrinter = new CSVSharedBufPrinter(mvWriter, strat);
+      }
+
+
+      CSVField csvField = new CSVField();
+      csvField.name = field;
+      csvField.sf = sf;
+      csvField.mvPrinter = csvPrinter;
+      csvFields.put(field, csvField);
+    }
+
+    NullValue = params.get(CSV_NULL, "");
+
+    if (params.getBool(CSV_HEADER, true)) {
+      for (CSVField csvField : csvFields.values()) {
+        printer.print(csvField.name);
+      }
+      printer.println();
+    }
+
+
+    if (responseObj instanceof DocList) {
+      writeDocList(null, (DocList)responseObj, null, null);
+    } else if (responseObj instanceof SolrDocumentList) {
+      writeSolrDocumentList(null, (SolrDocumentList)responseObj, null, null);
+    }
+
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (printer != null) printer.flush();
+    super.close();
+  }
+
+  @Override
+  public void writeNamedList(String name, NamedList val) throws IOException {
+  }
+
+  @Override
+  public void writeDoc(String name, Document doc, Set<String> returnFields, float score, boolean includeScore) throws IOException {
+    pass++;
+
+    for (Fieldable field: doc.getFields()) {
+      CSVField csvField = csvFields.get(field.name());
+      if (csvField == null) continue;
+      if (csvField.tmp != pass) {
+        csvField.tmp = pass;
+        csvField.values.clear();
+      }
+      csvField.values.add(field);
+    }
+
+    for (CSVField csvField : csvFields.values()) {
+      if (csvField.name.equals("score")) {
+        writeFloat("score", score);
+        continue;
+      }
+      if (csvField.tmp != pass) {
+        writeNull(csvField.name);
+        continue;
+      }
+
+      if (csvField.sf.multiValued() || csvField.values.size() > 1) {
+        mvWriter.reset();
+        csvField.mvPrinter.reset();
+        // switch the printer to use the multi-valued one
+        CSVPrinter tmp = printer;
+        printer = csvField.mvPrinter;
+        for (Fieldable fval : csvField.values) {
+          csvField.sf.getType().write(this, csvField.name, fval);
+        }
+        printer = tmp;  // restore the original printer
+
+        mvWriter.freeze();
+        printer.print(mvWriter.getFrozenBuf(), 0, mvWriter.getFrozenSize(), true);
+      } else {
+        assert csvField.values.size() == 1;
+        csvField.sf.getType().write(this,csvField.name,csvField.values.get(0));
+      }
+    }
+
+    printer.println();
+  }
+
+  //NOTE: a document cannot currently contain another document
+  List tmpList;
+  @Override
+  public void writeSolrDocument(String name, SolrDocument doc, Set<String> returnFields, Map pseudoFields) throws IOException {
+    if (tmpList == null) {
+      tmpList = new ArrayList(1);
+      tmpList.add(null);
+    }
+
+    for (CSVField csvField : csvFields.values()) {
+      Object val = doc.getFieldValue(csvField.name);
+      int nVals = val instanceof Collection ? ((Collection)val).size() : (val==null ? 0 : 1);
+      if (nVals == 0) {
+        writeNull(csvField.name);
+        continue;
+      }
+
+      if ((csvField.sf != null && csvField.sf.multiValued()) || nVals > 1) {
+        Collection values;
+        // normalize to a collection
+        if (val instanceof Collection) {
+          values = (Collection)val;
+        } else {
+          tmpList.set(0, val);
+          values = tmpList;
+        }
+
+        mvWriter.reset();
+        csvField.mvPrinter.reset();
+        // switch the printer to use the multi-valued one
+        CSVPrinter tmp = printer;
+        printer = csvField.mvPrinter;
+        for (Object fval : values) {
+          writeVal(csvField.name, fval);
+        }
+        printer = tmp;  // restore the original printer
+
+        mvWriter.freeze();
+        printer.print(mvWriter.getFrozenBuf(), 0, mvWriter.getFrozenSize(), true);
+
+      } else {
+        // normalize to first value
+        if (val instanceof Collection) {
+          Collection values = (Collection)val;
+          val = values.iterator().next();
+        }
+        writeVal(csvField.name, val);
+      }
+    }
+
+    printer.println();
+  }
+
+  @Override
+  public void writeDocList(String name, DocList ids, Set<String> fields, Map otherFields) throws IOException {
+    int sz=ids.size();
+    SolrIndexSearcher searcher = req.getSearcher();
+    DocIterator iterator = ids.iterator();
+    for (int i=0; i<sz; i++) {
+      int id = iterator.nextDoc();
+      Document doc = searcher.doc(id, fields);
+      writeDoc(null, doc, fields, (returnScore ? iterator.score() : 0.0f), returnScore);
+    }
+  }
+
+  Map scoreMap = new HashMap(1);
+  @Override
+  public void writeSolrDocumentList(String name, SolrDocumentList docs, Set<String> fields, Map otherFields) throws IOException {
+    for (SolrDocument doc : docs) {
+      writeSolrDocument(name, doc, fields, otherFields);
+    }
+  }
+
+  @Override
+  public void writeStr(String name, String val, boolean needsEscaping) throws IOException {
+    printer.print(val, needsEscaping);
+  }
+
+  @Override
+  public void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException {
+  }
+
+  @Override
+  public void writeArray(String name, Object[] val) throws IOException {
+  }
+
+  @Override
+  public void writeArray(String name, Iterator val) throws IOException {
+  }
+
+  @Override
+  public void writeNull(String name) throws IOException {
+    printer.print(NullValue);
+  }
+
+  @Override
+  public void writeInt(String name, String val) throws IOException {
+    printer.print(val, false);
+  }
+
+  @Override
+  public void writeLong(String name, String val) throws IOException {
+    printer.print(val, false);
+  }
+
+  @Override
+  public void writeBool(String name, String val) throws IOException {
+    printer.print(val, false);
+  }
+
+  @Override
+  public void writeFloat(String name, String val) throws IOException {
+    printer.print(val, false);
+  }
+
+  @Override
+  public void writeDouble(String name, String val) throws IOException {
+    printer.print(val, false);
+  }
+
+  @Override
+  public void writeDate(String name, Date val) throws IOException {
+    StringBuilder sb = new StringBuilder(25);
+    cal = DateUtil.formatDate(val, cal, sb);
+    writeDate(name, sb.toString());
+  }
+
+  @Override
+  public void writeDate(String name, String val) throws IOException {
+    printer.print(val, false);
+  }
+
+  @Override
+  public void writeShort(String name, String val) throws IOException {
+    printer.print(val, false);
+  }
+
+  @Override
+  public void writeByte(String name, String val) throws IOException {
+    printer.print(val, false);
+  }
+}
