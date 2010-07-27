@@ -217,22 +217,40 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
   @Override
   public DocsEnum docs(FieldInfo fieldInfo, TermState _termState, Bits skipDocs, DocsEnum reuse) throws IOException {
     final SepTermState termState = (SepTermState) _termState;
-    if (reuse == null) {
-      return (new SepDocsEnum()).init(fieldInfo, termState, skipDocs);
+    SepDocsEnum docsEnum;
+    if (reuse == null || !(reuse instanceof SepDocsEnum)) {
+      docsEnum = new SepDocsEnum();
     } else {
-      return ((SepDocsEnum) reuse).init(fieldInfo, termState, skipDocs);
+      docsEnum = (SepDocsEnum) reuse;
+      if (docsEnum.startDocIn != docIn) {
+        // If you are using ParellelReader, and pass in a
+        // reused DocsAndPositionsEnum, it could have come
+        // from another reader also using sep codec
+        docsEnum = new SepDocsEnum();        
+      }
     }
+
+    return docsEnum.init(fieldInfo, termState, skipDocs);
   }
 
   @Override
   public DocsAndPositionsEnum docsAndPositions(FieldInfo fieldInfo, TermState _termState, Bits skipDocs, DocsAndPositionsEnum reuse) throws IOException {
     assert !fieldInfo.omitTermFreqAndPositions;
     final SepTermState termState = (SepTermState) _termState;
-    if (reuse == null) {
-      return (new SepDocsAndPositionsEnum()).init(fieldInfo, termState, skipDocs);
+    SepDocsAndPositionsEnum postingsEnum;
+    if (reuse == null || !(reuse instanceof SepDocsAndPositionsEnum)) {
+      postingsEnum = new SepDocsAndPositionsEnum();
     } else {
-      return ((SepDocsAndPositionsEnum) reuse).init(fieldInfo, termState, skipDocs);
+      postingsEnum = (SepDocsAndPositionsEnum) reuse;
+      if (postingsEnum.startDocIn != docIn) {
+        // If you are using ParellelReader, and pass in a
+        // reused DocsAndPositionsEnum, it could have come
+        // from another reader also using sep codec
+        postingsEnum = new SepDocsAndPositionsEnum();        
+      }
     }
+
+    return postingsEnum.init(fieldInfo, termState, skipDocs);
   }
 
   class SepDocsEnum extends DocsEnum {
@@ -253,6 +271,7 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
     private final IntIndexInput.Index docIndex;
     private final IntIndexInput.Index freqIndex;
     private final IntIndexInput.Index posIndex;
+    private final IntIndexInput startDocIn;
 
     // TODO: -- should we do hasProx with 2 different enum classes?
 
@@ -260,6 +279,7 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
     SepSkipListReader skipper;
 
     SepDocsEnum() throws IOException {
+      startDocIn = docIn;
       docReader = docIn.reader();
       docIndex = docIn.index();
       if (freqIn != null) {
@@ -439,6 +459,8 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
     private final IntIndexInput.Index docIndex;
     private final IntIndexInput.Index freqIndex;
     private final IntIndexInput.Index posIndex;
+    private final IntIndexInput startDocIn;
+
     private long payloadOffset;
 
     private int pendingPosCount;
@@ -452,6 +474,7 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
     private boolean posSeekPending;
 
     SepDocsAndPositionsEnum() throws IOException {
+      startDocIn = docIn;
       docReader = docIn.reader();
       docIndex = docIn.index();
       freqReader = freqIn.reader();
