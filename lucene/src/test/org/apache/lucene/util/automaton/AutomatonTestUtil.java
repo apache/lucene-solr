@@ -77,12 +77,44 @@ public class AutomatonTestUtil {
     return new String(buffer, 0, end);
   }
   
-  // picks a random int code point that this transition
-  // accepts, avoiding the surrogates range since they are
-  // "defined" in UTF32.  Don't call this on a transition
-  // that only accepts UTF16 surrogate values!!
+  // picks a random int code point, avoiding surrogates;
+  // throws IllegalArgumentException if this transition only
+  // accepts surrogates
   private static int getRandomCodePoint(final Random r, final Transition t) {
-    return t.min+r.nextInt(t.max-t.min+1);
+    final int code;
+    if (t.max < UnicodeUtil.UNI_SUR_HIGH_START ||
+        t.min > UnicodeUtil.UNI_SUR_HIGH_END) {
+      // easy: entire range is before or after surrogates
+      code = t.min+r.nextInt(t.max-t.min+1);
+    } else if (t.min >= UnicodeUtil.UNI_SUR_HIGH_START) {
+      if (t.max > UnicodeUtil.UNI_SUR_LOW_END) {
+        // after surrogates
+        code = 1+UnicodeUtil.UNI_SUR_LOW_END+r.nextInt(t.max-UnicodeUtil.UNI_SUR_LOW_END+1);
+      } else {
+        throw new IllegalArgumentException("transition accepts only surrogates: " + t);
+      }
+    } else if (t.max <= UnicodeUtil.UNI_SUR_LOW_END) {
+      if (t.min < UnicodeUtil.UNI_SUR_HIGH_START) {
+        // before surrogates
+        code = t.min + r.nextInt(UnicodeUtil.UNI_SUR_HIGH_START - t.min);
+      } else {
+        throw new IllegalArgumentException("transition accepts only surrogates: " + t);
+      }
+    } else {
+      // range includes all surrogates
+      int gap1 = UnicodeUtil.UNI_SUR_HIGH_START - t.min;
+      int gap2 = t.max - UnicodeUtil.UNI_SUR_LOW_END;
+      int c = r.nextInt(gap1+gap2);
+      if (c < gap1) {
+        code = t.min + c;
+      } else {
+        code = UnicodeUtil.UNI_SUR_LOW_END + c - gap1 + 1;
+      }
+    }
+
+    assert code >= t.min && code <= t.max && (code < UnicodeUtil.UNI_SUR_HIGH_START || code > UnicodeUtil.UNI_SUR_LOW_END):
+      "code=" + code + " min=" + t.min + " max=" + t.max;
+    return code;
   }
 
   public static class RandomAcceptedStrings {
@@ -206,7 +238,6 @@ public class AutomatonTestUtil {
           } else {
             t = s.transitionsArray[r.nextInt(s.numTransitions)];
           }
-          
           soFar.add(getRandomCodePoint(r, t));
           s = t.to;
         }
