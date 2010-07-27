@@ -33,21 +33,15 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
-/**
- * Unit test for sorting code.
- * 
- */
-
-public class TestCustomSearcherSort extends LuceneTestCase implements
-    Serializable {
+/** Unit test for sorting code. */
+public class TestCustomSearcherSort extends LuceneTestCase implements Serializable {
   
   private Directory index = null;
   private IndexReader reader;
   private Query query = null;
   // reduced from 20000 to 2000 to speed up test...
-  private final static int INDEX_SIZE = 2000 * _TestUtil.getRandomMultiplier();
+  private final static int INDEX_SIZE = 2000 * RANDOM_MULTIPLIER;
   
   /**
    * Create index and query for test cases.

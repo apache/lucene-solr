@@ -31,7 +31,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util._TestUtil;
 
 import org.junit.Test;
 import org.junit.AfterClass;
@@ -44,7 +43,7 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
   // shift the starting of the values to the left, to also have negative values:
   private static final long startOffset = - 1L << 31;
   // number of docs to generate for testing
-  private static final int noDocs = 10000*_TestUtil.getRandomMultiplier();
+  private static final int noDocs = 10000 * RANDOM_MULTIPLIER;
   
   private static RAMDirectory directory = null;
   private static IndexReader reader = null;
@@ -352,7 +351,8 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
     final Random rnd=newRandom();
     String field="field"+precisionStep;
     int termCountT=0,termCountC=0;
-    for (int i=0; i<10*_TestUtil.getRandomMultiplier(); i++) {
+    int num = 10 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
       long lower=(long)(rnd.nextDouble()*noDocs*distance)+startOffset;
       long upper=(long)(rnd.nextDouble()*noDocs*distance)+startOffset;
       if (lower>upper) {
@@ -435,7 +435,8 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
     final Random rnd=newRandom();
     String field="ascfield"+precisionStep;
     // 10 random tests
-    for (int i=0; i<10*_TestUtil.getRandomMultiplier(); i++) {
+    int num = 10 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
       long lower=(long)(rnd.nextDouble()*noDocs - noDocs/2);
       long upper=(long)(rnd.nextDouble()*noDocs - noDocs/2);
       if (lower>upper) {
@@ -521,7 +522,8 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
     String field="field"+precisionStep;
     // 10 random tests, the index order is ascending,
     // so using a reverse sort field should retun descending documents
-    for (int i=0; i<10*_TestUtil.getRandomMultiplier(); i++) {
+    int num = 10 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
       long lower=(long)(rnd.nextDouble()*noDocs*distance)+startOffset;
       long upper=(long)(rnd.nextDouble()*noDocs*distance)+startOffset;
       if (lower>upper) {

@@ -608,8 +608,8 @@ public class TestPhraseQuery extends LuceneTestCase {
 
     Random r = random;
 
-    int NUM_DOCS = 10*_TestUtil.getRandomMultiplier();
-    for(int i=0;i<NUM_DOCS;i++) {
+    int NUM_DOCS = 10 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < NUM_DOCS; i++) {
       // must be > 4096 so it spans multiple chunks
       int termCount = _TestUtil.nextInt(r, 10000, 30000);
 
@@ -655,7 +655,8 @@ public class TestPhraseQuery extends LuceneTestCase {
     w.close();
 
     // now search
-    for(int i=0;i<100*_TestUtil.getRandomMultiplier();i++) {
+    int num = 100 * RANDOM_MULTIPLIER;
+    for(int i=0;i<num;i++) {
       int docID = r.nextInt(docs.size());
       List<String> doc = docs.get(docID);
       

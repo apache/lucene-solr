@@ -56,7 +56,8 @@ public class TestPrefixRandom extends LuceneTestCase {
     Field field = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);
     doc.add(field);
 
-    for (int i = 0; i < 2000*_TestUtil.getRandomMultiplier(); i++) {
+    int num = 2000 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
       field.setValue(_TestUtil.randomUnicodeString(random, 10));
       writer.addDocument(doc);
     }
@@ -111,7 +112,8 @@ public class TestPrefixRandom extends LuceneTestCase {
   
   /** test a bunch of random prefixes */
   public void testPrefixes() throws Exception {
-      for (int i = 0; i < 1000*_TestUtil.getRandomMultiplier(); i++)
+      int num = 1000 * RANDOM_MULTIPLIER;
+      for (int i = 0; i < num; i++)
         assertSame(_TestUtil.randomUnicodeString(random, 5));
   }
   

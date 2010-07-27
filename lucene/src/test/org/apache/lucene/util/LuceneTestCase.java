@@ -72,6 +72,15 @@ public abstract class LuceneTestCase extends TestCase {
   /** Create indexes in this directory, optimally use a subdir, named after the test */
   public static final File TEMP_DIR = LuceneTestCaseJ4.TEMP_DIR;
 
+  /** Gets the codec to run tests with. */
+  public static final String TEST_CODEC = LuceneTestCaseJ4.TEST_CODEC;
+
+  /**
+   * A random multiplier which you should use when writing random tests:
+   * multiply it by the number of iterations
+   */
+  public static final int RANDOM_MULTIPLIER = LuceneTestCaseJ4.RANDOM_MULTIPLIER;
+  
   private int savedBoolMaxClauseCount;
   
   private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;
@@ -120,7 +129,7 @@ public abstract class LuceneTestCase extends TestCase {
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
     savedDefaultCodec = CodecProvider.getDefaultCodec();
 
-    codec = _TestUtil.getTestCodec();
+    codec = TEST_CODEC;
     if (codec.equals("random"))
       codec = CodecProvider.CORE_CODECS[seedRnd.nextInt(CodecProvider.CORE_CODECS.length)];
 
@@ -318,7 +327,7 @@ public abstract class LuceneTestCase extends TestCase {
       seed = null;
       super.runBare();
     } catch (Throwable e) {
-      if (_TestUtil.getTestCodec().equals("random")) {
+      if (TEST_CODEC.equals("random")) {
         System.out.println("NOTE: random codec of testcase '" + getName() + "' was: " + codec);
       }
       if (seed != null) {

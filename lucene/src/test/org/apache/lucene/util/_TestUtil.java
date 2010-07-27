@@ -41,18 +41,19 @@ public class _TestUtil {
 
   public static void rmDir(File dir) throws IOException {
     if (dir.exists()) {
-      File[] files = dir.listFiles();
-      for (int i = 0; i < files.length; i++) {
-        if (!files[i].delete()) {
-          throw new IOException("could not delete " + files[i]);
+      for (File f : dir.listFiles()) {
+        if (f.isDirectory()) {
+          rmDir(f);
+        } else {
+          if (!f.delete()) {
+            throw new IOException("could not delete " + f);
+          }
         }
       }
-      dir.delete();
+      if (!dir.delete()) {
+        throw new IOException("could not delete " + dir);
+      }
     }
-  }
-
-  public static void rmDir(String dir) throws IOException {
-    rmDir(new File(dir));
   }
 
   public static void syncConcurrentMerges(IndexWriter writer) {
@@ -81,39 +82,6 @@ public class _TestUtil {
       return true;
   }
 
-  /** Use only for testing.
-   *  @deprecated -- in 3.0 we can use Arrays.toString
-   *  instead */
-  @Deprecated
-  public static String arrayToString(int[] array) {
-    StringBuilder buf = new StringBuilder();
-    buf.append("[");
-    for(int i=0;i<array.length;i++) {
-      if (i > 0) {
-        buf.append(" ");
-      }
-      buf.append(array[i]);
-    }
-    buf.append("]");
-    return buf.toString();
-  }
-
-  /** Use only for testing.
-   *  @deprecated -- in 3.0 we can use Arrays.toString
-   *  instead */
-  @Deprecated
-  public static String arrayToString(Object[] array) {
-    StringBuilder buf = new StringBuilder();
-    buf.append("[");
-    for(int i=0;i<array.length;i++) {
-      if (i > 0) {
-        buf.append(" ");
-      }
-      buf.append(array[i]);
-    }
-    buf.append("]");
-    return buf.toString();
-  }
   /** start and end are BOTH inclusive */
   public static int nextInt(Random r, int start, int end) {
     return start + r.nextInt(end-start+1);
@@ -214,20 +182,6 @@ public class _TestUtil {
     for (int i = 0; i < end; i++)
       sb.appendCodePoint(nextInt(r, blockStarts[block], blockEnds[block]));
     return sb.toString();
-  }
-
-  /** gets a random multiplier, which you should use when writing
-   *  random tests: multiply it by the number of iterations */
-  public static int getRandomMultiplier() {
-    return Integer.parseInt(System.getProperty("random.multiplier", "1"));
-  }
-
-  /** gets the codec to run tests with */
-  public static String getTestCodec() {
-    // by default we randomly pick a different codec for
-    // each test case (non-J4 tests) and each test class (J4
-    // tests)
-    return System.getProperty("tests.codec", "random");
   }
 
   public static CodecProvider alwaysCodec(final Codec c) {

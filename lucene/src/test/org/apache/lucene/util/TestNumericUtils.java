@@ -309,7 +309,7 @@ public class TestNumericUtils extends LuceneTestCase {
   
   public void testRandomSplit() throws Exception {
     final Random random = newRandom();
-    long num = 100L * _TestUtil.getRandomMultiplier();
+    long num = 100L * RANDOM_MULTIPLIER;
     for (long i=0; i < num; i++) {
       executeOneRandomSplit(random);
     }
@@ -317,7 +317,7 @@ public class TestNumericUtils extends LuceneTestCase {
   
   private void executeOneRandomSplit(final Random random) throws Exception {
     long lower = randomLong(random);
-    long len = (long) random.nextInt(16384*1024); // not too large bitsets, else OOME!
+    long len = random.nextInt(16384*1024); // not too large bitsets, else OOME!
     while (lower + len < lower) { // overflow
       lower >>= 1;
     }

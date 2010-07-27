@@ -29,7 +29,8 @@ public class TestMultiFields extends LuceneTestCase {
 
     Random r = newRandom();
 
-    for(int iter=0;iter<2*_TestUtil.getRandomMultiplier();iter++) {
+    int num = 2 * RANDOM_MULTIPLIER;
+    for (int iter = 0; iter < num; iter++) {
       Directory dir = new MockRAMDirectory();
 
       IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
@@ -38,7 +39,7 @@ public class TestMultiFields extends LuceneTestCase {
       Set<Integer> deleted = new HashSet<Integer>();
       List<BytesRef> terms = new ArrayList<BytesRef>();
 
-      int numDocs = _TestUtil.nextInt(r, 1, 100*_TestUtil.getRandomMultiplier());
+      int numDocs = _TestUtil.nextInt(r, 1, 100 * RANDOM_MULTIPLIER);
       Document doc = new Document();
       Field f = new Field("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
       doc.add(f);

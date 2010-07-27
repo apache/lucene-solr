@@ -208,7 +208,8 @@ public class TestBoolean2 extends LuceneTestCase {
     try {
 
       // increase number of iterations for more complete testing
-      for (int i=0; i<50*_TestUtil.getRandomMultiplier(); i++) {
+      int num = 50 * RANDOM_MULTIPLIER;
+      for (int i=0; i<num; i++) {
         int level = rnd.nextInt(3);
         q1 = randBoolQuery(new Random(rnd.nextLong()), rnd.nextBoolean(), level, field, vals, null);
         

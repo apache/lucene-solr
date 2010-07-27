@@ -31,7 +31,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 /**
  * Create an index with terms from 0000-9999.
@@ -98,7 +97,8 @@ public class TestWildcardRandom extends LuceneTestCase {
   }
   
   public void testWildcards() throws Exception {;
-    for (int i = 0; i < 100*_TestUtil.getRandomMultiplier(); i++) {
+    int num = 100 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
       assertPatternHits("NNNN", 1);
       assertPatternHits("?NNN", 10);
       assertPatternHits("N?NN", 10);
@@ -106,7 +106,8 @@ public class TestWildcardRandom extends LuceneTestCase {
       assertPatternHits("NNN?", 10);
     }
     
-    for (int i = 0; i < 10*_TestUtil.getRandomMultiplier(); i++) {
+    num = 10 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
       assertPatternHits("??NN", 100);
       assertPatternHits("N??N", 100);
       assertPatternHits("NN??", 100);

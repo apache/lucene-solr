@@ -486,7 +486,7 @@ public class TestPayloads extends LuceneTestCase {
     public void testThreadSafety() throws Exception {
         rnd = newRandom();
         final int numThreads = 5;
-        final int numDocs = 50* _TestUtil.getRandomMultiplier();
+        final int numDocs = 50 * RANDOM_MULTIPLIER;
         final ByteArrayPool pool = new ByteArrayPool(numThreads, 5);
         
         Directory dir = new MockRAMDirectory();

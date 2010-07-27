@@ -19,7 +19,6 @@ package org.apache.lucene.util.automaton;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util._TestUtil;
 
 import java.util.Random;
 
@@ -87,8 +86,8 @@ public class TestBasicOperations extends LuceneTestCase {
 
   public void testGetRandomAcceptedString() throws Throwable {
     final Random r = newRandom();
-    final int ITER1 = 100*_TestUtil.getRandomMultiplier();
-    final int ITER2 = 100*_TestUtil.getRandomMultiplier();
+    final int ITER1 = 100 * RANDOM_MULTIPLIER;
+    final int ITER2 = 100 * RANDOM_MULTIPLIER;
     for(int i=0;i<ITER1;i++) {
 
       final RegExp re = AutomatonTestUtil.randomRegexp(r);

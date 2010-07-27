@@ -99,7 +99,8 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
 
     r = newRandom();
 
-    for (int i=0; i<3*_TestUtil.getRandomMultiplier(); i++) {  // increase iterations for better testing
+    int num = 3 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) { // increase iterations for better testing
       sameFieldOrder=r.nextBoolean();
       mergeFactor=r.nextInt(3)+2;
       maxBufferedDocs=r.nextInt(3)+2;

@@ -114,6 +114,18 @@ public class LuceneTestCaseJ4 {
     TEMP_DIR = new File(s);
   }
 
+  // by default we randomly pick a different codec for
+  // each test case (non-J4 tests) and each test class (J4
+  // tests)
+  /** Gets the codec to run tests with. */
+  static final String TEST_CODEC = System.getProperty("tests.codec", "random");
+
+  /**
+   * A random multiplier which you should use when writing random tests:
+   * multiply it by the number of iterations
+   */
+  public static final int RANDOM_MULTIPLIER = Integer.parseInt(System.getProperty("random.multiplier", "1"));
+  
   private int savedBoolMaxClauseCount;
 
   private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;
@@ -164,7 +176,7 @@ public class LuceneTestCaseJ4 {
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
     savedDefaultCodec = CodecProvider.getDefaultCodec();
-    codec = _TestUtil.getTestCodec();
+    codec = TEST_CODEC;
     if (codec.equals("random"))
       codec = CodecProvider.CORE_CODECS[seedRnd.nextInt(CodecProvider.CORE_CODECS.length)];
 
@@ -483,7 +495,7 @@ public class LuceneTestCaseJ4 {
       System.out.println("NOTE: random static seed of testclass '" + getName() + "' was: " + staticSeed);
     }
     
-    if (_TestUtil.getTestCodec().equals("random")) {
+    if (TEST_CODEC.equals("random")) {
       System.out.println("NOTE: random codec of testcase '" + getName() + "' was: " + codec);
     }
 

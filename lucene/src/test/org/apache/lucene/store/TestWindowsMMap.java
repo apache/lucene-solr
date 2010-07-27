@@ -17,12 +17,10 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.util.Collections;
 import java.util.Random;
 import java.io.File;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -84,7 +82,8 @@ public class TestWindowsMMap extends LuceneTestCase {
     writer.commit();
     IndexSearcher searcher = new IndexSearcher(dir, true);
     
-    for(int dx = 0; dx < 1000*_TestUtil.getRandomMultiplier(); dx ++) {
+    int num = 1000 * RANDOM_MULTIPLIER;
+    for(int dx = 0; dx < num; dx ++) {
       String f = randomField();
       Document doc = new Document();
       doc.add(new Field("data", f, Field.Store.YES, Field.Index.ANALYZED));	

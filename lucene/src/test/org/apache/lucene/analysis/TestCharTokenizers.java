@@ -39,7 +39,8 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
     Random newRandom = newRandom();
     // create random input
     int num = 1024 + newRandom.nextInt(1024);
-    for (int i = 1; i < num*_TestUtil.getRandomMultiplier(); i++) {
+    num *= RANDOM_MULTIPLIER;
+    for (int i = 1; i < num; i++) {
       builder.append("\ud801\udc1cabc");
       if((i % 10) == 0)
         builder.append(" ");

@@ -23,17 +23,14 @@ import java.text.NumberFormat;
 import java.util.Locale;
 import java.util.Random;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 /**
  * Create an index with terms from 0000-9999.
@@ -101,7 +98,8 @@ public class TestRegexpRandom extends LuceneTestCase {
   }
   
   public void testRegexps() throws Exception {
-    for (int i = 0; i < 100*_TestUtil.getRandomMultiplier(); i++) {
+    int num = 100 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
       assertPatternHits("NNNN", 1);
       assertPatternHits(".NNN", 10);
       assertPatternHits("N.NN", 10);
@@ -109,7 +107,8 @@ public class TestRegexpRandom extends LuceneTestCase {
       assertPatternHits("NNN.", 10);
     }
     
-    for (int i = 0; i < 10*_TestUtil.getRandomMultiplier(); i++) {
+    num = 10 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
       assertPatternHits(".{1,2}NN", 100);
       assertPatternHits("N.{1,2}N", 100);
       assertPatternHits("NN.{1,2}", 100);

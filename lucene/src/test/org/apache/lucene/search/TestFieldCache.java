@@ -37,7 +37,7 @@ import java.io.PrintStream;
 
 public class TestFieldCache extends LuceneTestCase {
   protected IndexReader reader;
-  private int NUM_DOCS;
+  private static final int NUM_DOCS = 1000 * RANDOM_MULTIPLIER;
   private String[] unicodeStrings;
 
   public TestFieldCache(String s) {
@@ -48,7 +48,6 @@ public class TestFieldCache extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     Random r = newRandom();
-    NUM_DOCS = 1000 * _TestUtil.getRandomMultiplier();
     RAMDirectory directory = new RAMDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(r, directory);
     long theLong = Long.MAX_VALUE;

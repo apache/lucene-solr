@@ -135,7 +135,8 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
       System.out.println("\nTEST: top now seek");
     }
 
-    for(int iter=0;iter<100*_TestUtil.getRandomMultiplier();iter++) {
+    int num = 100 * RANDOM_MULTIPLIER;
+    for (int iter = 0; iter < num; iter++) {
 
       // pick random field+term
       int spot = r.nextInt(fieldTerms.size());
@@ -197,7 +198,8 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
     }
 
     {
-      for(int iter=0;iter<100*_TestUtil.getRandomMultiplier();iter++) {
+      int num = 100 * RANDOM_MULTIPLIER;
+      for (int iter = 0; iter < num; iter++) {
       
         // seek to random spot
         String field = ("f" + r.nextInt(numField)).intern();
@@ -288,7 +290,7 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
 
     for(int f=0;f<numField;f++) {
       String field = "f" + f;
-      final int numTerms = 10000*_TestUtil.getRandomMultiplier();
+      final int numTerms = 10000 * RANDOM_MULTIPLIER;
 
       final Set<String> uniqueTerms = new HashSet<String>();
 

@@ -17,9 +17,7 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -318,7 +316,8 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
 
 
       // increase number of iterations for more complete testing      
-      for (int i=0; i<50*_TestUtil.getRandomMultiplier(); i++) {
+      int num = 50 * RANDOM_MULTIPLIER;
+      for (int i=0; i<num; i++) {
         int lev = rnd.nextInt(maxLev);
         final long seed = rnd.nextLong();
         BooleanQuery q1 = TestBoolean2.randBoolQuery(new Random(seed), true, lev, field, vals, null);
