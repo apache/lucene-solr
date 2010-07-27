@@ -2,13 +2,13 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -24,6 +24,8 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -51,7 +53,7 @@ final class DocumentsWriter {
   private final DocumentsWriterThreadPool threadPool;
   private final Lock sequenceIDLock = new ReentrantLock();
 
-  private final Directory directory;
+  private final Directory openFilesTrackingDirectory;
   final IndexWriter indexWriter;
   final IndexWriterConfig config;
 
@@ -69,7 +71,14 @@ final class DocumentsWriter {
   private Map<DocumentsWriterPerThread, Long> minSequenceIDsPerThread = new HashMap<DocumentsWriterPerThread, Long>();
 
   public DocumentsWriter(Directory directory, IndexWriter indexWriter, IndexWriterConfig config) {
-    this.directory = directory;
+    this.openFilesTrackingDirectory = new FilterDirectory(directory) {
+      @Override public IndexOutput createOutput(final String name) throws IOException {
+        addOpenFile(name);
+        return super.createOutput(name);
+      }
+    };
+
+    //this.openFilesTrackingDirectory = directory;
     this.indexWriter = indexWriter;
     this.config = config;
     this.maxBufferedDocs = config.getMaxBufferedDocs();
@@ -111,7 +120,7 @@ final class DocumentsWriter {
   }
 
   DocumentsWriterPerThread newDocumentsWriterPerThread() {
-    DocumentsWriterPerThread perThread = new DocumentsWriterPerThread(directory, this, config
+    DocumentsWriterPerThread perThread = new DocumentsWriterPerThread(openFilesTrackingDirectory, this, config
         .getIndexingChain());
     sequenceIDLock.lock();
     try {
@@ -127,13 +136,23 @@ final class DocumentsWriter {
     return updateDocument(null, doc, analyzer);
   }
 
+  private final static class UpdateResult {
+    long sequenceID;
+    boolean flushed;
+    
+    UpdateResult(long sequenceID) {
+      this.sequenceID = sequenceID;
+      flushed = false;
+    }
+  }
+  
   long updateDocument(final Term delTerm, final Document doc, final Analyzer analyzer)
       throws CorruptIndexException, IOException {
 
-    long seqID = threadPool.executePerThread(this, doc,
-        new DocumentsWriterThreadPool.PerThreadTask<Long>() {
+    UpdateResult result = threadPool.executePerThread(this, doc,
+        new DocumentsWriterThreadPool.PerThreadTask<UpdateResult>() {
           @Override
-          public Long process(final DocumentsWriterPerThread perThread) throws IOException {
+          public UpdateResult process(final DocumentsWriterPerThread perThread) throws IOException {
             long perThreadRAMUsedBeforeAdd = perThread.numBytesUsed;
             perThread.addDocument(doc, analyzer);
 
@@ -154,16 +173,23 @@ final class DocumentsWriter {
               sequenceIDLock.unlock();
             }
 
+            UpdateResult result = new UpdateResult(sequenceID);
             if (finishAddDocument(perThread, perThreadRAMUsedBeforeAdd)) {
+              result.flushed = true;
               super.clearThreadBindings();
             }
-            return sequenceID;
+            return result;
           }
         });
+        
+    if (result == null) {
+      return -1;
+    }
     
-    indexWriter.maybeMerge();
-    
-    return seqID;
+    if (result.flushed) {
+      indexWriter.maybeMerge();
+    }
+    return result.sequenceID;
   }
 
   private final boolean finishAddDocument(DocumentsWriterPerThread perThread,
@@ -257,17 +283,12 @@ final class DocumentsWriter {
 
   final boolean flushAllThreads(final boolean flushDeletes)
       throws IOException {
-    return threadPool.executeAllThreads(new DocumentsWriterThreadPool.AllThreadsTask<Boolean>() {
+    
+    return threadPool.executeAllThreads(this, new DocumentsWriterThreadPool.AllThreadsTask<Boolean>() {
       @Override
       public Boolean process(Iterator<DocumentsWriterPerThread> threadsIterator) throws IOException {
         boolean anythingFlushed = false;
         
-        if (flushDeletes) {
-          if (applyDeletes(indexWriter.segmentInfos)) {
-            indexWriter.checkpoint();
-          }
-        }
-
         while (threadsIterator.hasNext()) {
           DocumentsWriterPerThread perThread = threadsIterator.next();
           final int numDocs = perThread.getNumDocsInRAM();
@@ -282,6 +303,7 @@ final class DocumentsWriter {
     
           if (flushDocs) {
             SegmentInfo newSegment = perThread.flush();
+            newSegment.dir = indexWriter.getDirectory();
             
             if (newSegment != null) {
               anythingFlushed = true;
@@ -315,10 +337,8 @@ final class DocumentsWriter {
   }
 
   /** Build compound file for the segment we just flushed */
-  void createCompoundFile(String segment, DocumentsWriterPerThread perThread) throws IOException {
-    
-    CompoundFileWriter cfsWriter = new CompoundFileWriter(directory, 
-        IndexFileNames.segmentFileName(segment, "", IndexFileNames.COMPOUND_FILE_EXTENSION));
+  void createCompoundFile(String compoundFileName, DocumentsWriterPerThread perThread) throws IOException {
+    CompoundFileWriter cfsWriter = new CompoundFileWriter(openFilesTrackingDirectory, compoundFileName);
     for(String fileName : perThread.flushState.flushedFiles) {
       cfsWriter.addFile(fileName);
     }
@@ -327,49 +347,53 @@ final class DocumentsWriter {
     cfsWriter.close();
   }
 
-  // nocommit
   void finishFlushedSegment(SegmentInfo newSegment, DocumentsWriterPerThread perThread) throws IOException {
-    synchronized(indexWriter) {
-      indexWriter.segmentInfos.add(newSegment);
-      indexWriter.checkpoint();
+    SegmentReader reader = indexWriter.readerPool.get(newSegment, false);
+    try {
+      applyDeletes(reader, newSegment.getMinSequenceID(), newSegment.getMaxSequenceID(), perThread.sequenceIDs);
+    } finally {
+      indexWriter.readerPool.release(reader);
+    }
     
-      SegmentReader reader = indexWriter.readerPool.get(newSegment, false);
-      boolean any = false;
+    if (indexWriter.useCompoundFile(newSegment)) {
+      String compoundFileName = IndexFileNames.segmentFileName(newSegment.name, "", IndexFileNames.COMPOUND_FILE_EXTENSION);
+      message("creating compound file " + compoundFileName);
+      // Now build compound file
+      boolean success = false;
       try {
-        any = applyDeletes(reader, newSegment.getMinSequenceID(), newSegment.getMaxSequenceID(), perThread.sequenceIDs);
+        createCompoundFile(compoundFileName, perThread);
+        success = true;
       } finally {
-        indexWriter.readerPool.release(reader);
-      }
-      if (any) {
-        indexWriter.checkpoint();
-      }
-  
-      if (indexWriter.mergePolicy.useCompoundFile(indexWriter.segmentInfos, newSegment)) {
-        // Now build compound file
-        boolean success = false;
-        try {
-          createCompoundFile(newSegment.name, perThread);
-          success = true;
-        } finally {
-          if (!success) {
-            if (infoStream != null) {
-              message("hit exception " +
-              		"reating compound file for newly flushed segment " + newSegment.name);
-            }
-            indexWriter.deleter.deleteFile(IndexFileNames.segmentFileName(newSegment.name, "", 
-                IndexFileNames.COMPOUND_FILE_EXTENSION));
+        if (!success) {
+          if (infoStream != null) {
+            message("hit exception " +
+            		"reating compound file for newly flushed segment " + newSegment.name);
           }
+          indexWriter.deleter.deleteFile(IndexFileNames.segmentFileName(newSegment.name, "", 
+              IndexFileNames.COMPOUND_FILE_EXTENSION));
+          for (String file : perThread.flushState.flushedFiles) {
+            indexWriter.deleter.deleteFile(file);
+          }
+
         }
-  
-        synchronized(indexWriter) {
-          newSegment.setUseCompoundFile(true);
-          indexWriter.checkpoint();
-          // In case the files we just merged into a CFS were
-          // not previously checkpointed:
-          indexWriter.deleter.deleteNewFiles(perThread.closedFiles());
-        }
+      }
+      
+      for (String file : perThread.flushState.flushedFiles) {
+        indexWriter.deleter.deleteFile(file);
+      }
+
+      newSegment.setUseCompoundFile(true);
+      
+      synchronized(openFiles) {
+        openFiles.remove(compoundFileName);
       }
     }
+    
+    synchronized(openFiles) {
+      openFiles.removeAll(perThread.flushState.flushedFiles);
+    }
+    
+    indexWriter.addNewSegment(newSegment);
   }
   
   // Returns true if an abort is in progress
@@ -400,6 +424,7 @@ final class DocumentsWriter {
     if (perThread.getNumDocsInRAM() == maxBufferedDocs) {
       flushSegment(perThread);
       assert perThread.getNumDocsInRAM() == 0;
+      
       return true;
     }
 
@@ -413,48 +438,57 @@ final class DocumentsWriter {
     }
 
     SegmentInfo newSegment = perThread.flush();
+    newSegment.dir = indexWriter.getDirectory();
     
-    if (newSegment != null) {
-      finishFlushedSegment(newSegment, perThread);
-      return true;
-    }
-    return false;
+    finishFlushedSegment(newSegment, perThread);
+    return true;
   }
 
   void abort() throws IOException {
-    threadPool.abort();
-    try {
-      try {
-        abortedFiles = openFiles();
-      } catch (Throwable t) {
-        abortedFiles = null;
+    threadPool.abort(new DocumentsWriterThreadPool.AbortTask() {
+      
+      @Override
+      void abort() throws IOException {
+        try {
+          abortedFiles = openFiles();
+        } catch (Throwable t) {
+          abortedFiles = null;
+        }
+    
+        deletesInRAM.clear();
+        // nocommit
+    //        deletesFlushed.clear();
+    
+        openFiles.clear();
+        deletesInRAM.clear();
       }
-  
-      deletesInRAM.clear();
-      // nocommit
-  //        deletesFlushed.clear();
-  
-      openFiles.clear();
-    } finally {
-      threadPool.finishAbort();
-    }
-
+    });
   }
 
-  final List<String> openFiles = new ArrayList<String>();
+  final Set<String> openFiles = new HashSet<String>();
   private Collection<String> abortedFiles; // List of files that were written before last abort()
-
   /*
    * Returns Collection of files in use by this instance,
    * including any flushed segments.
    */
   @SuppressWarnings("unchecked")
-  List<String> openFiles() {
+  private Collection<String> openFiles() {
     synchronized(openFiles) {
-      return (List<String>) ((ArrayList<String>) openFiles).clone();
+      return (Set<String>) ((HashSet<String>) openFiles).clone();
     }
   }
 
+  void addOpenFile(String file) {
+    synchronized(openFiles) {
+      openFiles.add(file);
+    }
+  }
+
+  void removeOpenFile(String file) {
+    synchronized(openFiles) {
+      openFiles.remove(file);
+    }
+  }
   
   Collection<String> abortedFiles() {
     return abortedFiles;
@@ -480,27 +514,29 @@ final class DocumentsWriter {
   // }
 
   boolean applyDeletes(SegmentInfos infos) throws IOException {
-    synchronized(indexWriter) {
-      if (!hasDeletes())
-        return false;
-  
-      final long t0 = System.currentTimeMillis();
-  
-      if (infoStream != null) {
-        message("apply " + deletesInRAM.getNumDeletes() + " buffered deletes on " +
-                +infos.size() + " segments.");
-      }
-  
-      final int infosEnd = infos.size();
-  
-      boolean any = false;
-      for (int i = 0; i < infosEnd; i++) {
-  
-        // Make sure we never attempt to apply deletes to
-        // segment in external dir
-        assert infos.info(i).dir == directory;
-  
-        SegmentInfo si = infos.info(i);
+    if (!hasDeletes())
+      return false;
+
+    final long t0 = System.currentTimeMillis();
+
+    if (infoStream != null) {
+      message("apply " + deletesInRAM.getNumDeletes() + " buffered deletes on " +
+              +infos.size() + " segments.");
+    }
+
+    final int infosEnd = infos.size();
+
+    boolean any = false;
+    for (int i = 0; i < infosEnd; i++) {
+
+      // Make sure we never attempt to apply deletes to
+      // segment in external dir
+      assert infos.info(i).dir == indexWriter.getDirectory();
+
+      SegmentInfo si = infos.info(i);
+      // we have to synchronize here, because we need a write lock on
+      // the segment in order to apply deletes
+      synchronized (indexWriter) {
         SegmentReader reader = indexWriter.readerPool.get(si, false);
         try {
           any |= applyDeletes(reader, si.getMinSequenceID(), si.getMaxSequenceID(), null);
@@ -508,13 +544,13 @@ final class DocumentsWriter {
           indexWriter.readerPool.release(reader);
         }
       }
-  
-      if (infoStream != null) {
-        message("apply deletes took " + (System.currentTimeMillis() - t0) + " msec");
-      }
-  
-      return any;
     }
+
+    if (infoStream != null) {
+      message("apply deletes took " + (System.currentTimeMillis() - t0) + " msec");
+    }
+
+    return any;
   }
 
   // Apply buffered delete terms, queries and docIDs to the
@@ -642,9 +678,6 @@ final class DocumentsWriter {
   }
 
   void message(String message) {
-    if (infoStream != null) {
-      indexWriter.message("DW: " + message);
-    }
+    indexWriter.message("DW: " + message);
   }
-
 }

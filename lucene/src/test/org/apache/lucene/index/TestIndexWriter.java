@@ -2351,7 +2351,7 @@ public class TestIndexWriter extends LuceneTestCase {
         StackTraceElement[] trace = new Exception().getStackTrace();
         for (int i = 0; i < trace.length; i++) {
           if ("abort".equals(trace[i].getMethodName()) ||
-              "flushDocument".equals(trace[i].getMethodName())) {
+              "finishDocument".equals(trace[i].getMethodName())) {
             if (onlyOnce)
               doFail = false;
             //System.out.println(Thread.currentThread().getName() + ": now fail");
@@ -2419,7 +2419,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
       for(int i=0;i<NUM_THREADS;i++) {
         threads[i].join();
-        assertTrue("hit unexpected Throwable", threads[i].error == null);
+        assertTrue("hit unexpected Throwable ", threads[i].error == null);
       }
 
       boolean success = false;
@@ -2481,7 +2481,8 @@ public class TestIndexWriter extends LuceneTestCase {
       if (doFail) {
         StackTraceElement[] trace = new Exception().getStackTrace();
         for (int i = 0; i < trace.length; i++) {
-          if ("closeDocStore".equals(trace[i].getMethodName())) {
+          if ("finishDocument".equals(trace[i].getMethodName())
+              && "org.apache.lucene.index.DocFieldProcessor".equals(trace[i].getClassName())) {
             if (onlyOnce)
               doFail = false;
             throw new IOException("now failing on purpose");
@@ -3007,7 +3008,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     @Override
     boolean testPoint(String name) {
-      if (doFail && name.equals("DocumentsWriter.ThreadState.init start"))
+      if (doFail && name.equals("DocumentsWriterPerThread.init start"))
         throw new RuntimeException("intentionally failing");
       return true;
     }
@@ -3020,7 +3021,7 @@ public class TestIndexWriter extends LuceneTestCase {
     Document doc = new Document();
     doc.add(new Field("field", "a field", Field.Store.YES,
                       Field.Index.ANALYZED));
-    w.addDocument(doc);
+
     w.doFail = true;
     try {
       w.addDocument(doc);
@@ -4945,7 +4946,7 @@ public class TestIndexWriter extends LuceneTestCase {
     doc.add(new Field("c", "val", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
     writer.addDocument(doc);
     // The second document should cause a flush.
-    assertTrue("flush should have occurred and files created", dir.listAll().length > 5);
+    assertTrue("flush should have occurred and files created", dir.listAll().length > 0);
    
     // After rollback, IW should remove all files
     writer.rollback();

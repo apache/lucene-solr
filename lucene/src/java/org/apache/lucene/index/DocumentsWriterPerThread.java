@@ -1,15 +1,32 @@
 package org.apache.lucene.index;
 
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FilterDirectory;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 
 public class DocumentsWriterPerThread {
@@ -84,6 +101,7 @@ public class DocumentsWriterPerThread {
    *  currently buffered docs.  This resets our state,
    *  discarding any docs added since last flush. */
   void abort() throws IOException {
+    assert aborting;
     try {
       if (infoStream != null) {
         message("docWriter: now abort");
@@ -124,11 +142,11 @@ public class DocumentsWriterPerThread {
   SegmentWriteState flushState;
 
   long[] sequenceIDs = new long[8];
-  final List<String> closedFiles = new ArrayList<String>();
   
   long numBytesUsed;
   
   public DocumentsWriterPerThread(Directory directory, DocumentsWriter parent, IndexingChain indexingChain) {
+    parent.indexWriter.testPoint("DocumentsWriterPerThread.init start");
     this.directory = directory;
     this.parent = parent;
     this.writer = parent.indexWriter;
@@ -141,7 +159,6 @@ public class DocumentsWriterPerThread {
     if (consumer instanceof DocFieldProcessor) {
       docFieldProcessor = (DocFieldProcessor) consumer;
     }
-
   }
   
   void setAborting() {
@@ -288,33 +305,11 @@ public class DocumentsWriterPerThread {
     return segment;
   }
   
-  @SuppressWarnings("unchecked")
-  List<String> closedFiles() {
-    return (List<String>) ((ArrayList<String>) closedFiles).clone();
-  }
-
-  
-  void addOpenFile(String name) {
-    synchronized(parent.openFiles) {
-      assert !parent.openFiles.contains(name);
-      parent.openFiles.add(name);
-    }
-  }
-
-  void removeOpenFile(String name) {
-    synchronized(parent.openFiles) {
-      assert parent.openFiles.contains(name);
-      parent.openFiles.remove(name);
-    }
-    closedFiles.add(name);
-  }
-  
   void bytesUsed(long numBytes) {
     ramAllocator.bytesUsed(numBytes);
   }
   
   void message(String message) {
-    if (infoStream != null)
-      writer.message("DW: " + message);
+    writer.message("DW: " + message);
   }
 }

@@ -189,8 +189,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
       threads[i].join();
 
     for(int i=0;i<NUM_THREADS;i++)
-      if (threads[i].failure != null)
+      if (threads[i].failure != null) {
         fail("thread " + threads[i].getName() + ": hit unexpected failure");
+      }
 
     writer.commit();
 

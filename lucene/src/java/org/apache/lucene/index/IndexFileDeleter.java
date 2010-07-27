@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Set;
 
 import java.util.List;
 import java.util.Map;
@@ -422,7 +423,7 @@ final class IndexFileDeleter {
   public void checkpoint(SegmentInfos segmentInfos, boolean isCommit) throws IOException {
 
     if (infoStream != null) {
-      message("now checkpoint \"" + segmentInfos.getCurrentSegmentFileName() + "\" [" + segmentInfos.size() + " segments " + "; isCommit = " + isCommit + "]");
+      message("now checkpoint \"" + segmentInfos + "\" [" + segmentInfos.size() + " segments " + "; isCommit = " + isCommit + "]");
     }
 
     // Try again now to delete any previously un-deletable
@@ -442,18 +443,6 @@ final class IndexFileDeleter {
       // Decref files for commits that were deleted by the policy:
       deleteCommits();
     } else {
-
-      final List<String> docWriterFiles;
-      if (docWriter != null) {
-        docWriterFiles = docWriter.openFiles();
-        if (docWriterFiles != null)
-          // We must incRef these files before decRef'ing
-          // last files to make sure we don't accidentally
-          // delete them:
-          incRef(docWriterFiles);
-      } else
-        docWriterFiles = null;
-
       // DecRef old files from the last checkpoint, if any:
       int size = lastFiles.size();
       if (size > 0) {
@@ -465,8 +454,6 @@ final class IndexFileDeleter {
       // Save files so we can decr on next checkpoint/commit:
       lastFiles.add(segmentInfos.files(directory, false));
 
-      if (docWriterFiles != null)
-        lastFiles.add(docWriterFiles);
     }
   }
 

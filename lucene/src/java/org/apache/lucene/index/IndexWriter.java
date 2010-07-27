@@ -271,8 +271,7 @@ public class IndexWriter implements Closeable {
   volatile SegmentInfos pendingCommit;            // set when a commit is pending (after prepareCommit() & before commit())
   volatile long pendingCommitChangeCount;
 
-  // nocommit - private
-  SegmentInfos segmentInfos = new SegmentInfos();       // the segments
+  private final SegmentInfos segmentInfos = new SegmentInfos();       // the segments
 
   private DocumentsWriter docWriter;
   //nocommit - private
@@ -304,7 +303,7 @@ public class IndexWriter implements Closeable {
   private int flushCount;
   private int flushDeletesCount;
 
-  final ReaderPool readerPool = new ReaderPool();
+  final IndexReaderPool readerPool;
   
   // This is a "write once" variable (like the organic dye
   // on a DVD-R that may or may not be heated by a laser and
@@ -315,7 +314,7 @@ public class IndexWriter implements Closeable {
   // reuse SegmentReader instances internally for applying
   // deletes, doing merges, and reopening near real-time
   // readers.
-  private volatile boolean poolReaders;
+  volatile boolean poolReaders;
 
   // The instance that was passed to the constructor. It is saved only in order
   // to allow users to query an IndexWriter settings.
@@ -427,246 +426,21 @@ public class IndexWriter implements Closeable {
       return r;
     }
   }
-
-  /** Holds shared SegmentReader instances. IndexWriter uses
-   *  SegmentReaders for 1) applying deletes, 2) doing
-   *  merges, 3) handing out a real-time reader.  This pool
-   *  reuses instances of the SegmentReaders in all these
-   *  places if it is in "near real-time mode" (getReader()
-   *  has been called on this instance). */
-
-  class ReaderPool {
-
-    private final Map<SegmentInfo,SegmentReader> readerMap = new HashMap<SegmentInfo,SegmentReader>();
-
-    /** Forcefully clear changes for the specified segments,
-     *  and remove from the pool.   This is called on successful merge. */
-    synchronized void clear(SegmentInfos infos) throws IOException {
-      if (infos == null) {
-        for (Map.Entry<SegmentInfo,SegmentReader> ent: readerMap.entrySet()) {
-          ent.getValue().hasChanges = false;
-        }
-      } else {
-        for (final SegmentInfo info: infos) {
-          if (readerMap.containsKey(info)) {
-            readerMap.get(info).hasChanges = false;
-          }
-        }     
-      }
+  
+  // used only by asserts
+  public synchronized boolean infoIsLive(SegmentInfo info) {
+    int idx = segmentInfos.indexOf(info);
+    assert idx != -1;
+    assert segmentInfos.get(idx) == info;
+    return true;
+  }
+  
+  public synchronized SegmentInfo mapToLive(SegmentInfo info) {
+    int idx = segmentInfos.indexOf(info);
+    if (idx != -1) {
+      info = segmentInfos.get(idx);
     }
-    
-    // used only by asserts
-    public synchronized boolean infoIsLive(SegmentInfo info) {
-      int idx = segmentInfos.indexOf(info);
-      assert idx != -1;
-      assert segmentInfos.get(idx) == info;
-      return true;
-    }
-
-    public synchronized SegmentInfo mapToLive(SegmentInfo info) {
-      int idx = segmentInfos.indexOf(info);
-      if (idx != -1) {
-        info = segmentInfos.get(idx);
-      }
-      return info;
-    }
-    
-    /**
-     * Release the segment reader (i.e. decRef it and close if there
-     * are no more references.
-     * @param sr
-     * @throws IOException
-     */
-    public synchronized void release(SegmentReader sr) throws IOException {
-      release(sr, false);
-    }
-    
-    /**
-     * Release the segment reader (i.e. decRef it and close if there
-     * are no more references.
-     * @param sr
-     * @throws IOException
-     */
-    public synchronized void release(SegmentReader sr, boolean drop) throws IOException {
-
-      final boolean pooled = readerMap.containsKey(sr.getSegmentInfo());
-
-      assert !pooled | readerMap.get(sr.getSegmentInfo()) == sr;
-
-      // Drop caller's ref; for an external reader (not
-      // pooled), this decRef will close it
-      sr.decRef();
-
-      if (pooled && (drop || (!poolReaders && sr.getRefCount() == 1))) {
-
-        // We are the last ref to this reader; since we're
-        // not pooling readers, we release it:
-        readerMap.remove(sr.getSegmentInfo());
-
-        assert !sr.hasChanges || Thread.holdsLock(IndexWriter.this);
-
-        // Drop our ref -- this will commit any pending
-        // changes to the dir
-        boolean success = false;
-        try {
-          sr.close();
-          success = true;
-        } finally {
-          if (!success && sr.hasChanges) {
-            // Abandon the changes & retry closing:
-            sr.hasChanges = false;
-            try {
-              sr.close();
-            } catch (Throwable ignore) {
-              // Keep throwing original exception
-            }
-          }
-        }
-      }
-    }
-    
-    /** Remove all our references to readers, and commits
-     *  any pending changes. */
-    synchronized void close() throws IOException {
-      Iterator<Map.Entry<SegmentInfo,SegmentReader>> iter = readerMap.entrySet().iterator();
-      while (iter.hasNext()) {
-        
-        Map.Entry<SegmentInfo,SegmentReader> ent = iter.next();
-
-        SegmentReader sr = ent.getValue();
-        if (sr.hasChanges) {
-          assert infoIsLive(sr.getSegmentInfo());
-          sr.startCommit();
-          boolean success = false;
-          try {
-            sr.doCommit(null);
-            success = true;
-          } finally {
-            if (!success) {
-              sr.rollbackCommit();
-            }
-          }
-        }
-
-        iter.remove();
-
-        // NOTE: it is allowed that this decRef does not
-        // actually close the SR; this can happen when a
-        // near real-time reader is kept open after the
-        // IndexWriter instance is closed
-        sr.decRef();
-      }
-    }
-    
-    /**
-     * Commit all segment reader in the pool.
-     * @throws IOException
-     */
-    synchronized void commit() throws IOException {
-      for (Map.Entry<SegmentInfo,SegmentReader> ent : readerMap.entrySet()) {
-
-        SegmentReader sr = ent.getValue();
-        if (sr.hasChanges) {
-          assert infoIsLive(sr.getSegmentInfo());
-          sr.startCommit();
-          boolean success = false;
-          try {
-            sr.doCommit(null);
-            success = true;
-          } finally {
-            if (!success) {
-              sr.rollbackCommit();
-            }
-          }
-        }
-      }
-    }
-    
-    /**
-     * Returns a ref to a clone.  NOTE: this clone is not
-     * enrolled in the pool, so you should simply close()
-     * it when you're done (ie, do not call release()).
-     */
-    public synchronized SegmentReader getReadOnlyClone(SegmentInfo info, boolean doOpenStores, int termInfosIndexDivisor) throws IOException {
-      SegmentReader sr = get(info, doOpenStores, BufferedIndexInput.BUFFER_SIZE, termInfosIndexDivisor);
-      try {
-        return (SegmentReader) sr.clone(true);
-      } finally {
-        sr.decRef();
-      }
-    }
-   
-    /**
-     * Obtain a SegmentReader from the readerPool.  The reader
-     * must be returned by calling {@link #release(SegmentReader)}
-     * @see #release(SegmentReader)
-     * @param info
-     * @param doOpenStores
-     * @throws IOException
-     */
-    public synchronized SegmentReader get(SegmentInfo info, boolean doOpenStores) throws IOException {
-      return get(info, doOpenStores, BufferedIndexInput.BUFFER_SIZE, config.getReaderTermsIndexDivisor());
-    }
-
-    /**
-     * Obtain a SegmentReader from the readerPool.  The reader
-     * must be returned by calling {@link #release(SegmentReader)}
-     * 
-     * @see #release(SegmentReader)
-     * @param info
-     * @param doOpenStores
-     * @param readBufferSize
-     * @param termsIndexDivisor
-     * @throws IOException
-     */
-    public synchronized SegmentReader get(SegmentInfo info, boolean doOpenStores, int readBufferSize, int termsIndexDivisor) throws IOException {
-
-      if (poolReaders) {
-        readBufferSize = BufferedIndexInput.BUFFER_SIZE;
-      }
-
-      SegmentReader sr = readerMap.get(info);
-      if (sr == null) {
-        // TODO: we may want to avoid doing this while
-        // synchronized
-        // Returns a ref, which we xfer to readerMap:
-        sr = SegmentReader.get(false, info.dir, info, readBufferSize, doOpenStores, termsIndexDivisor, codecs);
-
-        if (info.dir == directory) {
-          // Only pool if reader is not external
-          readerMap.put(info, sr);
-        }
-      } else {
-        if (doOpenStores) {
-          sr.openDocStores();
-        }
-        if (termsIndexDivisor != -1) {
-          // If this reader was originally opened because we
-          // needed to merge it, we didn't load the terms
-          // index.  But now, if the caller wants the terms
-          // index (eg because it's doing deletes, or an NRT
-          // reader is being opened) we ask the reader to
-          // load its terms index.
-          sr.loadTermsIndex(termsIndexDivisor);
-        }
-      }
-
-      // Return a ref to our caller
-      if (info.dir == directory) {
-        // Only incRef if we pooled (reader is not external)
-        sr.incRef();
-      }
-      return sr;
-    }
-
-    // Returns a ref
-    public synchronized SegmentReader getIfExists(SegmentInfo info) throws IOException {
-      SegmentReader sr = readerMap.get(info);
-      if (sr != null) {
-        sr.incRef();
-      }
-      return sr;
-    }
+    return info;
   }
   
   /**
@@ -934,6 +708,8 @@ public class IndexWriter implements Closeable {
     
     poolReaders = conf.getReaderPooling();
 
+    this.readerPool = new IndexReaderPool(this, directory, config);
+    
     OpenMode mode = conf.getOpenMode();
     boolean create;
     if (mode == OpenMode.CREATE) {
@@ -1784,7 +1560,7 @@ public class IndexWriter implements Closeable {
           if (infoStream != null) {
             message("hit exception updating document");
           }
-
+          
           synchronized (this) {
             // If docWriter has some aborted files that were
             // never incref'd, then we clean them up here
@@ -2419,6 +2195,15 @@ public class IndexWriter implements Closeable {
     deleter.checkpoint(segmentInfos, false);
   }
 
+  synchronized void addNewSegment(SegmentInfo newSegment) throws IOException {
+    segmentInfos.add(newSegment);
+    checkpoint();
+  }
+  
+  boolean useCompoundFile(SegmentInfo segmentInfo) {
+    return mergePolicy.useCompoundFile(segmentInfos, segmentInfo);
+  }
+  
   private synchronized void resetMergeExceptions() {
     mergeExceptions = new ArrayList<MergePolicy.OneMerge>();
     mergeGen++;
@@ -2793,7 +2578,7 @@ public class IndexWriter implements Closeable {
     if (pendingCommit != null) {
       try {
         if (infoStream != null)
-    	  message("commit: pendingCommit != null");
+        message("commit: pendingCommit != null");
         pendingCommit.finishCommit(directory);
         if (infoStream != null)
           message("commit: wrote segments file \"" + pendingCommit.getCurrentSegmentFileName() + "\"");
@@ -2828,25 +2613,37 @@ public class IndexWriter implements Closeable {
   protected final void flush(boolean triggerMerge, boolean flushDeletes) throws CorruptIndexException, IOException {
     // We can be called during close, when closing==true, so we must pass false to ensureOpen:
     ensureOpen(false);
-    if (doFlush(flushDeletes) && triggerMerge)
+    
+    doBeforeFlush();
+    
+    if (flushDeletes) {
+      if (applyDeletes()) {
+        checkpoint();
+      }
+    }
+    boolean maybeMerge = false;
+    boolean success = false;
+    try {
+      maybeMerge = docWriter.flushAllThreads(flushDeletes) && triggerMerge;
+      success = true;
+    } finally {
+      if (!success) {
+        synchronized (this) {
+          // If docWriter has some aborted files that were
+          // never incref'd, then we clean them up here
+          final Collection<String> files = docWriter.abortedFiles();
+          if (files != null) {
+            deleter.deleteNewFiles(files);
+          }
+        }
+      }
+    }
+    
+    doAfterFlush();
+    
+    if (maybeMerge) {
       maybeMerge();
-  }
-
-  // TODO: this method should not have to be entirely
-  // synchronized, ie, merges should be allowed to commit
-  // even while a flush is happening
-  private synchronized final boolean doFlush(boolean flushDeletes) throws CorruptIndexException, IOException {
-    return docWriter.flushAllThreads(flushDeletes);
-    // nocommit
-//    try {
-//      try {
-//        return doFlushInternal(flushDocStores, flushDeletes);
-//      } finally {
-//        docWriter.balanceRAM();
-//      }
-//    } finally {
-//      docWriter.clearFlushPending();
-//    }
+    }
   }
 
   /** Expert:  Return the total size of all index files currently cached in memory.

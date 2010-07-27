@@ -79,9 +79,6 @@ final class StoredFieldsWriter {
       state.flushedFiles.add(fieldsName);
       state.flushedFiles.add(fieldsIdxName);
 
-      docWriter.removeOpenFile(fieldsName);
-      docWriter.removeOpenFile(fieldsIdxName);
-
       if (4+((long) state.numDocs)*8 != state.directory.fileLength(fieldsIdxName)) {
         throw new RuntimeException("after flush: fdx size mismatch: " + state.numDocs + " docs vs " + state.directory.fileLength(fieldsIdxName) + " length in bytes of " + fieldsIdxName + " file exists?=" + state.directory.fileExists(fieldsIdxName));
       }
@@ -96,8 +93,6 @@ final class StoredFieldsWriter {
         fieldsWriter = new FieldsWriter(docWriter.directory,
                                         segment,
                                         fieldInfos);
-        docWriter.addOpenFile(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_EXTENSION));
-        docWriter.addOpenFile(IndexFileNames.segmentFileName(segment, "", IndexFileNames.FIELDS_INDEX_EXTENSION));
         lastDocID = 0;
       }
     }

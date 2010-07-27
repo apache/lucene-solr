@@ -82,9 +82,12 @@ final class TermsHash extends InvertedDocConsumer {
   @Override
   public void abort() {
     reset();
-    consumer.abort();
-    if (nextTermsHash != null) {
-      nextTermsHash.abort();
+    try {
+      consumer.abort();
+    } finally {
+      if (nextTermsHash != null) {
+        nextTermsHash.abort();
+      }
     }
   }
   

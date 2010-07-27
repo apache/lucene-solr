@@ -75,10 +75,6 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       state.flushedFiles.add(fldName);
       state.flushedFiles.add(docName);
 
-      docWriter.removeOpenFile(idxName);
-      docWriter.removeOpenFile(fldName);
-      docWriter.removeOpenFile(docName);
-
       lastDocID = 0;
 
     }
@@ -105,7 +101,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     }
   }
 
-  void initTermVectorsWriter() throws IOException {        
+  private final void initTermVectorsWriter() throws IOException {        
     if (tvx == null) {
       
       final String segment = docWriter.getSegment();
@@ -128,10 +124,6 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
       tvd.writeInt(TermVectorsReader.FORMAT_CURRENT);
       tvf.writeInt(TermVectorsReader.FORMAT_CURRENT);
 
-      docWriter.addOpenFile(idxName);
-      docWriter.addOpenFile(fldName);
-      docWriter.addOpenFile(docName);
-
       lastDocID = 0;
     }
   }
@@ -146,7 +138,8 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     fill(docState.docID);
     
     // Append term vectors to the real outputs:
-    tvx.writeLong(tvd.getFilePointer());
+    long pointer = tvd.getFilePointer();
+    tvx.writeLong(pointer);
     tvx.writeLong(tvf.getFilePointer());
     tvd.writeVInt(numVectorFields);
     if (numVectorFields > 0) {
@@ -198,7 +191,7 @@ final class TermVectorsTermsWriter extends TermsHashConsumer {
     }
     lastDocID = 0;
     
-
+    reset();
   }
 
   int numVectorFields;

@@ -30,8 +30,7 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
   Random random = new Random();
   HeavyAtomicInt seq = new HeavyAtomicInt(1);
 
-  // nocommit
-  public void _testIndexing() throws Exception {
+  public void testIndexing() throws Exception {
     Directory mainDir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(mainDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);

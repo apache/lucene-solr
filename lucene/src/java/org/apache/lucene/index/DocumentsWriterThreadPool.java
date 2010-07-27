@@ -1,5 +1,22 @@
 package org.apache.lucene.index;
 
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements. See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * 
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.concurrent.locks.Condition;
@@ -30,6 +47,10 @@ abstract class DocumentsWriterThreadPool {
     abstract T process(final Iterator<DocumentsWriterPerThread> threadsIterator) throws IOException;
   }
 
+  public static abstract class AbortTask {
+    abstract void abort() throws IOException;
+  }
+  
   protected abstract static class ThreadState {
     private DocumentsWriterPerThread perThread;
     private boolean isIdle = true;
@@ -95,11 +116,29 @@ abstract class DocumentsWriterThreadPool {
     return true;
   }
   
-  void abort() throws IOException {
-    pauseAllThreads();
-    aborting = true;
-    for (ThreadState state : allThreadStates) {
-      state.perThread.abort();
+  void abort(AbortTask task) throws IOException {
+    lock.lock();
+    try {
+      if (!aborting) {
+        aborting = true;
+        pauseAllThreads();
+        for (ThreadState state : allThreadStates) {
+          state.perThread.aborting = true;
+        }
+
+        try {
+          for (ThreadState state : allThreadStates) {
+            state.perThread.abort();
+          }
+          
+          task.abort();
+        } finally {
+          aborting = false;
+          resumeAllThreads();
+        }
+      }
+    } finally {
+      lock.unlock();
     }
   }
   
@@ -108,7 +147,7 @@ abstract class DocumentsWriterThreadPool {
     resumeAllThreads();
   }
 
-  public <T> T executeAllThreads(AllThreadsTask<T> task) throws IOException {
+  public <T> T executeAllThreads(DocumentsWriter documentsWriter, AllThreadsTask<T> task) throws IOException {
     T result = null;
     
     lock.lock();
@@ -120,19 +159,21 @@ abstract class DocumentsWriterThreadPool {
       } catch (InterruptedException ie) {
         throw new ThreadInterruptedException(ie);
       }
-      
-      pauseAllThreads();
+
+      assert !globalLock;
       globalLock = true;
+
+      pauseAllThreads();
+      
     } finally {
       lock.unlock();
     }
 
+    final ThreadState[] localAllThreads = allThreadStates;
     
     // all threads are idle now
-    
+    boolean success = false;
     try {
-      final ThreadState[] localAllThreads = allThreadStates;
-      
       result = task.process(new Iterator<DocumentsWriterPerThread>() {
         int i = 0;
   
@@ -151,8 +192,18 @@ abstract class DocumentsWriterThreadPool {
           throw new UnsupportedOperationException("remove() not supported.");
         }
       });
+      success = true;
       return result;
     } finally {
+      boolean abort = false;
+      if (!success) {
+        for (ThreadState state : localAllThreads) {
+          if (state.perThread.aborting) {
+            abort = true;
+          }
+        }
+      }
+      
       lock.lock();
       try {
         try {
@@ -166,6 +217,10 @@ abstract class DocumentsWriterThreadPool {
         }
       } finally {
         lock.unlock();
+      }
+      
+      if (!aborting && abort) {
+        documentsWriter.abort();
       }
       
     }
@@ -182,13 +237,12 @@ abstract class DocumentsWriterThreadPool {
     } finally {
       boolean abort = false;
       if (!success && state.perThread.aborting) {
-        state.perThread.aborting = false;
         abort = true;
       }
 
       returnDocumentsWriterPerThread(state, task.doClearThreadBindings());
       
-      if (abort) {
+      if (!aborting && abort) {
         documentsWriter.abort();
       }
     }
@@ -222,12 +276,14 @@ abstract class DocumentsWriterThreadPool {
       ThreadState threadState = selectThreadState(Thread.currentThread(), documentsWriter, doc);
       
       try {
-        while (!threadState.isIdle || globalLock || aborting) {
+        while (!threadState.isIdle || globalLock || aborting || threadState.perThread.aborting) {
           threadStateAvailable.await();
         }
       } catch (InterruptedException ie) {
         throw new ThreadInterruptedException(ie);
       }
+      
+      assert threadState.isIdle;
       
       threadState.isIdle = false;
       threadState.start();
