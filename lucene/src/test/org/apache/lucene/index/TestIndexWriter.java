@@ -2014,7 +2014,6 @@ public class TestIndexWriter extends LuceneTestCase {
       LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
       lmp.setMergeFactor(2);
       lmp.setUseCompoundFile(false);
-      lmp.setUseCompoundDocStore(false);
       Document doc = new Document();
       String contents = "aa bb cc dd ee ff gg hh ii jj kk";
 
@@ -2050,7 +2049,6 @@ public class TestIndexWriter extends LuceneTestCase {
         writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
         LogMergePolicy lmp2 = (LogMergePolicy) writer.getConfig().getMergePolicy();
         lmp2.setUseCompoundFile(false);
-        lmp2.setUseCompoundDocStore(false);
         writer.optimize();
         writer.close();
       }
@@ -4553,7 +4551,6 @@ public class TestIndexWriter extends LuceneTestCase {
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
     lmp.setUseCompoundFile(false);
-    lmp.setUseCompoundDocStore(false);
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
     writer.setInfoStream(new PrintStream(bos));
     writer.addDocument(new Document());

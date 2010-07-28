@@ -644,7 +644,6 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDeleteTerms(2));
     LogMergePolicy lmp = (LogMergePolicy) modifier.getConfig().getMergePolicy();
     lmp.setUseCompoundFile(true);
-    lmp.setUseCompoundDocStore(true);
 
     dir.failOn(failure.reset());
 

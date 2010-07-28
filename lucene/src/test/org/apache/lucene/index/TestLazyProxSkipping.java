@@ -63,7 +63,6 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         Directory directory = new SeekCountingDirectory();
         IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10));
         ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
-        ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false);
         for (int i = 0; i < numDocs; i++) {
             Document doc = new Document();
             String content;

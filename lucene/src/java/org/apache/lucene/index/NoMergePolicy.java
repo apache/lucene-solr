@@ -67,9 +67,6 @@ public final class NoMergePolicy extends MergePolicy {
       throws CorruptIndexException, IOException { return null; }
 
   @Override
-  public boolean useCompoundDocStore(SegmentInfos segments) { return useCompoundFile; }
-
-  @Override
   public boolean useCompoundFile(SegmentInfos segments, SegmentInfo newSegment) { return useCompoundFile; }
 
   @Override

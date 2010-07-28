@@ -81,7 +81,6 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
       LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFiles);
-      lmp.setUseCompoundDocStore(useCompoundFiles);
       IndexWriter writer = new IndexWriter(directory, conf);
 
       final int MAX_DOCS = 225;

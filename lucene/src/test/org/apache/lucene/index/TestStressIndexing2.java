@@ -147,7 +147,6 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
     w.commit();
     LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
     lmp.setUseCompoundFile(false);
-    lmp.setUseCompoundDocStore(false);
     lmp.setMergeFactor(mergeFactor);
     /***
         w.setMaxMergeDocs(Integer.MAX_VALUE);
@@ -200,7 +199,6 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
                .setReaderPooling(doReaderPooling));
       LogMergePolicy lmp = (LogMergePolicy) w.getConfig().getMergePolicy();
       lmp.setUseCompoundFile(false);
-      lmp.setUseCompoundDocStore(false);
       lmp.setMergeFactor(mergeFactor);
 
       threads = new IndexingThread[nThreads];

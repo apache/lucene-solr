@@ -76,7 +76,6 @@ public class TestSearch extends LuceneTestCase {
       IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
       LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFile);
-      lmp.setUseCompoundDocStore(useCompoundFile);
       IndexWriter writer = new IndexWriter(directory, conf);
 
       String[] docs = {

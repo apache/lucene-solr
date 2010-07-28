@@ -17,34 +17,34 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
-import org.apache.lucene.search.Similarity;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.Similarity;
+import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.AlreadyClosedException;
-import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.util.Constants;
-import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.Version;
-
-import java.io.IOException;
-import java.io.Closeable;
-import java.io.PrintStream;
-import java.util.List;
-import java.util.Collection;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.Iterator;
-import java.util.Map;
 
 /**
   An <code>IndexWriter</code> creates and maintains an index.
@@ -274,8 +274,8 @@ public class IndexWriter implements Closeable {
   private final SegmentInfos segmentInfos = new SegmentInfos();       // the segments
 
   private DocumentsWriter docWriter;
-  //nocommit - private
-  IndexFileDeleter deleter;
+
+  private IndexFileDeleter deleter;
 
   private Set<SegmentInfo> segmentsToOptimize = new HashSet<SegmentInfo>();           // used by optimize to note those needing optimization
 
@@ -290,8 +290,8 @@ public class IndexWriter implements Closeable {
   // Holds all SegmentInfo instances currently involved in
   // merges
   private HashSet<SegmentInfo> mergingSegments = new HashSet<SegmentInfo>();
-  // nocommit - private
-  MergePolicy mergePolicy;
+
+  private MergePolicy mergePolicy;
   // TODO 4.0: this should be made final once the setter is removed
   private /*final*/MergeScheduler mergeScheduler;
   private LinkedList<MergePolicy.OneMerge> pendingMerges = new LinkedList<MergePolicy.OneMerge>();
@@ -1098,6 +1098,10 @@ public class IndexWriter implements Closeable {
   /** Returns true if verbosing is enabled (i.e., infoStream != null). */
   public boolean verbose() {
     return infoStream != null;
+  }
+  
+  final IndexFileDeleter getIndexFileDeleter() {
+    return deleter;
   }
   
   /**
@@ -2189,8 +2193,7 @@ public class IndexWriter implements Closeable {
    * the index files referenced exist (correctly) in the
    * index directory.
    */
-  // nocommit - private
-  synchronized void checkpoint() throws IOException {
+  private synchronized void checkpoint() throws IOException {
     changeCount++;
     deleter.checkpoint(segmentInfos, false);
   }
@@ -2200,7 +2203,7 @@ public class IndexWriter implements Closeable {
     checkpoint();
   }
   
-  boolean useCompoundFile(SegmentInfo segmentInfo) {
+  synchronized boolean useCompoundFile(SegmentInfo segmentInfo) {
     return mergePolicy.useCompoundFile(segmentInfos, segmentInfo);
   }
   
@@ -3017,12 +3020,11 @@ public class IndexWriter implements Closeable {
     mergingSegments.add(merge.info);
   }
   
-  // nocommit - private
   static void setDiagnostics(SegmentInfo info, String source) {
     setDiagnostics(info, source, null);
   }
   
-  private static void setDiagnostics(SegmentInfo info, String source, Map<String,String> details) {
+  static void setDiagnostics(SegmentInfo info, String source, Map<String,String> details) {
     Map<String,String> diagnostics = new HashMap<String,String>();
     diagnostics.put("source", source);
     diagnostics.put("lucene.version", Constants.LUCENE_VERSION);

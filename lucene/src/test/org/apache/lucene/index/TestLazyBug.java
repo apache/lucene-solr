@@ -75,7 +75,6 @@ public class TestLazyBug extends LuceneTestCase {
           TEST_VERSION_CURRENT, new MockAnalyzer()));
       LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
       lmp.setUseCompoundFile(false);
-      lmp.setUseCompoundDocStore(false);
       
       for (int d = 1; d <= NUM_DOCS; d++) {
         Document doc = new Document();

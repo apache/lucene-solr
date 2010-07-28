@@ -369,17 +369,17 @@ final class DocumentsWriter {
             message("hit exception " +
             		"reating compound file for newly flushed segment " + newSegment.name);
           }
-          indexWriter.deleter.deleteFile(IndexFileNames.segmentFileName(newSegment.name, "", 
+          indexWriter.getIndexFileDeleter().deleteFile(IndexFileNames.segmentFileName(newSegment.name, "", 
               IndexFileNames.COMPOUND_FILE_EXTENSION));
           for (String file : perThread.flushState.flushedFiles) {
-            indexWriter.deleter.deleteFile(file);
+            indexWriter.getIndexFileDeleter().deleteFile(file);
           }
 
         }
       }
       
       for (String file : perThread.flushState.flushedFiles) {
-        indexWriter.deleter.deleteFile(file);
+        indexWriter.getIndexFileDeleter().deleteFile(file);
       }
 
       newSegment.setUseCompoundFile(true);

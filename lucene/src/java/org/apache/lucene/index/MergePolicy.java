@@ -292,10 +292,4 @@ public abstract class MergePolicy implements java.io.Closeable {
    * segment should use the compound file format.
    */
   public abstract boolean useCompoundFile(SegmentInfos segments, SegmentInfo newSegment);
-
-  /**
-   * Returns true if the doc store files should use the
-   * compound file format.
-   */
-  public abstract boolean useCompoundDocStore(SegmentInfos segments);
 }

@@ -251,7 +251,6 @@ public class Syns2Index
           IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
               Version.LUCENE_CURRENT, ana).setOpenMode(OpenMode.CREATE));
           ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(true); // why?
-          ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(true); // why?
           Iterator<String> i1 = word2Nums.keySet().iterator();
           while (i1.hasNext()) // for each word
           {

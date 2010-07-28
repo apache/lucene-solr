@@ -288,7 +288,6 @@ public class IndexTask extends Task {
           create ? OpenMode.CREATE : OpenMode.APPEND);
       LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundIndex);
-      lmp.setUseCompoundDocStore(useCompoundIndex);
       lmp.setMergeFactor(mergeFactor);
       IndexWriter writer = new IndexWriter(dir, conf);
       int totalFiles = 0;

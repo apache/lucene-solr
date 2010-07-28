@@ -555,7 +555,6 @@ public class TestIndexReader extends LuceneTestCase
         //  add 1 documents with term : aaa
         writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
         ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
-        ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false);
         addDoc(writer, searchTerm.text());
         writer.close();
 
