@@ -207,7 +207,7 @@ public class AutoCommitTest extends AbstractSolrTestCase {
     assertQ("should not be there yet", req("id:500") ,"//result[@numFound=0]" );
     
     // Wait longer than the autocommit time
-    assertTrue(trigger.waitForCommit(30000));
+    assertTrue(trigger.waitForCommit(45000));
     trigger.reset();
     
     req.setContentStreams( toContentStreams(
