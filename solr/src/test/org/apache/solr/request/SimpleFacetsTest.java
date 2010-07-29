@@ -20,6 +20,7 @@ package org.apache.solr.request;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;
+import org.junit.After;
 import org.junit.Test;
 
 
@@ -217,28 +218,38 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
 
   }
 
+  public static void indexDateFacets() {
+    final String i = "id";
+    final String f = "bday";
+    final String ff = "a_tdt";
+    final String ooo = "00:00:00.000Z";
+    final String xxx = "15:15:15.155Z";
+
+    assertU(adoc(i, "201",  f, "1976-07-04T12:08:56.235Z", ff, "1900-01-01T"+ooo));
+    assertU(adoc(i, "202",  f, "1976-07-05T00:00:00.000Z", ff, "1976-07-01T"+ooo));
+    assertU(adoc(i, "203",  f, "1976-07-15T00:07:67.890Z", ff, "1976-07-04T"+ooo));
+    assertU(commit());
+    assertU(adoc(i, "204",  f, "1976-07-21T00:07:67.890Z", ff, "1976-07-05T"+ooo));
+    assertU(adoc(i, "205",  f, "1976-07-13T12:12:25.255Z", ff, "1976-07-05T"+xxx));
+    assertU(adoc(i, "206",  f, "1976-07-03T17:01:23.456Z", ff, "1976-07-07T"+ooo));
+    assertU(adoc(i, "207",  f, "1976-07-12T12:12:25.255Z", ff, "1976-07-13T"+ooo));
+    assertU(commit());
+    assertU(adoc(i, "208",  f, "1976-07-15T15:15:15.155Z", ff, "1976-07-13T"+xxx));
+    assertU(adoc(i, "209",  f, "1907-07-12T13:13:23.235Z", ff, "1976-07-15T"+xxx));
+    assertU(adoc(i, "2010", f, "1976-07-03T11:02:45.678Z", ff, "2000-01-01T"+ooo));
+    assertU(adoc(i, "2011", f, "1907-07-12T12:12:25.255Z"));
+    assertU(adoc(i, "2012", f, "2007-07-30T07:07:07.070Z"));
+    assertU(adoc(i, "2013", f, "1976-07-30T22:22:22.222Z"));
+    assertU(adoc(i, "2014", f, "1976-07-05T22:22:22.222Z"));
+    assertU(commit());
+  }
+
   @Test
   public void testDateFacets() {
     final String f = "bday";
     final String pre = "//lst[@name='facet_dates']/lst[@name='"+f+"']";
 
-    assertU(adoc("id", "1",  f, "1976-07-04T12:08:56.235Z"));
-    assertU(adoc("id", "2",  f, "1976-07-05T00:00:00.000Z"));
-    assertU(adoc("id", "3",  f, "1976-07-15T00:07:67.890Z"));
-    assertU(commit());
-    assertU(adoc("id", "4",  f, "1976-07-21T00:07:67.890Z"));
-    assertU(adoc("id", "5",  f, "1976-07-13T12:12:25.255Z"));
-    assertU(adoc("id", "6",  f, "1976-07-03T17:01:23.456Z"));
-    assertU(adoc("id", "7",  f, "1976-07-12T12:12:25.255Z"));
-    assertU(adoc("id", "8",  f, "1976-07-15T15:15:15.155Z"));
-    assertU(adoc("id", "9",  f, "1907-07-12T13:13:23.235Z"));
-    assertU(adoc("id", "10", f, "1976-07-03T11:02:45.678Z"));
-    assertU(commit());
-    assertU(adoc("id", "11", f, "1907-07-12T12:12:25.255Z"));
-    assertU(adoc("id", "12", f, "2007-07-30T07:07:07.070Z"));
-    assertU(adoc("id", "13", f, "1976-07-30T22:22:22.222Z"));
-    assertU(adoc("id", "14", f, "1976-07-05T22:22:22.222Z"));
-    assertU(commit());
+    indexDateFacets();
 
     assertQ("check counts for month of facet by day",
             req( "q", "*:*"
@@ -343,6 +354,42 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,pre+"/int[@name='between'][.='11']"
             );
 
+    assertQ("check before is not inclusive of upper bound by default",
+            req("q", "*:*"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.date", f
+                ,"facet.date.start",  "1976-07-05T00:00:00.000Z"
+                ,"facet.date.end",    "1976-07-07T00:00:00.000Z"
+                ,"facet.date.gap",    "+1DAY"
+                ,"facet.date.other",  "all"
+                )
+            // 2 gaps + pre+post+inner = 5
+            ,"*[count("+pre+"/int)=5]"
+            ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='0'  ]"
+            
+            ,pre+"/int[@name='before' ][.='5']"
+            );
+    assertQ("check after is not inclusive of lower bound by default",
+            req("q", "*:*"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.date", f
+                ,"facet.date.start",  "1976-07-03T00:00:00.000Z"
+                ,"facet.date.end",    "1976-07-05T00:00:00.000Z"
+                ,"facet.date.gap",    "+1DAY"
+                ,"facet.date.other",  "all"
+                )
+            // 2 gaps + pre+post+inner = 5
+            ,"*[count("+pre+"/int)=5]"
+            ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-04T00:00:00Z'][.='2'  ]"
+            
+            ,pre+"/int[@name='after' ][.='8']"
+            );
+            
+
     assertQ("check hardend=false",
             req( "q", "*:*"
                 ,"rows", "0"
@@ -387,6 +434,305 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,pre+"/int[@name='between'][.='6']"
             );
     
+  }
+
+  /** similar to testDateFacets, but a differnet field with test data 
+      exactly on on boundary marks */
+  @Test
+  public void testDateFacetsWithIncludeOption() {
+    final String f = "a_tdt";
+    final String pre = "//lst[@name='facet_dates']/lst[@name='"+f+"']";
+
+    indexDateFacets();
+
+    assertQ("checking counts for lower",
+            req( "q", "*:*"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.date", f
+                ,"facet.date.start", "1976-07-01T00:00:00.000Z"
+                ,"facet.date.end",   "1976-07-16T00:00:00.000Z"
+                ,"facet.date.gap",   "+1DAY"
+                ,"facet.date.other", "all"
+                ,"facet.date.include", "lower"
+                )
+            // 15 days + pre+post+inner = 18
+            ,"*[count("+pre+"/int)=18]"
+            ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-04T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-07T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-08T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-09T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-10T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-11T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-12T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-13T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-14T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-15T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='before' ][.='1']"
+            ,pre+"/int[@name='after'  ][.='1']"
+            ,pre+"/int[@name='between'][.='8']"
+            );
+
+    assertQ("checking counts for upper",
+            req( "q", "*:*"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.date", f
+                ,"facet.date.start", "1976-07-01T00:00:00.000Z"
+                ,"facet.date.end",   "1976-07-16T00:00:00.000Z"
+                ,"facet.date.gap",   "+1DAY"
+                ,"facet.date.other", "all"
+                ,"facet.date.include", "upper"
+                )
+            // 15 days + pre+post+inner = 18
+            ,"*[count("+pre+"/int)=18]"
+            ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-04T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-07T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-08T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-09T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-10T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-11T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-12T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-13T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-14T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-15T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='before' ][.='2']"
+            ,pre+"/int[@name='after'  ][.='1']"
+            ,pre+"/int[@name='between'][.='7']"
+            );
+
+    assertQ("checking counts for lower & upper",
+            req( "q", "*:*"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.date", f
+                ,"facet.date.start", "1976-07-01T00:00:00.000Z"
+                ,"facet.date.end",   "1976-07-16T00:00:00.000Z"
+                ,"facet.date.gap",   "+1DAY"
+                ,"facet.date.other", "all"
+                ,"facet.date.include", "lower"
+                ,"facet.date.include", "upper"
+                )
+            // 15 days + pre+post+inner = 18
+            ,"*[count("+pre+"/int)=18]"
+            ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-04T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-07T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-08T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-09T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-10T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-11T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-12T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-13T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-14T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-15T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='before' ][.='1']"
+            ,pre+"/int[@name='after'  ][.='1']"
+            ,pre+"/int[@name='between'][.='8']"
+            );
+
+    assertQ("checking counts for upper & edge",
+            req( "q", "*:*"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.date", f
+                ,"facet.date.start", "1976-07-01T00:00:00.000Z"
+                ,"facet.date.end",   "1976-07-16T00:00:00.000Z"
+                ,"facet.date.gap",   "+1DAY"
+                ,"facet.date.other", "all"
+                ,"facet.date.include", "upper"
+                ,"facet.date.include", "edge"
+                )
+            // 15 days + pre+post+inner = 18
+            ,"*[count("+pre+"/int)=18]"
+            ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-04T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-07T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-08T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-09T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-10T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-11T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-12T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-13T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-14T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-15T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='before' ][.='1']"
+            ,pre+"/int[@name='after'  ][.='1']"
+            ,pre+"/int[@name='between'][.='8']"
+            );
+
+    assertQ("checking counts for upper & outer",
+            req( "q", "*:*"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.date", f
+                ,"facet.date.start", "1976-07-01T00:00:00.000Z"
+                ,"facet.date.end",   "1976-07-13T00:00:00.000Z" // smaller now
+                ,"facet.date.gap",   "+1DAY"
+                ,"facet.date.other", "all"
+                ,"facet.date.include", "upper"
+                ,"facet.date.include", "outer"
+                )
+            // 12 days + pre+post+inner = 15
+            ,"*[count("+pre+"/int)=15]"
+            ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-04T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-07T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-08T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-09T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-10T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-11T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-12T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='before' ][.='2']"
+            ,pre+"/int[@name='after'  ][.='4']"
+            ,pre+"/int[@name='between'][.='5']"
+            );
+
+    assertQ("checking counts for lower & edge",
+            req( "q", "*:*"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.date", f
+                ,"facet.date.start", "1976-07-01T00:00:00.000Z"
+                ,"facet.date.end",   "1976-07-13T00:00:00.000Z" // smaller now
+                ,"facet.date.gap",   "+1DAY"
+                ,"facet.date.other", "all"
+                ,"facet.date.include", "lower"
+                ,"facet.date.include", "edge"
+                )
+            // 12 days + pre+post+inner = 15
+            ,"*[count("+pre+"/int)=15]"
+            ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-04T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-07T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-08T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-09T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-10T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-11T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-12T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='before' ][.='1']"
+            ,pre+"/int[@name='after'  ][.='3']"
+            ,pre+"/int[@name='between'][.='6']"
+            );
+
+    assertQ("checking counts for lower & outer",
+            req( "q", "*:*"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.date", f
+                ,"facet.date.start", "1976-07-01T00:00:00.000Z"
+                ,"facet.date.end",   "1976-07-13T00:00:00.000Z" // smaller now
+                ,"facet.date.gap",   "+1DAY"
+                ,"facet.date.other", "all"
+                ,"facet.date.include", "lower"
+                ,"facet.date.include", "outer"
+                )
+            // 12 days + pre+post+inner = 15
+            ,"*[count("+pre+"/int)=15]"
+            ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-04T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-07T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-08T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-09T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-10T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-11T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-12T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='before' ][.='2']"
+            ,pre+"/int[@name='after'  ][.='4']"
+            ,pre+"/int[@name='between'][.='5']"
+            );
+
+    assertQ("checking counts for lower & edge & outer",
+            req( "q", "*:*"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.date", f
+                ,"facet.date.start", "1976-07-01T00:00:00.000Z"
+                ,"facet.date.end",   "1976-07-13T00:00:00.000Z" // smaller now
+                ,"facet.date.gap",   "+1DAY"
+                ,"facet.date.other", "all"
+                ,"facet.date.include", "lower"
+                ,"facet.date.include", "edge"
+                ,"facet.date.include", "outer"
+                )
+            // 12 days + pre+post+inner = 15
+            ,"*[count("+pre+"/int)=15]"
+            ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-04T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-07T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-08T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-09T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-10T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-11T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-12T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='before' ][.='2']"
+            ,pre+"/int[@name='after'  ][.='4']"
+            ,pre+"/int[@name='between'][.='6']"
+            );
+
+    assertQ("checking counts for all",
+            req( "q", "*:*"
+                ,"rows", "0"
+                ,"facet", "true"
+                ,"facet.date", f
+                ,"facet.date.start", "1976-07-01T00:00:00.000Z"
+                ,"facet.date.end",   "1976-07-13T00:00:00.000Z" // smaller now
+                ,"facet.date.gap",   "+1DAY"
+                ,"facet.date.other", "all"
+                ,"facet.date.include", "all"
+                )
+            // 12 days + pre+post+inner = 15
+            ,"*[count("+pre+"/int)=15]"
+            ,pre+"/int[@name='1976-07-01T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-02T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-03T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-04T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-05T00:00:00Z'][.='2'  ]"
+            ,pre+"/int[@name='1976-07-06T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-07T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='1976-07-08T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-09T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-10T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-11T00:00:00Z'][.='0']"
+            ,pre+"/int[@name='1976-07-12T00:00:00Z'][.='1'  ]"
+            ,pre+"/int[@name='before' ][.='2']"
+            ,pre+"/int[@name='after'  ][.='4']"
+            ,pre+"/int[@name='between'][.='6']"
+            );
   }
 
   @Test
@@ -583,6 +929,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     String indent="on";
     String pre = "//lst[@name='"+f+"']";
     String notc = "id:[* TO *] -"+f+":C";
+
+    assertU(delQ("*:*"));
 
     assertU(adoc("id", "1",  f, "AAA"));
     assertU(adoc("id", "2",  f, "B"));
