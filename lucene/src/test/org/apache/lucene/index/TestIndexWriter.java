@@ -4387,6 +4387,12 @@ public class TestIndexWriter extends LuceneTestCase {
         }
       }
 
+      try {
+        w.rollback();
+      } catch (IOException ioe) {
+        throw new RuntimeException(ioe);
+      }
+
       if (!failed) {
         try {
           _TestUtil.checkIndex(dir);
