@@ -49,7 +49,7 @@ public abstract class CodecProvider {
 
   public final static String[] CORE_CODECS = new String[] {"Standard", "Sep", "Pulsing", "IntBlock", "PreFlex"};
 
-  public void register(Codec codec) {
+  public synchronized void register(Codec codec) {
     if (codec.name == null) {
       throw new IllegalArgumentException("code.name is null");
     }
@@ -62,7 +62,7 @@ public abstract class CodecProvider {
   }
   
   /** @lucene.internal */
-  public void unregister(Codec codec) {
+  public synchronized void unregister(Codec codec) {
     if (codec.name == null) {
       throw new IllegalArgumentException("code.name is null");
     }
@@ -80,7 +80,7 @@ public abstract class CodecProvider {
     return knownExtensions;
   }
 
-  public Codec lookup(String name) {
+  public synchronized Codec lookup(String name) {
     final Codec codec = (Codec) codecs.get(name);
     if (codec == null)
       throw new IllegalArgumentException("required codec '" + name + "' not found");
@@ -104,11 +104,11 @@ public abstract class CodecProvider {
   }
 
   /** Used for testing. @lucene.internal */
-  public static void setDefaultCodec(String s) {
+  public synchronized static void setDefaultCodec(String s) {
     defaultCodec = s;
   }
   /** Used for testing. @lucene.internal */
-  public static String getDefaultCodec() {
+  public synchronized static String getDefaultCodec() {
     return defaultCodec;
   }
 }
