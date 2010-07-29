@@ -193,6 +193,9 @@ New features
   SegmentInfosReader to allow customization of SegmentInfos data.
   (Andrzej Bialecki)
 
+* LUCENE-2559: Added SegmentReader.reopen methods (John Wang via Mike
+  McCandless)
+
 Optimizations
 
 * LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.

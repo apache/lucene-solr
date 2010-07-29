@@ -611,6 +611,18 @@ public class SegmentReader extends IndexReader implements Cloneable {
     return reopenSegment(si, true, openReadOnly);
   }
 
+  @Override
+  public synchronized IndexReader reopen()
+    throws CorruptIndexException, IOException {
+    return reopenSegment(si, false, readOnly);
+  }
+
+  @Override
+  public synchronized IndexReader reopen(boolean openReadOnly)
+    throws CorruptIndexException, IOException {
+    return reopenSegment(si, false, openReadOnly);
+  }
+
   synchronized SegmentReader reopenSegment(SegmentInfo si, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
     boolean deletionsUpToDate = (this.si.hasDeletions() == si.hasDeletions()) 
                                   && (!si.hasDeletions() || this.si.getDelFileName().equals(si.getDelFileName()));
