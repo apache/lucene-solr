@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+import java.util.Collections;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -5064,6 +5065,60 @@ public class TestIndexWriter extends LuceneTestCase {
       }
     }
     assertNotNull(commit);
+
+    dir.close();
+  }
+
+  public void testRandomStoredFields() throws IOException {
+    Directory dir = new MockRAMDirectory();
+    Random rand = newRandom();
+    RandomIndexWriter w = new RandomIndexWriter(rand, dir, newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(_TestUtil.nextInt(rand, 5, 20)));
+    final int docCount = 200*RANDOM_MULTIPLIER;
+    final int fieldCount = _TestUtil.nextInt(rand, 1, 5);
+    String[][] fields = new String[fieldCount][];
+    for(int i=0;i<fieldCount;i++) {
+      fields[i] = new String[docCount];
+    }
+
+    final List<Integer> fieldIDs = new ArrayList<Integer>();
+
+    for(int i=0;i<fieldCount;i++) {
+      fieldIDs.add(i);
+    }
+    
+    for(int i=0;i<docCount;i++) {
+      Document doc = new Document();
+      for(int field: fieldIDs) {
+        final String s;
+        if (rand.nextInt(4) != 3) {
+          s = _TestUtil.randomUnicodeString(rand, 1000);
+          doc.add(new Field("f"+field, s, Field.Store.YES, Field.Index.NO));
+        } else {
+          s = null;
+        }
+        fields[field][i] = s;
+      }
+      w.addDocument(doc);
+      if (rand.nextInt(50) == 17) {
+        // mixup binding of field name -> Number every so often
+        Collections.shuffle(fieldIDs);
+      }
+    }
+
+    for(int x=0;x<2;x++) {
+      IndexReader r = w.getReader();
+
+      for(int iter=0;iter<1000*RANDOM_MULTIPLIER;iter++) {
+        int docID = rand.nextInt(docCount);
+        Document doc = r.document(docID);
+        for(int i=0;i<fieldCount;i++) {
+          assertEquals(fields[i][docID], doc.get("f"+i));
+        }
+      }
+      r.close();
+      w.optimize();
+    }
+    w.close();
 
     dir.close();
   }
