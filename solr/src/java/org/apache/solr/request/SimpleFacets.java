@@ -31,13 +31,14 @@ import org.apache.solr.common.params.FacetParams;
 import org.apache.solr.common.params.RequiredSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.FacetParams.FacetDateOther;
-import org.apache.solr.common.params.FacetParams.FacetDateInclude;
+import org.apache.solr.common.params.FacetParams.FacetRangeOther;
+import org.apache.solr.common.params.FacetParams.FacetRangeInclude;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.*;
+import org.apache.solr.schema.TrieField.TrieTypes;
 import org.apache.solr.search.*;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.ByteUtils;
@@ -63,10 +64,13 @@ public class SimpleFacets {
   protected DocSet docs;
   /** Configuration params behavior should be driven by */
   protected SolrParams params;
+  protected SolrParams required;
   /** Searcher to use for all calculations */
   protected SolrIndexSearcher searcher;
   protected SolrQueryRequest req;
   protected ResponseBuilder rb;
+
+  public final Date NOW = new Date();
 
   // per-facet values
   SolrParams localParams; // localParams on this particular facet command
@@ -89,6 +93,7 @@ public class SimpleFacets {
     this.searcher = req.getSearcher();
     this.base = this.docs = docs;
     this.params = params;
+    this.required = new RequiredSolrParams(params);
     this.rb = rb;
   }
 
@@ -166,6 +171,7 @@ public class SimpleFacets {
    * @see #getFacetQueryCounts
    * @see #getFacetFieldCounts
    * @see #getFacetDateCounts
+   * @see #getFacetRangeCounts
    * @see FacetParams#FACET
    * @return a NamedList of Facet Count info or null
    */
@@ -181,7 +187,8 @@ public class SimpleFacets {
       res.add("facet_queries", getFacetQueryCounts());
       res.add("facet_fields", getFacetFieldCounts());
       res.add("facet_dates", getFacetDateCounts());
-      
+      res.add("facet_ranges", getFacetRangeCounts());
+
     } catch (Exception e) {
       SolrException.logOnce(SolrCore.log, "Exception during facet counts", e);
       res.add("exception", SolrException.toStr(e));
@@ -723,12 +730,10 @@ public class SimpleFacets {
    * @see FacetParams#FACET_DATE
    */
   public NamedList getFacetDateCounts()
-          throws IOException, ParseException {
+    throws IOException, ParseException {
 
-    final SolrParams required = new RequiredSolrParams(params);
     final NamedList resOuter = new SimpleOrderedMap();
     final String[] fields = params.getParams(FacetParams.FACET_DATE);
-    final Date NOW = new Date();
     
     if (null == fields || 0 == fields.length) return resOuter;
     
@@ -778,9 +783,9 @@ public class SimpleFacets {
       final DateMathParser dmp = new DateMathParser(ft.UTC, Locale.US);
       dmp.setNow(NOW);
 
-      int minCount = params.getFieldInt(f,FacetParams.FACET_MINCOUNT, 0);
+      final int minCount = params.getFieldInt(f,FacetParams.FACET_MINCOUNT, 0);
 
-      final EnumSet<FacetDateInclude> include = FacetDateInclude.parseParam
+      final EnumSet<FacetRangeInclude> include = FacetRangeInclude.parseParam
         (params.getFieldParams(f,FacetParams.FACET_DATE_INCLUDE));
 
       try {
@@ -802,14 +807,14 @@ public class SimpleFacets {
               (SolrException.ErrorCode.BAD_REQUEST,
                "date facet infinite loop (is gap negative?)");
           }
-          boolean includeLower = 
-            (include.contains(FacetDateInclude.LOWER) ||
-             (include.contains(FacetDateInclude.EDGE) && low.equals(start)));
-          boolean includeUpper = 
-            (include.contains(FacetDateInclude.UPPER) ||
-             (include.contains(FacetDateInclude.EDGE) && high.equals(end)));
+          final boolean includeLower = 
+            (include.contains(FacetRangeInclude.LOWER) ||
+             (include.contains(FacetRangeInclude.EDGE) && low.equals(start)));
+          final boolean includeUpper = 
+            (include.contains(FacetRangeInclude.UPPER) ||
+             (include.contains(FacetRangeInclude.EDGE) && high.equals(end)));
 
-          int count = rangeCount(sf,low,high,includeLower,includeUpper);
+          final int count = rangeCount(sf,low,high,includeLower,includeUpper);
           if (count >= minCount) {
             resInner.add(label, count);
           }
@@ -821,49 +826,52 @@ public class SimpleFacets {
            "date facet 'gap' is not a valid Date Math string: " + gap, e);
       }
       
-      // explicitly return the gap and end so all the counts are meaningful
+      // explicitly return the gap and end so all the counts 
+      // (including before/after/between) are meaningful - even if mincount
+      // has removed the neighboring ranges
       resInner.add("gap", gap);
+      resInner.add("start", start);
       resInner.add("end", end);
 
       final String[] othersP =
         params.getFieldParams(f,FacetParams.FACET_DATE_OTHER);
       if (null != othersP && 0 < othersP.length ) {
-        Set<FacetDateOther> others = EnumSet.noneOf(FacetDateOther.class);
+        final Set<FacetRangeOther> others = EnumSet.noneOf(FacetRangeOther.class);
 
         for (final String o : othersP) {
-          others.add(FacetDateOther.get(o));
+          others.add(FacetRangeOther.get(o));
         }
 
         // no matter what other values are listed, we don't do
         // anything if "none" is specified.
-        if (! others.contains(FacetDateOther.NONE) ) {          
-          boolean all = others.contains(FacetDateOther.ALL);
+        if (! others.contains(FacetRangeOther.NONE) ) {          
+          boolean all = others.contains(FacetRangeOther.ALL);
         
-          if (all || others.contains(FacetDateOther.BEFORE)) {
+          if (all || others.contains(FacetRangeOther.BEFORE)) {
             // include upper bound if "outer" or if first gap doesn't already include it
-            resInner.add(FacetDateOther.BEFORE.toString(),
+            resInner.add(FacetRangeOther.BEFORE.toString(),
                          rangeCount(sf,null,start,
                                     false,
-                                    (include.contains(FacetDateInclude.OUTER) ||
-                                     (! (include.contains(FacetDateInclude.LOWER) ||
-                                         include.contains(FacetDateInclude.EDGE))))));
+                                    (include.contains(FacetRangeInclude.OUTER) ||
+                                     (! (include.contains(FacetRangeInclude.LOWER) ||
+                                         include.contains(FacetRangeInclude.EDGE))))));
           }
-          if (all || others.contains(FacetDateOther.AFTER)) {
+          if (all || others.contains(FacetRangeOther.AFTER)) {
             // include lower bound if "outer" or if last gap doesn't already include it
-            resInner.add(FacetDateOther.AFTER.toString(),
+            resInner.add(FacetRangeOther.AFTER.toString(),
                          rangeCount(sf,end,null,
-                                    (include.contains(FacetDateInclude.OUTER) ||
-                                     (! (include.contains(FacetDateInclude.UPPER) ||
-                                         include.contains(FacetDateInclude.EDGE)))),
+                                    (include.contains(FacetRangeInclude.OUTER) ||
+                                     (! (include.contains(FacetRangeInclude.UPPER) ||
+                                         include.contains(FacetRangeInclude.EDGE)))),
                                     false));
           }
-          if (all || others.contains(FacetDateOther.BETWEEN)) {
-            resInner.add(FacetDateOther.BETWEEN.toString(),
+          if (all || others.contains(FacetRangeOther.BETWEEN)) {
+            resInner.add(FacetRangeOther.BETWEEN.toString(),
                          rangeCount(sf,start,end,
-                                    (include.contains(FacetDateInclude.LOWER) ||
-                                     include.contains(FacetDateInclude.EDGE)),
-                                    (include.contains(FacetDateInclude.UPPER) ||
-                                     include.contains(FacetDateInclude.EDGE))));
+                                    (include.contains(FacetRangeInclude.LOWER) ||
+                                     include.contains(FacetRangeInclude.EDGE)),
+                                    (include.contains(FacetRangeInclude.UPPER) ||
+                                     include.contains(FacetRangeInclude.EDGE))));
           }
         }
       }
@@ -872,6 +880,197 @@ public class SimpleFacets {
     return resOuter;
   }
 
+  
+  /**
+   * Returns a list of value constraints and the associated facet
+   * counts for each facet numerical field, range, and interval
+   * specified in the SolrParams
+   *
+   * @see FacetParams#FACET_RANGE
+   */
+  public NamedList getFacetRangeCounts()
+    throws IOException, ParseException {
+    
+    final NamedList resOuter = new SimpleOrderedMap();
+    final String[] fields = params.getParams(FacetParams.FACET_RANGE);
+    
+    if (null == fields || 0 == fields.length) return resOuter;
+    
+    final IndexSchema schema = searcher.getSchema();
+    for (String f : fields) {
+      parseParams(FacetParams.FACET_RANGE, f);
+      f = facetValue;
+      
+      final SchemaField sf = schema.getField(f);
+      final FieldType ft = sf.getType();
+      
+      RangeEndpointCalculator calc = null;
+
+      if (ft instanceof TrieField) {
+        final TrieField trie = (TrieField)ft;
+        
+        switch (trie.getType()) {
+        case FLOAT: 
+          calc = new FloatRangeEndpointCalculator(sf);
+          break;
+        case DOUBLE: 
+          calc = new DoubleRangeEndpointCalculator(sf);
+          break;
+        case INTEGER: 
+          calc = new IntegerRangeEndpointCalculator(sf);
+          break;
+        case LONG: 
+          calc = new LongRangeEndpointCalculator(sf);
+          break;
+        default:
+          throw new SolrException
+            (SolrException.ErrorCode.BAD_REQUEST,
+             "Unable to range facet on tried field of unexpected type:" + f);
+        }
+      } else if (ft instanceof DateField) {
+        calc = new DateRangeEndpointCalculator(sf, NOW);
+      } else if (ft instanceof SortableIntField) {
+        calc = new IntegerRangeEndpointCalculator(sf);
+      } else if (ft instanceof SortableLongField) {
+        calc = new LongRangeEndpointCalculator(sf);
+      } else if (ft instanceof SortableFloatField) {
+        calc = new FloatRangeEndpointCalculator(sf);
+      } else if (ft instanceof SortableDoubleField) {
+        calc = new DoubleRangeEndpointCalculator(sf);
+      } else {
+        throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST,
+           "Unable to range facet on field:" + sf);
+      }
+
+      resOuter.add(key, getFacetRangeCounts(sf, calc));
+    }
+    
+    return resOuter;
+  }
+
+  private <T extends Comparable<T>> NamedList getFacetRangeCounts
+    (final SchemaField sf, 
+     final RangeEndpointCalculator<T> calc) throws IOException {
+    
+    final String f = sf.getName();
+    final NamedList res = new SimpleOrderedMap();
+    final NamedList counts = new SimpleOrderedMap();
+    res.add("counts", counts);
+
+    final T start = calc.getValue(required.getFieldParam(f,FacetParams.FACET_RANGE_START));
+    // not final, hardend may change this
+    T end = calc.getValue(required.getFieldParam(f,FacetParams.FACET_RANGE_END));
+    if (end.compareTo(start) < 0) {
+      throw new SolrException
+        (SolrException.ErrorCode.BAD_REQUEST,
+         "range facet 'end' comes before 'start': "+end+" < "+start);
+    }
+    
+    final String gap = required.getFieldParam(f, FacetParams.FACET_RANGE_GAP);
+    // explicitly return the gap.  compute this early so we are more 
+    // likely to catch parse errors before attempting math
+    res.add("gap", calc.getGap(gap));
+    
+    final int minCount = params.getFieldInt(f,FacetParams.FACET_MINCOUNT, 0);
+    
+    final EnumSet<FacetRangeInclude> include = FacetRangeInclude.parseParam
+      (params.getFieldParams(f,FacetParams.FACET_RANGE_INCLUDE));
+    
+    T low = start;
+    
+    while (low.compareTo(end) < 0) {
+      T high = calc.addGap(low, gap);
+      if (end.compareTo(high) < 0) {
+        if (params.getFieldBool(f,FacetParams.FACET_RANGE_HARD_END,false)) {
+          high = end;
+        } else {
+          end = high;
+        }
+      }
+      if (high.compareTo(low) < 0) {
+        throw new SolrException
+          (SolrException.ErrorCode.BAD_REQUEST,
+           "range facet infinite loop (is gap negative? did the math overflow?)");
+      }
+      
+      final boolean includeLower = 
+        (include.contains(FacetRangeInclude.LOWER) ||
+         (include.contains(FacetRangeInclude.EDGE) && 
+          0 == low.compareTo(start)));
+      final boolean includeUpper = 
+        (include.contains(FacetRangeInclude.UPPER) ||
+         (include.contains(FacetRangeInclude.EDGE) && 
+          0 == high.compareTo(end)));
+      
+      final String lowS = calc.formatValue(low);
+      final String highS = calc.formatValue(high);
+
+      final int count = rangeCount(sf, lowS, highS,
+                                   includeLower,includeUpper);
+      if (count >= minCount) {
+        counts.add(lowS, count);
+      }
+      
+      low = high;
+    }
+    
+    // explicitly return the start and end so all the counts 
+    // (including before/after/between) are meaningful - even if mincount
+    // has removed the neighboring ranges
+    res.add("start", start);
+    res.add("end", end);
+    
+    final String[] othersP =
+      params.getFieldParams(f,FacetParams.FACET_RANGE_OTHER);
+    if (null != othersP && 0 < othersP.length ) {
+      Set<FacetRangeOther> others = EnumSet.noneOf(FacetRangeOther.class);
+      
+      for (final String o : othersP) {
+        others.add(FacetRangeOther.get(o));
+      }
+      
+      // no matter what other values are listed, we don't do
+      // anything if "none" is specified.
+      if (! others.contains(FacetRangeOther.NONE) ) {
+        
+        boolean all = others.contains(FacetRangeOther.ALL);
+        final String startS = calc.formatValue(start);
+        final String endS = calc.formatValue(end);
+
+        if (all || others.contains(FacetRangeOther.BEFORE)) {
+          // include upper bound if "outer" or if first gap doesn't already include it
+          res.add(FacetRangeOther.BEFORE.toString(),
+                  rangeCount(sf,null,startS,
+                             false,
+                             (include.contains(FacetRangeInclude.OUTER) ||
+                              (! (include.contains(FacetRangeInclude.LOWER) ||
+                                  include.contains(FacetRangeInclude.EDGE))))));
+          
+        }
+        if (all || others.contains(FacetRangeOther.AFTER)) {
+          // include lower bound if "outer" or if last gap doesn't already include it
+          res.add(FacetRangeOther.AFTER.toString(),
+                  rangeCount(sf,endS,null,
+                             (include.contains(FacetRangeInclude.OUTER) ||
+                              (! (include.contains(FacetRangeInclude.UPPER) ||
+                                  include.contains(FacetRangeInclude.EDGE)))),  
+                             false));
+        }
+        if (all || others.contains(FacetRangeOther.BETWEEN)) {
+         res.add(FacetRangeOther.BETWEEN.toString(),
+                 rangeCount(sf,startS,endS,
+                            (include.contains(FacetRangeInclude.LOWER) ||
+                             include.contains(FacetRangeInclude.EDGE)),
+                            (include.contains(FacetRangeInclude.UPPER) ||
+                             include.contains(FacetRangeInclude.EDGE))));
+         
+        }
+      }
+    }
+    return res;
+  }  
+  
   /**
    * Macro for getting the numDocs of range over docs
    * @see SolrIndexSearcher#numDocs
@@ -914,5 +1113,173 @@ public class SimpleFacets {
       return (0 != vc ? vc : key.compareTo(o.key));
     }
   }
+
+
+  /**
+   * Perhaps someday instead of having a giant "instanceof" case 
+   * statement to pick an impl, we can add a "RangeFacetable" marker 
+   * interface to FieldTypes and they can return instances of these 
+   * directly from some method -- but until then, keep this locked down 
+   * and private.
+   */
+  private static abstract class RangeEndpointCalculator<T extends Comparable<T>> {
+    protected final SchemaField field;
+    public RangeEndpointCalculator(final SchemaField field) {
+      this.field = field;
+    }
+
+    /**
+     * Formats a Range endpoint for use as a range label name in the response.
+     * Default Impl just uses toString()
+     */
+    public String formatValue(final T val) {
+      return val.toString();
+    }
+    /**
+     * Parses a String param into an Range endpoint value throwing 
+     * a useful exception if not possible
+     */
+    public final T getValue(final String rawval) {
+      try {
+        return parseVal(rawval);
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                "Can't parse value "+rawval+" for field: " + 
+                                field.getName(), e);
+      }
+    }
+    /**
+     * Parses a String param into an Range endpoint. 
+     * Can throw a low level format exception as needed.
+     */
+    protected abstract T parseVal(final String rawval) 
+      throws java.text.ParseException;
+
+    /** 
+     * Parses a String param into a value that represents the gap and 
+     * can be included in the response, throwing 
+     * a useful exception if not possible.
+     *
+     * Note: uses Object as the return type instead of T for things like 
+     * Date where gap is just a DateMathParser string 
+     */
+    public final Object getGap(final String gap) {
+      try {
+        return parseGap(gap);
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                "Can't parse gap "+gap+" for field: " + 
+                                field.getName(), e);
+      }
+    }
+
+    /**
+     * Parses a String param into a value that represents the gap and 
+     * can be included in the response. 
+     * Can throw a low level format exception as needed.
+     *
+     * Default Impl calls parseVal
+     */
+    protected Object parseGap(final String rawval) 
+      throws java.text.ParseException {
+      return parseVal(rawval);
+    }
+
+    /**
+     * Adds the String gap param to a low Range endpoint value to determine 
+     * the corrisponding high Range endpoint value, throwing 
+     * a useful exception if not possible.
+     */
+    public final T addGap(T value, String gap) {
+      try {
+        return parseAndAddGap(value, gap);
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                "Can't add gap "+gap+" to value " + value +
+                                " for field: " + field.getName(), e);
+      }
+    }
+    /**
+     * Adds the String gap param to a low Range endpoint value to determine 
+     * the corrisponding high Range endpoint value.
+     * Can throw a low level format exception as needed.
+     */
+    protected abstract T parseAndAddGap(T value, String gap) 
+      throws java.text.ParseException;
+
+  }
+
+  private static class FloatRangeEndpointCalculator 
+    extends RangeEndpointCalculator<Float> {
+
+    public FloatRangeEndpointCalculator(final SchemaField f) { super(f); }
+    protected Float parseVal(String rawval) {
+      return Float.valueOf(rawval);
+    }
+    public Float parseAndAddGap(Float value, String gap) {
+      return new Float(value.floatValue() + Float.valueOf(gap).floatValue());
+    }
+  }
+  private static class DoubleRangeEndpointCalculator 
+    extends RangeEndpointCalculator<Double> {
+
+    public DoubleRangeEndpointCalculator(final SchemaField f) { super(f); }
+    protected Double parseVal(String rawval) {
+      return Double.valueOf(rawval);
+    }
+    public Double parseAndAddGap(Double value, String gap) {
+      return new Double(value.floatValue() + Double.valueOf(gap).floatValue());
+    }
+  }
+  private static class IntegerRangeEndpointCalculator 
+    extends RangeEndpointCalculator<Integer> {
+
+    public IntegerRangeEndpointCalculator(final SchemaField f) { super(f); }
+    protected Integer parseVal(String rawval) {
+      return Integer.valueOf(rawval);
+    }
+    public Integer parseAndAddGap(Integer value, String gap) {
+      return new Integer(value.intValue() + Integer.valueOf(gap).intValue());
+    }
+  }
+  private static class LongRangeEndpointCalculator 
+    extends RangeEndpointCalculator<Long> {
+
+    public LongRangeEndpointCalculator(final SchemaField f) { super(f); }
+    protected Long parseVal(String rawval) {
+      return Long.valueOf(rawval);
+    }
+    public Long parseAndAddGap(Long value, String gap) {
+      return new Long(value.intValue() + Long.valueOf(gap).intValue());
+    }
+  }
+  private static class DateRangeEndpointCalculator 
+    extends RangeEndpointCalculator<Date> {
+    private final Date now;
+    public DateRangeEndpointCalculator(final SchemaField f, 
+                                       final Date now) { 
+      super(f); 
+      this.now = now;
+      if (! (field.getType() instanceof DateField) ) {
+        throw new IllegalArgumentException
+          ("SchemaField must use filed type extending DateField");
+      }
+    }
+    public String formatValue(Date val) {
+      return ((DateField)field.getType()).toExternal(val);
+    }
+    protected Date parseVal(String rawval) {
+      return ((DateField)field.getType()).parseMath(now, rawval);
+    }
+    protected Object parseGap(final String rawval) {
+      return rawval;
+    }
+    public Date parseAndAddGap(Date value, String gap) throws java.text.ParseException {
+      final DateMathParser dmp = new DateMathParser(DateField.UTC, Locale.US);
+      dmp.setNow(value);
+      return dmp.parseMath(gap);
+    }
+  }
+  
 }
 

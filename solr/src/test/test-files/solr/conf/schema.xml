@@ -564,7 +564,18 @@
    <copyField source="subject" dest="text"/>
  
    <copyField source="*_t" dest="text"/>
+
+   <copyField source="id"            dest="range_facet_si"/>
+   <copyField source="id"            dest="range_facet_l"/>
+   <copyField source="id"            dest="range_facet_sl"/>
+   <copyField source="range_facet_f" dest="range_facet_sf"/>
+   <copyField source="range_facet_f" dest="range_facet_d"/>
+   <copyField source="range_facet_f" dest="range_facet_sd"/>
+
+   <copyField source="bday" dest="bday_pdt"/>
+   <copyField source="a_tdt" dest="a_pdt"/>
    
+
    <!-- dynamic destination -->
    <copyField source="*_dynamic" dest="dynamic_*"/>
     

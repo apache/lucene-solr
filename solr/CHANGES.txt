@@ -214,6 +214,11 @@ New Features
 * SOLR-1925: Add CSVResponseWriter (use wt=csv) that returns the list of documents
   in CSV format. (Chris Mattmann, yonik)
 
+* SOLR-1240: "Rnage Faceting has been added.  This is a generalization
+  of the existing "Date Faceting" logic so that it now supports any
+  all stock numeric field types that support range queries in addition
+  to dates.  
+  (Gijs Kunze, hossman)
 
 Optimizations
 ----------------------

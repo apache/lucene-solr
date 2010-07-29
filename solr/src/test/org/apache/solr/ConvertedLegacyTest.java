@@ -1150,7 +1150,7 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
             ,"//str[.='Yonik']  "
             ,"//float[.='1.4142135'] "
             ,"//float[@name='score'] "
-            ,"*[count(//doc/*)=13]"
+            ,"*[count(//doc/*)>=13]"
             );
     args = new HashMap<String,String>();
     args.put("version","2.0");
@@ -1161,7 +1161,7 @@ public class ConvertedLegacyTest extends SolrTestCaseJ4 {
             ,"//str[.='Yonik']  "
             ,"//float[.='1.4142135'] "
             ,"//float[@name='score'] "
-            ,"*[count(//doc/*)=13]"
+            ,"*[count(//doc/*)>=13]"
             );
     args = new HashMap<String,String>();
     args.put("version","2.0");
