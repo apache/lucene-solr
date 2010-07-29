@@ -404,8 +404,9 @@ public class  FacetComponent extends SearchComponent
       }
     }
 
-    // TODO: facet dates
+    // TODO: facet dates & numbers
     facet_counts.add("facet_dates", new SimpleOrderedMap());
+    facet_counts.add("facet_ranges", new SimpleOrderedMap());
 
     rb.rsp.add("facet_counts", facet_counts);
 
