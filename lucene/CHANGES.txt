@@ -333,6 +333,9 @@ New features
 * LUCENE-2526: Don't throw NPE from MultiPhraseQuery.toString when
   it's empty.  (Ross Woolf via Mike McCandless)
   
+* LUCENE-2559: Added SegmentReader.reopen methods (John Wang via Mike
+  McCandless)
+
 Optimizations
 
 * LUCENE-2494: Use CompletionService in ParallelMultiSearcher instead of
