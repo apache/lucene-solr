@@ -4387,13 +4387,15 @@ public class TestIndexWriter extends LuceneTestCase {
         }
       }
 
-      try {
-        w.rollback();
-      } catch (IOException ioe) {
-        throw new RuntimeException(ioe);
-      }
-
       if (!failed) {
+        // clear interrupt state:
+        Thread.interrupted();
+        try {
+          w.rollback();
+        } catch (IOException ioe) {
+          throw new RuntimeException(ioe);
+        }
+
         try {
           _TestUtil.checkIndex(dir);
         } catch (Exception e) {
@@ -4618,9 +4620,9 @@ public class TestIndexWriter extends LuceneTestCase {
     for(int i=0;i<NUM_THREADS;i++) {
       threads[i].join();
     }
+    assertFalse(failed.get());
     w.close();
     dir.close();
-    assertFalse(failed.get());
   }
 
   // both start & end are inclusive
