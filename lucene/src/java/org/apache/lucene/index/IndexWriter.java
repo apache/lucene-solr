@@ -3341,6 +3341,9 @@ public class IndexWriter implements Closeable {
                                      docWriter.hasProx(),    
                                      docWriter.getCodec());
 
+        if (infoStream != null) {
+          message("flush codec=" + docWriter.getCodec().name);
+        }
         setDiagnostics(newSegment, "flush");
       }
 
@@ -3642,7 +3645,7 @@ public class IndexWriter implements Closeable {
     } catch (OutOfMemoryError oom) {
       handleOOM(oom, "merge");
     }
-    if (infoStream != null) {
+    if (infoStream != null && merge.info != null) {
       message("merge time " + (System.currentTimeMillis()-t0) + " msec for " + merge.info.docCount + " docs");
     }
   }
@@ -4025,6 +4028,10 @@ public class IndexWriter implements Closeable {
 
       // Record which codec was used to write the segment
       merge.info.setCodec(merger.getCodec());
+
+      if (infoStream != null) {
+        message("merge codec=" + merger.getCodec().name);
+      }
       
       assert mergedDocCount == totDocCount;
 
