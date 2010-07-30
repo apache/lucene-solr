@@ -478,6 +478,11 @@ Test Cases
 * LUCENE-2398: Improve tests to work better from IDEs such as Eclipse.
   (Paolo Castagna via Robert Muir)
 
+Documentation
+
+* LUCENE-2579: Fix oal.search's package.html description of abstract
+  methods.  (Santiago M. Mola via Mike McCandless)
+
 ================== Release 2.9.3 / 3.0.2 2010-06-18 ====================
 
 Changes in backwards compatibility policy
