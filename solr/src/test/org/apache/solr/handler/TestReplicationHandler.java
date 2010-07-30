@@ -452,7 +452,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     SolrDocumentList slaveQueryResult = null;
     NamedList slaveQueryRsp;
     // try a few times in case tests are running slow
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 30; i++) {
       slaveQueryRsp = rQuery(1, "id:555", slaveClient);
       slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
       if (slaveQueryResult.getNumFound() > 0) {
