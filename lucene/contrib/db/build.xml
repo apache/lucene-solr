@@ -25,6 +25,8 @@
       - bdb-je: using Berkeley DB Java Edition
   </description>
 
+  <import file="../contrib-build.xml"/>
+
   <target name="bdb">
     <ant dir="bdb" />
   </target>

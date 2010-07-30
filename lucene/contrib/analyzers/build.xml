@@ -26,6 +26,8 @@
       - stempel:	Algorithmic Stemmer for Polish
   </description>
 
+  <import file="../contrib-build.xml"/>
+
   <target name="common">
     <ant dir="common" />
   </target>
