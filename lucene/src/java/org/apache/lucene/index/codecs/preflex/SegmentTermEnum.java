@@ -144,20 +144,9 @@ public final class SegmentTermEnum implements Cloneable {
     termInfo.freqPointer += input.readVLong();	  // read freq pointer
     termInfo.proxPointer += input.readVLong();	  // read prox pointer
     
-    if(format == -1){
-    //  just read skipOffset in order to increment  file pointer; 
-    // value is never used since skipTo is switched off
-      if (!isIndex) {
-        if (termInfo.docFreq > formatM1SkipInterval) {
-          termInfo.skipOffset = input.readVInt(); 
-        }
-      }
-    }
-    else{
-      if (termInfo.docFreq >= skipInterval) 
-        termInfo.skipOffset = input.readVInt();
-    }
-    
+    if (termInfo.docFreq >= skipInterval) 
+      termInfo.skipOffset = input.readVInt();
+
     if (isIndex)
       indexPointer += input.readVLong();	  // read index pointer
 
