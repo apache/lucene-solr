@@ -209,6 +209,11 @@ Optimizations
   efficient copying by sub-classes. Optimized copy is implemented for RAM and FS
   streams. (Shai Erera)
 
+Documentation
+
+* LUCENE-2579: Fix oal.search's package.html description of abstract
+  methods.  (Santiago M. Mola via Mike McCandless)
+
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy
