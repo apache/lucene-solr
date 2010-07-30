@@ -204,7 +204,11 @@ Optimizations
 * LUCENE-2531: Fix issue when sorting by a String field that was
   causing too many fallbacks to compare-by-value (instead of by-ord).
   (Mike McCandless)
-  
+
+* LUCENE-2574: IndexInput exposes copyBytes(IndexOutput, long) to allow for 
+  efficient copying by sub-classes. Optimized copy is implemented for RAM and FS
+  streams. (Shai Erera)
+
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy

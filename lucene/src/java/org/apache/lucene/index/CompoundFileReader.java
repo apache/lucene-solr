@@ -303,6 +303,17 @@ public class CompoundFileReader extends Directory {
           return length;
         }
 
+        @Override
+        public void copyBytes(IndexOutput out, long numBytes) throws IOException {
+          // Copy first whatever is in the buffer
+          numBytes -= flushBuffer(out, numBytes);
+          
+          // If there are more bytes left to copy, delegate the copy task to the
+          // base IndexInput, in case it can do an optimized copy.
+          if (numBytes > 0) {
+            base.copyBytes(out, numBytes);
+          }
+        }
 
     }
     

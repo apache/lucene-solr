@@ -18,9 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -35,7 +33,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.store.SimpleFSDirectory.SimpleFSIndexInput;
-import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.Constants;
 
@@ -438,47 +435,6 @@ public abstract class FSDirectory extends Directory {
     return chunkSize;
   }
 
-  @Override
-  public void copy(Directory to, String src, String dest) throws IOException {
-    if (to instanceof FSDirectory) {
-      FSDirectory target = (FSDirectory) to;
-      target.ensureCanWrite(dest);
-      FileChannel input = null;
-      FileChannel output = null;
-      IOException priorException = null;
-      try {
-        input = new FileInputStream(new File(directory, src)).getChannel();
-        output = new FileOutputStream(new File(target.directory, dest)).getChannel();
-        copy(input, output, input.size());
-      } catch (IOException ioe) {
-        priorException = ioe;
-      } finally {
-        IOUtils.closeSafely(priorException, input, output);
-      }
-    } else {
-      super.copy(to, src, dest);
-    }
-  }
-
-  /**
-   * Copies the content of a given {@link FileChannel} to a destination one. The
-   * copy is done in chunks of 2MB because if transferFrom is used without a
-   * limit when copying a very large file, then an OOM may be thrown (depends on
-   * the state of the RAM in the machine, as well as the OS used). Performance
-   * measurements showed that chunk sizes larger than 2MB do not result in much
-   * faster file copy, therefore we limit the size to be safe with different
-   * file sizes and systems.
-   */
-  static void copy(FileChannel input, FileChannel output, long numBytes) throws IOException {
-    long pos = output.position();
-    long writeTo = numBytes + pos;
-    while (pos < writeTo) {
-      pos += output.transferFrom(input, pos, Math.min(CHANNEL_CHUNK_SIZE, writeTo - pos));
-    }
-    // transferFrom does not change the position of the channel. Need to change it manually
-    output.position(pos);
-  }
-  
   protected static class FSIndexOutput extends BufferedIndexOutput {
     private final FSDirectory parent;
     private final String name;
@@ -501,23 +457,37 @@ public abstract class FSDirectory extends Directory {
     @Override
     public void copyBytes(DataInput input, long numBytes) throws IOException {
       // Optimized copy only if the number of bytes to copy is larger than the
-      // buffer size, and the given IndexInput supports FileChannel copying ..
+      // buffer size, and the given IndexInput supports FileChannel copying.
       // NOTE: the below check relies on NIOIndexInput extending Simple. If that
       // changes in the future, we should change the check as well.
-      if (numBytes > BUFFER_SIZE && input instanceof SimpleFSIndexInput) {
-        // flush any bytes in the buffer
-        flush();
-        // do the optimized copy
-        FileChannel in = ((SimpleFSIndexInput) input).file.getChannel();
-        FileChannel out = file.getChannel();
-        copy(in, out, numBytes);
-        // corrects the position in super (BufferedIndexOutput), so that calls
-        // to getFilePointer will return the correct pointer.
-        // Perhaps a specific method is better?
-        super.seek(out.position());
-      } else {
+      if (numBytes <= BUFFER_SIZE || !(input instanceof SimpleFSIndexInput)) {
         super.copyBytes(input, numBytes);
+        return;
       }
+
+      SimpleFSIndexInput fsInput = (SimpleFSIndexInput) input;
+
+      // flush any bytes in the buffer
+      flush();
+      
+      // flush any bytes in the input's buffer.
+      numBytes -= fsInput.flushBuffer(this, numBytes);
+      
+      // do the optimized copy
+      FileChannel in = fsInput.file.getChannel();
+      FileChannel out = file.getChannel();
+      long pos = out.position();
+      long writeTo = numBytes + pos;
+      while (pos < writeTo) {
+        pos += out.transferFrom(in, pos, Math.min(CHANNEL_CHUNK_SIZE, writeTo - pos));
+      }
+      // transferFrom does not change the position of the channel. Need to change it manually
+      out.position(pos);
+      
+      // corrects the position in super (BufferedIndexOutput), so that calls
+      // to getFilePointer will return the correct pointer.
+      // Perhaps a specific method is better?
+      super.seek(out.position());
     }
     
     @Override

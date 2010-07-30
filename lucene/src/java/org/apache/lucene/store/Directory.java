@@ -215,26 +215,11 @@ public abstract class Directory implements Closeable {
    * overwrite it if it does.
    */
   public void copy(Directory to, String src, String dest) throws IOException {
-    IndexOutput os = null;
-    IndexInput is = null;
+    IndexOutput os = to.createOutput(dest);
+    IndexInput is = openInput(src);
     IOException priorException = null;
-    int bufSize = BufferedIndexOutput.BUFFER_SIZE;
-    byte[] buf = new byte[bufSize];
     try {
-      // create file in dest directory
-      os = to.createOutput(dest);
-      // read current file
-      is = openInput(src);
-      // and copy to dest directory
-      long len = is.length();
-      long numRead = 0;
-      while (numRead < len) {
-        long left = len - numRead;
-        int toRead = (int) (bufSize < left ? bufSize : left);
-        is.readBytes(buf, 0, toRead);
-        os.writeBytes(buf, toRead);
-        numRead += toRead;
-      }
+      is.copyBytes(os, is.length());
     } catch (IOException ioe) {
       priorException = ioe;
     } finally {
