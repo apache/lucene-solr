@@ -169,8 +169,8 @@ public class MultiPhraseQuery extends Query {
 
       PhraseQuery.PostingsAndFreq[] postingsFreqs = new PhraseQuery.PostingsAndFreq[termArrays.size()];
 
-      for (int i=0; i<postingsFreqs.length; i++) {
-        Term[] terms = termArrays.get(i);
+      for (int pos=0; pos<postingsFreqs.length; pos++) {
+        Term[] terms = termArrays.get(pos);
 
         final TermPositions p;
         int docFreq;
@@ -181,8 +181,8 @@ public class MultiPhraseQuery extends Query {
           // coarse -- this overcounts since a given doc can
           // have more than one terms:
           docFreq = 0;
-          for(int j=0;j<terms.length;j++) {
-            docFreq += reader.docFreq(terms[i]);
+          for(int termIdx=0;termIdx<terms.length;termIdx++) {
+            docFreq += reader.docFreq(terms[termIdx]);
           }
         } else {
           p = reader.termPositions(terms[0]);
@@ -192,7 +192,7 @@ public class MultiPhraseQuery extends Query {
             return null;
         }
 
-        postingsFreqs[i] = new PhraseQuery.PostingsAndFreq(p, docFreq, positions.get(i).intValue());
+        postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(p, docFreq, positions.get(pos).intValue());
       }
 
       // sort by increasing docFreq order
