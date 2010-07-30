@@ -132,7 +132,25 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     searcher.close();
     reader.close();
     indexStore.close();
-    
+  }
+
+  // LUCENE-2580
+  public void testTall() throws IOException {
+    MockRAMDirectory indexStore = new MockRAMDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore);
+    add("blueberry chocolate pie", writer);
+    add("blueberry chocolate tart", writer);
+    IndexReader r = writer.getReader();
+    writer.close();
+
+    IndexSearcher searcher = new IndexSearcher(r);
+    MultiPhraseQuery q = new MultiPhraseQuery();
+    q.add(new Term("body", "blueberry"));
+    q.add(new Term("body", "chocolate"));
+    q.add(new Term[] {new Term("body", "pie"), new Term("body", "tart")});
+    assertEquals(2, searcher.search(q, 1).totalHits);
+    r.close();
+    indexStore.close();
   }
   
   private void add(String s, RandomIndexWriter writer) throws IOException {

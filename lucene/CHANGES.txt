@@ -457,6 +457,9 @@ Bug fixes
 * LUCENE-2537: FSDirectory.copy() implementation was unsafe and could result in 
   OOM if a large file was copied. (Shai Erera)
 
+* LUCENE-2580: MultiPhraseQuery throws AIOOBE if number of positions
+  exceeds number of terms at one position (Jayendra Patil via Mike McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
