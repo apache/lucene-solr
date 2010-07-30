@@ -22,15 +22,15 @@ import java.io.Closeable;
 import java.util.Map;
 import java.util.HashMap;
 
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.RamUsageEstimator;
-
 /** Abstract base class for input from a file in a {@link Directory}.  A
  * random-access input stream.  Used for all Lucene index input operations.
  * @see Directory
  */
 public abstract class IndexInput implements Cloneable,Closeable {
+
   private boolean preUTF8Strings;                 // true if we are reading old (modified UTF8) string format
+
+  protected byte[] copyBuf = null;
 
   /** Reads and returns a single byte.
    * @see IndexOutput#writeByte(byte)
@@ -59,8 +59,7 @@ public abstract class IndexInput implements Cloneable,Closeable {
    * @see IndexOutput#writeBytes(byte[],int)
    */
   public void readBytes(byte[] b, int offset, int len, boolean useBuffer)
-    throws IOException
-  {
+    throws IOException {
     // Default to ignoring useBuffer entirely
     readBytes(b, offset, len);
   }
@@ -239,4 +238,31 @@ public abstract class IndexInput implements Cloneable,Closeable {
 
     return map;
   }
+
+  /**
+   * Copies <code>numBytes</code> bytes to the given {@link IndexOutput}.
+   * <p>
+   * <b>NOTE:</b> this method uses an intermediate buffer to copy the bytes.
+   * Consider overriding it in your implementation, if you can make a better,
+   * optimized copy.
+   * <p>
+   * <b>NOTE</b> ensure that there are enough bytes in the input to copy to
+   * output. Otherwise, different exceptions may be thrown, depending on the
+   * implementation.
+   */
+  public void copyBytes(IndexOutput out, long numBytes) throws IOException {
+    assert numBytes >= 0: "numBytes=" + numBytes;
+
+    if (copyBuf == null) {
+      copyBuf = new byte[BufferedIndexInput.BUFFER_SIZE];
+    }
+
+    while (numBytes > 0) {
+      final int toCopy = (int) (numBytes > copyBuf.length ? copyBuf.length : numBytes);
+      readBytes(copyBuf, 0, toCopy);
+      out.writeBytes(copyBuf, 0, toCopy);
+      numBytes -= toCopy;
+    }
+  }
+  
 }
