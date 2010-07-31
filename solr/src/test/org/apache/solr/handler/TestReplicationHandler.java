@@ -448,6 +448,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     index(slaveClient, "id", 555, "name", "name = " + 555);
     slaveClient.commit(true, true);
 
+
     //this doc is added to slave so it should show an item w/ that result
     SolrDocumentList slaveQueryResult = null;
     NamedList slaveQueryRsp;
@@ -459,6 +460,10 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
         break;
       }
       Thread.sleep(100);
+
+      // The last commit may have failed due to exceeding max warming searchers.
+      // We'll try again.
+      slaveClient.commit(true, true);
     }
     assertNotNull(slaveQueryResult);
     assertEquals(1, slaveQueryResult.getNumFound());
