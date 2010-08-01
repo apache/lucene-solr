@@ -452,20 +452,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     //this doc is added to slave so it should show an item w/ that result
     SolrDocumentList slaveQueryResult = null;
     NamedList slaveQueryRsp;
-    // try a few times in case tests are running slow
-    for (int i = 0; i < 30; i++) {
-      slaveQueryRsp = rQuery(1, "id:555", slaveClient);
-      slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-      if (slaveQueryResult.getNumFound() > 0) {
-        break;
-      }
-      Thread.sleep(100);
-
-      // The last commit may have failed due to exceeding max warming searchers.
-      // We'll try again.
-      slaveClient.commit(true, true);
-    }
-    assertNotNull(slaveQueryResult);
+    slaveQueryRsp = rQuery(1, "id:555", slaveClient);
+    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
     assertEquals(1, slaveQueryResult.getNumFound());
 
     masterUrl = "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication?command=enableReplication";
