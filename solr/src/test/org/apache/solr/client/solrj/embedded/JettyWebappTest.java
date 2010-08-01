@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.embedded;
 
 import java.io.File;
 import java.net.URL;
+import java.util.Random;
 
 import junit.framework.TestCase;
 
@@ -26,6 +27,7 @@ import org.apache.commons.io.IOUtils;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.bio.SocketConnector;
+import org.mortbay.jetty.servlet.HashSessionIdManager;
 import org.mortbay.jetty.webapp.WebAppContext;
 
 /**
@@ -52,6 +54,8 @@ public class JettyWebappTest extends TestCase
     String path = "../../webapp/web";
 
     server = new Server(port);
+    // insecure: only use for tests!!!!
+    server.setSessionIdManager(new HashSessionIdManager(new Random()));
     new WebAppContext(server, path, context );
 
     SocketConnector connector = new SocketConnector();
