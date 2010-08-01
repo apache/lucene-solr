@@ -20,6 +20,7 @@ package org.apache.solr.client.solrj.embedded;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.util.Random;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -31,6 +32,7 @@ import org.mortbay.jetty.Server;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.FilterHolder;
+import org.mortbay.jetty.servlet.HashSessionIdManager;
 import org.mortbay.log.Logger;
 
 /**
@@ -75,6 +77,9 @@ public class JettySolrRunner
   {
     this.context = context;
     server = new Server( port );    
+    if (System.getProperty("jetty.insecurerandom") != null)
+      server.setSessionIdManager(new HashSessionIdManager(new Random()));
+
     server.setStopAtShutdown( true );
     
     // Initialize the servlets

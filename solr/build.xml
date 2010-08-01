@@ -436,6 +436,7 @@
       <sysproperty key="java.util.logging.config.file" value="${common-solr.dir}/testlogging.properties"/>
       <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
       <sysproperty key="tests.codec" value="${tests.codec}"/>
+      <sysproperty key="jetty.insecurerandom" value="1"/>
       <jvmarg line="${dir.prop}"/>
       <jvmarg line="${args}"/>
 

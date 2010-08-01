@@ -151,6 +151,7 @@
            dir="src/test/resources/"
            tempdir="${junit.output.dir}"
            >
+      <sysproperty key="jetty.insecurerandom" value="1"/>
       <formatter type="brief" usefile="false" if="junit.details"/>
       <classpath refid="test.classpath"/>
       <formatter type="xml"/>
@@ -191,6 +192,7 @@
            failureProperty="tests.failed"
            dir="src/extras/test/resources/"
            >
+      <sysproperty key="jetty.insecurerandom" value="1"/>
       <formatter type="brief" usefile="false" if="junit.details"/>
       <classpath refid="test.extras.classpath"/>
       <assertions>
