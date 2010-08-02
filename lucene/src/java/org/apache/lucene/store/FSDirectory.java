@@ -475,6 +475,10 @@ public abstract class FSDirectory extends Directory {
       
       // do the optimized copy
       FileChannel in = fsInput.file.getChannel();
+
+      // Necessary because BufferedIndexInput does lazy seeking:
+      in.position(fsInput.getFilePointer());
+
       FileChannel out = file.getChannel();
       long pos = out.position();
       long writeTo = numBytes + pos;
