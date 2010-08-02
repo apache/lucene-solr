@@ -135,6 +135,10 @@ class TermVectorsReader implements Cloneable {
     tvx.seek((docNum + docStoreOffset) * 16L + FORMAT_SIZE);
   }
 
+  boolean canReadRawDocs() {
+    return format >= FORMAT_UTF8_LENGTH_IN_BYTES;
+  }
+
   /** Retrieve the length (in bytes) of the tvd and tvf
    *  entries for the next numDocs starting with
    *  startDocID.  This is used for bulk copying when
@@ -148,6 +152,11 @@ class TermVectorsReader implements Cloneable {
       Arrays.fill(tvfLengths, 0);
       return;
     }
+
+    // SegmentMerger calls canReadRawDocs() first and should
+    // not call us if that returns false.
+    if (format < FORMAT_UTF8_LENGTH_IN_BYTES)
+      throw new IllegalStateException("cannot read raw docs with older term vector formats");
 
     seekTvx(startDocID);
 
