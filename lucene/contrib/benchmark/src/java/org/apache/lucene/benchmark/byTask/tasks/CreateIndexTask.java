@@ -49,7 +49,7 @@ import java.io.PrintStream;
  * org.apache.lucene.index.ConcurrentMergeScheduler),
  * concurrent.merge.scheduler.max.thread.count and
  * concurrent.merge.scheduler.max.merge.count (defaults per
- * ConcurrentMergeScheduler) </code>.
+ * ConcurrentMergeScheduler), default.codec </code>.
  * <p>
  * This task also supports a "writer.info.stream" property with the following
  * values:

@@ -2,6 +2,11 @@ Lucene Benchmark Contrib Change Log
 
 The Benchmark contrib package contains code for benchmarking Lucene in a variety of ways.
 
+8/2/2010
+  LUCENE-2582: You can now specify the default codec to use for
+  writing new segments by adding default.codec = Pulsing (for
+  example), in the alg file.  (Mike McCandless)
+
 4/27/2010: WriteLineDocTask now supports multi-threading. Also, 
   StringBufferReader was renamed to StringBuilderReader and works on 
   StringBuilder now. In addition, LongToEnglishCountentSource starts from 0
