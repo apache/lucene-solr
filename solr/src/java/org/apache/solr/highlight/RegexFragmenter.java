@@ -32,7 +32,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 
 /**
- * Fragmenter that tries to produce snippets that "look" like a regular 
+ * {@link org.apache.lucene.search.highlight.Fragmenter} that tries to produce snippets that "look" like a regular 
  * expression.
  *
  * <code>solrconfig.xml</code> parameters:
