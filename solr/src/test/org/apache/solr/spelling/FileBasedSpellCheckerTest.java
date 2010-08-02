@@ -70,8 +70,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add(AbstractLuceneSpellChecker.LOCATION, spelling.getAbsolutePath());
     spellchecker.add(IndexBasedSpellChecker.FIELD, "teststop");
     spellchecker.add(FileBasedSpellChecker.SOURCE_FILE_CHAR_ENCODING, "UTF-8");
-    File tmpDir = new File(System.getProperty("java.io.tmpdir"));
-    File indexDir = new File(tmpDir, "spellingIdx" + new Date().getTime());
+    File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
     indexDir.mkdirs();
     spellchecker.add(FileBasedSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     SolrCore core = h.getCore();
@@ -107,8 +106,7 @@ public class FileBasedSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add(AbstractLuceneSpellChecker.LOCATION, spelling.getAbsolutePath());
     spellchecker.add(IndexBasedSpellChecker.FIELD, "teststop");
     spellchecker.add(FileBasedSpellChecker.SOURCE_FILE_CHAR_ENCODING, "UTF-8");
-    File tmpDir = new File(System.getProperty("java.io.tmpdir"));
-    File indexDir = new File(tmpDir, "spellingIdx" + new Date().getTime());
+    File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
     indexDir.mkdirs();
     spellchecker.add(FileBasedSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     spellchecker.add(FileBasedSpellChecker.FIELD_TYPE, "teststop");

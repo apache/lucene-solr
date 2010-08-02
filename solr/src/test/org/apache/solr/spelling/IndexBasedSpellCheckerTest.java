@@ -82,8 +82,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
-    File tmpDir = new File(System.getProperty("java.io.tmpdir"));
-    File indexDir = new File(tmpDir, "spellingIdx" + new Date().getTime());
+    File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
     indexDir.mkdirs();
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     spellchecker.add(IndexBasedSpellChecker.FIELD, "title");
@@ -157,8 +156,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
-    File tmpDir = new File(System.getProperty("java.io.tmpdir"));
-    File indexDir = new File(tmpDir, "spellingIdx" + new Date().getTime());
+    File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
     indexDir.mkdirs();
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     spellchecker.add(IndexBasedSpellChecker.FIELD, "title");
@@ -213,8 +211,7 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
-    File tmpDir = new File(System.getProperty("java.io.tmpdir"));
-    File indexDir = new File(tmpDir, "spellingIdx" + new Date().getTime());
+    File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
     indexDir.mkdirs();
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, indexDir.getAbsolutePath());
     spellchecker.add(IndexBasedSpellChecker.FIELD, "title");
@@ -254,10 +251,9 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
     NamedList spellchecker = new NamedList();
     spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
 
-    File tmpDir = new File(System.getProperty("java.io.tmpdir"));
-    File indexDir = new File(tmpDir, "spellingIdx" + new Date().getTime());
+    File indexDir = new File(TEMP_DIR, "spellingIdx" + new Date().getTime());
     //create a standalone index
-    File altIndexDir = new File(tmpDir, "alternateIdx" + new Date().getTime());
+    File altIndexDir = new File(TEMP_DIR, "alternateIdx" + new Date().getTime());
     IndexWriter iw = new IndexWriter(FSDirectory.open(altIndexDir), new WhitespaceAnalyzer(), IndexWriter.MaxFieldLength.LIMITED);
     for (int i = 0; i < ALT_DOCS.length; i++) {
       Document doc = new Document();

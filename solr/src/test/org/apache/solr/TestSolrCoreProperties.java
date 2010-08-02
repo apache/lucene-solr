@@ -101,14 +101,12 @@ public class TestSolrCoreProperties extends AbstractSolrTestCase {
 
   public void setUpMe() throws Exception {
 
-    String home = System.getProperty("java.io.tmpdir")
-            + File.separator
-            + getClass().getName() + "-" + System.currentTimeMillis();
+    homeDir = new File(TEMP_DIR,
+            getClass().getName() + "-" + System.currentTimeMillis());
 
 
-    homeDir = new File(home);
-    dataDir = new File(home, "data");
-    confDir = new File(home, "conf");
+    dataDir = new File(homeDir, "data");
+    confDir = new File(homeDir, "conf");
 
 
     homeDir.mkdirs();

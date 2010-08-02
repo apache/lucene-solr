@@ -652,18 +652,17 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       System.setProperty("solr.test.sys.prop1", "propone");
       System.setProperty("solr.test.sys.prop2", "proptwo");
 
-      String home = System.getProperty("java.io.tmpdir")
-              + File.separator
-              + getClass().getName() + "-" + System.currentTimeMillis();
+      File home = new File(TEMP_DIR,
+              getClass().getName() + "-" + System.currentTimeMillis());
 
       if (null == masterPort) {
-        homeDir = new File(home + "master");
-        dataDir = new File(home + "master", "data");
-        confDir = new File(home + "master", "conf");
+        homeDir = new File(home, "master");
+        dataDir = new File(homeDir, "data");
+        confDir = new File(homeDir, "conf");
       } else {
-        homeDir = new File(home + "slave");
-        dataDir = new File(home + "slave", "data");
-        confDir = new File(home + "slave", "conf");
+        homeDir = new File(home, "slave");
+        dataDir = new File(homeDir, "data");
+        confDir = new File(homeDir, "conf");
       }
 
       homeDir.mkdirs();
