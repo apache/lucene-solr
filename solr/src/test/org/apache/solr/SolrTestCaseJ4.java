@@ -181,9 +181,8 @@ public class SolrTestCaseJ4 extends LuceneTestCaseJ4 {
 
   public static void createTempDir() {
     String cname = getSimpleClassName();
-    dataDir = new File(System.getProperty("java.io.tmpdir")
-            + System.getProperty("file.separator")
-            +"solrtest-" + cname + "-" + System.currentTimeMillis());
+    dataDir = new File(TEMP_DIR,
+            "solrtest-" + cname + "-" + System.currentTimeMillis());
     dataDir.mkdirs();
   }
 
