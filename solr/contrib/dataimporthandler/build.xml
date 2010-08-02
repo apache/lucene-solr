@@ -128,11 +128,15 @@
   	</solr-javac>
   </target>
 
+  <property name="tempDir" value="${junit.output.dir}/temp" />
   <target  name="test" depends="testCore,testExtras"/>
 	
   <target name="testCore" depends="compileTests">
   	<mkdir dir="${junit.output.dir}"/>
-  	
+    <!-- <mkdir dir="@{tempDir}/@{pattern}"/> 
+       This is very loud and obnoxious. abuse touch instead for a "quiet" mkdir
+    -->
+  	<touch file="${tempDir}/quiet.ant" verbose="false" mkdirs="true"/>
     <condition property="runall">
       <not>
         <or>
@@ -149,9 +153,10 @@
            errorProperty="tests.failed"
            failureProperty="tests.failed"
            dir="src/test/resources/"
-           tempdir="${junit.output.dir}"
+           tempdir="${tempDir}"
            >
       <sysproperty key="jetty.insecurerandom" value="1"/>
+      <sysproperty key="tempDir" file="${tempDir}"/>
       <formatter type="brief" usefile="false" if="junit.details"/>
       <classpath refid="test.classpath"/>
       <formatter type="xml"/>
@@ -174,6 +179,10 @@
 
   <target name="testExtras" depends="compileExtrasTests">
   	<mkdir dir="${junit.output.dir}"/>
+    <!-- <mkdir dir="@{tempDir}/@{pattern}"/> 
+       This is very loud and obnoxious. abuse touch instead for a "quiet" mkdir
+    -->
+  	<touch file="${tempDir}/quiet.ant" verbose="false" mkdirs="true"/>
 
     <condition property="runall">
       <not>
@@ -191,8 +200,10 @@
            errorProperty="tests.failed"
            failureProperty="tests.failed"
            dir="src/extras/test/resources/"
+           tempdir="${tempDir}"
            >
       <sysproperty key="jetty.insecurerandom" value="1"/>
+      <sysproperty key="tempDir" file="${tempDir}"/>
       <formatter type="brief" usefile="false" if="junit.details"/>
       <classpath refid="test.extras.classpath"/>
       <assertions>

@@ -410,6 +410,7 @@
   <macrodef name="junit-macro">
   <attribute name="threadNum" default="1"/>
   <attribute name="threadTotal" default="1"/>
+  <attribute name="tempDir" default="${junit.output.dir}/temp"/>
     <sequential>
     <!-- no description so it doesn't show up in -projecthelp -->  
     <condition property="runall">
@@ -424,6 +425,10 @@
     <condition property="dir.prop" value="-Dsolr.directoryFactory=solr.StandardDirectoryFactory">
       <isset property="use.fsdir"/>
     </condition>
+    <!-- <mkdir dir="@{tempDir}/@{pattern}"/> 
+       This is very loud and obnoxious. abuse touch instead for a "quiet" mkdir
+    -->
+    <touch file="@{tempDir}/@{threadNum}/quiet.ant" verbose="false" mkdirs="true"/>
     <property name="dir.prop" value=""/>
     <junit printsummary="no"
            haltonfailure="no"
@@ -431,12 +436,13 @@
            errorProperty="tests.failed"
            failureProperty="tests.failed"
            dir="src/test/test-files/"
-           tempdir="${junit.output.dir}"
+           tempdir="@{tempDir}/@{threadNum}"
            >
       <sysproperty key="java.util.logging.config.file" value="${common-solr.dir}/testlogging.properties"/>
       <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
       <sysproperty key="tests.codec" value="${tests.codec}"/>
       <sysproperty key="jetty.insecurerandom" value="1"/>
+      <sysproperty key="tempDir" file="@{tempDir}/@{threadNum}"/>
       <jvmarg line="${dir.prop}"/>
       <jvmarg line="${args}"/>
 
