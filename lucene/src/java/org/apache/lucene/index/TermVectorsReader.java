@@ -104,8 +104,12 @@ class TermVectorsReader implements Cloneable {
           // docs
           assert numTotalDocs >= size + docStoreOffset: "numTotalDocs=" + numTotalDocs + " size=" + size + " docStoreOffset=" + docStoreOffset;
         }
-      } else
+      } else {
+        // TODO: understand why FieldInfos.hasVectors() can
+        // return true yet the term vectors files don't
+        // exist...
         format = 0;
+      }
 
       this.fieldInfos = fieldInfos;
       success = true;
@@ -136,7 +140,9 @@ class TermVectorsReader implements Cloneable {
   }
 
   boolean canReadRawDocs() {
-    return format >= FORMAT_UTF8_LENGTH_IN_BYTES;
+    // we can always read raw docs, unless the term vectors
+    // didn't exist
+    return format != 0;
   }
 
   /** Retrieve the length (in bytes) of the tvd and tvf
@@ -152,11 +158,6 @@ class TermVectorsReader implements Cloneable {
       Arrays.fill(tvfLengths, 0);
       return;
     }
-
-    // SegmentMerger calls canReadRawDocs() first and should
-    // not call us if that returns false.
-    if (format < FORMAT_UTF8_LENGTH_IN_BYTES)
-      throw new IllegalStateException("cannot read raw docs with older term vector formats");
 
     seekTvx(startDocID);
 

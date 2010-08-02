@@ -321,7 +321,7 @@ final class SegmentMerger {
           FieldsReader matchingFieldsReader = null;
           if (matchingSegmentReader != null) {
             final FieldsReader fieldsReader = matchingSegmentReader.getFieldsReader();
-            if (fieldsReader != null && fieldsReader.canReadRawDocs()) {            
+            if (fieldsReader != null) {
               matchingFieldsReader = fieldsReader;
             }
           }
