@@ -24,6 +24,7 @@ import java.util.Random;
 import junit.framework.TestCase;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.mortbay.jetty.Connector;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.bio.SocketConnector;
@@ -46,9 +47,8 @@ public class JettyWebappTest extends TestCase
   {
     System.setProperty("solr.solr.home", "../../../example/solr");
     
-    File dataDir = new File(System.getProperty("java.io.tmpdir")
-        + System.getProperty("file.separator")
-        + getClass().getName() + "-" + System.currentTimeMillis());
+    File dataDir = new File(SolrTestCaseJ4.TEMP_DIR,
+        getClass().getName() + "-" + System.currentTimeMillis());
     dataDir.mkdirs();
     System.setProperty("solr.data.dir", dataDir.getCanonicalPath());
     String path = "../../webapp/web";

@@ -21,6 +21,7 @@ import junit.framework.TestCase;
 import junit.framework.Assert;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
@@ -188,9 +189,8 @@ public class TestLBHttpSolrServer extends TestCase {
     }
 
     public void setUp() throws Exception {
-      String home = System.getProperty("java.io.tmpdir")
-              + File.separator
-              + getClass().getName() + "-" + System.currentTimeMillis();
+      File home = new File(SolrTestCaseJ4.TEMP_DIR,
+              getClass().getName() + "-" + System.currentTimeMillis());
 
 
       homeDir = new File(home, name);
