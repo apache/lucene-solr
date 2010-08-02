@@ -29,6 +29,7 @@ import org.apache.lucene.index.NoDeletionPolicy;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.NoMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.Version;
 
 import java.io.BufferedOutputStream;
@@ -93,6 +94,11 @@ public class CreateIndexTask extends PerfTask {
           cms.setMaxMergeCount(v);
         }
       }
+    }
+
+    final String defaultCodec = config.get("default.codec", null);
+    if (defaultCodec != null) {
+      CodecProvider.setDefaultCodec(defaultCodec);
     }
 
     final String mergePolicy = config.get("merge.policy",

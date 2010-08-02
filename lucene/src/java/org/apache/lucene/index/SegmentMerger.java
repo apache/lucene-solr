@@ -321,7 +321,7 @@ final class SegmentMerger {
           FieldsReader matchingFieldsReader = null;
           if (matchingSegmentReader != null) {
             final FieldsReader fieldsReader = matchingSegmentReader.getFieldsReader();
-            if (fieldsReader != null && fieldsReader.canReadRawDocs()) {            
+            if (fieldsReader != null) {
               matchingFieldsReader = fieldsReader;
             }
           }
@@ -453,7 +453,7 @@ final class SegmentMerger {
           TermVectorsReader vectorsReader = matchingSegmentReader.getTermVectorsReaderOrig();
 
           // If the TV* files are an older format then they cannot read raw docs:
-          if (vectorsReader != null && vectorsReader.canReadRawDocs()) {
+          if (vectorsReader != null) {
             matchingVectorsReader = vectorsReader;
           }
         }

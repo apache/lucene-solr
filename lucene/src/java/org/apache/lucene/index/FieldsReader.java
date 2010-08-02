@@ -186,12 +186,6 @@ final class FieldsReader implements Cloneable {
     indexStream.seek(FORMAT_SIZE + (docID + docStoreOffset) * 8L);
   }
 
-  boolean canReadRawDocs() {
-    // Since we currently only support >3.0 format anymore, always return true!
-    // I leave this method in because it may help for later format changes.
-    return true;
-  }
-
   final Document doc(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     seekIndex(n);
     long position = indexStream.readLong();
