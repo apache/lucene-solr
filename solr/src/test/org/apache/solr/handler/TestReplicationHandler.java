@@ -80,12 +80,15 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    masterClient.deleteByQuery("*:*");
-    masterClient.commit();
-    rQuery(0, "*:*", masterClient);
-    slaveClient.deleteByQuery("*:*");
-    slaveClient.commit();
-    rQuery(0, "*:*", slaveClient);
+
+    NamedList res = query("*:*", masterClient);
+    SolrDocumentList docs = (SolrDocumentList)res.get("response");
+    if (docs.getNumFound() != 0) {
+      masterClient.deleteByQuery("*:*");
+      masterClient.commit();
+      // wait for replication to sync
+      rQuery(0, "*:*", slaveClient);
+    }
   }
 
   @AfterClass
@@ -153,6 +156,71 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       Thread.sleep(100);
     } while(docList.getNumFound() != expectedDocCount && timeSlept < 30000);
     return res;
+  }
+  
+  @Test
+  public void testReplicateAfterWrite2Slave() throws Exception {
+    //add 50 docs to master
+    int nDocs = 50;
+    for (int i = 0; i < nDocs; i++) {
+      index(masterClient, "id", i, "name", "name = " + i);
+    }
+
+    String masterUrl = "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication?command=disableReplication";
+    URL url = new URL(masterUrl);
+    InputStream stream = url.openStream();
+    try {
+      stream.close();
+    } catch (IOException e) {
+      //e.printStackTrace();
+    }
+
+    masterClient.commit();
+
+    NamedList masterQueryRsp = rQuery(nDocs, "*:*", masterClient);
+    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
+    assertEquals(nDocs, masterQueryResult.getNumFound());
+
+    // Make sure that both the index version and index generation on the slave is
+    // higher than that of the master, just to make the test harder.
+
+    index(slaveClient, "id", 551, "name", "name = " + 551);
+    slaveClient.commit(true, true);
+    index(slaveClient, "id", 552, "name", "name = " + 552);
+    slaveClient.commit(true, true);
+    index(slaveClient, "id", 553, "name", "name = " + 553);
+    slaveClient.commit(true, true);
+    index(slaveClient, "id", 554, "name", "name = " + 554);
+    slaveClient.commit(true, true);
+    index(slaveClient, "id", 555, "name", "name = " + 555);
+    slaveClient.commit(true, true);
+
+
+    //this doc is added to slave so it should show an item w/ that result
+    SolrDocumentList slaveQueryResult = null;
+    NamedList slaveQueryRsp;
+    slaveQueryRsp = rQuery(1, "id:555", slaveClient);
+    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(1, slaveQueryResult.getNumFound());
+
+    masterUrl = "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication?command=enableReplication";
+    url = new URL(masterUrl);
+    stream = url.openStream();
+    try {
+      stream.close();
+    } catch (IOException e) {
+      //e.printStackTrace();
+    }
+
+    //the slave should have done a full copy of the index so the doc with id:555 should not be there in the slave now
+    slaveQueryRsp = rQuery(0, "id:555", slaveClient);
+    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(0, slaveQueryResult.getNumFound());
+
+    // make sure we replicated the correct index from the master
+    slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
+    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
+    assertEquals(nDocs, slaveQueryResult.getNumFound());
   }
 
   @Test
@@ -411,65 +479,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
   }
 
-  @Test
-  public void testReplicateAfterWrite2Slave() throws Exception {
-    //add 50 docs to master
-    int nDocs = 50;
-    for (int i = 0; i < nDocs; i++) {
-      index(masterClient, "id", i, "name", "name = " + i);
-    }
 
-    String masterUrl = "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication?command=disableReplication";
-    URL url = new URL(masterUrl);
-    InputStream stream = url.openStream();
-    try {
-      stream.close();
-    } catch (IOException e) {
-      //e.printStackTrace();
-    }
-
-    masterClient.commit();
-
-    NamedList masterQueryRsp = rQuery(50, "*:*", masterClient);
-    SolrDocumentList masterQueryResult = (SolrDocumentList) masterQueryRsp.get("response");
-    assertEquals(nDocs, masterQueryResult.getNumFound());
-
-    // Make sure that both the index version and index generation on the slave is
-    // higher than that of the master, just to make the test harder.
-
-    index(slaveClient, "id", 551, "name", "name = " + 551);
-    slaveClient.commit(true, true);
-    index(slaveClient, "id", 552, "name", "name = " + 552);
-    slaveClient.commit(true, true);
-    index(slaveClient, "id", 553, "name", "name = " + 553);
-    slaveClient.commit(true, true);
-    index(slaveClient, "id", 554, "name", "name = " + 554);
-    slaveClient.commit(true, true);
-    index(slaveClient, "id", 555, "name", "name = " + 555);
-    slaveClient.commit(true, true);
-
-
-    //this doc is added to slave so it should show an item w/ that result
-    SolrDocumentList slaveQueryResult = null;
-    NamedList slaveQueryRsp;
-    slaveQueryRsp = rQuery(1, "id:555", slaveClient);
-    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    assertEquals(1, slaveQueryResult.getNumFound());
-
-    masterUrl = "http://localhost:" + masterJetty.getLocalPort() + "/solr/replication?command=enableReplication";
-    url = new URL(masterUrl);
-    stream = url.openStream();
-    try {
-      stream.close();
-    } catch (IOException e) {
-      //e.printStackTrace();
-    }
-
-    //the slave should have done a full copy of the index so the doc with id:555 should not be there in the slave now
-    slaveQueryRsp = rQuery(0, "id:555", slaveClient);
-    slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
-    assertEquals(0, slaveQueryResult.getNumFound());
-  }
   
   @Test
   public void testBackup() throws Exception {
