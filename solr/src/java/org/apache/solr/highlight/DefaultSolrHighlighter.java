@@ -136,7 +136,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
 
   /**
-   * Return a phrase Highlighter appropriate for this field.
+   * Return a phrase {@link org.apache.lucene.search.highlight.Highlighter} appropriate for this field.
    * @param query The current Query
    * @param fieldName The name of the field
    * @param request The current SolrQueryRequest
@@ -155,7 +155,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
   
   /**
-   * Return a Highlighter appropriate for this field.
+   * Return a {@link org.apache.lucene.search.highlight.Highlighter} appropriate for this field.
    * @param query The current Query
    * @param fieldName The name of the field
    * @param request The current SolrQueryRequest
@@ -170,7 +170,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
   
   /**
-   * Return a SpanScorer suitable for this Query and field.
+   * Return a {@link org.apache.lucene.search.highlight.QueryScorer} suitable for this Query and field.
    * @param query The current query
    * @param tokenStream document text CachingTokenStream
    * @param fieldName The name of the field
@@ -195,7 +195,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
 
   /**
-   * Return a QueryScorer suitable for this Query and field.
+   * Return a {@link org.apache.lucene.search.highlight.Scorer} suitable for this Query and field.
    * @param query The current query
    * @param fieldName The name of the field
    * @param request The SolrQueryRequest
@@ -231,13 +231,13 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
   
   /**
-   * Return a formatter appropriate for this field. If a formatter
+   * Return a {@link org.apache.lucene.search.highlight.Formatter} appropriate for this field. If a formatter
    * has not been configured for this field, fall back to the configured
-   * default or the solr default (SimpleHTMLFormatter).
+   * default or the solr default ({@link org.apache.lucene.search.highlight.SimpleHTMLFormatter}).
    * 
    * @param fieldName The name of the field
    * @param params The params controlling Highlighting
-   * @return An appropriate Formatter.
+   * @return An appropriate {@link org.apache.lucene.search.highlight.Formatter}.
    */
   protected Formatter getFormatter(String fieldName, SolrParams params ) 
   {
@@ -250,13 +250,13 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
   
   /**
-   * Return a fragmenter appropriate for this field. If a fragmenter
+   * Return a {@link org.apache.lucene.search.highlight.Fragmenter} appropriate for this field. If a fragmenter
    * has not been configured for this field, fall back to the configured
-   * default or the solr default (GapFragmenter).
+   * default or the solr default ({@link org.apache.lucene.search.highlight.GapFragmenter}).
    * 
    * @param fieldName The name of the field
    * @param params The params controlling Highlighting
-   * @return An appropriate Fragmenter.
+   * @return An appropriate {@link org.apache.lucene.search.highlight.Fragmenter}.
    */
   protected Fragmenter getFragmenter(String fieldName, SolrParams params) 
   {
