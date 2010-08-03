@@ -102,9 +102,6 @@ public class _TestUtil {
     for (int i = 0; i < end; i++) {
       int t = r.nextInt(5);
 
-      // nocommit
-      //buffer[i] = (char) nextInt(r, 0x41, 0x61);
-
       if (0 == t && i < end - 1) {
         // Make a surrogate pair
         // High surrogate
