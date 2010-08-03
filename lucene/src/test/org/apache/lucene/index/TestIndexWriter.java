@@ -54,6 +54,7 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
@@ -5072,59 +5073,76 @@ public class TestIndexWriter extends LuceneTestCase {
   public void testRandomStoredFields() throws IOException {
     File index = _TestUtil.getTempDir("lucenerandfields");
     Directory dir = FSDirectory.open(index);
-    try {
-      Random rand = newRandom();
-      RandomIndexWriter w = new RandomIndexWriter(rand, dir, newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(_TestUtil.nextInt(rand, 5, 20)));
-      final int docCount = 200*RANDOM_MULTIPLIER;
-      final int fieldCount = _TestUtil.nextInt(rand, 1, 5);
-      String[][] fields = new String[fieldCount][];
-      for(int i=0;i<fieldCount;i++) {
-        fields[i] = new String[docCount];
-      }
+    // nocommit seed
+    //Random rand = newRandom(1864464794067677128L);
+    Random rand = newRandom();
+    RandomIndexWriter w = new RandomIndexWriter(rand, dir, newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(_TestUtil.nextInt(rand, 5, 20)));
+    //w.w.setInfoStream(System.out);
+    //w.w.setUseCompoundFile(false);
+    final int docCount = 200*RANDOM_MULTIPLIER;
+    final int fieldCount = _TestUtil.nextInt(rand, 1, 5);
+      
+    final List<Integer> fieldIDs = new ArrayList<Integer>();
 
-      final List<Integer> fieldIDs = new ArrayList<Integer>();
+    Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
 
-      for(int i=0;i<fieldCount;i++) {
-        fieldIDs.add(i);
-      }
+    for(int i=0;i<fieldCount;i++) {
+      fieldIDs.add(i);
+    }
+
+    final Map<String,Document> docs = new HashMap<String,Document>();
     
-      for(int i=0;i<docCount;i++) {
-        Document doc = new Document();
-        for(int field: fieldIDs) {
-          final String s;
-          if (rand.nextInt(4) != 3) {
-            s = _TestUtil.randomUnicodeString(rand, 1000);
-            doc.add(new Field("f"+field, s, Field.Store.YES, Field.Index.NO));
-          } else {
-            s = null;
-          }
-          fields[field][i] = s;
-        }
-        w.addDocument(doc);
-        if (rand.nextInt(50) == 17) {
-          // mixup binding of field name -> Number every so often
-          Collections.shuffle(fieldIDs);
+    for(int i=0;i<docCount;i++) {
+      Document doc = new Document();
+      doc.add(idField);
+      final String id = ""+i;
+      idField.setValue(id);
+      docs.put(id, doc);
+
+      for(int field: fieldIDs) {
+        final String s;
+        if (rand.nextInt(4) != 3) {
+          s = _TestUtil.randomUnicodeString(rand, 1000);
+          doc.add(new Field("f"+field, s, Field.Store.YES, Field.Index.NO));
+        } else {
+          s = null;
         }
       }
+      w.addDocument(doc);
+      if (rand.nextInt(50) == 17) {
+        // mixup binding of field name -> Number every so often
+        Collections.shuffle(fieldIDs);
+      }
+      if (rand.nextInt(5) == 3 && i > 0) {
+        final String delID = ""+rand.nextInt(i);
+        w.deleteDocuments(new Term("id", delID));
+        docs.remove(delID);
+      }
+    }
+
+    if (docs.size() > 0) {
+      String[] idsList = docs.keySet().toArray(new String[docs.size()]);
 
       for(int x=0;x<2;x++) {
         IndexReader r = w.getReader();
+        IndexSearcher s = new IndexSearcher(r);
 
         for(int iter=0;iter<1000*RANDOM_MULTIPLIER;iter++) {
-          int docID = rand.nextInt(docCount);
-          Document doc = r.document(docID);
+          String testID = idsList[rand.nextInt(idsList.length)];
+          TopDocs hits = s.search(new TermQuery(new Term("id", testID)), 1);
+          assertEquals(1, hits.totalHits);
+          Document doc = r.document(hits.scoreDocs[0].doc);
+          Document docExp = docs.get(testID);
           for(int i=0;i<fieldCount;i++) {
-            assertEquals(fields[i][docID], doc.get("f"+i));
+            assertEquals("doc " + testID + ", field f" + fieldCount + " is wrong", docExp.get("f"+i),  doc.get("f"+i));
           }
         }
         r.close();
         w.optimize();
       }
-      w.close();
-
-    } finally {
-      dir.close();
-      _TestUtil.rmDir(index);
     }
+    w.close();
+    dir.close();
+    _TestUtil.rmDir(index);
   }
 }
