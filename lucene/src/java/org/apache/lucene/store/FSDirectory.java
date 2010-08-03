@@ -460,7 +460,7 @@ public abstract class FSDirectory extends Directory {
       // buffer size, and the given IndexInput supports FileChannel copying.
       // NOTE: the below check relies on NIOIndexInput extending Simple. If that
       // changes in the future, we should change the check as well.
-      if (numBytes <= BUFFER_SIZE || !(input instanceof SimpleFSIndexInput)) {
+      if (true || numBytes <= BUFFER_SIZE || !(input instanceof SimpleFSIndexInput)) {
         super.copyBytes(input, numBytes);
         return;
       }
