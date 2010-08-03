@@ -220,6 +220,8 @@ New Features
   to dates.  
   (Gijs Kunze, hossman)
 
+* SOLR-2021: Add SolrEncoder plugin to Highlighter. (koji)
+
 Optimizations
 ----------------------
 

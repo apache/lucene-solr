@@ -44,6 +44,10 @@ public abstract class SolrHighlighter
     new HashMap<String, SolrFormatter>();
 
   // Thread safe registry
+  protected final Map<String,SolrEncoder> encoders =
+    new HashMap<String, SolrEncoder>();
+
+  // Thread safe registry
   protected final Map<String,SolrFragmenter> fragmenters =
     new HashMap<String, SolrFragmenter>() ;
 
