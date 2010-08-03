@@ -80,6 +80,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
 
   public void init(PluginInfo info) {
     formatters.clear();
+    encoders.clear();
     fragmenters.clear();
     fragListBuilders.clear();
     fragmentsBuilders.clear();
@@ -95,6 +96,12 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     if (fmt == null) fmt = new HtmlFormatter();
     formatters.put("", fmt);
     formatters.put(null, fmt);
+
+    // Load the formatters
+    SolrEncoder enc = solrCore.initPlugins(info.getChildren("encoder"), encoders,SolrEncoder.class,null);
+    if (enc == null) enc = new DefaultEncoder();
+    encoders.put("", enc);
+    encoders.put(null, enc);
 
     // Load the FragListBuilders
     SolrFragListBuilder fragListBuilder = solrCore.initPlugins(info.getChildren("fragListBuilder"),
@@ -126,6 +133,10 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     formatters.put("", fmt);
     formatters.put(null, fmt);    
 
+    SolrEncoder enc = new DefaultEncoder();
+    encoders.put("", enc);
+    encoders.put(null, enc);    
+
     SolrFragListBuilder fragListBuilder = new SimpleFragListBuilder();
     fragListBuilders.put( "", fragListBuilder );
     fragListBuilders.put( null, fragListBuilder );
@@ -147,7 +158,10 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     SolrParams params = request.getParams();
     Highlighter highlighter = null;
     
-    highlighter = new Highlighter(getFormatter(fieldName, params), getSpanQueryScorer(query, fieldName, tokenStream, request));
+    highlighter = new Highlighter(
+        getFormatter(fieldName, params),
+        getEncoder(fieldName, params),
+        getSpanQueryScorer(query, fieldName, tokenStream, request));
     
     highlighter.setTextFragmenter(getFragmenter(fieldName, params));
 
@@ -164,6 +178,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     SolrParams params = request.getParams(); 
     Highlighter highlighter = new Highlighter(
            getFormatter(fieldName, params), 
+           getEncoder(fieldName, params),
            getQueryScorer(query, fieldName, request));
      highlighter.setTextFragmenter(getFragmenter(fieldName, params));
        return highlighter;
@@ -247,6 +262,24 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unknown formatter: "+str );
     }
     return formatter.getFormatter( fieldName, params );
+  }
+
+  /**
+   * Return an {@link org.apache.lucene.search.highlight.Encoder} appropriate for this field. If an encoder
+   * has not been configured for this field, fall back to the configured
+   * default or the solr default ({@link org.apache.lucene.search.highlight.DefaultEncoder}).
+   * 
+   * @param fieldName The name of the field
+   * @param params The params controlling Highlighting
+   * @return An appropriate {@link org.apache.lucene.search.highlight.Encoder}.
+   */
+  protected Encoder getEncoder(String fieldName, SolrParams params){
+    String str = params.getFieldParam( fieldName, HighlightParams.ENCODER );
+    SolrEncoder encoder = encoders.get( str );
+    if( encoder == null ) {
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unknown encoder: "+str );
+    }
+    return encoder.getEncoder( fieldName, params );
   }
   
   /**
