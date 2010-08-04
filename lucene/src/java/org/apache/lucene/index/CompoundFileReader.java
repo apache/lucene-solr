@@ -311,6 +311,11 @@ public class CompoundFileReader extends Directory {
           // If there are more bytes left to copy, delegate the copy task to the
           // base IndexInput, in case it can do an optimized copy.
           if (numBytes > 0) {
+            long start = getFilePointer();
+            if (start + numBytes > length) {
+              throw new IOException("read past EOF");
+            }
+            base.seek(fileOffset + start);
             base.copyBytes(out, numBytes);
           }
         }
