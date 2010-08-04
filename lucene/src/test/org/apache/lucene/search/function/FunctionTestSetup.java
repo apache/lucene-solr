@@ -22,11 +22,13 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Fieldable;
-import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util._TestUtil;
+import java.util.Random;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -95,7 +97,12 @@ public class FunctionTestSetup extends LuceneTestCaseJ4 {
     // prepare a small index with just a few documents.  
     dir = new RAMDirectory();
     anlzr = new MockAnalyzer();
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, anlzr));
+    Random r = newRandom();
+    IndexWriterConfig iwc = newIndexWriterConfig(r, TEST_VERSION_CURRENT, anlzr);
+    if (doMultiSegment) {
+      iwc.setMaxBufferedDocs(_TestUtil.nextInt(r, 2, 7));
+    }
+    RandomIndexWriter iw = new RandomIndexWriter(r, dir, iwc);
     // add docs not exactly in natural ID order, to verify we do check the order of docs by scores
     int remaining = N_DOCS;
     boolean done[] = new boolean[N_DOCS];
@@ -107,15 +114,15 @@ public class FunctionTestSetup extends LuceneTestCaseJ4 {
       addDoc(iw, i);
       done[i] = true;
       i = (i + 4) % N_DOCS;
-      if (doMultiSegment && remaining % 3 == 0) {
-        iw.commit();
-      }
       remaining --;
+    }
+    if (!doMultiSegment) {
+      iw.optimize();
     }
     iw.close();
   }
 
-  private void addDoc(IndexWriter iw, int i) throws Exception {
+  private void addDoc(RandomIndexWriter iw, int i) throws Exception {
     Document d = new Document();
     Fieldable f;
     int scoreAndID = i + 1;
