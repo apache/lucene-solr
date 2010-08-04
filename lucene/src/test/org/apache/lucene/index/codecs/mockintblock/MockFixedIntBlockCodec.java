@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.sep;
+package org.apache.lucene.index.codecs.mockintblock;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,10 +26,12 @@ import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.index.codecs.sep.SepPostingsReaderImpl;
+import org.apache.lucene.index.codecs.sep.SepPostingsWriterImpl;
 import org.apache.lucene.index.codecs.standard.SimpleStandardTermsIndexReader;
 import org.apache.lucene.index.codecs.standard.SimpleStandardTermsIndexWriter;
-import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
 import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
+import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
 import org.apache.lucene.index.codecs.standard.StandardTermsDictReader;
 import org.apache.lucene.index.codecs.standard.StandardTermsDictWriter;
 import org.apache.lucene.index.codecs.standard.StandardTermsIndexReader;
@@ -38,17 +40,21 @@ import org.apache.lucene.index.codecs.standard.StandardCodec;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
-/** @lucene.experimental */
-public class SepCodec extends Codec {
+/**
+ * A silly codec that simply writes each block as a series
+ * of vInts.  Don't use this (performance will be poor)!
+ * This is here just to test the core intblock codec
+ * classes.
+ */
+public class MockFixedIntBlockCodec extends Codec {
 
-  public SepCodec() {
-    name = "Sep";
+  public MockFixedIntBlockCodec() {
+    name = "MockFixedIntBlock";
   }
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-
-    StandardPostingsWriter postingsWriter = new SepPostingsWriterImpl(state, new SingleIntFactory());
+    StandardPostingsWriter postingsWriter = new SepPostingsWriterImpl(state, new MockFixedIntBlockFactory(1024));
 
     boolean success = false;
     StandardTermsIndexWriter indexWriter;
@@ -77,16 +83,12 @@ public class SepCodec extends Codec {
     }
   }
 
-  final static String DOC_EXTENSION = "doc";
-  final static String SKIP_EXTENSION = "skp";
-  final static String FREQ_EXTENSION = "frq";
-  final static String POS_EXTENSION = "pos";
-  final static String PAYLOAD_EXTENSION = "pyl";
-
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-
-    StandardPostingsReader postingsReader = new SepPostingsReaderImpl(state.dir, state.segmentInfo, state.readBufferSize, new SingleIntFactory());
+    StandardPostingsReader postingsReader = new SepPostingsReaderImpl(state.dir,
+                                                                      state.segmentInfo,
+                                                                      state.readBufferSize,
+                                                                      new MockFixedIntBlockFactory(1024));
 
     StandardTermsIndexReader indexReader;
     boolean success = false;
@@ -135,15 +137,7 @@ public class SepCodec extends Codec {
 
   @Override
   public void getExtensions(Set<String> extensions) {
-    getSepExtensions(extensions);
-  }
-
-  public static void getSepExtensions(Set<String> extensions) {
-    extensions.add(DOC_EXTENSION);
-    extensions.add(FREQ_EXTENSION);
-    extensions.add(SKIP_EXTENSION);
-    extensions.add(POS_EXTENSION);
-    extensions.add(PAYLOAD_EXTENSION);
+    SepPostingsWriterImpl.getExtensions(extensions);
     StandardTermsDictReader.getExtensions(extensions);
     SimpleStandardTermsIndexReader.getIndexExtensions(extensions);
   }

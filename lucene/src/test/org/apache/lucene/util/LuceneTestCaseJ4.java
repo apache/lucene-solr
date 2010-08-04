@@ -30,6 +30,9 @@ import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
+import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
+import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
+import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockCodec;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -152,51 +155,81 @@ public class LuceneTestCaseJ4 {
   // saves default codec: we do this statically as many build indexes in @beforeClass
   private static String savedDefaultCodec;
   private static String codec;
-  private static Codec preFlexSav;
   
-  // returns current PreFlex codec
-  public static Codec installPreFlexRW() {
-    final Codec preFlex = CodecProvider.getDefault().lookup("PreFlex");
-    if (preFlex != null) {
-      CodecProvider.getDefault().unregister(preFlex);
+  private static final String[] TEST_CODECS = new String[] {"MockSep", "MockFixedIntBlock"};
+
+  private static void swapCodec(Codec c) {
+    final CodecProvider cp = CodecProvider.getDefault();
+    Codec prior = null;
+    try {
+      prior = cp.lookup(c.name);
+    } catch (IllegalArgumentException iae) {
     }
-    CodecProvider.getDefault().register(new PreFlexRWCodec());
-    return preFlex;
+    if (prior != null) {
+      cp.unregister(prior);
+    }
+    cp.register(c);
+  }
+
+  // returns current default codec
+  static String installTestCodecs() {
+    final CodecProvider cp = CodecProvider.getDefault();
+
+    savedDefaultCodec = CodecProvider.getDefaultCodec();
+    String codec = TEST_CODEC;
+    if (codec.equals("random")) {
+      codec = pickRandomCodec(seedRnd);
+    }
+    CodecProvider.setDefaultCodec(codec);
+
+    if (codec.equals("PreFlex")) {
+      // If we're running w/ PreFlex codec we must swap in the
+      // test-only PreFlexRW codec (since core PreFlex can
+      // only read segments):
+      swapCodec(new PreFlexRWCodec());
+    }
+
+    swapCodec(new MockSepCodec());
+    swapCodec(new MockFixedIntBlockCodec());
+
+    return codec;
   }
 
   // returns current PreFlex codec
-  public static void restorePreFlex(Codec preFlex) {
-    Codec preFlexRW = CodecProvider.getDefault().lookup("PreFlex");
-    if (preFlexRW != null) {
-      CodecProvider.getDefault().unregister(preFlexRW);
+  static void removeTestCodecs(String codec) {
+    System.out.println("remove");
+    final CodecProvider cp = CodecProvider.getDefault();
+    if (codec.equals("PreFlex")) {
+      final Codec preFlex = cp.lookup("PreFlex");
+      if (preFlex != null) {
+        cp.unregister(preFlex);
+      }
+      cp.register(new PreFlexCodec());
     }
-    CodecProvider.getDefault().register(preFlex);
+    cp.unregister(cp.lookup("MockSep"));
+    cp.unregister(cp.lookup("MockFixedIntBlock"));
+    CodecProvider.setDefaultCodec(savedDefaultCodec);
+  }
+
+  // randomly picks from core and test codecs
+  static String pickRandomCodec(Random rnd) {
+    int idx = rnd.nextInt(CodecProvider.CORE_CODECS.length + 
+                          TEST_CODECS.length);
+    if (idx < CodecProvider.CORE_CODECS.length) {
+      return CodecProvider.CORE_CODECS[idx];
+    } else {
+      return TEST_CODECS[idx - CodecProvider.CORE_CODECS.length];
+    }
   }
 
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
-    savedDefaultCodec = CodecProvider.getDefaultCodec();
-    codec = TEST_CODEC;
-    if (codec.equals("random"))
-      codec = CodecProvider.CORE_CODECS[seedRnd.nextInt(CodecProvider.CORE_CODECS.length)];
-
-    // If we're running w/ PreFlex codec we must swap in the
-    // test-only PreFlexRW codec (since core PreFlex can
-    // only read segments):
-    if (codec.equals("PreFlex")) {
-      preFlexSav = installPreFlexRW();
-    } 
-
-    CodecProvider.setDefaultCodec(codec);
+    codec = installTestCodecs();
   }
   
   @AfterClass
   public static void afterClassLuceneTestCaseJ4() {
-    // Restore read-only PreFlex codec:
-    if (codec.equals("PreFlex")) {
-      restorePreFlex(preFlexSav);
-    } 
-    CodecProvider.setDefaultCodec(savedDefaultCodec);
+    removeTestCodecs(codec);
   }
 
   // This is how we get control when errors occur.

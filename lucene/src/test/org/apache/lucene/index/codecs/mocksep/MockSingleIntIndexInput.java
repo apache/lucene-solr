@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.sep;
+package org.apache.lucene.index.codecs.mocksep;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.CodecUtil;
+import org.apache.lucene.index.codecs.sep.IntIndexInput;
 
 /** Reads IndexInputs written with {@link
  *  SingleIntIndexOutput}.  NOTE: this class is just for
@@ -30,14 +31,15 @@ import org.apache.lucene.util.CodecUtil;
  *
  * @lucene.experimental
  */
-public class SingleIntIndexInput extends IntIndexInput {
+public class MockSingleIntIndexInput extends IntIndexInput {
   private final IndexInput in;
 
-  public SingleIntIndexInput(Directory dir, String fileName, int readBufferSize)
+  public MockSingleIntIndexInput(Directory dir, String fileName, int readBufferSize)
     throws IOException {
     in = dir.openInput(fileName, readBufferSize);
-    CodecUtil.checkHeader(in, SingleIntIndexOutput.CODEC,
-      SingleIntIndexOutput.VERSION_START, SingleIntIndexOutput.VERSION_START);
+    CodecUtil.checkHeader(in, MockSingleIntIndexOutput.CODEC,
+                          MockSingleIntIndexOutput.VERSION_START,
+                          MockSingleIntIndexOutput.VERSION_START);
   }
 
   @Override

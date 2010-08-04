@@ -32,7 +32,7 @@ import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.index.codecs.PostingsConsumer;
 import org.apache.lucene.index.codecs.TermsConsumer;
-import org.apache.lucene.index.codecs.sep.SepCodec;
+import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
@@ -344,7 +344,7 @@ public class TestCodecs extends MultiCodecTestCase {
     final Directory dir = new RAMDirectory();
     final IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_31,
       new MockAnalyzer());
-    config.setCodecProvider(new SepCodecs());
+    config.setCodecProvider(new MockSepCodecs());
     final IndexWriter writer = new IndexWriter(dir, config);
 
     try {
@@ -397,15 +397,15 @@ public class TestCodecs extends MultiCodecTestCase {
     }
   }
 
-  public static class SepCodecs extends CodecProvider {
+  public static class MockSepCodecs extends CodecProvider {
 
-    protected SepCodecs() {
-      this.register(new SepCodec());
+    protected MockSepCodecs() {
+      this.register(new MockSepCodec());
     }
 
     @Override
     public Codec getWriter(final SegmentWriteState state) {
-      return this.lookup("Sep");
+      return this.lookup("MockSep");
     }
 
   }

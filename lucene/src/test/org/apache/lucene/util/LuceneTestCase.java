@@ -36,8 +36,6 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
-import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.codecs.Codec;
 
 /** 
  * Base class for all Lucene unit tests.  
@@ -85,9 +83,7 @@ public abstract class LuceneTestCase extends TestCase {
   
   private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;
   
-  private String savedDefaultCodec;
   private String codec;
-  private Codec preFlexSav;
 
   /** Used to track if setUp and tearDown are called correctly from subclasses */
   private boolean setup;
@@ -127,19 +123,7 @@ public abstract class LuceneTestCase extends TestCase {
     
     ConcurrentMergeScheduler.setTestMode();
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
-    savedDefaultCodec = CodecProvider.getDefaultCodec();
-
-    codec = TEST_CODEC;
-    if (codec.equals("random"))
-      codec = CodecProvider.CORE_CODECS[seedRnd.nextInt(CodecProvider.CORE_CODECS.length)];
-
-    // If we're running w/ PreFlex codec we must swap in the
-    // test-only PreFlexRW codec (since core PreFlex can
-    // only read segments):
-    if (codec.equals("PreFlex")) {
-      preFlexSav = LuceneTestCaseJ4.installPreFlexRW();
-    } 
-    CodecProvider.setDefaultCodec(codec);
+    codec = LuceneTestCaseJ4.installTestCodecs();
   }
 
   /**
@@ -165,11 +149,7 @@ public abstract class LuceneTestCase extends TestCase {
     assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
     setup = false;
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
-    // Restore read-only PreFlex codec:
-    if (codec.equals("PreFlex")) {
-      LuceneTestCaseJ4.restorePreFlex(preFlexSav);
-    } 
-    CodecProvider.setDefaultCodec(savedDefaultCodec);
+    LuceneTestCaseJ4.removeTestCodecs(codec);
     
     try {
       Thread.setDefaultUncaughtExceptionHandler(savedUncaughtExceptionHandler);

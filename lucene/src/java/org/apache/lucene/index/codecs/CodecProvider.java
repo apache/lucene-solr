@@ -23,10 +23,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.codecs.intblock.IntBlockCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
-import org.apache.lucene.index.codecs.sep.SepCodec;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
 
 /** Holds a set of codecs, keyed by name.  You subclass
@@ -47,7 +45,7 @@ public abstract class CodecProvider {
 
   private static String defaultCodec = "Standard";
 
-  public final static String[] CORE_CODECS = new String[] {"Standard", "Sep", "Pulsing", "IntBlock", "PreFlex"};
+  public final static String[] CORE_CODECS = new String[] {"Standard", "Pulsing", "PreFlex"};
 
   public synchronized void register(Codec codec) {
     if (codec.name == null) {
@@ -116,10 +114,8 @@ public abstract class CodecProvider {
 class DefaultCodecProvider extends CodecProvider {
   DefaultCodecProvider() {
     register(new StandardCodec());
-    register(new IntBlockCodec());
     register(new PreFlexCodec());
     register(new PulsingCodec());
-    register(new SepCodec());
   }
 
   @Override

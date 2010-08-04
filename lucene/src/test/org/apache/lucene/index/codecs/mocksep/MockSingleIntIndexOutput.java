@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.sep;
+package org.apache.lucene.index.codecs.mocksep;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -20,7 +20,7 @@ package org.apache.lucene.index.codecs.sep;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.CodecUtil;
-
+import org.apache.lucene.index.codecs.sep.IntIndexOutput;
 import java.io.IOException;
 
 /** Writes ints directly to the file (not in blocks) as
@@ -28,13 +28,13 @@ import java.io.IOException;
  * 
  * @lucene.experimental
 */
-public class SingleIntIndexOutput extends IntIndexOutput {
+public class MockSingleIntIndexOutput extends IntIndexOutput {
   private final IndexOutput out;
   final static String CODEC = "SINGLE_INTS";
   final static int VERSION_START = 0;
   final static int VERSION_CURRENT = VERSION_START;
 
-  public SingleIntIndexOutput(Directory dir, String fileName) throws IOException {
+  public MockSingleIntIndexOutput(Directory dir, String fileName) throws IOException {
     out = dir.createOutput(fileName);
     CodecUtil.writeHeader(out, CODEC, VERSION_CURRENT);
   }

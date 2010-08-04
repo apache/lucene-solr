@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.sep;
+package org.apache.lucene.index.codecs.mockintblock;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -18,16 +18,27 @@ package org.apache.lucene.index.codecs.sep;
  */
 
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.index.codecs.sep.IntStreamFactory;
+import org.apache.lucene.index.codecs.sep.IntIndexInput;
+import org.apache.lucene.index.codecs.sep.IntIndexOutput;
+
 import java.io.IOException;
 
-/** @lucene.experimental */
-public class SingleIntFactory extends IntStreamFactory {
+/** Silly int factory that reads/writes block of ints by
+ *  simply encoding each as vInt.  Don't use this
+ *  (performance will be poor)!  This is here just to test
+ *  the core intblock codec classes.*/
+public class MockFixedIntBlockFactory extends IntStreamFactory {
+  private final int blockSize;
+  public MockFixedIntBlockFactory(int blockSize) {
+    this.blockSize = blockSize;
+  }
   @Override
   public IntIndexInput openInput(Directory dir, String fileName, int readBufferSize) throws IOException {
-    return new SingleIntIndexInput(dir, fileName, readBufferSize);
+    return new MockFixedIntBlockIndexInput(dir, fileName, readBufferSize);
   }
   @Override
   public IntIndexOutput createOutput(Directory dir, String fileName) throws IOException {
-    return new SingleIntIndexOutput(dir, fileName);
+    return new MockFixedIntBlockIndexOutput(dir, fileName, blockSize);
   }
 }

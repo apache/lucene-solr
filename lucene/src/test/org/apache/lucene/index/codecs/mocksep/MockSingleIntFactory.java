@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.intblock;
+package org.apache.lucene.index.codecs.mocksep;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -25,17 +25,13 @@ import org.apache.lucene.index.codecs.sep.IntIndexOutput;
 import java.io.IOException;
 
 /** @lucene.experimental */
-public class SimpleIntBlockFactory extends IntStreamFactory {
-  private final int blockSize;
-  public SimpleIntBlockFactory(int blockSize) {
-    this.blockSize = blockSize;
-  }
+public class MockSingleIntFactory extends IntStreamFactory {
   @Override
   public IntIndexInput openInput(Directory dir, String fileName, int readBufferSize) throws IOException {
-    return new SimpleIntBlockIndexInput(dir, fileName, readBufferSize);
+    return new MockSingleIntIndexInput(dir, fileName, readBufferSize);
   }
   @Override
   public IntIndexOutput createOutput(Directory dir, String fileName) throws IOException {
-    return new SimpleIntBlockIndexOutput(dir, fileName, blockSize);
+    return new MockSingleIntIndexOutput(dir, fileName);
   }
 }

@@ -18,6 +18,7 @@ u * contributor license agreements.  See the NOTICE file distributed with
  */
 
 import java.io.IOException;
+import java.util.Set;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
@@ -34,6 +35,12 @@ import org.apache.lucene.util.CodecUtil;
  * @lucene.experimental */
 public final class SepPostingsWriterImpl extends StandardPostingsWriter {
   final static String CODEC = "SepDocFreqSkip";
+
+  final static String DOC_EXTENSION = "doc";
+  final static String SKIP_EXTENSION = "skp";
+  final static String FREQ_EXTENSION = "frq";
+  final static String POS_EXTENSION = "pos";
+  final static String PAYLOAD_EXTENSION = "pyl";
 
   // Increment version to change it:
   final static int VERSION_START = 0;
@@ -76,24 +83,24 @@ public final class SepPostingsWriterImpl extends StandardPostingsWriter {
   public SepPostingsWriterImpl(SegmentWriteState state, IntStreamFactory factory) throws IOException {
     super();
 
-    final String docFileName = IndexFileNames.segmentFileName(state.segmentName, "", SepCodec.DOC_EXTENSION);
+    final String docFileName = IndexFileNames.segmentFileName(state.segmentName, "", DOC_EXTENSION);
     state.flushedFiles.add(docFileName);
     docOut = factory.createOutput(state.directory, docFileName);
     docIndex = docOut.index();
 
     if (state.fieldInfos.hasProx()) {
-      final String frqFileName = IndexFileNames.segmentFileName(state.segmentName, "", SepCodec.FREQ_EXTENSION);
+      final String frqFileName = IndexFileNames.segmentFileName(state.segmentName, "", FREQ_EXTENSION);
       state.flushedFiles.add(frqFileName);
       freqOut = factory.createOutput(state.directory, frqFileName);
       freqIndex = freqOut.index();
 
-      final String posFileName = IndexFileNames.segmentFileName(state.segmentName, "", SepCodec.POS_EXTENSION);
+      final String posFileName = IndexFileNames.segmentFileName(state.segmentName, "", POS_EXTENSION);
       posOut = factory.createOutput(state.directory, posFileName);
       state.flushedFiles.add(posFileName);
       posIndex = posOut.index();
 
       // TODO: -- only if at least one field stores payloads?
-      final String payloadFileName = IndexFileNames.segmentFileName(state.segmentName, "", SepCodec.PAYLOAD_EXTENSION);
+      final String payloadFileName = IndexFileNames.segmentFileName(state.segmentName, "", PAYLOAD_EXTENSION);
       state.flushedFiles.add(payloadFileName);
       payloadOut = state.directory.createOutput(payloadFileName);
 
@@ -105,7 +112,7 @@ public final class SepPostingsWriterImpl extends StandardPostingsWriter {
       payloadOut = null;
     }
 
-    final String skipFileName = IndexFileNames.segmentFileName(state.segmentName, "", SepCodec.SKIP_EXTENSION);
+    final String skipFileName = IndexFileNames.segmentFileName(state.segmentName, "", SKIP_EXTENSION);
     state.flushedFiles.add(skipFileName);
     skipOut = state.directory.createOutput(skipFileName);
 
@@ -283,5 +290,13 @@ public final class SepPostingsWriterImpl extends StandardPostingsWriter {
         }
       }
     }
+  }
+
+  public static void getExtensions(Set<String> extensions) {
+    extensions.add(DOC_EXTENSION);
+    extensions.add(FREQ_EXTENSION);
+    extensions.add(SKIP_EXTENSION);
+    extensions.add(POS_EXTENSION);
+    extensions.add(PAYLOAD_EXTENSION);
   }
 }

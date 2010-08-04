@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.intblock;
+package org.apache.lucene.index.codecs.mockintblock;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -24,22 +24,19 @@ package org.apache.lucene.index.codecs.intblock;
 import org.apache.lucene.util.CodecUtil;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexOutput;
 
 import java.io.IOException;
 
-/**
- * Don't use this class!!  It naively encodes ints one vInt
- * at a time.  Use it only for testing.
- *
- * @lucene.experimental
- */
-public class SimpleIntBlockIndexOutput extends FixedIntBlockIndexOutput {
+/** Don't use this class!!  It naively encodes ints one vInt
+ * at a time.  Use it only for testing. */
+public class MockFixedIntBlockIndexOutput extends FixedIntBlockIndexOutput {
 
   public final static String CODEC = "SIMPLE_INT_BLOCKS";
   public final static int VERSION_START = 0;
   public final static int VERSION_CURRENT = VERSION_START;
 
-  public SimpleIntBlockIndexOutput(Directory dir, String fileName, int blockSize) throws IOException {
+  public MockFixedIntBlockIndexOutput(Directory dir, String fileName, int blockSize) throws IOException {
     IndexOutput out = dir.createOutput(fileName);
     CodecUtil.writeHeader(out, CODEC, VERSION_CURRENT);
     init(out, blockSize);
