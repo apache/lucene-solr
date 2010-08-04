@@ -378,7 +378,7 @@ public class QueryUtils {
   // check that first skip on just created scorers always goes to the right doc
   private static void checkFirstSkipTo(final Query q, final IndexSearcher s) throws IOException {
     //System.out.println("checkFirstSkipTo: "+q);
-    final float maxDiff = 1e-5f;
+    final float maxDiff = 1e-3f;
     final int lastDoc[] = {-1};
     final IndexReader lastReader[] = {null};
 
