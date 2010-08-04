@@ -197,7 +197,6 @@ public class LuceneTestCaseJ4 {
 
   // returns current PreFlex codec
   static void removeTestCodecs(String codec) {
-    System.out.println("remove");
     final CodecProvider cp = CodecProvider.getDefault();
     if (codec.equals("PreFlex")) {
       final Codec preFlex = cp.lookup("PreFlex");
