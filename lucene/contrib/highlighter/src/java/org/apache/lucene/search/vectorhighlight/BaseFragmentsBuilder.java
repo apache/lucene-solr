@@ -25,6 +25,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.MapFieldSelector;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.highlight.DefaultEncoder;
+import org.apache.lucene.search.highlight.Encoder;
 import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo;
 import org.apache.lucene.search.vectorhighlight.FieldFragList.WeightedFragInfo.SubInfo;
 import org.apache.lucene.search.vectorhighlight.FieldPhraseList.WeightedPhraseInfo.Toffs;
@@ -59,17 +61,34 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
   }
   
   public abstract List<WeightedFragInfo> getWeightedFragInfoList( List<WeightedFragInfo> src );
+
+  private static final Encoder NULL_ENCODER = new DefaultEncoder();
   
   public String createFragment( IndexReader reader, int docId,
       String fieldName, FieldFragList fieldFragList ) throws IOException {
-    String[] fragments = createFragments( reader, docId, fieldName, fieldFragList, 1 );
-    if( fragments == null || fragments.length == 0 ) return null;
-    return fragments[0];
+    return createFragment( reader, docId, fieldName, fieldFragList,
+        preTags, postTags, NULL_ENCODER );
   }
 
   public String[] createFragments( IndexReader reader, int docId,
       String fieldName, FieldFragList fieldFragList, int maxNumFragments )
       throws IOException {
+    return createFragments( reader, docId, fieldName, fieldFragList, maxNumFragments,
+        preTags, postTags, NULL_ENCODER );
+  }
+  
+  public String createFragment( IndexReader reader, int docId,
+      String fieldName, FieldFragList fieldFragList, String[] preTags, String[] postTags,
+      Encoder encoder ) throws IOException {
+    String[] fragments = createFragments( reader, docId, fieldName, fieldFragList, 1,
+        preTags, postTags, encoder );
+    if( fragments == null || fragments.length == 0 ) return null;
+    return fragments[0];
+  }
+
+  public String[] createFragments( IndexReader reader, int docId,
+      String fieldName, FieldFragList fieldFragList, int maxNumFragments,
+      String[] preTags, String[] postTags, Encoder encoder ) throws IOException {
     if( maxNumFragments < 0 )
       throw new IllegalArgumentException( "maxNumFragments(" + maxNumFragments + ") must be positive number." );
 
@@ -82,7 +101,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     int[] nextValueIndex = { 0 };
     for( int n = 0; n < maxNumFragments && n < fragInfos.size(); n++ ){
       WeightedFragInfo fragInfo = fragInfos.get( n );
-      fragments.add( makeFragment( buffer, nextValueIndex, values, fragInfo ) );
+      fragments.add( makeFragment( buffer, nextValueIndex, values, fragInfo, preTags, postTags, encoder ) );
     }
     return fragments.toArray( new String[fragments.size()] );
   }
@@ -102,25 +121,32 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
   @Deprecated
   protected String makeFragment( StringBuilder buffer, int[] index, String[] values, WeightedFragInfo fragInfo ){
     final int s = fragInfo.startOffset;
-    return makeFragment( fragInfo, getFragmentSource( buffer, index, values, s, fragInfo.endOffset ), s );
+    return makeFragment( fragInfo, getFragmentSource( buffer, index, values, s, fragInfo.endOffset ), s,
+        preTags, postTags, NULL_ENCODER );
   }
 
-  protected String makeFragment( StringBuilder buffer, int[] index, Field[] values, WeightedFragInfo fragInfo ){
+  protected String makeFragment( StringBuilder buffer, int[] index, Field[] values, WeightedFragInfo fragInfo,
+      String[] preTags, String[] postTags, Encoder encoder ){
     final int s = fragInfo.startOffset;
-    return makeFragment( fragInfo, getFragmentSource( buffer, index, values, s, fragInfo.endOffset ), s );
+    return makeFragment( fragInfo, getFragmentSource( buffer, index, values, s, fragInfo.endOffset ), s,
+        preTags, postTags, encoder );
   }
   
-  private String makeFragment( WeightedFragInfo fragInfo, String src, int s ){
+  private String makeFragment( WeightedFragInfo fragInfo, String src, int s,
+      String[] preTags, String[] postTags, Encoder encoder ){
     StringBuilder fragment = new StringBuilder();
     int srcIndex = 0;
     for( SubInfo subInfo : fragInfo.subInfos ){
       for( Toffs to : subInfo.termsOffsets ){
-        fragment.append( src.substring( srcIndex, to.startOffset - s ) ).append( getPreTag( subInfo.seqnum ) )
-          .append( src.substring( to.startOffset - s, to.endOffset - s ) ).append( getPostTag( subInfo.seqnum ) );
+        fragment
+          .append( encoder.encodeText( src.substring( srcIndex, to.startOffset - s ) ) )
+          .append( getPreTag( preTags, subInfo.seqnum ) )
+          .append( encoder.encodeText( src.substring( to.startOffset - s, to.endOffset - s ) ) )
+          .append( getPostTag( postTags, subInfo.seqnum ) );
         srcIndex = to.endOffset - s;
       }
     }
-    fragment.append( src.substring( srcIndex ) );
+    fragment.append( encoder.encodeText( src.substring( srcIndex ) ) );
     return fragment.toString();
   }
   
@@ -146,13 +172,21 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     int eo = buffer.length() < endOffset ? buffer.length() : endOffset;
     return buffer.substring( startOffset, eo );
   }
-  
+
   protected String getPreTag( int num ){
+    return getPreTag( preTags, num );
+  }
+  
+  protected String getPostTag( int num ){
+    return getPostTag( postTags, num );
+  }
+  
+  protected String getPreTag( String[] preTags, int num ){
     int n = num % preTags.length;
     return preTags[n];
   }
   
-  protected String getPostTag( int num ){
+  protected String getPostTag( String[] postTags, int num ){
     int n = num % postTags.length;
     return postTags[n];
   }
