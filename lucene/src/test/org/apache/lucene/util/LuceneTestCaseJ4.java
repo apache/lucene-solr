@@ -491,6 +491,9 @@ public class LuceneTestCaseJ4 {
     if (r.nextBoolean()) {
       c.setTermIndexInterval(_TestUtil.nextInt(r, 1, 1000));
     }
+    if (r.nextBoolean()) {
+      c.setMaxThreadStates(_TestUtil.nextInt(r, 1, 20));
+    }
     
     if (c.getMergePolicy() instanceof LogMergePolicy) {
       LogMergePolicy logmp = (LogMergePolicy) c.getMergePolicy();
