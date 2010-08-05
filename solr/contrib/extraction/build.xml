@@ -20,8 +20,6 @@
 <project name="solr-cell" default="build">
 
   <property name="solr-path" value="../.." />
-  <property name="tika.version" value="0.2-SNAPSHOT"/>
-  <property name="tika.lib" value="lib/tika-${tika.version}-standalone.jar"/>
 
   <import file="../../common-build.xml"/>
   
@@ -67,7 +65,7 @@
   <target name="build" depends="compile">
     <solr-jar destfile="${dest}/${fullnamever}.jar" basedir="${dest}/classes"
               manifest="../../${dest}/META-INF/MANIFEST.MF">
-      <!--<zipfileset src="${tika.lib}"/>-->
+
     </solr-jar>
   </target>
 
