@@ -29,7 +29,6 @@ import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
@@ -53,8 +52,7 @@ public class TestSpans extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     directory = new RAMDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(newRandom(), directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    RandomIndexWriter writer= new RandomIndexWriter(newRandom(), directory);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(new Field(field, docFields[i], Field.Store.YES, Field.Index.ANALYZED));

@@ -394,18 +394,18 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   }
 
   public void testDeletesOnDiskFull() throws IOException {
-    testOperationsOnDiskFull(false);
+    doTestOperationsOnDiskFull(false);
   }
 
   public void testUpdatesOnDiskFull() throws IOException {
-    testOperationsOnDiskFull(true);
+    doTestOperationsOnDiskFull(true);
   }
 
   /**
    * Make sure if modifier tries to commit but hits disk full that modifier
    * remains consistent and usable. Similar to TestIndexReader.testDiskFull().
    */
-  private void testOperationsOnDiskFull(boolean updates) throws IOException {
+  private void doTestOperationsOnDiskFull(boolean updates) throws IOException {
 
     Term searchTerm = new Term("content", "aaa");
     int START_COUNT = 157;
@@ -700,6 +700,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     try {
       modifier.commit();
     } catch (IOException ioe) {
+      // expected
       failed = true;
     }
 

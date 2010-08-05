@@ -24,8 +24,6 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
@@ -127,8 +125,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
     query.setSlop(slop);
 
     RAMDirectory ramDir = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, ramDir, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    RandomIndexWriter writer = new RandomIndexWriter(random, ramDir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     writer.addDocument(doc);
 
     IndexReader reader = writer.getReader();

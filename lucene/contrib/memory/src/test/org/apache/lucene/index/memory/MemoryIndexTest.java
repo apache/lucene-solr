@@ -27,18 +27,17 @@ import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.StopAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util._TestUtil;
 
 /**
  * Verifies that Lucene MemoryIndex and RAMDirectory have the same behaviour,
@@ -108,8 +107,8 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     
     RAMDirectory ramdir = new RAMDirectory();
     Analyzer analyzer = randomAnalyzer();
-    IndexWriter writer = new IndexWriter(ramdir, analyzer,
-        IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriter writer = new IndexWriter(ramdir,
+                                         new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
     Field field1 = new Field("foo", fooField.toString(), Field.Store.NO, Field.Index.ANALYZED);
     Field field2 = new Field("term", termField.toString(), Field.Store.NO, Field.Index.ANALYZED);

@@ -23,7 +23,6 @@ import java.util.Random;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
@@ -33,7 +32,6 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 /** Test BooleanQuery2 against BooleanQuery by overriding the standard query parser.
  * This also tests the scoring order of BooleanQuery.
@@ -54,8 +52,7 @@ public class TestBoolean2 extends LuceneTestCase {
     super.setUp();
     rnd = newRandom();
     RAMDirectory directory = new RAMDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(rnd, directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-
+    RandomIndexWriter writer= new RandomIndexWriter(rnd, directory);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(new Field(field, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
@@ -72,14 +69,14 @@ public class TestBoolean2 extends LuceneTestCase {
     int docCount = 0;
     do {
       final Directory copy = new RAMDirectory(dir2);
-      RandomIndexWriter w = new RandomIndexWriter(rnd, dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+      RandomIndexWriter w = new RandomIndexWriter(rnd, dir2);
       w.addIndexes(new Directory[] {copy});
       docCount = w.maxDoc();
       w.close();
       mulFactor *= 2;
     } while(docCount < 3000);
 
-    RandomIndexWriter w = new RandomIndexWriter(rnd, dir2, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    RandomIndexWriter w = new RandomIndexWriter(rnd, dir2);
     Document doc = new Document();
     doc.add(new Field("field2", "xxx", Field.Store.NO, Field.Index.ANALYZED));
     for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {

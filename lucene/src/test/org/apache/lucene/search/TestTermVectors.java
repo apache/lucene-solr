@@ -48,8 +48,7 @@ public class TestTermVectors extends LuceneTestCase {
   protected void setUp() throws Exception {                  
     super.setUp();
     random = newRandom();
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, new SimpleAnalyzer(TEST_VERSION_CURRENT));
     //writer.setUseCompoundFile(true);
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
@@ -109,8 +108,7 @@ public class TestTermVectors extends LuceneTestCase {
   
   public void testTermVectorsFieldOrder() throws IOException {
     Directory dir = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new SimpleAnalyzer(TEST_VERSION_CURRENT));
     Document doc = new Document();
     doc.add(new Field("c", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("a", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
@@ -245,8 +243,8 @@ public class TestTermVectors extends LuceneTestCase {
     
     Directory dir = new MockRAMDirectory();
     
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, 
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
+        newIndexWriterConfig(random, TEST_VERSION_CURRENT, 
         new SimpleAnalyzer(TEST_VERSION_CURRENT))
     .setOpenMode(OpenMode.CREATE));
     writer.addDocument(testDoc1);
@@ -362,7 +360,7 @@ public class TestTermVectors extends LuceneTestCase {
   // Test only a few docs having vectors
   public void testRareVectors() throws IOException {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
+        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
         .setOpenMode(OpenMode.CREATE));
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
@@ -397,7 +395,7 @@ public class TestTermVectors extends LuceneTestCase {
   // vectors up
   public void testMixedVectrosVectors() throws IOException {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, 
+        newIndexWriterConfig(random, TEST_VERSION_CURRENT, 
         new SimpleAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE));
     Document doc = new Document();
     doc.add(new Field("field", "one",

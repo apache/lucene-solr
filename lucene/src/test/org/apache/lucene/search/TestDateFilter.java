@@ -18,12 +18,11 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.SimpleAnalyzer;
+
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
@@ -47,8 +46,7 @@ public class TestDateFilter extends LuceneTestCase {
   public void testBefore() throws IOException {
     // create an index
     RAMDirectory indexStore = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore);
     
     long now = System.currentTimeMillis();
     
@@ -114,8 +112,7 @@ public class TestDateFilter extends LuceneTestCase {
   public void testAfter() throws IOException {
     // create an index
     RAMDirectory indexStore = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore);
     
     long now = System.currentTimeMillis();
     

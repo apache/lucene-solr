@@ -18,13 +18,11 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.Index;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
@@ -221,8 +219,7 @@ public class TestWildcard
   private RAMDirectory getIndexStore(String field, String[] contents)
       throws IOException {
     RAMDirectory indexStore = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     for (int i = 0; i < contents.length; ++i) {
       Document doc = new Document();
       doc.add(new Field(field, contents[i], Field.Store.YES, Field.Index.ANALYZED));
@@ -278,9 +275,7 @@ public class TestWildcard
 
     // prepare the index
     RAMDirectory dir = new RAMDirectory();
-    RandomIndexWriter iw = new RandomIndexWriter(random, dir, 
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
-
+    RandomIndexWriter iw = new RandomIndexWriter(random, dir);
     for (int i = 0; i < docs.length; i++) {
       Document doc = new Document();
       doc.add(new Field(field,docs[i],Store.NO,Index.ANALYZED));

@@ -29,7 +29,9 @@ import java.util.Collections;
 
 import junit.framework.TestCase;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
@@ -80,7 +82,7 @@ public abstract class LuceneTestCase extends TestCase {
   private int savedBoolMaxClauseCount;
   
   private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;
-  
+
   /** Used to track if setUp and tearDown are called correctly from subclasses */
   private boolean setup;
 
@@ -144,7 +146,7 @@ public abstract class LuceneTestCase extends TestCase {
     assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
     setup = false;
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
-
+    
     try {
       Thread.setDefaultUncaughtExceptionHandler(savedUncaughtExceptionHandler);
       if (!uncaughtExceptions.isEmpty()) {
@@ -256,7 +258,8 @@ public abstract class LuceneTestCase extends TestCase {
     if (seed != null) {
       throw new IllegalStateException("please call LuceneTestCase.newRandom only once per test");
     }
-    return newRandom(seedRnd.nextLong());
+    this.seed = Long.valueOf(seedRnd.nextLong());
+    return new Random(seed);
   }
   
   /**
@@ -268,10 +271,16 @@ public abstract class LuceneTestCase extends TestCase {
     if (this.seed != null) {
       throw new IllegalStateException("please call LuceneTestCase.newRandom only once per test");
     }
+    System.out.println("WARNING: random seed of testcase '" + getName() + "' is fixed to: " + seed);
     this.seed = Long.valueOf(seed);
     return new Random(seed);
   }
-  
+
+  /** create a new index writer config with random defaults */
+  public static IndexWriterConfig newIndexWriterConfig(Random r, Version v, Analyzer a) {
+    return LuceneTestCaseJ4.newIndexWriterConfig(r, v, a);
+  }
+
   /** Gets a resource from the classpath as {@link File}. This method should only be used,
    * if a real file is needed. To get a stream, code should prefer
    * {@link Class#getResourceAsStream} using {@code this.getClass()}.

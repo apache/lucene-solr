@@ -18,12 +18,11 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.SimpleAnalyzer;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.store.RAMDirectory;
@@ -44,8 +43,7 @@ public class TestPhrasePrefixQuery extends LuceneTestCase {
      */
   public void testPhrasePrefix() throws IOException {
     RAMDirectory indexStore = new RAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore);
     Document doc1 = new Document();
     Document doc2 = new Document();
     Document doc3 = new Document();

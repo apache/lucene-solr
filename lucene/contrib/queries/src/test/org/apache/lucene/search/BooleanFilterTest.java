@@ -23,7 +23,6 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.RAMDirectory;
@@ -37,8 +36,7 @@ public class BooleanFilterTest extends LuceneTestCase {
 	protected void setUp() throws Exception {
 	  super.setUp();
 		directory = new RAMDirectory();
-		RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+		RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
 		
 		//Add series of docs with filterable fields : acces rights, prices, dates and "in-stock" flags
 		addDoc(writer, "admin guest", "010", "20040101","Y");

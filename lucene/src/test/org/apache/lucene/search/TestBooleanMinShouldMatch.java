@@ -18,11 +18,9 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -58,8 +56,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
         };
 
         index = new RAMDirectory();
-        RandomIndexWriter w = new RandomIndexWriter(rnd, index, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        RandomIndexWriter w = new RandomIndexWriter(rnd, index);
 
         for (int i = 0; i < data.length; i++) {
             Document doc = new Document();

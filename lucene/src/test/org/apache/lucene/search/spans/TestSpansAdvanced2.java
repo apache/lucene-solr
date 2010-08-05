@@ -21,7 +21,6 @@ import java.io.IOException;
 
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -45,7 +44,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
     
     // create test index
     final RandomIndexWriter writer = new RandomIndexWriter(random, mDirectory,
-        new IndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT))
+        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT))
             .setOpenMode(OpenMode.APPEND));
     addDocument(writer, "A", "Should we, could we, would we?");
     addDocument(writer, "B", "It should.  Should it?");
