@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.extraction;
 
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.DateUtil;
@@ -29,14 +28,17 @@ import org.apache.solr.handler.ContentStreamHandlerBase;
 import org.apache.solr.handler.ContentStreamLoader;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.exception.TikaException;
+import org.apache.tika.mime.MimeTypeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+
 
 
 /**
@@ -49,14 +51,14 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
   private transient static Logger log = LoggerFactory.getLogger(ExtractingRequestHandler.class);
 
   public static final String CONFIG_LOCATION = "tika.config";
+
   public static final String DATE_FORMATS = "date.formats";
 
   protected TikaConfig config;
 
-
   protected Collection<String> dateFormats = DateUtil.DEFAULT_DATE_FORMATS;
-  protected SolrContentHandlerFactory factory;
 
+  protected SolrContentHandlerFactory factory;
 
   @Override
   public void init(NamedList args) {
@@ -77,8 +79,6 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
         } catch (Exception e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, e);
         }
-      } else {
-        config = TikaConfig.getDefaultConfig();
       }
       NamedList configDateFormats = (NamedList) initArgs.get(DATE_FORMATS);
       if (configDateFormats != null && configDateFormats.size() > 0) {
@@ -90,8 +90,15 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
           dateFormats.add(format);
         }
       }
-    } else {
-      config = TikaConfig.getDefaultConfig();
+    }
+    if (config == null) {
+      try {
+        config = getDefaultConfig(core.getResourceLoader().getClassLoader());
+      } catch (MimeTypeException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      } catch (IOException e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
     }
     factory = createFactory();
   }
@@ -99,7 +106,6 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
   protected SolrContentHandlerFactory createFactory() {
     return new SolrContentHandlerFactory(dateFormats);
   }
-
 
   protected ContentStreamLoader newLoader(SolrQueryRequest req, UpdateRequestProcessor processor) {
     return new ExtractingDocumentLoader(req, processor, config, factory);
@@ -125,6 +131,9 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
   public String getSource() {
     return "$URL:$";
   }
+  
+  private TikaConfig getDefaultConfig(ClassLoader classLoader) throws MimeTypeException, IOException {
+    return new TikaConfig(classLoader);
+  }
+
 }
-
-

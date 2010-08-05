@@ -25,7 +25,7 @@ $Id$
 Versions of Major Components
 ---------------------
 Apache Lucene trunk
-Apache Tika 0.6
+Apache Tika 0.8-SNAPSHOT
 Carrot2 3.1.0
 
 
@@ -337,6 +337,8 @@ Bug Fixes
 * SOLR-2008: avoid possible RejectedExecutionException w/autoCommit
   by making SolreCore close the UpdateHandler before closing the
   SearchExecutor.  (NarasimhaRaju, hossman)
+
+* SOLR-1902: Upgraded Tika to 0.8-SNAPSHOT (gsingers)
   
 
 Other Changes

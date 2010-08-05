@@ -672,4 +672,13 @@ public class SolrResourceLoader implements ResourceLoader
     }
     throw new SolrException( SolrException.ErrorCode.SERVER_ERROR, builder.toString() );
   }
+  /**
+  +   * EXPERT
+  +   * <p/>
+  +   * The underlying class loader.  Most applications will not need to use this.
+  +   * @return The {@link ClassLoader}
+  +   */
+  public ClassLoader getClassLoader() {
+      return classLoader;
+    }
 }
