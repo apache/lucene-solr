@@ -43,6 +43,9 @@ Changes in backwards compatibility policy
  * LUCENE-2323: Moved contrib/wikipedia functionality into contrib/analyzers.
    Additionally the package was changed from org.apache.lucene.wikipedia.analysis
    to org.apache.lucene.analysis.wikipedia.  (Robert Muir)
+
+ * LUCENE-2581: Added new methods to FragmentsBuilder interface. These methods
+   are used to set pre/post tags and Encoder. (Koji Sekiguchi)
     
 Changes in runtime behavior
 
@@ -189,6 +192,9 @@ New features
 
  * LUCENE-2503: Added lighter stemming alternatives for European languages. 
    (Robert Muir)
+
+ * LUCENE-2581: FastVectorHighlighter: add Encoder to FragmentsBuilder.
+   (Koji Sekiguchi)
 
 Build
 

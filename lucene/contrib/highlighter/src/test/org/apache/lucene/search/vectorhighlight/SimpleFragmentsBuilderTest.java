@@ -27,6 +27,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.highlight.SimpleHTMLEncoder;
 
 public class SimpleFragmentsBuilderTest extends AbstractTestCase {
   
@@ -58,6 +59,15 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     assertEquals( "<b>a</b> b b b b b b b b b ", f[0] );
     assertEquals( "b b <b>a</b> b <b>a</b> b b b b b ", f[1] );
     assertEquals( "<b>c</b> <b>a</b> <b>a</b> b b", f[2] );
+  }
+  
+  public void testTagsAndEncoder() throws Exception {
+    FieldFragList ffl = ffl( "a", "<h1> a </h1>" );
+    SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
+    String[] preTags = { "[" };
+    String[] postTags = { "]" };
+    assertEquals( "&lt;h1&gt; [a] &lt;/h1&gt;",
+        sfb.createFragment( reader, 0, F, ffl, preTags, postTags, new SimpleHTMLEncoder() ) );
   }
 
   private FieldFragList ffl( String queryValue, String indexValue ) throws Exception {
