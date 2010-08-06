@@ -382,8 +382,8 @@ public class TestNumericRangeQuery32 extends LuceneTestCaseJ4 {
       assertEquals("Total number of terms should be equal for unlimited precStep", termCountT, termCountC);
     } else if (VERBOSE) {
       System.out.println("Average number of terms during random search on '" + field + "':");
-      System.out.println(" Trie query: " + (((double)termCountT)/(10*4)));
-      System.out.println(" Classical query: " + (((double)termCountC)/(10*4)));
+      System.out.println(" Trie query: " + (((double)termCountT)/(num * 4)));
+      System.out.println(" Classical query: " + (((double)termCountC)/(num * 4)));
     }
   }
   
