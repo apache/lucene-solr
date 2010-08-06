@@ -134,7 +134,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
   public void testConstants() throws Exception {
     // Tests that the values of the constants does not change
     assertEquals(1000, IndexWriterConfig.WRITE_LOCK_TIMEOUT);
-    assertEquals(128, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL);
+    assertEquals(32, IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL);
     assertEquals(Integer.MAX_VALUE, IndexWriterConfig.UNLIMITED_FIELD_LENGTH);
     assertEquals(-1, IndexWriterConfig.DISABLE_AUTO_FLUSH);
     assertEquals(IndexWriterConfig.DISABLE_AUTO_FLUSH, IndexWriterConfig.DEFAULT_MAX_BUFFERED_DELETE_TERMS);

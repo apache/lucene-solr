@@ -55,7 +55,7 @@ public final class IndexWriterConfig implements Cloneable {
   public static enum OpenMode { CREATE, APPEND, CREATE_OR_APPEND }
   
   /** Default value is 128. Change using {@link #setTermIndexInterval(int)}. */
-  public static final int DEFAULT_TERM_INDEX_INTERVAL = 128;
+  public static final int DEFAULT_TERM_INDEX_INTERVAL = 32;
 
   /** Denotes a flush trigger is disabled. */
   public final static int DISABLE_AUTO_FLUSH = -1;

@@ -80,7 +80,7 @@ public class SimpleStandardTermsIndexWriter extends StandardTermsIndexWriter {
     final long termsStart;
     long packedIndexStart;
     long packedOffsetsStart;
-    private int numTerms;
+    private long numTerms;
 
     // TODO: we could conceivably make a PackedInts wrapper
     // that auto-grows... then we wouldn't force 6 bytes RAM
@@ -89,6 +89,8 @@ public class SimpleStandardTermsIndexWriter extends StandardTermsIndexWriter {
     private int[] termsPointerDeltas;
     private long lastTermsPointer;
     private long totTermLength;
+
+    private final BytesRef lastTerm = new BytesRef();
 
     SimpleFieldWriter(FieldInfo fieldInfo) {
       this.fieldInfo = fieldInfo;
@@ -103,8 +105,20 @@ public class SimpleStandardTermsIndexWriter extends StandardTermsIndexWriter {
       // First term is first indexed term:
       if (0 == (numTerms++ % termIndexInterval)) {
 
-        // write full bytes
-        out.writeBytes(text.bytes, text.offset, text.length);
+        // we can safely strip off the non-distinguishing
+        // suffix to save RAM in the loaded terms index.
+        final int limit = Math.min(lastTerm.length, text.length);
+        int minPrefixDiff = 1+lastTerm.length;
+        for(int byteIdx=0;byteIdx<limit;byteIdx++) {
+          if (lastTerm.bytes[lastTerm.offset+byteIdx] != text.bytes[text.offset+byteIdx]) {
+            minPrefixDiff = byteIdx+1;
+            break;
+          }
+        }
+
+        // write only the min prefix that shows the diff
+        // against prior term
+        out.writeBytes(text.bytes, text.offset, minPrefixDiff);
 
         if (termLengths.length == numIndexTerms) {
           termLengths = ArrayUtil.grow(termLengths);
@@ -119,14 +133,19 @@ public class SimpleStandardTermsIndexWriter extends StandardTermsIndexWriter {
         lastTermsPointer = fp;
 
         // save term length (in bytes)
-        assert text.length <= Short.MAX_VALUE;
-        termLengths[numIndexTerms] = (short) text.length;
+        assert minPrefixDiff <= Short.MAX_VALUE;
+        termLengths[numIndexTerms] = (short) minPrefixDiff;
+        totTermLength += minPrefixDiff;
 
-        totTermLength += text.length;
-
+        lastTerm.copy(text);
         numIndexTerms++;
         return true;
       } else {
+        if (0 == numTerms % termIndexInterval) {
+          // save last term just before next index term so we
+          // can compute wasted suffix
+          lastTerm.copy(text);
+        }
         return false;
       }
     }
