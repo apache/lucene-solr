@@ -49,11 +49,10 @@ public class TestPrefixRandom extends LuceneTestCase {
     super.setUp();
     random = newRandom();
     dir = new MockRAMDirectory();
-    // TODO: fix mocktokenizer to not extend chartokenizer, so you can have an 'empty' keyword.
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(MockTokenizer.KEYWORD, false));
     
     Document doc = new Document();
-    Field field = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);
+    Field field = new Field("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
     doc.add(field);
 
     int num = 2000 * RANDOM_MULTIPLIER;
