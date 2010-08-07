@@ -3854,6 +3854,7 @@ public class IndexWriter implements Closeable {
       if (infoStream != null)
         message("now flush at merge");
       doFlush(true, false);
+      updatePendingMerges(1, false);
     }
 
     merge.increfDone = true;
@@ -4036,6 +4037,7 @@ public class IndexWriter implements Closeable {
             if (infoStream != null)
               message("now flush at mergeMiddle");
             doFlush(true, false);
+            updatePendingMerges(1, false);
           }
         }
 
