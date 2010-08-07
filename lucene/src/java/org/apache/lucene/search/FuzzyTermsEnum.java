@@ -252,14 +252,6 @@ public final class FuzzyTermsEnum extends TermsEnum {
   }
   
   /**
-   * Finds and returns the smallest of three integers 
-   */
-  private static final int min(int a, int b, int c) {
-    final int t = (a < b) ? a : b;
-    return (t < c) ? t : c;
-  }
-  
-  /**
    * Implement fuzzy enumeration with automaton.
    * <p>
    * This is the fastest method as opposed to LinearFuzzyTermsEnum:
@@ -326,22 +318,14 @@ public final class FuzzyTermsEnum extends TermsEnum {
    * Implement fuzzy enumeration with linear brute force.
    */
   private class LinearFuzzyTermsEnum extends FilteredTermsEnum {
-    
-    /* This should be somewhere around the average long word.
-     * If it is longer, we waste time and space. If it is shorter, we waste a
-     * little bit of time growing the array as we encounter longer words.
-     */
-    private static final int TYPICAL_LONGEST_WORD_IN_INDEX = 19;
-    
     /* Allows us save time required to create a new array
      * every time similarity is called.
      */
-    private int[][] d;
+    private int[] d;
+    private int[] p;
     
     // this is the text, minus the prefix
     private final int[] text;
-    
-    private final int[] maxDistances = new int[TYPICAL_LONGEST_WORD_IN_INDEX];
     
     private final MultiTermQuery.BoostAttribute boostAtt =
       attributes().addAttribute(MultiTermQuery.BoostAttribute.class);
@@ -367,15 +351,15 @@ public final class FuzzyTermsEnum extends TermsEnum {
       System.arraycopy(termText, realPrefixLength, text, 0, text.length);
       final String prefix = UnicodeUtil.newString(termText, 0, realPrefixLength);
       prefixBytesRef = new BytesRef(prefix);
-      initializeMaxDistances();
-      this.d = initDistanceArray();
+      this.d = new int[this.text.length + 1];
+      this.p = new int[this.text.length + 1];
       
       setInitialSeekTerm(prefixBytesRef);
     }
     
     private final BytesRef prefixBytesRef;
     // used for unicode conversion from BytesRef byte[] to int[]
-    private final IntsRef utf32 = new IntsRef(TYPICAL_LONGEST_WORD_IN_INDEX);
+    private final IntsRef utf32 = new IntsRef(20);
     
     /**
      * The termCompare method in FuzzyTermEnum uses Levenshtein distance to 
@@ -398,10 +382,6 @@ public final class FuzzyTermsEnum extends TermsEnum {
     /******************************
      * Compute Levenshtein distance
      ******************************/
-    
-    private final int[][] initDistanceArray(){
-      return new int[this.text.length + 1][TYPICAL_LONGEST_WORD_IN_INDEX];
-    }
     
     /**
      * <p>Similarity returns a number that is 1.0f or less (including negative numbers)
@@ -452,7 +432,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
         return realPrefixLength == 0 ? 0.0f : 1.0f - ((float) n / realPrefixLength);
       }
       
-      final int maxDistance = getMaxDistance(m);
+      final int maxDistance = calculateMaxDistance(m);
       
       if (maxDistance < Math.abs(m-n)) {
         //just adding the characters of m to n or vice-versa results in
@@ -465,56 +445,52 @@ public final class FuzzyTermsEnum extends TermsEnum {
         return 0.0f;
       }
       
-      //let's make sure we have enough room in our array to do the distance calculations.
-      if (d[0].length <= m) {
-        growDistanceArray(m);
+      // init matrix d
+      for (int i = 0; i <=n; ++i) {
+        p[i] = i;
       }
       
-      // init matrix d
-      for (int i = 0; i <= n; i++) d[i][0] = i;
-      for (int j = 0; j <= m; j++) d[0][j] = j;
-      
       // start computing edit distance
-      for (int i = 1; i <= n; i++) {
+      for (int j = 1; j<=m; ++j) { // iterates through target
         int bestPossibleEditDistance = m;
-        final int s_i = text[i - 1];
-        for (int j = 1; j <= m; j++) {
-          if (s_i != target[offset+j-1]) {
-            d[i][j] = min(d[i-1][j], d[i][j-1], d[i-1][j-1])+1;
+        final int t_j = target[offset+j-1]; // jth character of t
+        d[0] = j;
+
+        for (int i=1; i<=n; ++i) { // iterates through text
+          // minimum of cell to the left+1, to the top+1, diagonally left and up +(0|1)
+          if (t_j != text[i-1]) {
+            d[i] = Math.min(Math.min(d[i-1], p[i]),  p[i-1]) + 1;
+          } else {
+            d[i] = Math.min(Math.min(d[i-1]+1, p[i]+1),  p[i-1]);
           }
-          else {
-            d[i][j] = min(d[i-1][j]+1, d[i][j-1]+1, d[i-1][j-1]);
-          }
-          bestPossibleEditDistance = Math.min(bestPossibleEditDistance, d[i][j]);
+          bestPossibleEditDistance = Math.min(bestPossibleEditDistance, d[i]);
         }
-        
+
         //After calculating row i, the best possible edit distance
         //can be found by found by finding the smallest value in a given column.
         //If the bestPossibleEditDistance is greater than the max distance, abort.
-        
-        if (i > maxDistance && bestPossibleEditDistance > maxDistance) {  //equal is okay, but not greater
+
+        if (j > maxDistance && bestPossibleEditDistance > maxDistance) {  //equal is okay, but not greater
           //the closest the target can be to the text is just too far away.
           //this target is leaving the party early.
           return 0.0f;
         }
+
+        // copy current distance counts to 'previous row' distance counts: swap p and d
+        int _d[] = p;
+        p = d;
+        d = _d;
       }
       
+      // our last action in the above loop was to switch d and p, so p now
+      // actually has the most recent cost counts
+
       // this will return less than 0.0 when the edit distance is
       // greater than the number of characters in the shorter word.
       // but this was the formula that was previously used in FuzzyTermEnum,
       // so it has not been changed (even though minimumSimilarity must be
       // greater than 0.0)
-      return 1.0f - ((float)d[n][m] / (float) (realPrefixLength + Math.min(n, m)));
-    }
-    
-    /**
-     * Grow the second dimension of the array, so that we can calculate the
-     * Levenshtein difference.
-     */
-    private void growDistanceArray(int m) {
-      for (int i = 0; i < d.length; i++) {
-        d[i] = new int[m+1];
-      }
+      return 1.0f - ((float)p[n] / (float) (realPrefixLength + Math.min(n, m)));
     }
     
     /**
@@ -524,16 +500,6 @@ public final class FuzzyTermsEnum extends TermsEnum {
      * @param m the length of the "other value"
      * @return the maximum levenshtein distance that we care about
      */
-    private final int getMaxDistance(int m) {
-      return (m < maxDistances.length) ? maxDistances[m] : calculateMaxDistance(m);
-    }
-    
-    private void initializeMaxDistances() {
-      for (int i = 0; i < maxDistances.length; i++) {
-        maxDistances[i] = calculateMaxDistance(i);
-      }
-    }
-    
     private int calculateMaxDistance(int m) {
       return (int) ((1-minSimilarity) * (Math.min(text.length, m) + realPrefixLength));
     }
