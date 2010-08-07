@@ -108,7 +108,7 @@ public class SimpleStandardTermsIndexWriter extends StandardTermsIndexWriter {
         // we can safely strip off the non-distinguishing
         // suffix to save RAM in the loaded terms index.
         final int limit = Math.min(lastTerm.length, text.length);
-        int minPrefixDiff = 1+lastTerm.length;
+        int minPrefixDiff = Math.min(1+lastTerm.length, text.length);
         for(int byteIdx=0;byteIdx<limit;byteIdx++) {
           if (lastTerm.bytes[lastTerm.offset+byteIdx] != text.bytes[text.offset+byteIdx]) {
             minPrefixDiff = byteIdx+1;
