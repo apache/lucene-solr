@@ -41,7 +41,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
 
   private Term searchTerm = null;
   private final String field;
-  private final String text;
+  private final char[] text;
   private final String prefix;
 
   private final float minimumSimilarity;
@@ -112,11 +112,11 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
     final int fullSearchTermLength = searchTerm.text().length();
     final int realPrefixLength = prefixLength > fullSearchTermLength ? fullSearchTermLength : prefixLength;
 
-    this.text = searchTerm.text().substring(realPrefixLength);
+    this.text = searchTerm.text().substring(realPrefixLength).toCharArray();
     this.prefix = searchTerm.text().substring(0, realPrefixLength);
 
-    this.p = new int[this.text.length()+1];
-    this.d = new int[this.text.length()+1];
+    this.p = new int[this.text.length+1];
+    this.d = new int[this.text.length+1];
 
     setEnum(reader.terms(new Term(searchTerm.field(), prefix)));
   }
@@ -191,7 +191,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
    */
   private float similarity(final String target) {
     final int m = target.length();
-    final int n = text.length();
+    final int n = text.length;
     if (n == 0)  {
       //we don't have anything to compare.  That means if we just add
       //the letters for m we get the new word
@@ -227,7 +227,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
 
       for (int i=1; i<=n; ++i) { // iterates through text
         // minimum of cell to the left+1, to the top+1, diagonally left and up +(0|1)
-        if (t_j != text.charAt(i-1)) {
+        if (t_j != text[i-1]) {
           d[i] = Math.min(Math.min(d[i-1], p[i]),  p[i-1]) + 1;
 		} else {
           d[i] = Math.min(Math.min(d[i-1]+1, p[i]+1),  p[i-1]);
@@ -270,7 +270,7 @@ public final class FuzzyTermEnum extends FilteredTermEnum {
    * @return the maximum levenshtein distance that we care about
    */
   private int calculateMaxDistance(int m) {
-    return (int) ((1-minimumSimilarity) * (Math.min(text.length(), m) + prefix.length()));
+    return (int) ((1-minimumSimilarity) * (Math.min(text.length, m) + prefix.length()));
   }
 
   /** {@inheritDoc} */
