@@ -222,6 +222,8 @@ New Features
 
 * SOLR-2021: Add SolrEncoder plugin to Highlighter. (koji)
 
+* SOLR-2030: Make FastVectorHighlighter use of SolrEncoder. (koji)
+
 Optimizations
 ----------------------
 

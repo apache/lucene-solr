@@ -1018,8 +1018,21 @@
       <!-- Configure the single fragListBuilder -->
       <fragListBuilder name="single" class="org.apache.solr.highlight.SingleFragListBuilder"/>
 
+      <!-- default tag FragmentsBuilder -->
+      <fragmentsBuilder name="default" class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder" default="true"/>
+
       <!-- multi-colored tag FragmentsBuilder -->
-      <fragmentsBuilder name="colored" class="org.apache.solr.highlight.MultiColoredScoreOrderFragmentsBuilder" default="true"/>
+      <fragmentsBuilder name="colored" class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder">
+        <lst name="defaults">
+          <str name="hl.tag.pre"><![CDATA[
+               <b style="background:yellow">,<b style="background:lawgreen">,
+               <b style="background:aquamarine">,<b style="background:magenta">,
+               <b style="background:palegreen">,<b style="background:coral">,
+               <b style="background:wheat">,<b style="background:khaki">,
+               <b style="background:lime">,<b style="background:deepskyblue">]]></str>
+          <str name="hl.tag.post"><![CDATA[</b>]]></str>
+        </lst>
+      </fragmentsBuilder>
     </highlighting>
   </searchComponent>
 

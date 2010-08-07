@@ -311,12 +311,16 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
   
   protected FragmentsBuilder getFragmentsBuilder( SolrParams params ){
+    return getSolrFragmentsBuilder( params ).getFragmentsBuilder( params );
+  }
+  
+  private SolrFragmentsBuilder getSolrFragmentsBuilder( SolrParams params ){
     String fb = params.get( HighlightParams.FRAGMENTS_BUILDER );
     SolrFragmentsBuilder solrFb = fragmentsBuilders.get( fb );
     if( solrFb == null ){
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unknown fragmentsBuilder: " + fb );
     }
-    return solrFb.getFragmentsBuilder( params );
+    return solrFb;
   }
   
   /**
@@ -361,6 +365,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
         getFragListBuilder( params ),
         getFragmentsBuilder( params ) );
     FieldQuery fieldQuery = fvh.getFieldQuery( query );
+    SolrFragmentsBuilder solrFb = getSolrFragmentsBuilder( params );
 
     // Highlight each document
     DocIterator iterator = docs.iterator();
@@ -371,7 +376,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       for (String fieldName : fieldNames) {
         fieldName = fieldName.trim();
         if( useFastVectorHighlighter( params, schema, fieldName ) )
-          doHighlightingByFastVectorHighlighter( fvh, fieldQuery, req, docSummaries, docId, doc, fieldName );
+          doHighlightingByFastVectorHighlighter( fvh, fieldQuery, solrFb, req, docSummaries, docId, doc, fieldName );
         else
           doHighlightingByHighlighter( query, req, docSummaries, docId, doc, fieldName );
       }
@@ -499,11 +504,15 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
 
   private void doHighlightingByFastVectorHighlighter( FastVectorHighlighter highlighter, FieldQuery fieldQuery,
-      SolrQueryRequest req, NamedList docSummaries, int docId, Document doc, String fieldName ) throws IOException {
+      SolrFragmentsBuilder solrFb, SolrQueryRequest req, NamedList docSummaries, int docId, Document doc,
+      String fieldName ) throws IOException {
     SolrParams params = req.getParams(); 
     String[] snippets = highlighter.getBestFragments( fieldQuery, req.getSearcher().getReader(), docId, fieldName,
         params.getFieldInt( fieldName, HighlightParams.FRAGSIZE, 100 ),
-        params.getFieldInt( fieldName, HighlightParams.SNIPPETS, 1 ) );
+        params.getFieldInt( fieldName, HighlightParams.SNIPPETS, 1 ),
+        solrFb.getPreTags( params, fieldName ),
+        solrFb.getPostTags( params, fieldName ),
+        getEncoder( fieldName, params ) );
     if( snippets != null && snippets.length > 0 )
       docSummaries.add( fieldName, snippets );
     else
