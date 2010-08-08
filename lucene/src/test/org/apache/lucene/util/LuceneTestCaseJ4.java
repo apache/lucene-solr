@@ -31,8 +31,10 @@ import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
+import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
 import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
 import org.apache.lucene.index.codecs.mockintblock.MockFixedIntBlockCodec;
+import org.apache.lucene.index.codecs.mockintblock.MockVariableIntBlockCodec;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -154,9 +156,9 @@ public class LuceneTestCaseJ4 {
   
   // saves default codec: we do this statically as many build indexes in @beforeClass
   private static String savedDefaultCodec;
-  private static String codec;
+  private static Codec codec;
   
-  private static final String[] TEST_CODECS = new String[] {"MockSep", "MockFixedIntBlock"};
+  private static final String[] TEST_CODECS = new String[] {"MockSep", "MockFixedIntBlock", "MockVariableIntBlock"};
 
   private static void swapCodec(Codec c) {
     final CodecProvider cp = CodecProvider.getDefault();
@@ -172,7 +174,7 @@ public class LuceneTestCaseJ4 {
   }
 
   // returns current default codec
-  static String installTestCodecs() {
+  static Codec installTestCodecs() {
     final CodecProvider cp = CodecProvider.getDefault();
 
     savedDefaultCodec = CodecProvider.getDefaultCodec();
@@ -190,15 +192,18 @@ public class LuceneTestCaseJ4 {
     }
 
     swapCodec(new MockSepCodec());
-    swapCodec(new MockFixedIntBlockCodec());
+    swapCodec(new PulsingCodec(_TestUtil.nextInt(seedRnd, 1, 20)));
+    swapCodec(new MockFixedIntBlockCodec(_TestUtil.nextInt(seedRnd, 1, 2000)));
+    // baseBlockSize cannot be over 127:
+    swapCodec(new MockVariableIntBlockCodec(_TestUtil.nextInt(seedRnd, 1, 127)));
 
-    return codec;
+    return cp.lookup(codec);
   }
 
   // returns current PreFlex codec
-  static void removeTestCodecs(String codec) {
+  static void removeTestCodecs(Codec codec) {
     final CodecProvider cp = CodecProvider.getDefault();
-    if (codec.equals("PreFlex")) {
+    if (codec.name.equals("PreFlex")) {
       final Codec preFlex = cp.lookup("PreFlex");
       if (preFlex != null) {
         cp.unregister(preFlex);
@@ -207,6 +212,8 @@ public class LuceneTestCaseJ4 {
     }
     cp.unregister(cp.lookup("MockSep"));
     cp.unregister(cp.lookup("MockFixedIntBlock"));
+    cp.unregister(cp.lookup("MockVariableIntBlock"));
+    swapCodec(new PulsingCodec(1));
     CodecProvider.setDefaultCodec(savedDefaultCodec);
   }
 
@@ -530,9 +537,7 @@ public class LuceneTestCaseJ4 {
       System.out.println("NOTE: random static seed of testclass '" + getName() + "' was: " + staticSeed);
     }
     
-    if (TEST_CODEC.equals("random")) {
-      System.out.println("NOTE: random codec of testcase '" + getName() + "' was: " + codec);
-    }
+    System.out.println("NOTE: random codec of testcase '" + getName() + "' was: " + codec);
 
     if (seed != null) {
       System.out.println("NOTE: random seed of testcase '" + getName() + "' was: " + seed);

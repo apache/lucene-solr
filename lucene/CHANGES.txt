@@ -548,6 +548,10 @@ New features
 
 * LUCENE-2526: Don't throw NPE from MultiPhraseQuery.toString when
   it's empty.  (Ross Woolf via Mike McCandless)
+
+* LUCENE-2589: Add a VariableSizedIntIndexInput, which, when used w/
+  Sep*, makes it simple to take any variable sized int block coders
+  (like Simple9/16) and use them in a codec.  (Mike McCandless)
   
 Optimizations
 

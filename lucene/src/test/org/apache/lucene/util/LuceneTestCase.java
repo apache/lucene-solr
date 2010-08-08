@@ -32,6 +32,7 @@ import junit.framework.TestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
@@ -83,7 +84,7 @@ public abstract class LuceneTestCase extends TestCase {
   
   private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;
   
-  private String codec;
+  private Codec codec;
 
   /** Used to track if setUp and tearDown are called correctly from subclasses */
   private boolean setup;
@@ -307,9 +308,7 @@ public abstract class LuceneTestCase extends TestCase {
       seed = null;
       super.runBare();
     } catch (Throwable e) {
-      if (TEST_CODEC.equals("random")) {
-        System.out.println("NOTE: random codec of testcase '" + getName() + "' was: " + codec);
-      }
+      System.out.println("NOTE: random codec of testcase '" + getName() + "' was: " + codec);
       if (seed != null) {
         System.out.println("NOTE: random seed of testcase '" + getName() + "' was: " + seed);
       }

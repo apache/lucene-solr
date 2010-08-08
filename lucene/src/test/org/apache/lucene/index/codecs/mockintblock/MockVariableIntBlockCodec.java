@@ -31,8 +31,8 @@ import org.apache.lucene.index.codecs.sep.IntIndexInput;
 import org.apache.lucene.index.codecs.sep.IntIndexOutput;
 import org.apache.lucene.index.codecs.sep.SepPostingsReaderImpl;
 import org.apache.lucene.index.codecs.sep.SepPostingsWriterImpl;
-import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexInput;
-import org.apache.lucene.index.codecs.intblock.FixedIntBlockIndexOutput;
+import org.apache.lucene.index.codecs.intblock.VariableIntBlockIndexInput;
+import org.apache.lucene.index.codecs.intblock.VariableIntBlockIndexOutput;
 import org.apache.lucene.index.codecs.standard.SimpleStandardTermsIndexReader;
 import org.apache.lucene.index.codecs.standard.SimpleStandardTermsIndexWriter;
 import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
@@ -42,48 +42,51 @@ import org.apache.lucene.index.codecs.standard.StandardTermsDictWriter;
 import org.apache.lucene.index.codecs.standard.StandardTermsIndexReader;
 import org.apache.lucene.index.codecs.standard.StandardTermsIndexWriter;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
-import org.apache.lucene.store.*;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.IndexInput;
+import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 
 /**
- * A silly test codec to verify core support for fixed
+ * A silly test codec to verify core support for variable
  * sized int block encoders is working.  The int encoder
- * used here just writes each block as a series of vInt.
+ * used here writes baseBlockSize ints at once, if the first
+ * int is <= 3, else 2*baseBlockSize.
  */
 
-public class MockFixedIntBlockCodec extends Codec {
+public class MockVariableIntBlockCodec extends Codec {
+  private final int baseBlockSize;
 
-  private final int blockSize;
-
-  public MockFixedIntBlockCodec(int blockSize) {
-    this.blockSize = blockSize;
-    name = "MockFixedIntBlock";
+  public MockVariableIntBlockCodec(int baseBlockSize) {
+    name = "MockVariableIntBlock";
+    this.baseBlockSize = baseBlockSize;
   }
 
   @Override
   public String toString() {
-    return name + "(blockSize=" + blockSize + ")";
-  }
-
-  // only for testing
-  public IntStreamFactory getIntFactory() {
-    return new MockIntFactory();
+    return name + "(baseBlockSize="+ baseBlockSize + ")";
   }
 
   private class MockIntFactory extends IntStreamFactory {
 
     @Override
     public IntIndexInput openInput(Directory dir, String fileName, int readBufferSize) throws IOException {
-      return new FixedIntBlockIndexInput(dir.openInput(fileName, readBufferSize)) {
+      final IndexInput in = dir.openInput(fileName, readBufferSize);
+      final int baseBlockSize = in.readInt();
+      return new VariableIntBlockIndexInput(in) {
 
         @Override
         protected BlockReader getBlockReader(final IndexInput in, final int[] buffer) throws IOException {
           return new BlockReader() {
             public void seek(long pos) {}
-            public void readBlock() throws IOException {
-              for(int i=0;i<buffer.length;i++) {
-                buffer[i] = in.readVInt();
+            public int readBlock() throws IOException {
+              buffer[0] = in.readVInt();
+              final int count = buffer[0] <= 3 ? baseBlockSize-1 : 2*baseBlockSize-1;
+              assert buffer.length >= count: "buffer.length=" + buffer.length + " count=" + count;
+              for(int i=0;i<count;i++) {
+                buffer[i+1] = in.readVInt();
               }
+              return 1+count;
             }
           };
         }
@@ -92,11 +95,31 @@ public class MockFixedIntBlockCodec extends Codec {
 
     @Override
     public IntIndexOutput createOutput(Directory dir, String fileName) throws IOException {
-      return new FixedIntBlockIndexOutput(dir.createOutput(fileName), blockSize) {
+      final IndexOutput out = dir.createOutput(fileName);
+      out.writeInt(baseBlockSize);
+      return new VariableIntBlockIndexOutput(out, 2*baseBlockSize) {
+
+        int pendingCount;
+        final int[] buffer = new int[2+2*baseBlockSize];
+
         @Override
-        protected void flushBlock() throws IOException {
-          for(int i=0;i<buffer.length;i++) {
-            out.writeVInt(buffer[i]);
+        protected int add(int value) throws IOException {
+          buffer[pendingCount++] = value;
+          // silly variable block length int encoder: if
+          // first value <= 3, we write N vints at once;
+          // else, 2*N
+          final int flushAt = buffer[0] <= 3 ? baseBlockSize : 2*baseBlockSize;
+
+          // intentionally be non-causal here:
+          if (pendingCount == flushAt+1) {
+            for(int i=0;i<flushAt;i++) {
+              out.writeVInt(buffer[i]);
+            }
+            buffer[0] = buffer[flushAt];
+            pendingCount = 1;
+            return flushAt;
+          } else {
+            return 0;
           }
         }
       };

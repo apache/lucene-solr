@@ -27,13 +27,15 @@ public class TestIntBlockCodec extends LuceneTestCase {
   public void testSimpleIntBlocks() throws Exception {
     Directory dir = new MockRAMDirectory();
 
-    IntIndexOutput out = new MockFixedIntBlockIndexOutput(dir, "test", 128);
+    IntStreamFactory f = new MockFixedIntBlockCodec(128).getIntFactory();
+
+    IntIndexOutput out = f.createOutput(dir, "test");
     for(int i=0;i<11777;i++) {
       out.write(i);
     }
     out.close();
 
-    IntIndexInput in = new MockFixedIntBlockIndexInput(dir, "test", 128);
+    IntIndexInput in = f.openInput(dir, "test");
     IntIndexInput.Reader r = in.reader();
 
     for(int i=0;i<11777;i++) {
@@ -47,11 +49,13 @@ public class TestIntBlockCodec extends LuceneTestCase {
   public void testEmptySimpleIntBlocks() throws Exception {
     Directory dir = new MockRAMDirectory();
 
-    IntIndexOutput out = new MockFixedIntBlockIndexOutput(dir, "test", 128);
+    IntStreamFactory f = new MockFixedIntBlockCodec(128).getIntFactory();
+    IntIndexOutput out = f.createOutput(dir, "test");
+
     // write no ints
     out.close();
 
-    IntIndexInput in = new MockFixedIntBlockIndexInput(dir, "test", 128);
+    IntIndexInput in = f.openInput(dir, "test");
     in.reader();
     // read no ints
     in.close();

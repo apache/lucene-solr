@@ -26,7 +26,9 @@ import java.io.IOException;
 import org.apache.lucene.index.codecs.sep.IntIndexOutput;
 import org.apache.lucene.store.IndexOutput;
 
-/** Abstract base class that writes fixed-size blocks of ints
+// TODO: much of this can be shared code w/ the fixed case
+
+/** Abstract base class that writes variable-size blocks of ints
  *  to an IndexOutput.  While this is a simple approach, a
  *  more performant approach would directly create an impl
  *  of IntIndexOutput inside Directory.  Wrapping a generic
@@ -34,21 +36,29 @@ import org.apache.lucene.store.IndexOutput;
  *
  * @lucene.experimental
  */
-public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
+public abstract class VariableIntBlockIndexOutput extends IntIndexOutput {
 
   protected final IndexOutput out;
-  private final int blockSize;
-  protected final int[] buffer;
+
   private int upto;
 
-  protected FixedIntBlockIndexOutput(IndexOutput out, int fixedBlockSize) throws IOException {
-    blockSize = fixedBlockSize;
+  private static final int MAX_BLOCK_SIZE = 1 << 8;
+
+  /** NOTE: maxBlockSize plus the max non-causal lookahead
+   *  of your codec must be less than 256.  EG Simple9
+   *  requires lookahead=1 because on seeing the Nth value
+   *  it knows it must now encode the N-1 values before it. */
+  protected VariableIntBlockIndexOutput(IndexOutput out, int maxBlockSize) throws IOException {
+    if (maxBlockSize > MAX_BLOCK_SIZE) {
+      throw new IllegalArgumentException("maxBlockSize must be <= " + MAX_BLOCK_SIZE + "; got " + maxBlockSize);
+    }
     this.out = out;
-    out.writeVInt(blockSize);
-    buffer = new int[blockSize];
+    out.writeInt(maxBlockSize);
   }
 
-  protected abstract void flushBlock() throws IOException;
+  /** Called one value at a time.  Return the number of
+   *  buffered input values that have been written to out. */
+  protected abstract int add(int value) throws IOException;
 
   @Override
   public Index index() throws IOException {
@@ -64,7 +74,7 @@ public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
     @Override
     public void mark() throws IOException {
       fp = out.getFilePointer();
-      upto = FixedIntBlockIndexOutput.this.upto;
+      upto = VariableIntBlockIndexOutput.this.upto;
     }
 
     @Override
@@ -76,18 +86,19 @@ public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
 
     @Override
     public void write(IndexOutput indexOut, boolean absolute) throws IOException {
+      assert upto >= 0;
       if (absolute) {
         indexOut.writeVLong(fp);
-        indexOut.writeVInt(upto);
+        indexOut.writeByte((byte) upto);
       } else if (fp == lastFP) {
         // same block
         indexOut.writeVLong(0);
         assert upto >= lastUpto;
-        indexOut.writeVLong(upto - lastUpto);
+        indexOut.writeByte((byte) upto);
       } else {      
         // new block
         indexOut.writeVLong(fp - lastFP);
-        indexOut.writeVLong(upto);
+        indexOut.writeByte((byte) upto);
       }
       lastUpto = upto;
       lastFP = fp;
@@ -96,20 +107,19 @@ public abstract class FixedIntBlockIndexOutput extends IntIndexOutput {
 
   @Override
   public void write(int v) throws IOException {
-    buffer[upto++] = v;
-    if (upto == blockSize) {
-      flushBlock();
-      upto = 0;
-    }
+    upto -= add(v)-1;
+    assert upto >= 0;
   }
 
   @Override
   public void close() throws IOException {
     try {
-      if (upto > 0) {
-        // NOTE: entries in the block after current upto are
-        // invalid
-        flushBlock();
+      // stuff 0s in until the "real" data is flushed:
+      int stuffed = 0;
+      while(upto > stuffed) {
+        upto -= add(0)-1;
+        assert upto >= 0;
+        stuffed += 1;
       }
     } finally {
       out.close();

@@ -27,7 +27,9 @@ import org.apache.lucene.index.codecs.sep.IntIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.IntsRef;
 
-/** Abstract base class that reads fixed-size blocks of ints
+// TODO: much of this can be shared code w/ the fixed case
+
+/** Abstract base class that reads variable-size blocks of ints
  *  from an IndexInput.  While this is a simple approach, a
  *  more performant approach would directly create an impl
  *  of IntIndexInput inside Directory.  Wrapping a generic
@@ -35,19 +37,19 @@ import org.apache.lucene.util.IntsRef;
  *
  * @lucene.experimental
  */
-public abstract class FixedIntBlockIndexInput extends IntIndexInput {
+public abstract class VariableIntBlockIndexInput extends IntIndexInput {
 
-  private final IndexInput in;
-  protected final int blockSize;
-  
-  public FixedIntBlockIndexInput(final IndexInput in) throws IOException {
+  protected final IndexInput in;
+  protected final int maxBlockSize;
+
+  protected VariableIntBlockIndexInput(final IndexInput in) throws IOException {
     this.in = in;
-    blockSize = in.readVInt();
+    maxBlockSize = in.readInt();
   }
 
   @Override
   public Reader reader() throws IOException {
-    final int[] buffer = new int[blockSize];
+    final int[] buffer = new int[maxBlockSize];
     final IndexInput clone = (IndexInput) in.clone();
     // TODO: can this be simplified?
     return new Reader(clone, buffer, this.getBlockReader(clone, buffer));
@@ -66,48 +68,64 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
   protected abstract BlockReader getBlockReader(IndexInput in, int[] buffer) throws IOException;
 
   public interface BlockReader {
-    public void readBlock() throws IOException;
+    public int readBlock() throws IOException;
+    public void seek(long pos) throws IOException;
   }
 
-  private static class Reader extends IntIndexInput.Reader {
+  public static class Reader extends IntIndexInput.Reader {
     private final IndexInput in;
 
-    protected final int[] pending;
+    public final int[] pending;
     int upto;
 
     private boolean seekPending;
     private long pendingFP;
     private int pendingUpto;
     private long lastBlockFP;
+    private int blockSize;
     private final BlockReader blockReader;
-    private final int blockSize;
     private final IntsRef bulkResult = new IntsRef();
 
     public Reader(final IndexInput in, final int[] pending, final BlockReader blockReader)
-    throws IOException {
+      throws IOException {
       this.in = in;
       this.pending = pending;
-      this.blockSize = pending.length;
       bulkResult.ints = pending;
       this.blockReader = blockReader;
-      upto = blockSize;
     }
 
-    void seek(final long fp, final int upto) {
+    void seek(final long fp, final int upto) throws IOException {
+      // TODO: should we do this in real-time, not lazy?
       pendingFP = fp;
       pendingUpto = upto;
+      assert pendingUpto >= 0: "pendingUpto=" + pendingUpto;
       seekPending = true;
     }
 
-    private void maybeSeek() throws IOException {
+    private final void maybeSeek() throws IOException {
       if (seekPending) {
         if (pendingFP != lastBlockFP) {
           // need new block
           in.seek(pendingFP);
+          blockReader.seek(pendingFP);
           lastBlockFP = pendingFP;
-          blockReader.readBlock();
+          blockSize = blockReader.readBlock();
         }
         upto = pendingUpto;
+
+        // TODO: if we were more clever when writing the
+        // index, such that a seek point wouldn't be written
+        // until the int encoder "committed", we could avoid
+        // this (likely minor) inefficiency:
+
+        // This is necessary for int encoders that are
+        // non-causal, ie must see future int values to
+        // encode the current ones.
+        while(upto >= blockSize) {
+          upto -= blockSize;
+          lastBlockFP = in.getFilePointer();
+          blockSize = blockReader.readBlock();
+        }
         seekPending = false;
       }
     }
@@ -117,7 +135,7 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
       this.maybeSeek();
       if (upto == blockSize) {
         lastBlockFP = in.getFilePointer();
-        blockReader.readBlock();
+        blockSize = blockReader.readBlock();
         upto = 0;
       }
 
@@ -128,7 +146,8 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
     public IntsRef read(final int count) throws IOException {
       this.maybeSeek();
       if (upto == blockSize) {
-        blockReader.readBlock();
+        lastBlockFP = in.getFilePointer();
+        blockSize = blockReader.readBlock();
         upto = 0;
       }
       bulkResult.offset = upto;
@@ -152,19 +171,26 @@ public abstract class FixedIntBlockIndexInput extends IntIndexInput {
     public void read(final IndexInput indexIn, final boolean absolute) throws IOException {
       if (absolute) {
         fp = indexIn.readVLong();
-        upto = indexIn.readVInt();
+        upto = indexIn.readByte()&0xFF;
       } else {
         final long delta = indexIn.readVLong();
         if (delta == 0) {
           // same block
-          upto += indexIn.readVInt();
+          upto = indexIn.readByte()&0xFF;
         } else {
           // new block
           fp += delta;
-          upto = indexIn.readVInt();
+          upto = indexIn.readByte()&0xFF;
         }
       }
-      assert upto < blockSize;
+      // TODO: we can't do this assert because non-causal
+      // int encoders can have upto over the buffer size
+      //assert upto < maxBlockSize: "upto=" + upto + " max=" + maxBlockSize;
+    }
+
+    @Override
+    public String toString() {
+      return "VarIntBlock.Index fp=" + fp + " upto=" + upto + " maxBlock=" + maxBlockSize;
     }
 
     @Override

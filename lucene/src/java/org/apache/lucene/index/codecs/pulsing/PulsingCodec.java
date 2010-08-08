@@ -50,8 +50,18 @@ import org.apache.lucene.util.BytesRef;
 
 public class PulsingCodec extends Codec {
 
-  public PulsingCodec() {
+  private final int freqCutoff;
+
+  /** Terms with freq <= freqCutoff are inlined into terms
+   *  dict. */
+  public PulsingCodec(int freqCutoff) {
     name = "Pulsing";
+    this.freqCutoff = freqCutoff;
+  }
+
+  @Override
+  public String toString() {
+    return name + "(freqCutoff=" + freqCutoff + ")";
   }
 
   @Override
@@ -62,7 +72,6 @@ public class PulsingCodec extends Codec {
 
     // Terms that have <= freqCutoff number of docs are
     // "pulsed" (inlined):
-    final int freqCutoff = 1;
     StandardPostingsWriter pulsingWriter = new PulsingPostingsWriterImpl(freqCutoff, docsWriter);
 
     // Terms dict index

@@ -169,6 +169,11 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
       skipOffset = other.skipOffset;
       payloadOffset = other.payloadOffset;
     }
+
+    @Override
+    public String toString() {
+      return "tis.fp=" + filePointer + " docFreq=" + docFreq + " ord=" + ord + " docIndex=" + docIndex;
+    }
   }
 
   @Override
@@ -629,12 +634,10 @@ public class SepPostingsReaderImpl extends StandardPostingsReader {
       // positions
       while (pendingPosCount > freq) {
         final int code = posReader.next();
-        if (storePayloads) {
-          if ((code & 1) != 0) {
-            // Payload length has changed
-            payloadLength = posReader.next();
-            assert payloadLength >= 0;
-          }
+        if (storePayloads && (code & 1) != 0) {
+          // Payload length has changed
+          payloadLength = posReader.next();
+          assert payloadLength >= 0;
         }
         pendingPosCount--;
         payloadPending = true;

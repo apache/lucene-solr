@@ -56,4 +56,9 @@ public abstract class Codec {
 
   /** Records all file extensions this codec uses */
   public abstract void getExtensions(Set<String> extensions);
+
+  @Override
+  public String toString() {
+    return name;
+  }
 }

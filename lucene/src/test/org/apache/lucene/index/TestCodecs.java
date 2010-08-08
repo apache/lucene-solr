@@ -268,7 +268,7 @@ public class TestCodecs extends MultiCodecTestCase {
     final int NUM_TERMS = 100;
     final TermData[] terms = new TermData[NUM_TERMS];
     for(int i=0;i<NUM_TERMS;i++) {
-      final int[] docs = new int[] {1};
+      final int[] docs = new int[] {i};
       final String text = Integer.toString(i, Character.MAX_RADIX);
       terms[i] = new TermData(text, docs, null);
     }
@@ -288,10 +288,21 @@ public class TestCodecs extends MultiCodecTestCase {
     final FieldsEnum fieldsEnum = reader.iterator();
     assertNotNull(fieldsEnum.next());
     final TermsEnum termsEnum = fieldsEnum.terms();
+
+    DocsEnum docsEnum = null;
     for(int i=0;i<NUM_TERMS;i++) {
       final BytesRef term = termsEnum.next();
       assertNotNull(term);
       assertEquals(terms[i].text2, term.utf8ToString());
+
+      // do this twice to stress test the codec's reuse, ie,
+      // make sure it properly fully resets (rewinds) its
+      // internal state:
+      for(int iter=0;iter<2;iter++) {
+        docsEnum = termsEnum.docs(null,  docsEnum);
+        assertEquals(terms[i].docs[0], docsEnum.nextDoc());
+        assertEquals(DocsEnum.NO_MORE_DOCS, docsEnum.nextDoc());
+      }
     }
     assertNull(termsEnum.next());
 

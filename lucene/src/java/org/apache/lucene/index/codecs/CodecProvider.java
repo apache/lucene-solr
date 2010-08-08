@@ -115,7 +115,7 @@ class DefaultCodecProvider extends CodecProvider {
   DefaultCodecProvider() {
     register(new StandardCodec());
     register(new PreFlexCodec());
-    register(new PulsingCodec());
+    register(new PulsingCodec(1));
   }
 
   @Override
