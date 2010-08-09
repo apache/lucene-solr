@@ -323,8 +323,8 @@ public abstract class LuceneTestCase extends TestCase {
     } catch (Throwable e) {
       if (TEST_LOCALE.equals("random"))
         System.out.println("NOTE: random locale of testcase '" + getName() + "' was: " + locale);
-      if (TEST_TIMEZONE.equals("random"))
-        System.out.println("NOTE: random timezone of testcase '" + getName() + "' was: " + timeZone.getID());
+      if (TEST_TIMEZONE.equals("random")) // careful to not deliver NPE here in case they forgot super.setUp
+        System.out.println("NOTE: random timezone of testcase '" + getName() + "' was: " + (timeZone == null ? "(null)" : timeZone.getID()));
       if (seed != null) {
         System.out.println("NOTE: random seed of testcase '" + getName() + "' was: " + seed);
       }

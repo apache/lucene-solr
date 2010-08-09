@@ -17,11 +17,10 @@
 
 package org.apache.solr.common.params;
 
-import junit.framework.TestCase;
-
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.MapSolrParams;
@@ -29,7 +28,7 @@ import org.apache.solr.common.params.SolrParams;
 
 /**
  */
-public class SolrParamTest extends TestCase 
+public class SolrParamTest extends LuceneTestCase 
 {  
   public void testGetParams() {
     Map<String,String> pmap = new HashMap<String, String>();

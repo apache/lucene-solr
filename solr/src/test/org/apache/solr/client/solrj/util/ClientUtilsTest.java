@@ -17,14 +17,14 @@
 
 package org.apache.solr.client.solrj.util;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * 
  * @version $Id$
  * @since solr 1.3
  */
-public class ClientUtilsTest extends TestCase {
+public class ClientUtilsTest extends LuceneTestCase {
   
   public void testEscapeQuery() 
   { 

@@ -21,9 +21,9 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URLDecoder;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
-public abstract class DocumentTestCase extends TestCase
+public abstract class DocumentTestCase extends LuceneTestCase
 {
     public DocumentTestCase(String name) {
         super(name);

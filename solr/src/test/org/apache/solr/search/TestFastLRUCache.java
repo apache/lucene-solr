@@ -16,7 +16,7 @@
  */
 package org.apache.solr.search;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.ConcurrentLRUCache;
 
@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @see org.apache.solr.search.FastLRUCache
  * @since solr 1.4
  */
-public class TestFastLRUCache extends TestCase {
+public class TestFastLRUCache extends LuceneTestCase {
   public void testSimple() throws IOException {
     FastLRUCache sc = new FastLRUCache();
     Map l = new HashMap();

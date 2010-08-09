@@ -17,9 +17,9 @@
 
 package org.apache.solr.core;
 
-import junit.framework.TestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 import org.easymock.EasyMock;
 
 import java.io.IOException;
@@ -28,7 +28,7 @@ import java.io.File;
 /**
  * Test-case for RAMDirectoryFactory
  */
-public class RAMDirectoryFactoryTest extends TestCase {
+public class RAMDirectoryFactoryTest extends LuceneTestCase {
   public void testOpenReturnsTheSameForSamePath() throws IOException {
     final Directory directory = new RefCntRamDirectory();
     RAMDirectoryFactory factory = new RAMDirectoryFactory() {

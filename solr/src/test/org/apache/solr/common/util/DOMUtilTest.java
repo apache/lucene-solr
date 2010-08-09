@@ -28,14 +28,16 @@ import javax.xml.xpath.XPathFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class DOMUtilTest extends TestCase {
+public class DOMUtilTest extends LuceneTestCase {
   
   private DocumentBuilder builder;
   private static final XPathFactory xpathFactory = XPathFactory.newInstance();
   
+  @Override
   public void setUp() throws Exception {
+    super.setUp();
     builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
   }
   

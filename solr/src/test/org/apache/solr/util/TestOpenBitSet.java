@@ -17,11 +17,10 @@
 
 package org.apache.solr.util;
 
-import junit.framework.TestCase;
-
 import java.util.Random;
 import java.util.BitSet;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSetIterator;
 import org.apache.lucene.search.DocIdSetIterator;
 
@@ -29,7 +28,7 @@ import org.apache.lucene.search.DocIdSetIterator;
  * @deprecated
  * @version $Id$
  */
-public class TestOpenBitSet extends TestCase {
+public class TestOpenBitSet extends LuceneTestCase {
   static Random rand = new Random();
 
   void doGet(BitSet a, OpenBitSet b) {

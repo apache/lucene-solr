@@ -19,14 +19,14 @@ package org.apache.lucene.benchmark.byTask;
 
 import java.io.StringReader;
 import java.util.ArrayList;
-import junit.framework.TestCase;
 
 import org.apache.lucene.benchmark.byTask.tasks.PerfTask;
 import org.apache.lucene.benchmark.byTask.tasks.TaskSequence;
 import org.apache.lucene.benchmark.byTask.utils.Algorithm;
+import org.apache.lucene.util.LuceneTestCase;
 
 /** Test very simply that perf tasks are parses as expected. */
-public class TestPerfTasksParse extends TestCase {
+public class TestPerfTasksParse extends LuceneTestCase {
 
   static final String NEW_LINE = System.getProperty("line.separator");
   static final String INDENT = "  ";

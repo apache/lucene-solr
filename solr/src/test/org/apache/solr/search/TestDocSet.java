@@ -17,12 +17,11 @@
 
 package org.apache.solr.search;
 
-import junit.framework.TestCase;
-
 import java.util.Random;
 import java.util.Arrays;
 import java.io.IOException;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetIterator;
 import org.apache.lucene.index.IndexReader;
@@ -35,7 +34,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 /**
  * @version $Id$
  */
-public class TestDocSet extends TestCase {
+public class TestDocSet extends LuceneTestCase {
   Random rand = new Random();
   float loadfactor;
 

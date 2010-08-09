@@ -17,11 +17,12 @@ package org.apache.lucene.queryParser.surround.query;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
-public class Test03Distance extends TestCase {
+import org.apache.lucene.util.LuceneTestCase;
+
+public class Test03Distance extends LuceneTestCase {
   public static void main(String args[]) {
     TestRunner.run(new TestSuite(Test03Distance.class));
   }

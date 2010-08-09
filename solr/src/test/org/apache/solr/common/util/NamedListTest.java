@@ -17,9 +17,9 @@
 
 package org.apache.solr.common.util;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class NamedListTest extends TestCase {
+public class NamedListTest extends LuceneTestCase {
   public void testRemove() {
     NamedList<String> nl = new NamedList<String>();
     nl.add("key1", "value1");

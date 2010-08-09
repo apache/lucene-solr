@@ -17,17 +17,17 @@
 
 package org.apache.solr.client.solrj;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.params.FacetParams;
 
 import junit.framework.Assert;
-import junit.framework.TestCase;
 
 /**
  * 
  * @version $Id$
  * @since solr 1.3
  */
-public class SolrQueryTest extends TestCase {
+public class SolrQueryTest extends LuceneTestCase {
   
   public void testSolrQueryMethods() {
     SolrQuery q = new SolrQuery("dog");

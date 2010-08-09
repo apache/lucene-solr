@@ -20,15 +20,14 @@ package org.apache.lucene.search.spell;
 import java.io.IOException;
 import java.io.StringReader;
 
-import junit.framework.TestCase;
-
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Test case for PlainTextDictionary
  *
  */
-public class TestPlainTextDictionary extends TestCase {
+public class TestPlainTextDictionary extends LuceneTestCase {
 
   public void testBuild() throws IOException {
     final String LF = System.getProperty("line.separator");

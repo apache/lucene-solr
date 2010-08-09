@@ -17,12 +17,12 @@ package org.apache.lucene.search.regex;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Testcase for {@link JakartaRegexpCapabilities}
  */
-public class TestJakartaRegexpCapabilities extends TestCase {
+public class TestJakartaRegexpCapabilities extends LuceneTestCase {
 
   public void testGetPrefix(){
     JakartaRegexpCapabilities cap = new JakartaRegexpCapabilities();

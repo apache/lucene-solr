@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj;
 
 import java.net.UnknownHostException;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
@@ -32,7 +32,7 @@ import org.apache.solr.common.SolrException;
  * @version $Id$
  * @since solr 1.3
  */
-public class SolrExceptionTest extends TestCase {
+public class SolrExceptionTest extends LuceneTestCase {
 
   public void testSolrException() throws Throwable {
     // test a connection to a solr server that probably doesn't exist

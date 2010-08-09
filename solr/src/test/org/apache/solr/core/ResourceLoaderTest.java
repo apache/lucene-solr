@@ -18,8 +18,8 @@
 package org.apache.solr.core;
 
 import junit.framework.Assert;
-import junit.framework.TestCase;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.analysis.KeywordTokenizerFactory;
 import org.apache.solr.analysis.NGramFilterFactory;
 import org.apache.solr.common.SolrException;
@@ -35,7 +35,7 @@ import java.nio.charset.CharacterCodingException;
 import java.util.Arrays;
 import java.util.List;
 
-public class ResourceLoaderTest extends TestCase 
+public class ResourceLoaderTest extends LuceneTestCase 
 {
   public void testInstanceDir() throws Exception {
     SolrResourceLoader loader = new SolrResourceLoader(null);

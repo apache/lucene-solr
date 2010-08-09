@@ -16,9 +16,9 @@ package org.apache.solr.util;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class ArraysUtilsTest extends TestCase {
+public class ArraysUtilsTest extends LuceneTestCase {
 
 
   public ArraysUtilsTest(String s) {

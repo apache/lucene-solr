@@ -17,17 +17,16 @@
 
 package org.apache.solr.common.util;
 
-import junit.framework.TestCase;
-
 import java.io.IOException;
 import java.io.StringWriter;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.XML;
 
 /** Test (some of the) character escaping functions of the XML class
  *  $Id$
  */
 
-public class TestXMLEscaping extends TestCase {
+public class TestXMLEscaping extends LuceneTestCase {
   private void doSimpleTest(String input,String expectedOutput) throws IOException {
     final StringWriter sw = new StringWriter();
     XML.escapeCharData(input, sw);

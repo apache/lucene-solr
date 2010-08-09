@@ -10,7 +10,7 @@
  */
 package org.apache.solr.common.params;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Unit Test Case for {@link org.apache.solr.common.params.ModifiableSolrParams
@@ -18,7 +18,7 @@ import junit.framework.TestCase;
  * 
  * @author kkumar
  */
-public class ModifiableSolrParamsTest extends TestCase
+public class ModifiableSolrParamsTest extends LuceneTestCase
 {
 
   @Override
