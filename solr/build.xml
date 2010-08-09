@@ -441,6 +441,8 @@
       <sysproperty key="java.util.logging.config.file" value="${common-solr.dir}/testlogging.properties"/>
       <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
       <sysproperty key="tests.codec" value="${tests.codec}"/>
+      <sysproperty key="tests.locale" value="${tests.locale}"/>
+      <sysproperty key="tests.timezone" value="${tests.timezone}"/>
       <sysproperty key="jetty.insecurerandom" value="1"/>
       <sysproperty key="tempDir" file="@{tempDir}/@{threadNum}"/>
       <jvmarg line="${dir.prop}"/>
