@@ -16,10 +16,10 @@ package org.apache.lucene.swing.models;
  * limitations under the License.
  */
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
 
-public class TestUpdatingList extends TestCase {
+public class TestUpdatingList extends LuceneTestCase {
     private BaseListModel baseListModel;
     private ListSearcher listSearcher;
 
@@ -27,6 +27,7 @@ public class TestUpdatingList extends TestCase {
 
     @Override
     protected void setUp() throws Exception {
+        super.setUp();
         baseListModel = new BaseListModel(DataStore.getRestaurants());
         listSearcher = new ListSearcher(baseListModel);
 

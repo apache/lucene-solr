@@ -17,10 +17,10 @@
 
 package org.apache.solr.client.solrj;
 
-import junit.framework.TestCase;
 import junit.framework.Assert;
 import org.apache.commons.httpclient.HttpClient;
 import org.apache.commons.io.FileUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
@@ -43,7 +43,7 @@ import java.util.Set;
  * @version $Id$
  * @since solr 1.4
  */
-public class TestLBHttpSolrServer extends TestCase {
+public class TestLBHttpSolrServer extends LuceneTestCase {
   SolrInstance[] solr = new SolrInstance[3];
   HttpClient httpClient = new HttpClient();
 
@@ -223,7 +223,7 @@ public class TestLBHttpSolrServer extends TestCase {
       jetty.start();
       int newPort = jetty.getLocalPort();
       if (port != 0 && newPort != port) {
-        TestCase.fail("TESTING FAILURE: could not grab requested port.");
+        fail("TESTING FAILURE: could not grab requested port.");
       }
       this.port = newPort;
 //      System.out.println("waiting.........");

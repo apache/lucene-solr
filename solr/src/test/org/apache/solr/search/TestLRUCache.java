@@ -5,14 +5,13 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Map;
 
-import junit.framework.TestCase;
-
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
 
 /**
  * Test for <code>org.apache.solr.search.LRUCache</code>
  */
-public class TestLRUCache extends TestCase {
+public class TestLRUCache extends LuceneTestCase {
 
   public void testFullAutowarm() throws IOException {
     LRUCache<Object, Object> lruCache = new LRUCache<Object, Object>();

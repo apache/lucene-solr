@@ -15,7 +15,6 @@
  */
 package org.apache.lucene.store.instantiated;
 
-import junit.framework.TestCase;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Scorer;
@@ -23,6 +22,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Assert that the content of an index 
@@ -30,7 +30,7 @@ import org.apache.lucene.index.IndexReader;
  * for all open searchers
  * also after a commit.
  */
-public class TestRealTime extends TestCase {
+public class TestRealTime extends LuceneTestCase {
 
   public void test() throws Exception {
 

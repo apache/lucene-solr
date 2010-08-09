@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.util;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.TestDistributedSearch;
@@ -28,9 +29,7 @@ import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
 
-import junit.framework.TestCase;
-
-public class TestNamedListCodec  extends TestCase {
+public class TestNamedListCodec  extends LuceneTestCase {
   public void testSimple() throws Exception{
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     NamedList nl = new NamedList();
@@ -252,7 +251,7 @@ public class TestNamedListCodec  extends TestCase {
       if (cmp != null) {
         System.out.println(nl);
         System.out.println(res);
-        TestCase.fail(cmp);
+        fail(cmp);
       }
     }
   }

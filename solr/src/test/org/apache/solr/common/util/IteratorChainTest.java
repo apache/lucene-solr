@@ -21,11 +21,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.IteratorChain;
 
-import junit.framework.TestCase;
-
-public class IteratorChainTest extends TestCase {
+public class IteratorChainTest extends LuceneTestCase {
   
   private Iterator<String> makeIterator(String marker,int howMany) {
     final List<String> c = new ArrayList<String>();

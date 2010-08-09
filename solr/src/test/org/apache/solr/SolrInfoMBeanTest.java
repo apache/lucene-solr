@@ -16,7 +16,7 @@
  */
 package org.apache.solr;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.core.SolrInfoMBean;
 import org.apache.solr.handler.StandardRequestHandler;
 import org.apache.solr.handler.admin.LukeRequestHandler;
@@ -34,7 +34,7 @@ import java.util.List;
 /**
  * A simple test used to increase code coverage for some standard things...
  */
-public class SolrInfoMBeanTest extends TestCase 
+public class SolrInfoMBeanTest extends LuceneTestCase 
 {
   /**
    * Gets a list of everything we can find in the classpath and makes sure it has

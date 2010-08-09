@@ -24,14 +24,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 
-import junit.framework.TestCase;
-
 /**
  */
-public class SolrDocumentTest extends TestCase 
+public class SolrDocumentTest extends LuceneTestCase 
 {
   public void testSimple() 
   {

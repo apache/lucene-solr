@@ -17,13 +17,12 @@
 
 package org.apache.solr.util;
 
-import junit.framework.TestCase;
-
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.junit.Assert;
@@ -31,7 +30,7 @@ import org.junit.Assert;
 /**
  * @version $Id$
  */
-public class TestUtils extends TestCase {
+public class TestUtils extends LuceneTestCase {
   public static void testSplitEscaping() {
     List<String> arr = StrUtils.splitSmart("\\r\\n:\\t\\f\\b", ":", true);
     assertEquals(2,arr.size());

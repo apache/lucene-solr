@@ -17,9 +17,9 @@
 
 package org.apache.solr.analysis;
 
-import junit.framework.TestCase;
+import org.apache.lucene.util.LuceneTestCase;
 
-public class TestMappingCharFilterFactory extends TestCase {
+public class TestMappingCharFilterFactory extends LuceneTestCase {
   public void testParseString() throws Exception {
 
     MappingCharFilterFactory f = new MappingCharFilterFactory();

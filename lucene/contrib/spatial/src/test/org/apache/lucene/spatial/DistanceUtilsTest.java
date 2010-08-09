@@ -1,8 +1,7 @@
 package org.apache.lucene.spatial;
 
-import junit.framework.TestCase;
 import org.apache.lucene.spatial.tier.InvalidGeoException;
-
+import org.apache.lucene.util.LuceneTestCase;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -26,7 +25,7 @@ import org.apache.lucene.spatial.tier.InvalidGeoException;
  *
  *
  **/
-public class DistanceUtilsTest extends TestCase {
+public class DistanceUtilsTest extends LuceneTestCase {
 
   public void testBoxCorner() throws Exception {
     double[] zero = new double[]{0, 0};

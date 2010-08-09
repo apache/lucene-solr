@@ -27,13 +27,12 @@ import java.io.StringReader;
 import java.net.URL;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.ContentStreamBase;
-
-import junit.framework.TestCase;
 
 /**
  */
-public class ContentStreamTest extends TestCase 
+public class ContentStreamTest extends LuceneTestCase 
 {  
   public void testStringStream() throws IOException 
   {
