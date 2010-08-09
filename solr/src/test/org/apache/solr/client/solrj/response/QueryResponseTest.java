@@ -23,6 +23,7 @@ import java.io.FileReader;
 
 import junit.framework.Assert;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.impl.XMLResponseParser;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
@@ -33,7 +34,7 @@ import static org.junit.Assert.assertTrue;
  * 
  * @since solr 1.3
  */
-public class QueryResponseTest {
+public class QueryResponseTest extends LuceneTestCase {
   @Test
   public void testDateFacets() throws Exception   {
     XMLResponseParser parser = new XMLResponseParser();

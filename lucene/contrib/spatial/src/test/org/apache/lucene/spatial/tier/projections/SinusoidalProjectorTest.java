@@ -1,5 +1,6 @@
 package org.apache.lucene.spatial.tier.projections;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 
@@ -7,7 +8,7 @@ import org.junit.Test;
  *
  *
  **/
-public class SinusoidalProjectorTest {
+public class SinusoidalProjectorTest extends LuceneTestCase {
 
   @Test
   public void testProjection() throws Exception {

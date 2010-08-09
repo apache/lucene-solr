@@ -19,6 +19,7 @@ package org.apache.solr.spelling;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
@@ -35,7 +36,7 @@ import java.util.ArrayList;
  * @version $Id$
  * @since solr 1.3
  */
-public class SpellingQueryConverterTest {
+public class SpellingQueryConverterTest extends LuceneTestCase {
 
   @Test
   public void test() throws Exception {

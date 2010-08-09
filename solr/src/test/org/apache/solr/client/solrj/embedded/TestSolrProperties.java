@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.embedded;
 
 import static junit.framework.Assert.assertEquals;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
@@ -44,7 +45,7 @@ import org.slf4j.LoggerFactory;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestSolrProperties {
+public class TestSolrProperties extends LuceneTestCase {
   protected static Logger log = LoggerFactory.getLogger(TestSolrProperties.class);
   protected CoreContainer cores = null;
 
@@ -58,6 +59,7 @@ public class TestSolrProperties {
 
   @Before
   public void setUp() throws Exception {
+    super.setUp();
     System.setProperty("solr.solr.home", getSolrHome());
 
     log.info("pwd: " + (new File(".")).getAbsolutePath());
@@ -81,6 +83,7 @@ public class TestSolrProperties {
     }
     File persistedFile = new File(getSolrHome() + File.separator + "solr-persist.xml");
     persistedFile.delete();
+    super.tearDown();
   }
 
   protected SolrServer getSolrCore0() {
