@@ -59,6 +59,8 @@ import java.util.Map;
 import java.util.TimeZone;
 import java.util.WeakHashMap;
 import java.util.Collections;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 import java.lang.reflect.Method;
 
 import static org.junit.Assert.assertEquals;
@@ -131,6 +133,8 @@ public class LuceneTestCaseJ4 {
   /** Gets the timezone to run tests with */
   static final String TEST_TIMEZONE = System.getProperty("tests.timezone", "random");
   
+  private static final Pattern codecWithParam = Pattern.compile("(.*)\\(\\s*(\\d+)\\s*\\)");
+
   /**
    * A random multiplier which you should use when writing random tests:
    * multiply it by the number of iterations
@@ -190,9 +194,24 @@ public class LuceneTestCaseJ4 {
 
     savedDefaultCodec = CodecProvider.getDefaultCodec();
     String codec = TEST_CODEC;
+
+    final boolean codecHasParam;
+    int codecParam = 0;
     if (codec.equals("random")) {
       codec = pickRandomCodec(seedRnd);
+      codecHasParam = false;
+    } else {
+      Matcher m = codecWithParam.matcher(codec);
+      if (m.matches()) {
+        // codec has a fixed param
+        codecHasParam = true;
+        codec = m.group(1);
+        codecParam = Integer.parseInt(m.group(2));
+      } else {
+        codecHasParam = false;
+      }
     }
+
     CodecProvider.setDefaultCodec(codec);
 
     if (codec.equals("PreFlex")) {
@@ -203,10 +222,10 @@ public class LuceneTestCaseJ4 {
     }
 
     swapCodec(new MockSepCodec());
-    swapCodec(new PulsingCodec(_TestUtil.nextInt(seedRnd, 1, 20)));
-    swapCodec(new MockFixedIntBlockCodec(_TestUtil.nextInt(seedRnd, 1, 2000)));
+    swapCodec(new PulsingCodec(codecHasParam && "Pulsing".equals(codec) ? codecParam : _TestUtil.nextInt(seedRnd, 1, 20)));
+    swapCodec(new MockFixedIntBlockCodec(codecHasParam && "MockFixedIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(seedRnd, 1, 2000)));
     // baseBlockSize cannot be over 127:
-    swapCodec(new MockVariableIntBlockCodec(_TestUtil.nextInt(seedRnd, 1, 127)));
+    swapCodec(new MockVariableIntBlockCodec(codecHasParam && "MockVariableIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(seedRnd, 1, 127)));
 
     return cp.lookup(codec);
   }
