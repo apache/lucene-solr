@@ -25,7 +25,7 @@ $Id$
 Versions of Major Components
 ---------------------
 Apache Lucene trunk
-Apache Tika 0.6
+Apache Tika 0.8-SNAPSHOT
 Carrot2 3.1.0
 Velocity 1.6.1
 
