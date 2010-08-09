@@ -2,12 +2,13 @@ package org.apache.lucene.spatial.geometry;
 
 import static junit.framework.Assert.*;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
 /**
  * Tests for {@link org.apache.lucene.spatial.geometry.DistanceUnits}
  */
-public class TestDistanceUnits {
+public class TestDistanceUnits extends LuceneTestCase {
 
   /**
    * Pass condition: When finding the DistanceUnit for "km", KILOMETRES is found.  When finding the DistanceUnit for

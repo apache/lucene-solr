@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.response;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.util.NamedList;
 import static org.junit.Assert.*;
 import org.junit.Test;
@@ -31,7 +32,7 @@ import java.util.List;
  * @since solr 1.4
  */
 @SuppressWarnings("unchecked")
-public class AnlysisResponseBaseTest {
+public class AnlysisResponseBaseTest extends LuceneTestCase {
 
   /**
    * Tests the {@link AnalysisResponseBase#buildTokenInfo(org.apache.solr.common.util.NamedList)} method.
