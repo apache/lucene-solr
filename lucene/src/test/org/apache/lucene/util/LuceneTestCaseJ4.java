@@ -29,8 +29,10 @@ import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatchman;
@@ -42,10 +44,12 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Random;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.WeakHashMap;
 import java.util.Collections;
 import java.lang.reflect.Method;
@@ -110,12 +114,11 @@ public class LuceneTestCaseJ4 {
     TEMP_DIR = new File(s);
   }
 
-  // by default we randomly pick a different codec for
-  // each test case (non-J4 tests) and each test class (J4
-  // tests)
-  /** Gets the codec to run tests with. */
-  static final String TEST_CODEC = System.getProperty("tests.codec", "random");
-
+  /** Gets the locale to run tests with */
+  static final String TEST_LOCALE = System.getProperty("tests.locale", "random");
+  /** Gets the timezone to run tests with */
+  static final String TEST_TIMEZONE = System.getProperty("tests.timezone", "random");
+  
   /**
    * A random multiplier which you should use when writing random tests:
    * multiply it by the number of iterations
@@ -144,6 +147,27 @@ public class LuceneTestCaseJ4 {
   private static final Object PLACEHOLDER = new Object();
   private static final Map<Class<? extends LuceneTestCaseJ4>,Object> checkedClasses =
     Collections.synchronizedMap(new WeakHashMap<Class<? extends LuceneTestCaseJ4>,Object>());
+  
+  private static Locale locale;
+  private static Locale savedLocale;
+  private static TimeZone timeZone;
+  private static TimeZone savedTimeZone;
+  
+  @BeforeClass
+  public static void beforeClassLuceneTestCaseJ4() {
+    savedLocale = Locale.getDefault();
+    locale = TEST_LOCALE.equals("random") ? randomLocale(seedRnd) : localeForName(TEST_LOCALE);
+    Locale.setDefault(locale);
+    savedTimeZone = TimeZone.getDefault();
+    timeZone = TEST_TIMEZONE.equals("random") ? randomTimeZone(seedRnd) : TimeZone.getTimeZone(TEST_TIMEZONE);
+    TimeZone.setDefault(timeZone);
+  }
+  
+  @AfterClass
+  public static void afterClassLuceneTestCaseJ4() {
+    Locale.setDefault(savedLocale);
+    TimeZone.setDefault(savedTimeZone);
+  }
 
   // This is how we get control when errors occur.
   // Think of this as start/end/success/failed
@@ -409,6 +433,29 @@ public class LuceneTestCaseJ4 {
     return c;
   }
 
+  /** return a random Locale from the available locales on the system */
+  public static Locale randomLocale(Random random) {
+    Locale locales[] = Locale.getAvailableLocales();
+    return locales[random.nextInt(locales.length)];
+  }
+  
+  /** return a random TimeZone from the available timezones on the system */
+  public static TimeZone randomTimeZone(Random random) {
+    String tzIds[] = TimeZone.getAvailableIDs();
+    return TimeZone.getTimeZone(tzIds[random.nextInt(tzIds.length)]);
+  }
+  
+  /** return a Locale object equivalent to its programmatic name */
+  public static Locale localeForName(String localeName) {
+    String elements[] = localeName.split("\\_");
+    switch(elements.length) {
+      case 3: return new Locale(elements[0], elements[1], elements[2]);
+      case 2: return new Locale(elements[0], elements[1]);
+      case 1: return new Locale(elements[0]);
+      default: throw new IllegalArgumentException("Invalid Locale: " + localeName);
+    }
+  }
+
   public String getName() {
     return this.name;
   }
@@ -431,7 +478,10 @@ public class LuceneTestCaseJ4 {
     if (staticSeed != null) {
       System.out.println("NOTE: random static seed of testclass '" + getName() + "' was: " + staticSeed);
     }
-
+    if (TEST_LOCALE.equals("random"))
+      System.out.println("NOTE: random locale of testcase '" + getName() + "' was: " + locale);
+    if (TEST_TIMEZONE.equals("random"))
+      System.out.println("NOTE: random timezone of testcase '" + getName() + "' was: " + timeZone.getID());
     if (seed != null) {
       System.out.println("NOTE: random seed of testcase '" + getName() + "' was: " + seed);
     }

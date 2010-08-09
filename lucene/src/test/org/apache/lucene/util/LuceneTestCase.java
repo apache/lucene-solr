@@ -22,10 +22,12 @@ import java.io.PrintStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Random;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Collections;
+import java.util.TimeZone;
 
 import junit.framework.TestCase;
 
@@ -70,9 +72,11 @@ public abstract class LuceneTestCase extends TestCase {
   /** Create indexes in this directory, optimally use a subdir, named after the test */
   public static final File TEMP_DIR = LuceneTestCaseJ4.TEMP_DIR;
 
-  /** Gets the codec to run tests with. */
-  public static final String TEST_CODEC = LuceneTestCaseJ4.TEST_CODEC;
-
+  /** Gets the locale to run tests with */
+  static final String TEST_LOCALE = LuceneTestCaseJ4.TEST_LOCALE;
+  /** Gets the timezone to run tests with */
+  static final String TEST_TIMEZONE = LuceneTestCaseJ4.TEST_TIMEZONE;
+  
   /**
    * A random multiplier which you should use when writing random tests:
    * multiply it by the number of iterations
@@ -83,6 +87,11 @@ public abstract class LuceneTestCase extends TestCase {
   
   private volatile Thread.UncaughtExceptionHandler savedUncaughtExceptionHandler = null;
 
+  private Locale locale;
+  private Locale savedLocale;
+  private TimeZone timeZone;
+  private TimeZone savedTimeZone;
+  
   /** Used to track if setUp and tearDown are called correctly from subclasses */
   private boolean setup;
 
@@ -121,6 +130,16 @@ public abstract class LuceneTestCase extends TestCase {
     
     ConcurrentMergeScheduler.setTestMode();
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
+    savedLocale = Locale.getDefault();
+    locale = TEST_LOCALE.equals("random") 
+      ? LuceneTestCaseJ4.randomLocale(seedRnd) 
+      : LuceneTestCaseJ4.localeForName(TEST_LOCALE);
+    Locale.setDefault(locale);
+    savedTimeZone = TimeZone.getDefault();
+    timeZone = TEST_TIMEZONE.equals("random")
+      ? LuceneTestCaseJ4.randomTimeZone(seedRnd)
+      : TimeZone.getTimeZone(TEST_TIMEZONE);
+    TimeZone.setDefault(timeZone);
   }
 
   /**
@@ -146,6 +165,8 @@ public abstract class LuceneTestCase extends TestCase {
     assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
     setup = false;
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
+    Locale.setDefault(savedLocale);
+    TimeZone.setDefault(savedTimeZone);
     
     try {
       Thread.setDefaultUncaughtExceptionHandler(savedUncaughtExceptionHandler);
@@ -300,6 +321,10 @@ public abstract class LuceneTestCase extends TestCase {
       seed = null;
       super.runBare();
     } catch (Throwable e) {
+      if (TEST_LOCALE.equals("random"))
+        System.out.println("NOTE: random locale of testcase '" + getName() + "' was: " + locale);
+      if (TEST_TIMEZONE.equals("random"))
+        System.out.println("NOTE: random timezone of testcase '" + getName() + "' was: " + timeZone.getID());
       if (seed != null) {
         System.out.println("NOTE: random seed of testcase '" + getName() + "' was: " + seed);
       }

@@ -56,6 +56,8 @@
   <property name="args" value=""/>
   <property name="threadsPerProcessor" value="1" />
   <property name="random.multiplier" value="1" />
+  <property name="tests.locale" value="random" />
+  <property name="tests.timezone" value="random" />
     
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
@@ -429,6 +431,10 @@
 	
 	      <!-- allow tests to control debug prints -->
 	      <sysproperty key="tests.verbose" value="${tests.verbose}"/>
+              <!-- set the locale tests should run with -->
+	      <sysproperty key="tests.locale" value="${tests.locale}"/>
+              <!-- set the timezone tests should run with -->
+	      <sysproperty key="tests.timezone" value="${tests.timezone}"/>
 	
 	      <!-- TODO: create propertyset for test properties, so each project can have its own set -->
               <sysproperty key="random.multiplier" value="${random.multiplier}"/>
