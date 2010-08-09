@@ -30,7 +30,7 @@ import org.junit.Test;
 /**
  * TestCase for the {@link CharacterUtils} class.
  */
-public class TestCharacterUtils {
+public class TestCharacterUtils extends LuceneTestCase {
 
   @Test
   public void testCodePointAtCharArrayInt() {
