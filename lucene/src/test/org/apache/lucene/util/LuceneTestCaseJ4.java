@@ -44,7 +44,13 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatchman;
+import org.junit.runner.Description;
+import org.junit.runner.RunWith;
+import org.junit.runner.manipulation.Filter;
+import org.junit.runner.manipulation.NoTestsRemainException;
+import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
+import org.junit.runners.model.InitializationError;
 
 import java.io.File;
 import java.io.PrintStream;
@@ -101,6 +107,7 @@ import static org.junit.Assert.fail;
 // every test. But the functionality we used to
 // get from that override is provided by InterceptTestCaseEvents
 //@RunWith(RunBareWrapper.class)
+@RunWith(LuceneTestCaseJ4.LuceneTestCaseRunner.class)
 public class LuceneTestCaseJ4 {
 
   /**
@@ -114,9 +121,16 @@ public class LuceneTestCaseJ4 {
    */
   public static final Version TEST_VERSION_CURRENT = Version.LUCENE_40;
 
+  /**
+   * If this is set, it is the only method that should run.
+   */
+  static final String TEST_METHOD;
+  
   /** Create indexes in this directory, optimally use a subdir, named after the test */
   public static final File TEMP_DIR;
   static {
+    String method = System.getProperty("testmethod", "").trim();
+    TEST_METHOD = method.length() == 0 ? null : method;
     String s = System.getProperty("tempDir", System.getProperty("java.io.tmpdir"));
     if (s == null)
       throw new RuntimeException("To run tests, you need to define system property 'tempDir' or 'java.io.tmpdir'.");
@@ -615,4 +629,27 @@ public class LuceneTestCaseJ4 {
   private static final Random seedRnd = new Random();
 
   private String name = "<unknown>";
+  
+  /** optionally filters the tests to be run by TEST_METHOD */
+  public static class LuceneTestCaseRunner extends BlockJUnit4ClassRunner {
+    public LuceneTestCaseRunner(Class<?> clazz) throws InitializationError {
+      super(clazz);
+      Filter f = new Filter() {
+
+        @Override
+        public String describe() { return "filters according to TEST_METHOD"; }
+
+        @Override
+        public boolean shouldRun(Description d) {
+          return TEST_METHOD == null || d.getMethodName().equals(TEST_METHOD);
+        }     
+      };
+      
+      try {
+        f.apply(this);
+      } catch (NoTestsRemainException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
 }

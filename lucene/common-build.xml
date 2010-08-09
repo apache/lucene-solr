@@ -53,6 +53,7 @@
   </path>
 
   <!-- default arguments to pass to JVM executing tests -->
+  <property name="testmethod" value=""/>
   <property name="args" value=""/>
   <property name="threadsPerProcessor" value="1" />
   <property name="random.multiplier" value="1" />
@@ -449,6 +450,8 @@
 	      <sysproperty key="tempDir" file="@{tempDir}/@{threadNum}"/>
 
 	      <sysproperty key="lucene.version" value="${dev.version}"/>
+              
+              <sysproperty key="testmethod" value="${testmethod}"/>
 	    	
 	      <formatter type="xml"/>
 	      <formatter classname="${junit.details.formatter}" usefile="false"/>

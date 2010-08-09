@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.TimeZone;
 
 import junit.framework.TestCase;
+import junit.framework.TestResult;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
@@ -322,6 +323,14 @@ public abstract class LuceneTestCase extends TestCase {
     } catch (Exception e) {
       throw new IOException("Cannot find resource: " + name);
     }
+  }
+  
+
+  @Override
+  public void run(TestResult result) {
+    if (LuceneTestCaseJ4.TEST_METHOD == null || 
+        getName().equals(LuceneTestCaseJ4.TEST_METHOD))
+        super.run(result);
   }
   
   @Override

@@ -445,6 +445,7 @@
       <sysproperty key="tests.timezone" value="${tests.timezone}"/>
       <sysproperty key="jetty.insecurerandom" value="1"/>
       <sysproperty key="tempDir" file="@{tempDir}/@{threadNum}"/>
+      <sysproperty key="testmethod" value="${testmethod}"/>
       <jvmarg line="${dir.prop}"/>
       <jvmarg line="${args}"/>
 

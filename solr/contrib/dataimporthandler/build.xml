@@ -157,6 +157,7 @@
            >
       <sysproperty key="jetty.insecurerandom" value="1"/>
       <sysproperty key="tempDir" file="${tempDir}"/>
+      <sysproperty key="testmethod" value="${testmethod}"/>
       <formatter type="brief" usefile="false" if="junit.details"/>
       <classpath refid="test.classpath"/>
       <formatter type="xml"/>
@@ -204,6 +205,7 @@
            >
       <sysproperty key="jetty.insecurerandom" value="1"/>
       <sysproperty key="tempDir" file="${tempDir}"/>
+      <sysproperty key="testmethod" value="${testmethod}"/>
       <formatter type="brief" usefile="false" if="junit.details"/>
       <classpath refid="test.extras.classpath"/>
       <assertions>

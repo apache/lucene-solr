@@ -109,6 +109,7 @@
   <property name="build.javadoc.solrj" value="${build.docs}/api-solrj"/>
   
   <!-- JUnit properties -->
+  <property name="testmethod" value=""/>
   <property name="junit.includes" value="**/Test*.java,**/*Test.java"/>
   <property name="junit.output.dir" location="${common-solr.dir}/${dest}/test-results"/>
   <property name="junit.reports" location="${common-solr.dir}/${dest}/test-results/reports"/>
