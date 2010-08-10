@@ -29,6 +29,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 public class TestIndexWriterDelete extends LuceneTestCase {
 
@@ -518,8 +519,10 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
         // If the close() succeeded, make sure there are
         // no unreferenced files.
-        if (success)
+        if (success) {
+          _TestUtil.checkIndex(dir);
           TestIndexWriter.assertNoUnreferencedFiles(dir, "after writer.close");
+        }
 
         // Finally, verify index is not corrupt, and, if
         // we succeeded, we see all docs changed, and if
