@@ -26,7 +26,7 @@
       - stempel:	Algorithmic Stemmer for Polish
   </description>
 
-  <import file="../contrib-build.xml"/>
+  <!-- we dont import contrib-build.xml here, as this file only delegates to the real build files -->
 
   <target name="common">
     <ant dir="common" />
