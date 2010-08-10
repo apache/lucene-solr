@@ -489,7 +489,7 @@ public class IndexWriter implements Closeable {
 
       final boolean pooled = readerMap.containsKey(sr.getSegmentInfo());
 
-      assert !pooled | readerMap.get(sr.getSegmentInfo()) == sr;
+      assert !pooled || readerMap.get(sr.getSegmentInfo()) == sr;
 
       // Drop caller's ref; for an external reader (not
       // pooled), this decRef will close it
@@ -497,28 +497,30 @@ public class IndexWriter implements Closeable {
 
       if (pooled && (drop || (!poolReaders && sr.getRefCount() == 1))) {
 
+        // We invoke deleter.checkpoint below, so we must be
+        // sync'd on IW if there are changes:
+        assert !sr.hasChanges || Thread.holdsLock(IndexWriter.this);
+
+        // Discard (don't save) changes when we are dropping
+        // the reader; this is used only on the sub-readers
+        // after a successful merge.
+        sr.hasChanges &= !drop;
+
+        final boolean hasChanges = sr.hasChanges;
+
+        // Drop our ref -- this will commit any pending
+        // changes to the dir
+        sr.close();
+
         // We are the last ref to this reader; since we're
         // not pooling readers, we release it:
         readerMap.remove(sr.getSegmentInfo());
 
-        assert !sr.hasChanges || Thread.holdsLock(IndexWriter.this);
-
-        // Drop our ref -- this will commit any pending
-        // changes to the dir
-        boolean success = false;
-        try {
-          sr.close();
-          success = true;
-        } finally {
-          if (!success && sr.hasChanges) {
-            // Abandon the changes & retry closing:
-            sr.hasChanges = false;
-            try {
-              sr.close();
-            } catch (Throwable ignore) {
-              // Keep throwing original exception
-            }
-          }
+        if (hasChanges) {
+          // Must checkpoint w/ deleter, because this
+          // segment reader will have created new _X_N.del
+          // file.
+          deleter.checkpoint(segmentInfos, false);
         }
       }
     }
@@ -526,6 +528,10 @@ public class IndexWriter implements Closeable {
     /** Remove all our references to readers, and commits
      *  any pending changes. */
     synchronized void close() throws IOException {
+      // We invoke deleter.checkpoint below, so we must be
+      // sync'd on IW:
+      assert Thread.holdsLock(IndexWriter.this);
+
       Iterator<Map.Entry<SegmentInfo,SegmentReader>> iter = readerMap.entrySet().iterator();
       while (iter.hasNext()) {
         
@@ -534,16 +540,12 @@ public class IndexWriter implements Closeable {
         SegmentReader sr = ent.getValue();
         if (sr.hasChanges) {
           assert infoIsLive(sr.getSegmentInfo());
-          sr.startCommit();
-          boolean success = false;
-          try {
-            sr.doCommit(null);
-            success = true;
-          } finally {
-            if (!success) {
-              sr.rollbackCommit();
-            }
-          }
+          sr.doCommit(null);
+
+          // Must checkpoint w/ deleter, because this
+          // segment reader will have created new _X_N.del
+          // file.
+          deleter.checkpoint(segmentInfos, false);
         }
 
         iter.remove();
@@ -561,21 +563,22 @@ public class IndexWriter implements Closeable {
      * @throws IOException
      */
     synchronized void commit() throws IOException {
+
+      // We invoke deleter.checkpoint below, so we must be
+      // sync'd on IW:
+      assert Thread.holdsLock(IndexWriter.this);
+
       for (Map.Entry<SegmentInfo,SegmentReader> ent : readerMap.entrySet()) {
 
         SegmentReader sr = ent.getValue();
         if (sr.hasChanges) {
           assert infoIsLive(sr.getSegmentInfo());
-          sr.startCommit();
-          boolean success = false;
-          try {
-            sr.doCommit(null);
-            success = true;
-          } finally {
-            if (!success) {
-              sr.rollbackCommit();
-            }
-          }
+          sr.doCommit(null);
+
+          // Must checkpoint w/ deleter, because this
+          // segment reader will have created new _X_N.del
+          // file.
+          deleter.checkpoint(segmentInfos, false);
         }
       }
     }
@@ -4095,7 +4098,7 @@ public class IndexWriter implements Closeable {
           for (int i=0;i<numSegments;i++) {
             if (merge.readers[i] != null) {
               try {
-                readerPool.release(merge.readers[i], true);
+                readerPool.release(merge.readers[i], false);
               } catch (Throwable t) {
               }
             }
@@ -4200,32 +4203,14 @@ public class IndexWriter implements Closeable {
       message("applyDeletes");
     }
     flushDeletesCount++;
-    SegmentInfos rollback = (SegmentInfos) segmentInfos.clone();
     boolean success = false;
     boolean changed;
     try {
       changed = docWriter.applyDeletes(segmentInfos);
       success = true;
     } finally {
-      if (!success) {
-        if (infoStream != null)
-          message("hit exception flushing deletes");
-
-        // Carefully remove any partially written .del
-        // files
-        final int size = rollback.size();
-        for(int i=0;i<size;i++) {
-          final String newDelFileName = segmentInfos.info(i).getDelFileName();
-          final String delFileName = rollback.info(i).getDelFileName();
-          if (newDelFileName != null && !newDelFileName.equals(delFileName))
-            deleter.deleteFile(newDelFileName);
-        }
-
-        // Fully replace the segmentInfos since flushed
-        // deletes could have changed any of the
-        // SegmentInfo instances:
-        segmentInfos.clear();
-        segmentInfos.addAll(rollback);
+      if (!success && infoStream != null) {
+        message("hit exception flushing deletes");
       }
     }
 
@@ -4338,6 +4323,13 @@ public class IndexWriter implements Closeable {
         Collection<String> files = toSync.files(directory, false);
         for(final String fileName: files) {
           assert directory.fileExists(fileName): "file " + fileName + " does not exist";
+
+          // If this trips it means we are missing a call to
+          // .checkpoint somewhere, because by the time we
+          // are called, deleter should know about every
+          // file referenced by the current head
+          // segmentInfos:
+          assert deleter.exists(fileName);
         }
       }
 

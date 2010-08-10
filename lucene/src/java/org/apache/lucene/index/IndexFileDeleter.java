@@ -517,6 +517,14 @@ final class IndexFileDeleter {
     }
   }
 
+  public boolean exists(String fileName) {
+    if (!refCounts.containsKey(fileName)) {
+      return false;
+    } else {
+      return getRefCount(fileName).count > 0;
+    }
+  }
+
   private RefCount getRefCount(String fileName) {
     RefCount rc;
     if (!refCounts.containsKey(fileName)) {

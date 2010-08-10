@@ -5142,4 +5142,66 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.close();
     _TestUtil.rmDir(index);
   }
+
+  private static class FailTwiceDuringMerge extends MockRAMDirectory.Failure {
+    public boolean didFail1;
+    public boolean didFail2;
+
+    @Override
+    public void eval(MockRAMDirectory dir)  throws IOException {
+      if (!doFail) {
+        return;
+      }
+      StackTraceElement[] trace = new Exception().getStackTrace();
+      for (int i = 0; i < trace.length; i++) {
+        if ("org.apache.lucene.index.SegmentMerger".equals(trace[i].getClassName()) && "mergeTerms".equals(trace[i].getMethodName()) && !didFail1) {
+          didFail1 = true;
+          throw new IOException("fake disk full during mergeTerms");
+        }
+        if ("org.apache.lucene.util.BitVector".equals(trace[i].getClassName()) && "write".equals(trace[i].getMethodName()) && !didFail2) {
+          didFail2 = true;
+          throw new IOException("fake disk full while writing BitVector");
+        }
+      }
+    }
+  }
+  
+  // LUCENE-2593
+  public void testCorruptionAfterDiskFullDuringMerge() throws IOException {
+    MockRAMDirectory dir = new MockRAMDirectory();
+    final Random rand = newRandom();
+    //IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new MockAnalyzer()).setReaderPooling(true));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new MockAnalyzer()).setMergeScheduler(new SerialMergeScheduler()).setReaderPooling(true));
+
+    ((LogMergePolicy) w.getMergePolicy()).setMergeFactor(2);
+
+    Document doc = new Document();
+    doc.add(new Field("f", "doctor who", Field.Store.YES, Field.Index.ANALYZED));
+    w.addDocument(doc);
+
+    w.commit();
+
+    w.deleteDocuments(new Term("f", "who"));
+    w.addDocument(doc);
+    
+    // disk fills up!
+    FailTwiceDuringMerge ftdm = new FailTwiceDuringMerge();
+    ftdm.setDoFail();
+    dir.failOn(ftdm);
+
+    try {
+      w.commit();
+      fail("fake disk full IOExceptions not hit");
+    } catch (IOException ioe) {
+      // expected
+      assertTrue(ftdm.didFail1);
+    }
+    _TestUtil.checkIndex(dir);
+    ftdm.clearDoFail();
+    w.addDocument(doc);
+    w.close();
+
+    _TestUtil.checkIndex(dir);
+    dir.close();
+  }
 }

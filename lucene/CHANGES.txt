@@ -470,6 +470,9 @@ Bug fixes
 * LUCENE-2580: MultiPhraseQuery throws AIOOBE if number of positions
   exceeds number of terms at one position (Jayendra Patil via Mike McCandless)
 
+* LUCENE-2593: Fixed certain rare cases where a disk full could lead
+  to a corrupted index (Robert Muir, Mike McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight

@@ -65,6 +65,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   private boolean rollbackHasChanges = false;
   private boolean rollbackDeletedDocsDirty = false;
   private boolean rollbackNormsDirty = false;
+  private SegmentInfo rollbackSegmentInfo;
   private int rollbackPendingDeleteCount;
 
   // optionally used for the .nrm file shared by multiple norms
@@ -474,11 +475,25 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
       // NOTE: norms are re-written in regular directory, not cfs
       si.advanceNormGen(this.number);
-      IndexOutput out = directory().createOutput(si.getNormFileName(this.number));
+      final String normFileName = si.getNormFileName(this.number);
+      IndexOutput out = directory().createOutput(normFileName);
+      boolean success = false;
       try {
-        out.writeBytes(bytes, maxDoc());
+        try {
+          out.writeBytes(bytes, maxDoc());
+        } finally {
+          out.close();
+        }
+        success = true;
       } finally {
-        out.close();
+        if (!success) {
+          try {
+            directory().deleteFile(normFileName);
+          } catch (Throwable t) {
+            // suppress this so we keep throwing the
+            // original exception
+          }
+        }
       }
       this.dirty = false;
     }
@@ -718,33 +733,60 @@ public class SegmentReader extends IndexReader implements Cloneable {
   @Override
   protected void doCommit(Map<String,String> commitUserData) throws IOException {
     if (hasChanges) {
-      if (deletedDocsDirty) {               // re-write deleted
-        si.advanceDelGen();
-
-        // We can write directly to the actual name (vs to a
-        // .tmp & renaming it) because the file is not live
-        // until segments file is written:
-        deletedDocs.write(directory(), si.getDelFileName());
-
-        si.setDelCount(si.getDelCount()+pendingDeleteCount);
-        pendingDeleteCount = 0;
-        assert deletedDocs.count() == si.getDelCount(): "delete count mismatch during commit: info=" + si.getDelCount() + " vs BitVector=" + deletedDocs.count();
-      } else {
-        assert pendingDeleteCount == 0;
+      startCommit();
+      boolean success = false;
+      try {
+        commitChanges(commitUserData);
+        success = true;
+      } finally {
+        if (!success) {
+          rollbackCommit();
+        }
       }
+    }
+  }
 
-      if (normsDirty) {               // re-write norms
-        si.initNormGen(core.fieldInfos.size());
-        for (final Norm norm : norms.values()) {
-          if (norm.dirty) {
-            norm.reWrite(si);
+  private void commitChanges(Map<String,String> commitUserData) throws IOException {
+    if (deletedDocsDirty) {               // re-write deleted
+      si.advanceDelGen();
+
+      // We can write directly to the actual name (vs to a
+      // .tmp & renaming it) because the file is not live
+      // until segments file is written:
+      final String delFileName = si.getDelFileName();
+      boolean success = false;
+      try {
+        deletedDocs.write(directory(), delFileName);
+        success = true;
+      } finally {
+        if (!success) {
+          try {
+            directory().deleteFile(delFileName);
+          } catch (Throwable t) {
+            // suppress this so we keep throwing the
+            // original exception
           }
         }
       }
-      deletedDocsDirty = false;
-      normsDirty = false;
-      hasChanges = false;
+
+      si.setDelCount(si.getDelCount()+pendingDeleteCount);
+      pendingDeleteCount = 0;
+      assert deletedDocs.count() == si.getDelCount(): "delete count mismatch during commit: info=" + si.getDelCount() + " vs BitVector=" + deletedDocs.count();
+    } else {
+      assert pendingDeleteCount == 0;
     }
+
+    if (normsDirty) {               // re-write norms
+      si.initNormGen(core.fieldInfos.size());
+      for (final Norm norm : norms.values()) {
+        if (norm.dirty) {
+          norm.reWrite(si);
+        }
+      }
+    }
+    deletedDocsDirty = false;
+    normsDirty = false;
+    hasChanges = false;
   }
 
   FieldsReader getFieldsReader() {
@@ -1173,6 +1215,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   void startCommit() {
+    rollbackSegmentInfo = (SegmentInfo) si.clone();
     rollbackHasChanges = hasChanges;
     rollbackDeletedDocsDirty = deletedDocsDirty;
     rollbackNormsDirty = normsDirty;
@@ -1183,6 +1226,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   void rollbackCommit() {
+    si.reset(rollbackSegmentInfo);
     hasChanges = rollbackHasChanges;
     deletedDocsDirty = rollbackDeletedDocsDirty;
     normsDirty = rollbackNormsDirty;
