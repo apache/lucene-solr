@@ -1051,7 +1051,10 @@ public class TestIndexWriter extends LuceneTestCase {
      */
     public void testCommitOnCloseOptimize() throws IOException {
       MockRAMDirectory dir = new MockRAMDirectory();  
-      dir.setPreventDoubleWrite(false); // TODO: should this be disabled here?
+      // Must disable throwing exc on double-write: this
+      // test uses IW.rollback which easily results in
+      // writing to same file more than once
+      dir.setPreventDoubleWrite(false);
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10));
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(10);
       for(int j=0;j<17;j++) {
