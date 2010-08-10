@@ -66,7 +66,7 @@ public class TestFlex extends LuceneTestCase {
 
   public void testTermOrd() throws Exception {
     Directory d = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT,
+    IndexWriter w = new IndexWriter(d, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT,
                                                              new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
     Document doc = new Document();
     doc.add(new Field("f", "a b c", Field.Store.NO, Field.Index.ANALYZED));

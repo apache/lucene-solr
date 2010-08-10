@@ -33,7 +33,7 @@ public class TestMultiFields extends LuceneTestCase {
     for (int iter = 0; iter < num; iter++) {
       Directory dir = new MockRAMDirectory();
 
-      IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
+      IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(r, TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
 
       Map<BytesRef,List<Integer>> docs = new HashMap<BytesRef,List<Integer>>();
       Set<Integer> deleted = new HashSet<Integer>();
@@ -132,7 +132,7 @@ public class TestMultiFields extends LuceneTestCase {
 
   public void testSeparateEnums() throws Exception {
     Directory dir = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document d = new Document();
     d.add(new Field("f", "j", Field.Store.NO, Field.Index.NOT_ANALYZED));
     w.addDocument(d);

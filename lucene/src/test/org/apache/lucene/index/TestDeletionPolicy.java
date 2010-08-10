@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 import java.util.Collection;
 
@@ -199,10 +200,11 @@ public class TestDeletionPolicy extends LuceneTestCase {
     final double SECONDS = 2.0;
 
     boolean useCompoundFile = true;
-
+    Random random = newRandom();
+    
     Directory dir = new RAMDirectory();
     ExpirationTimeDeletionPolicy policy = new ExpirationTimeDeletionPolicy(dir, SECONDS);
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT,
+    IndexWriterConfig conf = newIndexWriterConfig(random, TEST_VERSION_CURRENT,
         new MockAnalyzer())
         .setIndexDeletionPolicy(policy);
     LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
@@ -216,7 +218,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       // Record last time when writer performed deletes of
       // past commits
       lastDeleteTime = System.currentTimeMillis();
-      conf = new IndexWriterConfig(TEST_VERSION_CURRENT,
+      conf = newIndexWriterConfig(random, TEST_VERSION_CURRENT,
           new MockAnalyzer()).setOpenMode(
           OpenMode.APPEND).setIndexDeletionPolicy(policy);
       lmp = (LogMergePolicy) conf.getMergePolicy();
@@ -271,7 +273,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
    * Test a silly deletion policy that keeps all commits around.
    */
   public void testKeepAllDeletionPolicy() throws IOException {
-
+    Random random = newRandom();
+    
     for(int pass=0;pass<2;pass++) {
 
       boolean useCompoundFile = (pass % 2) != 0;
@@ -282,20 +285,21 @@ public class TestDeletionPolicy extends LuceneTestCase {
       Directory dir = new RAMDirectory();
       policy.dir = dir;
 
-      IndexWriterConfig conf = new IndexWriterConfig(
+      IndexWriterConfig conf = newIndexWriterConfig(random,
           TEST_VERSION_CURRENT, new MockAnalyzer())
           .setIndexDeletionPolicy(policy).setMaxBufferedDocs(10)
           .setMergeScheduler(new SerialMergeScheduler());
       LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFile);
       lmp.setUseCompoundDocStore(useCompoundFile);
+      lmp.setMergeFactor(10);
       IndexWriter writer = new IndexWriter(dir, conf);
       for(int i=0;i<107;i++) {
         addDoc(writer);
       }
       writer.close();
 
-      conf = new IndexWriterConfig(TEST_VERSION_CURRENT,
+      conf = newIndexWriterConfig(random, TEST_VERSION_CURRENT,
           new MockAnalyzer()).setOpenMode(
           OpenMode.APPEND).setIndexDeletionPolicy(policy);
       lmp = (LogMergePolicy) conf.getMergePolicy();
@@ -338,7 +342,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
           // Open & close a writer and assert that it
           // actually removed something:
           int preCount = dir.listAll().length;
-          writer = new IndexWriter(dir, new IndexWriterConfig(
+          writer = new IndexWriter(dir, newIndexWriterConfig(random,
               TEST_VERSION_CURRENT,
               new MockAnalyzer()).setOpenMode(
               OpenMode.APPEND).setIndexDeletionPolicy(policy));
@@ -356,16 +360,18 @@ public class TestDeletionPolicy extends LuceneTestCase {
    * then, opens a new IndexWriter on a previous commit
    * point. */
   public void testOpenPriorSnapshot() throws IOException {
-  
+    Random random = newRandom();
+    
     // Never deletes a commit
     KeepAllDeletionPolicy policy = new KeepAllDeletionPolicy();
 
     Directory dir = new MockRAMDirectory();
     policy.dir = dir;
 
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setIndexDeletionPolicy(policy).setMaxBufferedDocs(2));
+    ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
     for(int i=0;i<10;i++) {
       addDoc(writer);
       if ((1+i)%2 == 0)
@@ -383,7 +389,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     assertTrue(lastCommit != null);
 
     // Now add 1 doc and optimize
-    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexDeletionPolicy(policy));
+    writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexDeletionPolicy(policy));
     addDoc(writer);
     assertEquals(11, writer.numDocs());
     writer.optimize();
@@ -392,7 +398,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     assertEquals(6, IndexReader.listCommits(dir).size());
 
     // Now open writer on the commit just before optimize:
-    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
+    writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
         .setIndexDeletionPolicy(policy).setIndexCommit(lastCommit));
     assertEquals(10, writer.numDocs());
 
@@ -405,7 +411,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     assertEquals(11, r.numDocs());
     r.close();
 
-    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
+    writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
         .setIndexDeletionPolicy(policy).setIndexCommit(lastCommit));
     assertEquals(10, writer.numDocs());
     // Commits the rollback:
@@ -422,7 +428,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     r.close();
 
     // Reoptimize
-    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexDeletionPolicy(policy));
+    writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexDeletionPolicy(policy));
     writer.optimize();
     writer.close();
 
@@ -433,7 +439,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
     // Now open writer on the commit just before optimize,
     // but this time keeping only the last commit:
-    writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexCommit(lastCommit));
+    writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexCommit(lastCommit));
     assertEquals(10, writer.numDocs());
     
     // Reader still sees optimized index, because writer
@@ -460,7 +466,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
    * you know there are no readers.
    */
   public void testKeepNoneOnInitDeletionPolicy() throws IOException {
-
+    Random random = newRandom();
+    
     for(int pass=0;pass<2;pass++) {
 
       boolean useCompoundFile = (pass % 2) != 0;
@@ -469,7 +476,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       Directory dir = new RAMDirectory();
 
-      IndexWriterConfig conf = new IndexWriterConfig(
+      IndexWriterConfig conf = newIndexWriterConfig(random,
           TEST_VERSION_CURRENT, new MockAnalyzer())
           .setOpenMode(OpenMode.CREATE).setIndexDeletionPolicy(policy)
           .setMaxBufferedDocs(10);
@@ -482,7 +489,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       }
       writer.close();
 
-      conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
+      conf = newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
           .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(policy);
       lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFile);
@@ -509,7 +516,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
    * Test a deletion policy that keeps last N commits.
    */
   public void testKeepLastNDeletionPolicy() throws IOException {
-
+    Random random = newRandom();
     final int N = 5;
 
     for(int pass=0;pass<2;pass++) {
@@ -521,7 +528,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       KeepLastNDeletionPolicy policy = new KeepLastNDeletionPolicy(N);
 
       for(int j=0;j<N+1;j++) {
-        IndexWriterConfig conf = new IndexWriterConfig(
+        IndexWriterConfig conf = newIndexWriterConfig(random,
             TEST_VERSION_CURRENT, new MockAnalyzer())
             .setOpenMode(OpenMode.CREATE).setIndexDeletionPolicy(policy)
             .setMaxBufferedDocs(10);
@@ -571,7 +578,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
    * around, with reader doing deletes.
    */
   public void testKeepLastNDeletionPolicyWithReader() throws IOException {
-
+    Random random = newRandom();
+    
     final int N = 10;
 
     for(int pass=0;pass<2;pass++) {
@@ -581,7 +589,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       KeepLastNDeletionPolicy policy = new KeepLastNDeletionPolicy(N);
 
       Directory dir = new RAMDirectory();
-      IndexWriterConfig conf = new IndexWriterConfig(
+      IndexWriterConfig conf = newIndexWriterConfig(random,
           TEST_VERSION_CURRENT, new MockAnalyzer())
           .setOpenMode(OpenMode.CREATE).setIndexDeletionPolicy(policy);
       LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
@@ -593,7 +601,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       Query query = new TermQuery(searchTerm);
 
       for(int i=0;i<N+1;i++) {
-        conf = new IndexWriterConfig(
+        conf = newIndexWriterConfig(random,
             TEST_VERSION_CURRENT, new MockAnalyzer())
             .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(policy);
         lmp = (LogMergePolicy) conf.getMergePolicy();
@@ -615,7 +623,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         reader.close();
         searcher.close();
       }
-      conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
+      conf = newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
           .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(policy);
       lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFile);
@@ -680,7 +688,8 @@ public class TestDeletionPolicy extends LuceneTestCase {
    * around, through creates.
    */
   public void testKeepLastNDeletionPolicyWithCreates() throws IOException {
-
+    Random random = newRandom();
+    
     final int N = 10;
 
     for(int pass=0;pass<2;pass++) {
@@ -690,7 +699,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       KeepLastNDeletionPolicy policy = new KeepLastNDeletionPolicy(N);
 
       Directory dir = new RAMDirectory();
-      IndexWriterConfig conf = new IndexWriterConfig(
+      IndexWriterConfig conf = newIndexWriterConfig(random,
           TEST_VERSION_CURRENT, new MockAnalyzer())
           .setOpenMode(OpenMode.CREATE).setIndexDeletionPolicy(policy)
           .setMaxBufferedDocs(10);
@@ -704,7 +713,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       for(int i=0;i<N+1;i++) {
 
-        conf = new IndexWriterConfig(
+        conf = newIndexWriterConfig(random,
             TEST_VERSION_CURRENT, new MockAnalyzer())
             .setOpenMode(OpenMode.APPEND).setIndexDeletionPolicy(policy)
             .setMaxBufferedDocs(10);
@@ -727,7 +736,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
         reader.close();
         searcher.close();
 
-        writer = new IndexWriter(dir, new IndexWriterConfig(
+        writer = new IndexWriter(dir, newIndexWriterConfig(random,
             TEST_VERSION_CURRENT, new MockAnalyzer())
             .setOpenMode(OpenMode.CREATE).setIndexDeletionPolicy(policy));
         // This will not commit: there are no changes

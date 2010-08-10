@@ -24,6 +24,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
+import java.util.Random;
 
 
 public class TestIndexWriterMerging extends LuceneTestCase
@@ -34,20 +35,20 @@ public class TestIndexWriterMerging extends LuceneTestCase
    * change the index order of documents.
    */
   public void testLucene() throws IOException {
-
+    Random random = newRandom();
     int num=100;
 
     Directory indexA = new MockRAMDirectory();
     Directory indexB = new MockRAMDirectory();
 
-    fillIndex(indexA, 0, num);
+    fillIndex(random, indexA, 0, num);
     boolean fail = verifyIndex(indexA, 0);
     if (fail)
     {
       fail("Index a is invalid");
     }
 
-    fillIndex(indexB, num, num);
+    fillIndex(random, indexB, num, num);
     fail = verifyIndex(indexB, num);
     if (fail)
     {
@@ -56,7 +57,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
     Directory merged = new MockRAMDirectory();
 
-    IndexWriter writer = new IndexWriter(merged, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(merged, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
 
     writer.addIndexes(new Directory[]{indexA, indexB});
@@ -90,9 +91,9 @@ public class TestIndexWriterMerging extends LuceneTestCase
     return fail;
   }
 
-  private void fillIndex(Directory dir, int start, int numDocs) throws IOException {
+  private void fillIndex(Random random, Directory dir, int start, int numDocs) throws IOException {
 
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, 
         new MockAnalyzer())
         .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(2));

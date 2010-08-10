@@ -85,7 +85,7 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
     int maxThreadStates = 1+r.nextInt(10);
     boolean doReaderPooling = r.nextBoolean();
     Map<String,Document> docs = indexRandom(5, 3, 100, dir1, maxThreadStates, doReaderPooling);
-    indexSerial(docs, dir2);
+    indexSerial(r, docs, dir2);
 
     // verifying verify
     // verifyEquals(dir1, dir1, "id");
@@ -115,7 +115,7 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
       Directory dir2 = new MockRAMDirectory();
       Map<String,Document> docs = indexRandom(nThreads, iter, range, dir1, maxThreadStates, doReaderPooling);
       //System.out.println("TEST: index serial");
-      indexSerial(docs, dir2);
+      indexSerial(r, docs, dir2);
       //System.out.println("TEST: verify");
       verifyEquals(dir1, dir2, "id");
     }
@@ -141,7 +141,7 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
   
   public DocsAndWriter indexRandomIWReader(int nThreads, int iterations, int range, Directory dir) throws IOException, InterruptedException {
     Map<String,Document> docs = new HashMap<String,Document>();
-    IndexWriter w = new MockIndexWriter(dir, new IndexWriterConfig(
+    IndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig(r,
         TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setRAMBufferSizeMB(
         0.1).setMaxBufferedDocs(maxBufferedDocs));
     w.commit();
@@ -194,7 +194,7 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
                                           boolean doReaderPooling) throws IOException, InterruptedException {
     Map<String,Document> docs = new HashMap<String,Document>();
     for(int iter=0;iter<3;iter++) {
-      IndexWriter w = new MockIndexWriter(dir, new IndexWriterConfig(
+      IndexWriter w = new MockIndexWriter(dir, newIndexWriterConfig(r,
           TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE)
                .setRAMBufferSizeMB(0.1).setMaxBufferedDocs(maxBufferedDocs).setMaxThreadStates(maxThreadStates)
                .setReaderPooling(doReaderPooling));
@@ -238,8 +238,8 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
   }
 
   
-  public static void indexSerial(Map<String,Document> docs, Directory dir) throws IOException {
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+  public static void indexSerial(Random random, Map<String,Document> docs, Directory dir) throws IOException {
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     // index all docs in a single thread
     Iterator<Document> iter = docs.values().iterator();

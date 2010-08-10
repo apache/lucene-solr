@@ -104,7 +104,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
 
   public void testSkipTo(int indexDivisor) throws IOException {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new MockAnalyzer()));
     
     Term ta = new Term("content","aaa");
     for(int i = 0; i < 10; i++)

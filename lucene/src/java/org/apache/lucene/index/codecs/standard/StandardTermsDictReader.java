@@ -362,7 +362,7 @@ public class StandardTermsDictReader extends FieldsProducer {
           bytesReader.reset(indexResult.term);
           
           state.ord = indexResult.position-1;
-          assert state.ord >= -1: "ord=" + state.ord;
+          assert state.ord >= -1: "ord=" + state.ord + " pos=" + indexResult.position;
 
           startOrd = indexResult.position;
         } else {

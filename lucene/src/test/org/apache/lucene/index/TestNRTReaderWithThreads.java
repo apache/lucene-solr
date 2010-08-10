@@ -18,21 +18,21 @@ package org.apache.lucene.index;
  */
 
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.index.TestIndexWriterReader.HeavyAtomicInt;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestNRTReaderWithThreads extends LuceneTestCase {
   Random random = new Random();
-  HeavyAtomicInt seq = new HeavyAtomicInt(1);
+  AtomicInteger seq = new AtomicInteger(1);
 
   public void testIndexing() throws Exception {
     Directory mainDir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(mainDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10));
+    IndexWriter writer = new IndexWriter(mainDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false);

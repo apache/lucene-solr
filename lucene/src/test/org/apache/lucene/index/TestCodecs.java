@@ -353,7 +353,7 @@ public class TestCodecs extends MultiCodecTestCase {
 
   public void testSepPositionAfterMerge() throws IOException {
     final Directory dir = new RAMDirectory();
-    final IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_31,
+    final IndexWriterConfig config = newIndexWriterConfig(newRandom(), Version.LUCENE_31,
       new MockAnalyzer());
     config.setCodecProvider(new MockSepCodecs());
     final IndexWriter writer = new IndexWriter(dir, config);

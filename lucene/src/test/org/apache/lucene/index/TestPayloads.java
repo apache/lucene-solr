@@ -103,7 +103,7 @@ public class TestPayloads extends LuceneTestCase {
         rnd = newRandom();
         Directory ram = new MockRAMDirectory();
         PayloadAnalyzer analyzer = new PayloadAnalyzer();
-        IndexWriter writer = new IndexWriter(ram, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+        IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(rnd, TEST_VERSION_CURRENT, analyzer));
         Document d = new Document();
         // this field won't have any payloads
         d.add(new Field("f1", "This field has no payloads", Field.Store.NO, Field.Index.ANALYZED));
@@ -130,7 +130,7 @@ public class TestPayloads extends LuceneTestCase {
         
         // now we add another document which has payloads for field f3 and verify if the SegmentMerger
         // enabled payloads for that field
-        writer = new IndexWriter(ram, new IndexWriterConfig(TEST_VERSION_CURRENT,
+        writer = new IndexWriter(ram, newIndexWriterConfig(rnd, TEST_VERSION_CURRENT,
             analyzer).setOpenMode(OpenMode.CREATE));
         d = new Document();
         d.add(new Field("f1", "This field has no payloads", Field.Store.NO, Field.Index.ANALYZED));
@@ -160,20 +160,20 @@ public class TestPayloads extends LuceneTestCase {
         rnd = newRandom();
         // first perform the test using a RAMDirectory
         Directory dir = new MockRAMDirectory();
-        performTest(dir);
+        performTest(rnd, dir);
         
         // now use a FSDirectory and repeat same test
         File dirName = _TestUtil.getTempDir("test_payloads");
         dir = FSDirectory.open(dirName);
-        performTest(dir);
+        performTest(rnd, dir);
        _TestUtil.rmDir(dirName);
     }
     
     // builds an index with payloads in the given Directory and performs
     // different tests to verify the payload encoding
-    private void performTest(Directory dir) throws Exception {
+    private void performTest(Random random, Directory dir) throws Exception {
         PayloadAnalyzer analyzer = new PayloadAnalyzer();
-        IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
             TEST_VERSION_CURRENT, analyzer)
             .setOpenMode(OpenMode.CREATE));
         
@@ -314,7 +314,7 @@ public class TestPayloads extends LuceneTestCase {
         
         // test long payload
         analyzer = new PayloadAnalyzer();
-        writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT,
+        writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT,
             analyzer).setOpenMode(OpenMode.CREATE));
         String singleTerm = "lucene";
         
@@ -490,7 +490,7 @@ public class TestPayloads extends LuceneTestCase {
         final ByteArrayPool pool = new ByteArrayPool(numThreads, 5);
         
         Directory dir = new MockRAMDirectory();
-        final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+        final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(rnd, 
             TEST_VERSION_CURRENT, new MockAnalyzer()));
         final String field = "test";
         

@@ -31,6 +31,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
+import java.util.Random;
 
 public class TestFilterIndexReader extends LuceneTestCase {
 
@@ -130,8 +131,9 @@ public class TestFilterIndexReader extends LuceneTestCase {
    * @throws Exception on error
    */
   public void testFilterIndexReader() throws Exception {
+    Random random = newRandom();
     RAMDirectory directory = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     Document d1 = new Document();
     d1.add(new Field("default","one two", Field.Store.YES, Field.Index.ANALYZED));
@@ -149,7 +151,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
 
     //IndexReader reader = new TestReader(IndexReader.open(directory, true));
     RAMDirectory target = new MockRAMDirectory();
-    writer = new IndexWriter(target, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    writer = new IndexWriter(target, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     IndexReader reader = new TestReader(IndexReader.open(directory, true));
     writer.addIndexes(reader);
     writer.close();

@@ -28,8 +28,8 @@ import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.DocsAndPositionsEnum;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
@@ -39,8 +39,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
   
   public void testCaching() throws IOException {
     Directory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
     Document doc = new Document();
     TokenStream stream = new TokenStream() {
       private int index = 0;
@@ -73,9 +72,8 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     // 2) now add the document to the index and verify if all tokens are indexed
     //    don't reset the stream here, the DocumentWriter should do that implicitly
     writer.addDocument(doc);
-    writer.close();
     
-    IndexReader reader = IndexReader.open(dir, true);
+    IndexReader reader = writer.getReader();
     DocsAndPositionsEnum termPositions = MultiFields.getTermPositionsEnum(reader,
                                                                           MultiFields.getDeletedDocs(reader),
                                                                           "preanalyzed",
@@ -101,7 +99,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     assertEquals(1, termPositions.freq());
     assertEquals(2, termPositions.nextPosition());
     reader.close();
-    
+    writer.close();
     // 3) reset stream and consume tokens again
     stream.reset();
     checkTokens(stream);

@@ -21,6 +21,7 @@ import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Random;
 import java.util.Map.Entry;
 
 import org.apache.lucene.document.Document;
@@ -56,10 +57,11 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   @Override
   @Test
   public void testExistingSnapshots() throws Exception {
+    Random random = newRandom();
     int numSnapshots = 3;
     Directory dir = new MockRAMDirectory();
     PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) getDeletionPolicy();
-    IndexWriter writer = new IndexWriter(dir, getConfig(psdp));
+    IndexWriter writer = new IndexWriter(dir, getConfig(random, psdp));
     prepareIndexAndSnapshots(psdp, writer, numSnapshots, "snapshot");
     writer.close();
     psdp.close();
@@ -68,7 +70,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
     psdp = new PersistentSnapshotDeletionPolicy(
         new KeepOnlyLastCommitDeletionPolicy(), snapshotDir, OpenMode.APPEND,
         TEST_VERSION_CURRENT);
-    new IndexWriter(dir, getConfig(psdp)).close();
+    new IndexWriter(dir, getConfig(random, psdp)).close();
 
     assertSnapshotExists(dir, psdp, numSnapshots);
     assertEquals(numSnapshots, psdp.getSnapshots().size());
@@ -83,7 +85,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   @Test
   public void testInvalidSnapshotInfos() throws Exception {
     // Add the correct number of documents (1), but without snapshot information
-    IndexWriter writer = new IndexWriter(snapshotDir, getConfig(null));
+    IndexWriter writer = new IndexWriter(snapshotDir, getConfig(newRandom(), null));
     writer.addDocument(new Document());
     writer.close();
     try {
@@ -98,7 +100,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   @Test
   public void testNoSnapshotInfos() throws Exception {
     // Initialize an empty index in snapshotDir - PSDP should initialize successfully.
-    new IndexWriter(snapshotDir, getConfig(null)).close();
+    new IndexWriter(snapshotDir, getConfig(newRandom(), null)).close();
     new PersistentSnapshotDeletionPolicy(
         new KeepOnlyLastCommitDeletionPolicy(), snapshotDir, OpenMode.APPEND,
         TEST_VERSION_CURRENT).close();
@@ -107,7 +109,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   @Test(expected=IllegalStateException.class)
   public void testTooManySnapshotInfos() throws Exception {
     // Write two documents to the snapshots directory - illegal.
-    IndexWriter writer = new IndexWriter(snapshotDir, getConfig(null));
+    IndexWriter writer = new IndexWriter(snapshotDir, getConfig(newRandom(), null));
     writer.addDocument(new Document());
     writer.addDocument(new Document());
     writer.close();
@@ -122,7 +124,7 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   public void testSnapshotRelease() throws Exception {
     Directory dir = new MockRAMDirectory();
     PersistentSnapshotDeletionPolicy psdp = (PersistentSnapshotDeletionPolicy) getDeletionPolicy();
-    IndexWriter writer = new IndexWriter(dir, getConfig(psdp));
+    IndexWriter writer = new IndexWriter(dir, getConfig(newRandom(), psdp));
     prepareIndexAndSnapshots(psdp, writer, 1, "snapshot");
     writer.close();
 

@@ -52,8 +52,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   
   public void testReopen() throws Exception {
     final Directory dir1 = new MockRAMDirectory();
+    Random random = newRandom();
     
-    createIndex(dir1, false);
+    createIndex(random, dir1, false);
     performDefaultTests(new TestReopen() {
 
       @Override
@@ -71,7 +72,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     
     final Directory dir2 = new MockRAMDirectory();
     
-    createIndex(dir2, true);
+    createIndex(random, dir2, true);
     performDefaultTests(new TestReopen() {
 
       @Override
@@ -89,10 +90,11 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
   
   public void testParallelReaderReopen() throws Exception {
+    Random random = newRandom();
     final Directory dir1 = new MockRAMDirectory();
-    createIndex(dir1, true);
+    createIndex(random, dir1, true);
     final Directory dir2 = new MockRAMDirectory();
-    createIndex(dir2, true);
+    createIndex(random, dir2, true);
     
     performDefaultTests(new TestReopen() {
 
@@ -115,9 +117,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     dir2.close();
     
     final Directory dir3 = new MockRAMDirectory();
-    createIndex(dir3, true);
+    createIndex(random, dir3, true);
     final Directory dir4 = new MockRAMDirectory();
-    createIndex(dir4, true);
+    createIndex(random, dir4, true);
 
     performTestsWithExceptionInReopen(new TestReopen() {
 
@@ -150,26 +152,26 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   // try this once with reopen once recreate, on both RAMDir and FSDir.
   public void testCommitReopenFS () throws IOException {
     Directory dir = FSDirectory.open(indexDir);
-    doTestReopenWithCommit(dir, true);
+    doTestReopenWithCommit(newRandom(), dir, true);
     dir.close();
   }
   public void testCommitRecreateFS () throws IOException {
     Directory dir = FSDirectory.open(indexDir);
-    doTestReopenWithCommit(dir, false);
+    doTestReopenWithCommit(newRandom(), dir, false);
     dir.close();
   }
   public void testCommitReopenRAM () throws IOException {
     Directory dir = new MockRAMDirectory();
-    doTestReopenWithCommit(dir, true);
+    doTestReopenWithCommit(newRandom(), dir, true);
     dir.close();
   }
   public void testCommitRecreateRAM () throws IOException {
     Directory dir = new MockRAMDirectory();
-    doTestReopenWithCommit(dir, false);
+    doTestReopenWithCommit(newRandom(), dir, false);
   }
 
-  private void doTestReopenWithCommit (Directory dir, boolean withReopen) throws IOException {
-    IndexWriter iwriter = new IndexWriter(dir, new IndexWriterConfig(
+  private void doTestReopenWithCommit (Random random, Directory dir, boolean withReopen) throws IOException {
+    IndexWriter iwriter = new IndexWriter(dir, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(
         OpenMode.CREATE).setMergeScheduler(new SerialMergeScheduler()));
     iwriter.commit();
@@ -213,12 +215,12 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
   
   public void testMultiReaderReopen() throws Exception {
-
+    Random random = newRandom();
     final Directory dir1 = new MockRAMDirectory();
-    createIndex(dir1, true);
+    createIndex(random, dir1, true);
 
     final Directory dir2 = new MockRAMDirectory();
-    createIndex(dir2, true);
+    createIndex(random, dir2, true);
 
     performDefaultTests(new TestReopen() {
 
@@ -241,10 +243,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     dir2.close();
     
     final Directory dir3 = new MockRAMDirectory();
-    createIndex(dir3, true);
+    createIndex(random, dir3, true);
 
     final Directory dir4 = new MockRAMDirectory();
-    createIndex(dir4, true);
+    createIndex(random, dir4, true);
 
     performTestsWithExceptionInReopen(new TestReopen() {
 
@@ -270,16 +272,17 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
 
   public void testMixedReaders() throws Exception {
+    Random random = newRandom();
     final Directory dir1 = new MockRAMDirectory();
-    createIndex(dir1, true);
+    createIndex(random, dir1, true);
     final Directory dir2 = new MockRAMDirectory();
-    createIndex(dir2, true);
+    createIndex(random, dir2, true);
     final Directory dir3 = new MockRAMDirectory();
-    createIndex(dir3, false);
+    createIndex(random, dir3, false);
     final Directory dir4 = new MockRAMDirectory();
-    createIndex(dir4, true);
+    createIndex(random, dir4, true);
     final Directory dir5 = new MockRAMDirectory();
-    createIndex(dir5, false);
+    createIndex(random, dir5, false);
     
     performDefaultTests(new TestReopen() {
 
@@ -357,10 +360,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
   
   public void testReferenceCounting() throws IOException {
-   
+    Random random = newRandom();
     for (int mode = 0; mode < 4; mode++) {
       Directory dir1 = new MockRAMDirectory();
-      createIndex(dir1, true);
+      createIndex(random, dir1, true);
      
       IndexReader reader0 = IndexReader.open(dir1, false);
       assertRefCountEquals(1, reader0);
@@ -463,11 +466,12 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
 
   public void testReferenceCountingMultiReader() throws IOException {
+    Random random = newRandom();
     for (int mode = 0; mode <=1; mode++) {
       Directory dir1 = new MockRAMDirectory();
-      createIndex(dir1, false);
+      createIndex(random, dir1, false);
       Directory dir2 = new MockRAMDirectory();
-      createIndex(dir2, true);
+      createIndex(random, dir2, true);
       
       IndexReader reader1 = IndexReader.open(dir1, false);
       assertRefCountEquals(1, reader1);
@@ -534,11 +538,12 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
 
   public void testReferenceCountingParallelReader() throws IOException {
+    Random random = newRandom();
     for (int mode = 0; mode <=1; mode++) {
       Directory dir1 = new MockRAMDirectory();
-      createIndex(dir1, false);
+      createIndex(random, dir1, false);
       Directory dir2 = new MockRAMDirectory();
-      createIndex(dir2, true);
+      createIndex(random, dir2, true);
       
       IndexReader reader1 = IndexReader.open(dir1, false);
       assertRefCountEquals(1, reader1);
@@ -610,7 +615,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   
   public void testNormsRefCounting() throws IOException {
     Directory dir1 = new MockRAMDirectory();
-    createIndex(dir1, false);
+    createIndex(newRandom(), dir1, false);
     
     IndexReader reader1 = IndexReader.open(dir1, false);
     SegmentReader segmentReader1 = SegmentReader.getOnlySegmentReader(reader1);
@@ -701,8 +706,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   public void testThreadSafety() throws Exception {
     final Directory dir = new MockRAMDirectory();
     final int n = 30 * RANDOM_MULTIPLIER;
-
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+    Random random = newRandom();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < n; i++) {
       writer.addDocument(createDocument(i, 3));
@@ -738,7 +743,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     final List<ReaderCouple> readers = Collections.synchronizedList(new ArrayList<ReaderCouple>());
     IndexReader firstReader = IndexReader.open(dir, false);
     IndexReader reader = firstReader;
-    final Random rnd = newRandom();
+    final Random rnd = random;
     
     ReaderThread[] threads = new ReaderThread[n];
     final Set<IndexReader> readersToClose = Collections.synchronizedSet(new HashSet<IndexReader>());
@@ -946,9 +951,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     }
   }
   
-  public static void createIndex(Directory dir, boolean multiSegment) throws IOException {
+  public static void createIndex(Random random, Directory dir, boolean multiSegment) throws IOException {
     IndexWriter.unlock(dir);
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMergePolicy(new LogDocMergePolicy()));
     
@@ -1101,7 +1106,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   
   public void testCloseOrig() throws Throwable {
     Directory dir = new MockRAMDirectory();
-    createIndex(dir, false);
+    createIndex(newRandom(), dir, false);
     IndexReader r1 = IndexReader.open(dir, false);
     IndexReader r2 = IndexReader.open(dir, false);
     r2.deleteDocument(0);
@@ -1122,7 +1127,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
   public void testDeletes() throws Throwable {
     Directory dir = new MockRAMDirectory();
-    createIndex(dir, false); // Create an index with a bunch of docs (1 segment)
+    createIndex(newRandom(), dir, false); // Create an index with a bunch of docs (1 segment)
 
     modifyIndex(0, dir); // Get delete bitVector on 1st segment
     modifyIndex(5, dir); // Add a doc (2 segments)
@@ -1155,7 +1160,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
   public void testDeletes2() throws Throwable {
     Directory dir = new MockRAMDirectory();
-    createIndex(dir, false);
+    createIndex(newRandom(), dir, false);
     // Get delete bitVector
     modifyIndex(0, dir);
     IndexReader r1 = IndexReader.open(dir, false);
@@ -1191,8 +1196,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
   public void testReopenOnCommit() throws Throwable {
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexDeletionPolicy(new KeepAllCommits()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(),
+                                                                   TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexDeletionPolicy(new KeepAllCommits()).setMaxBufferedDocs(-1));
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(10);
     for(int i=0;i<4;i++) {
       Document doc = new Document();
       doc.add(new Field("id", ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));

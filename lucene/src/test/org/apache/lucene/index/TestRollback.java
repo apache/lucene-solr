@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.util.Random;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -31,7 +33,8 @@ public class TestRollback extends LuceneTestCase {
   // LUCENE-2536
   public void testRollbackIntegrityWithBufferFlush() throws Exception {
     Directory dir = new MockRAMDirectory();
-    RandomIndexWriter rw = new RandomIndexWriter(newRandom(), dir);
+    Random random = newRandom();
+    RandomIndexWriter rw = new RandomIndexWriter(random, dir);
     for (int i = 0; i < 5; i++) {
       Document doc = new Document();
       doc.add(new Field("pk", Integer.toString(i), Store.YES, Index.ANALYZED_NO_NORMS));
@@ -40,7 +43,7 @@ public class TestRollback extends LuceneTestCase {
     rw.close();
 
     // If buffer size is small enough to cause a flush, errors ensue...
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2).setOpenMode(IndexWriterConfig.OpenMode.APPEND));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2).setOpenMode(IndexWriterConfig.OpenMode.APPEND));
 
     Term pkTerm = new Term("pk", "");
     for (int i = 0; i < 3; i++) {

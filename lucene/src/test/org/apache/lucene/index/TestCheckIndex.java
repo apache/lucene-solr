@@ -34,12 +34,13 @@ public class TestCheckIndex extends LuceneTestCase {
 
   public void testDeletedDocs() throws IOException {
     MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter writer  = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
     Document doc = new Document();
     doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     for(int i=0;i<19;i++) {
       writer.addDocument(doc);
     }
+    writer.optimize();
     writer.close();
     IndexReader reader = IndexReader.open(dir, false);
     reader.deleteDocument(5);

@@ -33,6 +33,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -56,7 +57,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
 
   public void testSimpleSkip() throws IOException {
     Directory dir = new CountingRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new PayloadAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
     Term term = new Term("test", "a");
     for (int i = 0; i < 5000; i++) {
       Document d1 = new Document();
@@ -88,7 +89,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
   public void checkSkipTo(DocsAndPositionsEnum tp, int target, int maxCounter) throws IOException {
     tp.advance(target);
     if (maxCounter < counter) {
-      fail("Too many bytes read: " + counter);
+      fail("Too many bytes read: " + counter + " vs " + maxCounter);
     }
 
     assertEquals("Wrong document " + tp.docID() + " after skipTo target " + target, target, tp.docID());

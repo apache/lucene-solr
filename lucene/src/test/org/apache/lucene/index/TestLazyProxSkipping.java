@@ -18,6 +18,7 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -57,11 +58,11 @@ public class TestLazyProxSkipping extends LuceneTestCase {
       }
     }
     
-    private void createIndex(int numHits) throws IOException {
+    private void createIndex(Random random, int numHits) throws IOException {
         int numDocs = 500;
         
         Directory directory = new SeekCountingDirectory();
-        IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10));
+        IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10));
         ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
         ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false);
         for (int i = 0; i < numDocs; i++) {
@@ -99,8 +100,8 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         return this.searcher.search(pq, null, 1000).scoreDocs;        
     }
     
-    private void performTest(int numHits) throws IOException {
-        createIndex(numHits);
+    private void performTest(Random random, int numHits) throws IOException {
+        createIndex(random, numHits);
         this.seeksCounter = 0;
         ScoreDoc[] hits = search();
         // verify that the right number of docs was found
@@ -113,13 +114,14 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     
     public void testLazySkipping() throws IOException {
         // test whether only the minimum amount of seeks() are performed
-        performTest(5);
-        performTest(10);
+        Random random = newRandom();
+        performTest(random, 5);
+        performTest(random, 10);
     }
     
     public void testSeek() throws IOException {
         Directory directory = new RAMDirectory();
-        IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+        IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new MockAnalyzer()));
         for (int i = 0; i < 10; i++) {
             Document doc = new Document();
             doc.add(new Field(this.field, "a b", Field.Store.YES, Field.Index.ANALYZED));

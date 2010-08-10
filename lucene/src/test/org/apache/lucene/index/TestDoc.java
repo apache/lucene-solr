@@ -25,6 +25,7 @@ import java.io.StringWriter;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Random;
 
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
@@ -109,11 +110,13 @@ public class TestDoc extends LuceneTestCase {
     public void testIndexAndMerge() throws Exception {
       StringWriter sw = new StringWriter();
       PrintWriter out = new PrintWriter(sw, true);
-
+      Random random = newRandom();
+      
       Directory directory = FSDirectory.open(indexDir);
-      IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+      IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer())
-        .setOpenMode(OpenMode.CREATE));
+                                           .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(-1));
+      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
 
       SegmentInfo si1 = indexDoc(writer, "test.txt");
       printSegment(out, si1);
@@ -141,9 +144,10 @@ public class TestDoc extends LuceneTestCase {
       out = new PrintWriter(sw, true);
 
       directory = FSDirectory.open(indexDir);
-      writer = new IndexWriter(directory, new IndexWriterConfig(
+      writer = new IndexWriter(directory, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer())
-        .setOpenMode(OpenMode.CREATE));
+                               .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(-1));
+      ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
 
       si1 = indexDoc(writer, "test.txt");
       printSegment(out, si1);

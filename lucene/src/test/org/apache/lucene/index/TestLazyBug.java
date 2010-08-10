@@ -71,7 +71,7 @@ public class TestLazyBug extends LuceneTestCase {
     Directory dir = new RAMDirectory();
     try {
       Random r = newRandom();
-      IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(r,
           TEST_VERSION_CURRENT, new MockAnalyzer()));
       LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
       lmp.setUseCompoundFile(false);

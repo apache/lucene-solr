@@ -28,6 +28,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
+import java.util.Random;
 
 public class TestDirectoryReader extends LuceneTestCase {
   protected Directory dir;
@@ -124,16 +125,17 @@ public class TestDirectoryReader extends LuceneTestCase {
   }
         
   public void testIsCurrent() throws IOException {
+    Random random = newRandom();
     RAMDirectory ramDir1=new RAMDirectory();
-    addDoc(ramDir1, "test foo", true);
+    addDoc(random, ramDir1, "test foo", true);
     RAMDirectory ramDir2=new RAMDirectory();
-    addDoc(ramDir2, "test blah", true);
+    addDoc(random, ramDir2, "test blah", true);
     IndexReader[] readers = new IndexReader[]{IndexReader.open(ramDir1, false), IndexReader.open(ramDir2, false)};
     MultiReader mr = new MultiReader(readers);
     assertTrue(mr.isCurrent());   // just opened, must be current
-    addDoc(ramDir1, "more text", false);
+    addDoc(random, ramDir1, "more text", false);
     assertFalse(mr.isCurrent());   // has been modified, not current anymore
-    addDoc(ramDir2, "even more text", false);
+    addDoc(random, ramDir2, "even more text", false);
     assertFalse(mr.isCurrent());   // has been modified even more, not current anymore
     try {
       mr.getVersion();
@@ -145,12 +147,13 @@ public class TestDirectoryReader extends LuceneTestCase {
   }
 
   public void testMultiTermDocs() throws IOException {
+    Random random = newRandom();
     RAMDirectory ramDir1=new RAMDirectory();
-    addDoc(ramDir1, "test foo", true);
+    addDoc(random, ramDir1, "test foo", true);
     RAMDirectory ramDir2=new RAMDirectory();
-    addDoc(ramDir2, "test blah", true);
+    addDoc(random, ramDir2, "test blah", true);
     RAMDirectory ramDir3=new RAMDirectory();
-    addDoc(ramDir3, "test wow", true);
+    addDoc(random, ramDir3, "test wow", true);
 
     IndexReader[] readers1 = new IndexReader[]{IndexReader.open(ramDir1, false), IndexReader.open(ramDir3, false)};
     IndexReader[] readers2 = new IndexReader[]{IndexReader.open(ramDir1, false), IndexReader.open(ramDir2, false), IndexReader.open(ramDir3, false)};
@@ -181,8 +184,8 @@ public class TestDirectoryReader extends LuceneTestCase {
     assertTrue(ret > 0);
   }
 
-  private void addDoc(RAMDirectory ramDir1, String s, boolean create) throws IOException {
-    IndexWriter iw = new IndexWriter(ramDir1, new IndexWriterConfig(
+  private void addDoc(Random random, RAMDirectory ramDir1, String s, boolean create) throws IOException {
+    IndexWriter iw = new IndexWriter(ramDir1, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, 
         new MockAnalyzer()).setOpenMode(
         create ? OpenMode.CREATE : OpenMode.APPEND));

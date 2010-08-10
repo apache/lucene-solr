@@ -27,7 +27,7 @@ public class TestNewestSegment extends LuceneTestCase {
   public void testNewestSegment() throws Exception {
     RAMDirectory directory = new RAMDirectory();
     Analyzer analyzer = new MockAnalyzer();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new MockAnalyzer()));
     assertNull(writer.newestSegment());
   }
 }

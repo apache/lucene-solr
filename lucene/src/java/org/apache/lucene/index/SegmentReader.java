@@ -106,8 +106,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
 
     CoreReaders(SegmentReader origInstance, Directory dir, SegmentInfo si, int readBufferSize, int termsIndexDivisor, CodecProvider codecs) throws IOException {
 
-      if (termsIndexDivisor < 1 && termsIndexDivisor != -1) {
-        throw new IllegalArgumentException("indexDivisor must be -1 (don't load terms index) or greater than 0: got " + termsIndexDivisor);
+      if (termsIndexDivisor == 0) {
+        throw new IllegalArgumentException("indexDivisor must be < 0 (don't load terms index) or greater than 0 (got 0)");
       }
 
       segment = si.name;

@@ -61,7 +61,7 @@ public class TestOmitTf extends LuceneTestCase {
   public void testOmitTermFreqAndPositions() throws Exception {
     Directory ram = new MockRAMDirectory();
     Analyzer analyzer = new MockAnalyzer();
-    IndexWriter writer = new IndexWriter(ram, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, analyzer));
     Document d = new Document();
         
     // this field will have Tf
@@ -108,7 +108,7 @@ public class TestOmitTf extends LuceneTestCase {
   public void testMixedMerge() throws Exception {
     Directory ram = new MockRAMDirectory();
     Analyzer analyzer = new MockAnalyzer();
-    IndexWriter writer = new IndexWriter(ram, new IndexWriterConfig(
+    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(newRandom(),
         TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
     Document d = new Document();
@@ -161,7 +161,7 @@ public class TestOmitTf extends LuceneTestCase {
   public void testMixedRAM() throws Exception {
     Directory ram = new MockRAMDirectory();
     Analyzer analyzer = new MockAnalyzer();
-    IndexWriter writer = new IndexWriter(ram, new IndexWriterConfig(
+    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(newRandom(),
         TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(10));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
     Document d = new Document();
@@ -209,7 +209,7 @@ public class TestOmitTf extends LuceneTestCase {
   public void testNoPrxFile() throws Throwable {
     Directory ram = new MockRAMDirectory();
     Analyzer analyzer = new MockAnalyzer();
-    IndexWriter writer = new IndexWriter(ram, new IndexWriterConfig(
+    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(newRandom(),
         TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3));
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
     lmp.setMergeFactor(2);
@@ -242,7 +242,7 @@ public class TestOmitTf extends LuceneTestCase {
   public void testBasic() throws Exception {
     Directory dir = new MockRAMDirectory();  
     Analyzer analyzer = new MockAnalyzer();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(),
         TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(2)
         .setSimilarity(new SimpleSimilarity()));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);

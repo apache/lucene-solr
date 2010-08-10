@@ -111,6 +111,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
         // In case terms index gets loaded, later, on demand
         totalIndexInterval = indexInterval * indexDivisor;
       }
+      assert totalIndexInterval > 0;
       
       seekDir(in, dirOffset);
 
@@ -365,6 +366,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
       public void getIndexOffset(BytesRef term, TermsIndexResult result) throws IOException {
         int lo = 0;					  // binary search
         int hi = numIndexTerms - 1;
+        assert totalIndexInterval > 0 : "totalIndexInterval=" + totalIndexInterval;
 
         while (hi >= lo) {
           int mid = (lo + hi) >>> 1;
@@ -411,8 +413,12 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
   public void loadTermsIndex(int indexDivisor) throws IOException {
     if (!indexLoaded) {
 
-      this.indexDivisor = indexDivisor;
-      this.totalIndexInterval = indexInterval * indexDivisor;
+      if (indexDivisor < 0) {
+        this.indexDivisor = -indexDivisor;
+      } else {
+        this.indexDivisor = indexDivisor;
+      }
+      this.totalIndexInterval = indexInterval * this.indexDivisor;
 
       Iterator<FieldIndexReader> it = fields.values().iterator();
       while(it.hasNext()) {
