@@ -42,7 +42,7 @@ import org.apache.lucene.index.codecs.SegmentInfosReader;
 import org.apache.lucene.index.codecs.SegmentInfosWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
@@ -118,7 +118,7 @@ public class TestAppendingCodec extends LuceneTestCase {
   }
   
   @SuppressWarnings("serial")
-  private static class AppendingRAMDirectory extends RAMDirectory {
+  private static class AppendingRAMDirectory extends MockRAMDirectory {
 
     @Override
     public IndexOutput createOutput(String name) throws IOException {

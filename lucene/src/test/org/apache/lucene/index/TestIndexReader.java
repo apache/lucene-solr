@@ -53,7 +53,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.NoSuchDirectoryException;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.BytesRef;
@@ -83,7 +83,7 @@ public class TestIndexReader extends LuceneTestCase
     }
     
     public void testCommitUserData() throws Exception {
-      RAMDirectory d = new MockRAMDirectory();
+      MockRAMDirectory d = new MockRAMDirectory();
 
       Map<String,String> commitUserData = new HashMap<String,String>();
       commitUserData.put("foo", "fighters");
@@ -138,7 +138,7 @@ public class TestIndexReader extends LuceneTestCase
     }
     
     public void testIsCurrent() throws Exception {
-      RAMDirectory d = new MockRAMDirectory();
+      MockRAMDirectory d = new MockRAMDirectory();
       IndexWriter writer = new IndexWriter(d, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, new MockAnalyzer()));
       addDocumentWithFields(writer);
@@ -167,7 +167,7 @@ public class TestIndexReader extends LuceneTestCase
      * @throws Exception on error
      */
     public void testGetFieldNames() throws Exception {
-        RAMDirectory d = new MockRAMDirectory();
+        MockRAMDirectory d = new MockRAMDirectory();
         // set up writer
         IndexWriter writer = new IndexWriter(d, newIndexWriterConfig(random, 
             TEST_VERSION_CURRENT, new MockAnalyzer()));
@@ -259,7 +259,7 @@ public class TestIndexReader extends LuceneTestCase
     }
 
   public void testTermVectors() throws Exception {
-    RAMDirectory d = new MockRAMDirectory();
+    MockRAMDirectory d = new MockRAMDirectory();
     // set up writer
     IndexWriter writer = new IndexWriter(d, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, new MockAnalyzer()));
@@ -356,7 +356,7 @@ public class TestIndexReader extends LuceneTestCase
     }
     
     public void testBinaryFields() throws IOException {
-        Directory dir = new RAMDirectory();
+        Directory dir = new MockRAMDirectory();
         byte[] bin = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
@@ -426,7 +426,7 @@ public class TestIndexReader extends LuceneTestCase
     // Make sure attempts to make changes after reader is
     // closed throws IOException:
     public void testChangesAfterClose() throws IOException {
-        Directory dir = new RAMDirectory();
+        Directory dir = new MockRAMDirectory();
 
         IndexWriter writer = null;
         IndexReader reader = null;
@@ -469,7 +469,7 @@ public class TestIndexReader extends LuceneTestCase
 
     // Make sure we get lock obtain failed exception with 2 writers:
     public void testLockObtainFailed() throws IOException {
-        Directory dir = new RAMDirectory();
+        Directory dir = new MockRAMDirectory();
 
         Term searchTerm = new Term("content", "aaa");
 
@@ -878,7 +878,7 @@ public class TestIndexReader extends LuceneTestCase
       int END_COUNT = 144;
       
       // First build up a starting index:
-      RAMDirectory startDir = new MockRAMDirectory();
+      MockRAMDirectory startDir = new MockRAMDirectory();
       IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
       for(int i=0;i<157;i++) {
         Document d = new Document();
@@ -1381,7 +1381,7 @@ public class TestIndexReader extends LuceneTestCase
 
     public void testGetIndexCommit() throws IOException {
 
-      RAMDirectory d = new MockRAMDirectory();
+      MockRAMDirectory d = new MockRAMDirectory();
 
       // set up writer
       IndexWriter writer = new IndexWriter(d, newIndexWriterConfig(random, 
@@ -1430,7 +1430,7 @@ public class TestIndexReader extends LuceneTestCase
     }      
 
     public void testReadOnly() throws Throwable {
-      RAMDirectory d = new MockRAMDirectory();
+      MockRAMDirectory d = new MockRAMDirectory();
       IndexWriter writer = new IndexWriter(d, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, new MockAnalyzer()));
       addDocumentWithFields(writer);
@@ -1498,7 +1498,7 @@ public class TestIndexReader extends LuceneTestCase
 
   // LUCENE-1474
   public void testIndexReader() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     writer.addDocument(createDocument("a"));

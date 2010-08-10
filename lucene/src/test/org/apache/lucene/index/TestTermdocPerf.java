@@ -28,7 +28,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
 
@@ -87,7 +87,7 @@ public class TestTermdocPerf extends LuceneTestCase {
 
 
   public int doTest(int iter, int ndocs, int maxTF, float percentDocs) throws IOException {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
 
     long start = System.currentTimeMillis();
     addDocs(dir, ndocs, "foo", "val", maxTF, percentDocs);

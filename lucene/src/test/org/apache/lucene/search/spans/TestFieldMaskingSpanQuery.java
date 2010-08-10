@@ -30,7 +30,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestFieldMaskingSpanQuery extends LuceneTestCase {
@@ -54,7 +54,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    directory = new RAMDirectory();
+    directory = new MockRAMDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(newRandom(), directory);
     
     writer.addDocument(doc(new Field[] { field("id", "0")

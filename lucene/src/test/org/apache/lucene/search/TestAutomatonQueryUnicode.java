@@ -26,7 +26,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.RegExp;
@@ -46,7 +46,7 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     Random random = newRandom();
-    directory = new RAMDirectory();
+    directory = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     Document doc = new Document();
     Field titleField = new Field("title", "some title", Field.Store.NO,

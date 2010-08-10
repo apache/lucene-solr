@@ -27,7 +27,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -40,7 +40,7 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
   
   public void testQuery() throws Exception {
 
-    RAMDirectory dir = new RAMDirectory();
+    MockRAMDirectory dir = new MockRAMDirectory();
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(2));
     addDoc("one", iw, 1f);

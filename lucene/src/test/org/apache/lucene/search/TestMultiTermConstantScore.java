@@ -25,7 +25,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import java.io.IOException;
 import java.text.Collator;
 import java.util.Locale;
@@ -55,7 +55,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
         "B   2   4 5 6", "Y     3   5 6", null, "C     3     6",
         "X       4 5 6" };
 
-    small = new RAMDirectory();
+    small = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(rand, small, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
 
     for (int i = 0; i < data.length; i++) {
@@ -609,7 +609,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public void testFarsi() throws Exception {
 
     /* build an index */
-    RAMDirectory farsiIndex = new RAMDirectory();
+    MockRAMDirectory farsiIndex = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(rand, farsiIndex, new MockAnalyzer(MockTokenizer.SIMPLE, true));
     Document doc = new Document();
     doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
@@ -649,7 +649,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public void testDanish() throws Exception {
 
     /* build an index */
-    RAMDirectory danishIndex = new RAMDirectory();
+    MockRAMDirectory danishIndex = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(rand, danishIndex, new MockAnalyzer(MockTokenizer.SIMPLE, true));
 
     // Danish collation orders the words below in the given order

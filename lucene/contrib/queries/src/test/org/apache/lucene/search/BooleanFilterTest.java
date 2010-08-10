@@ -27,17 +27,17 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class BooleanFilterTest extends LuceneTestCase {
-	private RAMDirectory directory;
+	private MockRAMDirectory directory;
 	private IndexReader reader;
 
 	@Override
 	protected void setUp() throws Exception {
 	  super.setUp();
-		directory = new RAMDirectory();
+		directory = new MockRAMDirectory();
 		RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
 		
 		//Add series of docs with filterable fields : acces rights, prices, dates and "in-stock" flags

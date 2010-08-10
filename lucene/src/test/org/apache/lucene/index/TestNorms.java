@@ -31,7 +31,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -76,7 +76,7 @@ public class TestNorms extends LuceneTestCase {
    */
   public void testNorms() throws IOException {
     Random random = newRandom();
-    Directory dir1 = new RAMDirectory();
+    Directory dir1 = new MockRAMDirectory();
 
     norms = new ArrayList<Float>();
     modifiedNorms = new ArrayList<Float>();
@@ -93,13 +93,13 @@ public class TestNorms extends LuceneTestCase {
     modifiedNorms = new ArrayList<Float>();
     numDocNorms = 0;
     
-    Directory dir2 = new RAMDirectory();
+    Directory dir2 = new MockRAMDirectory();
 
     createIndex(random, dir2);
     doTestNorms(random, dir2);
 
     // add index1 and index2 to a third index: index3
-    Directory dir3 = new RAMDirectory();
+    Directory dir3 = new MockRAMDirectory();
 
     createIndex(random, dir3);
     IndexWriter iw = new IndexWriter(dir3, newIndexWriterConfig(random,

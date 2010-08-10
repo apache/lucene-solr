@@ -40,7 +40,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MultiCodecTestCase;
 import org.apache.lucene.util.Version;
@@ -352,7 +352,7 @@ public class TestCodecs extends MultiCodecTestCase {
   }
 
   public void testSepPositionAfterMerge() throws IOException {
-    final Directory dir = new RAMDirectory();
+    final Directory dir = new MockRAMDirectory();
     final IndexWriterConfig config = newIndexWriterConfig(newRandom(), Version.LUCENE_31,
       new MockAnalyzer());
     config.setCodecProvider(new MockSepCodecs());

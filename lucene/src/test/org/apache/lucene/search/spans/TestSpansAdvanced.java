@@ -32,7 +32,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 /*******************************************************************************
  * Tests the span query bug in Lucene. It demonstrates that SpanTermQuerys don't
@@ -59,7 +59,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
     super.setUp();
     random = newRandom();
     // create test index
-    mDirectory = new RAMDirectory();
+    mDirectory = new MockRAMDirectory();
     final RandomIndexWriter writer = new RandomIndexWriter(random,
         mDirectory, new MockAnalyzer(MockTokenizer.SIMPLE, true,
                 MockTokenFilter.ENGLISH_STOPSET, true));

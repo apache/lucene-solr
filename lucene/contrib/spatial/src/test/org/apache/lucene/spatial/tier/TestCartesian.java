@@ -49,7 +49,7 @@ import org.apache.lucene.spatial.tier.projections.CartesianTierPlotter;
 import org.apache.lucene.spatial.tier.projections.IProjector;
 import org.apache.lucene.spatial.tier.projections.SinusoidalProjector;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestCartesian extends LuceneTestCase {
@@ -71,7 +71,7 @@ public class TestCartesian extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    directory = new RAMDirectory();
+    directory = new MockRAMDirectory();
 
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     

@@ -29,7 +29,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -39,7 +39,7 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestLuceneDictionary extends LuceneTestCase {
 
-  private Directory store = new RAMDirectory();
+  private Directory store = new MockRAMDirectory();
 
   private IndexReader indexReader = null;
 
@@ -187,7 +187,7 @@ public class TestLuceneDictionary extends LuceneTestCase {
   }
   
   public void testSpellchecker() throws IOException {
-    SpellChecker sc = new SpellChecker(new RAMDirectory());
+    SpellChecker sc = new SpellChecker(new MockRAMDirectory());
     indexReader = IndexReader.open(store, true);
     sc.indexDictionary(new LuceneDictionary(indexReader, "contents"));
     String[] suggestions = sc.suggestSimilar("Tam", 1);

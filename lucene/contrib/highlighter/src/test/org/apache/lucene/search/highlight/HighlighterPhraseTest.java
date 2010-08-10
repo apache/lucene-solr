@@ -48,7 +48,7 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
 
@@ -58,7 +58,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
   public void testConcurrentPhrase() throws CorruptIndexException,
       LockObtainFailedException, IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox jumped";
-    final Directory directory = new RAMDirectory();
+    final Directory directory = new MockRAMDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
         new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     try {
@@ -101,7 +101,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
   public void testConcurrentSpan() throws CorruptIndexException,
       LockObtainFailedException, IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox jumped";
-    final Directory directory = new RAMDirectory();
+    final Directory directory = new MockRAMDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
         new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     try {
@@ -170,7 +170,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
   public void testSparsePhrase() throws CorruptIndexException,
       LockObtainFailedException, IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
-    final Directory directory = new RAMDirectory();
+    final Directory directory = new MockRAMDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
         new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     try {
@@ -212,7 +212,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
   public void testSparsePhraseWithNoPositions() throws CorruptIndexException,
       LockObtainFailedException, IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
-    final Directory directory = new RAMDirectory();
+    final Directory directory = new MockRAMDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
         new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     try {
@@ -252,7 +252,7 @@ public class HighlighterPhraseTest extends LuceneTestCase {
   public void testSparseSpan() throws CorruptIndexException,
       LockObtainFailedException, IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
-    final Directory directory = new RAMDirectory();
+    final Directory directory = new MockRAMDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
         new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     try {

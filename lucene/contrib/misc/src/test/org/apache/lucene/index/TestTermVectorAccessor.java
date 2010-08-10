@@ -4,7 +4,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Collections;
@@ -27,7 +27,7 @@ public class TestTermVectorAccessor extends LuceneTestCase {
 
   public void test() throws Exception {
 
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     Document doc;

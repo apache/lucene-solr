@@ -14,7 +14,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
@@ -141,7 +141,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
 		
 		
 		//Create an index
-		RAMDirectory dir=new RAMDirectory();
+		MockRAMDirectory dir=new MockRAMDirectory();
 		IndexWriter w=new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
 		for (int i = 0; i < docFieldValues.length; i++)
 		{

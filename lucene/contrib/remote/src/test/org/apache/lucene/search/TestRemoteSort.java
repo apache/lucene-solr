@@ -33,7 +33,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -82,7 +82,7 @@ public class TestRemoteSort extends RemoteTestCaseJ4 {
   // create an index of all the documents, or just the x, or just the y documents
   @BeforeClass
   public static void beforeClass() throws Exception {
-    RAMDirectory indexStore = new RAMDirectory ();
+    MockRAMDirectory indexStore = new MockRAMDirectory ();
     IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMaxBufferedDocs(2));

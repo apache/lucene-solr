@@ -30,7 +30,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.junit.Test;
 
@@ -73,7 +73,7 @@ public class TestNoDeletionPolicy extends LuceneTestCaseJ4 {
 
   @Test
   public void testAllCommitsRemain() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(),
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));

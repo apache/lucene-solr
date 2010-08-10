@@ -17,7 +17,7 @@ package org.apache.lucene.store.instantiated;
  */
 
 
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.IndexWriter;
@@ -34,7 +34,7 @@ public class TestSerialization extends LuceneTestCase {
 
   public void test() throws Exception {
 
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
 
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();

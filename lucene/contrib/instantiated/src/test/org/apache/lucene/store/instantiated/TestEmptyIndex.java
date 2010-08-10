@@ -29,7 +29,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestEmptyIndex extends LuceneTestCase {
@@ -61,7 +61,7 @@ public class TestEmptyIndex extends LuceneTestCase {
 
     // make sure a Directory acts the same
 
-    Directory d = new RAMDirectory();
+    Directory d = new MockRAMDirectory();
     new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())).close();
     r = IndexReader.open(d, false);
     testNorms(r);
@@ -94,7 +94,7 @@ public class TestEmptyIndex extends LuceneTestCase {
 
     // make sure a Directory acts the same
 
-    Directory d = new RAMDirectory();
+    Directory d = new MockRAMDirectory();
     new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())).close();
     r = IndexReader.open(d, false);
     termsEnumTest(r);

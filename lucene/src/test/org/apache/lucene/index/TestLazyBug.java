@@ -31,7 +31,7 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 
@@ -68,7 +68,7 @@ public class TestLazyBug extends LuceneTestCase {
     };
   
   private Directory makeIndex() throws RuntimeException { 
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     try {
       Random r = newRandom();
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(r,

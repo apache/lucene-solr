@@ -8,7 +8,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -152,7 +152,7 @@ public class TestDocument extends LuceneTestCase {
    * @throws Exception on error
    */
   public void testGetValuesForIndexedDocument() throws Exception {
-    RAMDirectory dir = new RAMDirectory();
+    MockRAMDirectory dir = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
     writer.addDocument(makeDocumentWithFields());
     IndexReader reader = writer.getReader();
@@ -230,7 +230,7 @@ public class TestDocument extends LuceneTestCase {
     doc.add(new Field("keyword", "test", Field.Store.YES,
         Field.Index.NOT_ANALYZED));
     
-    RAMDirectory dir = new RAMDirectory();
+    MockRAMDirectory dir = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
     writer.addDocument(doc);
     field.setValue("id2");

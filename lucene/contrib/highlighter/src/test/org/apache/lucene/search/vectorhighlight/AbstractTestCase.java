@@ -44,7 +44,7 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public abstract class AbstractTestCase extends LuceneTestCase {
@@ -91,7 +91,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     analyzerK = new MockAnalyzer(MockTokenizer.KEYWORD, false);
     paW = new QueryParser(TEST_VERSION_CURRENT,  F, analyzerW );
     paB = new QueryParser(TEST_VERSION_CURRENT,  F, analyzerB );
-    dir = new RAMDirectory();
+    dir = new MockRAMDirectory();
   }
   
   @Override

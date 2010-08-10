@@ -29,11 +29,11 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 public class TestDistance extends LuceneTestCase {
   
-  private RAMDirectory directory;
+  private MockRAMDirectory directory;
   // reston va
   private double lat = 38.969398; 
   private double lng= -77.386398;
@@ -44,7 +44,7 @@ public class TestDistance extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    directory = new RAMDirectory();
+    directory = new MockRAMDirectory();
     writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     addData(writer);
     

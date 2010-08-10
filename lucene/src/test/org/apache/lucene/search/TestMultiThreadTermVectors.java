@@ -25,13 +25,13 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TermFreqVector;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.English;
 
 import java.io.IOException;
 
 public class TestMultiThreadTermVectors extends LuceneTestCase {
-  private RAMDirectory directory = new RAMDirectory();
+  private MockRAMDirectory directory = new MockRAMDirectory();
   public int numDocs = 100;
   public int numThreads = 3;
   

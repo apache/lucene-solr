@@ -31,7 +31,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /** Unit test for sorting code. */
@@ -50,7 +50,7 @@ public class TestCustomSearcherSort extends LuceneTestCase implements Serializab
   protected void setUp() throws Exception {
     super.setUp();
     Random rand = newRandom();
-    index = new RAMDirectory();
+    index = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(rand, index);
     RandomGen random = new RandomGen(rand);
     for (int i = 0; i < INDEX_SIZE; ++i) { // don't decrease; if to low the

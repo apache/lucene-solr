@@ -12,7 +12,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -46,7 +46,7 @@ public class TestScorerPerf extends LuceneTestCase {
   public void createDummySearcher() throws Exception {
       // Create a dummy index with nothing in it.
     // This could possibly fail if Lucene starts checking for docid ranges...
-    RAMDirectory rd = new RAMDirectory();
+    MockRAMDirectory rd = new MockRAMDirectory();
     IndexWriter iw = new IndexWriter(rd, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     iw.addDocument(new Document());
     iw.close();

@@ -72,7 +72,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LocalizedTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
@@ -654,7 +654,7 @@ public class TestQPHelper extends LocalizedTestCase {
 
   public void testFarsiRangeCollating() throws Exception {
 
-    RAMDirectory ramDir = new RAMDirectory();
+    MockRAMDirectory ramDir = new MockRAMDirectory();
     IndexWriter iw = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     Document doc = new Document();
     doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
@@ -1077,7 +1077,7 @@ public class TestQPHelper extends LocalizedTestCase {
 
   public void testLocalDateFormat() throws IOException, QueryNodeException {
 
-    RAMDirectory ramDir = new RAMDirectory();
+    MockRAMDirectory ramDir = new MockRAMDirectory();
     IndexWriter iw = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
     addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);

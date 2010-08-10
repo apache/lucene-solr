@@ -22,7 +22,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -38,7 +38,7 @@ public class TestNot extends LuceneTestCase {
   }
 
   public void testNot() throws Exception {
-    RAMDirectory store = new RAMDirectory();
+    MockRAMDirectory store = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), store);
 
     Document d1 = new Document();

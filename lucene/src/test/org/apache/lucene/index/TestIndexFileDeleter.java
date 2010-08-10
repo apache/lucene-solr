@@ -21,7 +21,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -39,8 +39,8 @@ public class TestIndexFileDeleter extends LuceneTestCase {
   
   public void testDeleteLeftoverFiles() throws IOException {
     Random random = newRandom();
-    Directory dir = new RAMDirectory();
-
+    MockRAMDirectory dir = new MockRAMDirectory();
+    dir.setPreventDoubleWrite(false);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMaxBufferedDocs(10));
@@ -135,14 +135,14 @@ public class TestIndexFileDeleter extends LuceneTestCase {
 
     // Create a bogus fnm file when the CFS already exists:
     copyFile(dir, "_0.cfs", "_0.fnm");
-
+    
     // Create some old segments file:
     copyFile(dir, "segments_2", "segments");
     copyFile(dir, "segments_2", "segments_1");
 
     // Create a bogus cfs file shadowing a non-cfs segment:
     copyFile(dir, "_1.cfs", "_2.cfs");
-
+    
     String[] filesPre = dir.listAll();
 
     // Open & close a writer: it should delete the above 4

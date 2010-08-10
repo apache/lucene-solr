@@ -28,7 +28,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.TimeLimitingCollector.TimeExceededException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 
@@ -76,7 +76,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
         "blueberry strudel",
         "blueberry pizza",
     };
-    directory = new RAMDirectory();
+    directory = new MockRAMDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(newRandom(), directory);
     
     for (int i=0; i<N_DOCS; i++) {

@@ -31,7 +31,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.OpenBitSet;
 
 
@@ -48,7 +48,7 @@ public class TestFilteredSearch extends LuceneTestCase {
   
   public void testFilteredSearch() throws CorruptIndexException, LockObtainFailedException, IOException {
     boolean enforceSingleSegment = true;
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     int[] filterBits = {1, 36};
     SimpleDocIdSetFilter filter = new SimpleDocIdSetFilter(filterBits);
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));

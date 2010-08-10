@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -31,7 +31,7 @@ import org.apache.lucene.document.Field;
  */
 public class TestPrefixQuery extends LuceneTestCase {
   public void testPrefixQuery() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
 
     String[] categories = new String[] {"/Computers",
                                         "/Computers/Mac",

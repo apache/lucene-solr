@@ -19,7 +19,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util.LuceneTestCase;
 /**
@@ -62,7 +62,7 @@ public class TestParser extends LuceneTestCase {
 		if(dir==null)
 		{
 			BufferedReader d = new BufferedReader(new InputStreamReader(TestParser.class.getResourceAsStream("reuters21578.txt"))); 
-			dir=new RAMDirectory();
+			dir=new MockRAMDirectory();
 			IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_24, analyzer));
 			String line = d.readLine();		
 			while(line!=null)

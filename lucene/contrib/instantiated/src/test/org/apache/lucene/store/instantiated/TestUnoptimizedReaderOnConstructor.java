@@ -20,7 +20,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -33,7 +33,7 @@ import org.apache.lucene.document.Field;
 public class TestUnoptimizedReaderOnConstructor extends LuceneTestCase {
 
   public void test() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     addDocument(iw, "Hello, world!");
     addDocument(iw, "All work and no play makes jack a dull boy");

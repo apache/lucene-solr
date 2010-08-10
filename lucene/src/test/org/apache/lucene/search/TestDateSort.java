@@ -33,7 +33,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 /**
  * Test date sorting, i.e. auto-sorting of fields with type "long".
@@ -51,7 +51,7 @@ public class TestDateSort extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     // Create an index writer.
-    directory = new RAMDirectory();
+    directory = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
 
     // oldest doc:

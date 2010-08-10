@@ -20,12 +20,12 @@ package org.apache.lucene.index;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestNewestSegment extends LuceneTestCase {
   public void testNewestSegment() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     Analyzer analyzer = new MockAnalyzer();
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new MockAnalyzer()));
     assertNull(writer.newestSegment());

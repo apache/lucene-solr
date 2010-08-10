@@ -27,7 +27,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -65,7 +65,7 @@ public class TestSimilarity extends LuceneTestCase {
   }
 
   public void testSimilarity() throws Exception {
-    RAMDirectory store = new RAMDirectory();
+    MockRAMDirectory store = new MockRAMDirectory();
     Random random = newRandom();
     RandomIndexWriter writer = new RandomIndexWriter(random, store, 
         newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())

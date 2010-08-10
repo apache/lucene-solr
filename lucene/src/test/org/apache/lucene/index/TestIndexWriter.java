@@ -70,7 +70,7 @@ import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.NoLockFactory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
@@ -91,7 +91,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     public void testDocCount() throws IOException {
-        Directory dir = new RAMDirectory();
+        Directory dir = new MockRAMDirectory();
 
         IndexWriter writer = null;
         IndexReader reader = null;
@@ -187,7 +187,7 @@ public class TestIndexWriter extends LuceneTestCase {
       Directory[] dirs = new Directory[NUM_DIR];
       long inputDiskUsage = 0;
       for(int i=0;i<NUM_DIR;i++) {
-        dirs[i] = new RAMDirectory();
+        dirs[i] = new MockRAMDirectory();
         IndexWriter writer  = new IndexWriter(dirs[i], newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
         for(int j=0;j<25;j++) {
           addDocWithIndex(writer, 25*i+j);
@@ -201,7 +201,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
       // Now, build a starting index that has START_COUNT docs.  We
       // will then try to addIndexesNoOptimize into a copy of this:
-      RAMDirectory startDir = new RAMDirectory();
+      MockRAMDirectory startDir = new MockRAMDirectory();
       IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
       for(int j=0;j<START_COUNT;j++) {
         addDocWithIndex(writer, j);
@@ -714,7 +714,8 @@ public class TestIndexWriter extends LuceneTestCase {
     // gracefully fallback to the previous segments file),
     // and that we can add to the index:
     public void testSimulatedCrashedWriter() throws IOException {
-        Directory dir = new RAMDirectory();
+        MockRAMDirectory dir = new MockRAMDirectory();
+        dir.setPreventDoubleWrite(false);
 
         IndexWriter writer = null;
 
@@ -775,7 +776,7 @@ public class TestIndexWriter extends LuceneTestCase {
     // latest segments file and make sure we get an
     // IOException trying to open the index:
     public void testSimulatedCorruptIndex1() throws IOException {
-        Directory dir = new RAMDirectory();
+        Directory dir = new MockRAMDirectory();
 
         IndexWriter writer = null;
 
@@ -818,7 +819,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     public void testChangesAfterClose() throws IOException {
-        Directory dir = new RAMDirectory();
+        Directory dir = new MockRAMDirectory();
 
         IndexWriter writer = null;
 
@@ -840,7 +841,7 @@ public class TestIndexWriter extends LuceneTestCase {
     // files and make sure we get an IOException trying to
     // open the index:
     public void testSimulatedCorruptIndex2() throws IOException {
-        Directory dir = new RAMDirectory();
+        Directory dir = new MockRAMDirectory();
 
         IndexWriter writer = null;
 
@@ -886,7 +887,7 @@ public class TestIndexWriter extends LuceneTestCase {
      * these docs until writer is closed.
      */
     public void testCommitOnClose() throws IOException {
-        Directory dir = new RAMDirectory();      
+        Directory dir = new MockRAMDirectory();      
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
         for (int i = 0; i < 14; i++) {
           addDoc(writer);
@@ -1049,7 +1050,8 @@ public class TestIndexWriter extends LuceneTestCase {
      * and close().
      */
     public void testCommitOnCloseOptimize() throws IOException {
-      RAMDirectory dir = new RAMDirectory();      
+      MockRAMDirectory dir = new MockRAMDirectory();  
+      dir.setPreventDoubleWrite(false); // TODO: should this be disabled here?
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10));
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(10);
       for(int j=0;j<17;j++) {
@@ -1093,7 +1095,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     public void testIndexNoDocuments() throws IOException {
-      RAMDirectory dir = new RAMDirectory();      
+      MockRAMDirectory dir = new MockRAMDirectory();      
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
       writer.commit();
       writer.close();
@@ -1114,7 +1116,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     public void testManyFields() throws IOException {
-      RAMDirectory dir = new RAMDirectory();      
+      MockRAMDirectory dir = new MockRAMDirectory();      
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10));
       for(int j=0;j<100;j++) {
         Document doc = new Document();
@@ -1144,7 +1146,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     public void testSmallRAMBuffer() throws IOException {
-      RAMDirectory dir = new RAMDirectory();      
+      MockRAMDirectory dir = new MockRAMDirectory();      
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setRAMBufferSizeMB(0.000001));
       ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
       int lastNumFile = dir.listAll().length;
@@ -1171,7 +1173,7 @@ public class TestIndexWriter extends LuceneTestCase {
      *             session won't be possible.
      */
     public void testChangingRAMBuffer() throws IOException {
-      RAMDirectory dir = new RAMDirectory();      
+      MockRAMDirectory dir = new MockRAMDirectory();      
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10).setRAMBufferSizeMB(
         IndexWriterConfig.DISABLE_AUTO_FLUSH));
@@ -1229,7 +1231,7 @@ public class TestIndexWriter extends LuceneTestCase {
      *             changing those settings on IW won't be possible.
      */
     public void testChangingRAMBuffer2() throws IOException {
-      RAMDirectory dir = new RAMDirectory();      
+      MockRAMDirectory dir = new MockRAMDirectory();      
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10).setMaxBufferedDeleteTerms(
         10).setRAMBufferSizeMB(IndexWriterConfig.DISABLE_AUTO_FLUSH));
@@ -1288,7 +1290,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     public void testDiverseDocs() throws IOException {
-      RAMDirectory dir = new RAMDirectory();      
+      MockRAMDirectory dir = new MockRAMDirectory();      
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setRAMBufferSizeMB(0.5));
       for(int i=0;i<3;i++) {
         // First, docs where every term is unique (heavy on
@@ -1335,7 +1337,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     public void testEnablingNorms() throws IOException {
-      RAMDirectory dir = new RAMDirectory();      
+      MockRAMDirectory dir = new MockRAMDirectory();      
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10));
       // Enable norms for only 1 doc, pre flush
       for(int j=0;j<10;j++) {
@@ -1381,7 +1383,7 @@ public class TestIndexWriter extends LuceneTestCase {
     }
 
     public void testHighFreqTerm() throws IOException {
-      RAMDirectory dir = new RAMDirectory();      
+      MockRAMDirectory dir = new MockRAMDirectory();      
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
           TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxFieldLength(100000000).setRAMBufferSizeMB(0.01));
       // Massive doc that has 128 K a's
@@ -1419,7 +1421,7 @@ public class TestIndexWriter extends LuceneTestCase {
     // compatibility.
     public void testNullLockFactory() throws IOException {
 
-      final class MyRAMDirectory extends RAMDirectory {
+      final class MyRAMDirectory extends MockRAMDirectory {
         private LockFactory myLockFactory;
         MyRAMDirectory() {
           lockFactory = null;
@@ -1442,17 +1444,17 @@ public class TestIndexWriter extends LuceneTestCase {
       IndexSearcher searcher = new IndexSearcher(dir, false);
       ScoreDoc[] hits = searcher.search(new TermQuery(searchTerm), null, 1000).scoreDocs;
       assertEquals("did not get right number of hits", 100, hits.length);
-      writer.close();
+      searcher.close();
 
       writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
         .setOpenMode(OpenMode.CREATE));
       writer.close();
-
+      searcher.close();
       dir.close();
     }
 
     public void testFlushWithNoMerging() throws IOException {
-      Directory dir = new RAMDirectory();
+      Directory dir = new MockRAMDirectory();
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
       ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
@@ -1472,7 +1474,7 @@ public class TestIndexWriter extends LuceneTestCase {
     // Make sure we can flush segment w/ norms, then add
     // empty doc (no norms) and flush
     public void testEmptyDocAfterFlushingRealDoc() throws IOException {
-      Directory dir = new RAMDirectory();
+      Directory dir = new MockRAMDirectory();
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
       Document doc = new Document();
       doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
@@ -1678,7 +1680,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
   // LUCENE-1072
   public void testExceptionFromTokenStream() throws IOException {
-    RAMDirectory dir = new MockRAMDirectory();
+    MockRAMDirectory dir = new MockRAMDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(random, TEST_VERSION_CURRENT, new Analyzer() {
 
       @Override
@@ -2080,7 +2082,7 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   public void testNoWaitClose() throws Throwable {
-    RAMDirectory directory = new MockRAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
 
     final Document doc = new Document();
     Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
@@ -4005,7 +4007,7 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   public void testOptimizeExceptions() throws IOException {
-    RAMDirectory startDir = new MockRAMDirectory();
+    MockRAMDirectory startDir = new MockRAMDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2);
     ((LogMergePolicy) conf.getMergePolicy()).setMergeFactor(100);
     IndexWriter w = new IndexWriter(startDir, conf);
@@ -4341,7 +4343,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
     @Override
     public void run() {
-      RAMDirectory dir = new RAMDirectory();
+      MockRAMDirectory dir = new MockRAMDirectory();
       IndexWriter w = null;
       boolean first = true;
       while(!finish) {
@@ -4939,7 +4941,7 @@ public class TestIndexWriter extends LuceneTestCase {
     // Tests that if we don't call commit(), the directory has 0 commits. This has
     // changed since LUCENE-2386, where before IW would always commit on a fresh
     // new index.
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     try {
       IndexReader.listCommits(dir);

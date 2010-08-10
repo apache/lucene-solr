@@ -30,7 +30,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -44,7 +44,7 @@ public class TestFieldNormModifier extends LuceneTestCase {
    
   public static int NUM_DOCS = 5;
   
-  public Directory store = new RAMDirectory();
+  public Directory store = new MockRAMDirectory();
   
   /** inverts the normal notion of lengthNorm */
   public static Similarity s = new DefaultSimilarity() {

@@ -26,7 +26,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import java.io.IOException;
 
 /**
@@ -112,11 +112,11 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     // create MultiSearcher from two seperate searchers
-    Directory d1 = new RAMDirectory();
+    Directory d1 = new MockRAMDirectory();
     IndexWriter iw1 = new IndexWriter(d1, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     addCollection1(iw1);
     iw1.close();
-    Directory d2 = new RAMDirectory();
+    Directory d2 = new MockRAMDirectory();
     IndexWriter iw2 = new IndexWriter(d2, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     addCollection2(iw2);
     iw2.close();
@@ -127,7 +127,7 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
     multiSearcher = new MultiSearcher(s);
 
     // create IndexSearcher which contains all documents
-    Directory d = new RAMDirectory();
+    Directory d = new MockRAMDirectory();
     IndexWriter iw = new IndexWriter(d, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     addCollection1(iw);
     addCollection2(iw);

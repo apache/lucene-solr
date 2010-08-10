@@ -29,7 +29,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -47,7 +47,7 @@ public class TestRegexpRandom extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     random = newRandom();
-    dir = new RAMDirectory();
+    dir = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     
     Document doc = new Document();

@@ -31,7 +31,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 public class TestBooleanOr extends LuceneTestCase {
 
@@ -137,7 +137,7 @@ public class TestBooleanOr extends LuceneTestCase {
     super.setUp();
 
     //
-    dir = new RAMDirectory();
+    dir = new MockRAMDirectory();
 
     Random random = newRandom();
     //

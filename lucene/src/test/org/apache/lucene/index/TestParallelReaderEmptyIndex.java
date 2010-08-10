@@ -31,7 +31,7 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 /**
  * Some tests for {@link ParallelReader}s with empty indexes
@@ -48,13 +48,13 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
    */
   public void testEmptyIndex() throws IOException {
     Random random = newRandom();
-    RAMDirectory rd1 = new MockRAMDirectory();
+    MockRAMDirectory rd1 = new MockRAMDirectory();
     IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     iw.close();
 
-    RAMDirectory rd2 = new MockRAMDirectory(rd1);
+    MockRAMDirectory rd2 = new MockRAMDirectory(rd1);
 
-    RAMDirectory rdOut = new MockRAMDirectory();
+    MockRAMDirectory rdOut = new MockRAMDirectory();
 
     IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     ParallelReader pr = new ParallelReader();
@@ -78,7 +78,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
    * any exception.
    */
   public void testEmptyIndexWithVectors() throws IOException {
-    RAMDirectory rd1 = new MockRAMDirectory();
+    MockRAMDirectory rd1 = new MockRAMDirectory();
     Random random = newRandom();
     {
       IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
@@ -100,7 +100,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       iw.close();
     }
 
-    RAMDirectory rd2 = new MockRAMDirectory();
+    MockRAMDirectory rd2 = new MockRAMDirectory();
     {
       IndexWriter iw = new IndexWriter(rd2, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
       Document doc = new Document();
@@ -108,7 +108,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       iw.close();
     }
 
-    RAMDirectory rdOut = new MockRAMDirectory();
+    MockRAMDirectory rdOut = new MockRAMDirectory();
 
     IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     ParallelReader pr = new ParallelReader();

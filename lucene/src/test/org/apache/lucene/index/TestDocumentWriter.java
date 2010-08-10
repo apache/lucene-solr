@@ -34,14 +34,14 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.BytesRef;
 
 public class TestDocumentWriter extends LuceneTestCase {
-  private RAMDirectory dir;
+  private MockRAMDirectory dir;
 
   public TestDocumentWriter(String s) {
     super(s);
@@ -50,7 +50,7 @@ public class TestDocumentWriter extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    dir = new RAMDirectory();
+    dir = new MockRAMDirectory();
   }
 
   public void test() {

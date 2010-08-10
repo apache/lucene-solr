@@ -26,13 +26,13 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestQueryWrapperFilter extends LuceneTestCase {
 
   public void testBasic() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
     Document doc = new Document();
     doc.add(new Field("field", "value", Store.NO, Index.ANALYZED));

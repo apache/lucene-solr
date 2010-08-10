@@ -24,7 +24,7 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 /** Document boost unit test.
  *
@@ -37,7 +37,7 @@ public class TestDocBoost extends LuceneTestCase {
   }
 
   public void testDocBoost() throws Exception {
-    RAMDirectory store = new RAMDirectory();
+    MockRAMDirectory store = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), store);
 
     Fieldable f1 = new Field("field", "word", Field.Store.YES, Field.Index.ANALYZED);

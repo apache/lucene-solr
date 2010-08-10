@@ -33,7 +33,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -202,7 +202,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     boolean useCompoundFile = true;
     Random random = newRandom();
     
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     ExpirationTimeDeletionPolicy policy = new ExpirationTimeDeletionPolicy(dir, SECONDS);
     IndexWriterConfig conf = newIndexWriterConfig(random, TEST_VERSION_CURRENT,
         new MockAnalyzer())
@@ -282,7 +282,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
       // Never deletes a commit
       KeepAllDeletionPolicy policy = new KeepAllDeletionPolicy();
 
-      Directory dir = new RAMDirectory();
+      Directory dir = new MockRAMDirectory();
       policy.dir = dir;
 
       IndexWriterConfig conf = newIndexWriterConfig(random,
@@ -474,7 +474,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       KeepNoneOnInitDeletionPolicy policy = new KeepNoneOnInitDeletionPolicy();
 
-      Directory dir = new RAMDirectory();
+      Directory dir = new MockRAMDirectory();
 
       IndexWriterConfig conf = newIndexWriterConfig(random,
           TEST_VERSION_CURRENT, new MockAnalyzer())
@@ -523,7 +523,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       boolean useCompoundFile = (pass % 2) != 0;
 
-      Directory dir = new RAMDirectory();
+      Directory dir = new MockRAMDirectory();
 
       KeepLastNDeletionPolicy policy = new KeepLastNDeletionPolicy(N);
 
@@ -588,7 +588,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       KeepLastNDeletionPolicy policy = new KeepLastNDeletionPolicy(N);
 
-      Directory dir = new RAMDirectory();
+      Directory dir = new MockRAMDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(random,
           TEST_VERSION_CURRENT, new MockAnalyzer())
           .setOpenMode(OpenMode.CREATE).setIndexDeletionPolicy(policy);
@@ -646,7 +646,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
       int expectedCount = 176;
-
+      searcher.close();
       for(int i=0;i<N+1;i++) {
         try {
           IndexReader reader = IndexReader.open(dir, true);
@@ -678,7 +678,6 @@ public class TestDeletionPolicy extends LuceneTestCase {
         }
         gen--;
       }
-      
       dir.close();
     }
   }
@@ -698,7 +697,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
 
       KeepLastNDeletionPolicy policy = new KeepLastNDeletionPolicy(N);
 
-      Directory dir = new RAMDirectory();
+      Directory dir = new MockRAMDirectory();
       IndexWriterConfig conf = newIndexWriterConfig(random,
           TEST_VERSION_CURRENT, new MockAnalyzer())
           .setOpenMode(OpenMode.CREATE).setIndexDeletionPolicy(policy)

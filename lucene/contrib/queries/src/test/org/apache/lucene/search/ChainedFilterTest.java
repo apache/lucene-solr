@@ -39,13 +39,13 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class ChainedFilterTest extends LuceneTestCase {
   public static final int MAX = 500;
 
-  private RAMDirectory directory;
+  private MockRAMDirectory directory;
   private IndexSearcher searcher;
   private IndexReader reader;
   private Query query;
@@ -60,7 +60,7 @@ public class ChainedFilterTest extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     random = newRandom();
-    directory = new RAMDirectory();
+    directory = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     Calendar cal = new GregorianCalendar();
     cal.clear();
@@ -195,7 +195,7 @@ public class ChainedFilterTest extends LuceneTestCase {
   */
   
   public void testWithCachingFilter() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     IndexReader reader = writer.getReader();
     writer.close();

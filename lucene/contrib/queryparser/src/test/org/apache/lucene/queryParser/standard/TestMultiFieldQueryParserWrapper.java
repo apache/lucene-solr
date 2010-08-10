@@ -36,7 +36,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -321,7 +321,7 @@ public class TestMultiFieldQueryParserWrapper extends LuceneTestCase {
 
   public void testStopWordSearching() throws Exception {
     Analyzer analyzer = new MockAnalyzer();
-    Directory ramDir = new RAMDirectory();
+    Directory ramDir = new MockRAMDirectory();
     IndexWriter iw = new IndexWriter(ramDir, analyzer, true,
         IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();

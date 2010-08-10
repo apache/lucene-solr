@@ -29,7 +29,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -53,7 +53,7 @@ public class TestBoolean2 extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     rnd = newRandom();
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(rnd, directory);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
@@ -70,7 +70,7 @@ public class TestBoolean2 extends LuceneTestCase {
     mulFactor = 1;
     int docCount = 0;
     do {
-      final Directory copy = new RAMDirectory(dir2);
+      final Directory copy = new MockRAMDirectory(dir2);
       RandomIndexWriter w = new RandomIndexWriter(rnd, dir2);
       w.addIndexes(new Directory[] {copy});
       docCount = w.maxDoc();

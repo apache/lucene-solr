@@ -22,7 +22,7 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -37,7 +37,7 @@ public class TestRemoteSearchable extends RemoteTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     // construct an index
-    RAMDirectory indexStore = new RAMDirectory();
+    MockRAMDirectory indexStore = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();

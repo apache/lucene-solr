@@ -24,7 +24,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 import java.text.DecimalFormat;
 import java.util.Random;
@@ -55,7 +55,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
             "X       4 5 6"
         };
 
-        index = new RAMDirectory();
+        index = new MockRAMDirectory();
         RandomIndexWriter w = new RandomIndexWriter(rnd, index);
 
         for (int i = 0; i < data.length; i++) {

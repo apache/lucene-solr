@@ -22,7 +22,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -43,12 +43,12 @@ import java.text.Collator;
 public class TestTermRangeQuery extends LuceneTestCase {
 
   private int docCount = 0;
-  private RAMDirectory dir;
+  private MockRAMDirectory dir;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    dir = new RAMDirectory();
+    dir = new MockRAMDirectory();
   }
 
   public void testExclusive() throws Exception {

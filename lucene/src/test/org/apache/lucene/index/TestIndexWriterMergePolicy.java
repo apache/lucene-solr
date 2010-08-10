@@ -24,7 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util._TestUtil;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -33,7 +33,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
   // Test the normal case
   public void testNormalCase() throws IOException {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
 
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
@@ -49,7 +49,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
   // Test to see if there is over merge
   public void testNoOverMerge() throws IOException {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
 
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
@@ -70,7 +70,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
   // Test the case where flush is forced after every addDoc
   public void testForceFlush() throws IOException {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
 
     LogDocMergePolicy mp = new LogDocMergePolicy();
     mp.setMinMergeDocs(100);
@@ -97,7 +97,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
   // Test the case where mergeFactor changes
   public void testMergeFactorChange() throws IOException {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
 
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
@@ -122,7 +122,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
   // Test the case where both mergeFactor and maxBufferedDocs change
   public void testMaxBufferedDocsChange() throws IOException {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
 
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
@@ -170,7 +170,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
   // Test the case where a merge results in no doc at all
   public void testMergeDocCount0() throws IOException {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
 
     LogDocMergePolicy ldmp = new LogDocMergePolicy();
     ldmp.setMergeFactor(100);

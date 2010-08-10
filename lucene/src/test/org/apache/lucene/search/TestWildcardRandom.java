@@ -29,7 +29,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -39,6 +39,7 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestWildcardRandom extends LuceneTestCase {
   private Searcher searcher;
+  private IndexReader reader;
   private Random random;
   private Directory dir;
   
@@ -46,7 +47,7 @@ public class TestWildcardRandom extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     random = newRandom();
-    dir = new RAMDirectory();
+    dir = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     
     Document doc = new Document();
@@ -59,7 +60,7 @@ public class TestWildcardRandom extends LuceneTestCase {
       writer.addDocument(doc);
     }
     
-    IndexReader reader = writer.getReader();
+    reader = writer.getReader();
     searcher = new IndexSearcher(reader);
     writer.close();
   }
@@ -92,6 +93,7 @@ public class TestWildcardRandom extends LuceneTestCase {
   @Override
   protected void tearDown() throws Exception {
     searcher.close();
+    reader.close();
     dir.close();
     super.tearDown();
   }

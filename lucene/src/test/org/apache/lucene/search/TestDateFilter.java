@@ -24,7 +24,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 import java.io.IOException;
 
@@ -44,7 +44,7 @@ public class TestDateFilter extends LuceneTestCase {
    */
   public void testBefore() throws IOException {
     // create an index
-    RAMDirectory indexStore = new RAMDirectory();
+    MockRAMDirectory indexStore = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore);
     
     long now = System.currentTimeMillis();
@@ -110,7 +110,7 @@ public class TestDateFilter extends LuceneTestCase {
    */
   public void testAfter() throws IOException {
     // create an index
-    RAMDirectory indexStore = new RAMDirectory();
+    MockRAMDirectory indexStore = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore);
     
     long now = System.currentTimeMillis();

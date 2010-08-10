@@ -26,7 +26,7 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 import java.io.IOException;
 import java.util.Random;
@@ -70,7 +70,7 @@ public class TestWildcard
    * a ConstantScoreQuery if the WildcardQuery had a ConstantScore rewriteMethod.
    */
   public void testTermWithoutWildcard() throws IOException {
-      RAMDirectory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
+      MockRAMDirectory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
       IndexSearcher searcher = new IndexSearcher(indexStore, true);
 
       MultiTermQuery wq = new WildcardQuery(new Term("field", "nowildcard"));
@@ -105,7 +105,7 @@ public class TestWildcard
    * Tests if a WildcardQuery with an empty term is rewritten to an empty BooleanQuery
    */
   public void testEmptyTerm() throws IOException {
-    RAMDirectory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
+    MockRAMDirectory indexStore = getIndexStore("field", new String[]{"nowildcard", "nowildcardx"});
     IndexSearcher searcher = new IndexSearcher(indexStore, true);
 
     MultiTermQuery wq = new WildcardQuery(new Term("field", ""));
@@ -122,7 +122,7 @@ public class TestWildcard
    * preserved.
    */
   public void testPrefixTerm() throws IOException {
-    RAMDirectory indexStore = getIndexStore("field", new String[]{"prefix", "prefixx"});
+    MockRAMDirectory indexStore = getIndexStore("field", new String[]{"prefix", "prefixx"});
     IndexSearcher searcher = new IndexSearcher(indexStore, true);
 
     MultiTermQuery wq = new WildcardQuery(new Term("field", "prefix*"));
@@ -141,7 +141,7 @@ public class TestWildcard
    */
   public void testAsterisk()
       throws IOException {
-    RAMDirectory indexStore = getIndexStore("body", new String[]
+    MockRAMDirectory indexStore = getIndexStore("body", new String[]
     {"metal", "metals"});
     IndexSearcher searcher = new IndexSearcher(indexStore, true);
     Query query1 = new TermQuery(new Term("body", "metal"));
@@ -180,7 +180,7 @@ public class TestWildcard
    */
   public void testQuestionmark()
       throws IOException {
-    RAMDirectory indexStore = getIndexStore("body", new String[]
+    MockRAMDirectory indexStore = getIndexStore("body", new String[]
     {"metal", "metals", "mXtals", "mXtXls"});
     IndexSearcher searcher = new IndexSearcher(indexStore, true);
     Query query1 = new WildcardQuery(new Term("body", "m?tal"));
@@ -198,9 +198,9 @@ public class TestWildcard
     assertMatches(searcher, query6, 1); // Query: 'meta??' matches 'metals' not 'metal'
   }
 
-  private RAMDirectory getIndexStore(String field, String[] contents)
+  private MockRAMDirectory getIndexStore(String field, String[] contents)
       throws IOException {
-    RAMDirectory indexStore = new RAMDirectory();
+    MockRAMDirectory indexStore = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     for (int i = 0; i < contents.length; ++i) {
       Document doc = new Document();
@@ -256,7 +256,7 @@ public class TestWildcard
     };
 
     // prepare the index
-    RAMDirectory dir = new RAMDirectory();
+    MockRAMDirectory dir = new MockRAMDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random, dir);
     for (int i = 0; i < docs.length; i++) {
       Document doc = new Document();

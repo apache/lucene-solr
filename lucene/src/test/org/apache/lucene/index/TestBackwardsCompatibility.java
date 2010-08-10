@@ -46,7 +46,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.BytesRef;
@@ -226,7 +226,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       String fullPath = fullDir(name);
       Directory dir = FSDirectory.open(new File(fullPath));
 
-      Directory targetDir = new RAMDirectory();
+      Directory targetDir = new MockRAMDirectory();
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(random,
           TEST_VERSION_CURRENT, new MockAnalyzer()));
       w.addIndexes(new Directory[] { dir });
@@ -247,7 +247,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       Directory dir = FSDirectory.open(new File(fullPath));
       IndexReader reader = IndexReader.open(dir);
       
-      Directory targetDir = new RAMDirectory();
+      Directory targetDir = new MockRAMDirectory();
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(random,
           TEST_VERSION_CURRENT, new MockAnalyzer()));
       w.addIndexes(new IndexReader[] { reader });

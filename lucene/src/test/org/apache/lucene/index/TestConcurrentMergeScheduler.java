@@ -18,7 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -108,7 +108,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   // before it finishes, are correctly merged back:
   public void testDeleteMerging() throws IOException {
 
-    RAMDirectory directory = new MockRAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
 
     LogDocMergePolicy mp = new LogDocMergePolicy();
     // Force degenerate merging so we can get a mix of
@@ -147,7 +147,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
   public void testNoExtraFiles() throws IOException {
 
-    RAMDirectory directory = new MockRAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     Random random = newRandom();
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer())
@@ -176,7 +176,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   }
 
   public void testNoWaitClose() throws IOException {
-    RAMDirectory directory = new MockRAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     Random random = newRandom();
     Document doc = new Document();
     Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);

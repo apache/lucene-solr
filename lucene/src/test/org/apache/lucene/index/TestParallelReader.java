@@ -35,7 +35,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestParallelReader extends LuceneTestCase {
@@ -262,7 +262,7 @@ public class TestParallelReader extends LuceneTestCase {
   }
 
   private Directory getDir2(Random random) throws IOException {
-    Directory dir2 = new RAMDirectory();
+    Directory dir2 = new MockRAMDirectory();
     IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document d3 = new Document();
     d3.add(new Field("f3", "v1", Field.Store.YES, Field.Index.ANALYZED));

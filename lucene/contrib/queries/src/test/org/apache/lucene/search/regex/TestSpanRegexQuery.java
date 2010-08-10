@@ -34,17 +34,17 @@ import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSpanRegexQuery extends LuceneTestCase {
   
-  Directory indexStoreA = new RAMDirectory();
+  Directory indexStoreA = new MockRAMDirectory();
 
-  Directory indexStoreB = new RAMDirectory();
+  Directory indexStoreB = new MockRAMDirectory();
 
   public void testSpanRegex() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();

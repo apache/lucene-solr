@@ -20,7 +20,7 @@ package org.apache.lucene.index;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.BufferedIndexInput;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.util.BytesRef;
@@ -30,14 +30,14 @@ import java.util.Collection;
 
 public class TestSegmentMerger extends LuceneTestCase {
   //The variables for the new merged segment
-  private Directory mergedDir = new RAMDirectory();
+  private Directory mergedDir = new MockRAMDirectory();
   private String mergedSegment = "test";
   //First segment to be merged
-  private Directory merge1Dir = new RAMDirectory();
+  private Directory merge1Dir = new MockRAMDirectory();
   private Document doc1 = new Document();
   private SegmentReader reader1 = null;
   //Second Segment to be merged
-  private Directory merge2Dir = new RAMDirectory();
+  private Directory merge2Dir = new MockRAMDirectory();
   private Document doc2 = new Document();
   private SegmentReader reader2 = null;
   

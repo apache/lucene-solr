@@ -28,13 +28,13 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 
 
 public class TestSegmentTermEnum extends LuceneTestCase {
   
-  Directory dir = new RAMDirectory();
+  Directory dir = new MockRAMDirectory();
 
   public void testTermEnum() throws IOException {
     Random random = newRandom();

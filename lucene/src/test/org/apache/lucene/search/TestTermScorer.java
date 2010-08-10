@@ -27,10 +27,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 public class TestTermScorer extends LuceneTestCase {
-  protected RAMDirectory directory;
+  protected MockRAMDirectory directory;
   private static final String FIELD = "field";
   
   protected String[] values = new String[] {"all", "dogs dogs", "like",
@@ -45,7 +45,7 @@ public class TestTermScorer extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    directory = new RAMDirectory();
+    directory = new MockRAMDirectory();
     
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
     for (int i = 0; i < values.length; i++) {

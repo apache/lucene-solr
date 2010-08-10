@@ -30,7 +30,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -40,7 +40,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestFuzzyQuery extends LuceneTestCase {
 
   public void testFuzziness() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
     addDoc("aaaaa", writer);
     addDoc("aaaab", writer);
@@ -193,7 +193,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   }
 
   public void testFuzzinessLong() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
     addDoc("aaaaaaa", writer);
     addDoc("segment", writer);
@@ -283,7 +283,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   }
   
   public void testTokenLengthOpt() throws IOException {
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
     addDoc("12345678911", writer);
     addDoc("segment", writer);
@@ -320,7 +320,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   
   /** Test the TopTermsBoostOnlyBooleanQueryRewrite rewrite method. */
   public void testBoostOnlyRewrite() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
     addDoc("Lucene", writer);
     addDoc("Lucene", writer);

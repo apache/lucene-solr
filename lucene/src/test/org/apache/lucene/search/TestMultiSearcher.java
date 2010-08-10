@@ -29,7 +29,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 import java.io.IOException;
 import java.util.Collections;
@@ -235,11 +235,11 @@ public class TestMultiSearcher extends LuceneTestCase
     }
 
   public void testFieldSelector() throws Exception {
-    RAMDirectory ramDirectory1, ramDirectory2;
+    MockRAMDirectory ramDirectory1, ramDirectory2;
     IndexSearcher indexSearcher1, indexSearcher2;
 
-    ramDirectory1 = new RAMDirectory();
-    ramDirectory2 = new RAMDirectory();
+    ramDirectory1 = new MockRAMDirectory();
+    ramDirectory2 = new MockRAMDirectory();
     Query query = new TermQuery(new Term("contents", "doc0"));
 
     // Now put the documents in a different index
@@ -292,7 +292,7 @@ public class TestMultiSearcher extends LuceneTestCase
     private void testNormalization(int nDocs, String message) throws IOException {
         Query query=new TermQuery(new Term("contents", "doc0"));
         
-        RAMDirectory ramDirectory1;
+        MockRAMDirectory ramDirectory1;
         IndexSearcher indexSearcher1;
         ScoreDoc[] hits;
         
@@ -320,7 +320,7 @@ public class TestMultiSearcher extends LuceneTestCase
         
         
         
-        RAMDirectory ramDirectory2;
+        MockRAMDirectory ramDirectory2;
         IndexSearcher indexSearcher2;
         
         ramDirectory1=new MockRAMDirectory();
@@ -366,7 +366,7 @@ public class TestMultiSearcher extends LuceneTestCase
      * @throws IOException 
      */
     public void testCustomSimilarity () throws IOException {
-        RAMDirectory dir = new RAMDirectory();
+        MockRAMDirectory dir = new MockRAMDirectory();
         initIndex(dir, 10, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
         IndexSearcher srchr = new IndexSearcher(dir, true);
         MultiSearcher msrchr = getMultiSearcherInstance(new Searcher[]{srchr});
@@ -406,8 +406,8 @@ public class TestMultiSearcher extends LuceneTestCase
     }
     
     public void testDocFreq() throws IOException{
-      RAMDirectory dir1 = new RAMDirectory();
-      RAMDirectory dir2 = new RAMDirectory();
+      MockRAMDirectory dir1 = new MockRAMDirectory();
+      MockRAMDirectory dir2 = new MockRAMDirectory();
 
       initIndex(dir1, 10, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
       initIndex(dir2, 5, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
@@ -419,8 +419,8 @@ public class TestMultiSearcher extends LuceneTestCase
     }
     
     public void testCreateDocFrequencyMap() throws IOException{
-      RAMDirectory dir1 = new RAMDirectory();
-      RAMDirectory dir2 = new RAMDirectory();
+      MockRAMDirectory dir1 = new MockRAMDirectory();
+      MockRAMDirectory dir2 = new MockRAMDirectory();
       Term template = new Term("contents") ;
       String[] contents  = {"a", "b", "c"};
       HashSet<Term> termsSet = new HashSet<Term>();

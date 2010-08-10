@@ -23,7 +23,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.DocIdBitSet;
 import java.util.BitSet;
@@ -40,14 +40,14 @@ public class TestFilteredQuery extends LuceneTestCase {
 
   private IndexSearcher searcher;
   private IndexReader reader;
-  private RAMDirectory directory;
+  private MockRAMDirectory directory;
   private Query query;
   private Filter filter;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    directory = new RAMDirectory();
+    directory = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter (newRandom(), directory);
 
     Document doc = new Document();
