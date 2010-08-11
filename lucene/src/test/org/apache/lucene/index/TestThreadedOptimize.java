@@ -32,6 +32,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import java.io.IOException;
 import java.io.File;
+import java.util.Random;
 
 public class TestThreadedOptimize extends LuceneTestCase {
   
@@ -52,9 +53,9 @@ public class TestThreadedOptimize extends LuceneTestCase {
     failed = true;
   }
 
-  public void runTest(Directory directory, MergeScheduler merger) throws Exception {
+  public void runTest(Random random, Directory directory, MergeScheduler merger) throws Exception {
 
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, ANALYZER)
         .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(2).setMergeScheduler(
             merger));
@@ -119,7 +120,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
       assertEquals(expectedDocCount, writer.maxDoc());
 
       writer.close();
-      writer = new IndexWriter(directory, new IndexWriterConfig(
+      writer = new IndexWriter(directory, newIndexWriterConfig(random,
           TEST_VERSION_CURRENT, ANALYZER).setOpenMode(
           OpenMode.APPEND).setMaxBufferedDocs(2));
 
@@ -136,15 +137,16 @@ public class TestThreadedOptimize extends LuceneTestCase {
     FSDirectory.
   */
   public void testThreadedOptimize() throws Exception {
+    Random random = newRandom();
     Directory directory = new MockRAMDirectory();
-    runTest(directory, new SerialMergeScheduler());
-    runTest(directory, new ConcurrentMergeScheduler());
+    runTest(random, directory, new SerialMergeScheduler());
+    runTest(random, directory, new ConcurrentMergeScheduler());
     directory.close();
 
     File dirName = new File(TEMP_DIR, "luceneTestThreadedOptimize");
     directory = FSDirectory.open(dirName);
-    runTest(directory, new SerialMergeScheduler());
-    runTest(directory, new ConcurrentMergeScheduler());
+    runTest(random, directory, new SerialMergeScheduler());
+    runTest(random, directory, new ConcurrentMergeScheduler());
     directory.close();
     _TestUtil.rmDir(dirName);
   }

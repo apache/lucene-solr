@@ -44,7 +44,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestMultiLevelSkipList extends LuceneTestCase {
   public void testSimpleSkip() throws IOException {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new PayloadAnalyzer()));
     Term term = new Term("test", "a");
     for (int i = 0; i < 5000; i++) {
       Document d1 = new Document();
@@ -76,7 +76,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
   public void checkSkipTo(TermPositions tp, int target, int maxCounter) throws IOException {
     tp.skipTo(target);
     if (maxCounter < counter) {
-      fail("Too many bytes read: " + counter);
+      fail("Too many bytes read: " + counter + " vs " + maxCounter);
     }
 
     assertEquals("Wrong document " + tp.doc() + " after skipTo target " + target, target, tp.doc());

@@ -444,6 +444,7 @@ public class LuceneTestCaseJ4 {
     }
     
     c.setReaderPooling(r.nextBoolean());
+    c.setReaderTermsIndexDivisor(_TestUtil.nextInt(r, 1, 4));
     return c;
   }
 

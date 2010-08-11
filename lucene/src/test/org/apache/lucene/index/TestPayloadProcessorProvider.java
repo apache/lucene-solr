@@ -22,6 +22,7 @@ import static org.junit.Assert.*;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -120,24 +121,25 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
 
   private static final int NUM_DOCS = 10;
 
-  private IndexWriterConfig getConfig() {
-    return new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(
+  private IndexWriterConfig getConfig(Random random) {
+    return newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(
         TEST_VERSION_CURRENT));
   }
 
-  private void populateDirs(Directory[] dirs, boolean multipleCommits)
+  private void populateDirs(Random random, Directory[] dirs, boolean multipleCommits)
       throws IOException {
     for (int i = 0; i < dirs.length; i++) {
       dirs[i] = new MockRAMDirectory();
-      populateDocs(dirs[i], multipleCommits);
+      populateDocs(random, dirs[i], multipleCommits);
       verifyPayloadExists(dirs[i], new Term("p", "p1"), NUM_DOCS);
       verifyPayloadExists(dirs[i], new Term("p", "p2"), NUM_DOCS);
     }
   }
 
-  private void populateDocs(Directory dir, boolean multipleCommits)
+  private void populateDocs(Random random, Directory dir, boolean multipleCommits)
       throws IOException {
-    IndexWriter writer = new IndexWriter(dir, getConfig());
+    IndexWriter writer = new IndexWriter(dir, getConfig(random));
+    ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(10);
     TokenStream payloadTS1 = new PayloadTokenStream("p1");
     TokenStream payloadTS2 = new PayloadTokenStream("p2");
     for (int i = 0; i < NUM_DOCS; i++) {
@@ -176,14 +178,14 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
     }
   }
 
-  private void doTest(boolean addToEmptyIndex,
+  private void doTest(Random random, boolean addToEmptyIndex,
       int numExpectedPayloads, boolean multipleCommits) throws IOException {
     Directory[] dirs = new Directory[2];
-    populateDirs(dirs, multipleCommits);
+    populateDirs(random, dirs, multipleCommits);
 
     Directory dir = new MockRAMDirectory();
     if (!addToEmptyIndex) {
-      populateDocs(dir, multipleCommits);
+      populateDocs(random, dir, multipleCommits);
       verifyPayloadExists(dir, new Term("p", "p1"), NUM_DOCS);
       verifyPayloadExists(dir, new Term("p", "p2"), NUM_DOCS);
     }
@@ -194,7 +196,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
     for (Directory d : dirs) {
       processors.put(d, new PerTermPayloadProcessor());
     }
-    IndexWriter writer = new IndexWriter(dir, getConfig());
+    IndexWriter writer = new IndexWriter(dir, getConfig(random));
     writer.setPayloadProcessorProvider(new PerDirPayloadProcessor(processors));
 
     IndexReader[] readers = new IndexReader[dirs.length];
@@ -218,26 +220,29 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
 
   @Test
   public void testAddIndexes() throws Exception {
+    Random random = newRandom();
     // addIndexes - single commit in each
-    doTest(true, 0, false);
+    doTest(random, true, 0, false);
 
     // addIndexes - multiple commits in each
-    doTest(true, 0, true);
+    doTest(random, true, 0, true);
   }
 
   @Test
   public void testAddIndexesIntoExisting() throws Exception {
+    Random random = newRandom();
     // addIndexes - single commit in each
-    doTest(false, NUM_DOCS, false);
+    doTest(random, false, NUM_DOCS, false);
 
     // addIndexes - multiple commits in each
-    doTest(false, NUM_DOCS, true);
+    doTest(random, false, NUM_DOCS, true);
   }
 
   @Test
   public void testRegularMerges() throws Exception {
+    Random random = newRandom();
     Directory dir = new MockRAMDirectory();
-    populateDocs(dir, true);
+    populateDocs(random, dir, true);
     verifyPayloadExists(dir, new Term("p", "p1"), NUM_DOCS);
     verifyPayloadExists(dir, new Term("p", "p2"), NUM_DOCS);
 
@@ -245,7 +250,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
     // won't get processed.
     Map<Directory, DirPayloadProcessor> processors = new HashMap<Directory, DirPayloadProcessor>();
     processors.put(dir, new PerTermPayloadProcessor());
-    IndexWriter writer = new IndexWriter(dir, getConfig());
+    IndexWriter writer = new IndexWriter(dir, getConfig(random));
     writer.setPayloadProcessorProvider(new PerDirPayloadProcessor(processors));
     writer.optimize();
     writer.close();
