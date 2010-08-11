@@ -400,6 +400,9 @@ Bug Fixes
 * SOLR-2008: avoid possible RejectedExecutionException w/autoCommit
   by making SolreCore close the UpdateHandler before closing the
   SearchExecutor.  (NarasimhaRaju, hossman)
+
+* SOLR-2036: Avoid expensive fieldCache ram estimation for the
+  admin stats page. (yonik)
   
 
 Other Changes

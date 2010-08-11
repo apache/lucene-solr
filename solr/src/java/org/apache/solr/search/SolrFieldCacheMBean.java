@@ -64,16 +64,18 @@ public class SolrFieldCacheMBean implements SolrInfoMBean {
       stats.add("entry#" + i, e.toString());
     }
 
-    Insanity[] insanity = checker.checkSanity(entries);
+    Insanity[] insanity = checker.check(entries);
 
     stats.add("insanity_count", insanity.length);
     for (int i = 0; i < insanity.length; i++) {
 
+      /** RAM estimation is both CPU and memory intensive... we don't want to do it unless asked.
       // we only estimate the size of insane entries
       for (CacheEntry e : insanity[i].getCacheEntries()) {
         // don't re-estimate if we've already done it.
         if (null == e.getEstimatedSize()) e.estimateSize();
       }
+      **/
       
       stats.add("insanity#" + i, insanity[i].toString());
     }
