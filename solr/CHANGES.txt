@@ -344,6 +344,9 @@ Bug Fixes
   SearchExecutor.  (NarasimhaRaju, hossman)
 
 * SOLR-1902: Upgraded Tika to 0.8-SNAPSHOT (gsingers)
+
+* SOLR-2036: Avoid expensive fieldCache ram estimation for the
+  admin stats page. (yonik)
   
 
 Other Changes
