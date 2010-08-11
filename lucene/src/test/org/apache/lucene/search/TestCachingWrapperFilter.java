@@ -28,7 +28,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
@@ -36,7 +36,7 @@ import org.apache.lucene.util.OpenBitSetDISI;
 
 public class TestCachingWrapperFilter extends LuceneTestCase {
   public void testCachingWorks() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new KeywordAnalyzer()));
     writer.close();
@@ -62,7 +62,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   }
   
   public void testNullDocIdSet() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new KeywordAnalyzer()));
     writer.close();
@@ -84,7 +84,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   }
   
   public void testNullDocIdSetIterator() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new KeywordAnalyzer()));
     writer.close();
@@ -125,7 +125,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   }
   
   public void testIsCacheAble() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new KeywordAnalyzer()));
     writer.close();
 

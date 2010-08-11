@@ -79,7 +79,7 @@ import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -94,7 +94,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   static final String FIELD_NAME = "contents";
   private static final String NUMERIC_FIELD_NAME = "nfield";
   private Query query;
-  RAMDirectory ramDir;
+  MockRAMDirectory ramDir;
   public IndexSearcher searcher = null;
   int numHighlights = 0;
   final Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
@@ -1323,7 +1323,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
   public void testMultiSearcher() throws Exception {
     // setup index 1
-    RAMDirectory ramDir1 = new RAMDirectory();
+    MockRAMDirectory ramDir1 = new MockRAMDirectory();
     IndexWriter writer1 = new IndexWriter(ramDir1, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
     Document d = new Document();
@@ -1335,7 +1335,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     IndexReader reader1 = IndexReader.open(ramDir1, true);
 
     // setup index 2
-    RAMDirectory ramDir2 = new RAMDirectory();
+    MockRAMDirectory ramDir2 = new MockRAMDirectory();
     IndexWriter writer2 = new IndexWriter(ramDir2, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
     d = new Document();
@@ -1591,7 +1591,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     helper.start();
   }
   
-  private Directory dir = new RAMDirectory();
+  private Directory dir = new MockRAMDirectory();
   private Analyzer a = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
   
   public void testWeightedTermsWithDeletes() throws IOException, ParseException, InvalidTokenOffsetsException {
@@ -1718,7 +1718,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    ramDir = new RAMDirectory();
+    ramDir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
     for (int i = 0; i < texts.length; i++) {

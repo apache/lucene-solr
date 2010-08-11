@@ -29,7 +29,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -45,7 +45,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     private String term2 = "yy";
     private String term3 = "zz";
 
-    private class SeekCountingDirectory extends RAMDirectory {
+    private class SeekCountingDirectory extends MockRAMDirectory {
       @Override
       public IndexInput openInput(String name) throws IOException {
         IndexInput ii = super.openInput(name);
@@ -119,7 +119,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     }
     
     public void testSeek() throws IOException {
-        Directory directory = new RAMDirectory();
+        Directory directory = new MockRAMDirectory();
         IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
         for (int i = 0; i < 10; i++) {
             Document doc = new Document();

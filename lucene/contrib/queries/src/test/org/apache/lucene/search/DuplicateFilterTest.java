@@ -27,12 +27,12 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class DuplicateFilterTest extends LuceneTestCase {
 	private static final String KEY_FIELD = "url";
-	private RAMDirectory directory;
+	private MockRAMDirectory directory;
 	private IndexReader reader;
 	TermQuery tq=new TermQuery(new Term("text","lucene"));
 	private IndexSearcher searcher;
@@ -40,7 +40,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
 	@Override
 	protected void setUp() throws Exception {
     super.setUp();
-		directory = new RAMDirectory();
+		directory = new MockRAMDirectory();
 		RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, new StandardAnalyzer(TEST_VERSION_CURRENT));
 		
 		//Add series of docs with filterable fields : url, text and dates  flags

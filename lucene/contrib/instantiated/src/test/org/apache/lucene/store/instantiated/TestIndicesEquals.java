@@ -39,7 +39,7 @@ import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -58,7 +58,7 @@ public class TestIndicesEquals extends LuceneTestCase {
 
 
   public void testLoadIndexReader() throws Exception {
-    RAMDirectory dir = new RAMDirectory();
+    MockRAMDirectory dir = new MockRAMDirectory();
 
     // create dir data
     IndexWriter indexWriter = new IndexWriter(dir, new IndexWriterConfig(
@@ -83,7 +83,7 @@ public class TestIndicesEquals extends LuceneTestCase {
   public void testInstantiatedIndexWriter() throws Exception {
 
 
-    RAMDirectory dir = new RAMDirectory();
+    MockRAMDirectory dir = new MockRAMDirectory();
     InstantiatedIndex ii = new InstantiatedIndex();
 
     // create dir data

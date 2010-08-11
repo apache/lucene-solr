@@ -31,7 +31,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestComplexPhraseQuery extends LuceneTestCase {
@@ -113,7 +113,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    RAMDirectory rd = new RAMDirectory();
+    MockRAMDirectory rd = new MockRAMDirectory();
     IndexWriter w = new IndexWriter(rd, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     for (int i = 0; i < docsContent.length; i++) {
       Document doc = new Document();

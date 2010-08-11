@@ -21,16 +21,13 @@ import java.util.List;
 import java.util.Arrays;
 import java.io.IOException;
 
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.queryParser.QueryParser;
@@ -42,7 +39,7 @@ import org.apache.lucene.queryParser.QueryParser;
 public class TestFuzzyQuery extends LuceneTestCase {
 
   public void testFuzziness() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
     addDoc("aaaaa", writer);
     addDoc("aaaab", writer);
@@ -195,7 +192,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   }
 
   public void testFuzzinessLong() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
     addDoc("aaaaaaa", writer);
     addDoc("segment", writer);
@@ -285,7 +282,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   }
   
   public void testTokenLengthOpt() throws IOException {
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
     addDoc("12345678911", writer);
     addDoc("segment", writer);
@@ -322,7 +319,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   
   /** Test the TopTermsBoostOnlyBooleanQueryRewrite rewrite method. */
   public void testBoostOnlyRewrite() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
     addDoc("Lucene", writer);
     addDoc("Lucene", writer);

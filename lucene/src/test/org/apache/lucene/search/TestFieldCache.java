@@ -20,7 +20,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
@@ -37,7 +37,7 @@ public class TestFieldCache extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(newRandom(), directory);
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;

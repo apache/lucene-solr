@@ -24,7 +24,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.apache.lucene.util.FieldCacheSanityChecker.InsanityType;
@@ -43,8 +43,8 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
 
-    RAMDirectory dirA = new RAMDirectory();
-    RAMDirectory dirB = new RAMDirectory();
+    MockRAMDirectory dirA = new MockRAMDirectory();
+    MockRAMDirectory dirB = new MockRAMDirectory();
 
     IndexWriter wA = new IndexWriter(dirA, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     IndexWriter wB = new IndexWriter(dirB, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));

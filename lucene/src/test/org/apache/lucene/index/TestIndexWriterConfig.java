@@ -33,7 +33,7 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.junit.Test;
 
@@ -261,7 +261,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     // iw.getConfig().getXYZ(), he'll get the same value he passed to
     // iw.setXYZ().
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, conf);
 
     writer.setSimilarity(new MySimilarity());

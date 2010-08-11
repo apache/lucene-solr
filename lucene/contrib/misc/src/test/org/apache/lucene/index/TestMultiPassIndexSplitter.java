@@ -20,7 +20,7 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestMultiPassIndexSplitter extends LuceneTestCase {
@@ -30,7 +30,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    RAMDirectory dir = new RAMDirectory();
+    MockRAMDirectory dir = new MockRAMDirectory();
     IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     Document doc;
     for (int i = 0; i < NUM_DOCS; i++) {
@@ -52,9 +52,9 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
   public void testSplitRR() throws Exception {
     MultiPassIndexSplitter splitter = new MultiPassIndexSplitter();
     Directory[] dirs = new Directory[]{
-            new RAMDirectory(),
-            new RAMDirectory(),
-            new RAMDirectory()
+            new MockRAMDirectory(),
+            new MockRAMDirectory(),
+            new MockRAMDirectory()
     };
     splitter.split(input, dirs, false);
     IndexReader ir;
@@ -94,9 +94,9 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
   public void testSplitSeq() throws Exception {
     MultiPassIndexSplitter splitter = new MultiPassIndexSplitter();
     Directory[] dirs = new Directory[]{
-            new RAMDirectory(),
-            new RAMDirectory(),
-            new RAMDirectory()
+            new MockRAMDirectory(),
+            new MockRAMDirectory(),
+            new MockRAMDirectory()
     };
     splitter.split(input, dirs, true);
     IndexReader ir;

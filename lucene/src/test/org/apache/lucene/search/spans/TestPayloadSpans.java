@@ -46,7 +46,7 @@ import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.payloads.PayloadHelper;
 import org.apache.lucene.search.payloads.PayloadSpanUtil;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestPayloadSpans extends LuceneTestCase {
@@ -113,7 +113,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   
   public IndexSearcher getSpanNotSearcher()
       throws IOException {
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(
         similarity));
@@ -253,7 +253,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   
   public void testShrinkToAfterShortestMatch() throws CorruptIndexException,
       LockObtainFailedException, IOException {
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
     Document doc = new Document();
@@ -287,7 +287,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   
   public void testShrinkToAfterShortestMatch2() throws CorruptIndexException,
       LockObtainFailedException, IOException {
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
     Document doc = new Document();
@@ -320,7 +320,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   
   public void testShrinkToAfterShortestMatch3() throws CorruptIndexException,
       LockObtainFailedException, IOException {
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
     Document doc = new Document();
@@ -358,7 +358,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   }
   
   public void testPayloadSpanUtil() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(
         similarity));
@@ -417,7 +417,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   }
   
   private IndexSearcher getSearcher() throws Exception {
-    RAMDirectory directory = new RAMDirectory();
+    MockRAMDirectory directory = new MockRAMDirectory();
     String[] docs = new String[]{"xx rr yy mm  pp","xx yy mm rr pp", "nopayload qq ss pp np", "one two three four five six seven eight nine ten eleven", "nine one two three four five six seven eight eleven ten"};
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));

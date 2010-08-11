@@ -27,7 +27,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 /**
  * A basic 'positive' Unit test class for the FieldCacheRangeFilter class.
@@ -524,7 +524,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
   
   // test using a sparse index (with deleted docs). The DocIdSet should be not cacheable, as it uses TermDocs if the range contains 0
   public void testSparseIndex() throws IOException {
-    RAMDirectory dir = new RAMDirectory();
+    MockRAMDirectory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
 
     for (int d = -20; d <= 20; d++) {

@@ -30,13 +30,13 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
   private String[] tokens = new String[] {"term1", "term2", "term3", "term2"};
   
   public void testCaching() throws IOException {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
 
     Document doc = new Document();

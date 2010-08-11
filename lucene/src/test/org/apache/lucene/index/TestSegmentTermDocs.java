@@ -18,7 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -29,7 +29,7 @@ import java.io.IOException;
 
 public class TestSegmentTermDocs extends LuceneTestCase {
   private Document testDoc = new Document();
-  private Directory dir = new RAMDirectory();
+  private Directory dir = new MockRAMDirectory();
   private SegmentInfo info;
 
   public TestSegmentTermDocs(String s) {
@@ -98,7 +98,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   }
 
   public void testSkipTo(int indexDivisor) throws IOException {
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     
     Term ta = new Term("content","aaa");

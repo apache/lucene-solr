@@ -20,7 +20,7 @@ package org.apache.lucene.search.spell;
 import java.io.IOException;
 import java.io.StringReader;
 
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -33,7 +33,7 @@ public class TestPlainTextDictionary extends LuceneTestCase {
     final String LF = System.getProperty("line.separator");
     String input = "oneword" + LF + "twoword" + LF + "threeword";
     PlainTextDictionary ptd = new PlainTextDictionary(new StringReader(input));
-    RAMDirectory ramDir = new RAMDirectory();
+    MockRAMDirectory ramDir = new MockRAMDirectory();
     SpellChecker spellChecker = new SpellChecker(ramDir);
     spellChecker.indexDictionary(ptd);
     String[] similar = spellChecker.suggestSimilar("treeword", 2);

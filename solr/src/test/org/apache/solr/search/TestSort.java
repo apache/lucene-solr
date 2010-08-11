@@ -23,7 +23,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.*;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.solr.util.AbstractSolrTestCase;
 
@@ -48,7 +48,7 @@ public class TestSort extends AbstractSolrTestCase {
   }
 
   public void testSort() throws Exception {
-    RAMDirectory dir = new RAMDirectory();
+    MockRAMDirectory dir = new MockRAMDirectory();
     Document smallDoc = new Document();
     // Field id = new Field("id","0", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);
     Field f = new Field("f","0", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);

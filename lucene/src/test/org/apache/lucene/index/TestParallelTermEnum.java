@@ -26,7 +26,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 
 public class TestParallelTermEnum extends LuceneTestCase {
     private IndexReader ir1;
@@ -37,7 +37,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
         super.setUp();
         Document doc;
         Random random = newRandom();
-        RAMDirectory rd1 = new RAMDirectory();
+        MockRAMDirectory rd1 = new MockRAMDirectory();
         IndexWriter iw1 = new IndexWriter(rd1, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
 
         doc = new Document();
@@ -49,7 +49,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
         iw1.addDocument(doc);
 
         iw1.close();
-        RAMDirectory rd2 = new RAMDirectory();
+        MockRAMDirectory rd2 = new MockRAMDirectory();
         IndexWriter iw2 = new IndexWriter(rd2, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
 
         doc = new Document();

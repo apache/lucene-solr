@@ -34,7 +34,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -58,7 +58,7 @@ public class TestBasics extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    directory = new RAMDirectory();
+    directory = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
         new SimpleAnalyzer(TEST_VERSION_CURRENT));
     //writer.infoStream = System.out;

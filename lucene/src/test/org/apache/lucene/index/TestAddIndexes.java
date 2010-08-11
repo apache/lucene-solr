@@ -26,7 +26,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 
 import org.apache.lucene.search.PhraseQuery;
@@ -42,10 +41,10 @@ public class TestAddIndexes extends LuceneTestCase {
 
   public void testSimpleCase() throws IOException {
     // main directory
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     // two auxiliary directories
-    Directory aux = new RAMDirectory();
-    Directory aux2 = new RAMDirectory();
+    Directory aux = new MockRAMDirectory();
+    Directory aux2 = new MockRAMDirectory();
 
     IndexWriter writer = null;
 
@@ -85,7 +84,7 @@ public class TestAddIndexes extends LuceneTestCase {
     verifyNumDocs(dir, 190);
 
     // now add another set in.
-    Directory aux3 = new RAMDirectory();
+    Directory aux3 = new MockRAMDirectory();
     writer = newWriter(aux3, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     // add 40 documents
     addDocs(writer, 40);
@@ -119,7 +118,7 @@ public class TestAddIndexes extends LuceneTestCase {
     verifyTermDocs(dir, new Term("content", "bbb"), 50);
 
     // now add a single document
-    Directory aux4 = new RAMDirectory();
+    Directory aux4 = new MockRAMDirectory();
     writer = newWriter(aux4, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     addDocs2(writer, 1);
     writer.close();
@@ -137,9 +136,9 @@ public class TestAddIndexes extends LuceneTestCase {
 
   public void testWithPendingDeletes() throws IOException {
     // main directory
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     // auxiliary directory
-    Directory aux = new RAMDirectory();
+    Directory aux = new MockRAMDirectory();
 
     setUpDirs(dir, aux);
     IndexWriter writer = newWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
@@ -174,9 +173,9 @@ public class TestAddIndexes extends LuceneTestCase {
 
   public void testWithPendingDeletes2() throws IOException {
     // main directory
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     // auxiliary directory
-    Directory aux = new RAMDirectory();
+    Directory aux = new MockRAMDirectory();
 
     setUpDirs(dir, aux);
     IndexWriter writer = newWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
@@ -212,9 +211,9 @@ public class TestAddIndexes extends LuceneTestCase {
 
   public void testWithPendingDeletes3() throws IOException {
     // main directory
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     // auxiliary directory
-    Directory aux = new RAMDirectory();
+    Directory aux = new MockRAMDirectory();
 
     setUpDirs(dir, aux);
     IndexWriter writer = newWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
@@ -252,9 +251,9 @@ public class TestAddIndexes extends LuceneTestCase {
   // case 0: add self or exceed maxMergeDocs, expect exception
   public void testAddSelf() throws IOException {
     // main directory
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     // auxiliary directory
-    Directory aux = new RAMDirectory();
+    Directory aux = new MockRAMDirectory();
 
     IndexWriter writer = null;
 
@@ -296,9 +295,9 @@ public class TestAddIndexes extends LuceneTestCase {
   // case 1: no tail segments
   public void testNoTailSegments() throws IOException {
     // main directory
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     // auxiliary directory
-    Directory aux = new RAMDirectory();
+    Directory aux = new MockRAMDirectory();
 
     setUpDirs(dir, aux);
 
@@ -320,9 +319,9 @@ public class TestAddIndexes extends LuceneTestCase {
   // case 2: tail segments, invariants hold, no copy
   public void testNoCopySegments() throws IOException {
     // main directory
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     // auxiliary directory
-    Directory aux = new RAMDirectory();
+    Directory aux = new MockRAMDirectory();
 
     setUpDirs(dir, aux);
 
@@ -342,9 +341,9 @@ public class TestAddIndexes extends LuceneTestCase {
   // case 3: tail segments, invariants hold, copy, invariants hold
   public void testNoMergeAfterCopy() throws IOException {
     // main directory
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     // auxiliary directory
-    Directory aux = new RAMDirectory();
+    Directory aux = new MockRAMDirectory();
 
     setUpDirs(dir, aux);
 
@@ -353,7 +352,7 @@ public class TestAddIndexes extends LuceneTestCase {
         .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(10));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
 
-    writer.addIndexes(new Directory[] { aux, new RAMDirectory(aux) });
+    writer.addIndexes(new Directory[] { aux, new MockRAMDirectory(aux) });
     assertEquals(1060, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
@@ -365,9 +364,9 @@ public class TestAddIndexes extends LuceneTestCase {
   // case 4: tail segments, invariants hold, copy, invariants not hold
   public void testMergeAfterCopy() throws IOException {
     // main directory
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     // auxiliary directory
-    Directory aux = new RAMDirectory();
+    Directory aux = new MockRAMDirectory();
 
     setUpDirs(dir, aux);
 
@@ -383,7 +382,7 @@ public class TestAddIndexes extends LuceneTestCase {
         .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(4));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
 
-    writer.addIndexes(new Directory[] { aux, new RAMDirectory(aux) });
+    writer.addIndexes(new Directory[] { aux, new MockRAMDirectory(aux) });
     assertEquals(1060, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
@@ -392,10 +391,10 @@ public class TestAddIndexes extends LuceneTestCase {
   // case 5: tail segments, invariants not hold
   public void testMoreMerges() throws IOException {
     // main directory
-    Directory dir = new RAMDirectory();
+    Directory dir = new MockRAMDirectory();
     // auxiliary directory
-    Directory aux = new RAMDirectory();
-    Directory aux2 = new RAMDirectory();
+    Directory aux = new MockRAMDirectory();
+    Directory aux2 = new MockRAMDirectory();
 
     setUpDirs(dir, aux);
 

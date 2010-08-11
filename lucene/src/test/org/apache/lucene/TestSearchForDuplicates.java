@@ -76,7 +76,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
 
 
   private void doTest(PrintWriter out, boolean useCompoundFiles) throws Exception {
-      Directory directory = new RAMDirectory();
+      Directory directory = new MockRAMDirectory();
       Analyzer analyzer = new SimpleAnalyzer(TEST_VERSION_CURRENT);
       IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
       LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();

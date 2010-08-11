@@ -39,7 +39,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
@@ -59,7 +59,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   private byte[] payloadField = new byte[]{1};
   private byte[] payloadMultiField1 = new byte[]{2};
   private byte[] payloadMultiField2 = new byte[]{4};
-  protected RAMDirectory directory;
+  protected MockRAMDirectory directory;
 
   public TestPayloadTermQuery(String s) {
     super(s);
@@ -112,7 +112,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    directory = new RAMDirectory();
+    directory = new MockRAMDirectory();
     Random random = newRandom();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig(random, TEST_VERSION_CURRENT, new PayloadAnalyzer())
@@ -261,6 +261,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     while (spans.next()) {
       count++;
     }
+    theSearcher.close();
   }
 
   public void testNoMatch() throws Exception {

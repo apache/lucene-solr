@@ -19,7 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.IndexOutput;
 
 import java.io.IOException;
@@ -47,7 +47,7 @@ public class TestFieldInfos extends LuceneTestCase {
     fieldInfos.add(testDoc);
     //Since the complement is stored as well in the fields map
     assertTrue(fieldInfos.size() == DocHelper.all.size()); //this is all b/c we are using the no-arg constructor
-    RAMDirectory dir = new RAMDirectory();
+    MockRAMDirectory dir = new MockRAMDirectory();
     String name = "testFile";
     IndexOutput output = dir.createOutput(name);
     assertTrue(output != null);

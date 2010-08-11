@@ -42,7 +42,7 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -107,7 +107,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   // create an index of all the documents, or just the x, or just the y documents
   private Searcher getIndex (boolean even, boolean odd)
   throws IOException {
-    RAMDirectory indexStore = new RAMDirectory();
+    MockRAMDirectory indexStore = new MockRAMDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
 
     for (int i=0; i<data.length; ++i) {
@@ -142,7 +142,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   }
   
   private IndexSearcher getFullStrings() throws CorruptIndexException, LockObtainFailedException, IOException {
-    RAMDirectory indexStore = new RAMDirectory ();
+    MockRAMDirectory indexStore = new MockRAMDirectory ();
     IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new SimpleAnalyzer(
         TEST_VERSION_CURRENT)).setMaxBufferedDocs(4));
@@ -1013,7 +1013,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   }
 
   public void testLUCENE2142() throws IOException {
-    RAMDirectory indexStore = new RAMDirectory ();
+    MockRAMDirectory indexStore = new MockRAMDirectory ();
     IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new SimpleAnalyzer(
         TEST_VERSION_CURRENT)));

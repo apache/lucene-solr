@@ -33,7 +33,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.NumericRangeFilter;
-import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.xmlparser.ParserException;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
@@ -62,7 +62,7 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
 		Document doc = getDocumentFromString(xml);
 		Filter filter = filterBuilder.getFilter(doc.getDocumentElement());
 
-		RAMDirectory ramDir = new RAMDirectory();
+		MockRAMDirectory ramDir = new MockRAMDirectory();
 		IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
 		writer.commit();
 		try
