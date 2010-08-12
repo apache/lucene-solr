@@ -26,6 +26,8 @@ import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.util.English;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
 import static org.apache.lucene.util.LuceneTestCaseJ4.TEST_VERSION_CURRENT;
@@ -45,6 +47,8 @@ public class PayloadHelper {
   public static final String NO_PAYLOAD_FIELD = "noPayloadField";
   public static final String MULTI_FIELD = "multiField";
   public static final String FIELD = "field";
+
+  public IndexReader reader;
 
   public final class PayloadAnalyzer extends Analyzer {
 
@@ -106,6 +110,8 @@ public class PayloadHelper {
   public IndexSearcher setUp(Similarity similarity, int numDocs) throws IOException {
     MockRAMDirectory directory = new MockRAMDirectory();
     PayloadAnalyzer analyzer = new PayloadAnalyzer();
+
+    // TODO randomize this
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer).setSimilarity(similarity));
     // writer.infoStream = System.out;
@@ -116,11 +122,15 @@ public class PayloadHelper {
       doc.add(new Field(NO_PAYLOAD_FIELD, English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
-    //writer.optimize();
+    reader = writer.getReader();
     writer.close();
 
-    IndexSearcher searcher = new IndexSearcher(directory, true);
+    IndexSearcher searcher = new IndexSearcher(SlowMultiReaderWrapper.wrap(reader));
     searcher.setSimilarity(similarity);
     return searcher;
+  }
+
+  public void tearDown() throws Exception {
+    reader.close();
   }
 }

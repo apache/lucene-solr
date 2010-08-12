@@ -22,6 +22,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
@@ -147,7 +148,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     
     r = writer.getReader();
     writer.close();
-    s = new IndexSearcher(r);
+    s = new IndexSearcher(SlowMultiReaderWrapper.wrap(r));
     s.setSimilarity(sim);
   }
   
@@ -167,7 +168,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     QueryUtils.check(dq, s);
     
     final Weight dw = dq.weight(s);
-    final Scorer ds = dw.scorer(r, true, false);
+    final Scorer ds = dw.scorer(s.getIndexReader(), true, false);
     final boolean skipOk = ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS;
     if (skipOk) {
       fail("firsttime skipTo found a match? ... "
@@ -183,7 +184,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
     QueryUtils.check(dq, s);
     
     final Weight dw = dq.weight(s);
-    final Scorer ds = dw.scorer(r, true, false);
+    final Scorer ds = dw.scorer(s.getIndexReader(), true, false);
     assertTrue("firsttime skipTo found no match",
         ds.advance(3) != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals("found wrong docid", "d4", r.document(ds.docID()).get("id"));

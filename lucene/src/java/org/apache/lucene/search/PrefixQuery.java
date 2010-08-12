@@ -48,6 +48,8 @@ public class PrefixQuery extends MultiTermQuery {
   protected TermsEnum getTermsEnum(IndexReader reader) throws IOException {
     if (prefix.bytes().length == 0) {
       // no prefix -- match all terms for this field:
+      // NOTE: for now, MultiTermQuery enums terms at the
+      // MultiReader level, so we must use MultiFields here:
       final Terms terms = MultiFields.getTerms(reader, getField());
       return (terms != null) ? terms.iterator() : TermsEnum.EMPTY;
     }

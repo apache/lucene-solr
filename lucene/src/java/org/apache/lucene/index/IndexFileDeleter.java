@@ -106,7 +106,7 @@ final class IndexFileDeleter {
 
   /** Change to true to see details of reference counts when
    *  infoStream != null */
-  public static boolean VERBOSE_REF_COUNTS = false;
+  public static boolean VERBOSE_REF_COUNTS = true;
 
   void setInfoStream(PrintStream infoStream) {
     this.infoStream = infoStream;

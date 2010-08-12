@@ -22,6 +22,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
@@ -50,7 +51,7 @@ public class TestSpanQueryFilter extends LuceneTestCase {
 
     SpanTermQuery query = new SpanTermQuery(new Term("field", English.intToEnglish(10).trim()));
     SpanQueryFilter filter = new SpanQueryFilter(query);
-    SpanFilterResult result = filter.bitSpans(reader);
+    SpanFilterResult result = filter.bitSpans(SlowMultiReaderWrapper.wrap(reader));
     DocIdSet docIdSet = result.getDocIdSet();
     assertTrue("docIdSet is null and it shouldn't be", docIdSet != null);
     assertContainsDocId("docIdSet doesn't contain docId 10", docIdSet, 10);

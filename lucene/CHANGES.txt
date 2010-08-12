@@ -555,6 +555,12 @@ New features
 * LUCENE-2589: Add a VariableSizedIntIndexInput, which, when used w/
   Sep*, makes it simple to take any variable sized int block coders
   (like Simple9/16) and use them in a codec.  (Mike McCandless)
+
+* LUCENE-2597: Add oal.index.SlowMultiReaderWrapper, to wrap a
+  composite reader (eg MultiReader or DirectoryReader), making it
+  pretend it's an atomic reader.  This is a convenience class (you can
+  use MultiFields static methods directly, instead) if you need to use
+  the flex APIs directly on a composite reader.  (Mike McCandless)
   
 Optimizations
 

@@ -23,7 +23,6 @@ import java.util.*;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsEnum;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
@@ -171,7 +170,7 @@ public class MultiPhraseQuery extends Query {
       if (termArrays.size() == 0)                  // optimize zero-term case
         return null;
 
-      final Bits delDocs = MultiFields.getDeletedDocs(reader);
+      final Bits delDocs = reader.getDeletedDocs();
       
       PhraseQuery.PostingsAndFreq[] postingsFreqs = new PhraseQuery.PostingsAndFreq[termArrays.size()];
 
@@ -191,22 +190,22 @@ public class MultiPhraseQuery extends Query {
             docFreq += reader.docFreq(terms[termIdx]);
           }
         } else {
-          final BytesRef text = new BytesRef(terms[0].text());
+          final Term term = terms[0];
           postingsEnum = reader.termPositionsEnum(delDocs,
-                                                  terms[0].field(),
-                                                  text);
+                                                  term.field(),
+                                                  term.bytes());
 
           if (postingsEnum == null) {
-            if (MultiFields.getTermDocsEnum(reader, delDocs, terms[0].field(), text) != null) {
+            if (reader.termDocsEnum(delDocs, term.field(), term.bytes()) != null) {
               // term does exist, but has no positions
-              throw new IllegalStateException("field \"" + terms[0].field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + terms[0].text() + ")");
+              throw new IllegalStateException("field \"" + term.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + term.text() + ")");
             } else {
               // term does not exist
               return null;
             }
           }
 
-          docFreq = reader.docFreq(terms[0].field(), text);
+          docFreq = reader.docFreq(term.field(), term.bytes());
         }
 
         postingsFreqs[pos] = new PhraseQuery.PostingsAndFreq(postingsEnum, docFreq, positions.get(pos).intValue());
@@ -497,7 +496,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
   public UnionDocsAndPositionsEnum(IndexReader indexReader, Term[] terms) throws IOException {
     List<DocsAndPositionsEnum> docsEnums = new LinkedList<DocsAndPositionsEnum>();
-    final Bits delDocs = MultiFields.getDeletedDocs(indexReader);
+    final Bits delDocs = indexReader.getDeletedDocs();
     for (int i = 0; i < terms.length; i++) {
       DocsAndPositionsEnum postings = indexReader.termPositionsEnum(delDocs,
                                                                     terms[i].field(),
@@ -505,7 +504,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
       if (postings != null) {
         docsEnums.add(postings);
       } else {
-        if (MultiFields.getTermDocsEnum(indexReader, delDocs, terms[i].field(), terms[i].bytes()) != null) {
+        if (indexReader.termDocsEnum(delDocs, terms[i].field(), terms[i].bytes()) != null) {
           // term does exist, but has no positions
           throw new IllegalStateException("field \"" + terms[i].field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + terms[i].text() + ")");
         }

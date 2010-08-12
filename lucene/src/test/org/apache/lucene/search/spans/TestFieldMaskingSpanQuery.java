@@ -24,6 +24,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
@@ -112,7 +113,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
                                          field("last",   "jones")     }));
     reader = writer.getReader();
     writer.close();
-    searcher = new IndexSearcher(reader);
+    searcher = new IndexSearcher(SlowMultiReaderWrapper.wrap(reader));
   }
 
   @Override

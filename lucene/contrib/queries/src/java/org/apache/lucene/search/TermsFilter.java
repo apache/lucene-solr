@@ -27,7 +27,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.BytesRef;
@@ -60,9 +59,9 @@ public class TermsFilter extends Filter
   @Override
   public DocIdSet getDocIdSet(IndexReader reader) throws IOException {
     OpenBitSet result=new OpenBitSet(reader.maxDoc());
-    Fields fields = MultiFields.getFields(reader);
+    Fields fields = reader.fields();
     BytesRef br = new BytesRef();
-    Bits delDocs = MultiFields.getDeletedDocs(reader);
+    Bits delDocs = reader.getDeletedDocs();
     if (fields != null) {
       String lastField = null;
       Terms termsC = null;

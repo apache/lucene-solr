@@ -62,7 +62,7 @@ public class ReaderUtil {
     try {
       new Gather(reader) {
         @Override
-          protected void add(int base, IndexReader r) {
+        protected void add(int base, IndexReader r) {
           allSubReaders.add(r);
         }
       }.run();

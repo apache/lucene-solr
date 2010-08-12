@@ -25,6 +25,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
@@ -69,7 +70,7 @@ public class TestBasics extends LuceneTestCase {
       writer.addDocument(doc);
     }
     reader = writer.getReader();
-    searcher = new IndexSearcher(reader);
+    searcher = new IndexSearcher(SlowMultiReaderWrapper.wrap(reader));
     writer.close();
   }
 

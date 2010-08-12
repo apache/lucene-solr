@@ -20,8 +20,6 @@ package org.apache.lucene.search.spans;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsAndPositionsEnum;
-import org.apache.lucene.index.MultiFields;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
@@ -83,17 +81,14 @@ public class SpanTermQuery extends SpanQuery {
 
   @Override
   public Spans getSpans(final IndexReader reader) throws IOException {
-    // NOTE: debateably, the caller should never pass in a
-    // multi reader...
-    final DocsAndPositionsEnum postings = MultiFields.getTermPositionsEnum(reader,
-                                                                           MultiFields.getDeletedDocs(reader),
-                                                                           term.field(),
-                                                                           term.bytes());
+    final DocsAndPositionsEnum postings = reader.termPositionsEnum(reader.getDeletedDocs(),
+                                                                   term.field(),
+                                                                   term.bytes());
 
     if (postings != null) {
       return new TermSpans(postings, term);
     } else {
-      if (MultiFields.getTermDocsEnum(reader, MultiFields.getDeletedDocs(reader), term.field(), term.bytes()) != null) {
+      if (reader.termDocsEnum(reader.getDeletedDocs(), term.field(), term.bytes()) != null) {
         // term does exist, but has no positions
         throw new IllegalStateException("field \"" + term.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run SpanTermQuery (term=" + term.text() + ")");
       } else {

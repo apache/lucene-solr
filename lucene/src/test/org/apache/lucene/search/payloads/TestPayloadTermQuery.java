@@ -35,10 +35,10 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -130,7 +130,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
     reader = writer.getReader();
     writer.close();
 
-    searcher = new IndexSearcher(reader);
+    searcher = new IndexSearcher(SlowMultiReaderWrapper.wrap(reader));
     searcher.setSimilarity(similarity);
   }
 

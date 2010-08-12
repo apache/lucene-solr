@@ -92,6 +92,8 @@ public class AutomatonQuery extends MultiTermQuery {
     
     // matches all possible strings
     if (BasicOperations.isTotal(automaton)) {
+      // NOTE: for now, MultiTermQuery enums terms at the
+      // MultiReader level, so we must use MultiFields here:
       return MultiFields.getTerms(reader, getField()).iterator();
     }
     

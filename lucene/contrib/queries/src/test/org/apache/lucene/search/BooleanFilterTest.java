@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -26,12 +25,14 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class BooleanFilterTest extends LuceneTestCase {
 	private MockRAMDirectory directory;
+	private IndexReader mainReader;
 	private IndexReader reader;
 
 	@Override
@@ -46,13 +47,14 @@ public class BooleanFilterTest extends LuceneTestCase {
 		addDoc(writer, "guest", "020", "20050101","Y");
 		addDoc(writer, "admin", "020", "20050101","Maybe");
 		addDoc(writer, "admin guest", "030", "20050101","N");
-		reader = writer.getReader();
+		mainReader = writer.getReader();
+		reader = SlowMultiReaderWrapper.wrap(mainReader);
 		writer.close();	
 	}
 	
 	@Override
 	protected void tearDown() throws Exception {
-	  reader.close();
+	  mainReader.close();
 	  directory.close();
 	  super.tearDown();
 	}

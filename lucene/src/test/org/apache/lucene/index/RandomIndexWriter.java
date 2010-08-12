@@ -90,6 +90,9 @@ public class RandomIndexWriter implements Closeable {
   public void addDocument(Document doc) throws IOException {
     w.addDocument(doc);
     if (docCount++ == flushAt) {
+      if (LuceneTestCaseJ4.VERBOSE) {
+        System.out.println("RIW.addDocument: now doing a commit");
+      }
       w.commit();
       flushAt += _TestUtil.nextInt(r, 10, 1000);
     }

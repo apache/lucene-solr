@@ -23,10 +23,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.Bits;
@@ -181,17 +179,16 @@ public class PhraseQuery extends Query {
         return null;
 
       PostingsAndFreq[] postingsFreqs = new PostingsAndFreq[terms.size()];
-      final Bits delDocs = MultiFields.getDeletedDocs(reader);
+      final Bits delDocs = reader.getDeletedDocs();
       for (int i = 0; i < terms.size(); i++) {
         final Term t = terms.get(i);
-        DocsAndPositionsEnum postingsEnum = MultiFields.getTermPositionsEnum(reader,
-                                                                             delDocs,
-                                                                             t.field(),
-                                                                             t.bytes());
+        DocsAndPositionsEnum postingsEnum = reader.termPositionsEnum(delDocs,
+                                                                     t.field(),
+                                                                     t.bytes());
         // PhraseQuery on a field that did not index
         // positions.
         if (postingsEnum == null) {
-          if (MultiFields.getTermDocsEnum(reader, delDocs, t.field(), t.bytes()) != null) {
+          if (reader.termDocsEnum(delDocs, t.field(), t.bytes()) != null) {
             // term does exist, but has no positions
             throw new IllegalStateException("field \"" + t.field() + "\" was indexed with Field.omitTermFreqAndPositions=true; cannot run PhraseQuery (term=" + t.text() + ")");
           } else {

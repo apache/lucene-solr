@@ -17,27 +17,33 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.util.Random;
 import java.io.IOException;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetDISI;
 
 public class TestCachingWrapperFilter extends LuceneTestCase {
+  Random rand;
+
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    rand = newRandom();
+  }
+
   public void testCachingWorks() throws Exception {
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(rand, dir);
     writer.close();
 
     IndexReader reader = IndexReader.open(dir, true);
@@ -62,8 +68,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   
   public void testNullDocIdSet() throws Exception {
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(rand, dir);
     writer.close();
 
     IndexReader reader = IndexReader.open(dir, true);
@@ -84,8 +89,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   
   public void testNullDocIdSetIterator() throws Exception {
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(rand, dir);
     writer.close();
 
     IndexReader reader = IndexReader.open(dir, true);
@@ -125,19 +129,21 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   
   public void testIsCacheAble() throws Exception {
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    RandomIndexWriter writer = new RandomIndexWriter(rand, dir);
+    writer.addDocument(new Document());
     writer.close();
 
     IndexReader reader = IndexReader.open(dir, true);
+    IndexReader slowReader = SlowMultiReaderWrapper.wrap(reader);
 
     // not cacheable:
-    assertDocIdSetCacheable(reader, new QueryWrapperFilter(new TermQuery(new Term("test","value"))), false);
+    assertDocIdSetCacheable(slowReader, new QueryWrapperFilter(new TermQuery(new Term("test","value"))), false);
     // returns default empty docidset, always cacheable:
-    assertDocIdSetCacheable(reader, NumericRangeFilter.newIntRange("test", Integer.valueOf(10000), Integer.valueOf(-10000), true, true), true);
+    assertDocIdSetCacheable(slowReader, NumericRangeFilter.newIntRange("test", Integer.valueOf(10000), Integer.valueOf(-10000), true, true), true);
     // is cacheable:
-    assertDocIdSetCacheable(reader, FieldCacheRangeFilter.newIntRange("test", Integer.valueOf(10), Integer.valueOf(20), true, true), true);
+    assertDocIdSetCacheable(slowReader, FieldCacheRangeFilter.newIntRange("test", Integer.valueOf(10), Integer.valueOf(20), true, true), true);
     // a openbitset filter is always cacheable
-    assertDocIdSetCacheable(reader, new Filter() {
+    assertDocIdSetCacheable(slowReader, new Filter() {
       @Override
       public DocIdSet getDocIdSet(IndexReader reader) {
         return new OpenBitSet();
@@ -149,8 +155,13 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
   public void testEnforceDeletions() throws Exception {
     Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
-    IndexReader reader = writer.getReader();
+    RandomIndexWriter writer = new RandomIndexWriter(rand, dir);
+
+    // NOTE: cannot use writer.getReader because RIW (on
+    // flipping a coin) may give us a newly opened reader,
+    // but we use .reopen on this reader below and expect to
+    // (must) get an NRT reader:
+    IndexReader reader = writer.w.getReader();
     IndexSearcher searcher = new IndexSearcher(reader);
 
     // add a doc, refresh the reader, and check that its there

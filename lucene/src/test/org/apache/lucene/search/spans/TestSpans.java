@@ -26,12 +26,12 @@ import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Searcher;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -197,7 +197,7 @@ public class TestSpans extends LuceneTestCase {
                                 makeSpanTermQuery("t3") },
                               slop,
                               ordered);
-    Spans spans = snq.getSpans(searcher.getIndexReader());
+    Spans spans = snq.getSpans(SlowMultiReaderWrapper.wrap(searcher.getIndexReader()));
 
     assertTrue("first range", spans.next());
     assertEquals("first doc", 11, spans.doc());
@@ -223,7 +223,7 @@ public class TestSpans extends LuceneTestCase {
                                 makeSpanTermQuery("u2") },
                               0,
                               false);
-    Spans spans = snq.getSpans(searcher.getIndexReader());
+    Spans spans = snq.getSpans(SlowMultiReaderWrapper.wrap(searcher.getIndexReader()));
     assertTrue("Does not have next and it should", spans.next());
     assertEquals("doc", 4, spans.doc());
     assertEquals("start", 1, spans.start());
@@ -259,7 +259,7 @@ public class TestSpans extends LuceneTestCase {
                               },
                               1,
                               false);
-    spans = snq.getSpans(searcher.getIndexReader());
+    spans = snq.getSpans(SlowMultiReaderWrapper.wrap(searcher.getIndexReader()));
     assertTrue("Does not have next and it should", spans.next());
     assertEquals("doc", 4, spans.doc());
     assertEquals("start", 0, spans.start());
@@ -317,7 +317,7 @@ public class TestSpans extends LuceneTestCase {
     for (int i = 0; i < terms.length; i++) {
       sqa[i] = makeSpanTermQuery(terms[i]);
     }
-    return (new SpanOrQuery(sqa)).getSpans(searcher.getIndexReader());
+    return (new SpanOrQuery(sqa)).getSpans(SlowMultiReaderWrapper.wrap(searcher.getIndexReader()));
   }
 
   private void tstNextSpans(Spans spans, int doc, int start, int end)
@@ -422,7 +422,7 @@ public class TestSpans extends LuceneTestCase {
       }
     };
 
-    Scorer spanScorer = snq.weight(searcher).scorer(searcher.getIndexReader(), true, false);
+    Scorer spanScorer = snq.weight(searcher).scorer(SlowMultiReaderWrapper.wrap(searcher.getIndexReader()), true, false);
 
     assertTrue("first doc", spanScorer.nextDoc() != DocIdSetIterator.NO_MORE_DOCS);
     assertEquals("first doc number", spanScorer.docID(), 11);

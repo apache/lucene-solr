@@ -135,8 +135,8 @@ public class TermRangeQuery extends MultiTermQuery {
       return TermsEnum.EMPTY;
     }
     if ((lowerTerm == null || (collator == null && includeLower && "".equals(lowerTerm))) && upperTerm == null) {
-      // NOTE: debateably, the caller should never pass in a
-      // multi reader...
+      // NOTE: for now, MultiTermQuery enums terms at the
+      // MultiReader level, so we must use MultiFields here:
       final Terms terms = MultiFields.getTerms(reader, field);
       return (terms != null) ? terms.iterator() : null;
     }

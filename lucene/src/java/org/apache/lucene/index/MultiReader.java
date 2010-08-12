@@ -107,7 +107,7 @@ public class MultiReader extends IndexReader implements Cloneable {
 
   @Override
   public Fields fields() throws IOException {
-    throw new UnsupportedOperationException("please use MultiFields.getFields if you really need a top level Fields (NOTE that it's usually better to work per segment instead)");
+    throw new UnsupportedOperationException("please use MultiFields.getFields, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Fields");
   }
 
   /**
@@ -154,7 +154,7 @@ public class MultiReader extends IndexReader implements Cloneable {
   
   @Override
   public Bits getDeletedDocs() throws IOException {
-    throw new UnsupportedOperationException("please use MultiFields.getDeletedDocs if you really need a top level Bits deletedDocs (NOTE that it's usually better to work per segment instead)");
+    throw new UnsupportedOperationException("please use MultiFields.getDeletedDocs, or wrap your IndexReader with SlowMultiReaderWrapper, if you really need a top level Bits deletedDocs");
   }
 
   /**

@@ -25,6 +25,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
 
@@ -58,8 +59,10 @@ public class TermsFilterTest extends LuceneTestCase {
 			doc.add(new Field(fieldName,""+term,Field.Store.YES,Field.Index.NOT_ANALYZED));
 			w.addDocument(doc);			
 		}
-		IndexReader reader = w.getReader();
+		IndexReader mainReader = w.getReader();
 		w.close();
+
+                IndexReader reader = SlowMultiReaderWrapper.wrap(mainReader);
 		
 		TermsFilter tf=new TermsFilter();
 		tf.addTerm(new Term(fieldName,"19"));
@@ -78,7 +81,7 @@ public class TermsFilterTest extends LuceneTestCase {
 		bits = (OpenBitSet)tf.getDocIdSet(reader);
 		assertEquals("Must match 2", 2, bits.cardinality());
 		
-		reader.close();
+		mainReader.close();
 		rd.close();
 	}
 }
