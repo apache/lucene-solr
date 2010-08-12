@@ -860,7 +860,7 @@
 
       <!-- ========== SOLR SPECIFIC COMMONS CSV ========== -->
       <m2-deploy  pom.xml="lib/solr-commons-csv-pom.xml.template"
-                  jar.file="lib/commons-csv-1.0-SNAPSHOT-r609327.jar" />
+                  jar.file="lib/commons-csv-1.0-SNAPSHOT-r966014.jar" />
 
       <!-- ========== SOLR ARTIFACTS ========== -->
 
