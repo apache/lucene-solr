@@ -31,7 +31,7 @@ import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.MockRAMDirectory;
 
 public class TestSegmentReader extends LuceneTestCase {
-  private MockRAMDirectory dir = new MockRAMDirectory();
+  private MockRAMDirectory dir;
   private Document testDoc = new Document();
   private SegmentReader reader = null;
 
@@ -43,9 +43,17 @@ public class TestSegmentReader extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
+    dir = newDirectory(newRandom());
     DocHelper.setupDoc(testDoc);
     SegmentInfo info = DocHelper.writeDoc(dir, testDoc);
     reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+  }
+  
+  @Override
+  protected void tearDown() throws Exception {
+    reader.close();
+    dir.close();
+    super.tearDown();
   }
 
   public void test() {
@@ -81,6 +89,7 @@ public class TestSegmentReader extends LuceneTestCase {
     assertTrue(deleteReader.isDeleted(0) == true);
     assertTrue(deleteReader.hasDeletions() == true);
     assertTrue(deleteReader.numDocs() == 0);
+    deleteReader.close();
   }    
   
   public void testGetFieldNameVariations() {

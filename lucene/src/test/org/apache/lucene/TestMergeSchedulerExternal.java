@@ -17,10 +17,13 @@ package org.apache.lucene;
  * limitations under the License.
  */
 import java.io.IOException;
+import java.util.Random;
+
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -80,17 +83,20 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
   }
 
   public void testSubclassConcurrentMergeScheduler() throws IOException {
-    MockRAMDirectory dir = new MockRAMDirectory();
+    Random random = newRandom();
+    MockRAMDirectory dir = newDirectory(random);
     dir.failOn(new FailOnlyOnMerge());
 
     Document doc = new Document();
     Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
     
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer()).setMergeScheduler(new MyMergeScheduler())
         .setMaxBufferedDocs(2).setRAMBufferSizeMB(
             IndexWriterConfig.DISABLE_AUTO_FLUSH));
+    LogMergePolicy logMP = (LogMergePolicy) writer.getConfig().getMergePolicy();
+    logMP.setMergeFactor(10);
     for(int i=0;i<20;i++)
       writer.addDocument(doc);
 

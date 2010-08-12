@@ -135,7 +135,7 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     doc.add( new Field( F, "aaa", Store.NO, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
     writer.addDocument( doc );
     writer.close();
-
+    if (reader != null) reader.close();
     reader = IndexReader.open( dir, true );
   }
   

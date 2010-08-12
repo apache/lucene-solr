@@ -107,6 +107,7 @@ public class PayloadHelper {
    * @return An IndexSearcher
    * @throws IOException
    */
+  // TODO: randomize
   public IndexSearcher setUp(Similarity similarity, int numDocs) throws IOException {
     MockRAMDirectory directory = new MockRAMDirectory();
     PayloadAnalyzer analyzer = new PayloadAnalyzer();

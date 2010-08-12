@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -45,7 +46,6 @@ import org.apache.lucene.search.FieldValueHitQueue.Entry;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.DocIdBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -60,9 +60,9 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestSort extends LuceneTestCase implements Serializable {
 
   private static final int NUM_STRINGS = 6000 * RANDOM_MULTIPLIER;
-  private Searcher full;
-  private Searcher searchX;
-  private Searcher searchY;
+  private IndexSearcher full;
+  private IndexSearcher searchX;
+  private IndexSearcher searchY;
   private Query queryX;
   private Query queryY;
   private Query queryA;
@@ -108,9 +108,10 @@ public class TestSort extends LuceneTestCase implements Serializable {
   };
   
   // create an index of all the documents, or just the x, or just the y documents
-  private Searcher getIndex (boolean even, boolean odd)
+  private IndexSearcher getIndex (boolean even, boolean odd)
   throws IOException {
-    MockRAMDirectory indexStore = new MockRAMDirectory();
+    MockRAMDirectory indexStore = newDirectory(random);
+    dirs.add(indexStore);
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
 
     for (int i=0; i<data.length; ++i) {
@@ -139,13 +140,14 @@ public class TestSort extends LuceneTestCase implements Serializable {
     return s;
   }
 
-  private Searcher getFullIndex()
+  private IndexSearcher getFullIndex()
   throws IOException {
     return getIndex (true, true);
   }
   
   private IndexSearcher getFullStrings() throws CorruptIndexException, LockObtainFailedException, IOException {
-    MockRAMDirectory indexStore = new MockRAMDirectory ();
+    MockRAMDirectory indexStore = newDirectory (random);
+    dirs.add(indexStore);
     IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(4));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(97);
@@ -197,17 +199,17 @@ public class TestSort extends LuceneTestCase implements Serializable {
     return randInt;
   }
 
-  private Searcher getXIndex()
+  private IndexSearcher getXIndex()
   throws IOException {
     return getIndex (true, false);
   }
 
-  private Searcher getYIndex()
+  private IndexSearcher getYIndex()
   throws IOException {
     return getIndex (false, true);
   }
 
-  private Searcher getEmptyIndex()
+  private IndexSearcher getEmptyIndex()
   throws IOException {
     return getIndex (false, false);
   }
@@ -225,6 +227,21 @@ public class TestSort extends LuceneTestCase implements Serializable {
     queryF = new TermQuery (new Term ("contents", "f"));
     queryG = new TermQuery (new Term ("contents", "g"));
     sort = new Sort();
+  }
+  
+  private ArrayList<Directory> dirs = new ArrayList<Directory>();
+  
+  @Override
+  protected void tearDown() throws Exception {
+    full.reader.close();
+    searchX.reader.close();
+    searchY.reader.close();
+    full.close();
+    searchX.close();
+    searchY.close();
+    for (Directory dir : dirs)
+      dir.close();
+    super.tearDown();
   }
 
   // test the sorts by score and document number
@@ -323,7 +340,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
       System.out.println("topn field1(field2)(docID):" + buff);
     }
     assertFalse("Found sort results out of order", fail);
-
+    searcher.close();
   }
   
   /** 
@@ -1015,8 +1032,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
   }
 
   public void testEmptyStringVsNullStringSort() throws Exception {
-    Directory dir = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(
+    Directory dir = newDirectory(random);
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random,
                         TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     doc.add(new Field("f", "", Field.Store.NO, Field.Index.NOT_ANALYZED));
@@ -1040,8 +1057,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
   }
 
   public void testLUCENE2142() throws IOException {
-    MockRAMDirectory indexStore = new MockRAMDirectory ();
-    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
+    MockRAMDirectory indexStore = newDirectory (random);
+    IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i=0; i<5; i++) {
         Document doc = new Document();
@@ -1055,7 +1072,10 @@ public class TestSort extends LuceneTestCase implements Serializable {
         new SortField("string", SortField.STRING),
         SortField.FIELD_DOC );
     // this should not throw AIOOBE or RuntimeEx
-    new IndexSearcher (indexStore, true).search(new MatchAllDocsQuery(), null, 500, sort);
+    IndexSearcher searcher = new IndexSearcher(indexStore, true);
+    searcher.search(new MatchAllDocsQuery(), null, 500, sort);
+    searcher.close();
+    indexStore.close();
   }
 
 }

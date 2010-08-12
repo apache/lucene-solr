@@ -274,7 +274,7 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
   public void testSurrogatesOrder() throws Exception {
     Random r = newRandom();
 
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(r);
     RandomIndexWriter w = new RandomIndexWriter(r,
                                                 dir,
                                                 newIndexWriterConfig(r, TEST_VERSION_CURRENT,
@@ -338,5 +338,7 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
     doTestSeekDoesNotExist(r, numField, fieldTerms, fieldTermsArray, reader);
 
     reader.close();
+    w.close();
+    dir.close();
   }
 }

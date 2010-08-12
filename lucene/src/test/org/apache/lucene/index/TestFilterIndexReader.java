@@ -132,7 +132,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
    */
   public void testFilterIndexReader() throws Exception {
     Random random = newRandom();
-    MockRAMDirectory directory = new MockRAMDirectory();
+    MockRAMDirectory directory = newDirectory(random);
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     Document d1 = new Document();
@@ -150,7 +150,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
     writer.close();
 
     //IndexReader reader = new TestReader(IndexReader.open(directory, true));
-    MockRAMDirectory target = new MockRAMDirectory();
+    MockRAMDirectory target = newDirectory(random);
     writer = new IndexWriter(target, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     IndexReader reader = new TestReader(IndexReader.open(directory, true));
     writer.addIndexes(reader);
@@ -176,5 +176,6 @@ public class TestFilterIndexReader extends LuceneTestCase {
 
     reader.close();
     directory.close();
+    target.close();
   }
 }

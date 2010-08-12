@@ -18,6 +18,7 @@ package org.apache.lucene.search.regex;
  */
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -39,13 +40,28 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSpanRegexQuery extends LuceneTestCase {
   
-  Directory indexStoreA = new MockRAMDirectory();
-
-  Directory indexStoreB = new MockRAMDirectory();
-
+  Directory indexStoreA;
+  Directory indexStoreB;
+  Random random;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    random = newRandom();
+    indexStoreA = newDirectory(random);
+    indexStoreB = newDirectory(random);
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    indexStoreA.close();
+    indexStoreB.close();
+    super.tearDown();
+  }
+  
   public void testSpanRegex() throws Exception {
-    MockRAMDirectory directory = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
+    MockRAMDirectory directory = newDirectory(random);
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     // doc.add(new Field("field", "the quick brown fox jumps over the lazy dog",
@@ -69,6 +85,8 @@ public class TestSpanRegexQuery extends LuceneTestCase {
     // true);
     int numHits = searcher.search(sfq, null, 1000).totalHits;
     assertEquals(1, numHits);
+    searcher.close();
+    directory.close();
   }
 
   public void testSpanRegexBug() throws CorruptIndexException, IOException {
@@ -111,14 +129,14 @@ public class TestSpanRegexQuery extends LuceneTestCase {
         Field.Index.ANALYZED_NO_NORMS));
 
     // creating first index writer
-    IndexWriter writerA = new IndexWriter(indexStoreA, new IndexWriterConfig(
+    IndexWriter writerA = new IndexWriter(indexStoreA, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
     writerA.addDocument(lDoc);
     writerA.optimize();
     writerA.close();
 
     // creating second index writer
-    IndexWriter writerB = new IndexWriter(indexStoreB, new IndexWriterConfig(
+    IndexWriter writerB = new IndexWriter(indexStoreB, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
     writerB.addDocument(lDoc2);
     writerB.optimize();

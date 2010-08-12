@@ -226,7 +226,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       String fullPath = fullDir(name);
       Directory dir = FSDirectory.open(new File(fullPath));
 
-      Directory targetDir = new MockRAMDirectory();
+      Directory targetDir = newDirectory(random);
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(random,
           TEST_VERSION_CURRENT, new MockAnalyzer()));
       w.addIndexes(new Directory[] { dir });
@@ -235,6 +235,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       _TestUtil.checkIndex(targetDir);
       
       dir.close();
+      targetDir.close();
       rmDir(name);
     }
   }
@@ -247,7 +248,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       Directory dir = FSDirectory.open(new File(fullPath));
       IndexReader reader = IndexReader.open(dir);
       
-      Directory targetDir = new MockRAMDirectory();
+      Directory targetDir = newDirectory(random);
       IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(random,
           TEST_VERSION_CURRENT, new MockAnalyzer()));
       w.addIndexes(new IndexReader[] { reader });
@@ -257,6 +258,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       _TestUtil.checkIndex(targetDir);
       
       dir.close();
+      targetDir.close();
       rmDir(name);
     }
   }

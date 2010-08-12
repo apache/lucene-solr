@@ -20,6 +20,7 @@ package org.apache.lucene;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Random;
 
 import org.apache.lucene.store.*;
 import org.apache.lucene.document.*;
@@ -58,7 +59,8 @@ public class TestSearchForDuplicates extends LuceneTestCase {
   public void testRun() throws Exception {
       StringWriter sw = new StringWriter();
       PrintWriter pw = new PrintWriter(sw, true);
-      doTest(pw, false);
+      Random random = newRandom();
+      doTest(random, pw, false);
       pw.close();
       sw.close();
       String multiFileOutput = sw.getBuffer().toString();
@@ -66,7 +68,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
 
       sw = new StringWriter();
       pw = new PrintWriter(sw, true);
-      doTest(pw, true);
+      doTest(random, pw, true);
       pw.close();
       sw.close();
       String singleFileOutput = sw.getBuffer().toString();
@@ -75,10 +77,10 @@ public class TestSearchForDuplicates extends LuceneTestCase {
   }
 
 
-  private void doTest(PrintWriter out, boolean useCompoundFiles) throws Exception {
-      Directory directory = new MockRAMDirectory();
+  private void doTest(Random random, PrintWriter out, boolean useCompoundFiles) throws Exception {
+      Directory directory = newDirectory(random);
       Analyzer analyzer = new MockAnalyzer();
-      IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+      IndexWriterConfig conf = newIndexWriterConfig(random, TEST_VERSION_CURRENT, analyzer);
       LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFiles);
       lmp.setUseCompoundDocStore(useCompoundFiles);
@@ -125,6 +127,7 @@ public class TestSearchForDuplicates extends LuceneTestCase {
       checkHits(hits, MAX_DOCS, searcher);
 
       searcher.close();
+      directory.close();
   }
 
 

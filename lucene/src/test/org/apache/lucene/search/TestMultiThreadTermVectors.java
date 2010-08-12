@@ -23,15 +23,15 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.English;
 
 import java.io.IOException;
+import java.util.Random;
 
 public class TestMultiThreadTermVectors extends LuceneTestCase {
-  private MockRAMDirectory directory = new MockRAMDirectory();
+  private MockRAMDirectory directory;
   public int numDocs = 100;
   public int numThreads = 3;
   
@@ -42,7 +42,9 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Random random = newRandom();
+    directory = newDirectory(random);
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     //writer.setUseCompoundFile(false);
     //writer.infoStream = System.out;
     for (int i = 0; i < numDocs; i++) {
@@ -53,6 +55,12 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
     }
     writer.close();
     
+  }
+  
+  @Override
+  protected void tearDown() throws Exception {
+    directory.close();
+    super.tearDown();
   }
   
   public void test() throws Exception {

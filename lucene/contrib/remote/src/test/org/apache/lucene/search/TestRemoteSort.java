@@ -35,6 +35,7 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.BytesRef;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -48,6 +49,7 @@ import org.junit.Test;
 public class TestRemoteSort extends RemoteTestCaseJ4 {
 
   private static IndexSearcher full;
+  private static MockRAMDirectory indexStore;
   private Query queryX;
   private Query queryY;
   private Query queryA;
@@ -82,8 +84,9 @@ public class TestRemoteSort extends RemoteTestCaseJ4 {
   // create an index of all the documents, or just the x, or just the y documents
   @BeforeClass
   public static void beforeClass() throws Exception {
-    MockRAMDirectory indexStore = new MockRAMDirectory ();
-    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
+    Random random = newStaticRandom(TestRemoteSort.class);
+    indexStore = newDirectory(random);
+    IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMaxBufferedDocs(2));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(1000);
@@ -109,6 +112,14 @@ public class TestRemoteSort extends RemoteTestCaseJ4 {
     full = new IndexSearcher (indexStore, false);
     full.setDefaultFieldSortScoring(true, true);
     startServer(full);
+  }
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    full.close();
+    full = null;
+    indexStore.close();
+    indexStore = null;
   }
   
   public String getRandomNumberString(int num, int low, int high) {

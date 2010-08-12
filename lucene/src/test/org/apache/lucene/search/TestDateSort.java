@@ -18,6 +18,7 @@ package org.apache.lucene.search;
  */
 
 import java.util.Arrays;
+import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -51,8 +52,9 @@ public class TestDateSort extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     // Create an index writer.
-    directory = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+    Random random = newRandom();
+    directory = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
 
     // oldest doc:
     // Add the first document.  text = "Document 1"  dateTime = Oct 10 03:25:22 EDT 2007

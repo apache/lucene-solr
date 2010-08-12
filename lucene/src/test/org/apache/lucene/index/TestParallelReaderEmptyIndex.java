@@ -48,13 +48,13 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
    */
   public void testEmptyIndex() throws IOException {
     Random random = newRandom();
-    MockRAMDirectory rd1 = new MockRAMDirectory();
+    MockRAMDirectory rd1 = newDirectory(random);
     IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     iw.close();
 
-    MockRAMDirectory rd2 = new MockRAMDirectory(rd1);
+    MockRAMDirectory rd2 = newDirectory(random, rd1);
 
-    MockRAMDirectory rdOut = new MockRAMDirectory();
+    MockRAMDirectory rdOut = newDirectory(random);
 
     IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     ParallelReader pr = new ParallelReader();
@@ -78,8 +78,8 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
    * any exception.
    */
   public void testEmptyIndexWithVectors() throws IOException {
-    MockRAMDirectory rd1 = new MockRAMDirectory();
     Random random = newRandom();
+    MockRAMDirectory rd1 = newDirectory(random);
     {
       IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
       Document doc = new Document();
@@ -100,7 +100,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       iw.close();
     }
 
-    MockRAMDirectory rd2 = new MockRAMDirectory();
+    MockRAMDirectory rd2 = newDirectory(random);
     {
       IndexWriter iw = new IndexWriter(rd2, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
       Document doc = new Document();
@@ -108,7 +108,7 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       iw.close();
     }
 
-    MockRAMDirectory rdOut = new MockRAMDirectory();
+    MockRAMDirectory rdOut = newDirectory(random);
 
     IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     ParallelReader pr = new ParallelReader();

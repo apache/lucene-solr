@@ -91,7 +91,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     analyzerK = new MockAnalyzer(MockTokenizer.KEYWORD, false);
     paW = new QueryParser(TEST_VERSION_CURRENT,  F, analyzerW );
     paB = new QueryParser(TEST_VERSION_CURRENT,  F, analyzerB );
-    dir = new MockRAMDirectory();
+    dir = newDirectory(newRandom());
   }
   
   @Override
@@ -100,6 +100,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
       reader.close();
       reader = null;
     }
+    dir.close();
     super.tearDown();
   }
 
@@ -334,7 +335,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
       doc.add( new Field( F, value, Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
     writer.addDocument( doc );
     writer.close();
-
+    if (reader != null) reader.close();
     reader = IndexReader.open( dir, true );
   }
   
@@ -347,7 +348,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
       doc.add( new Field( F, value, Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS ) );
     writer.addDocument( doc );
     writer.close();
-
+    if (reader != null) reader.close();
     reader = IndexReader.open( dir, true );
   }
   

@@ -47,7 +47,7 @@ public class TestRegexpRandom extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     random = newRandom();
-    dir = new MockRAMDirectory();
+    dir = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     
     Document doc = new Document();

@@ -49,11 +49,12 @@ public class TestNumericRangeQuery32 extends LuceneTestCaseJ4 {
   private static MockRAMDirectory directory = null;
   private static IndexReader reader = null;
   private static IndexSearcher searcher = null;
-
+  private static Random random = null;
+  
   @BeforeClass
   public static void beforeClass() throws Exception {
-    directory = new MockRAMDirectory();
-    Random random = newStaticRandom(TestNumericRangeQuery32.class);
+    random = newStaticRandom(TestNumericRangeQuery32.class);
+    directory = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     
     NumericField
@@ -280,8 +281,8 @@ public class TestNumericRangeQuery32 extends LuceneTestCaseJ4 {
   
   @Test
   public void testInfiniteValues() throws Exception {
-    MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    MockRAMDirectory dir = newDirectory(random);
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     doc.add(new NumericField("float").setFloatValue(Float.NEGATIVE_INFINITY));
     doc.add(new NumericField("int").setIntValue(Integer.MIN_VALUE));

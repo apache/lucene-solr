@@ -20,6 +20,7 @@ package org.apache.lucene.xmlparser.builders;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Random;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -61,9 +62,9 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
 		String xml = "<NumericRangeFilter fieldName='AGE' type='int' lowerTerm='-1' upperTerm='NaN'/>";
 		Document doc = getDocumentFromString(xml);
 		Filter filter = filterBuilder.getFilter(doc.getDocumentElement());
-
-		MockRAMDirectory ramDir = new MockRAMDirectory();
-		IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, null));
+		Random random = newRandom();
+		MockRAMDirectory ramDir = newDirectory(random);
+		IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, null));
 		writer.commit();
 		try
 		{
@@ -81,6 +82,7 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
 		{
 			writer.commit();
 			writer.close();
+			ramDir.close();
 		}
 	}
 

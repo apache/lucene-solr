@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.StringTokenizer;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -99,6 +100,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   int numHighlights = 0;
   final Analyzer analyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
   TopDocs hits;
+  private Random random;
 
   String[] texts = {
       "Hello this is a piece of text that is very long and contains too much preamble and the meat is really here which says kennedy has been shot",
@@ -142,6 +144,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
       if (VERBOSE) System.out.println(fragment);
     }
+    searcher.close();
   }
   
   public void testHighlightingWithDefaultField() throws Exception {
@@ -432,7 +435,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
     QueryScorer scorer = new QueryScorer(query, FIELD_NAME);
     Highlighter highlighter = new Highlighter(this, scorer);
-    
+  
     for (int i = 0; i < hits.totalHits; i++) {
       String text = searcher.doc(hits.scoreDocs[i].doc).get(FIELD_NAME);
       TokenStream tokenStream = analyzer.tokenStream(FIELD_NAME, new StringReader(text));
@@ -1206,6 +1209,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       public void run() throws Exception {
         numHighlights = 0;
         // test to show how rewritten query can still be used
+        if (searcher != null) searcher.close();
         searcher = new IndexSearcher(ramDir, true);
         Analyzer analyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
 
@@ -1319,8 +1323,8 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
   public void testMultiSearcher() throws Exception {
     // setup index 1
-    MockRAMDirectory ramDir1 = new MockRAMDirectory();
-    IndexWriter writer1 = new IndexWriter(ramDir1, new IndexWriterConfig(
+    MockRAMDirectory ramDir1 = newDirectory(random);
+    IndexWriter writer1 = new IndexWriter(ramDir1, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)));
     Document d = new Document();
     Field f = new Field(FIELD_NAME, "multiOne", Field.Store.YES, Field.Index.ANALYZED);
@@ -1331,8 +1335,8 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     IndexReader reader1 = IndexReader.open(ramDir1, true);
 
     // setup index 2
-    MockRAMDirectory ramDir2 = new MockRAMDirectory();
-    IndexWriter writer2 = new IndexWriter(ramDir2, new IndexWriterConfig(
+    MockRAMDirectory ramDir2 = newDirectory(random);
+    IndexWriter writer2 = new IndexWriter(ramDir2, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)));
     d = new Document();
     f = new Field(FIELD_NAME, "multiTwo", Field.Store.YES, Field.Index.ANALYZED);
@@ -1371,7 +1375,12 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     }
     assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
         numHighlights == 2);
-
+    reader1.close();
+    reader2.close();
+    searchers[0].close();
+    searchers[1].close();
+    ramDir1.close();
+    ramDir2.close();
   }
 
   public void testFieldSpecificHighlighting() throws Exception {
@@ -1587,7 +1596,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     helper.start();
   }
   
-  private Directory dir = new MockRAMDirectory();
+  private Directory dir;
   private Analyzer a = new MockAnalyzer(MockTokenizer.WHITESPACE, false);
   
   public void testWeightedTermsWithDeletes() throws IOException, ParseException, InvalidTokenOffsetsException {
@@ -1684,6 +1693,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
 
   public void doSearching(Query unReWrittenQuery) throws Exception {
+    if (searcher != null) searcher.close();
     searcher = new IndexSearcher(ramDir, true);
     // for any multi-term queries to work (prefix, wildcard, range,fuzzy etc)
     // you must use a rewritten query!
@@ -1714,8 +1724,10 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    ramDir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(ramDir, new IndexWriterConfig(
+    random = newRandom();
+    dir = newDirectory(random);
+    ramDir = newDirectory(random);
+    IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true)));
     for (int i = 0; i < texts.length; i++) {
       addDoc(writer, texts[i]);
@@ -1746,6 +1758,14 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     numHighlights = 0;
   }
 
+  @Override
+  protected void tearDown() throws Exception {
+    if (searcher != null) searcher.close();
+    reader.close();
+    dir.close();
+    ramDir.close();
+    super.tearDown();
+  }
   private void addDoc(IndexWriter writer, String text) throws IOException {
     Document d = new Document();
     Field f = new Field(FIELD_NAME, text, Field.Store.YES, Field.Index.ANALYZED);

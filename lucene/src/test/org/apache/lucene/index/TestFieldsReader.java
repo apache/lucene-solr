@@ -45,7 +45,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 public class TestFieldsReader extends LuceneTestCase {
-  private MockRAMDirectory dir = new MockRAMDirectory();
+  private MockRAMDirectory dir;
   private Document testDoc = new Document();
   private FieldInfos fieldInfos = null;
   private Random random;
@@ -62,6 +62,7 @@ public class TestFieldsReader extends LuceneTestCase {
     DocHelper.setupDoc(testDoc);
     fieldInfos.add(testDoc);
     random = newRandom();
+    dir = newDirectory(random);
     IndexWriterConfig conf = newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer());
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(false);
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundDocStore(false);
@@ -70,6 +71,11 @@ public class TestFieldsReader extends LuceneTestCase {
     writer.close();
   }
 
+  @Override
+  protected void tearDown() throws Exception {
+    dir.close();
+    super.tearDown();
+  }
   public void test() throws IOException {
     assertTrue(dir != null);
     assertTrue(fieldInfos != null);
@@ -157,6 +163,7 @@ public class TestFieldsReader extends LuceneTestCase {
       assertTrue("byte[" + i + "] is mismatched", bytes[i] == DocHelper.LAZY_FIELD_BINARY_BYTES[i]);
 
     }
+    reader.close();
   }
 
   public void testLatentFields() throws Exception {
@@ -226,6 +233,7 @@ public class TestFieldsReader extends LuceneTestCase {
       assertTrue("byte[" + i + "] is mismatched", bytes[i] == DocHelper.LAZY_FIELD_BINARY_BYTES[i]);
 
     }
+    reader.close();
   }
 
 
@@ -278,6 +286,7 @@ public class TestFieldsReader extends LuceneTestCase {
       count++;
     }
     assertTrue(count + " does not equal: " + 1, count == 1);
+    reader.close();
   }
 
   /**

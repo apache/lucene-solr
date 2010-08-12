@@ -398,7 +398,7 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
   public void testFarsi() throws Exception {
     
     /* build an index */
-    MockRAMDirectory farsiIndex = new MockRAMDirectory();
+    MockRAMDirectory farsiIndex = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, farsiIndex);
     Document doc = new Document();
     doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
@@ -438,7 +438,7 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
   public void testDanish() throws Exception {
     
     /* build an index */
-    MockRAMDirectory danishIndex = new MockRAMDirectory();
+    MockRAMDirectory danishIndex = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, danishIndex);
     // Danish collation orders the words below in the given order
     // (example taken from TestSort.testInternationalSort() ).

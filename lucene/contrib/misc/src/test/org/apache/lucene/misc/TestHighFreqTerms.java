@@ -17,6 +17,8 @@ package org.apache.lucene.misc;
  * limitations under the License.
  */
 
+import java.util.Random;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -36,17 +38,19 @@ public class TestHighFreqTerms extends LuceneTestCase {
   
   public void setUp() throws Exception {
   	super.setUp();
-    dir= new MockRAMDirectory();
-    writer = new IndexWriter(dir, new IndexWriterConfig(
+  	Random random = newRandom();
+    dir= newDirectory(random);
+    writer = new IndexWriter(dir, newIndexWriterConfig(random,
        TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false))
        .setMaxBufferedDocs(2));
     indexDocs(writer);
     reader = IndexReader.open(dir, true);
   }
   
-  public void tearDown()throws Exception{
-    super.tearDown();
+  public void tearDown() throws Exception{
     reader.close();
+    dir.close();
+    super.tearDown();
   }
 /******************** Tests for getHighFreqTerms **********************************/
   

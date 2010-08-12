@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.util.Random;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -307,8 +309,8 @@ public class TestSimpleExplanations extends TestExplanations {
   
   public void testTermQueryMultiSearcherExplain() throws Exception {
     // creating two directories for indices
-    Directory indexStoreA = new MockRAMDirectory();
-    Directory indexStoreB = new MockRAMDirectory();
+    Directory indexStoreA = newDirectory(random);
+    Directory indexStoreB = newDirectory(random);
 
     Document lDoc = new Document();
     lDoc.add(new Field("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
@@ -317,9 +319,9 @@ public class TestSimpleExplanations extends TestExplanations {
     Document lDoc3 = new Document();
     lDoc3.add(new Field("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
 
-    IndexWriter writerA = new IndexWriter(indexStoreA, new IndexWriterConfig(
+    IndexWriter writerA = new IndexWriter(indexStoreA, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer()));
-    IndexWriter writerB = new IndexWriter(indexStoreB, new IndexWriterConfig(
+    IndexWriter writerB = new IndexWriter(indexStoreB, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     writerA.addDocument(lDoc);
@@ -368,6 +370,8 @@ public class TestSimpleExplanations extends TestExplanations {
     assertTrue(exp, exp.indexOf("1=3") > -1);
     assertTrue(exp, exp.indexOf("2=3") > -1);
     mSearcher.close();
+    indexStoreA.close();
+    indexStoreB.close();
   }
   
 }

@@ -86,7 +86,7 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     int bits = Integer.parseInt(reader.readLine());
     int terms = (int) Math.pow(2, bits);
     
-    MockRAMDirectory dir = new MockRAMDirectory();
+    MockRAMDirectory dir = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(MockTokenizer.KEYWORD, false));
     
     Document doc = new Document();

@@ -25,15 +25,14 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestRollback extends LuceneTestCase {
 
   // LUCENE-2536
   public void testRollbackIntegrityWithBufferFlush() throws Exception {
-    Directory dir = new MockRAMDirectory();
     Random random = newRandom();
+    Directory dir = newDirectory(random);
     RandomIndexWriter rw = new RandomIndexWriter(random, dir);
     for (int i = 0; i < 5; i++) {
       Document doc = new Document();

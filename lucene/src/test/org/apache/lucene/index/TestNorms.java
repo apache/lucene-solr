@@ -76,7 +76,7 @@ public class TestNorms extends LuceneTestCase {
    */
   public void testNorms() throws IOException {
     Random random = newRandom();
-    Directory dir1 = new MockRAMDirectory();
+    Directory dir1 = newDirectory(random);
 
     norms = new ArrayList<Float>();
     modifiedNorms = new ArrayList<Float>();
@@ -93,13 +93,13 @@ public class TestNorms extends LuceneTestCase {
     modifiedNorms = new ArrayList<Float>();
     numDocNorms = 0;
     
-    Directory dir2 = new MockRAMDirectory();
+    Directory dir2 = newDirectory(random);
 
     createIndex(random, dir2);
     doTestNorms(random, dir2);
 
     // add index1 and index2 to a third index: index3
-    Directory dir3 = new MockRAMDirectory();
+    Directory dir3 = newDirectory(random);
 
     createIndex(random, dir3);
     IndexWriter iw = new IndexWriter(dir3, newIndexWriterConfig(random,

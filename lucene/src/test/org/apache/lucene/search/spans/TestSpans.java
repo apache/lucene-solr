@@ -27,7 +27,6 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
@@ -39,19 +38,22 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
+import java.util.Random;
 
 public class TestSpans extends LuceneTestCase {
   private IndexSearcher searcher;
   private IndexReader reader;
   private Directory directory;
-
+  private Random random;
+  
   public static final String field = "field";
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    directory = new MockRAMDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(newRandom(), directory);
+    random = newRandom();
+    directory = newDirectory(random);
+    RandomIndexWriter writer= new RandomIndexWriter(random, directory);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(new Field(field, docFields[i], Field.Store.YES, Field.Index.ANALYZED));
@@ -461,7 +463,7 @@ public class TestSpans extends LuceneTestCase {
 
   // LUCENE-1404
   public void testNPESpanQuery() throws Throwable {
-    final Directory dir = new MockRAMDirectory();
+    final Directory dir = newDirectory(random);
     final IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
 

@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -27,7 +28,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -49,7 +49,6 @@ import org.apache.lucene.spatial.tier.projections.CartesianTierPlotter;
 import org.apache.lucene.spatial.tier.projections.IProjector;
 import org.apache.lucene.spatial.tier.projections.SinusoidalProjector;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestCartesian extends LuceneTestCase {
@@ -71,14 +70,21 @@ public class TestCartesian extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    directory = new MockRAMDirectory();
+    Random random = newRandom();
+    directory = newDirectory(random);
 
-    IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     
     setUpPlotter( 2, 15);
     
     addData(writer);
     
+  }
+  
+  @Override
+  protected void tearDown() throws Exception {
+    directory.close();
+    super.tearDown();
   }
   
   
@@ -287,6 +293,7 @@ public class TestCartesian extends LuceneTestCase {
       assertTrue(geo_distance >= lastDistance);
       lastDistance = geo_distance;
     }
+    searcher.close();
   }
 
   public void testPoleFlipping() throws IOException, InvalidGeoException {
@@ -383,6 +390,7 @@ public class TestCartesian extends LuceneTestCase {
       assertTrue(geo_distance >= lastDistance);
       lastDistance = geo_distance;
     }
+    searcher.close();
   }
   
   public void testRange() throws IOException, InvalidGeoException {
@@ -477,6 +485,7 @@ public class TestCartesian extends LuceneTestCase {
         lastDistance = geo_distance;
       }
     }
+    searcher.close();
   }
   
   
@@ -570,5 +579,6 @@ public class TestCartesian extends LuceneTestCase {
 	      
       }
     }
+    searcher.close();
   }
 }

@@ -600,10 +600,10 @@ public class TestExternalCodecs extends LuceneTestCase {
   public void testPerFieldCodec() throws Exception {
     
     final int NUM_DOCS = 173;
-
-    Directory dir = new MockRAMDirectory();
+    Random random = newRandom();
+    Directory dir = newDirectory(random);
     IndexWriter w = new IndexWriter(dir,
-                                    new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setCodecProvider(new MyCodecs()));
+                                    newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setCodecProvider(new MyCodecs()));
 
     w.setMergeFactor(3);
     Document doc = new Document();

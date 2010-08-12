@@ -24,7 +24,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestTopScoreDocCollector extends LuceneTestCase {
@@ -37,9 +36,8 @@ public class TestTopScoreDocCollector extends LuceneTestCase {
   }
 
   public void testOutOfOrderCollection() throws Exception {
-
-    Directory dir = new MockRAMDirectory();
     Random random = newRandom();
+    Directory dir = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     for (int i = 0; i < 10; i++) {
       writer.addDocument(new Document());

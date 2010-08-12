@@ -39,7 +39,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
   
   public void testDeleteLeftoverFiles() throws IOException {
     Random random = newRandom();
-    MockRAMDirectory dir = new MockRAMDirectory();
+    MockRAMDirectory dir = newDirectory(random);
     dir.setPreventDoubleWrite(false);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer())

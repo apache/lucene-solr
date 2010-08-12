@@ -35,7 +35,6 @@ import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -166,8 +165,9 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   }
   
   public void testNormsClose() throws IOException { 
-    Directory dir1 = new MockRAMDirectory(); 
-    TestIndexReaderReopen.createIndex(newRandom(), dir1, false);
+    Random random = newRandom();
+    Directory dir1 = newDirectory(random); 
+    TestIndexReaderReopen.createIndex(random, dir1, false);
     SegmentReader reader1 = SegmentReader.getOnlySegmentReader(dir1);
     reader1.norms("field1");
     Norm r1norm = reader1.norms.get("field1");
@@ -182,8 +182,9 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   }
   
   public void testNormsRefCounting() throws IOException { 
-    Directory dir1 = new MockRAMDirectory(); 
-    TestIndexReaderReopen.createIndex(newRandom(), dir1, false);
+    Random random = newRandom();
+    Directory dir1 = newDirectory(random); 
+    TestIndexReaderReopen.createIndex(random, dir1, false);
     IndexReader reader1 = IndexReader.open(dir1, false);
         
     IndexReader reader2C = (IndexReader) reader1.clone();

@@ -48,7 +48,8 @@ public class TestSort extends AbstractSolrTestCase {
   }
 
   public void testSort() throws Exception {
-    MockRAMDirectory dir = new MockRAMDirectory();
+    Random random = newRandom();
+    MockRAMDirectory dir = newDirectory(random);
     Document smallDoc = new Document();
     // Field id = new Field("id","0", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);
     Field f = new Field("f","0", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);
@@ -179,6 +180,8 @@ public class TestSort extends AbstractSolrTestCase {
           assertEquals(id, collectedDocs.get(j).doc);
         }
       }
+      searcher.close();
+      dir.close();
     }
 
   }

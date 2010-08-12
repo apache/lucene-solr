@@ -38,8 +38,8 @@ public class TestIndexWriterMerging extends LuceneTestCase
     Random random = newRandom();
     int num=100;
 
-    Directory indexA = new MockRAMDirectory();
-    Directory indexB = new MockRAMDirectory();
+    Directory indexA = newDirectory(random);
+    Directory indexB = newDirectory(random);
 
     fillIndex(random, indexA, 0, num);
     boolean fail = verifyIndex(indexA, 0);
@@ -55,7 +55,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
       fail("Index b is invalid");
     }
 
-    Directory merged = new MockRAMDirectory();
+    Directory merged = newDirectory(random);
 
     IndexWriter writer = new IndexWriter(merged, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
@@ -68,6 +68,9 @@ public class TestIndexWriterMerging extends LuceneTestCase
     merged.close();
 
     assertFalse("The merged index is invalid", fail);
+    indexA.close();
+    indexB.close();
+    merged.close();
   }
 
   private boolean verifyIndex(Directory directory, int startAt) throws IOException

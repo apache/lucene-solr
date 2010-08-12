@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import java.util.Random;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
@@ -25,9 +27,12 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestNewestSegment extends LuceneTestCase {
   public void testNewestSegment() throws Exception {
-    MockRAMDirectory directory = new MockRAMDirectory();
+    Random random = newRandom();
+    MockRAMDirectory directory = newDirectory(random);
     Analyzer analyzer = new MockAnalyzer();
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     assertNull(writer.newestSegment());
+    writer.close();
+    directory.close();
   }
 }

@@ -27,17 +27,18 @@ import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Random;
 
 public class TestSegmentMerger extends LuceneTestCase {
   //The variables for the new merged segment
-  private Directory mergedDir = new MockRAMDirectory();
+  private Directory mergedDir;
   private String mergedSegment = "test";
   //First segment to be merged
-  private Directory merge1Dir = new MockRAMDirectory();
+  private Directory merge1Dir;
   private Document doc1 = new Document();
   private SegmentReader reader1 = null;
   //Second Segment to be merged
-  private Directory merge2Dir = new MockRAMDirectory();
+  private Directory merge2Dir;
   private Document doc2 = new Document();
   private SegmentReader reader2 = null;
   
@@ -49,12 +50,26 @@ public class TestSegmentMerger extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
+    Random random = newRandom();
+    mergedDir = newDirectory(random);
+    merge1Dir = newDirectory(random);
+    merge2Dir = newDirectory(random);
     DocHelper.setupDoc(doc1);
     SegmentInfo info1 = DocHelper.writeDoc(merge1Dir, doc1);
     DocHelper.setupDoc(doc2);
     SegmentInfo info2 = DocHelper.writeDoc(merge2Dir, doc2);
     reader1 = SegmentReader.get(true, info1, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
     reader2 = SegmentReader.get(true, info2, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);
+  }
+  
+  @Override
+  protected void tearDown() throws Exception {
+    reader1.close();
+    reader2.close();
+    mergedDir.close();
+    merge1Dir.close();
+    merge2Dir.close();
+    super.tearDown();
   }
 
   public void test() {
@@ -118,5 +133,6 @@ public class TestSegmentMerger extends LuceneTestCase {
     }
 
     TestSegmentReader.checkNorms(mergedReader);
+    mergedReader.close();
   }    
 }

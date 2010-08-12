@@ -17,13 +17,13 @@
 package org.apache.lucene.spatial.tier;
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.QueryWrapperFilter;
@@ -44,8 +44,9 @@ public class TestDistance extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    directory = new MockRAMDirectory();
-    writer = new IndexWriter(directory, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Random random = newRandom();
+    directory = newDirectory(random);
+    writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     addData(writer);
     
   }
@@ -53,6 +54,7 @@ public class TestDistance extends LuceneTestCase {
   @Override
   protected void tearDown() throws Exception {
     writer.close();
+    directory.close();
     super.tearDown();
   }
   
@@ -104,6 +106,7 @@ public class TestDistance extends LuceneTestCase {
     for(int i=0;i<readers.length;i++) {
       f.getDocIdSet(readers[i]);
     }
+    r.close();
   }
  
   /* these tests do not test anything, as no assertions:

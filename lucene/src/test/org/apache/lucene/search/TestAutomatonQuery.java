@@ -43,7 +43,7 @@ public class TestAutomatonQuery extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     Random random = newRandom();
-    directory = new MockRAMDirectory();
+    directory = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     Document doc = new Document();
     Field titleField = new Field("title", "some title", Field.Store.NO,

@@ -321,7 +321,7 @@ public class TestMultiFieldQueryParserWrapper extends LuceneTestCase {
 
   public void testStopWordSearching() throws Exception {
     Analyzer analyzer = new MockAnalyzer();
-    Directory ramDir = new MockRAMDirectory();
+    Directory ramDir = newDirectory(newRandom());
     IndexWriter iw = new IndexWriter(ramDir, analyzer, true,
         IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
@@ -338,6 +338,7 @@ public class TestMultiFieldQueryParserWrapper extends LuceneTestCase {
     ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
     is.close();
+    ramDir.close();
   }
 
   /**

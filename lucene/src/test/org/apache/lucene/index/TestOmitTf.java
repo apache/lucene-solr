@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -29,12 +30,18 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.search.*;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 
 
 public class TestOmitTf extends LuceneTestCase {
-    
+  private Random random;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    random = newRandom();
+  }
+  
   public static class SimpleSimilarity extends Similarity {
     @Override public float lengthNorm(String field, int numTerms) { return 1.0f; }
     @Override public float queryNorm(float sumOfSquaredWeights) { return 1.0f; }
@@ -59,9 +66,9 @@ public class TestOmitTf extends LuceneTestCase {
   // Tests whether the DocumentWriter correctly enable the
   // omitTermFreqAndPositions bit in the FieldInfo
   public void testOmitTermFreqAndPositions() throws Exception {
-    Directory ram = new MockRAMDirectory();
+    Directory ram = newDirectory(random);
     Analyzer analyzer = new MockAnalyzer();
-    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, analyzer));
+    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(random, TEST_VERSION_CURRENT, analyzer));
     Document d = new Document();
         
     // this field will have Tf
@@ -106,9 +113,9 @@ public class TestOmitTf extends LuceneTestCase {
   // Tests whether merging of docs that have different
   // omitTermFreqAndPositions for the same field works
   public void testMixedMerge() throws Exception {
-    Directory ram = new MockRAMDirectory();
+    Directory ram = newDirectory(random);
     Analyzer analyzer = new MockAnalyzer();
-    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(newRandom(),
+    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
     Document d = new Document();
@@ -159,9 +166,9 @@ public class TestOmitTf extends LuceneTestCase {
   // field X, then adding docs that do omitTermFreqAndPositions for that same
   // field, 
   public void testMixedRAM() throws Exception {
-    Directory ram = new MockRAMDirectory();
+    Directory ram = newDirectory(random);
     Analyzer analyzer = new MockAnalyzer();
-    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(newRandom(),
+    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(10));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
     Document d = new Document();
@@ -207,9 +214,9 @@ public class TestOmitTf extends LuceneTestCase {
 
   // Verifies no *.prx exists when all fields omit term freq:
   public void testNoPrxFile() throws Throwable {
-    Directory ram = new MockRAMDirectory();
+    Directory ram = newDirectory(random);
     Analyzer analyzer = new MockAnalyzer();
-    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(newRandom(),
+    IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(3));
     LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
     lmp.setMergeFactor(2);
@@ -240,9 +247,9 @@ public class TestOmitTf extends LuceneTestCase {
  
   // Test scores with one field with Term Freqs and one without, otherwise with equal content 
   public void testBasic() throws Exception {
-    Directory dir = new MockRAMDirectory();  
+    Directory dir = newDirectory(random);  
     Analyzer analyzer = new MockAnalyzer();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(),
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(2)
         .setSimilarity(new SimpleSimilarity()));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);

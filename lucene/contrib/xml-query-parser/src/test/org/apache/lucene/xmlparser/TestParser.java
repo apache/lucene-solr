@@ -4,6 +4,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -58,12 +59,10 @@ public class TestParser extends LuceneTestCase {
 		//initialize the parser
 		builder=new CorePlusExtensionsParser("contents",analyzer);
 		
-		//initialize the index (done once, then cached in static data for use with ALL tests)		
-		if(dir==null)
-		{
+		  Random random = newRandom();
 			BufferedReader d = new BufferedReader(new InputStreamReader(TestParser.class.getResourceAsStream("reuters21578.txt"))); 
-			dir=new MockRAMDirectory();
-			IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(Version.LUCENE_24, analyzer));
+			dir=newDirectory(random);
+			IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, Version.LUCENE_24, analyzer));
 			String line = d.readLine();		
 			while(line!=null)
 			{
@@ -81,7 +80,6 @@ public class TestParser extends LuceneTestCase {
 			}			
 			d.close();
       writer.close();
-		}
 		reader=IndexReader.open(dir, true);
 		searcher=new IndexSearcher(reader);
 		
@@ -94,7 +92,7 @@ public class TestParser extends LuceneTestCase {
 	protected void tearDown() throws Exception {
 		reader.close();
 		searcher.close();
-//		dir.close();
+		dir.close();
 		super.tearDown();
 	}
 	public void testSimpleXML() throws ParserException, IOException

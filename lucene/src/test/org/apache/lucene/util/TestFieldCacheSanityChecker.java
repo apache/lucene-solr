@@ -29,24 +29,25 @@ import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.apache.lucene.util.FieldCacheSanityChecker.InsanityType;
 
 import java.io.IOException;
+import java.util.Random;
 
 public class TestFieldCacheSanityChecker extends LuceneTestCase {
 
   protected IndexReader readerA;
   protected IndexReader readerB;
   protected IndexReader readerX;
-
+  protected MockRAMDirectory dirA, dirB;
   private static final int NUM_DOCS = 1000;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
+    Random random = newRandom();
+    dirA = newDirectory(random);
+    dirB = newDirectory(random);
 
-    MockRAMDirectory dirA = new MockRAMDirectory();
-    MockRAMDirectory dirB = new MockRAMDirectory();
-
-    IndexWriter wA = new IndexWriter(dirA, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
-    IndexWriter wB = new IndexWriter(dirB, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter wA = new IndexWriter(dirA, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter wB = new IndexWriter(dirB, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;
@@ -80,6 +81,8 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
     readerA.close();
     readerB.close();
     readerX.close();
+    dirA.close();
+    dirB.close();
     super.tearDown();
   }
 

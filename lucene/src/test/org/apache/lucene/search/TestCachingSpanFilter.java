@@ -18,25 +18,28 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Random;
 
-import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestCachingSpanFilter extends LuceneTestCase {
 
   public void testEnforceDeletions() throws Exception {
-    Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
-    IndexReader reader = writer.getReader();
+    Random random = newRandom();
+    Directory dir = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    // NOTE: cannot use writer.getReader because RIW (on
+    // flipping a coin) may give us a newly opened reader,
+    // but we use .reopen on this reader below and expect to
+    // (must) get an NRT reader:
+    IndexReader reader = writer.w.getReader();
     IndexSearcher searcher = new IndexSearcher(reader);
 
     // add a doc, refresh the reader, and check that its there
@@ -110,6 +113,9 @@ public class TestCachingSpanFilter extends LuceneTestCase {
 
     docs = searcher.search(constantScore, 1);
     assertEquals("[just filter] Should *not* find a hit...", 0, docs.totalHits);
+    writer.close();
+    reader.close();
+    dir.close();
   }
 
   private static IndexReader refreshReader(IndexReader reader) throws IOException {

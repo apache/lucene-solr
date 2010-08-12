@@ -28,7 +28,7 @@ import org.apache.lucene.document.*;
 public class TestValueSource extends LuceneTestCase {
 
   public void testMultiValueSource() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(newRandom());
     IndexWriter w = new IndexWriter(dir, new MockAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     Field f = new Field("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);

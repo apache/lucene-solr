@@ -99,6 +99,7 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
         Document doc = r.document(r.maxDoc() - 1);
         Field sid = doc.getField(SNAPSHOTS_ID);
         if (sid == null) {
+          writer.close();
           throw new IllegalStateException("directory is not a valid snapshots store!");
         }
         doc.removeField(SNAPSHOTS_ID);
@@ -106,6 +107,7 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
           registerSnapshotInfo(f.name(), f.stringValue(), null);
         }
       } else if (numDocs != 0) {
+        writer.close();
         throw new IllegalStateException(
             "should be at most 1 document in the snapshots directory: " + numDocs);
       }

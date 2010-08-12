@@ -23,6 +23,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -73,8 +74,9 @@ public class TestNoDeletionPolicy extends LuceneTestCaseJ4 {
 
   @Test
   public void testAllCommitsRemain() throws Exception {
-    Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(),
+    Random random = newRandom();
+    Directory dir = newDirectory(random);
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
     for (int i = 0; i < 10; i++) {
@@ -85,6 +87,7 @@ public class TestNoDeletionPolicy extends LuceneTestCaseJ4 {
       assertEquals("wrong number of commits !", i + 1, IndexReader.listCommits(dir).size());
     }
     writer.close();
+    dir.close();
   }
   
 }

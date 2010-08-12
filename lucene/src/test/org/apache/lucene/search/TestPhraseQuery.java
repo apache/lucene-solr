@@ -55,7 +55,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   public void setUp() throws Exception {
     super.setUp();
     random = newRandom();
-    directory = new MockRAMDirectory();
+    directory = newDirectory(random);
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
@@ -213,7 +213,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testPhraseQueryWithStopAnalyzer() throws Exception {
-    MockRAMDirectory directory = new MockRAMDirectory();
+    MockRAMDirectory directory = newDirectory(random);
     Analyzer stopAnalyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, false);
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig(random, Version.LUCENE_24, stopAnalyzer));
@@ -249,7 +249,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testPhraseQueryInConjunctionScorer() throws Exception {
-    MockRAMDirectory directory = new MockRAMDirectory();
+    MockRAMDirectory directory = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     
     Document doc = new Document();
@@ -336,7 +336,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testSlopScoring() throws IOException {
-    Directory directory = new MockRAMDirectory();
+    Directory directory = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
 
     Document doc = new Document();
@@ -597,7 +597,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
 
   public void testRandomPhrases() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     Analyzer analyzer = new MockAnalyzer();
 
     RandomIndexWriter w  = new RandomIndexWriter(random, dir, analyzer);

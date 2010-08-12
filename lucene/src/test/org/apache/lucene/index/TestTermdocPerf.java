@@ -57,8 +57,7 @@ class RepeatingTokenStream extends TokenStream {
 
 public class TestTermdocPerf extends LuceneTestCase {
 
-  void addDocs(Directory dir, final int ndocs, String field, final String val, final int maxTF, final float percentDocs) throws IOException {
-    final Random random = newRandom();
+  void addDocs(final Random random, Directory dir, final int ndocs, String field, final String val, final int maxTF, final float percentDocs) throws IOException {
     final RepeatingTokenStream ts = new RepeatingTokenStream(val);
 
     Analyzer analyzer = new Analyzer() {
@@ -87,10 +86,11 @@ public class TestTermdocPerf extends LuceneTestCase {
 
 
   public int doTest(int iter, int ndocs, int maxTF, float percentDocs) throws IOException {
-    Directory dir = new MockRAMDirectory();
+    Random random = newRandom();
+    Directory dir = newDirectory(random);
 
     long start = System.currentTimeMillis();
-    addDocs(dir, ndocs, "foo", "val", maxTF, percentDocs);
+    addDocs(random, dir, ndocs, "foo", "val", maxTF, percentDocs);
     long end = System.currentTimeMillis();
     if (VERBOSE) System.out.println("milliseconds for creation of " + ndocs + " docs = " + (end-start));
 

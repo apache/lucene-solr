@@ -19,6 +19,7 @@ package org.apache.lucene.search.spell;
 
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -39,17 +40,19 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestLuceneDictionary extends LuceneTestCase {
 
-  private Directory store = new MockRAMDirectory();
+  private Directory store;
 
   private IndexReader indexReader = null;
-
+  private Random random;
   private LuceneDictionary ld;
   private Iterator<String> it;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    IndexWriter writer = new IndexWriter(store, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
+    random = newRandom();
+    store = newDirectory(random);
+    IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
 
     Document doc;
 
@@ -77,6 +80,14 @@ public class TestLuceneDictionary extends LuceneTestCase {
     writer.close();
   }
 
+  @Override
+  protected void tearDown() throws Exception {
+    if (indexReader != null)
+      indexReader.close();
+    store.close();
+    super.tearDown();
+  }
+  
   public void testFieldNonExistent() throws IOException {
     try {
       indexReader = IndexReader.open(store, true);
@@ -187,7 +198,8 @@ public class TestLuceneDictionary extends LuceneTestCase {
   }
   
   public void testSpellchecker() throws IOException {
-    SpellChecker sc = new SpellChecker(new MockRAMDirectory());
+    Directory dir = newDirectory(random);
+    SpellChecker sc = new SpellChecker(dir);
     indexReader = IndexReader.open(store, true);
     sc.indexDictionary(new LuceneDictionary(indexReader, "contents"));
     String[] suggestions = sc.suggestSimilar("Tam", 1);
@@ -197,6 +209,8 @@ public class TestLuceneDictionary extends LuceneTestCase {
     assertEquals(1, suggestions.length);
     assertEquals("Jerry", suggestions[0]);
     indexReader.close();
+    sc.close();
+    dir.close();
   }
   
 }

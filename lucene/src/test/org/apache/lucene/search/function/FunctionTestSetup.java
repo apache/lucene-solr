@@ -25,7 +25,6 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.apache.lucene.util._TestUtil;
 import java.util.Random;
@@ -85,9 +84,10 @@ public class FunctionTestSetup extends LuceneTestCaseJ4 {
   @Override
   @After
   public void tearDown() throws Exception {
-    super.tearDown();
+    dir.close();
     dir = null;
     anlzr = null;
+    super.tearDown();
   }
 
   @Override
@@ -95,9 +95,9 @@ public class FunctionTestSetup extends LuceneTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     // prepare a small index with just a few documents.  
-    dir = new MockRAMDirectory();
-    anlzr = new MockAnalyzer();
     Random r = newRandom();
+    dir = newDirectory(r);
+    anlzr = new MockAnalyzer();
     IndexWriterConfig iwc = newIndexWriterConfig(r, TEST_VERSION_CURRENT, anlzr);
     if (doMultiSegment) {
       iwc.setMaxBufferedDocs(_TestUtil.nextInt(r, 2, 7));

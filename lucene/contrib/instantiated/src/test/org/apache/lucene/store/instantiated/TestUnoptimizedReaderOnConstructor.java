@@ -16,6 +16,8 @@ package org.apache.lucene.store.instantiated;
  */
 
 import java.io.IOException;
+import java.util.Random;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -33,7 +35,8 @@ import org.apache.lucene.document.Field;
 public class TestUnoptimizedReaderOnConstructor extends LuceneTestCase {
 
   public void test() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Random random = newRandom();
+    Directory dir = newDirectory(random);
     IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     addDocument(iw, "Hello, world!");
     addDocument(iw, "All work and no play makes jack a dull boy");
@@ -59,7 +62,8 @@ public class TestUnoptimizedReaderOnConstructor extends LuceneTestCase {
     }
 
     // todo some assertations.
-
+    unoptimizedReader.close();
+    dir.close();
   }
 
   private void addDocument(IndexWriter iw, String text) throws IOException {

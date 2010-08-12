@@ -55,7 +55,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
             "X       4 5 6"
         };
 
-        index = new MockRAMDirectory();
+        index = newDirectory(rnd);
         RandomIndexWriter w = new RandomIndexWriter(rnd, index);
 
         for (int i = 0; i < data.length; i++) {

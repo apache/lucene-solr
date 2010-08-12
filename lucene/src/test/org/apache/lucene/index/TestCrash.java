@@ -30,7 +30,7 @@ import org.apache.lucene.document.Field;
 public class TestCrash extends LuceneTestCase {
 
   private IndexWriter initIndex(Random random, boolean initialCommit) throws IOException {
-    return initIndex(random, new MockRAMDirectory(), initialCommit);
+    return initIndex(random, newDirectory(random), initialCommit);
   }
 
   private IndexWriter initIndex(Random random, MockRAMDirectory dir, boolean initialCommit) throws IOException {
@@ -70,6 +70,8 @@ public class TestCrash extends LuceneTestCase {
     crash(writer);
     IndexReader reader = IndexReader.open(dir, false);
     assertTrue(reader.numDocs() < 157);
+    reader.close();
+    dir.close();
   }
 
   public void testWriterAfterCrash() throws IOException {
@@ -86,6 +88,8 @@ public class TestCrash extends LuceneTestCase {
 
     IndexReader reader = IndexReader.open(dir, false);
     assertTrue(reader.numDocs() < 314);
+    reader.close();
+    dir.close();
   }
 
   public void testCrashAfterReopen() throws IOException {
@@ -108,6 +112,8 @@ public class TestCrash extends LuceneTestCase {
 
     IndexReader reader = IndexReader.open(dir, false);
     assertTrue(reader.numDocs() >= 157);
+    reader.close();
+    dir.close();
   }
 
   public void testCrashAfterClose() throws IOException {
@@ -127,6 +133,8 @@ public class TestCrash extends LuceneTestCase {
 
     IndexReader reader = IndexReader.open(dir, false);
     assertEquals(157, reader.numDocs());
+    reader.close();
+    dir.close();
   }
 
   public void testCrashAfterCloseNoWait() throws IOException {
@@ -146,6 +154,8 @@ public class TestCrash extends LuceneTestCase {
     */
     IndexReader reader = IndexReader.open(dir, false);
     assertEquals(157, reader.numDocs());
+    reader.close();
+    dir.close();
   }
 
   public void testCrashReaderDeletes() throws IOException {
@@ -167,6 +177,8 @@ public class TestCrash extends LuceneTestCase {
     */
     reader = IndexReader.open(dir, false);
     assertEquals(157, reader.numDocs());
+    reader.close();
+    dir.close();
   }
 
   public void testCrashReaderDeletesAfterClose() throws IOException {
@@ -189,5 +201,7 @@ public class TestCrash extends LuceneTestCase {
     */
     reader = IndexReader.open(dir, false);
     assertEquals(156, reader.numDocs());
+    reader.close();
+    dir.close();
   }
 }

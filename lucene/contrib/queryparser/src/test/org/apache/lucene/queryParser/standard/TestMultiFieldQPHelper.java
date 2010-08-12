@@ -20,6 +20,7 @@ package org.apache.lucene.queryParser.standard;
 import java.io.Reader;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
@@ -319,8 +320,9 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
 
   public void testStopWordSearching() throws Exception {
     Analyzer analyzer = new MockAnalyzer();
-    Directory ramDir = new MockRAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    Random random = newRandom();
+    Directory ramDir = newDirectory(random);
+    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
     doc.add(new Field("body", "blah the footest blah", Field.Store.NO,
         Field.Index.ANALYZED));
@@ -337,6 +339,7 @@ public class TestMultiFieldQPHelper extends LuceneTestCase {
     ScoreDoc[] hits = is.search(q, null, 1000).scoreDocs;
     assertEquals(1, hits.length);
     is.close();
+    ramDir.close();
   }
 
   /**

@@ -30,6 +30,7 @@ import org.apache.lucene.store.MockRAMDirectory;
 
 import java.io.IOException;
 import java.util.LinkedList;
+import java.util.Random;
 
 /**
  * This class tests PhrasePrefixQuery class.
@@ -43,8 +44,9 @@ public class TestPhrasePrefixQuery extends LuceneTestCase {
      *
      */
   public void testPhrasePrefix() throws IOException {
-    MockRAMDirectory indexStore = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore);
+    Random random = newRandom();
+    MockRAMDirectory indexStore = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     Document doc1 = new Document();
     Document doc2 = new Document();
     Document doc3 = new Document();

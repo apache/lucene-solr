@@ -281,8 +281,15 @@ public class MockRAMDirectory extends RAMDirectory {
       // super() does not throw IOException currently:
       throw new RuntimeException("MockRAMDirectory: cannot close: there are still open files: " + openFiles);
     }
+    open = false;
   }
 
+  boolean open = true;
+  
+  public synchronized boolean isOpen() {
+    return open;
+  }
+  
   /**
    * Objects that represent fail-able conditions. Objects of a derived
    * class are created and registered with the mock directory. After

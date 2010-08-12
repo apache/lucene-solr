@@ -139,7 +139,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
   */
   public void testThreadedOptimize() throws Exception {
     Random random = newRandom();
-    Directory directory = new MockRAMDirectory();
+    Directory directory = newDirectory(random);
     runTest(random, directory, new SerialMergeScheduler());
     runTest(random, directory, new ConcurrentMergeScheduler());
     directory.close();

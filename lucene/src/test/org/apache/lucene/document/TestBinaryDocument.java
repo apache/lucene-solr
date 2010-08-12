@@ -1,5 +1,7 @@
 package org.apache.lucene.document;
 
+import java.util.Random;
+
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.index.IndexReader;
@@ -55,8 +57,9 @@ public class TestBinaryDocument extends LuceneTestCase {
     assertEquals(2, doc.fields.size());
     
     /** add the doc to a ram index */
-    MockRAMDirectory dir = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
+    Random random = newRandom();
+    MockRAMDirectory dir = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.addDocument(doc);
     
     /** open a reader and fetch the document */ 
@@ -94,8 +97,9 @@ public class TestBinaryDocument extends LuceneTestCase {
     doc.add(stringFldCompressed);
     
     /** add the doc to a ram index */
-    MockRAMDirectory dir = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
+    Random random = newRandom();
+    MockRAMDirectory dir = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.addDocument(doc);
     
     /** open a reader and fetch the document */ 

@@ -36,7 +36,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -54,7 +53,7 @@ public class TestSpellChecker extends LuceneTestCase {
     super.setUp();
     
     //create a user index
-    userindex = new MockRAMDirectory();
+    userindex = newDirectory(random);
     IndexWriter writer = new IndexWriter(userindex, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
 
@@ -67,8 +66,17 @@ public class TestSpellChecker extends LuceneTestCase {
     writer.close();
     searchers = Collections.synchronizedList(new ArrayList<IndexSearcher>());
     // create the spellChecker
-    spellindex = new MockRAMDirectory();
+    spellindex = newDirectory(random);
     spellChecker = new SpellCheckerMock(spellindex);
+  }
+  
+  @Override
+  protected void tearDown() throws Exception {
+    userindex.close();
+    if (!spellChecker.isClosed())
+      spellChecker.close();
+    spellindex.close();
+    super.tearDown();
   }
 
 
@@ -99,7 +107,7 @@ public class TestSpellChecker extends LuceneTestCase {
     spellChecker.setAccuracy(0.5f);
     checkCommonSuggestions(r);
     checkNGramSuggestions();
-    
+    r.close();
   }
 
   private void checkCommonSuggestions(IndexReader r) throws IOException {
@@ -260,6 +268,7 @@ public class TestSpellChecker extends LuceneTestCase {
     }
     assertEquals(4, searchers.size());
     assertSearchersClosed();
+    r.close();
   }
   
   /*
@@ -311,7 +320,7 @@ public class TestSpellChecker extends LuceneTestCase {
     // 2. and 3. during addwords
     assertEquals(iterations + 4, searchers.size());
     assertSearchersClosed();
-    
+    r.close();
   }
   
   private void assertLastSearcherOpen(int numSearchers) {

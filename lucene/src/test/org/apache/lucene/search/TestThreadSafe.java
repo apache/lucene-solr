@@ -18,7 +18,6 @@ package org.apache.lucene.search;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -33,10 +32,8 @@ import java.io.IOException;
 public class TestThreadSafe extends LuceneTestCase {
   Random r;
   Directory dir1;
-  Directory dir2;
 
   IndexReader ir1;
-  IndexReader ir2;
 
   String failure=null;
 
@@ -142,7 +139,7 @@ public class TestThreadSafe extends LuceneTestCase {
 
   public void testLazyLoadThreadSafety() throws Exception{
     r = newRandom();
-    dir1 = new MockRAMDirectory();
+    dir1 = newDirectory(r);
     // test w/ field sizes bigger than the buffer of an index input
     buildDir(dir1, 15, 5, 2000);
 
@@ -151,7 +148,9 @@ public class TestThreadSafe extends LuceneTestCase {
     for (int i = 0; i < num; i++) {
       ir1 = IndexReader.open(dir1, false);
       doTest(10,100);
+      ir1.close();
     }
+    dir1.close();
   }
 
 }

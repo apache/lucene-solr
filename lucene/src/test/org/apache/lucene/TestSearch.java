@@ -18,6 +18,7 @@ package org.apache.lucene;
  */
 
 import java.util.GregorianCalendar;
+import java.util.Random;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
@@ -50,9 +51,10 @@ public class TestSearch extends LuceneTestCase {
      *        single-file formats, even if the results are wrong.
      */
     public void testSearch() throws Exception {
+      Random random = newRandom();
       StringWriter sw = new StringWriter();
       PrintWriter pw = new PrintWriter(sw, true);
-      doTestSearch(pw, false);
+      doTestSearch(random, pw, false);
       pw.close();
       sw.close();
       String multiFileOutput = sw.getBuffer().toString();
@@ -60,7 +62,7 @@ public class TestSearch extends LuceneTestCase {
 
       sw = new StringWriter();
       pw = new PrintWriter(sw, true);
-      doTestSearch(pw, true);
+      doTestSearch(random, pw, true);
       pw.close();
       sw.close();
       String singleFileOutput = sw.getBuffer().toString();
@@ -69,11 +71,11 @@ public class TestSearch extends LuceneTestCase {
     }
 
 
-    private void doTestSearch(PrintWriter out, boolean useCompoundFile)
+    private void doTestSearch(Random random, PrintWriter out, boolean useCompoundFile)
     throws Exception {
-      Directory directory = new MockRAMDirectory();
+      Directory directory = newDirectory(random);
       Analyzer analyzer = new MockAnalyzer();
-      IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
+      IndexWriterConfig conf = newIndexWriterConfig(random, TEST_VERSION_CURRENT, analyzer);
       LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFile);
       lmp.setUseCompoundDocStore(useCompoundFile);
@@ -129,6 +131,7 @@ public class TestSearch extends LuceneTestCase {
         }
       }
       searcher.close();
+      directory.close();
   }
 
   static long Time(int year, int month, int day) {

@@ -59,7 +59,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
     super.setUp();
     random = newRandom();
     // create test index
-    mDirectory = new MockRAMDirectory();
+    mDirectory = newDirectory(random);
     final RandomIndexWriter writer = new RandomIndexWriter(random,
         mDirectory, new MockAnalyzer(MockTokenizer.SIMPLE, true,
                 MockTokenFilter.ENGLISH_STOPSET, true));

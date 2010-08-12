@@ -112,8 +112,8 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    directory = new MockRAMDirectory();
     Random random = newRandom();
+    directory = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig(random, TEST_VERSION_CURRENT, new PayloadAnalyzer())
         .setSimilarity(similarity));

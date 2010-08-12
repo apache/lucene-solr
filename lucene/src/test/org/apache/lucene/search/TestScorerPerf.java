@@ -36,21 +36,22 @@ import org.apache.lucene.document.Field;
  */
 
 public class TestScorerPerf extends LuceneTestCase {
-  Random r;
+  Random r = newRandom();
   boolean validate = true;  // set to false when doing performance testing
 
   BitSet[] sets;
   Term[] terms;
   IndexSearcher s;
+  Directory d;
 
   public void createDummySearcher() throws Exception {
       // Create a dummy index with nothing in it.
     // This could possibly fail if Lucene starts checking for docid ranges...
-    MockRAMDirectory rd = new MockRAMDirectory();
-    IndexWriter iw = new IndexWriter(rd, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    d = newDirectory(r);
+    IndexWriter iw = new IndexWriter(d, newIndexWriterConfig(r, TEST_VERSION_CURRENT, new MockAnalyzer()));
     iw.addDocument(new Document());
     iw.close();
-    s = new IndexSearcher(rd, true);
+    s = new IndexSearcher(d, true);
   }
 
   public void createRandomTerms(int nDocs, int nTerms, double power, Directory dir) throws Exception {
@@ -62,7 +63,7 @@ public class TestScorerPerf extends LuceneTestCase {
       terms[i] = new Term("f",Character.toString((char)('A'+i)));
     }
 
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(r, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
     for (int i=0; i<nDocs; i++) {
       Document d = new Document();
       for (int j=0; j<nTerms; j++) {
@@ -315,13 +316,13 @@ public class TestScorerPerf extends LuceneTestCase {
 
   public void testConjunctions() throws Exception {
     // test many small sets... the bugs will be found on boundary conditions
-    r = newRandom();
     createDummySearcher();
     validate=true;
     sets=randBitSets(1000 * RANDOM_MULTIPLIER, 10 * RANDOM_MULTIPLIER);
     doConjunctions(10000 * RANDOM_MULTIPLIER, 5 * RANDOM_MULTIPLIER);
     doNestedConjunctions(10000 * RANDOM_MULTIPLIER, 3 * RANDOM_MULTIPLIER, 3 * RANDOM_MULTIPLIER);
     s.close();
+    d.close();
   }
 
   /***

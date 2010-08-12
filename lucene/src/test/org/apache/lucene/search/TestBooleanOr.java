@@ -137,9 +137,10 @@ public class TestBooleanOr extends LuceneTestCase {
     super.setUp();
 
     //
-    dir = new MockRAMDirectory();
-
     Random random = newRandom();
+    dir = newDirectory(random);
+
+
     //
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
 

@@ -8,6 +8,7 @@ import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Collections;
+import java.util.Random;
 /*
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -26,9 +27,9 @@ import java.util.Collections;
 public class TestTermVectorAccessor extends LuceneTestCase {
 
   public void test() throws Exception {
-
-    Directory dir = new MockRAMDirectory();
-    IndexWriter iw = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Random random = newRandom();
+    Directory dir = newDirectory(random);
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     Document doc;
 

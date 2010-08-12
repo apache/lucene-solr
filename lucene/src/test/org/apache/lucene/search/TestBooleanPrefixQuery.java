@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.util.Random;
+
 import org.apache.lucene.util.LuceneTestCase;
 import junit.framework.Test;
 import junit.framework.TestSuite;
@@ -65,7 +67,8 @@ public class TestBooleanPrefixQuery extends LuceneTestCase {
   }
 
   public void testMethod() throws Exception {
-    MockRAMDirectory directory = new MockRAMDirectory();
+    Random random = newRandom();
+    MockRAMDirectory directory = newDirectory(random);
 
     String[] categories = new String[]{"food",
                                        "foodanddrink",
@@ -75,7 +78,7 @@ public class TestBooleanPrefixQuery extends LuceneTestCase {
     Query rw1 = null;
     Query rw2 = null;
     IndexReader reader = null;
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     for (int i = 0; i < categories.length; i++) {
       Document doc = new Document();
       doc.add(new Field("category", categories[i], Field.Store.YES, Field.Index.NOT_ANALYZED));

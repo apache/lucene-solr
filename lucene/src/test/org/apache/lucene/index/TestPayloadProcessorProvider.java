@@ -126,7 +126,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
   private void populateDirs(Random random, Directory[] dirs, boolean multipleCommits)
       throws IOException {
     for (int i = 0; i < dirs.length; i++) {
-      dirs[i] = new MockRAMDirectory();
+      dirs[i] = newDirectory(random);
       populateDocs(random, dirs[i], multipleCommits);
       verifyPayloadExists(dirs[i], "p", new BytesRef("p1"), NUM_DOCS);
       verifyPayloadExists(dirs[i], "p", new BytesRef("p2"), NUM_DOCS);
@@ -179,7 +179,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
     Directory[] dirs = new Directory[2];
     populateDirs(random, dirs, multipleCommits);
 
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     if (!addToEmptyIndex) {
       populateDocs(random, dir, multipleCommits);
       verifyPayloadExists(dir, "p", new BytesRef("p1"), NUM_DOCS);
@@ -212,6 +212,9 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
     numExpectedPayloads = NUM_DOCS * dirs.length
         + (addToEmptyIndex ? 0 : NUM_DOCS);
     verifyPayloadExists(dir, "p", new BytesRef("p2"), numExpectedPayloads);
+    for (Directory d : dirs)
+      d.close();
+    dir.close();
   }
 
   @Test
@@ -237,7 +240,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
   @Test
   public void testRegularMerges() throws Exception {
     Random random = newRandom();
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     populateDocs(random, dir, true);
     verifyPayloadExists(dir, "p", new BytesRef("p1"), NUM_DOCS);
     verifyPayloadExists(dir, "p", new BytesRef("p2"), NUM_DOCS);
@@ -253,6 +256,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
 
     verifyPayloadExists(dir, "p", new BytesRef("p1"), 0);
     verifyPayloadExists(dir, "p", new BytesRef("p2"), NUM_DOCS);
+    dir.close();
   }
 
 }

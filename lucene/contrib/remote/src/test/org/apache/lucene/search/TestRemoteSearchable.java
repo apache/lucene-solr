@@ -20,25 +20,29 @@ package org.apache.lucene.search;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.MockRAMDirectory;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
 import java.util.Collections;
+import java.util.Random;
 import java.util.Set;
 import java.util.HashSet;
 
 public class TestRemoteSearchable extends RemoteTestCaseJ4 {
-
+  private static MockRAMDirectory indexStore;
+  private static Searchable local;
+  
   @BeforeClass
   public static void beforeClass() throws Exception {
     // construct an index
-    MockRAMDirectory indexStore = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
+    Random random = newStaticRandom(TestRemoteSearchable.class);
+    indexStore = newDirectory(random);
+    IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     doc.add(new Field("test", "test text", Field.Store.YES, Field.Index.ANALYZED));
@@ -46,10 +50,17 @@ public class TestRemoteSearchable extends RemoteTestCaseJ4 {
     writer.addDocument(doc);
     writer.optimize();
     writer.close();
-    Searchable local = new IndexSearcher(indexStore, true);
+    local = new IndexSearcher(indexStore, true);
     startServer(local);
   }
-
+  
+  @AfterClass
+  public static void afterClass() throws Exception {
+    local.close();
+    indexStore.close();
+    indexStore = null;
+  }
+  
   private static void search(Query query) throws Exception {
     // try to search the published index
     Searchable[] searchables = { lookupRemote() };

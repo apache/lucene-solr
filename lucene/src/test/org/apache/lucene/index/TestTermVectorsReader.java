@@ -22,6 +22,7 @@ import java.io.Reader;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Random;
 import java.util.SortedSet;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -43,7 +44,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   private String[] testTerms = {"this", "is", "a", "test"};
   private int[][] positions = new int[testTerms.length][];
   private TermVectorOffsetInfo[][] offsets = new TermVectorOffsetInfo[testTerms.length][];
-  private MockRAMDirectory dir = new MockRAMDirectory();
+  private MockRAMDirectory dir;
   private String seg;
   private FieldInfos fieldInfos = new FieldInfos();
   private static int TERM_FREQ = 3;
@@ -93,7 +94,9 @@ public class TestTermVectorsReader extends LuceneTestCase {
     }
     Arrays.sort(tokens);
 
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new MyAnalyzer()).setMaxBufferedDocs(-1));
+    Random random = newRandom();
+    dir = newDirectory(random);
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MyAnalyzer()).setMaxBufferedDocs(-1));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false);
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(10);
@@ -121,6 +124,12 @@ public class TestTermVectorsReader extends LuceneTestCase {
     writer.close();
 
     fieldInfos = new FieldInfos(dir, IndexFileNames.segmentFileName(seg, "", IndexFileNames.FIELD_INFOS_EXTENSION));
+  }
+  
+  @Override
+  protected void tearDown() throws Exception {
+    dir.close();
+    super.tearDown();
   }
 
   private class MyTokenStream extends TokenStream {
@@ -182,6 +191,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
         assertTrue(term.equals(testTerms[i]));
       }
     }
+    reader.close();
   }
 
   public void testPositionReader() throws IOException {
@@ -224,6 +234,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
       //System.out.println("Term: " + term);
       assertTrue(term.equals(testTerms[i]));
     }
+    reader.close();
   }
 
   public void testOffsetReader() throws IOException {
@@ -252,6 +263,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
         assertTrue(termVectorOffsetInfo.equals(offsets[i][j]));
       }
     }
+    reader.close();
   }
 
   public void testMapper() throws IOException {
@@ -366,37 +378,45 @@ public class TestTermVectorsReader extends LuceneTestCase {
     assertEquals(0, docNumAwareMapper.getDocumentNumber());
 
     ir.close();
-
+    reader.close();
   }
 
 
   /**
    * Make sure exceptions and bad params are handled appropriately
    */
-  public void testBadParams() {
+  public void testBadParams() throws IOException {
+    TermVectorsReader reader = null;
     try {
-      TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
+      reader = new TermVectorsReader(dir, seg, fieldInfos);
       //Bad document number, good field number
       reader.get(50, testFields[0]);
       fail();
     } catch (IOException e) {
       // expected exception
+    } finally {
+      reader.close();
     }
     try {
-      TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
+      reader = new TermVectorsReader(dir, seg, fieldInfos);
       //Bad document number, no field
       reader.get(50);
       fail();
     } catch (IOException e) {
       // expected exception
+    } finally {
+      reader.close();
     }
     try {
-      TermVectorsReader reader = new TermVectorsReader(dir, seg, fieldInfos);
+      reader = new TermVectorsReader(dir, seg, fieldInfos);
       //good document number, bad field number
       TermFreqVector vector = reader.get(0, "f50");
       assertTrue(vector == null);
+      reader.close();
     } catch (IOException e) {
       fail();
+    } finally {
+      reader.close();
     }
   }
 

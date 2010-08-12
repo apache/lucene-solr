@@ -36,6 +36,7 @@ public class TestDirectoryReader extends LuceneTestCase {
   private Document doc2;
   protected SegmentReader [] readers = new SegmentReader[2];
   protected SegmentInfos sis;
+  private Random random;
   
   
   public TestDirectoryReader(String s) {
@@ -45,7 +46,8 @@ public class TestDirectoryReader extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    dir = new MockRAMDirectory();
+    random = newRandom();
+    dir = newDirectory(random);
     doc1 = new Document();
     doc2 = new Document();
     DocHelper.setupDoc(doc1);
@@ -54,6 +56,14 @@ public class TestDirectoryReader extends LuceneTestCase {
     DocHelper.writeDoc(dir, doc2);
     sis = new SegmentInfos();
     sis.read(dir);
+  }
+  
+  @Override
+  protected void tearDown() throws Exception {
+    if (readers[0] != null) readers[0].close();
+    if (readers[1] != null) readers[1].close();
+    dir.close();
+    super.tearDown();
   }
 
   protected IndexReader openReader() throws IOException {
@@ -86,6 +96,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     TermFreqVector vector = reader.getTermFreqVector(0, DocHelper.TEXT_FIELD_2_KEY);
     assertTrue(vector != null);
     TestSegmentReader.checkNorms(reader);
+    reader.close();
   }
 
   public void doTestUndeleteAll() throws IOException {
@@ -122,13 +133,13 @@ public class TestDirectoryReader extends LuceneTestCase {
     sis.read(dir);
     reader = openReader();
     assertEquals( 1, reader.numDocs() );
+    reader.close();
   }
         
   public void testIsCurrent() throws IOException {
-    Random random = newRandom();
-    MockRAMDirectory ramDir1=new MockRAMDirectory();
+    MockRAMDirectory ramDir1=newDirectory(random);
     addDoc(random, ramDir1, "test foo", true);
-    MockRAMDirectory ramDir2=new MockRAMDirectory();
+    MockRAMDirectory ramDir2=newDirectory(random);
     addDoc(random, ramDir2, "test blah", true);
     IndexReader[] readers = new IndexReader[]{IndexReader.open(ramDir1, false), IndexReader.open(ramDir2, false)};
     MultiReader mr = new MultiReader(readers);
@@ -144,15 +155,16 @@ public class TestDirectoryReader extends LuceneTestCase {
       // expected exception
     }
     mr.close();
+    ramDir1.close();
+    ramDir2.close();
   }
 
   public void testMultiTermDocs() throws IOException {
-    Random random = newRandom();
-    MockRAMDirectory ramDir1=new MockRAMDirectory();
+    MockRAMDirectory ramDir1=newDirectory(random);
     addDoc(random, ramDir1, "test foo", true);
-    MockRAMDirectory ramDir2=new MockRAMDirectory();
+    MockRAMDirectory ramDir2=newDirectory(random);
     addDoc(random, ramDir2, "test blah", true);
-    MockRAMDirectory ramDir3=new MockRAMDirectory();
+    MockRAMDirectory ramDir3=newDirectory(random);
     addDoc(random, ramDir3, "test wow", true);
 
     IndexReader[] readers1 = new IndexReader[]{IndexReader.open(ramDir1, false), IndexReader.open(ramDir3, false)};
@@ -182,6 +194,14 @@ public class TestDirectoryReader extends LuceneTestCase {
     // really a dummy assert to ensure that we got some docs and to ensure that
     // nothing is optimized out.
     assertTrue(ret > 0);
+    readers1[0].close();
+    readers1[1].close();
+    readers2[0].close();
+    readers2[1].close();
+    readers2[2].close();
+    ramDir1.close();
+    ramDir2.close();
+    ramDir3.close();
   }
 
   private void addDoc(Random random, MockRAMDirectory ramDir1, String s, boolean create) throws IOException {

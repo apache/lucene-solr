@@ -67,10 +67,10 @@ public class TestLazyBug extends LuceneTestCase {
       }
     };
   
-  private Directory makeIndex() throws RuntimeException { 
-    Directory dir = new MockRAMDirectory();
+  private Directory makeIndex() throws Exception { 
+    Random r = newRandom();
+    Directory dir = newDirectory(r);
     try {
-      Random r = newRandom();
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(r,
           TEST_VERSION_CURRENT, new MockAnalyzer()));
       LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
@@ -120,6 +120,7 @@ public class TestLazyBug extends LuceneTestCase {
       }
     }
     reader.close();
+    dir.close();
   }
 
   public void testLazyWorks() throws Exception {

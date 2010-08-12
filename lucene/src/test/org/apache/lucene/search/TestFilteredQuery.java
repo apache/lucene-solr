@@ -27,6 +27,7 @@ import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.DocIdBitSet;
 import java.util.BitSet;
+import java.util.Random;
 
 /**
  * FilteredQuery JUnit tests.
@@ -47,8 +48,9 @@ public class TestFilteredQuery extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    directory = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter (newRandom(), directory);
+    Random random = newRandom();
+    directory = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter (random, directory);
 
     Document doc = new Document();
     doc.add (new Field("field", "one two three four five", Field.Store.YES, Field.Index.ANALYZED));

@@ -56,7 +56,7 @@ public class TestPackedInts extends LuceneTestCase {
       long ceil = 2;
       for(int nbits=1;nbits<63;nbits++) {
         final int valueCount = 100+rnd.nextInt(500);
-        final Directory d = new MockRAMDirectory();
+        final Directory d = newDirectory(rnd);
 
         IndexOutput out = d.createOutput("out.bin");
         PackedInts.Writer w = PackedInts.getWriter(
@@ -95,6 +95,7 @@ public class TestPackedInts extends LuceneTestCase {
         assertEquals(fp, in.getFilePointer());
         in.close();
         ceil *= 2;
+        d.close();
       }
     }
   }
@@ -208,7 +209,7 @@ public class TestPackedInts extends LuceneTestCase {
   }
 
   public void testSingleValue() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(newRandom());
     IndexOutput out = dir.createOutput("out");
     PackedInts.Writer w = PackedInts.getWriter(out, 1, 8);
     w.add(17);

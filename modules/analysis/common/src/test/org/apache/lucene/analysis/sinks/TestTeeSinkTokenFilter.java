@@ -40,6 +40,7 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.English;
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.Random;
 
 
 /**
@@ -92,9 +93,10 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
   // TODO: instead of testing it this way, we can test 
   // with BaseTokenStreamTestCase now...
   public void testEndOffsetPositionWithTeeSinkTokenFilter() throws Exception {
-    MockRAMDirectory dir = new MockRAMDirectory();
+    Random random = newRandom();
+    MockRAMDirectory dir = newDirectory(random);
     Analyzer analyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
     TeeSinkTokenFilter tee = new TeeSinkTokenFilter(analyzer.tokenStream("field", new StringReader("abcd   ")));
     TokenStream sink = tee.newSinkTokenStream();

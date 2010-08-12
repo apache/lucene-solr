@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.util.Random;
+
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -38,15 +40,16 @@ import org.apache.lucene.store.MockRAMDirectory;
 public class TestPrefixInBooleanQuery extends LuceneTestCase {
 
   private static final String FIELD = "name";
-  private MockRAMDirectory directory = new MockRAMDirectory();
+  private MockRAMDirectory directory;
   private IndexReader reader;
   private IndexSearcher searcher;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+    Random random = newRandom();
+    directory = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
 
     for (int i = 0; i < 5137; ++i) {
       Document doc = new Document();

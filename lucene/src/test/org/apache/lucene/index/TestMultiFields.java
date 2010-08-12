@@ -31,7 +31,7 @@ public class TestMultiFields extends LuceneTestCase {
 
     int num = 2 * RANDOM_MULTIPLIER;
     for (int iter = 0; iter < num; iter++) {
-      Directory dir = new MockRAMDirectory();
+      Directory dir = newDirectory(r);
 
       IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(r, TEST_VERSION_CURRENT, new MockAnalyzer()).setMergePolicy(NoMergePolicy.COMPOUND_FILES));
 
@@ -131,8 +131,9 @@ public class TestMultiFields extends LuceneTestCase {
   */
 
   public void testSeparateEnums() throws Exception {
-    Directory dir = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Random random = newRandom();
+    Directory dir = newDirectory(random);
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document d = new Document();
     d.add(new Field("f", "j", Field.Store.NO, Field.Index.NOT_ANALYZED));
     w.addDocument(d);

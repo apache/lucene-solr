@@ -2,6 +2,7 @@ package org.apache.lucene.xmlparser;
 
 import java.io.IOException;
 import java.util.Properties;
+import java.util.Random;
 import java.util.StringTokenizer;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -44,6 +45,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
 	CoreParser builder;
 	Analyzer analyzer=new MockAnalyzer();
 	private IndexSearcher searcher;
+	private MockRAMDirectory dir;
 	
 	//A collection of documents' field values for use in our tests
 	String docFieldValues []=
@@ -141,8 +143,9 @@ public class TestQueryTemplateManager extends LuceneTestCase {
 		
 		
 		//Create an index
-		MockRAMDirectory dir=new MockRAMDirectory();
-		IndexWriter w=new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+		Random random = newRandom();
+		dir=newDirectory(random);
+		IndexWriter w=new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, analyzer));
 		for (int i = 0; i < docFieldValues.length; i++)
 		{
 			w.addDocument(getDocumentFromString(docFieldValues[i]));
@@ -160,6 +163,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
 	@Override
 	protected void tearDown() throws Exception {
 		searcher.close();
+		dir.close();
     super.tearDown();
 	}
 }

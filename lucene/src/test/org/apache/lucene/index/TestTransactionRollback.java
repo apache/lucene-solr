@@ -124,7 +124,7 @@ public class TestTransactionRollback extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    dir = new MockRAMDirectory();
+    dir = newDirectory(random);
 		random = newRandom();
     //Build index, of records 1 to 100, committing after each batch of 10
     IndexDeletionPolicy sdp=new KeepAllDeletionPolicy();
@@ -142,6 +142,12 @@ public class TestTransactionRollback extends LuceneTestCase {
     }
 
     w.close();
+  }
+  
+  @Override
+  protected void tearDown() throws Exception {
+    dir.close();
+    super.tearDown();
   }
 
   // Rolls back to previous commit point

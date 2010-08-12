@@ -87,6 +87,7 @@ public class TestOrdValues extends FunctionTestSetup {
       }
       prevID = resID;
     }
+    s.close();
   }
 
   /**
@@ -131,6 +132,7 @@ public class TestOrdValues extends FunctionTestSetup {
               : id2String(i + 1);     // reverse  ==> smaller values first
       assertTrue("id of result " + i + " shuould be " + expectedId + " != " + score, expectedId.equals(id));
     }
+    s.close();
   }
 
   /**
@@ -217,7 +219,7 @@ public class TestOrdValues extends FunctionTestSetup {
         }
       }
     }
-
+    s.close();
     // verify new values are reloaded (not reused) for a new reader
     s = new IndexSearcher(dir, true);
     if (inOrder) {
@@ -245,6 +247,7 @@ public class TestOrdValues extends FunctionTestSetup {
         }
       }
     }
+    s.close();
   }
 
   private String testName() {

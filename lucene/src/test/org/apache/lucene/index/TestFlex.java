@@ -31,7 +31,7 @@ public class TestFlex extends LuceneTestCase {
 
   // Test non-flex API emulated on flex index
   public void testNonFlex() throws Exception {
-    Directory d = new MockRAMDirectory();
+    Directory d = newDirectory(newRandom());
 
     final int DOC_COUNT = 177;
 
@@ -65,8 +65,9 @@ public class TestFlex extends LuceneTestCase {
   }
 
   public void testTermOrd() throws Exception {
-    Directory d = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(d, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT,
+    Random random = newRandom();
+    Directory d = newDirectory(random);
+    IndexWriter w = new IndexWriter(d, newIndexWriterConfig(random, TEST_VERSION_CURRENT,
                                                              new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
     Document doc = new Document();
     doc.add(new Field("f", "a b c", Field.Store.NO, Field.Index.ANALYZED));

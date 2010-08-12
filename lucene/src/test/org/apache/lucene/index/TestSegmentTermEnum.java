@@ -28,16 +28,27 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.MockRAMDirectory;
 
 
 public class TestSegmentTermEnum extends LuceneTestCase {
   
-  Directory dir = new MockRAMDirectory();
+  Directory dir;
+  Random random;
+  
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    random = newRandom();
+    dir = newDirectory(random);
+  }
+  
+  @Override
+  public void tearDown() throws Exception {
+    dir.close();
+    super.tearDown();
+  }
 
   public void testTermEnum() throws IOException {
-    Random random = newRandom();
     IndexWriter writer = null;
 
     writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
@@ -66,8 +77,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
 
   public void testPrevTermAtEnd() throws IOException
   {
-    Directory dir = new MockRAMDirectory();
-    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
     addDoc(writer, "aaa bbb");
     writer.close();
     SegmentReader reader = SegmentReader.getOnlySegmentReader(dir);
@@ -81,6 +91,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
 
     assertEquals(TermsEnum.SeekStatus.FOUND, terms.seek(ordB));
     assertEquals("bbb", terms.term().utf8ToString());
+    reader.close();
   }
 
   private void verifyDocFreq()
@@ -113,6 +124,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     // assert that term is 'bbb'
     assertEquals("bbb", termEnum.term().utf8ToString());
     assertEquals(100, termEnum.docFreq());
+    reader.close();
   }
 
   private void addDoc(IndexWriter writer, String value) throws IOException

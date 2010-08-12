@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.junit.Test;
 
@@ -33,7 +32,7 @@ public class TestIndexCommit extends LuceneTestCaseJ4 {
   @Test
   public void testEqualsHashCode() throws Exception {
     // LUCENE-2417: equals and hashCode() impl was inconsistent
-    final Directory dir = new MockRAMDirectory();
+    final Directory dir = newDirectory(newRandom());
     
     IndexCommit ic1 = new IndexCommit() {
       @Override public String getSegmentsFileName() { return "a"; }
@@ -63,5 +62,6 @@ public class TestIndexCommit extends LuceneTestCaseJ4 {
 
     assertEquals(ic1, ic2);
     assertEquals("hash codes are not equals", ic1.hashCode(), ic2.hashCode());
+    dir.close();
   }
 }

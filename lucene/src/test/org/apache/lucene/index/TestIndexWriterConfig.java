@@ -264,7 +264,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     // iw.getConfig().getXYZ(), he'll get the same value he passed to
     // iw.setXYZ().
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(newRandom());
     IndexWriter writer = new IndexWriter(dir, conf);
 
     writer.setSimilarity(new MySimilarity());
@@ -296,6 +296,8 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     
     writer.setMergePolicy(new LogDocMergePolicy());
     assertEquals(LogDocMergePolicy.class, writer.getConfig().getMergePolicy().getClass());
+    writer.close();
+    dir.close();
   }
 
 }

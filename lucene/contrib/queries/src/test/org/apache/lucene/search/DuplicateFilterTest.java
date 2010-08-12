@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -41,8 +42,9 @@ public class DuplicateFilterTest extends LuceneTestCase {
 	@Override
 	protected void setUp() throws Exception {
     super.setUp();
-		directory = new MockRAMDirectory();
-		RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+    Random random = newRandom();
+		directory = newDirectory(random);
+		RandomIndexWriter writer = new RandomIndexWriter(random, directory);
 		
 		//Add series of docs with filterable fields : url, text and dates  flags
 		addDoc(writer, "http://lucene.apache.org", "lucene 1.4.3 available", "20040101");

@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -42,7 +43,8 @@ import org.apache.lucene.util.BytesRef;
 
 public class TestDocumentWriter extends LuceneTestCase {
   private MockRAMDirectory dir;
-
+  private Random random;
+  
   public TestDocumentWriter(String s) {
     super(s);
   }
@@ -50,7 +52,14 @@ public class TestDocumentWriter extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    dir = new MockRAMDirectory();
+    random = newRandom();
+    dir = newDirectory(random);
+  }
+  
+  @Override
+  protected void tearDown() throws Exception {
+    dir.close();
+    super.tearDown();
   }
 
   public void test() {
@@ -60,7 +69,7 @@ public class TestDocumentWriter extends LuceneTestCase {
   public void testAddDocument() throws Exception {
     Document testDoc = new Document();
     DocHelper.setupDoc(testDoc);
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     writer.addDocument(testDoc);
     writer.commit();
     SegmentInfo info = writer.newestSegment();
@@ -102,6 +111,7 @@ public class TestDocumentWriter extends LuceneTestCase {
         assertTrue(fi.omitNorms == !reader.hasNorms(fi.name));
       }
     }
+    reader.close();
   }
 
   public void testPositionIncrementGap() throws IOException {
@@ -117,7 +127,7 @@ public class TestDocumentWriter extends LuceneTestCase {
       }
     };
 
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, analyzer));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, analyzer));
 
     Document doc = new Document();
     doc.add(new Field("repeated", "repeated one", Field.Store.YES, Field.Index.ANALYZED));
@@ -136,6 +146,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     assertEquals(2, freq);
     assertEquals(0, termPositions.nextPosition());
     assertEquals(502, termPositions.nextPosition());
+    reader.close();
   }
 
   public void testTokenReuse() throws IOException {
@@ -181,7 +192,7 @@ public class TestDocumentWriter extends LuceneTestCase {
       }
     };
 
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, analyzer));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, analyzer));
 
     Document doc = new Document();
     doc.add(new Field("f1", "a 5 a a", Field.Store.YES, Field.Index.ANALYZED));
@@ -202,11 +213,12 @@ public class TestDocumentWriter extends LuceneTestCase {
     assertEquals(false, termPositions.hasPayload());
     assertEquals(7, termPositions.nextPosition());
     assertEquals(false, termPositions.hasPayload());
+    reader.close();
   }
 
 
   public void testPreAnalyzedField() throws IOException {
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(),
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     
@@ -250,7 +262,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     assertTrue(termPositions.nextDoc() != termPositions.NO_MORE_DOCS);
     assertEquals(1, termPositions.freq());
     assertEquals(2, termPositions.nextPosition());
-
+    reader.close();
   }
 
   /**
@@ -266,7 +278,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     doc.add(new Field("f2", "v1", Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
     doc.add(new Field("f2", "v2", Store.YES, Index.NOT_ANALYZED, TermVector.NO));
 
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(),
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     writer.addDocument(doc);
     writer.close();
@@ -282,6 +294,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     TermFreqVector tfv2 = reader.getTermFreqVector(0, "f2");
     assertNotNull(tfv2);
     assertEquals("the 'with_tv' setting should rule!",2,tfv2.getTerms().length);
+    reader.close();
   }
 
   /**
@@ -300,7 +313,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     doc.add(f);
     doc.add(new Field("f2", "v2", Store.YES, Index.NO));
 
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(),
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     writer.addDocument(doc);
     writer.optimize(); // be sure to have a single segment
@@ -316,5 +329,6 @@ public class TestDocumentWriter extends LuceneTestCase {
     // f2
     assertTrue("f2 should have norms", reader.hasNorms("f2"));
     assertTrue("omitTermFreqAndPositions field bit should be set for f2", fi.fieldInfo("f2").omitTermFreqAndPositions);
+    reader.close();
   }
 }

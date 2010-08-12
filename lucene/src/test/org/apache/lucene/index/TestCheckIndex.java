@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.MockRAMDirectory;
@@ -33,8 +34,9 @@ import org.apache.lucene.util.Constants;
 public class TestCheckIndex extends LuceneTestCase {
 
   public void testDeletedDocs() throws IOException {
-    MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
+    Random random = newRandom();
+    MockRAMDirectory dir = newDirectory(random);
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
     Document doc = new Document();
     doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     for(int i=0;i<19;i++) {
@@ -87,6 +89,7 @@ public class TestCheckIndex extends LuceneTestCase {
     onlySegments.add("_0");
     
     assertTrue(checker.checkIndex(onlySegments).clean == true);
+    dir.close();
   }
 
   public void testLuceneConstantVersion() throws IOException {

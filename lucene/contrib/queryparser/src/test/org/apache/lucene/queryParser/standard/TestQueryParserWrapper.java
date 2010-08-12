@@ -654,7 +654,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
 
   public void testFarsiRangeCollating() throws Exception {
 
-    MockRAMDirectory ramDir = new MockRAMDirectory();
+    MockRAMDirectory ramDir = newDirectory(newRandom());
     IndexWriter iw = new IndexWriter(ramDir, new MockAnalyzer(MockTokenizer.WHITESPACE, false), true,
         IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
@@ -696,6 +696,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     assertEquals("The index Term should be included.", 1, result.length);
 
     is.close();
+    ramDir.close();
   }
   
   private String escapeDateString(String s) {
@@ -1062,7 +1063,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
 
   public void testLocalDateFormat() throws IOException, ParseException {
 
-    MockRAMDirectory ramDir = new MockRAMDirectory();
+    MockRAMDirectory ramDir = newDirectory(newRandom());
     IndexWriter iw = new IndexWriter(ramDir, new MockAnalyzer(MockTokenizer.WHITESPACE, false), true,
         IndexWriter.MaxFieldLength.LIMITED);
     addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
@@ -1076,6 +1077,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
     assertHits(1, "{12/1/2005 TO 12/4/2005}", is);
     assertHits(0, "{12/3/2005 TO 12/4/2005}", is);
     is.close();
+    ramDir.close();
   }
 
   public void testStarParsing() throws Exception {

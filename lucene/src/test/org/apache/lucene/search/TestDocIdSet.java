@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Random;
 
 import junit.framework.Assert;
 
@@ -101,8 +102,9 @@ public class TestDocIdSet extends LuceneTestCase {
   public void testNullDocIdSet() throws Exception {
     // Tests that if a Filter produces a null DocIdSet, which is given to
     // IndexSearcher, everything works fine. This came up in LUCENE-1754.
-    Directory dir = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
+    Random random = newRandom();
+    Directory dir = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     Document doc = new Document();
     doc.add(new Field("c", "val", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
     writer.addDocument(doc);

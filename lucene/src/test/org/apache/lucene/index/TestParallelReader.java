@@ -40,9 +40,10 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestParallelReader extends LuceneTestCase {
 
-  private Searcher parallel;
-  private Searcher single;
+  private IndexSearcher parallel;
+  private IndexSearcher single;
   private Random random;
+  private Directory dir, dir1, dir2;
   
   @Override
   protected void setUp() throws Exception {
@@ -50,6 +51,16 @@ public class TestParallelReader extends LuceneTestCase {
     random = newRandom();
     single = single(random);
     parallel = parallel(random);
+  }
+  
+  @Override
+  protected void tearDown() throws Exception {
+    single.getIndexReader().close();
+    parallel.getIndexReader().close();
+    dir.close();
+    dir1.close();
+    dir2.close();
+    super.tearDown();
   }
 
   public void testQueries() throws Exception {
@@ -80,6 +91,9 @@ public class TestParallelReader extends LuceneTestCase {
     assertTrue(fieldNames.contains("f2"));
     assertTrue(fieldNames.contains("f3"));
     assertTrue(fieldNames.contains("f4"));
+    pr.close();
+    dir1.close();
+    dir2.close();
   }
   
   public void testDocument() throws IOException {
@@ -101,6 +115,9 @@ public class TestParallelReader extends LuceneTestCase {
     assertEquals("v2", doc24.get("f4"));
     assertEquals("v2", doc223.get("f2"));
     assertEquals("v2", doc223.get("f3"));
+    pr.close();
+    dir1.close();
+    dir2.close();
   }
   
   public void testIncompatibleIndexes() throws IOException {
@@ -108,7 +125,7 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir1 = getDir1(random);
 
     // one document only:
-    Directory dir2 = new MockRAMDirectory();
+    Directory dir2 = newDirectory(random);
     IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document d3 = new Document();
     d3.add(new Field("f3", "v1", Field.Store.YES, Field.Index.ANALYZED));
@@ -117,12 +134,17 @@ public class TestParallelReader extends LuceneTestCase {
     
     ParallelReader pr = new ParallelReader();
     pr.add(IndexReader.open(dir1, false));
+    IndexReader ir = IndexReader.open(dir2, false);
     try {
-      pr.add(IndexReader.open(dir2, false));
+      pr.add(ir);
       fail("didn't get exptected exception: indexes don't have same number of documents");
     } catch (IllegalArgumentException e) {
       // expected exception
     }
+    pr.close();
+    ir.close();
+    dir1.close();
+    dir2.close();
   }
   
   public void testIsCurrent() throws IOException {
@@ -147,6 +169,9 @@ public class TestParallelReader extends LuceneTestCase {
     
     // now both are not current anymore
     assertFalse(pr.isCurrent());
+    pr.close();
+    dir1.close();
+    dir2.close();
   }
 
   public void testIsOptimized() throws IOException {
@@ -197,7 +222,8 @@ public class TestParallelReader extends LuceneTestCase {
     // now both indexes are optimized
     assertTrue(pr.isOptimized());
     pr.close();
-
+    dir1.close();
+    dir2.close();
   }
 
   private void queryTest(Query query) throws IOException {
@@ -216,8 +242,8 @@ public class TestParallelReader extends LuceneTestCase {
   }
 
   // Fields 1-4 indexed together:
-  private Searcher single(Random random) throws IOException {
-    Directory dir = new MockRAMDirectory();
+  private IndexSearcher single(Random random) throws IOException {
+    dir = newDirectory(random);
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document d1 = new Document();
     d1.add(new Field("f1", "v1", Field.Store.YES, Field.Index.ANALYZED));
@@ -237,9 +263,9 @@ public class TestParallelReader extends LuceneTestCase {
   }
 
   // Fields 1 & 2 in one index, 3 & 4 in other, with ParallelReader:
-  private Searcher parallel(Random random) throws IOException {
-    Directory dir1 = getDir1(random);
-    Directory dir2 = getDir2(random);
+  private IndexSearcher parallel(Random random) throws IOException {
+    dir1 = getDir1(random);
+    dir2 = getDir2(random);
     ParallelReader pr = new ParallelReader();
     pr.add(IndexReader.open(dir1, false));
     pr.add(IndexReader.open(dir2, false));
@@ -247,7 +273,7 @@ public class TestParallelReader extends LuceneTestCase {
   }
 
   private Directory getDir1(Random random) throws IOException {
-    Directory dir1 = new MockRAMDirectory();
+    Directory dir1 = newDirectory(random);
     IndexWriter w1 = new IndexWriter(dir1, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document d1 = new Document();
     d1.add(new Field("f1", "v1", Field.Store.YES, Field.Index.ANALYZED));
@@ -262,7 +288,7 @@ public class TestParallelReader extends LuceneTestCase {
   }
 
   private Directory getDir2(Random random) throws IOException {
-    Directory dir2 = new MockRAMDirectory();
+    Directory dir2 = newDirectory(random);
     IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document d3 = new Document();
     d3.add(new Field("f3", "v1", Field.Store.YES, Field.Index.ANALYZED));

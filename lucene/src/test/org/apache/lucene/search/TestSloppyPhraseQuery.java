@@ -125,7 +125,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
   private float  checkPhraseQuery(Document doc, PhraseQuery query, int slop, int expectedNumResults) throws Exception {
     query.setSlop(slop);
 
-    MockRAMDirectory ramDir = new MockRAMDirectory();
+    MockRAMDirectory ramDir = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, ramDir, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
     writer.addDocument(doc);
 

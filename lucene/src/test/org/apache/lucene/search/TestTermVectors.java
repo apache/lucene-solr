@@ -26,7 +26,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.English;
 
 import java.io.IOException;
@@ -38,7 +37,7 @@ import java.util.SortedSet;
 public class TestTermVectors extends LuceneTestCase {
   private IndexSearcher searcher;
   private IndexReader reader;
-  private Directory directory = new MockRAMDirectory();
+  private Directory directory;
 
   private Random random;
 
@@ -50,6 +49,7 @@ public class TestTermVectors extends LuceneTestCase {
   protected void setUp() throws Exception {                  
     super.setUp();
     random = newRandom();
+    directory = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, new MockAnalyzer(MockTokenizer.SIMPLE, true));
     //writer.setUseCompoundFile(true);
     //writer.infoStream = System.out;
@@ -115,7 +115,7 @@ public class TestTermVectors extends LuceneTestCase {
   }
   
   public void testTermVectorsFieldOrder() throws IOException {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(MockTokenizer.SIMPLE, true));
     Document doc = new Document();
     doc.add(new Field("c", "some content here", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
@@ -243,7 +243,7 @@ public class TestTermVectors extends LuceneTestCase {
     Document testDoc4 = new Document();
     setupDoc(testDoc4, test4);
     
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
         newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.SIMPLE, true))

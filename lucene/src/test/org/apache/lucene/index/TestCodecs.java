@@ -278,7 +278,7 @@ public class TestCodecs extends MultiCodecTestCase {
     final FieldData field = new FieldData("field", fieldInfos, terms, true, false);
     final FieldData[] fields = new FieldData[] {field};
 
-    final Directory dir = new MockRAMDirectory();
+    final Directory dir = newDirectory(RANDOM);
     this.write(fieldInfos, dir, fields);
     final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, -1, SEGMENT, false, true, CodecProvider.getDefault().getWriter(null));
     si.setHasProx(false);
@@ -311,6 +311,8 @@ public class TestCodecs extends MultiCodecTestCase {
     }
 
     assertNull(fieldsEnum.next());
+    reader.close();
+    dir.close();
   }
 
   public void testRandomPostings() throws Throwable {
@@ -326,7 +328,7 @@ public class TestCodecs extends MultiCodecTestCase {
       fields[i] = new FieldData(fieldNames[i], fieldInfos, this.makeRandomTerms(omitTF, storePayloads), omitTF, storePayloads);
     }
 
-    final Directory dir = new MockRAMDirectory();
+    final Directory dir = newDirectory(RANDOM);
 
     this.write(fieldInfos, dir, fields);
     final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, -1, SEGMENT, false, true, CodecProvider.getDefault().getWriter(null));
@@ -352,8 +354,9 @@ public class TestCodecs extends MultiCodecTestCase {
   }
 
   public void testSepPositionAfterMerge() throws IOException {
-    final Directory dir = new MockRAMDirectory();
-    final IndexWriterConfig config = newIndexWriterConfig(newRandom(), Version.LUCENE_31,
+    Random random = newRandom();
+    final Directory dir = newDirectory(random);
+    final IndexWriterConfig config = newIndexWriterConfig(random, Version.LUCENE_31,
       new MockAnalyzer());
     config.setCodecProvider(new MockSepCodecs());
     final IndexWriter writer = new IndexWriter(dir, config);

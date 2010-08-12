@@ -27,6 +27,7 @@ import org.apache.lucene.store.MockRAMDirectory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * A basic unit test for FieldCacheTermsFilter
@@ -36,8 +37,9 @@ import java.util.List;
 public class TestFieldCacheTermsFilter extends LuceneTestCase {
   public void testMissingTerms() throws Exception {
     String fieldName = "field1";
-    MockRAMDirectory rd = new MockRAMDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(newRandom(), rd);
+    Random random = newRandom();
+    MockRAMDirectory rd = newDirectory(random);
+    RandomIndexWriter w = new RandomIndexWriter(random, rd);
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
       int term = i * 10; //terms are units of 10;

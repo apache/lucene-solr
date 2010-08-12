@@ -31,7 +31,7 @@ public class TestNRTReaderWithThreads extends LuceneTestCase {
   AtomicInteger seq = new AtomicInteger(1);
 
   public void testIndexing() throws Exception {
-    Directory mainDir = new MockRAMDirectory();
+    Directory mainDir = newDirectory(random);
     IndexWriter writer = new IndexWriter(mainDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
