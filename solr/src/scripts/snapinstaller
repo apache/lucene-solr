@@ -131,7 +131,7 @@ logMessage command: $0 $@
 name=`perl -e 'chdir q|'${data_dir}'|; print ((sort grep {/^snapshot[.][1-9][0-9]{13}$/} <*>)[-1])'`
 
 # clean up after INT/TERM
-trap 'echo "caught INT/TERM, exiting now but partial installation may have already occured";/bin/rm -rf ${data_dir"/index.tmp$$;logExit aborted 13' INT TERM
+trap 'echo "caught INT/TERM, exiting now but partial installation may have already occured";/bin/rm -rf ${data_dir}/index.tmp$$;logExit aborted 13' INT TERM
 
 # is there a snapshot
 if [[ "${name}" == "" ]]
