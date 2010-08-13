@@ -509,6 +509,8 @@ Build
 
 * LUCENE-2466: Commons-Codec was upgraded from 1.3 to 1.4. (rmuir)
 
+* SOLR-2042: Fixed some Maven deps (Drew Farris via gsingers)
+
 Documentation
 ----------------------
 
