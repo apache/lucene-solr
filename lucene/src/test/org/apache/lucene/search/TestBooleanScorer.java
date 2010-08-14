@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -39,11 +40,12 @@ public class TestBooleanScorer extends LuceneTestCase
   private static final String FIELD = "category";
   
   public void testMethod() throws Exception {
-    MockRAMDirectory directory = new MockRAMDirectory();
+    Random random = newRandom();
+    MockRAMDirectory directory = newDirectory(random);
 
     String[] values = new String[] { "1", "2", "3", "4" };
 
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     for (int i = 0; i < values.length; i++) {
       Document doc = new Document();
       doc.add(new Field(FIELD, values[i], Field.Store.YES, Field.Index.NOT_ANALYZED));

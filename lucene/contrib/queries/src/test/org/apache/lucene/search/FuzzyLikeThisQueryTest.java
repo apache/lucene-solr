@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -40,8 +41,9 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 	@Override
 	protected void setUp() throws Exception	{
 	  super.setUp();
-		directory = new MockRAMDirectory();
-		RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory);
+	  Random random = newRandom();
+		directory = newDirectory(random);
+		RandomIndexWriter writer = new RandomIndexWriter(random, directory);
 		
 		//Add series of docs with misspelt names
 		addDoc(writer, "jonathon smythe","1");

@@ -79,8 +79,8 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     
-    index = new MockRAMDirectory();
     Random random = newRandom();
+    index = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, index,
         newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
             .setSimilarity(sim));

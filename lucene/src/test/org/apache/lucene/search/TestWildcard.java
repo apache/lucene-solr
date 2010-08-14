@@ -99,6 +99,8 @@ public class TestWildcard
       q = searcher.rewrite(wq);
       assertTrue(q instanceof ConstantScoreQuery);
       assertEquals(q.getBoost(), wq.getBoost());
+      searcher.close();
+      indexStore.close();
   }
   
   /**
@@ -114,6 +116,8 @@ public class TestWildcard
     Query q = searcher.rewrite(wq);
     assertTrue(q instanceof BooleanQuery);
     assertEquals(0, ((BooleanQuery) q).clauses().size());
+    searcher.close();
+    indexStore.close();
   }
   
   /**
@@ -152,6 +156,8 @@ public class TestWildcard
     expected.setRewriteMethod(wq.getRewriteMethod());
     expected.setBoost(wq.getBoost());
     assertEquals(searcher.rewrite(expected), searcher.rewrite(wq));
+    searcher.close();
+    indexStore.close();
   }
 
   /**
@@ -189,6 +195,8 @@ public class TestWildcard
     assertMatches(searcher, new WildcardQuery(new Term("body", "*tall")), 0);
     assertMatches(searcher, new WildcardQuery(new Term("body", "*tal")), 1);
     assertMatches(searcher, new WildcardQuery(new Term("body", "*tal*")), 2);
+    searcher.close();
+    indexStore.close();
   }
 
   /**
@@ -214,11 +222,13 @@ public class TestWildcard
     assertMatches(searcher, query4, 3);
     assertMatches(searcher, query5, 0);
     assertMatches(searcher, query6, 1); // Query: 'meta??' matches 'metals' not 'metal'
+    searcher.close();
+    indexStore.close();
   }
 
   private MockRAMDirectory getIndexStore(String field, String[] contents)
       throws IOException {
-    MockRAMDirectory indexStore = new MockRAMDirectory();
+    MockRAMDirectory indexStore = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     for (int i = 0; i < contents.length; ++i) {
       Document doc = new Document();
@@ -274,7 +284,7 @@ public class TestWildcard
     };
 
     // prepare the index
-    MockRAMDirectory dir = new MockRAMDirectory();
+    MockRAMDirectory dir = newDirectory(random);
     RandomIndexWriter iw = new RandomIndexWriter(random, dir);
     for (int i = 0; i < docs.length; i++) {
       Document doc = new Document();
@@ -330,6 +340,7 @@ public class TestWildcard
     }
 
     searcher.close();
+    dir.close();
   }
   
 }

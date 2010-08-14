@@ -1,5 +1,7 @@
 package org.apache.lucene.document;
 
+import java.util.Random;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -152,8 +154,9 @@ public class TestDocument extends LuceneTestCase {
    * @throws Exception on error
    */
   public void testGetValuesForIndexedDocument() throws Exception {
-    MockRAMDirectory dir = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
+    Random random = newRandom();
+    MockRAMDirectory dir = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.addDocument(makeDocumentWithFields());
     IndexReader reader = writer.getReader();
     
@@ -230,8 +233,9 @@ public class TestDocument extends LuceneTestCase {
     doc.add(new Field("keyword", "test", Field.Store.YES,
         Field.Index.NOT_ANALYZED));
     
-    MockRAMDirectory dir = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
+    Random random = newRandom();
+    MockRAMDirectory dir = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.addDocument(doc);
     field.setValue("id2");
     writer.addDocument(doc);

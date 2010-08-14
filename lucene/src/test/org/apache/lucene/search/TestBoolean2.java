@@ -44,6 +44,7 @@ public class TestBoolean2 extends LuceneTestCase {
   private static int NUM_EXTRA_DOCS = 6000;
 
   public static final String field = "field";
+  private Directory directory;
   private Directory dir2;
   private int mulFactor;
 
@@ -51,7 +52,7 @@ public class TestBoolean2 extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     rnd = newRandom();
-    MockRAMDirectory directory = new MockRAMDirectory();
+    directory = newDirectory(rnd);
     RandomIndexWriter writer= new RandomIndexWriter(rnd, directory);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
@@ -94,8 +95,10 @@ public class TestBoolean2 extends LuceneTestCase {
 
   @Override
   protected void tearDown() throws Exception {
+    searcher.close();
     reader.close();
     dir2.close();
+    directory.close();
     super.tearDown();
   }
 

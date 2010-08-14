@@ -281,6 +281,7 @@ public class TestCustomScoreQuery extends FunctionTestSetup {
     verifyResults(boost, s, 
         h1, h2CustomNeutral, h3CustomMul, h4CustomAdd, h5CustomMulAdd,
         q1, q2CustomNeutral, q3CustomMul, q4CustomAdd, q5CustomMulAdd);
+    s.close();
   }
 
   // verify results are as expected.

@@ -18,13 +18,18 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.SimpleAnalyzer;
+import java.util.Random;
+
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestNewestSegment extends LuceneTestCase {
   public void testNewestSegment() throws Exception {
-    MockRAMDirectory directory = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+    Random random = newRandom();
+    MockRAMDirectory directory = newDirectory(random);
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
     assertNull(writer.newestSegment());
+    writer.close();
+    directory.close();
   }
 }

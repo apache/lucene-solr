@@ -19,6 +19,7 @@ package org.apache.lucene.analysis;
 
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -30,14 +31,14 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermPositions;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 
 public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
   private String[] tokens = new String[] {"term1", "term2", "term3", "term2"};
   
   public void testCaching() throws IOException {
-    Directory dir = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
+    Random random = newRandom();
+    Directory dir = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
 
     Document doc = new Document();
     TokenStream stream = new TokenStream() {
@@ -93,6 +94,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
     // 3) reset stream and consume tokens again
     stream.reset();
     checkTokens(stream);
+    dir.close();
   }
   
   private void checkTokens(TokenStream stream) throws IOException {

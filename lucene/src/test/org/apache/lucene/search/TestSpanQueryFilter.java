@@ -17,6 +17,7 @@ package org.apache.lucene.search;
  */
 
 import java.util.List;
+import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -25,7 +26,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -37,8 +37,9 @@ public class TestSpanQueryFilter extends LuceneTestCase {
   }
 
   public void testFilterWorks() throws Exception {
-    Directory dir = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
+    Random random = newRandom();
+    Directory dir = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     for (int i = 0; i < 500; i++) {
       Document document = new Document();
       document.add(new Field("field", English.intToEnglish(i) + " equals " + English.intToEnglish(i),

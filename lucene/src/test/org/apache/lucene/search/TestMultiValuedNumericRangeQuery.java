@@ -40,7 +40,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
   public void testMultiValuedNRQ() throws Exception {
     final Random rnd = newRandom();
 
-    MockRAMDirectory directory = new MockRAMDirectory();
+    MockRAMDirectory directory = newDirectory(rnd);
     RandomIndexWriter writer = new RandomIndexWriter(rnd, directory);
     
     DecimalFormat format = new DecimalFormat("00000000000", new DecimalFormatSymbols(Locale.US));

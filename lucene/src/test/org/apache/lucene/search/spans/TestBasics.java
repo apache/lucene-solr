@@ -18,6 +18,7 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
@@ -58,8 +59,9 @@ public class TestBasics extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    directory = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), directory, 
+    Random random = newRandom();
+    directory = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         new SimpleAnalyzer(TEST_VERSION_CURRENT));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {

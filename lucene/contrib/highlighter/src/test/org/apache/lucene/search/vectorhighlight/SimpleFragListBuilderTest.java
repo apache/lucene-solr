@@ -64,11 +64,11 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
     FieldFragList ffl = sflb.createFieldFragList( fpl( "a", "a a" ), 100 );
     assertEquals( 1, ffl.fragInfos.size() );
     assertEquals( "subInfos=(a((0,1))a((2,3)))/2.0(0,100)", ffl.fragInfos.get( 0 ).toString() );
-
+  
     ffl = sflb.createFieldFragList( fpl( "a", "a b b b b b b b b a" ), 20 );
     assertEquals( 1, ffl.fragInfos.size() );
     assertEquals( "subInfos=(a((0,1))a((18,19)))/2.0(0,20)", ffl.fragInfos.get( 0 ).toString() );
-    
+
     ffl = sflb.createFieldFragList( fpl( "a", "b b b b a b b b b a" ), 20 );
     assertEquals( 1, ffl.fragInfos.size() );
     assertEquals( "subInfos=(a((8,9))a((18,19)))/2.0(2,22)", ffl.fragInfos.get( 0 ).toString() );

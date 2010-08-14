@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Collections;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
@@ -627,9 +628,9 @@ public class TestQPHelper extends LocalizedTestCase {
   }
 
   public void testFarsiRangeCollating() throws Exception {
-
-    MockRAMDirectory ramDir = new MockRAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    Random random = newRandom();
+    MockRAMDirectory ramDir = newDirectory(random);
+    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
     doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
         Field.Index.NOT_ANALYZED));
@@ -673,6 +674,7 @@ public class TestQPHelper extends LocalizedTestCase {
     assertEquals("The index Term should be included.", 1, result.length);
 
     is.close();
+    ramDir.close();
   }
 
   /** for testing legacy DateField support */
@@ -1049,9 +1051,9 @@ public class TestQPHelper extends LocalizedTestCase {
   }
 
   public void testLocalDateFormat() throws IOException, QueryNodeException {
-
-    MockRAMDirectory ramDir = new MockRAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    Random random = newRandom();
+    MockRAMDirectory ramDir = newDirectory(random);
+    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
     addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
     iw.close();
@@ -1063,6 +1065,7 @@ public class TestQPHelper extends LocalizedTestCase {
     assertHits(1, "{12/1/2005 TO 12/4/2005}", is);
     assertHits(0, "{12/3/2005 TO 12/4/2005}", is);
     is.close();
+    ramDir.close();
   }
 
   public void testStarParsing() throws Exception {
@@ -1248,8 +1251,9 @@ public class TestQPHelper extends LocalizedTestCase {
   }
 
   public void testMultiPhraseQuery() throws Exception {
-    MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new CannedAnalyzer()));
+    Random random = newRandom();
+    MockRAMDirectory dir = newDirectory(random);
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new CannedAnalyzer()));
     Document doc = new Document();
     doc.add(new Field("field", "", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);
@@ -1261,6 +1265,7 @@ public class TestQPHelper extends LocalizedTestCase {
     assertEquals(1, s.search(q, 10).totalHits);
     r.close();
     w.close();
+    dir.close();
   }
 
 }

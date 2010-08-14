@@ -24,6 +24,7 @@ import org.apache.lucene.index.SnapshotDeletionPolicy;
 import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util._TestUtil;
+import org.junit.Before;
 import org.junit.Test;
 
 //
@@ -32,9 +33,16 @@ import org.junit.Test;
 //
 
 public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
-	
+  protected Random random;
   public static final String INDEX_PATH = "test.snapshots";
 
+  @Before
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    random = newRandom();
+  }
+  
   protected IndexWriterConfig getConfig(Random random, IndexDeletionPolicy dp) {
     IndexWriterConfig conf = newIndexWriterConfig(random, TEST_VERSION_CURRENT, new KeywordAnalyzer());
     if (dp != null) {
@@ -86,7 +94,6 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
   
   @Test
   public void testSnapshotDeletionPolicy() throws Exception {
-    Random random = newRandom();
     File dir = _TestUtil.getTempDir(INDEX_PATH);
     try {
       Directory fsDir = FSDirectory.open(dir);
@@ -96,7 +103,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
       _TestUtil.rmDir(dir);
     }
 
-    MockRAMDirectory dir2 = new MockRAMDirectory();
+    MockRAMDirectory dir2 = newDirectory(random);
     runTest(random, dir2);
     dir2.close();
   }
@@ -233,10 +240,9 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
   public void testBasicSnapshots() throws Exception {
     int numSnapshots = 3;
     SnapshotDeletionPolicy sdp = getDeletionPolicy();
-    Random random = newRandom();
     
     // Create 3 snapshots: snapshot0, snapshot1, snapshot2
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     IndexWriter writer = new IndexWriter(dir, getConfig(random, sdp));
     prepareIndexAndSnapshots(sdp, writer, numSnapshots, "snapshot");
     writer.close();
@@ -261,12 +267,12 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
         // expected - snapshot should not exist
       }
     }
+    dir.close();
   }
 
   @Test
   public void testMultiThreadedSnapshotting() throws Exception {
-    Random random = newRandom();
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     final SnapshotDeletionPolicy sdp = getDeletionPolicy();
     final IndexWriter writer = new IndexWriter(dir, getConfig(random, sdp));
 
@@ -305,13 +311,13 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
     }
     assertEquals(1, IndexReader.listCommits(dir).size());
     writer.close();
+    dir.close();
   }
 
   @Test
   public void testRollbackToOldSnapshot() throws Exception {
-    Random random = newRandom();
     int numSnapshots = 2;
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     SnapshotDeletionPolicy sdp = getDeletionPolicy();
     IndexWriter writer = new IndexWriter(dir, getConfig(random, sdp));
     prepareIndexAndSnapshots(sdp, writer, numSnapshots, "snapshot");
@@ -327,12 +333,12 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
     // but 'snapshot1' files will still exist (need to release snapshot before they can be deleted).
     String segFileName = sdp.getSnapshot("snapshot1").getSegmentsFileName();
     assertTrue("snapshot files should exist in the directory: " + segFileName, dir.fileExists(segFileName));
+    dir.close();
   }
 
   @Test
   public void testReleaseSnapshot() throws Exception {
-    Random random = newRandom();
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     SnapshotDeletionPolicy sdp = getDeletionPolicy();
     IndexWriter writer = new IndexWriter(dir, getConfig(random, sdp));
     prepareIndexAndSnapshots(sdp, writer, 1, "snapshot");
@@ -355,15 +361,15 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
     assertNull(sdp.getSnapshots().get(snapId));
     writer.deleteUnusedFiles();
     assertFalse("segments file should not be found in dirctory: " + segFileName, dir.fileExists(segFileName));
+    dir.close();
   }
 
   @Test
   public void testExistingSnapshots() throws Exception {
-    Random random = newRandom();
     // Tests the ability to construct a SDP from existing snapshots, and
     // asserts that those snapshots/commit points are protected.
     int numSnapshots = 3;
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     SnapshotDeletionPolicy sdp = getDeletionPolicy();
     IndexWriter writer = new IndexWriter(dir, getConfig(random, sdp));
     prepareIndexAndSnapshots(sdp, writer, numSnapshots, "snapshot");
@@ -376,12 +382,12 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
     writer.deleteUnusedFiles();
     writer.close();
     assertSnapshotExists(dir, sdp, numSnapshots);
+    dir.close();
   }
 
   @Test
   public void testSnapshotLastCommitTwice() throws Exception {
-    Random random = newRandom();
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     SnapshotDeletionPolicy sdp = getDeletionPolicy();
     IndexWriter writer = new IndexWriter(dir, getConfig(random, sdp));
     writer.addDocument(new Document());
@@ -403,14 +409,14 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
     checkSnapshotExists(dir, ic2);
     
     writer.close();
+    dir.close();
   }
   
   @Test
   public void testMissingCommits() throws Exception {
-    Random random = newRandom();
     // Tests the behavior of SDP when commits that are given at ctor are missing
     // on onInit().
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     SnapshotDeletionPolicy sdp = getDeletionPolicy();
     IndexWriter writer = new IndexWriter(dir, getConfig(random, sdp));
     writer.addDocument(new Document());
@@ -438,6 +444,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
     } catch (IllegalStateException e) {
       // expected.
     }
+    dir.close();
   }
 
 }

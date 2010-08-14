@@ -119,8 +119,9 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     }
     
     public void testSeek() throws IOException {
-        Directory directory = new MockRAMDirectory();
-        IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        Random random = newRandom();
+        Directory directory = newDirectory(random);
+        IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
         for (int i = 0; i < 10; i++) {
             Document doc = new Document();
             doc.add(new Field(this.field, "a b", Field.Store.YES, Field.Index.ANALYZED));
@@ -142,7 +143,8 @@ public class TestLazyProxSkipping extends LuceneTestCase {
             assertEquals(tp.doc(), i);
             assertEquals(tp.nextPosition(), 0);
         }
-        
+        reader.close();
+        directory.close();
         
     }
     

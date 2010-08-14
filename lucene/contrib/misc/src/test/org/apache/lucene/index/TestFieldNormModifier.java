@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Random;
 
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
@@ -44,7 +45,7 @@ public class TestFieldNormModifier extends LuceneTestCase {
    
   public static int NUM_DOCS = 5;
   
-  public Directory store = new MockRAMDirectory();
+  public Directory store;
   
   /** inverts the normal notion of lengthNorm */
   public static Similarity s = new DefaultSimilarity() {
@@ -57,7 +58,9 @@ public class TestFieldNormModifier extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    IndexWriter writer = new IndexWriter(store, new IndexWriterConfig(
+    Random random = newRandom();
+    store = newDirectory(random);
+    IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new SimpleAnalyzer(
         TEST_VERSION_CURRENT)));
     
@@ -76,7 +79,13 @@ public class TestFieldNormModifier extends LuceneTestCase {
     writer.close();
   }
   
-  public void testMissingField() {
+  @Override
+  protected void tearDown() throws Exception {
+    store.close();
+    super.tearDown();
+  }
+  
+  public void testMissingField() throws Exception {
     FieldNormModifier fnm = new FieldNormModifier(store, s);
     try {
       fnm.reSetNorms("nobodyherebutuschickens");

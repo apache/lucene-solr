@@ -28,7 +28,6 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -42,7 +41,6 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.search.Explanation.IDFExplanation;
@@ -106,8 +104,8 @@ public class TestPayloadNearQuery extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    directory = new MockRAMDirectory();
     Random random = newRandom();
+    directory = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig(random, TEST_VERSION_CURRENT, new PayloadAnalyzer())
         .setSimilarity(similarity));

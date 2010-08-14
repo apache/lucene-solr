@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.StopFilter;
@@ -87,8 +88,9 @@ public class TestPositionIncrement extends LuceneTestCase {
         };
       }
     };
-    Directory store = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), store, analyzer);
+    Random random = newRandom();
+    Directory store = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, store, analyzer);
     Document d = new Document();
     d.add(new Field("field", "bogus", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(d);
@@ -241,8 +243,9 @@ public class TestPositionIncrement extends LuceneTestCase {
   }
   
   public void testPayloadsPos0() throws Exception {
-    Directory dir = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir, new TestPayloadAnalyzer());
+    Random random = newRandom();
+    Directory dir = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new TestPayloadAnalyzer());
     Document doc = new Document();
     doc.add(new Field("content",
                       new StringReader("a a b c d e a f g h i j a b k k")));

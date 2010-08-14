@@ -105,7 +105,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       termField.append(randomTerm());
     }
     
-    MockRAMDirectory ramdir = new MockRAMDirectory();
+    MockRAMDirectory ramdir = newDirectory(random);
     Analyzer analyzer = randomAnalyzer();
     IndexWriter writer = new IndexWriter(ramdir,
                                          new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
@@ -121,6 +121,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     memory.addField("foo", fooField.toString(), analyzer);
     memory.addField("term", termField.toString(), analyzer);
     assertAllQueries(memory, ramdir, analyzer);  
+    ramdir.close();
   }
   
   /**
@@ -135,6 +136,8 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       TopDocs memDocs = mem.search(qp.parse(query), 1);
       assertEquals(ramDocs.totalHits, memDocs.totalHits);
     }
+    ram.close();
+    mem.close();
   }
   
   /**

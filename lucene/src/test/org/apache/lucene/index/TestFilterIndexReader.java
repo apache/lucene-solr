@@ -97,7 +97,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
    */
   public void testFilterIndexReader() throws Exception {
     Random random = newRandom();
-    MockRAMDirectory directory = new MockRAMDirectory();
+    MockRAMDirectory directory = newDirectory(random);
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
 
     Document d1 = new Document();

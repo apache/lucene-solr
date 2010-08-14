@@ -21,15 +21,19 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.Random;
 
 public class TestFieldCache extends LuceneTestCase {
   protected IndexReader reader;
   private static final int NUM_DOCS = 1000;
-
+  private Random random;
+  private Directory directory;
+  
   public TestFieldCache(String s) {
     super(s);
   }
@@ -37,8 +41,9 @@ public class TestFieldCache extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    MockRAMDirectory directory = new MockRAMDirectory();
-    RandomIndexWriter writer= new RandomIndexWriter(newRandom(), directory);
+    random = newRandom();
+    directory = newDirectory(random);
+    RandomIndexWriter writer= new RandomIndexWriter(random, directory);
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;
     byte theByte = Byte.MAX_VALUE;
@@ -59,6 +64,13 @@ public class TestFieldCache extends LuceneTestCase {
     reader = IndexReader.open(directory, true);
   }
 
+  @Override
+  protected void tearDown() throws Exception {
+    reader.close();
+    directory.close();
+    super.tearDown();
+  }
+  
   public void testInfoStream() throws Exception {
     try {
       FieldCache cache = FieldCache.DEFAULT;

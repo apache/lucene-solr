@@ -66,7 +66,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
   
   public void testRandomIWReader() throws Throwable {
     r = newRandom();
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(r);
     
     // TODO: verify equals using IW.getReader
     DocsAndWriter dw = indexRandomIWReader(5, 3, 100, dir);
@@ -80,9 +80,9 @@ public class TestStressIndexing2 extends LuceneTestCase {
   
   public void testRandom() throws Throwable {
     r = newRandom();
-    Directory dir1 = new MockRAMDirectory();
+    Directory dir1 = newDirectory(r);
     // dir1 = FSDirectory.open("foofoofoo");
-    Directory dir2 = new MockRAMDirectory();
+    Directory dir2 = newDirectory(r);
     // mergeFactor=2; maxBufferedDocs=2; Map docs = indexRandom(1, 3, 2, dir1);
     int maxThreadStates = 1+r.nextInt(10);
     boolean doReaderPooling = r.nextBoolean();
@@ -94,6 +94,8 @@ public class TestStressIndexing2 extends LuceneTestCase {
     // verifyEquals(dir2, dir2, "id");
 
     verifyEquals(dir1, dir2, "id");
+    dir1.close();
+    dir2.close();
   }
 
   public void testMultiConfig() throws Throwable {
@@ -111,11 +113,13 @@ public class TestStressIndexing2 extends LuceneTestCase {
       int nThreads=r.nextInt(5)+1;
       int iter=r.nextInt(5)+1;
       int range=r.nextInt(20)+1;
-      Directory dir1 = new MockRAMDirectory();
-      Directory dir2 = new MockRAMDirectory();
+      Directory dir1 = newDirectory(r);
+      Directory dir2 = newDirectory(r);
       Map<String,Document> docs = indexRandom(nThreads, iter, range, dir1, maxThreadStates, doReaderPooling);
       indexSerial(r, docs, dir2);
       verifyEquals(dir1, dir2, "id");
+      dir1.close();
+      dir2.close();
     }
   }
 

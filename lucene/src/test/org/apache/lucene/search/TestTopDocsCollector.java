@@ -18,12 +18,12 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestTopDocsCollector extends LuceneTestCase {
@@ -90,7 +90,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
   
   private static final float MAX_SCORE = 9.17561f;
   
-  private Directory dir = new MockRAMDirectory();
+  private Directory dir;
   private IndexReader reader;
 
   private TopDocsCollector<ScoreDoc> doSearch(int numResults) throws IOException {
@@ -108,7 +108,9 @@ public class TestTopDocsCollector extends LuceneTestCase {
     
     // populate an index with 30 documents, this should be enough for the test.
     // The documents have no content - the test uses MatchAllDocsQuery().
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), dir);
+    Random random = newRandom();
+    dir = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     for (int i = 0; i < 30; i++) {
       writer.addDocument(new Document());
     }

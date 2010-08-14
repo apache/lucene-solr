@@ -26,6 +26,8 @@ import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 
 import org.junit.After;
@@ -49,6 +51,7 @@ import java.io.PrintStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Hashtable;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Random;
@@ -167,8 +170,11 @@ public class LuceneTestCaseJ4 {
   private static TimeZone timeZone;
   private static TimeZone savedTimeZone;
   
+  private static Map<MockRAMDirectory,StackTraceElement[]> stores;
+  
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
+    stores = Collections.synchronizedMap(new IdentityHashMap<MockRAMDirectory,StackTraceElement[]>());
     savedLocale = Locale.getDefault();
     locale = TEST_LOCALE.equals("random") ? randomLocale(seedRnd) : localeForName(TEST_LOCALE);
     Locale.setDefault(locale);
@@ -181,6 +187,15 @@ public class LuceneTestCaseJ4 {
   public static void afterClassLuceneTestCaseJ4() {
     Locale.setDefault(savedLocale);
     TimeZone.setDefault(savedTimeZone);
+    // now look for unclosed resources
+    for (MockRAMDirectory d : stores.keySet()) {
+      if (d.isOpen()) {
+        StackTraceElement elements[] = stores.get(d);
+        StackTraceElement element = (elements.length > 1) ? elements[1] : null;
+        fail("directory of test was not closed, opened from: " + element);
+      }
+    }
+    stores = null;
   }
 
   // This is how we get control when errors occur.
@@ -448,6 +463,20 @@ public class LuceneTestCaseJ4 {
     return c;
   }
 
+  public static MockRAMDirectory newDirectory(Random r) throws IOException {
+    StackTraceElement[] stack = new Exception().getStackTrace();
+    MockRAMDirectory dir = new MockRAMDirectory();
+    stores.put(dir, stack);
+    return dir;
+  }
+  
+  public static MockRAMDirectory newDirectory(Random r, Directory d) throws IOException {
+    StackTraceElement[] stack = new Exception().getStackTrace();
+    MockRAMDirectory dir = new MockRAMDirectory(d);
+    stores.put(dir, stack);
+    return dir;
+  }
+  
   /** return a random Locale from the available locales on the system */
   public static Locale randomLocale(Random random) {
     Locale locales[] = Locale.getAvailableLocales();

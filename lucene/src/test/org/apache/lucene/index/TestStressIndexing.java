@@ -169,7 +169,7 @@ public class TestStressIndexing extends LuceneTestCase {
     RANDOM = newRandom();
 
     // With ConcurrentMergeScheduler, in RAMDir
-    Directory directory = new MockRAMDirectory();
+    Directory directory = newDirectory(RANDOM);
     runStressTest(directory, new ConcurrentMergeScheduler());
     directory.close();
 

@@ -18,19 +18,19 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
 import java.io.IOException;
+import java.util.Random;
 
 public class TestSegmentTermDocs extends LuceneTestCase {
   private Document testDoc = new Document();
-  private Directory dir = new MockRAMDirectory();
+  private Directory dir;
   private SegmentInfo info;
+  private Random random;
 
   public TestSegmentTermDocs(String s) {
     super(s);
@@ -39,8 +39,16 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
+    random = newRandom();
+    dir = newDirectory(random);
     DocHelper.setupDoc(testDoc);
     info = DocHelper.writeDoc(dir, testDoc);
+  }
+  
+  @Override
+  protected void tearDown() throws Exception {
+    dir.close();
+    super.tearDown();
   }
 
   public void test() {
@@ -98,8 +106,8 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   }
 
   public void testSkipTo(int indexDivisor) throws IOException {
-    Directory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    Directory dir = newDirectory(random);
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     
     Term ta = new Term("content","aaa");
     for(int i = 0; i < 10; i++)
@@ -223,7 +231,6 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   }
   
   public void testIndexDivisor() throws IOException {
-    dir = new MockRAMDirectory();
     testDoc = new Document();
     DocHelper.setupDoc(testDoc);
     DocHelper.writeDoc(dir, testDoc);

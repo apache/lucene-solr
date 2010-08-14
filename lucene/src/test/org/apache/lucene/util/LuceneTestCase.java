@@ -21,8 +21,10 @@ import java.io.File;
 import java.io.PrintStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Random;
 import java.util.ArrayList;
 import java.util.List;
@@ -38,6 +40,8 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 
 /** 
@@ -92,7 +96,9 @@ public abstract class LuceneTestCase extends TestCase {
   private Locale savedLocale;
   private TimeZone timeZone;
   private TimeZone savedTimeZone;
-  
+
+  private Map<MockRAMDirectory,StackTraceElement[]> stores;
+
   /** Used to track if setUp and tearDown are called correctly from subclasses */
   private boolean setup;
 
@@ -120,6 +126,7 @@ public abstract class LuceneTestCase extends TestCase {
     super.setUp();
     assertFalse("ensure your tearDown() calls super.tearDown()!!!", setup);
     setup = true;
+    stores = new IdentityHashMap<MockRAMDirectory,StackTraceElement[]>();
     savedUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
       public void uncaughtException(Thread t, Throwable e) {
@@ -196,6 +203,15 @@ public abstract class LuceneTestCase extends TestCase {
       purgeFieldCache(FieldCache.DEFAULT);
     }
 
+    // now look for unclosed resources
+    for (MockRAMDirectory d : stores.keySet()) {
+      if (d.isOpen()) {
+        StackTraceElement elements[] = stores.get(d);
+        StackTraceElement element = (elements.length > 1) ? elements[1] : null;
+        fail("directory of testcase " + getName() + " was not closed, opened from: " + element);
+      }
+    }
+    stores = null;
     super.tearDown();
   }
 
@@ -303,6 +319,20 @@ public abstract class LuceneTestCase extends TestCase {
     return LuceneTestCaseJ4.newIndexWriterConfig(r, v, a);
   }
 
+  public MockRAMDirectory newDirectory(Random r) throws IOException {
+    StackTraceElement[] stack = new Exception().getStackTrace();
+    MockRAMDirectory dir = new MockRAMDirectory();
+    stores.put(dir, stack);
+    return dir;
+  }
+  
+  public MockRAMDirectory newDirectory(Random r, Directory d) throws IOException {
+    StackTraceElement[] stack = new Exception().getStackTrace();
+    MockRAMDirectory dir = new MockRAMDirectory(d);
+    stores.put(dir, stack);
+    return dir;
+  }
+  
   /** Gets a resource from the classpath as {@link File}. This method should only be used,
    * if a real file is needed. To get a stream, code should prefer
    * {@link Class#getResourceAsStream} using {@code this.getClass()}.

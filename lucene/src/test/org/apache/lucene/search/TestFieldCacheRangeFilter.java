@@ -21,7 +21,6 @@ import java.io.IOException;
 
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.analysis.SimpleAnalyzer;
@@ -524,8 +523,8 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
   
   // test using a sparse index (with deleted docs). The DocIdSet should be not cacheable, as it uses TermDocs if the range contains 0
   public void testSparseIndex() throws IOException {
-    MockRAMDirectory dir = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+    MockRAMDirectory dir = newDirectory(rand);
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
 
     for (int d = -20; d <= 20; d++) {
       Document doc = new Document();
@@ -565,6 +564,8 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     result = search.search(q,fcrf=FieldCacheRangeFilter.newByteRange("id",Byte.valueOf((byte) -20),Byte.valueOf((byte) -10),T,T), 100).scoreDocs;
     assertTrue("DocIdSet must be cacheable", fcrf.getDocIdSet(reader.getSequentialSubReaders()[0]).isCacheable());
     assertEquals("find all", 11, result.length);
+    reader.close();
+    dir.close();
   }
   
 }

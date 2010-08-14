@@ -34,7 +34,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
   public static final boolean F = false;
   public static final boolean T = true;
   
-  protected Random rand;
+  protected Random rand = newRandom();
   
   /**
    * Collation interacts badly with hyphens -- collation produces different
@@ -46,20 +46,23 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     int maxR;
     int minR;
     boolean allowNegativeRandomInts;
-    MockRAMDirectory index = new MockRAMDirectory();
+    MockRAMDirectory index;
     
     TestIndex(int minR, int maxR, boolean allowNegativeRandomInts) {
       this.minR = minR;
       this.maxR = maxR;
       this.allowNegativeRandomInts = allowNegativeRandomInts;
+      try {
+        index = newDirectory(rand);
+      } catch (IOException e) { throw new RuntimeException(e); }
     }
   }
   
   IndexReader signedIndexReader;
   IndexReader unsignedIndexReader;
   
-  TestIndex signedIndexDir = new TestIndex(Integer.MAX_VALUE, Integer.MIN_VALUE, true);
-  TestIndex unsignedIndexDir = new TestIndex(Integer.MAX_VALUE, 0, false);
+  TestIndex signedIndexDir;
+  TestIndex unsignedIndexDir;
   
   int minId = 0;
   int maxId = 10000;
@@ -88,7 +91,8 @@ public class BaseTestRangeFilter extends LuceneTestCase {
    
   protected void setUp() throws Exception {
     super.setUp();
-    rand = newRandom();
+    signedIndexDir = new TestIndex(Integer.MAX_VALUE, Integer.MIN_VALUE, true);
+    unsignedIndexDir = new TestIndex(Integer.MAX_VALUE, 0, false);
     signedIndexReader = build(rand, signedIndexDir);
     unsignedIndexReader = build(rand, unsignedIndexDir);
   }
@@ -96,6 +100,8 @@ public class BaseTestRangeFilter extends LuceneTestCase {
   protected void tearDown() throws Exception {
     signedIndexReader.close();
     unsignedIndexReader.close();
+    signedIndexDir.index.close();
+    unsignedIndexDir.index.close();
     super.tearDown();
   }
   

@@ -28,6 +28,7 @@ import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
@@ -542,9 +543,9 @@ public class TestQueryParser extends LocalizedTestCase {
   }
     
   public void testFarsiRangeCollating() throws Exception {
-    
-    MockRAMDirectory ramDir = new MockRAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    Random random = newRandom();
+    MockRAMDirectory ramDir = newDirectory(random);
+    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
     doc.add(new Field("content","\u0633\u0627\u0628", 
                       Field.Store.YES, Field.Index.NOT_ANALYZED));
@@ -583,6 +584,7 @@ public class TestQueryParser extends LocalizedTestCase {
     assertEquals("The index Term should be included.", 1, result.length);
 
     is.close();
+    ramDir.close();
   }
   
   private String escapeDateString(String s) {
@@ -952,8 +954,9 @@ public class TestQueryParser extends LocalizedTestCase {
   }
 
   public void testLocalDateFormat() throws IOException, ParseException {
-    MockRAMDirectory ramDir = new MockRAMDirectory();
-    IndexWriter iw = new IndexWriter(ramDir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    Random random = newRandom();
+    MockRAMDirectory ramDir = newDirectory(random);
+    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
     addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
     iw.close();
@@ -965,6 +968,7 @@ public class TestQueryParser extends LocalizedTestCase {
     assertHits(1, "{12/1/2005 TO 12/4/2005}", is);
     assertHits(0, "{12/3/2005 TO 12/4/2005}", is);
     is.close();
+    ramDir.close();
   }
 
   public void testStarParsing() throws Exception {
@@ -1097,9 +1101,10 @@ public class TestQueryParser extends LocalizedTestCase {
   // enableStopPositionIncr & QueryParser's enablePosIncr
   // "match"
   public void testPositionIncrements() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Random random = newRandom();
+    Directory dir = newDirectory(random);
     Analyzer a = new StandardAnalyzer(TEST_VERSION_CURRENT);
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(TEST_VERSION_CURRENT, a));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, a));
     Document doc = new Document();
     doc.add(new Field("f", "the wizard of ozzy", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);

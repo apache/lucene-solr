@@ -54,7 +54,6 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.NoSuchDirectoryException;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -82,7 +81,7 @@ public class TestIndexReader extends LuceneTestCase
     }
     
     public void testCommitUserData() throws Exception {
-      MockRAMDirectory d = new MockRAMDirectory();
+      MockRAMDirectory d = newDirectory(random);
 
       Map<String,String> commitUserData = new HashMap<String,String>();
       commitUserData.put("foo", "fighters");
@@ -137,7 +136,7 @@ public class TestIndexReader extends LuceneTestCase
     }
     
     public void testIsCurrent() throws Exception {
-      MockRAMDirectory d = new MockRAMDirectory();
+      MockRAMDirectory d = newDirectory(random);
       IndexWriter writer = new IndexWriter(d, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
       addDocumentWithFields(writer);
@@ -166,7 +165,7 @@ public class TestIndexReader extends LuceneTestCase
      * @throws Exception on error
      */
     public void testGetFieldNames() throws Exception {
-        MockRAMDirectory d = new MockRAMDirectory();
+        MockRAMDirectory d = newDirectory(random);
         // set up writer
         IndexWriter writer = new IndexWriter(d, newIndexWriterConfig(random, 
             TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
@@ -258,7 +257,7 @@ public class TestIndexReader extends LuceneTestCase
     }
 
   public void testTermVectors() throws Exception {
-    MockRAMDirectory d = new MockRAMDirectory();
+    MockRAMDirectory d = newDirectory(random);
     // set up writer
     IndexWriter writer = new IndexWriter(d, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
@@ -288,7 +287,8 @@ public class TestIndexReader extends LuceneTestCase
       assertTrue("entry is null and it shouldn't be", entry != null);
       if (VERBOSE) System.out.println("Entry: " + entry);
     }
-    
+    reader.close();
+    d.close();
   }
 
   private void assertTermDocsCount(String msg,
@@ -316,7 +316,7 @@ public class TestIndexReader extends LuceneTestCase
     }
 
     public void testBasicDelete() throws IOException {
-        Directory dir = new MockRAMDirectory();
+        Directory dir = newDirectory(random);
 
         IndexWriter writer = null;
         IndexReader reader = null;
@@ -360,7 +360,7 @@ public class TestIndexReader extends LuceneTestCase
     }
     
     public void testBinaryFields() throws IOException {
-        Directory dir = new MockRAMDirectory();
+        Directory dir = newDirectory(random);
         byte[] bin = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
         
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
@@ -425,12 +425,13 @@ public class TestIndexReader extends LuceneTestCase
           assertEquals(bin[i], data1[i + b1.getBinaryOffset()]);
         }
         reader.close();
+        dir.close();
     }
 
     // Make sure attempts to make changes after reader is
     // closed throws IOException:
     public void testChangesAfterClose() throws IOException {
-        Directory dir = new MockRAMDirectory();
+        Directory dir = newDirectory(random);
 
         IndexWriter writer = null;
         IndexReader reader = null;
@@ -469,11 +470,12 @@ public class TestIndexReader extends LuceneTestCase
         } catch (AlreadyClosedException e) {
           // expected
         }
+        dir.close();
     }
 
     // Make sure we get lock obtain failed exception with 2 writers:
     public void testLockObtainFailed() throws IOException {
-        Directory dir = new MockRAMDirectory();
+        Directory dir = newDirectory(random);
 
         Term searchTerm = new Term("content", "aaa");
 
@@ -510,6 +512,7 @@ public class TestIndexReader extends LuceneTestCase
         }
         writer.close();
         reader.close();
+        dir.close();
     }
 
     // Make sure you can set norms & commit even if a reader
@@ -560,7 +563,7 @@ public class TestIndexReader extends LuceneTestCase
     // Make sure you can set norms & commit, and there are
     // no extra norms files left:
     public void testWritingNormsNoReader() throws IOException {
-        Directory dir = new MockRAMDirectory();
+        Directory dir = newDirectory(random);
         IndexWriter writer = null;
         IndexReader reader = null;
         Term searchTerm = new Term("content", "aaa");
@@ -732,7 +735,7 @@ public class TestIndexReader extends LuceneTestCase
         try {
           final Directory dir;
           if (0 == i)
-            dir = new MockRAMDirectory();
+            dir = newDirectory(random);
           else
             dir = getDirectory();
           assertFalse(IndexReader.indexExists(dir));
@@ -768,7 +771,7 @@ public class TestIndexReader extends LuceneTestCase
     }
 
     public void testVersion() throws IOException {
-      Directory dir = new MockRAMDirectory();
+      Directory dir = newDirectory(random);
       assertFalse(IndexReader.indexExists(dir));
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
       addDocumentWithFields(writer);
@@ -791,7 +794,7 @@ public class TestIndexReader extends LuceneTestCase
     }
 
     public void testLock() throws IOException {
-      Directory dir = new MockRAMDirectory();
+      Directory dir = newDirectory(random);
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
       addDocumentWithFields(writer);
       writer.close();
@@ -811,7 +814,7 @@ public class TestIndexReader extends LuceneTestCase
     }
 
     public void testUndeleteAll() throws IOException {
-      Directory dir = new MockRAMDirectory();
+      Directory dir = newDirectory(random);
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
       addDocumentWithFields(writer);
       addDocumentWithFields(writer);
@@ -828,7 +831,7 @@ public class TestIndexReader extends LuceneTestCase
     }
 
     public void testUndeleteAllAfterClose() throws IOException {
-      Directory dir = new MockRAMDirectory();
+      Directory dir = newDirectory(random);
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
       addDocumentWithFields(writer);
       addDocumentWithFields(writer);
@@ -845,7 +848,7 @@ public class TestIndexReader extends LuceneTestCase
     }
 
     public void testUndeleteAllAfterCloseThenReopen() throws IOException {
-      Directory dir = new MockRAMDirectory();
+      Directory dir = newDirectory(random);
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
       addDocumentWithFields(writer);
       addDocumentWithFields(writer);
@@ -882,7 +885,7 @@ public class TestIndexReader extends LuceneTestCase
       int END_COUNT = 144;
       
       // First build up a starting index:
-      MockRAMDirectory startDir = new MockRAMDirectory();
+      MockRAMDirectory startDir = newDirectory(random);
       IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
       for(int i=0;i<157;i++) {
         Document d = new Document();
@@ -1072,7 +1075,7 @@ public class TestIndexReader extends LuceneTestCase
     }
 
     public void testDocsOutOfOrderJIRA140() throws IOException {
-      Directory dir = new MockRAMDirectory();      
+      Directory dir = newDirectory(random);      
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
       for(int i=0;i<11;i++) {
         addDoc(writer, "aaa");
@@ -1112,7 +1115,7 @@ public class TestIndexReader extends LuceneTestCase
 
     public void testExceptionReleaseWriteLockJIRA768() throws IOException {
 
-      Directory dir = new MockRAMDirectory();      
+      Directory dir = newDirectory(random);      
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
       addDoc(writer, "aaa");
       writer.close();
@@ -1407,7 +1410,7 @@ public class TestIndexReader extends LuceneTestCase
 
     public void testGetIndexCommit() throws IOException {
 
-      MockRAMDirectory d = new MockRAMDirectory();
+      MockRAMDirectory d = newDirectory(random);
 
       // set up writer
       IndexWriter writer = new IndexWriter(d, newIndexWriterConfig(random, 
@@ -1456,7 +1459,7 @@ public class TestIndexReader extends LuceneTestCase
     }      
 
     public void testReadOnly() throws Throwable {
-      MockRAMDirectory d = new MockRAMDirectory();
+      MockRAMDirectory d = newDirectory(random);
       IndexWriter writer = new IndexWriter(d, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
       addDocumentWithFields(writer);
@@ -1519,12 +1522,13 @@ public class TestIndexReader extends LuceneTestCase
       writer.close();
 
       r3.close();
+      d.close();
     }
 
 
   // LUCENE-1474
   public void testIndexReader() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
     writer.addDocument(createDocument("a"));
@@ -1537,11 +1541,12 @@ public class TestIndexReader extends LuceneTestCase
     reader.deleteDocuments(new Term("id", "b"));
     reader.close();
     IndexReader.open(dir,true).close();
+    dir.close();
   }
 
   // LUCENE-1647
   public void testIndexReaderUnDeleteAll() throws Exception {
-    MockRAMDirectory dir = new MockRAMDirectory();
+    MockRAMDirectory dir = newDirectory(random);
     dir.setPreventDoubleWrite(false);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
@@ -1583,7 +1588,7 @@ public class TestIndexReader extends LuceneTestCase
   // LUCENE-1509
   public void testNoDupCommitFileNames() throws Throwable {
 
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT))
@@ -1609,7 +1614,7 @@ public class TestIndexReader extends LuceneTestCase
   // LUCENE-1579: Ensure that on a cloned reader, segments
   // reuse the doc values arrays in FieldCache
   public void testFieldCacheReuseAfterClone() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
     doc.add(new Field("number", "17", Field.Store.NO, Field.Index.NOT_ANALYZED));
@@ -1640,7 +1645,7 @@ public class TestIndexReader extends LuceneTestCase
   // shared segments reuse the doc values arrays in
   // FieldCache
   public void testFieldCacheReuseAfterReopen() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
     doc.add(new Field("number", "17", Field.Store.NO, Field.Index.NOT_ANALYZED));
@@ -1673,7 +1678,7 @@ public class TestIndexReader extends LuceneTestCase
   // LUCENE-1579: Make sure all SegmentReaders are new when
   // reopen switches readOnly
   public void testReopenChangeReadonly() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(-1));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(10);
     Document doc = new Document();
@@ -1715,7 +1720,7 @@ public class TestIndexReader extends LuceneTestCase
 
   // LUCENE-1586: getUniqueTermCount
   public void testUniqueTermCount() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
     doc.add(new Field("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", Field.Store.NO, Field.Index.ANALYZED));
@@ -1748,7 +1753,7 @@ public class TestIndexReader extends LuceneTestCase
 
   // LUCENE-1609: don't load terms index
   public void testNoTermsIndex() throws Throwable {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
     doc.add(new Field("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", Field.Store.NO, Field.Index.ANALYZED));
@@ -1786,7 +1791,7 @@ public class TestIndexReader extends LuceneTestCase
 
   // LUCENE-2046
   public void testPrepareCommitIsCurrent() throws Throwable {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     writer.commit();

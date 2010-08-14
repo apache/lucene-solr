@@ -18,6 +18,7 @@ package org.apache.lucene.queryParser.complexPhrase;
  */
 
 import java.util.HashSet;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -35,7 +36,7 @@ import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestComplexPhraseQuery extends LuceneTestCase {
-
+  MockRAMDirectory rd;
   Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
 
   DocData docsContent[] = { new DocData("john smith", "1"),
@@ -113,8 +114,9 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    MockRAMDirectory rd = new MockRAMDirectory();
-    IndexWriter w = new IndexWriter(rd, new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
+    Random random = newRandom();
+    rd = newDirectory(random);
+    IndexWriter w = new IndexWriter(rd, newIndexWriterConfig(random, TEST_VERSION_CURRENT, analyzer));
     for (int i = 0; i < docsContent.length; i++) {
       Document doc = new Document();
       doc.add(new Field("name", docsContent[i].name, Field.Store.YES,
@@ -130,6 +132,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
   @Override
   protected void tearDown() throws Exception {
     searcher.close();
+    rd.close();
     super.tearDown();
   }
 

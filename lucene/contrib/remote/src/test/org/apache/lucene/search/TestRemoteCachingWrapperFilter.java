@@ -18,12 +18,14 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.analysis.SimpleAnalyzer;
+import java.util.Random;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.MockRAMDirectory;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -33,11 +35,15 @@ import static org.junit.Assert.*;
  * Tests that the index is cached on the searcher side of things.
  */
 public class TestRemoteCachingWrapperFilter extends RemoteTestCaseJ4 {
+  private static MockRAMDirectory indexStore;
+  private static Searchable local;
+  
   @BeforeClass
   public static void beforeClass() throws Exception {
     // construct an index
-    MockRAMDirectory indexStore = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
+    Random random = newStaticRandom(TestRemoteCachingWrapperFilter.class);
+    indexStore = newDirectory(random);
+    IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new SimpleAnalyzer(
         TEST_VERSION_CURRENT)));
     Document doc = new Document();
@@ -53,10 +59,17 @@ public class TestRemoteCachingWrapperFilter extends RemoteTestCaseJ4 {
     writer.addDocument(doc);
     writer.optimize();
     writer.close();
-    Searchable local = new IndexSearcher(indexStore, true);
+    local = new IndexSearcher(indexStore, true);
     startServer(local);
   }
 
+  @AfterClass
+  public static void afterClass() throws Exception {
+    local.close();
+    indexStore.close();
+    indexStore = null;
+  }
+  
   private static void search(Query query, Filter filter, int hitNumber, String typeValue) throws Exception {
     Searchable[] searchables = { lookupRemote() };
     Searcher searcher = new MultiSearcher(searchables);

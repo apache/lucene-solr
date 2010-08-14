@@ -31,6 +31,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedList;
+import java.util.Random;
 
 /**
  * This class tests the MultiPhraseQuery class.
@@ -43,8 +44,9 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   }
   
   public void testPhrasePrefix() throws IOException {
-    MockRAMDirectory indexStore = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore);
+    Random random = newRandom();
+    MockRAMDirectory indexStore = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     add("blueberry pie", writer);
     add("blueberry strudel", writer);
     add("blueberry pizza", writer);
@@ -131,8 +133,9 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
 
   // LUCENE-2580
   public void testTall() throws IOException {
-    MockRAMDirectory indexStore = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore, new SimpleAnalyzer(TEST_VERSION_CURRENT));
+    Random random = newRandom();
+    MockRAMDirectory indexStore = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     add("blueberry chocolate pie", writer);
     add("blueberry chocolate tart", writer);
     IndexReader r = writer.getReader();
@@ -160,9 +163,9 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     // In order to cause the bug, the outer query must have more than one term
     // and all terms required.
     // The contained PhraseMultiQuery must contain exactly one term array.
-    
-    MockRAMDirectory indexStore = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore);
+    Random random = newRandom();
+    MockRAMDirectory indexStore = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     add("blueberry pie", writer);
     add("blueberry chewing gum", writer);
     add("blue raspberry pie", writer);
@@ -193,8 +196,9 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   }
   
   public void testPhrasePrefixWithBooleanQuery() throws IOException {
-    MockRAMDirectory indexStore = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore);
+    Random random = newRandom();
+    MockRAMDirectory indexStore = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     add("This is a test", "object", writer);
     add("a note", "note", writer);
     
@@ -221,8 +225,9 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   }
   
   public void testNoDocs() throws Exception {
-    MockRAMDirectory indexStore = new MockRAMDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(newRandom(), indexStore);
+    Random random = newRandom();
+    MockRAMDirectory indexStore = newDirectory(random);
+    RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     add("a note", "note", writer);
     
     IndexReader reader = writer.getReader();

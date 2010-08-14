@@ -17,6 +17,8 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.util.Random;
+
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.document.Document;
@@ -59,8 +61,9 @@ public class TestBooleanQuery extends LuceneTestCase {
 
   // LUCENE-1630
   public void testNullOrSubScorer() throws Throwable {
-    Directory dir = new MockRAMDirectory();
-    RandomIndexWriter w = new RandomIndexWriter(newRandom(), dir);
+    Random random = newRandom();
+    Directory dir = newDirectory(random);
+    RandomIndexWriter w = new RandomIndexWriter(random, dir);
     Document doc = new Document();
     doc.add(new Field("field", "a b c d", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);

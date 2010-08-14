@@ -60,7 +60,7 @@ public class ChainedFilterTest extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     random = newRandom();
-    directory = new MockRAMDirectory();
+    directory = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     Calendar cal = new GregorianCalendar();
     cal.clear();
@@ -195,7 +195,7 @@ public class ChainedFilterTest extends LuceneTestCase {
   */
   
   public void testWithCachingFilter() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     IndexReader reader = writer.getReader();
     writer.close();

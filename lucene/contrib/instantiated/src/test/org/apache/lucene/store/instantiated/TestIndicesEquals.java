@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
@@ -58,10 +59,11 @@ public class TestIndicesEquals extends LuceneTestCase {
 
 
   public void testLoadIndexReader() throws Exception {
-    MockRAMDirectory dir = new MockRAMDirectory();
+    Random random = newRandom();
+    MockRAMDirectory dir = newDirectory(random);
 
     // create dir data
-    IndexWriter indexWriter = new IndexWriter(dir, new IndexWriterConfig(
+    IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new StandardAnalyzer(
         TEST_VERSION_CURRENT)));
     for (int i = 0; i < 20; i++) {
@@ -77,17 +79,18 @@ public class TestIndicesEquals extends LuceneTestCase {
     ir.close();
 
     testEqualBehaviour(dir, ii);
+    dir.close();
   }
 
 
   public void testInstantiatedIndexWriter() throws Exception {
 
-
-    MockRAMDirectory dir = new MockRAMDirectory();
+    Random random = newRandom();
+    MockRAMDirectory dir = newDirectory(random);
     InstantiatedIndex ii = new InstantiatedIndex();
 
     // create dir data
-    IndexWriter indexWriter = new IndexWriter(dir, new IndexWriterConfig(
+    IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new StandardAnalyzer(
         TEST_VERSION_CURRENT)));
     for (int i = 0; i < 500; i++) {
@@ -109,7 +112,7 @@ public class TestIndicesEquals extends LuceneTestCase {
 
     testEqualBehaviour(dir, ii);
 
-
+    dir.close();
 
   }
 

@@ -18,13 +18,13 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.MockRAMDirectory;
 
@@ -39,8 +39,9 @@ public class TestSetNorm extends LuceneTestCase {
   }
 
   public void testSetNorm() throws Exception {
-    MockRAMDirectory store = new MockRAMDirectory();
-    IndexWriter writer = new IndexWriter(store, new IndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
+    Random random = newRandom();
+    MockRAMDirectory store = newDirectory(random);
+    IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
 
     // add the same document four times
     Fieldable f1 = new Field("field", "word", Field.Store.YES, Field.Index.ANALYZED);
@@ -63,7 +64,8 @@ public class TestSetNorm extends LuceneTestCase {
     // check that searches are ordered by this boost
     final float[] scores = new float[4];
 
-    new IndexSearcher(store, true).search
+    IndexSearcher is = new IndexSearcher(store, true);
+    is.search
       (new TermQuery(new Term("field", "word")),
        new Collector() {
          private int base = 0;
@@ -85,12 +87,13 @@ public class TestSetNorm extends LuceneTestCase {
            return true;
          }
        });
-
+    is.close();
     float lastScore = 0.0f;
 
     for (int i = 0; i < 4; i++) {
       assertTrue(scores[i] > lastScore);
       lastScore = scores[i];
     }
+    store.close();
   }
 }

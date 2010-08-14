@@ -195,8 +195,8 @@ public class TestTransactions extends LuceneTestCase {
 
   public void testTransactions() throws Throwable {
     RANDOM = newRandom();
-    MockRAMDirectory dir1 = new MockRAMDirectory();
-    MockRAMDirectory dir2 = new MockRAMDirectory();
+    MockRAMDirectory dir1 = newDirectory(RANDOM);
+    MockRAMDirectory dir2 = newDirectory(RANDOM);
     dir1.setPreventDoubleWrite(false);
     dir2.setPreventDoubleWrite(false);
     dir1.failOn(new RandomFailure());
@@ -225,5 +225,7 @@ public class TestTransactions extends LuceneTestCase {
 
     for(int i=0;i<numThread;i++)
       assertTrue(!threads[i].failed);
+    dir1.close();
+    dir2.close();
   }
 }

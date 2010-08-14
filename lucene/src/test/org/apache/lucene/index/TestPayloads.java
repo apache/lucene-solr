@@ -99,7 +99,7 @@ public class TestPayloads extends LuceneTestCase {
     // payload bit in the FieldInfo
     public void testPayloadFieldBit() throws Exception {
         rnd = newRandom();
-        Directory ram = new RAMDirectory();
+        Directory ram = newDirectory(rnd);
         PayloadAnalyzer analyzer = new PayloadAnalyzer();
         IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(rnd, TEST_VERSION_CURRENT, analyzer));
         Document d = new Document();
@@ -150,20 +150,22 @@ public class TestPayloads extends LuceneTestCase {
         assertTrue("Payload field bit should be set.", fi.fieldInfo("f2").storePayloads);
         assertTrue("Payload field bit should be set.", fi.fieldInfo("f3").storePayloads);
         reader.close();        
+        ram.close();
     }
 
     // Tests if payloads are correctly stored and loaded using both RamDirectory and FSDirectory
     public void testPayloadsEncoding() throws Exception {
         rnd = newRandom();
         // first perform the test using a RAMDirectory
-        Directory dir = new RAMDirectory();
+        Directory dir = newDirectory(rnd);
         performTest(rnd, dir);
-        
+        dir.close();
         // now use a FSDirectory and repeat same test
         File dirName = _TestUtil.getTempDir("test_payloads");
         dir = FSDirectory.open(dirName);
         performTest(rnd, dir);
        _TestUtil.rmDir(dirName);
+        dir.close();
     }
     
     // builds an index with payloads in the given Directory and performs
@@ -469,7 +471,7 @@ public class TestPayloads extends LuceneTestCase {
         final int numDocs = 50 * RANDOM_MULTIPLIER;
         final ByteArrayPool pool = new ByteArrayPool(numThreads, 5);
         
-        Directory dir = new RAMDirectory();
+        Directory dir = newDirectory(rnd);
         final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(rnd, 
             TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
         final String field = "test";
@@ -513,7 +515,7 @@ public class TestPayloads extends LuceneTestCase {
         }
         terms.close();
         reader.close();
-        
+        dir.close();
         assertEquals(pool.size(), numThreads);
     }
     

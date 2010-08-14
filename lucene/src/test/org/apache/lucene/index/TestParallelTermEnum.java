@@ -31,13 +31,15 @@ import org.apache.lucene.store.MockRAMDirectory;
 public class TestParallelTermEnum extends LuceneTestCase {
     private IndexReader ir1;
     private IndexReader ir2;
-
+    private MockRAMDirectory rd1;
+    private MockRAMDirectory rd2;
+    
     @Override
     protected void setUp() throws Exception {
         super.setUp();
         Document doc;
         Random random = newRandom();
-        MockRAMDirectory rd1 = new MockRAMDirectory();
+        rd1 = newDirectory(random);
         IndexWriter iw1 = new IndexWriter(rd1, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
 
         doc = new Document();
@@ -49,7 +51,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
         iw1.addDocument(doc);
 
         iw1.close();
-        MockRAMDirectory rd2 = new MockRAMDirectory();
+        rd2 = newDirectory(random);
         IndexWriter iw2 = new IndexWriter(rd2, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
 
         doc = new Document();
@@ -70,6 +72,8 @@ public class TestParallelTermEnum extends LuceneTestCase {
     protected void tearDown() throws Exception {
         ir1.close();
         ir2.close();
+        rd1.close();
+        rd2.close();
         super.tearDown();
     }
 
