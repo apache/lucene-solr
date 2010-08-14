@@ -100,6 +100,11 @@ Changes in backwards compatibility policy
 * LUCENE-2484: Removed deprecated TermAttribute. Use CharTermAttribute
   and TermToBytesRefAttribute instead.  (Uwe Schindler)
 
+* LUCENE-2602: The default (LogByteSizeMergePolicy) merge policy now
+  takes deletions into account by default.  You can disable this by
+  calling setCalibrateSizeByDeletes(false) on the merge policy.  (Mike
+  McCandless)
+
 API Changes
 
 * LUCENE-2302, LUCENE-1458, LUCENE-2111, LUCENE-2514: Terms are no longer
