@@ -45,8 +45,8 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.payloads.PayloadHelper;
 import org.apache.lucene.search.payloads.PayloadSpanUtil;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestPayloadSpans extends LuceneTestCase {
@@ -54,6 +54,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   private Similarity similarity = new DefaultSimilarity();
   protected IndexReader indexReader;
   private IndexReader closeIndexReader;
+  private Directory directory;
   private Random rand;
 
   public TestPayloadSpans(String s) {
@@ -112,7 +113,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     SpanQuery spq = new SpanNearQuery(clauses, 5, true);
     SpanNotQuery snq = new SpanNotQuery(spq, new SpanTermQuery(new Term(PayloadHelper.FIELD, "two")));
 
-    MockRAMDirectory directory = new MockRAMDirectory();
+    Directory directory = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, directory,
                                                      newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
 
@@ -125,6 +126,7 @@ public class TestPayloadSpans extends LuceneTestCase {
 
     checkSpans(snq.getSpans(reader), 1,new int[]{2});
     reader.close();
+    directory.close();
   }
   
   public void testNestedSpans() throws Exception {
@@ -181,6 +183,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     assertTrue("spans is null and it shouldn't be", spans != null);
     checkSpans(spans, 2, new int[]{3,3});
     closeIndexReader.close();
+    directory.close();
   }
   
   public void testFirstClauseWithoutPayload() throws Exception {
@@ -212,6 +215,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     assertTrue("spans is null and it shouldn't be", spans != null);
     checkSpans(spans, 1, new int[]{3});
     closeIndexReader.close();
+    directory.close();
   }
   
   public void testHeavilyNestedSpanQuery() throws Exception {
@@ -248,11 +252,12 @@ public class TestPayloadSpans extends LuceneTestCase {
     assertTrue("spans is null and it shouldn't be", spans != null);
     checkSpans(spans, 2, new int[]{8, 8});
     closeIndexReader.close();
+    directory.close();
   }
   
   public void testShrinkToAfterShortestMatch() throws CorruptIndexException,
       LockObtainFailedException, IOException {
-    MockRAMDirectory directory = new MockRAMDirectory();
+    Directory directory = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, directory,
                                                      newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
 
@@ -285,11 +290,12 @@ public class TestPayloadSpans extends LuceneTestCase {
     assertTrue(payloadSet.contains("a:Noise:10"));
     assertTrue(payloadSet.contains("k:Noise:11"));
     reader.close();
+    directory.close();
   }
   
   public void testShrinkToAfterShortestMatch2() throws CorruptIndexException,
       LockObtainFailedException, IOException {
-    MockRAMDirectory directory = new MockRAMDirectory();
+    Directory directory = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, directory,
                                                      newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
 
@@ -320,11 +326,12 @@ public class TestPayloadSpans extends LuceneTestCase {
     assertTrue(payloadSet.contains("a:Noise:10"));
     assertTrue(payloadSet.contains("k:Noise:11"));
     reader.close();
+    directory.close();
   }
   
   public void testShrinkToAfterShortestMatch3() throws CorruptIndexException,
       LockObtainFailedException, IOException {
-    MockRAMDirectory directory = new MockRAMDirectory();
+    Directory directory = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, directory,
                                                      newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
 
@@ -361,10 +368,11 @@ public class TestPayloadSpans extends LuceneTestCase {
     assertTrue(payloadSet.contains("a:Noise:10"));
     assertTrue(payloadSet.contains("k:Noise:11"));
     reader.close();
+    directory.close();
   }
   
   public void testPayloadSpanUtil() throws Exception {
-    MockRAMDirectory directory = new MockRAMDirectory();
+    Directory directory = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, directory,
                                                      newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
 
@@ -386,6 +394,7 @@ public class TestPayloadSpans extends LuceneTestCase {
         System.out.println(new String(bytes));
     }
     reader.close();
+    directory.close();
   }
 
   private void checkSpans(Spans spans, int expectedNumSpans, int expectedNumPayloads,
@@ -422,7 +431,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   }
   
   private IndexSearcher getSearcher() throws Exception {
-    MockRAMDirectory directory = new MockRAMDirectory();
+    directory = newDirectory(rand);
     String[] docs = new String[]{"xx rr yy mm  pp","xx yy mm rr pp", "nopayload qq ss pp np", "one two three four five six seven eight nine ten eleven", "nine one two three four five six seven eight eleven ten"};
     RandomIndexWriter writer = new RandomIndexWriter(rand, directory,
                                                      newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));

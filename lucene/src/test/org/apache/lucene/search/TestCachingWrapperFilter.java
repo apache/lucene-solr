@@ -20,8 +20,6 @@ package org.apache.lucene.search;
 import java.util.Random;
 import java.io.IOException;
 
-import org.apache.lucene.analysis.KeywordAnalyzer;
-import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
@@ -43,7 +41,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   }
 
   public void testCachingWorks() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, dir);
     writer.close();
 
@@ -65,10 +63,11 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     assertFalse("second time", filter.wasCalled());
 
     reader.close();
+    dir.close();
   }
   
   public void testNullDocIdSet() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, dir);
     writer.close();
 
@@ -86,10 +85,11 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     assertSame(DocIdSet.EMPTY_DOCIDSET, cacher.getDocIdSet(reader));
     
     reader.close();
+    dir.close();
   }
   
   public void testNullDocIdSetIterator() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, dir);
     writer.close();
 
@@ -112,6 +112,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     assertSame(DocIdSet.EMPTY_DOCIDSET, cacher.getDocIdSet(reader));
     
     reader.close();
+    dir.close();
   }
   
   private static void assertDocIdSetCacheable(IndexReader reader, Filter filter, boolean shouldCacheable) throws IOException {
@@ -129,7 +130,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   }
   
   public void testIsCacheAble() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, dir);
     writer.addDocument(new Document());
     writer.close();
@@ -151,10 +152,11 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     }, true);
 
     reader.close();
+    dir.close();
   }
 
   public void testEnforceDeletions() throws Exception {
-    Directory dir = new MockRAMDirectory();
+    Directory dir = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, dir);
 
     // NOTE: cannot use writer.getReader because RIW (on
@@ -266,6 +268,9 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     // doesn't count as a miss
     assertEquals(missCount, filter.missCount);
+    reader.close();
+    writer.close();
+    dir.close();
   }
 
   private static IndexReader refreshReader(IndexReader reader) throws IOException {
