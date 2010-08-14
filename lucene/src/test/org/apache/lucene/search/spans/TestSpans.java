@@ -26,7 +26,6 @@ import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Searcher;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
