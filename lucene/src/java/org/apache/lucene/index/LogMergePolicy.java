@@ -60,8 +60,7 @@ public abstract class LogMergePolicy extends MergePolicy {
   long maxMergeSize;
   int maxMergeDocs = DEFAULT_MAX_MERGE_DOCS;
 
-  /* TODO 3.0: change this default to true */
-  protected boolean calibrateSizeByDeletes = false;
+  protected boolean calibrateSizeByDeletes = true;
   
   private boolean useCompoundFile = true;
   private boolean useCompoundDocStore = true;
@@ -162,6 +161,7 @@ public abstract class LogMergePolicy extends MergePolicy {
   protected long sizeDocs(SegmentInfo info) throws IOException {
     if (calibrateSizeByDeletes) {
       int delCount = writer.get().numDeletedDocs(info);
+      assert delCount <= info.docCount;
       return (info.docCount - (long)delCount);
     } else {
       return info.docCount;
@@ -172,8 +172,9 @@ public abstract class LogMergePolicy extends MergePolicy {
     long byteSize = info.sizeInBytes();
     if (calibrateSizeByDeletes) {
       int delCount = writer.get().numDeletedDocs(info);
-      float delRatio = (info.docCount <= 0 ? 0.0f : ((float)delCount / (float)info.docCount));
-      return (info.docCount <= 0 ?  byteSize : (long)(byteSize * (1.0f - delRatio)));
+      double delRatio = (info.docCount <= 0 ? 0.0f : ((float)delCount / (float)info.docCount));
+      assert delRatio <= 1.0;
+      return (info.docCount <= 0 ?  byteSize : (long)(byteSize * (1.0 - delRatio)));
     } else {
       return byteSize;
     }
