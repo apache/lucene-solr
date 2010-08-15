@@ -403,7 +403,8 @@ Bug Fixes
 
 * SOLR-2036: Avoid expensive fieldCache ram estimation for the
   admin stats page. (yonik)
-  
+
+* SOLR-2047: ReplicationHandler should accept bool type for enable flag. (koji)  
 
 Other Changes
 ----------------------

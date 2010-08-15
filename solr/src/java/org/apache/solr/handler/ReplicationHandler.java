@@ -25,6 +25,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.FastOutputStream;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.*;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.BinaryQueryResponseWriter;
@@ -771,13 +772,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     registerFileStreamResponseWriter();
     registerCloseHook();
     NamedList slave = (NamedList) initArgs.get("slave");
-    boolean enableSlave = slave != null && (null == slave.get("enable") || "true".equals(slave.get("enable")));
+    boolean enableSlave = isEnabled( slave );
     if (enableSlave) {
       tempSnapPuller = snapPuller = new SnapPuller(slave, this, core);
       isSlave = true;
     }
     NamedList master = (NamedList) initArgs.get("master");
-    boolean enableMaster = master != null && (null == master.get("enable") || "true".equals(master.get("enable")));
+    boolean enableMaster = isEnabled( master );
     if (enableMaster) {
       includeConfFiles = (String) master.get(CONF_FILES);
       if (includeConfFiles != null && includeConfFiles.trim().length() > 0) {
@@ -862,6 +863,16 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       LOG.info("Commits will be reserved for  " + reserveCommitDuration);
       isMaster = true;
     }
+  }
+  
+  // check master or slave is enabled
+  private boolean isEnabled( NamedList params ){
+    if( params == null ) return false;
+    Object enable = params.get( "enable" );
+    if( enable == null ) return true;
+    if( enable instanceof String )
+      return StrUtils.parseBool( (String)enable );
+    return Boolean.TRUE.equals( enable );
   }
 
   /**
