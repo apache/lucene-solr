@@ -46,7 +46,7 @@ import org.apache.lucene.index.TermsEnum;
  * </pre>
  *
  * matches all documents whose float valued "weight" field
- * ranges from 0.3 to 0.10, inclusive.
+ * ranges from 0.03 to 0.10, inclusive.
  *
  * <p>The performance of NumericRangeQuery is much better
  * than the corresponding {@link TermRangeQuery} because the
