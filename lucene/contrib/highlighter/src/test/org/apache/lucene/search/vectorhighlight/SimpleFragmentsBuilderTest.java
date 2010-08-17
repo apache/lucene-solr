@@ -148,6 +148,21 @@ public class SimpleFragmentsBuilderTest extends AbstractTestCase {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
     SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
+    // '/' separator doesn't effect the snippet because of NOT_ANALYZED field
+    sfb.setMultiValuedSeparator( '/' );
     assertEquals( "abc<b>defg</b>hijkl", sfb.createFragment( reader, 0, F, ffl ) );
+  }
+  
+  public void testMVSeparator() throws Exception {
+    makeIndexShortMV();
+
+    FieldQuery fq = new FieldQuery( tq( "d" ), true, true );
+    FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
+    FieldPhraseList fpl = new FieldPhraseList( stack, fq );
+    SimpleFragListBuilder sflb = new SimpleFragListBuilder();
+    FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
+    SimpleFragmentsBuilder sfb = new SimpleFragmentsBuilder();
+    sfb.setMultiValuedSeparator( '/' );
+    assertEquals( "a b c/<b>d</b> e", sfb.createFragment( reader, 0, F, ffl ) );
   }
 }

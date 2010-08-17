@@ -103,6 +103,10 @@ API Changes
 
  * LUCENE-2477: Deprecate MoreLikeThis's DEFAULT_ANALYZER. If you are not using term 
    vectors, explicitly set your analyzer instead.  (Robert Muir)
+
+ * LUCENE-2603: Add setMultiValuedSeparator(char) method to set an arbitrary
+   char that is used when concatenating multiValued data. Default is a space
+   (' '). It is applied on ANALYZED field only. (Koji Sekiguchi)
    
 New features
 
