@@ -44,6 +44,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
     "<b style=\"background:turquoise\">", "<b style=\"background:powderblue\">"
   };
   public static final String[] COLORED_POST_TAGS = { "</b>" };
+  private char multiValuedSeparator = ' ';
   
   protected BaseFragmentsBuilder(){
     this( new String[]{ "<b>" }, new String[]{ "</b>" } );
@@ -155,7 +156,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
       int startOffset, int endOffset ){
     while( buffer.length() < endOffset && index[0] < values.length ){
       if( index[0] > 0 && values[index[0]].length() > 0 )
-        buffer.append( ' ' );
+        buffer.append( multiValuedSeparator );
       buffer.append( values[index[0]++] );
     }
     int eo = buffer.length() < endOffset ? buffer.length() : endOffset;
@@ -166,11 +167,19 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
       int startOffset, int endOffset ){
     while( buffer.length() < endOffset && index[0] < values.length ){
       if( index[0] > 0 && values[index[0]].isTokenized() && values[index[0]].stringValue().length() > 0 )
-        buffer.append( ' ' );
+        buffer.append( multiValuedSeparator );
       buffer.append( values[index[0]++].stringValue() );
     }
     int eo = buffer.length() < endOffset ? buffer.length() : endOffset;
     return buffer.substring( startOffset, eo );
+  }
+  
+  public void setMultiValuedSeparator( char separator ){
+    multiValuedSeparator = separator;
+  }
+  
+  public char getMultiValuedSeparator(){
+    return multiValuedSeparator;
   }
 
   protected String getPreTag( int num ){

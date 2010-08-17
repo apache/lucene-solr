@@ -112,6 +112,10 @@ API Changes
    such as stopword lists and any language-specific processing in addition to
    stemming. Add Turkish and Romanian stopwords lists to support this.
    (Robert Muir, Uwe Schindler, Simon Willnauer)
+
+ * LUCENE-2603: Add setMultiValuedSeparator(char) method to set an arbitrary
+   char that is used when concatenating multiValued data. Default is a space
+   (' '). It is applied on ANALYZED field only. (Koji Sekiguchi)
    
 New features
 
