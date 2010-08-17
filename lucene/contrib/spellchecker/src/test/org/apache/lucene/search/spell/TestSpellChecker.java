@@ -62,7 +62,7 @@ public class TestSpellChecker extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new Field("field1", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
       doc.add(new Field("field2", English.intToEnglish(i + 1), Field.Store.YES, Field.Index.ANALYZED)); // + word thousand
-      doc.add(new Field("field3", "fvei" + (i % 2 == 0 ? "five" : ""), Field.Store.YES, Field.Index.ANALYZED)); // + word thousand
+      doc.add(new Field("field3", "fvei" + (i % 2 == 0 ? " five" : ""), Field.Store.YES, Field.Index.ANALYZED)); // + word thousand
       writer.addDocument(doc);
     }
     writer.close();
@@ -119,9 +119,10 @@ public class TestSpellChecker extends LuceneTestCase {
     addwords(r, compareSP, "field3");
 
     String[] similar = compareSP.suggestSimilar("fvie", 2, r, "field3", false);
-    assertTrue(similar.length > 0);
+    assertEquals(2, similar.length);
     //five and fvei have the same score, but different frequencies.
     assertEquals("fvei", similar[0]);
+    assertEquals("five", similar[1]);
     r.close();
     if (!compareSP.isClosed())
       compareSP.close();
