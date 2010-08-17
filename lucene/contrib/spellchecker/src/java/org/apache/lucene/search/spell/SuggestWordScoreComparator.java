@@ -1,8 +1,4 @@
 package org.apache.lucene.search.spell;
-
-import java.util.Comparator;
-
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -20,28 +16,32 @@ import java.util.Comparator;
  * limitations under the License.
  */
 
+import java.util.Comparator;
+
+
 /**
- *  SuggestWord, used in suggestSimilar method in SpellChecker class.
- * <p/>
- * Default sort is first by score, then by frequency.
- * 
+ * Score first, then frequency
  *
- */
-public final class SuggestWord{
-  
-  /**
-   * the score of the word
-   */
-  public float score;
+ **/
+class SuggestWordScoreComparator implements Comparator<SuggestWord> {
+  @Override
+  public int compare(SuggestWord first, SuggestWord second) {
+    // first criteria: the distance
+    if (first.score > second.score) {
+      return 1;
+    }
+    if (first.score < second.score) {
+      return -1;
+    }
 
-  /**
-   * The freq of the word
-   */
-  public int freq;
+    // second criteria (if first criteria is equal): the popularity
+    if (first.freq > second.freq) {
+      return 1;
+    }
 
-  /**
-   * the suggested word
-   */
-  public String string;
-
+    if (first.freq < second.freq) {
+      return -1;
+    }
+    return 0;
+  }
 }

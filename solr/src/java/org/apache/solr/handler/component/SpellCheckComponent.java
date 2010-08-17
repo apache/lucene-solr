@@ -24,6 +24,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.search.spell.LevensteinDistance;
 import org.apache.lucene.search.spell.StringDistance;
+import org.apache.lucene.search.spell.SuggestWord;
+import org.apache.lucene.search.spell.SuggestWordQueue;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.solr.client.solrj.response.SpellCheckResponse;
 import org.slf4j.Logger;
@@ -157,59 +159,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     }
   }
 
-  static class SuggestWordQueue extends PriorityQueue {
-    SuggestWordQueue(int size) {
-      initialize(size);
-    }
 
-    @Override
-    protected boolean lessThan(Object a, Object b) {
-      SuggestWord wa = (SuggestWord) a;
-      SuggestWord wb = (SuggestWord) b;
-      int val = wa.compareTo(wb);
-      return val < 0;
-    }
-  }
-
-  /**
-   * Borrowed from Lucene SpellChecker
-   */
-  static class SuggestWord {
-    /**
-     * the score of the word
-     */
-    public float score;
-
-    /**
-     * The freq of the word
-     */
-    public int freq;
-
-    /**
-     * the suggested word
-     */
-    public String string;
-
-    public final int compareTo(SuggestWord a) {
-      // first criteria: the edit distance
-      if (score > a.score) {
-        return 1;
-      }
-      if (score < a.score) {
-        return -1;
-      }
-
-      // second criteria (if first criteria is equal): the popularity
-      if (freq > a.freq) {
-        return 1;
-      }
-
-      if (freq < a.freq) {
-        return -1;
-      }
-      return 0;
-    }
-  }
 
   @Override
   public void modifyRequest(ResponseBuilder rb, SearchComponent who, ShardRequest sreq) {

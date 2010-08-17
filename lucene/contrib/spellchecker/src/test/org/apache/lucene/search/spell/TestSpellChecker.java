@@ -20,6 +20,7 @@ package org.apache.lucene.search.spell;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ExecutorService;
@@ -61,6 +62,7 @@ public class TestSpellChecker extends LuceneTestCase {
       Document doc = new Document();
       doc.add(new Field("field1", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
       doc.add(new Field("field2", English.intToEnglish(i + 1), Field.Store.YES, Field.Index.ANALYZED)); // + word thousand
+      doc.add(new Field("field3", "fvei" + (i % 2 == 0 ? " five" : ""), Field.Store.YES, Field.Index.ANALYZED)); // + word thousand
       writer.addDocument(doc);
     }
     writer.close();
@@ -85,10 +87,10 @@ public class TestSpellChecker extends LuceneTestCase {
 
     spellChecker.clearIndex();
 
-    addwords(r, "field1");
+    addwords(r, spellChecker, "field1");
     int num_field1 = this.numdoc();
 
-    addwords(r, "field2");
+    addwords(r, spellChecker, "field2");
     int num_field2 = this.numdoc();
 
     assertEquals(num_field2, num_field1 + 1);
@@ -108,6 +110,25 @@ public class TestSpellChecker extends LuceneTestCase {
     checkCommonSuggestions(r);
     checkNGramSuggestions();
     r.close();
+  }
+
+  public void testComparator() throws Exception {
+    IndexReader r = IndexReader.open(userindex, true);
+    Directory compIdx = newDirectory(random);
+    SpellChecker compareSP = new SpellCheckerMock(compIdx, new LevensteinDistance(), new SuggestWordFrequencyComparator());
+    addwords(r, compareSP, "field3");
+
+    String[] similar = compareSP.suggestSimilar("fvie", 2, r, "field3", false);
+    assertTrue(similar.length == 2);
+    //five and fvei have the same score, but different frequencies.
+    assertEquals("fvei", similar[0]);
+    assertEquals("five", similar[1]);
+    r.close();
+    if (!compareSP.isClosed())
+      compareSP.close();
+    compIdx.close();
+
+
   }
 
   private void checkCommonSuggestions(IndexReader r) throws IOException {
@@ -204,9 +225,9 @@ public class TestSpellChecker extends LuceneTestCase {
     assertEquals(similar[1], "ninety");
   }
 
-  private void addwords(IndexReader r, String field) throws IOException {
+  private void addwords(IndexReader r, SpellChecker sc, String field) throws IOException {
     long time = System.currentTimeMillis();
-    spellChecker.indexDictionary(new LuceneDictionary(r, field));
+    sc.indexDictionary(new LuceneDictionary(r, field));
     time = System.currentTimeMillis() - time;
     //System.out.println("time to build " + field + ": " + time);
   }
@@ -224,9 +245,9 @@ public class TestSpellChecker extends LuceneTestCase {
     IndexReader r = IndexReader.open(userindex, true);
     spellChecker.clearIndex();
     String field = "field1";
-    addwords(r, "field1");
+    addwords(r, spellChecker, "field1");
     int num_field1 = this.numdoc();
-    addwords(r, "field2");
+    addwords(r, spellChecker, "field2");
     int num_field2 = this.numdoc();
     assertEquals(num_field2, num_field1 + 1);
     checkCommonSuggestions(r);
@@ -280,10 +301,10 @@ public class TestSpellChecker extends LuceneTestCase {
     final IndexReader r = IndexReader.open(userindex, true);
     spellChecker.clearIndex();
     assertEquals(2, searchers.size());
-    addwords(r, "field1");
+    addwords(r, spellChecker, "field1");
     assertEquals(3, searchers.size());
     int num_field1 = this.numdoc();
-    addwords(r, "field2");
+    addwords(r, spellChecker, "field2");
     assertEquals(4, searchers.size());
     int num_field2 = this.numdoc();
     assertEquals(num_field2, num_field1 + 1);
@@ -394,6 +415,10 @@ public class TestSpellChecker extends LuceneTestCase {
     public SpellCheckerMock(Directory spellIndex, StringDistance sd)
         throws IOException {
       super(spellIndex, sd);
+    }
+
+    public SpellCheckerMock(Directory spellIndex, StringDistance sd, Comparator<SuggestWord> comparator) throws IOException {
+      super(spellIndex, sd, comparator);
     }
 
     @Override

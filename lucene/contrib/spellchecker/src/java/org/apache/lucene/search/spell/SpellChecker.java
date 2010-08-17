@@ -18,6 +18,7 @@ package org.apache.lucene.search.spell;
  */
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.Iterator;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
@@ -103,6 +104,8 @@ public class SpellChecker implements java.io.Closeable {
   
   private StringDistance sd;
 
+  private Comparator<SuggestWord> comparator;
+
   /**
    * Use the given directory as a spell checker index. The directory
    * is created if it doesn't exist yet.
@@ -111,8 +114,7 @@ public class SpellChecker implements java.io.Closeable {
    * @throws IOException if Spellchecker can not open the directory
    */
   public SpellChecker(Directory spellIndex, StringDistance sd) throws IOException {
-    setSpellIndex(spellIndex);
-    setStringDistance(sd);
+    this(spellIndex, sd, SuggestWordQueue.DEFAULT_COMPARATOR);
   }
   /**
    * Use the given directory as a spell checker index with a
@@ -126,6 +128,20 @@ public class SpellChecker implements java.io.Closeable {
    */
   public SpellChecker(Directory spellIndex) throws IOException {
     this(spellIndex, new LevensteinDistance());
+  }
+
+  /**
+   * Use the given directory as a spell checker index with the given {@link org.apache.lucene.search.spell.StringDistance} measure
+   * and the given {@link java.util.Comparator} for sorting the results.
+   * @param spellIndex The spelling index
+   * @param sd The distance
+   * @param comparator The comparator
+   * @throws IOException if there is a problem opening the index
+   */
+  public SpellChecker(Directory spellIndex, StringDistance sd, Comparator<SuggestWord> comparator) throws IOException {
+    setSpellIndex(spellIndex);
+    setStringDistance(sd);
+    this.comparator = comparator;
   }
   
   /**
@@ -151,6 +167,15 @@ public class SpellChecker implements java.io.Closeable {
       swapSearcher(spellIndexDir);
     }
   }
+
+  /**
+   * Sets the {@link java.util.Comparator} for the {@link SuggestWordQueue}.
+   * @param comparator the comparator
+   */
+  public void setComparator(Comparator<SuggestWord> comparator) {
+    this.comparator = comparator;
+  }
+
   /**
    * Sets the {@link StringDistance} implementation for this
    * {@link SpellChecker} instance.
@@ -271,7 +296,7 @@ public class SpellChecker implements java.io.Closeable {
   //    System.out.println("Q: " + query);
       ScoreDoc[] hits = indexSearcher.search(query, null, maxHits).scoreDocs;
   //    System.out.println("HITS: " + hits.length());
-      SuggestWordQueue sugQueue = new SuggestWordQueue(numSug);
+      SuggestWordQueue sugQueue = new SuggestWordQueue(numSug, comparator);
   
       // go thru more than 'maxr' matches in case the distance filter triggers
       int stop = Math.min(hits.length, maxHits);

@@ -20,6 +20,9 @@ New Features
     code is refactored to support append-only FS, and to allow for future
     customization of per-segment information. (Andrzej Bialecki)
 
+  * LUCENE-2479: Added ability to provide a sort comparator for spelling suggestions along
+    with two implementations.  The existing comparator (score, then frequency) is the default (Grant Ingersoll)
+
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy
