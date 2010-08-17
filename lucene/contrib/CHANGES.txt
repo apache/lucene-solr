@@ -8,6 +8,9 @@ New Features
     pages from the buffer cache, since fadvise/madvise do not seem.
     (Michael McCandless)
 
+  * LUCENE-2479: Added ability to provide a sort comparator for spelling suggestions along
+    with two implementations.  The existing comparator (score, then frequency) is the default (Grant Ingersoll)
+
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy
