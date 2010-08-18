@@ -226,6 +226,8 @@ New Features
 
 * SOLR-2053: Add support for custom comparators in Solr spellchecker, per LUCENE-2479 (gsingers)
 
+* SOLR-2049: Add hl.multiValuedSeparatorChar for FastVectorHighlighter, per LUCENE-2603. (koji)
+
 Optimizations
 ----------------------
 

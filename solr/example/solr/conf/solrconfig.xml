@@ -1032,7 +1032,13 @@
       <fragListBuilder name="single" class="org.apache.solr.highlight.SingleFragListBuilder"/>
 
       <!-- default tag FragmentsBuilder -->
-      <fragmentsBuilder name="default" class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder" default="true"/>
+      <fragmentsBuilder name="default" class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder" default="true">
+        <!-- 
+        <lst name="defaults">
+          <str name="hl.multiValuedSeparatorChar">/</str>
+        </lst>
+        -->
+      </fragmentsBuilder>
 
       <!-- multi-colored tag FragmentsBuilder -->
       <fragmentsBuilder name="colored" class="org.apache.solr.highlight.ScoreOrderFragmentsBuilder">
