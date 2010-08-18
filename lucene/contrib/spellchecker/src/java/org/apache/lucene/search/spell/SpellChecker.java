@@ -176,6 +176,10 @@ public class SpellChecker implements java.io.Closeable {
     this.comparator = comparator;
   }
 
+  public Comparator<SuggestWord> getComparator() {
+    return comparator;
+  }
+
   /**
    * Sets the {@link StringDistance} implementation for this
    * {@link SpellChecker} instance.

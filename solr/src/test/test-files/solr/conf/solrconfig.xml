@@ -357,6 +357,27 @@
       <str name="characterEncoding">UTF-8</str>
       <str name="spellcheckIndexDir">spellchecker3</str>
     </lst>
+    <!-- Comparator -->
+    <lst name="spellchecker">
+      <str name="name">freq</str>
+      <str name="field">lowerfilt</str>
+      <str name="spellcheckIndexDir">spellcheckerFreq</str>
+      <!-- comparatorClass be one of:
+        1. score (default)
+        2. freq (Frequency first, then score)
+        3. A fully qualified class name
+       -->
+      <str name="comparatorClass">freq</str>
+      <str name="buildOnCommit">true</str>
+    </lst>
+    <lst name="spellchecker">
+      <str name="name">fqcn</str>
+      <str name="field">lowerfilt</str>
+      <str name="spellcheckIndexDir">spellcheckerFQCN</str>
+      <str name="comparatorClass">org.apache.solr.spelling.SampleComparator</str>
+      <str name="buildOnCommit">true</str>
+    </lst>
+
   </searchComponent>
 
   <searchComponent name="termsComp" class="org.apache.solr.handler.component.TermsComponent"/>
