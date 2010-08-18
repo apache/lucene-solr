@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.br;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
@@ -80,6 +79,9 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
       "suas","tal","tambem","teu","teus","toda","todas","todo",
       "todos","tua","tuas","tudo","um","uma","umas","uns"};
 
+  /** File containing default Brazilian Portuguese stopwords. */
+  public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
+  
 	/**
    * Returns an unmodifiable instance of the default stop-words set.
    * @return an unmodifiable instance of the default stop-words set.
@@ -89,9 +91,19 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
   }
   
   private static class DefaultSetHolder {
-    static final Set<?> DEFAULT_STOP_SET = CharArraySet
-        .unmodifiableSet(new CharArraySet(Version.LUCENE_CURRENT, 
-            Arrays.asList(BRAZILIAN_STOP_WORDS), false));
+    static final Set<?> DEFAULT_STOP_SET;
+    
+    static {
+      try {
+        DEFAULT_STOP_SET = CharArraySet.unmodifiableSet(new CharArraySet(
+            Version.LUCENE_CURRENT, WordlistLoader.getWordSet(BrazilianAnalyzer.class, 
+                DEFAULT_STOPWORD_FILE, "#"), false));
+      } catch (IOException ex) {
+        // default set should always be present as it is part of the
+        // distribution (JAR)
+        throw new RuntimeException("Unable to load default stopword set");
+      }
+    }
   }
 
 

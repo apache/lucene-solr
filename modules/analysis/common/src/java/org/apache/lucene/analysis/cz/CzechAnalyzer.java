@@ -31,7 +31,6 @@ import org.apache.lucene.analysis.util.WordlistLoader;
 import org.apache.lucene.util.Version;
 
 import java.io.*;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
@@ -84,6 +83,9 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
         "jeho\u017e","j\u00ed\u017e","jeliko\u017e","je\u017e","jako\u017e","na\u010de\u017e",
     };
 	
+  /** File containing default Czech stopwords. */
+  public final static String DEFAULT_STOPWORD_FILE = "stopwords.txt";
+  
   /**
    * Returns a set of default Czech-stopwords
    * 
@@ -94,8 +96,19 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
 	}
 	
 	private static class DefaultSetHolder {
-	  private static final Set<?> DEFAULT_SET = CharArraySet.unmodifiableSet(new CharArraySet(
-	      Version.LUCENE_CURRENT, Arrays.asList(CZECH_STOP_WORDS), false));
+	  private static final Set<?> DEFAULT_SET;
+	  
+	  static {
+	    try {
+	      DEFAULT_SET = CharArraySet.unmodifiableSet(new CharArraySet(
+	          Version.LUCENE_CURRENT, WordlistLoader.getWordSet(CzechAnalyzer.class, 
+	              DEFAULT_STOPWORD_FILE, "#"), false));
+	    } catch (IOException ex) {
+	      // default set should always be present as it is part of the
+	      // distribution (JAR)
+	      throw new RuntimeException("Unable to load default stopword set");
+	    }
+	  }
 	}
 
  
