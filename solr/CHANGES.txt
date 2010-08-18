@@ -228,6 +228,9 @@ New Features
 
 * SOLR-2049: Add hl.multiValuedSeparatorChar for FastVectorHighlighter, per LUCENE-2603. (koji)
 
+* SOLR-1881: add a url-scheme config string to SearchHandler to specify alternate
+  URL prefixes for distributed search shard requests.  (Sami Siren via yonik)
+
 Optimizations
 ----------------------
 

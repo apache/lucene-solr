@@ -64,9 +64,14 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
   // cannot be established within x ms. with a
   // java.net.SocketTimeoutException: Connection timed out
   static final String INIT_CONNECTION_TIMEOUT = "shard-connection-timeout";
+
+  // URL scheme to be used in distributed search.
+  static final String INIT_URL_SCHEME = "url-scheme";
+  
   static int soTimeout = 0; //current default values
   static int connectionTimeout = 0; //current default values
-
+  public static String scheme = "http://"; //current default values
+  
   protected static Logger log = LoggerFactory.getLogger(SearchHandler.class);
 
   protected List<SearchComponent> components = null;
@@ -147,6 +152,12 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
     if (so != null) {
       soTimeout = (Integer) so;
       log.info("Setting shard-socket-timeout to: " + soTimeout);
+    }
+
+    Object urlScheme = initArgs.get(INIT_URL_SCHEME);
+    if (urlScheme != null) {
+      SearchHandler.scheme = (String) urlScheme + "://";
+      log.info("Setting url-scheme to: " + urlScheme);
     }
   }
 
@@ -403,7 +414,7 @@ class HttpCommComponent {
 
         try {
           // String url = "http://" + shard + "/select";
-          String url = "http://" + shard;
+          String url = SearchHandler.scheme + shard;
 
           params.remove(CommonParams.WT); // use default (currently javabin)
           params.remove(CommonParams.VERSION);

@@ -543,6 +543,9 @@
      <arr name="last-components">
        <str>spellcheck</str>
      </arr>
+     <!--
+     <str name="url-scheme">httpx</str>
+     -->
   </requestHandler>
   
 
