@@ -108,6 +108,11 @@
       <artifactId>commons-fileupload</artifactId>
       <version>1.2.1</version>
     </dependency>
+    <dependency>
+      <groupId>org.apache.velocity</groupId>
+      <artifactId>velocity</artifactId>
+      <version>1.6.1</version>
+    </dependency>
 
     <!-- Solr specific commons csv -->
     <dependency>
