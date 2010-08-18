@@ -18,6 +18,7 @@
 package org.apache.solr.highlight;
 
 import org.apache.lucene.search.vectorhighlight.FragmentsBuilder;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.DefaultSolrParams;
 import org.apache.solr.common.params.HighlightParams;
 import org.apache.solr.common.params.SolrParams;
@@ -39,7 +40,10 @@ public abstract class SolrFragmentsBuilder extends HighlightingPluginBase
    */
   public FragmentsBuilder getFragmentsBuilder(SolrParams params) {
     numRequests++;
-    return getFragmentsBuilder( getPreTags( params, null ), getPostTags( params, null ) );
+    if( defaults != null ) {
+      params = new DefaultSolrParams( params, defaults );
+    }
+    return getFragmentsBuilder( params, getPreTags( params, null ), getPostTags( params, null ) );
   }
   
   public String[] getPreTags( SolrParams params, String fieldName ){
@@ -66,5 +70,14 @@ public abstract class SolrFragmentsBuilder extends HighlightingPluginBase
     return tags;
   }
   
-  protected abstract FragmentsBuilder getFragmentsBuilder( String[] preTags, String[] postTags );
+  protected abstract FragmentsBuilder getFragmentsBuilder( SolrParams params, String[] preTags, String[] postTags );
+  
+  protected char getMultiValuedSeparatorChar( SolrParams params ){
+    String separator = params.get( HighlightParams.MULTI_VALUED_SEPARATOR, " " );
+    if( separator.length() > 1 ){
+      throw new SolrException( SolrException.ErrorCode.BAD_REQUEST,
+          HighlightParams.MULTI_VALUED_SEPARATOR + " parameter must be a char, but is \"" + separator + "\"" );
+    }
+    return separator.charAt( 0 );
+  }
 }
