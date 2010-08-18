@@ -27,10 +27,14 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.spell.JaroWinklerDistance;
 import org.apache.lucene.search.spell.SpellChecker;
 import org.apache.lucene.search.spell.StringDistance;
+import org.apache.lucene.search.spell.SuggestWord;
+import org.apache.lucene.search.spell.SuggestWordFrequencyComparator;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.handler.component.SpellCheckComponent;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.junit.AfterClass;
@@ -39,6 +43,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Map;
 
@@ -73,6 +78,27 @@ public class IndexBasedSpellCheckerTest extends SolrTestCaseJ4 {
   @AfterClass
   public static void afterClass() throws Exception {
     queryConverter = null;
+  }
+
+  @Test
+  public void testComparator() throws Exception {
+    SpellCheckComponent component = (SpellCheckComponent) h.getCore().getSearchComponent("spellcheck");
+    assertNotNull(component);
+    AbstractLuceneSpellChecker spellChecker;
+    Comparator<SuggestWord> comp;
+    spellChecker = (AbstractLuceneSpellChecker) component.getSpellChecker("freq");
+    assertNotNull(spellChecker);
+    comp = spellChecker.getSpellChecker().getComparator();
+    assertNotNull(comp);
+    assertTrue(comp instanceof SuggestWordFrequencyComparator);
+
+    spellChecker = (AbstractLuceneSpellChecker) component.getSpellChecker("fqcn");
+    assertNotNull(spellChecker);
+    comp = spellChecker.getSpellChecker().getComparator();
+    assertNotNull(comp);
+    assertTrue(comp instanceof SampleComparator);
+
+
   }
 
   @Test

@@ -710,6 +710,19 @@
       <str name="spellcheckIndexDir">./spellchecker2</str>
     </lst>
      -->
+    <!-- Use an alternate comparator -->
+    <!--<lst name="spellchecker">
+      <str name="name">freq</str>
+      <str name="field">lowerfilt</str>
+      <str name="spellcheckIndexDir">spellcheckerFreq</str>
+      &lt;!&ndash; comparatorClass be one of:
+        1. score (default)
+        2. freq (Frequency first, then score)
+        3. A fully qualified class name
+       &ndash;&gt;
+      <str name="comparatorClass">freq</str>
+      <str name="buildOnCommit">true</str>
+    -->
 
     <!-- a file based spell checker
     <lst name="spellchecker">

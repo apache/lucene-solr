@@ -22,7 +22,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+
+import org.apache.lucene.search.spell.SuggestWord;
+import org.apache.lucene.search.spell.SuggestWordFrequencyComparator;
+import org.apache.lucene.search.spell.SuggestWordQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,6 +65,11 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   public static final String ACCURACY = "accuracy";
   public static final String STRING_DISTANCE = "distanceMeasure";
   public static final String FIELD_TYPE = "fieldType";
+  public static final String COMPARATOR_CLASS = "comparatorClass";
+
+  public static final String SCORE_COMP = "score";
+  public static final String FREQ_COMP = "freq";
+
   protected String field;
   protected String fieldTypeName;
   protected org.apache.lucene.search.spell.SpellChecker spellChecker;
@@ -89,6 +99,19 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
       }
     }
     sourceLocation = (String) config.get(LOCATION);
+    String compClass = (String) config.get(COMPARATOR_CLASS);
+    Comparator<SuggestWord> comp = null;
+    if (compClass != null){
+      if (compClass.equalsIgnoreCase(SCORE_COMP)){
+        comp = SuggestWordQueue.DEFAULT_COMPARATOR;
+      } else if (compClass.equalsIgnoreCase(FREQ_COMP)){
+        comp = new SuggestWordFrequencyComparator();
+      } else{//must be a FQCN
+        comp = (Comparator<SuggestWord>) core.getResourceLoader().newInstance(compClass);
+      }
+    } else {
+      comp = SuggestWordQueue.DEFAULT_COMPARATOR;
+    }
     field = (String) config.get(FIELD);
     String strDistanceName = (String)config.get(STRING_DISTANCE);
     if (strDistanceName != null) {
@@ -99,7 +122,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     }
     try {
       initIndex();
-      spellChecker = new SpellChecker(index, sd);
+      spellChecker = new SpellChecker(index, sd, comp);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
@@ -229,5 +252,9 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
 
   public StringDistance getStringDistance() {
     return sd;
+  }
+
+  public SpellChecker getSpellChecker() {
+    return spellChecker;
   }
 }

@@ -224,6 +224,8 @@ New Features
 
 * SOLR-2030: Make FastVectorHighlighter use of SolrEncoder. (koji)
 
+* SOLR-2053: Add support for custom comparators in Solr spellchecker, per LUCENE-2479 (gsingers)
+
 Optimizations
 ----------------------
 
