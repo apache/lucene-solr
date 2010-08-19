@@ -1,5 +1,9 @@
 package org.apache.lucene.search.regex;
 
+import java.io.Serializable;
+
+import org.apache.lucene.util.BytesRef;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -21,7 +25,7 @@ package org.apache.lucene.search.regex;
  * Defines basic operations needed by {@link RegexQuery} for a regular
  * expression implementation.
  */
-public interface RegexCapabilities {
+public interface RegexCapabilities extends Serializable {
   /**
    * Called by the constructor of {@link RegexTermEnum} allowing
    * implementations to cache a compiled version of the regular
@@ -29,20 +33,22 @@ public interface RegexCapabilities {
    *
    * @param pattern regular expression pattern
    */
-  void compile(String pattern);
+  public RegexMatcher compile(String pattern);
 
-  /**
-   *
-   * @param string
-   * @return true if string matches the pattern last passed to {@link #compile}.
-   */
-  boolean match(String string);
+  public interface RegexMatcher {
+    /**
+     *
+     * @param string
+     * @return true if string matches the pattern last passed to {@link #compile}.
+     */
+    public boolean match(BytesRef term);
 
-  /**
-   * A wise prefix implementation can reduce the term enumeration (and thus increase performance)
-   * of RegexQuery dramatically!
-   *
-   * @return static non-regex prefix of the pattern last passed to {@link #compile}.  May return null.
-   */
-  String prefix();
+    /**
+     * A wise prefix implementation can reduce the term enumeration (and thus increase performance)
+     * of RegexQuery dramatically!
+     *
+     * @return static non-regex prefix of the pattern last passed to {@link #compile}.  May return null.
+     */
+    public String prefix();
+  }
 }

@@ -34,15 +34,13 @@ import java.io.IOException;
  */
 
 public class RegexTermsEnum extends FilteredTermsEnum {
-  private RegexCapabilities regexImpl;
+  private RegexCapabilities.RegexMatcher regexImpl;
   private final BytesRef prefixRef;
 
-  public RegexTermsEnum(IndexReader reader, Term term, RegexCapabilities regexImpl) throws IOException {
+  public RegexTermsEnum(IndexReader reader, Term term, RegexCapabilities regexCap) throws IOException {
     super(reader, term.field());
     String text = term.text();
-    this.regexImpl = regexImpl;
-
-    regexImpl.compile(text);
+    this.regexImpl = regexCap.compile(text);
 
     String pre = regexImpl.prefix();
     if (pre == null) pre = "";
@@ -55,8 +53,7 @@ public class RegexTermsEnum extends FilteredTermsEnum {
     if (term.startsWith(prefixRef)) {
       // TODO: set BoostAttr based on distance of
       // searchTerm.text() and term().text()
-      String text = term.utf8ToString();
-      return regexImpl.match(text) ? AcceptStatus.YES : AcceptStatus.NO;
+      return regexImpl.match(term) ? AcceptStatus.YES : AcceptStatus.NO;
     } else {
       return AcceptStatus.NO;
     }

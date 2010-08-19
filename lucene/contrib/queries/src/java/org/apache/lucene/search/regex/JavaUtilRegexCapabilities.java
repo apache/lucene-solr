@@ -17,7 +17,11 @@ package org.apache.lucene.search.regex;
  * limitations under the License.
  */
 
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.UnicodeUtil;
 
 /**
  * An implementation tying Java's built-in java.util.regex to RegexQuery.
@@ -27,9 +31,8 @@ import java.util.regex.Pattern;
  * attempt to {@link #match} each term for the specified field in the index.
  */
 public class JavaUtilRegexCapabilities implements RegexCapabilities {
-  private Pattern pattern;
   private int flags = 0;
-  
+
   // Define the optional flags from Pattern that can be used.
   // Do this here to keep Pattern contained within this class.
   
@@ -66,32 +69,59 @@ public class JavaUtilRegexCapabilities implements RegexCapabilities {
     this.flags = flags;
   }
   
-  public void compile(String pattern) {
-    this.pattern = Pattern.compile(pattern, this.flags);
+  public RegexCapabilities.RegexMatcher compile(String regex) {
+    return new JavaUtilRegexMatcher(regex, flags);
   }
-
-  public boolean match(String string) {
-    return pattern.matcher(string).matches();
-  }
-
-  public String prefix() {
-    return null;
+  
+  @Override
+  public int hashCode() {
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + flags;
+    return result;
   }
 
   @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-
-    final JavaUtilRegexCapabilities that = (JavaUtilRegexCapabilities) o;
-
-    if (pattern != null ? !pattern.equals(that.pattern) : that.pattern != null) return false;
-
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (obj == null) return false;
+    if (getClass() != obj.getClass()) return false;
+    JavaUtilRegexCapabilities other = (JavaUtilRegexCapabilities) obj;
+    if (flags != other.flags) return false;
     return true;
   }
 
-  @Override
-  public int hashCode() {
-    return (pattern != null ? pattern.hashCode() : 0);
+  class JavaUtilRegexMatcher implements RegexCapabilities.RegexMatcher {
+    private final Pattern pattern;
+    private final Matcher matcher;
+    private final UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
+    private final CharSequence utf16wrapper = new CharSequence() {
+
+      public int length() {
+        return utf16.length;
+      }
+
+      public char charAt(int index) {
+        return utf16.result[index];
+      }
+
+      public CharSequence subSequence(int start, int end) {
+        return new String(utf16.result, start, end - start);
+      }  
+    };
+    
+    public JavaUtilRegexMatcher(String regex, int flags) {
+      this.pattern = Pattern.compile(regex, flags);
+      this.matcher = this.pattern.matcher(utf16wrapper);
+    }
+    
+    public boolean match(BytesRef term) {
+      UnicodeUtil.UTF8toUTF16(term.bytes, term.offset, term.length, utf16);
+      return matcher.reset().matches();
+    }
+
+    public String prefix() {
+      return null;
+    }
   }
 }

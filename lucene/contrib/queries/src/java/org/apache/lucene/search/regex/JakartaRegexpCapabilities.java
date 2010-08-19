@@ -17,6 +17,9 @@ package org.apache.lucene.search.regex;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.UnicodeUtil;
+import org.apache.regexp.CharacterIterator;
 import org.apache.regexp.RE;
 import org.apache.regexp.REProgram;
 import java.lang.reflect.Field;
@@ -30,8 +33,6 @@ import java.lang.reflect.Method;
  * it doesn't always provide a prefix even if one would exist.
  */
 public class JakartaRegexpCapabilities implements RegexCapabilities {
-  private RE regexp;
-
   private static Field prefixField;
   private static Method getPrefixMethod;
   static {
@@ -79,45 +80,75 @@ public class JakartaRegexpCapabilities implements RegexCapabilities {
     this.flags = flags;
   }
   
-  public void compile(String pattern) {
-    regexp = new RE(pattern, this.flags);
-  }
-
-  public boolean match(String string) {
-    return regexp.match(string);
-  }
-
-  public String prefix() {
-    try {
-      final char[] prefix;
-      if (getPrefixMethod != null) {
-        prefix = (char[]) getPrefixMethod.invoke(regexp.getProgram());
-      } else if (prefixField != null) {
-        prefix = (char[]) prefixField.get(regexp.getProgram());
-      } else {
-        return null;
-      }
-      return prefix == null ? null : new String(prefix);
-    } catch (Exception e) {
-      // if we cannot get the prefix, return none
-      return null;
-    }
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-
-    final JakartaRegexpCapabilities that = (JakartaRegexpCapabilities) o;
-
-    if (regexp != null ? !regexp.equals(that.regexp) : that.regexp != null) return false;
-
-    return true;
+  public RegexCapabilities.RegexMatcher compile(String regex) {
+    return new JakartaRegexMatcher(regex, flags);
   }
 
   @Override
   public int hashCode() {
-    return (regexp != null ? regexp.hashCode() : 0);
+    final int prime = 31;
+    int result = 1;
+    result = prime * result + flags;
+    return result;
+  }
+
+  @Override
+  public boolean equals(Object obj) {
+    if (this == obj) return true;
+    if (obj == null) return false;
+    if (getClass() != obj.getClass()) return false;
+    JakartaRegexpCapabilities other = (JakartaRegexpCapabilities) obj;
+    if (flags != other.flags) return false;
+    return true;
+  }
+
+  class JakartaRegexMatcher implements RegexCapabilities.RegexMatcher {
+    private RE regexp;
+    private final UnicodeUtil.UTF16Result utf16 = new UnicodeUtil.UTF16Result();
+    private final CharacterIterator utf16wrapper = new CharacterIterator() {
+
+      public char charAt(int pos) {
+        return utf16.result[pos];
+      }
+
+      public boolean isEnd(int pos) {
+        return pos >= utf16.length;
+      }
+
+      public String substring(int beginIndex) {
+        return substring(beginIndex, utf16.length);
+      }
+
+      public String substring(int beginIndex, int endIndex) {
+        return new String(utf16.result, beginIndex, endIndex - beginIndex);
+      }
+      
+    };
+    
+    public JakartaRegexMatcher(String regex, int flags) {
+      regexp = new RE(regex, flags);
+    }
+    
+    public boolean match(BytesRef term) {
+      UnicodeUtil.UTF8toUTF16(term.bytes, term.offset, term.length, utf16);
+      return regexp.match(utf16wrapper, 0);
+    }
+
+    public String prefix() {
+      try {
+        final char[] prefix;
+        if (getPrefixMethod != null) {
+          prefix = (char[]) getPrefixMethod.invoke(regexp.getProgram());
+        } else if (prefixField != null) {
+          prefix = (char[]) prefixField.get(regexp.getProgram());
+        } else {
+          return null;
+        }
+        return prefix == null ? null : new String(prefix);
+      } catch (Exception e) {
+        // if we cannot get the prefix, return none
+        return null;
+      }
+    }
   }
 }

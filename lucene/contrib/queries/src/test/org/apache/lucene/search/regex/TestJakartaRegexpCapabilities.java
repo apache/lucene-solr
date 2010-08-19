@@ -17,6 +17,7 @@ package org.apache.lucene.search.regex;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -26,21 +27,21 @@ public class TestJakartaRegexpCapabilities extends LuceneTestCase {
 
   public void testGetPrefix(){
     JakartaRegexpCapabilities cap = new JakartaRegexpCapabilities();
-    cap.compile("luc[e]?");
-    assertTrue(cap.match("luce"));
-    assertEquals("luc", cap.prefix());
+    RegexCapabilities.RegexMatcher matcher = cap.compile("luc[e]?");
+    assertTrue(matcher.match(new BytesRef("luce")));
+    assertEquals("luc", matcher.prefix());
     
-    cap.compile("lucene");
-    assertTrue(cap.match("lucene"));
-    assertEquals("lucene", cap.prefix());
+    matcher = cap.compile("lucene");
+    assertTrue(matcher.match(new BytesRef("lucene")));
+    assertEquals("lucene", matcher.prefix());
   }
   
   public void testShakyPrefix(){
     JakartaRegexpCapabilities cap = new JakartaRegexpCapabilities();
-    cap.compile("(ab|ac)");
-    assertTrue(cap.match("ab"));
-    assertTrue(cap.match("ac"));
+    RegexCapabilities.RegexMatcher matcher = cap.compile("(ab|ac)");
+    assertTrue(matcher.match(new BytesRef("ab")));
+    assertTrue(matcher.match(new BytesRef("ac")));
     // why is it not a???
-    assertNull(cap.prefix());
+    assertNull(matcher.prefix());
   }
 }
