@@ -27,7 +27,7 @@
     <version>@version@</version>
   </parent>
   <groupId>org.apache.lucene</groupId>
-  <artifactId>lucene-phonetic</artifactId>
+  <artifactId>lucene-analyzers-phonetic</artifactId>
   <name>
     Lucene Phonetic Filters
   </name>

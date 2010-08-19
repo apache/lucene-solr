@@ -22,13 +22,7 @@
     <sequential>
       <subant target="test" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml" />
-      </subant>
-
-      <subant target="test" inheritall="false" failonerror="true">
         <fileset dir="modules" includes="build.xml" />
-      </subant>
-
-      <subant target="test" inheritall="false" failonerror="true">
         <fileset dir="solr" includes="build.xml" />
       </subant>
     </sequential>
@@ -44,13 +38,12 @@
     </sequential>
   </target>
 
+  <!-- run with -Dmaven.dist.dir=maven to put all the artifacts in one place -->
   <target name="generate-maven-artifacts" description="Generate Maven Artifacts for Lucene and Solr">
     <sequential>
       <subant target="generate-maven-artifacts" inheritall="false" failonerror="true">
         <fileset dir="lucene" includes="build.xml" />
-      </subant>
-
-      <subant target="generate-maven-artifacts" inheritall="false" failonerror="true">
+        <fileset dir="modules" includes="build.xml" />
         <fileset dir="solr" includes="build.xml" />
       </subant>
     </sequential>

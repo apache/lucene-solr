@@ -34,6 +34,14 @@
     </sequential>
   </target>
 
+  <target name="generate-maven-artifacts" description="Generate Maven Artifacts for Modules">
+    <sequential>
+      <subant target="dist-maven" inheritall="false" failonerror="true">
+        <fileset dir="analysis" includes="build.xml" />
+      </subant>
+    </sequential>
+  </target>
+
   <target name="clean" description="Clean all modules">
     <sequential>
       <subant target="clean" inheritall="false" failonerror="true">
