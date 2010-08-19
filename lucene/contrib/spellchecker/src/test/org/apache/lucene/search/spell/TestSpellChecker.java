@@ -104,11 +104,21 @@ public class TestSpellChecker extends LuceneTestCase {
     spellChecker.setAccuracy(0.8f);
     checkCommonSuggestions(r);
     checkJaroWinklerSuggestions();
+    // the accuracy is set to 0.8 by default, but the best result has a score of 0.925
+    String[] similar = spellChecker.suggestSimilar("fvie", 2, 0.93f);
+    assertTrue(similar.length == 0);
+    similar = spellChecker.suggestSimilar("fvie", 2, 0.92f);
+    assertTrue(similar.length == 1);
+
+    similar = spellChecker.suggestSimilar("fiv", 2);
+    assertTrue(similar.length > 0);
+    assertEquals(similar[0], "five");
     
     spellChecker.setStringDistance(new NGramDistance(2));
     spellChecker.setAccuracy(0.5f);
     checkCommonSuggestions(r);
     checkNGramSuggestions();
+
     r.close();
   }
 
@@ -127,8 +137,6 @@ public class TestSpellChecker extends LuceneTestCase {
     if (!compareSP.isClosed())
       compareSP.close();
     compIdx.close();
-
-
   }
 
   private void checkCommonSuggestions(IndexReader r) throws IOException {

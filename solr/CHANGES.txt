@@ -62,6 +62,11 @@ Upgrading from Solr 1.4
 * SOLR-1876: All Analyzers and TokenStreams are now final to enforce
   the decorator pattern.  (rmuir, uschindler)
 
+* LUCENE-2608: Added the ability to specify the accuracy on a per request basis. 
+  It is recommended that implementations of SolrSpellChecker should change over to the new SolrSpellChecker
+  methods using the new SpellingOptions class, but are not required to.  While this change is
+  backward compatible, the trunk version of Solr has already dropped support for all but the SpellingOptions method. (gsingers)
+
 Detailed Change List
 ----------------------
 

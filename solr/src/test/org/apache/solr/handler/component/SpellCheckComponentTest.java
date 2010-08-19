@@ -24,6 +24,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
@@ -33,7 +34,6 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.spelling.AbstractLuceneSpellChecker;
 import org.apache.solr.spelling.IndexBasedSpellChecker;
-import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -133,9 +133,9 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     assertTrue(cmdExec + " is not equal to " + "build",
             cmdExec.equals("build") == true);
     NamedList spellCheck = (NamedList) values.get("spellcheck");
-    assertTrue("spellCheck is null and it shouldn't be", spellCheck != null);
+    assertNotNull(spellCheck);
     NamedList suggestions = (NamedList) spellCheck.get("suggestions");
-    assertTrue("suggestions is null and it shouldn't be", suggestions != null);
+    assertNotNull(suggestions);
     NamedList document = (NamedList) suggestions.get("documemt");
     assertEquals(1, document.get("numFound"));
     assertEquals(0, document.get("startOffset"));
@@ -143,6 +143,50 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     Collection<String> theSuggestion = (Collection<String>) document.get("suggestion");
     assertEquals(1, theSuggestion.size());
     assertEquals("document", theSuggestion.iterator().next());
+  }
+
+
+  @Test
+  public void testPerDictionary() throws Exception {
+    SolrCore core = h.getCore();
+    SearchComponent speller = core.getSearchComponent("spellcheck");
+    assertTrue("speller is null and it shouldn't be", speller != null);
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CommonParams.QT, "spellCheckCompRH");
+    params.add(SpellCheckComponent.SPELLCHECK_BUILD, "true");
+    params.add(CommonParams.Q, "documemt");
+    params.add(SpellCheckComponent.COMPONENT_NAME, "true");
+    params.add(SpellingParams.SPELLCHECK_DICT, "perDict");
+
+    params.add(SpellingParams.SPELLCHECK_PREFIX + ".perDict.foo", "bar");
+    params.add(SpellingParams.SPELLCHECK_PREFIX + ".perDict.bar", "foo");
+
+    SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
+    NamedList values = rsp.getValues();
+
+    NamedList spellCheck = (NamedList) values.get("spellcheck");
+    NamedList suggestions = (NamedList) spellCheck.get("suggestions");
+    assertNotNull("suggestions", suggestions);
+    NamedList suggestion;
+    Collection<String> theSuggestion;
+    suggestion = (NamedList) suggestions.get("foo");
+    assertEquals(1, suggestion.get("numFound"));
+    assertEquals(0, suggestion.get("startOffset"));
+    assertEquals(suggestion.get("endOffset"), 1);
+    theSuggestion = (Collection<String>) suggestion.get("suggestion");
+    assertEquals(1, theSuggestion.size());
+    assertEquals("bar", theSuggestion.iterator().next());
+
+    suggestion = (NamedList) suggestions.get("bar");
+    assertEquals(1, suggestion.get("numFound"));
+    assertEquals(2, suggestion.get("startOffset"));
+    assertEquals(3, suggestion.get("endOffset"));
+    theSuggestion = (Collection<String>) suggestion.get("suggestion");
+    assertEquals(1, theSuggestion.size());
+    assertEquals("foo", theSuggestion.iterator().next());
   }
 
   @Test

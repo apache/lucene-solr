@@ -74,6 +74,8 @@ public abstract class SolrSpellChecker {
    * Assumes count = 1, onlyMorePopular = false, extendedResults = false
    *
    * @see #getSuggestions(Collection, org.apache.lucene.index.IndexReader, int, boolean, boolean)
+   *
+   * @deprecated This method will be removed in 4.x in favor of {@link #getSuggestions(org.apache.solr.spelling.SpellingOptions)}
    */
   public SpellingResult getSuggestions(Collection<Token> tokens, IndexReader reader) throws IOException {
     return getSuggestions(tokens, reader, 1, false, false);
@@ -83,6 +85,8 @@ public abstract class SolrSpellChecker {
    * Assumes onlyMorePopular = false, extendedResults = false
    *
    * @see #getSuggestions(Collection, org.apache.lucene.index.IndexReader, int, boolean, boolean)
+   *
+   * @deprecated This method will be removed in 4.x in favor of {@link #getSuggestions(org.apache.solr.spelling.SpellingOptions)}
    */
   public SpellingResult getSuggestions(Collection<Token> tokens, IndexReader reader, int count) throws IOException {
     return getSuggestions(tokens, reader, count, false, false);
@@ -93,6 +97,8 @@ public abstract class SolrSpellChecker {
    * Assumes count = 1.
    *
    * @see #getSuggestions(Collection, org.apache.lucene.index.IndexReader, int, boolean, boolean)
+   *
+   * @deprecated This method will be removed in 4.x in favor of {@link #getSuggestions(org.apache.solr.spelling.SpellingOptions)}
    */
   public SpellingResult getSuggestions(Collection<Token> tokens, IndexReader reader, boolean onlyMorePopular, boolean extendedResults) throws IOException {
     return getSuggestions(tokens, reader, 1, onlyMorePopular, extendedResults);
@@ -108,8 +114,27 @@ public abstract class SolrSpellChecker {
    * @param onlyMorePopular  TODO
    * @param extendedResults  TODO
    * @throws IOException
+   *
+   * @deprecated This method will be removed in 4.x in favor of {@link #getSuggestions(org.apache.solr.spelling.SpellingOptions)}
    */
   public abstract SpellingResult getSuggestions(Collection<Token> tokens, IndexReader reader, int count,
                                                 boolean onlyMorePopular, boolean extendedResults)
           throws IOException;
+
+   /**
+   * Get suggestions for the given query.  Tokenizes the query using a field appropriate Analyzer.
+   * The {@link SpellingResult#getSuggestions()} suggestions must be ordered by best suggestion first.
+   * <p/>
+    * Note: This method is abstract in Solr 4.0 and beyond and is the recommended way of implementing the spell checker.  For now,
+    * it calls {@link #getSuggestions(java.util.Collection, org.apache.lucene.index.IndexReader, boolean, boolean)}.
+    *
+   *
+   * @param options The {@link SpellingOptions} to use
+   * @return The {@link SpellingResult} suggestions
+   * @throws IOException if there is an error producing suggestions
+   */
+  public SpellingResult getSuggestions(SpellingOptions options) throws IOException{
+     return getSuggestions(options.tokens, options.reader, options.count, options.onlyMorePopular, options.extendedResults);
+   }
+
 }
