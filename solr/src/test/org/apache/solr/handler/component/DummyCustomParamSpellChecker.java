@@ -1,0 +1,61 @@
+package org.apache.solr.handler.component;
+
+import org.apache.lucene.analysis.Token;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.spelling.SolrSpellChecker;
+import org.apache.solr.spelling.SpellingOptions;
+import org.apache.solr.spelling.SpellingResult;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Iterator;
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+/**
+ * A Dummy SpellChecker for testing purposes
+ *
+ **/
+public class DummyCustomParamSpellChecker extends SolrSpellChecker {
+
+  @Override
+  public void reload() throws IOException {
+
+  }
+
+  @Override
+  public void build(SolrCore core, SolrIndexSearcher searcher) {
+
+  }
+
+  @Override
+  public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
+
+    SpellingResult result = new SpellingResult();
+    //just spit back out the results
+    Iterator<String> iterator = options.customParams.getParameterNamesIterator();
+    int i = 0;
+    while (iterator.hasNext()){
+      String name = iterator.next();
+      String value = options.customParams.get(name);
+      result.add(new Token(name, i++, i++),  Collections.singletonList(value));
+    }    
+    return result;
+  }
+}

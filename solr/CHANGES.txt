@@ -77,6 +77,12 @@ Upgrading from Solr 1.4
   legacy behavior should set a default value for the 'mm' param in
   their solrconfig.xml file.
 
+* LUCENE-2608: Added the ability to specify the accuracy on a per request basis. 
+  Implementations of SolrSpellChecker must change over to the new SolrSpellChecker
+  abstract methods using the new SpellingOptions class.  While this change is not
+  backward compatible, it should be trivial to migrate as the SpellingOptions class
+  just encapsulates the parameters that were passed in to the methods before the change. (gsingers)
+
 Detailed Change List
 ----------------------
 
@@ -225,11 +231,6 @@ New Features
 * SOLR-2030: Make FastVectorHighlighter use of SolrEncoder. (koji)
 
 * SOLR-2053: Add support for custom comparators in Solr spellchecker, per LUCENE-2479 (gsingers)
-
-* SOLR-2049: Add hl.multiValuedSeparatorChar for FastVectorHighlighter, per LUCENE-2603. (koji)
-
-* SOLR-1881: add a url-scheme config string to SearchHandler to specify alternate
-  URL prefixes for distributed search shard requests.  (Sami Siren via yonik)
 
 Optimizations
 ----------------------

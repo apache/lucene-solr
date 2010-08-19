@@ -70,46 +70,15 @@ public abstract class SolrSpellChecker {
    */
   public abstract void build(SolrCore core, SolrIndexSearcher searcher);
 
-  /**
-   * Assumes count = 1, onlyMorePopular = false, extendedResults = false
-   *
-   * @see #getSuggestions(Collection, org.apache.lucene.index.IndexReader, int, boolean, boolean)
-   */
-  public SpellingResult getSuggestions(Collection<Token> tokens, IndexReader reader) throws IOException {
-    return getSuggestions(tokens, reader, 1, false, false);
-  }
-
-  /**
-   * Assumes onlyMorePopular = false, extendedResults = false
-   *
-   * @see #getSuggestions(Collection, org.apache.lucene.index.IndexReader, int, boolean, boolean)
-   */
-  public SpellingResult getSuggestions(Collection<Token> tokens, IndexReader reader, int count) throws IOException {
-    return getSuggestions(tokens, reader, count, false, false);
-  }
-
-
-  /**
-   * Assumes count = 1.
-   *
-   * @see #getSuggestions(Collection, org.apache.lucene.index.IndexReader, int, boolean, boolean)
-   */
-  public SpellingResult getSuggestions(Collection<Token> tokens, IndexReader reader, boolean onlyMorePopular, boolean extendedResults) throws IOException {
-    return getSuggestions(tokens, reader, 1, onlyMorePopular, extendedResults);
-  }
 
   /**
    * Get suggestions for the given query.  Tokenizes the query using a field appropriate Analyzer.
    * The {@link SpellingResult#getSuggestions()} suggestions must be ordered by best suggestion first.
+   * <p/>
    *
-   * @param tokens          The Tokens to be spell checked.
-   * @param reader          The (optional) IndexReader.  If there is not IndexReader, than extendedResults are not possible
-   * @param count The maximum number of suggestions to return
-   * @param onlyMorePopular  TODO
-   * @param extendedResults  TODO
-   * @throws IOException
+   * @param options The {@link SpellingOptions} to use
+   * @return The {@link SpellingResult} suggestions
+   * @throws IOException if there is an error producing suggestions
    */
-  public abstract SpellingResult getSuggestions(Collection<Token> tokens, IndexReader reader, int count,
-                                                boolean onlyMorePopular, boolean extendedResults)
-          throws IOException;
+  public abstract SpellingResult getSuggestions(SpellingOptions options) throws IOException;
 }

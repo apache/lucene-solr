@@ -377,7 +377,11 @@
       <str name="comparatorClass">org.apache.solr.spelling.SampleComparator</str>
       <str name="buildOnCommit">true</str>
     </lst>
-
+    <lst name="spellchecker">
+      <str name="name">perDict</str>
+      <str name="classname">org.apache.solr.handler.component.DummyCustomParamSpellChecker</str>
+      <str name="field">lowerfilt</str>
+    </lst>
   </searchComponent>
 
   <searchComponent name="termsComp" class="org.apache.solr.handler.component.TermsComponent"/>

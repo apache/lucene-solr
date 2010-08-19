@@ -150,29 +150,30 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     return name;
   }
   
-  @SuppressWarnings("unchecked")
-  public SpellingResult getSuggestions(Collection<Token> tokens,
-                                       IndexReader reader, int count, boolean onlyMorePopular,
-                                       boolean extendedResults)
-          throws IOException {
-    SpellingResult result = new SpellingResult(tokens);
-    reader = determineReader(reader);
+  @Override
+  public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
+    SpellingResult result = new SpellingResult(options.tokens);
+    IndexReader reader = determineReader(options.reader);
     Term term = field != null ? new Term(field, "") : null;
-    for (Token token : tokens) {
+    float theAccuracy = (options.accuracy == Float.MIN_VALUE) ? spellChecker.getAccuracy() : options.accuracy;
+    
+    int count = (int) Math.max(options.count, AbstractLuceneSpellChecker.DEFAULT_SUGGESTION_COUNT);
+    for (Token token : options.tokens) {
       String tokenText = new String(token.buffer(), 0, token.length());
-      String[] suggestions = spellChecker.suggestSimilar(tokenText, (int) Math.max(count, AbstractLuceneSpellChecker.DEFAULT_SUGGESTION_COUNT),
+      String[] suggestions = spellChecker.suggestSimilar(tokenText,
+              count,
             field != null ? reader : null, //workaround LUCENE-1295
             field,
-            onlyMorePopular);
+            options.onlyMorePopular, theAccuracy);
       if (suggestions.length == 1 && suggestions[0].equals(tokenText)) {
         //These are spelled the same, continue on
         continue;
       }
 
-      if (extendedResults == true && reader != null && field != null) {
+      if (options.extendedResults == true && reader != null && field != null) {
         term = term.createTerm(tokenText);
         result.add(token, reader.docFreq(term));
-        int countLimit = Math.min(count, suggestions.length);
+        int countLimit = Math.min(options.count, suggestions.length);
         for (int i = 0; i < countLimit; i++) {
           term = term.createTerm(suggestions[i]);
           result.add(token, suggestions[i], reader.docFreq(term));
@@ -180,8 +181,8 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
       } else {
         if (suggestions.length > 0) {
           List<String> suggList = Arrays.asList(suggestions);
-          if (suggestions.length > count) {
-            suggList = suggList.subList(0, count);
+          if (suggestions.length > options.count) {
+            suggList = suggList.subList(0, options.count);
           }
           result.add(token, suggList);
         }

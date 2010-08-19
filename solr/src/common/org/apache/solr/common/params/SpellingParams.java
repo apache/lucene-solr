@@ -81,4 +81,9 @@ public interface SpellingParams {
    * Take the top suggestion for each token and create a new query from it
    */
   public static final String SPELLCHECK_COLLATE = SPELLCHECK_PREFIX + "collate";
+
+  /**
+   * Certain spelling implementations may allow for an accuracy setting.
+   */
+  public static final String SPELLCHECK_ACCURACY = SPELLCHECK_PREFIX + "accuracy";
 }
