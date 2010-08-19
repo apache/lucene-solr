@@ -247,8 +247,7 @@ public abstract class QParser {
     if (localParams == null) {
       type = defaultType;
     } else {
-      String localType = localParams.get(QueryParsing.TYPE);
-      type = localType == null ? defaultType : localType;
+      type = localParams.get(QueryParsing.TYPE,defaultType);
       qstr = localParams.get("v");
     }
 
