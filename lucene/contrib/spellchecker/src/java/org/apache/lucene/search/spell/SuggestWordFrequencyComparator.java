@@ -25,7 +25,6 @@ import java.util.Comparator;
  **/
 public class SuggestWordFrequencyComparator implements Comparator<SuggestWord> {
 
-  @Override
   public int compare(SuggestWord first, SuggestWord second) {
     // first criteria: the frequency
     if (first.freq > second.freq) {

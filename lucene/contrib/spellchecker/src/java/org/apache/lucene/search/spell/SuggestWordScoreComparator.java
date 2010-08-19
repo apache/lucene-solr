@@ -24,7 +24,6 @@ import java.util.Comparator;
  *
  **/
 public class SuggestWordScoreComparator implements Comparator<SuggestWord> {
-  @Override
   public int compare(SuggestWord first, SuggestWord second) {
     // first criteria: the distance
     if (first.score > second.score) {
