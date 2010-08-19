@@ -75,7 +75,8 @@ public class AutomatonQuery extends MultiTermQuery {
     MinimizationOperations.minimize(automaton);
   }
 
-  private void compileAutomaton() {
+  private synchronized void compileAutomaton() {
+    // this method must be synchronized, as setting the three transient fields is not atomic:
     if (runAutomaton == null) {
       runAutomaton = new ByteRunAutomaton(automaton);
       isFinite = SpecialOperations.isFinite(automaton);
