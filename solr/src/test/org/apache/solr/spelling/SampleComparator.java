@@ -27,8 +27,6 @@ import java.util.Comparator;
  **/
 public class SampleComparator implements Comparator<SuggestWord> {
 
-
-  @Override
   public int compare(SuggestWord suggestWord, SuggestWord suggestWord1) {
     return suggestWord.string.compareTo(suggestWord1.string);
   }
