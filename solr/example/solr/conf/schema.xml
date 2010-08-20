@@ -495,7 +495,7 @@
 
    <!-- catchall field, containing all other searchable text fields (implemented
         via copyField further on in this schema  -->
-   <field name="text" type="text" indexed="true" stored="true" multiValued="true" termVectors="true"/>
+   <field name="text" type="text" indexed="true" stored="false" multiValued="true"/>
 
    <!-- catchall text field that indexes tokens both normally and in reverse for efficient
         leading wildcard queries. -->
