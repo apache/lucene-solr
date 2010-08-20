@@ -450,6 +450,8 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       for (Iterator<Map.Entry<Token, String>> bestIter = best.entrySet().iterator(); bestIter.hasNext();) {
         Map.Entry<Token, String> entry = bestIter.next();
         Token tok = entry.getKey();
+        // we are replacing the query in order, but injected terms might cause illegal offsets due to previous replacements.
+        if (tok.getPositionIncrement() == 0) continue;
         collation.replace(tok.startOffset() + offset, 
           tok.endOffset() + offset, entry.getValue());
         offset += entry.getValue().length() - (tok.endOffset() - tok.startOffset());

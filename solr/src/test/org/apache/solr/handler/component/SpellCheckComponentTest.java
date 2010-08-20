@@ -57,6 +57,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     assertNull(h.validateUpdate(adoc("id", "6", "lowerfilt", "boue")));
     assertNull(h.validateUpdate(adoc("id", "7", "lowerfilt", "glue")));
     assertNull(h.validateUpdate(adoc("id", "8", "lowerfilt", "blee")));
+    assertNull(h.validateUpdate(adoc("id", "9", "lowerfilt", "pixmaa")));
     assertNull(h.validateUpdate(commit()));
   }
   
@@ -234,6 +235,30 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     suggestions = (NamedList) spellCheck.get("suggestions");
     collation = (String) suggestions.get("collation");
     assertEquals("document brown",collation);
+  }
+  
+  @Test
+  public void testCollate2() throws Exception {
+    SolrCore core = h.getCore();
+    SearchComponent speller = core.getSearchComponent("spellcheck");
+    assertTrue("speller is null and it shouldn't be", speller != null);
+
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add(CommonParams.QT, "spellCheckCompRH");
+    params.add(SpellCheckComponent.SPELLCHECK_BUILD, "true");
+    params.add(CommonParams.Q, "pixma-a-b-c-d-e-f-g");
+    params.add(SpellCheckComponent.COMPONENT_NAME, "true");
+    params.add(SpellCheckComponent.SPELLCHECK_COLLATE, "true");
+
+    SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    rsp.add("responseHeader", new SimpleOrderedMap());
+    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
+    NamedList values = rsp.getValues();
+    NamedList spellCheck = (NamedList) values.get("spellcheck");
+    NamedList suggestions = (NamedList) spellCheck.get("suggestions");
+    String collation = (String) suggestions.get("collation");
+    assertEquals("pixmaa", collation);
   }
 
   @Test

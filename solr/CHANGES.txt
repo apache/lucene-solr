@@ -412,7 +412,10 @@ Bug Fixes
 * SOLR-2036: Avoid expensive fieldCache ram estimation for the
   admin stats page. (yonik)
 
-* SOLR-2047: ReplicationHandler should accept bool type for enable flag. (koji)  
+* SOLR-2047: ReplicationHandler should accept bool type for enable flag. (koji)
+
+* SOLR-1630: Fix spell checking collation issue related to token positions (rmuir, gsingers) 
+
 
 Other Changes
 ----------------------
