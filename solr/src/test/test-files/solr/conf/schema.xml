@@ -197,6 +197,14 @@
         <filter class="solr.LowerCaseFilterFactory"/>
       </analyzer>
     </fieldtype>
+    <fieldtype name="lowerpunctfilt" class="solr.TextField">
+      <analyzer>
+        <tokenizer class="solr.WhitespaceTokenizerFactory"/>
+        <filter name="syn" class="solr.SynonymFilterFactory" synonyms="synonyms.txt" expand="true"/>
+        <filter class="solr.WordDelimiterFilterFactory" generateWordParts="1" generateNumberParts="1" catenateWords="1" catenateNumbers="1" catenateAll="1" splitOnCaseChange="1"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+      </analyzer>
+    </fieldtype>
     <fieldtype name="patternreplacefilt" class="solr.TextField">
       <analyzer type="index">
         <tokenizer class="solr.KeywordTokenizerFactory"/>
