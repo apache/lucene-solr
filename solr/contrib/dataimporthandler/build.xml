@@ -89,8 +89,12 @@
   <target name="init">
   	<mkdir dir="target/classes"/>
     <mkdir dir="${build.javadoc}" />
-    <ant dir="../../" inheritall="false" target="compile" />
-    <ant dir="../../" inheritall="false" target="make-manifest" />
+    <subant target="compileTests">
+      <fileset dir="${solr-path}" includes="build.xml"/>
+    </subant>
+    <subant target="make-manifest">
+      <fileset dir="${solr-path}" includes="build.xml"/>
+    </subant>
   </target>
 	
   <target name="compile" depends="init">
