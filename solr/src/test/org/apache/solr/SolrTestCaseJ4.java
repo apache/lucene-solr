@@ -23,6 +23,8 @@ import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrQueryRequest;
@@ -325,6 +327,68 @@ public class SolrTestCaseJ4 extends LuceneTestCaseJ4 {
       throw new RuntimeException("Exception during query", e2);
     }
   }
+
+  /** Validates a query matches some JSON test expressions and closes the query.
+   * The text expression is of the form path:JSON.  To facilitate easy embedding
+   * in Java strings, the JSON can have double quotes replaced with single quotes.
+   *
+   * Please use this with care: this makes it easy to match complete structures, but doing so
+   * can result in fragile tests if you are matching more than what you want to test.
+   *
+   **/
+  public static void assertJQ(SolrQueryRequest req, String... tests) throws Exception {
+    SolrParams params =  null;
+    try {
+      params = req.getParams();
+      if (!"json".equals(params.get("wt","xml")) || params.get("indent")==null) {
+        ModifiableSolrParams newParams = new ModifiableSolrParams(params);
+        newParams.set("wt","json");
+        if (params.get("indent")==null) newParams.set("indent","true");
+        req.setParams(newParams);
+      }
+
+      String response;
+      boolean failed=true;
+      try {
+        response = h.query(req);
+        failed = false;
+      } finally {
+        if (failed) {
+          log.error("REQUEST FAILED: " + req.getParamString());
+        }
+      }
+
+      for (String test : tests) {
+        String testJSON = test.replace('\'', '"');
+
+        try {
+          failed = true;
+          String err = JSONTestUtil.match(response, testJSON);
+          failed = false;
+          if (err != null) {
+            log.error("query failed JSON validation. error=" + err +
+                "\n expected =" + testJSON +
+                "\n response = " + response +
+                "\n request = " + req.getParamString()
+            );
+            throw new RuntimeException(err);
+          }
+        } finally {
+          if (failed) {
+            log.error("JSON query validation threw an exception." + 
+                "\n expected =" + testJSON +
+                "\n response = " + response +
+                "\n request = " + req.getParamString()
+            );
+          }
+        }
+      }
+    } finally {
+      // restore the params
+      if (params != null && params != req.getParams()) req.setParams(params);
+    }
+  }  
+
 
   /** Makes sure a query throws a SolrException with the listed response code */
   public static void assertQEx(String message, SolrQueryRequest req, int code ) {
