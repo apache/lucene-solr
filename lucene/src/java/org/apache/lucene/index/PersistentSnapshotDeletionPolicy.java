@@ -18,7 +18,9 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.lucene.document.Document;
@@ -56,6 +58,38 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
   private final IndexWriter writer;
 
   /**
+   * Reads the snapshots information from the given {@link Directory}. This
+   * method does can be used if the snapshots information is needed, however you
+   * cannot instantiate the deletion policy (because e.g., some other process
+   * keeps a lock on the snapshots directory).
+   */
+  public static Map<String, String> readSnapshotsInfo(Directory dir) throws IOException {
+    IndexReader r = IndexReader.open(dir, true);
+    Map<String, String> snapshots = new HashMap<String, String>();
+    try {
+      int numDocs = r.numDocs();
+      // index is allowed to have exactly one document or 0.
+      if (numDocs == 1) {
+        Document doc = r.document(r.maxDoc() - 1);
+        Field sid = doc.getField(SNAPSHOTS_ID);
+        if (sid == null) {
+          throw new IllegalStateException("directory is not a valid snapshots store!");
+        }
+        doc.removeField(SNAPSHOTS_ID);
+        for (Fieldable f : doc.getFields()) {
+          snapshots.put(f.name(), f.stringValue());
+        }
+      } else if (numDocs != 0) {
+        throw new IllegalStateException(
+            "should be at most 1 document in the snapshots directory: " + numDocs);
+      }
+    } finally {
+      r.close();
+    }
+    return snapshots;
+  }
+  
+  /**
    * {@link PersistentSnapshotDeletionPolicy} wraps another
    * {@link IndexDeletionPolicy} to enable flexible snapshotting.
    * 
@@ -91,28 +125,8 @@ public class PersistentSnapshotDeletionPolicy extends SnapshotDeletionPolicy {
     // Initializes the snapshots information. This code should basically run
     // only if mode != CREATE, but if it is, it's no harm as we only open the
     // reader once and immediately close it.
-    IndexReader r = writer.getReader();
-    try {
-      int numDocs = r.numDocs();
-      // index is allowed to have exactly one document or 0.
-      if (numDocs == 1) {
-        Document doc = r.document(r.maxDoc() - 1);
-        Field sid = doc.getField(SNAPSHOTS_ID);
-        if (sid == null) {
-          writer.close();
-          throw new IllegalStateException("directory is not a valid snapshots store!");
-        }
-        doc.removeField(SNAPSHOTS_ID);
-        for (Fieldable f : doc.getFields()) {
-          registerSnapshotInfo(f.name(), f.stringValue(), null);
-        }
-      } else if (numDocs != 0) {
-        writer.close();
-        throw new IllegalStateException(
-            "should be at most 1 document in the snapshots directory: " + numDocs);
-      }
-    } finally {
-      r.close();
+    for (Entry<String, String> e : readSnapshotsInfo(dir).entrySet()) {
+      registerSnapshotInfo(e.getKey(), e.getValue(), null);
     }
   }
 
