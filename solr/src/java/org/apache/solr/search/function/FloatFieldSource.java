@@ -18,6 +18,8 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.solr.search.MutableValue;
+import org.apache.solr.search.MutableValueFloat;
 import org.apache.solr.search.function.DocValues;
 import org.apache.lucene.search.FieldCache;
 
@@ -76,6 +78,25 @@ public class FloatFieldSource extends FieldCacheSource {
       public String toString(int doc) {
         return description() + '=' + floatVal(doc);
       }
+
+      @Override
+      public ValueFiller getValueFiller() {
+        return new ValueFiller() {
+          private final float[] floatArr = arr;
+          private final MutableValueFloat mval = new MutableValueFloat();
+
+          @Override
+          public MutableValue getValue() {
+            return mval;
+          }
+
+          @Override
+          public void fillValue(int doc) {
+            mval.value = floatArr[doc];
+          }
+        };
+      }
+
     };
   }
 

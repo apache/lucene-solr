@@ -18,7 +18,8 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.solr.search.function.DocValues;
+import org.apache.solr.search.MutableValueInt;
+import org.apache.solr.search.MutableValue;
 import org.apache.lucene.search.FieldCache;
 
 import java.io.IOException;
@@ -32,7 +33,7 @@ import java.util.Map;
  */
 
 public class IntFieldSource extends FieldCacheSource {
-  FieldCache.IntParser parser;
+  final FieldCache.IntParser parser;
 
   public IntFieldSource(String field) {
     this(field, null);
@@ -53,6 +54,8 @@ public class IntFieldSource extends FieldCacheSource {
             cache.getInts(reader, field) :
             cache.getInts(reader, field, parser);
     return new DocValues() {
+      final MutableValueInt val = new MutableValueInt();
+      
       public float floatVal(int doc) {
         return (float)arr[doc];
       }
@@ -110,6 +113,26 @@ public class IntFieldSource extends FieldCacheSource {
           }
         };
       }
+
+      @Override
+      public ValueFiller getValueFiller() {
+        return new ValueFiller() {
+          private final int[] intArr = arr;
+          private final MutableValueInt mval = new MutableValueInt();
+
+          @Override
+          public MutableValue getValue() {
+            return mval;
+          }
+
+          @Override
+          public void fillValue(int doc) {
+            mval.value = intArr[doc];
+          }
+        };
+      }
+
+      
     };
   }
 

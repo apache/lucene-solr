@@ -28,10 +28,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.request.SolrQueryRequest;
@@ -39,6 +36,10 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.*;
+import org.apache.solr.search.function.BoostedQuery;
+import org.apache.solr.search.function.FunctionQuery;
+import org.apache.solr.search.function.QueryValueSource;
+import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.util.SolrPluginUtils;
 
 import java.io.IOException;
@@ -175,6 +176,77 @@ public class QueryComponent extends SearchComponent
     SolrIndexSearcher.QueryCommand cmd = rb.getQueryCommand();
     cmd.setTimeAllowed(timeAllowed);
     SolrIndexSearcher.QueryResult result = new SolrIndexSearcher.QueryResult();
+
+    //
+    // grouping / field collapsing
+    //
+    boolean doGroup = params.getBool(GroupParams.GROUP, false);
+    if (doGroup) {
+      try {
+        cmd.groupCommands = new ArrayList<SolrIndexSearcher.GroupCommand>();
+        
+        String[] fields = params.getParams(GroupParams.GROUP_FIELD);
+        String[] funcs = params.getParams(GroupParams.GROUP_FUNC);
+        String[] queries = params.getParams(GroupParams.GROUP_QUERY);
+        String groupSortStr = params.get(GroupParams.GROUP_SORT);
+        Sort groupSort = groupSortStr != null ? QueryParsing.parseSort(groupSortStr, req.getSchema()) : null;
+
+        int limitDefault = cmd.getLen(); // this is normally from "rows"
+        int docsPerGroupDefault = params.getInt(GroupParams.GROUP_LIMIT, 1);
+
+        // temporary: implement all group-by-field as group-by-func
+        if (funcs == null) {
+          funcs = fields;
+        } else if (fields != null) {
+          // catenate functions and fields
+          String[] both = new String[fields.length + funcs.length];
+          System.arraycopy(fields, 0, both, 0, fields.length);
+          System.arraycopy(funcs, 0, both, fields.length, funcs.length);
+          funcs = both;
+        }
+
+
+        if (funcs != null) {
+          for (String groupByStr : funcs) {
+            QParser parser = QParser.getParser(groupByStr, "func", rb.req);
+            Query q = parser.getQuery();
+            SolrIndexSearcher.GroupCommandFunc gc;
+            if (groupSort != null) {
+              SolrIndexSearcher.GroupSortCommand gcSort = new SolrIndexSearcher.GroupSortCommand();
+              gcSort.sort = groupSort;
+              gc = gcSort;
+            } else {
+              gc =  new SolrIndexSearcher.GroupCommandFunc();
+            }
+
+            if (q instanceof FunctionQuery) {
+              gc.groupBy = ((FunctionQuery)q).getValueSource();
+            } else {
+              gc.groupBy = new QueryValueSource(q, 0.0f);
+            }
+            gc.key = groupByStr;
+            gc.groupLimit = limitDefault;
+            gc.docsPerGroup = docsPerGroupDefault;
+
+            cmd.groupCommands.add(gc);
+          }
+        }
+
+
+        if (cmd.groupCommands.size() == 0)
+          cmd.groupCommands = null;
+
+        if (cmd.groupCommands != null) {
+          searcher.search(result,cmd);
+          rsp.add("grouped", result.groupedResults);
+          return;
+        }
+      } catch (ParseException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      }
+    }
+
+    // normal search result
     searcher.search(result,cmd);
     rb.setResult( result );
 

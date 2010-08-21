@@ -19,6 +19,8 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldCache;
+import org.apache.solr.search.MutableValue;
+import org.apache.solr.search.MutableValueDouble;
 
 import java.io.IOException;
 import java.util.Map;
@@ -132,6 +134,24 @@ public class DoubleFieldSource extends FieldCacheSource {
             }
           };
         }
+      }
+
+            @Override
+      public ValueFiller getValueFiller() {
+        return new ValueFiller() {
+          private final double[] doubleArr = arr;
+          private final MutableValueDouble mval = new MutableValueDouble();
+
+          @Override
+          public MutableValue getValue() {
+            return mval;
+          }
+
+          @Override
+          public void fillValue(int doc) {
+            mval.value = doubleArr[doc];
+          }
+        };
       }
 
 

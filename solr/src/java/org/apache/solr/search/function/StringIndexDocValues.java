@@ -20,6 +20,8 @@ package org.apache.solr.search.function;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.search.MutableValue;
+import org.apache.solr.search.MutableValueStr;
 
 import java.io.IOException;
 
@@ -29,6 +31,7 @@ import java.io.IOException;
 public abstract class StringIndexDocValues extends DocValues {
     protected final FieldCache.DocTermsIndex termsIndex;
     protected final ValueSource vs;
+    protected final MutableValueStr val = new MutableValueStr();
 
     public StringIndexDocValues(ValueSource vs, IndexReader reader, String field) throws IOException {
       try {
@@ -81,9 +84,26 @@ public abstract class StringIndexDocValues extends DocValues {
       };
     }
 
-    public String toString(int doc) {
-      return vs.description() + '=' + strVal(doc);
-    }
+  public String toString(int doc) {
+    return vs.description() + '=' + strVal(doc);
+  }
+
+  @Override
+  public ValueFiller getValueFiller() {
+    return new ValueFiller() {
+      private final MutableValueStr mval = new MutableValueStr();
+
+      @Override
+      public MutableValue getValue() {
+        return mval;
+      }
+
+      @Override
+      public void fillValue(int doc) {
+        mval.value = termsIndex.getTerm(doc, val.value);
+      }
+    };
+  }
 
   public static final class StringIndexException extends RuntimeException {
     public StringIndexException(final String fieldName,
@@ -92,5 +112,6 @@ public abstract class StringIndexDocValues extends DocValues {
             "DocValues for field: " + fieldName, cause);
     }
   }
-  
+
+
 }

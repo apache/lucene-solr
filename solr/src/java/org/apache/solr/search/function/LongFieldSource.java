@@ -19,6 +19,8 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldCache;
+import org.apache.solr.search.MutableValue;
+import org.apache.solr.search.MutableValueLong;
 
 
 import java.io.IOException;
@@ -116,8 +118,31 @@ public class LongFieldSource extends FieldCacheSource {
         };
       }
 
+      @Override
+      public ValueFiller getValueFiller() {
+        return new ValueFiller() {
+          private final long[] longArr = arr;
+          private final MutableValueLong mval = newMutableValueLong();
+
+          @Override
+          public MutableValue getValue() {
+            return mval;
+          }
+
+          @Override
+          public void fillValue(int doc) {
+            mval.value = longArr[doc];
+          }
+        };
+      }
+
+
 
     };
+  }
+
+  protected MutableValueLong newMutableValueLong() {
+    return new MutableValueLong();  
   }
 
   public boolean equals(Object o) {

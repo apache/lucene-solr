@@ -37,6 +37,9 @@ import org.apache.lucene.util.OpenBitSet;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
+
+import org.apache.solr.search.function.DocValues;
+import org.apache.solr.search.function.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -898,12 +901,138 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
   public static final int GET_SCORES             =       0x01;
 
+
+  private void groupBy(QueryResult qr, QueryCommand cmd) throws IOException {
+    DocListAndSet out = new DocListAndSet();
+    qr.setDocListAndSet(out);
+
+    DocSet filter = cmd.getFilter()!=null ? cmd.getFilter() : getDocSet(cmd.getFilterList());
+
+    int last = cmd.getOffset() + cmd.getLen();
+    if (last < 0 || last > maxDoc()) last=maxDoc();
+
+    boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
+
+    Query query = QueryUtils.makeQueryable(cmd.getQuery());
+
+    final Filter luceneFilter = filter==null ? null : filter.getTopFilter();
+
+    Sort sort = cmd.getSort();
+    if (sort == null) sort = new Sort();
+
+    // TODO: make this a generic collector list
+    List<TopGroupCollector> collectors = new ArrayList<TopGroupCollector>(cmd.groupCommands.size());
+    for (GroupCommand groupCommand : cmd.groupCommands) {
+      // TODO: perhaps use some methods rather than instanceof
+      if (groupCommand instanceof GroupCommandFunc) {
+        GroupCommandFunc gc = (GroupCommandFunc)groupCommand;
+        Map context = ValueSource.newContext();
+        gc.groupBy.createWeight(context, this);
+        TopGroupCollector collector;
+        if (gc instanceof GroupSortCommand) {
+          GroupSortCommand sortGc = (GroupSortCommand) gc;
+          collector = new TopGroupSortCollector(gc.groupBy, context, sort, sortGc.sort, last);  
+        } else {
+          collector = new TopGroupCollector(gc.groupBy, context, sort, last);
+        }
+        collectors.add(collector);
+
+        // for next phase
+        gc.context = context;
+        gc.collector = collector;
+      }
+    }
+
+    search(query, luceneFilter, MultiCollector.wrap(collectors));
+
+    // TODO: make this a generic collector list
+    List<Phase2GroupCollector> phase2Collectors = new ArrayList<Phase2GroupCollector>(cmd.groupCommands.size());
+    for (GroupCommand groupCommand : cmd.groupCommands) {
+      if (groupCommand instanceof GroupCommandFunc) {
+        GroupCommandFunc gc = (GroupCommandFunc)groupCommand;
+        Sort collectorSort;
+        if (gc instanceof GroupSortCommand) {
+          collectorSort = ((GroupSortCommand) gc).sort;
+        } else {
+          collectorSort = sort;
+        }
+
+        Phase2GroupCollector collector = new Phase2GroupCollector((TopGroupCollector)gc.collector, gc.groupBy, gc.context, collectorSort, gc.docsPerGroup, needScores);
+        phase2Collectors.add(collector);
+      }
+    }
+
+    // TODO: optionally cache docs and feed them back through rather than re-searching
+    search(query, luceneFilter, MultiCollector.wrap(phase2Collectors));
+
+
+    NamedList grouped = new SimpleOrderedMap();
+    for (int cmdnum=0; cmdnum<cmd.groupCommands.size(); cmdnum++) {
+      GroupCommand groupCommand = cmd.groupCommands.get(cmdnum);
+      GroupCommandFunc groupCommandFunc = (GroupCommandFunc)groupCommand;
+      TopGroupCollector collector = collectors.get(cmdnum);
+      Phase2GroupCollector collector2 = phase2Collectors.get(cmdnum);
+
+      if (collector.orderedGroups == null) collector.buildSet();
+
+      NamedList groupResult = new SimpleOrderedMap();
+      grouped.add(groupCommand.key, groupResult);  // grouped={ key={
+
+      groupResult.add("matches", collector.getMatches());
+
+      List groupList = new ArrayList();
+      groupResult.add("groups", groupList);        // grouped={ key={ groups=[
+
+      for (SearchGroup group : collector.orderedGroups) {
+        NamedList nl = new SimpleOrderedMap();
+        groupList.add(nl);                         // grouped={ key={ groups=[ {
+
+        nl.add("groupValue", group.groupValue.toObject());
+
+        SearchGroupDocs groupDocs = collector2.groupMap.get(group.groupValue);
+        // nl.add("matches", groupDocs.matches);  // redundant with doclist.numFound from the doc list
+
+        TopDocs topDocs = groupDocs.collector.topDocs(0, groupCommandFunc.docsPerGroup);
+        //topDocs.totalHits
+        int ids[] = new int[topDocs.scoreDocs.length];
+        float[] scores = needScores ? new float[topDocs.scoreDocs.length] : null;
+        for (int i=0; i<ids.length; i++) {
+          ids[i] = topDocs.scoreDocs[i].doc;
+          if (scores != null)
+            scores[i] = topDocs.scoreDocs[i].score;
+        }
+
+        DocSlice docs = new DocSlice(0, ids.length, ids, scores, topDocs.totalHits, topDocs.getMaxScore());
+        nl.add("doclist", docs);
+
+
+        /*** values from stage 1
+         DocSlice docs = new DocSlice(0, 1, new int[] {group.topDoc}, null, 1, 0);
+         nl.add("docs", docs);
+
+         Object[] vals = new Object[collector.comparators.length];
+         for (int i=0; i<vals.length; i++) {
+         vals[i] = collector.comparators[i].value(group.comparatorSlot);
+         }
+         nl.add("groupSortValue", vals);
+         groupResult.add(nl);
+         ***/
+      }
+      qr.groupedResults = grouped;
+
+    }
+  }
+
   /**
    * getDocList version that uses+populates query and filter caches.
    * In the event of a timeout, the cache is not populated.
    */
   private void getDocListC(QueryResult qr, QueryCommand cmd) throws IOException {
-    // old parameters: DocListAndSet out, Query query, List<Query> filterList, DocSet filter, Sort lsort, int offset, int len, int flags, long timeAllowed, NamedList<Object> responseHeader
+    if (cmd.groupCommands != null) {
+      groupBy(qr, cmd);
+      return;
+    }
+
     DocListAndSet out = new DocListAndSet();
     qr.setDocListAndSet(out);
     QueryResultKey key=null;
@@ -1714,6 +1843,8 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     private int flags;
     private long timeAllowed = -1;
 
+    public List<GroupCommand> groupCommands;
+
     public Query getQuery() { return query; }
     public QueryCommand setQuery(Query query) {
       this.query = query;
@@ -1814,12 +1945,37 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     }
   }
 
+  public static class GroupCommand {
+    public String key;  // the name to use for this group in the response
+    public Sort groupSort;  // the sort of the documents *within* a single group.
+    public int groupLimit;   // how many groups - defaults to the "rows" parameter
+    public int docsPerGroup; // how many docs in each group - from "group.limit" param, default=1
+
+
+    
+  }
+
+  public static class GroupCommandFunc extends GroupCommand {
+    public ValueSource groupBy;
+
+
+    // todo - find a better place to store these
+    transient Map context;
+    transient Collector collector;
+  }
+
+  public static class GroupSortCommand extends GroupCommandFunc {
+    public Sort sort;
+  }
+
   /**
    * The result of a search.
    */
   public static class QueryResult {
     private boolean partialResults;
     private DocListAndSet docListAndSet;
+
+    public Object groupedResults;   // TODO: currently for testing
     
     public DocList getDocList() { return docListAndSet.docList; }
     public void setDocList(DocList list) {
@@ -1845,7 +2001,5 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   }
 
 }
-
-
 
 

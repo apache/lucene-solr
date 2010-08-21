@@ -28,6 +28,8 @@ import org.apache.solr.analysis.*;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.response.XMLWriter;
+import org.apache.solr.search.MutableValueDate;
+import org.apache.solr.search.MutableValueLong;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.function.*;
 
@@ -555,6 +557,11 @@ class TrieDateFieldSource extends LongFieldSource {
 
   public String description() {
     return "date(" + field + ')';
+  }
+
+  @Override
+  protected MutableValueLong newMutableValueLong() {
+    return new MutableValueDate();
   }
 
   @Override
