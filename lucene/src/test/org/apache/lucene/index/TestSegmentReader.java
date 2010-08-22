@@ -86,7 +86,7 @@ public class TestSegmentReader extends LuceneTestCase {
     assertTrue(deleteReader != null);
     assertTrue(deleteReader.numDocs() == 1);
     deleteReader.deleteDocument(0);
-    assertTrue(deleteReader.isDeleted(0) == true);
+    assertTrue(deleteReader.getDeletedDocs().get(0));
     assertTrue(deleteReader.hasDeletions() == true);
     assertTrue(deleteReader.numDocs() == 0);
     deleteReader.close();

@@ -26,8 +26,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.Bits;
 
 /**
  * Tests cloning multiple types of readers, modifying the deletedDocs and norms
@@ -243,10 +243,13 @@ public class TestIndexReaderClone extends LuceneTestCase {
   }
 
   public static boolean isReadOnly(IndexReader r) {
-    if (r instanceof ReadOnlySegmentReader
-        || r instanceof ReadOnlyDirectoryReader)
-      return true;
-    return false;
+    if (r instanceof SegmentReader) {
+      return ((SegmentReader) r).readOnly;
+    } else if (r instanceof DirectoryReader) {
+      return ((DirectoryReader) r).readOnly;
+    } else {
+      return false;
+    }
   }
 
   public void testParallelReader() throws Exception {
@@ -286,8 +289,9 @@ public class TestIndexReaderClone extends LuceneTestCase {
     assertTrue(Similarity.getDefault().decodeNormValue(r1.norms("field1")[4]) == norm1);
     assertTrue(Similarity.getDefault().decodeNormValue(pr1Clone.norms("field1")[4]) != norm1);
 
-    assertTrue(!r1.isDeleted(10));
-    assertTrue(pr1Clone.isDeleted(10));
+    final Bits delDocs = MultiFields.getDeletedDocs(r1);
+    assertTrue(delDocs == null || !delDocs.get(10));
+    assertTrue(MultiFields.getDeletedDocs(pr1Clone).get(10));
 
     // try to update the original reader, which should throw an exception
     try {
@@ -376,9 +380,10 @@ public class TestIndexReaderClone extends LuceneTestCase {
     assertTrue(origSegmentReader.deletedDocs != clonedSegmentReader.deletedDocs);
 
     assertDocDeleted(origSegmentReader, clonedSegmentReader, 1);
-    assertTrue(!origSegmentReader.isDeleted(2)); // doc 2 should not be deleted
+    final Bits delDocs = origSegmentReader.getDeletedDocs();
+    assertTrue(delDocs == null || !delDocs.get(2)); // doc 2 should not be deleted
                                                   // in original segmentreader
-    assertTrue(clonedSegmentReader.isDeleted(2)); // doc 2 should be deleted in
+    assertTrue(clonedSegmentReader.getDeletedDocs().get(2)); // doc 2 should be deleted in
                                                   // cloned segmentreader
 
     // deleting a doc from the original segmentreader should throw an exception
@@ -420,7 +425,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     clonedReader.close();
 
     IndexReader r = IndexReader.open(dir1, false);
-    assertTrue(r.isDeleted(1));
+    assertTrue(MultiFields.getDeletedDocs(r).get(1));
     r.close();
     dir1.close();
   }
@@ -448,7 +453,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
 
   private void assertDocDeleted(SegmentReader reader, SegmentReader reader2,
       int doc) {
-    assertEquals(reader.isDeleted(doc), reader2.isDeleted(doc));
+    assertEquals(reader.getDeletedDocs().get(doc), reader2.getDeletedDocs().get(doc));
   }
 
   private void assertDelDocsRefCountEquals(int refCount, SegmentReader reader) {

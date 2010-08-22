@@ -225,7 +225,7 @@ public class SolrIndexReader extends FilterIndexReader {
   }
 
   @Override
-  public Bits getDeletedDocs() throws IOException {
+  public Bits getDeletedDocs() {
     return in.getDeletedDocs();
   }
 
@@ -264,11 +264,6 @@ public class SolrIndexReader extends FilterIndexReader {
   @Override
   public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     return in.document(n, fieldSelector);
-  }
-
-  @Override
-  public boolean isDeleted(int n) {
-    return in.isDeleted(n);
   }
 
   @Override

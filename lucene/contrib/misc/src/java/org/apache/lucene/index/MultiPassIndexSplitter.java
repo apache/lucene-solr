@@ -183,8 +183,10 @@ public class MultiPassIndexSplitter {
       dels = new OpenBitSet(in.maxDoc());
       if (in.hasDeletions()) {
         oldDels = new OpenBitSet(in.maxDoc());
+        final Bits oldDelBits = MultiFields.getDeletedDocs(in);
+        assert oldDelBits != null;
         for (int i = 0; i < in.maxDoc(); i++) {
-          if (in.isDeleted(i)) oldDels.set(i);
+          if (oldDelBits.get(i)) oldDels.set(i);
         }
         dels.or(oldDels);
       }
@@ -205,7 +207,6 @@ public class MultiPassIndexSplitter {
       if (oldDels != null) {
         dels.or(oldDels);
       }
-      storeDelDocs(null);
     }
 
     @Override
@@ -226,11 +227,6 @@ public class MultiPassIndexSplitter {
     @Override
     public Bits getDeletedDocs() {
       return dels;
-    }
-
-    @Override
-    public boolean isDeleted(int n) {
-      return dels.get(n);
     }
   }
 }

@@ -44,6 +44,7 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BitVector;
+import org.apache.lucene.util.Bits;
 
 public class TestIndexReaderReopen extends LuceneTestCase {
     
@@ -1153,7 +1154,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     r2.deleteDocument(0);
 
     // r1 should not see the delete
-    assertFalse(r1.isDeleted(0));
+    final Bits r1DelDocs = MultiFields.getDeletedDocs(r1);
+    assertFalse(r1DelDocs != null && r1DelDocs.get(0));
 
     // Now r2 should have made a private copy of deleted docs:
     assertTrue(sr1.deletedDocs!=sr2.deletedDocs);

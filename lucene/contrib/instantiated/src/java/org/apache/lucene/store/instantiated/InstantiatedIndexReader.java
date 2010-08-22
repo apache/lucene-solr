@@ -152,14 +152,6 @@ public class InstantiatedIndexReader extends IndexReader {
     return index.getDeletedDocuments() != null || uncommittedDeletedDocuments != null;
   }
 
-
-  @Override
-  public boolean isDeleted(int n) {
-    return (index.getDeletedDocuments() != null && index.getDeletedDocuments().get(n))
-        || (uncommittedDeletedDocuments != null && uncommittedDeletedDocuments.get(n));
-  }
-
-
   @Override
   protected void doDelete(int docNum) throws IOException {
 
@@ -313,7 +305,7 @@ public class InstantiatedIndexReader extends IndexReader {
 
   @Override
   public Document document(int n) throws IOException {
-    return isDeleted(n) ? null : getIndex().getDocumentsByNumber()[n].getDocument();
+    return getIndex().getDocumentsByNumber()[n].getDocument();
   }
 
   /**

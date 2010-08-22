@@ -41,6 +41,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Bits;
 
 
 /**
@@ -95,8 +96,9 @@ public abstract class ReadTask extends PerfTask {
     // optionally warm and add num docs traversed to count
     if (withWarm()) {
       Document doc = null;
+      Bits delDocs = reader.getDeletedDocs();
       for (int m = 0; m < reader.maxDoc(); m++) {
-        if (!reader.isDeleted(m)) {
+        if (!delDocs.get(m)) {
           doc = reader.document(m);
           res += (doc == null ? 0 : 1);
         }

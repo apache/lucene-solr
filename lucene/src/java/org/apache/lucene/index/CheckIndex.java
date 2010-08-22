@@ -733,8 +733,9 @@ public class CheckIndex {
       }
 
       // Scan stored fields for all documents
+      final Bits delDocs = reader.getDeletedDocs();
       for (int j = 0; j < info.docCount; ++j) {
-        if (!reader.isDeleted(j)) {
+        if (delDocs == null || !delDocs.get(j)) {
           status.docCount++;
           Document doc = reader.document(j);
           status.totFields += doc.getFields().size();
@@ -770,8 +771,9 @@ public class CheckIndex {
         infoStream.print("    test: term vectors........");
       }
 
+      final Bits delDocs = reader.getDeletedDocs();
       for (int j = 0; j < info.docCount; ++j) {
-        if (!reader.isDeleted(j)) {
+        if (delDocs == null || !delDocs.get(j)) {
           status.docCount++;
           TermFreqVector[] tfv = reader.getTermFreqVectors(j);
           if (tfv != null) {

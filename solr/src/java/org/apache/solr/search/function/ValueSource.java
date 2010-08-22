@@ -24,12 +24,13 @@ import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.util.Bits;
+import org.apache.lucene.index.MultiFields;
 
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.Collections;
 
 /**
@@ -177,6 +178,7 @@ class ValueSourceScorer extends Scorer {
   protected final int maxDoc;
   protected final DocValues values;
   protected boolean checkDeletes;
+  private final Bits delDocs;
 
   protected ValueSourceScorer(IndexReader reader, DocValues values) {
     super(null);
@@ -184,6 +186,7 @@ class ValueSourceScorer extends Scorer {
     this.maxDoc = reader.maxDoc();
     this.values = values;
     setCheckDeletes(true);
+    this.delDocs = MultiFields.getDeletedDocs(reader);
   }
 
   public IndexReader getReader() {
@@ -195,7 +198,7 @@ class ValueSourceScorer extends Scorer {
   }
 
   public boolean matches(int doc) {
-    return (!checkDeletes || !reader.isDeleted(doc)) && matchesValue(doc);
+    return (!checkDeletes || !delDocs.get(doc)) && matchesValue(doc);
   }
 
   public boolean matchesValue(int doc) {

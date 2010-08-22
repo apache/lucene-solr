@@ -1198,12 +1198,6 @@ public class MemoryIndex implements Serializable {
     }
 
     @Override
-    public boolean isDeleted(int n) {
-      if (DEBUG) System.err.println("MemoryIndexReader.isDeleted");
-      return false;
-    }
-  
-    @Override
     public boolean hasDeletions() {
       if (DEBUG) System.err.println("MemoryIndexReader.hasDeletions");
       return false;

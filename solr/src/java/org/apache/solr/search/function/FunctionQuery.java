@@ -19,11 +19,12 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.*;
+import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.util.Bits;
 import org.apache.solr.search.SolrIndexReader;
 
 import java.io.IOException;
 import java.util.Set;
-import java.util.IdentityHashMap;
 import java.util.Map;
 
 
@@ -112,6 +113,7 @@ public class FunctionQuery extends Query {
     int doc=-1;
     final DocValues vals;
     final boolean hasDeletions;
+    final Bits delDocs;
 
     public AllScorer(Similarity similarity, IndexReader reader, FunctionWeight w) throws IOException {
       super(similarity);
@@ -120,6 +122,8 @@ public class FunctionQuery extends Query {
       this.reader = reader;
       this.maxDoc = reader.maxDoc();
       this.hasDeletions = reader.hasDeletions();
+      this.delDocs = MultiFields.getDeletedDocs(reader);
+      assert !hasDeletions || delDocs != null;
       vals = func.getValues(weight.context, reader);
     }
 
@@ -139,7 +143,7 @@ public class FunctionQuery extends Query {
         if (doc>=maxDoc) {
           return doc=NO_MORE_DOCS;
         }
-        if (hasDeletions && reader.isDeleted(doc)) continue;
+        if (hasDeletions && delDocs.get(doc)) continue;
         return doc;
       }
     }
@@ -161,7 +165,7 @@ public class FunctionQuery extends Query {
         if (doc>=maxDoc) {
           return false;
         }
-        if (hasDeletions && reader.isDeleted(doc)) continue;
+        if (hasDeletions && delDocs.get(doc)) continue;
         // todo: maybe allow score() to throw a specific exception
         // and continue on to the next document if it is thrown...
         // that may be useful, but exceptions aren't really good

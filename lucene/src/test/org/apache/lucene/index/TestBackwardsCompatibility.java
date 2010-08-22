@@ -46,10 +46,10 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.NumericRangeQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Bits;
 
 /*
   Verify we can read the pre-4.0 file format, do searches
@@ -310,8 +310,10 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     _TestUtil.checkIndex(dir);
 
+    final Bits delDocs = MultiFields.getDeletedDocs(reader);
+
     for(int i=0;i<35;i++) {
-      if (!reader.isDeleted(i)) {
+      if (!delDocs.get(i)) {
         Document d = reader.document(i);
         List<Fieldable> fields = d.getFields();
         if (d.getField("content3") == null) {

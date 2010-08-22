@@ -93,10 +93,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
       protected Object doBody(String segmentFileName) throws CorruptIndexException, IOException {
         SegmentInfos infos = new SegmentInfos();
         infos.read(directory, segmentFileName, codecs2);
-        if (readOnly)
-          return new ReadOnlyDirectoryReader(directory, infos, deletionPolicy, termInfosIndexDivisor, codecs2);
-        else
-          return new DirectoryReader(directory, infos, deletionPolicy, false, termInfosIndexDivisor, codecs2);
+        return new DirectoryReader(directory, infos, deletionPolicy, readOnly, termInfosIndexDivisor, codecs2);
       }
     }.run(commit);
   }
@@ -503,11 +500,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
   private synchronized DirectoryReader doReopen(SegmentInfos infos, boolean doClone, boolean openReadOnly) throws CorruptIndexException, IOException {
     DirectoryReader reader;
-    if (openReadOnly) {
-      reader = new ReadOnlyDirectoryReader(directory, infos, subReaders, starts, normsCache, doClone, termInfosIndexDivisor, null);
-    } else {
-      reader = new DirectoryReader(directory, infos, subReaders, starts, normsCache, false, doClone, termInfosIndexDivisor, null);
-    }
+    reader = new DirectoryReader(directory, infos, subReaders, starts, normsCache, openReadOnly, doClone, termInfosIndexDivisor, null);
     return reader;
   }
 
@@ -585,13 +578,6 @@ class DirectoryReader extends IndexReader implements Cloneable {
     ensureOpen();
     int i = readerIndex(n);                          // find segment num
     return subReaders[i].document(n - starts[i], fieldSelector);    // dispatch to segment reader
-  }
-
-  @Override
-  public boolean isDeleted(int n) {
-    // Don't call ensureOpen() here (it could affect performance)
-    final int i = readerIndex(n);                           // find segment num
-    return subReaders[i].isDeleted(n - starts[i]);    // dispatch to segment reader
   }
 
   @Override
@@ -735,7 +721,7 @@ class DirectoryReader extends IndexReader implements Cloneable {
       // NOTE: we should not reach this code w/ the core
       // IndexReader classes; however, an external subclass
       // of IndexReader could reach this.
-      ReadOnlySegmentReader.noWrite();
+      throw new UnsupportedOperationException("This IndexReader cannot make any changes to the index (it was opened with readOnly = true)");
     }
 
     if (segmentInfos != null) {

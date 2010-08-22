@@ -367,10 +367,11 @@ final class SegmentMerger {
     throws IOException, MergeAbortedException, CorruptIndexException {
     int docCount = 0;
     final int maxDoc = reader.maxDoc();
+    final Bits delDocs = MultiFields.getDeletedDocs(reader);
     if (matchingFieldsReader != null) {
       // We can bulk-copy because the fieldInfos are "congruent"
       for (int j = 0; j < maxDoc;) {
-        if (reader.isDeleted(j)) {
+        if (delDocs.get(j)) {
           // skip deleted docs
           ++j;
           continue;
@@ -382,7 +383,7 @@ final class SegmentMerger {
           j++;
           numDocs++;
           if (j >= maxDoc) break;
-          if (reader.isDeleted(j)) {
+          if (delDocs.get(j)) {
             j++;
             break;
           }
@@ -395,7 +396,7 @@ final class SegmentMerger {
       }
     } else {
       for (int j = 0; j < maxDoc; j++) {
-        if (reader.isDeleted(j)) {
+        if (delDocs.get(j)) {
           // skip deleted docs
           continue;
         }
@@ -485,10 +486,11 @@ final class SegmentMerger {
                                         final IndexReader reader)
     throws IOException, MergeAbortedException {
     final int maxDoc = reader.maxDoc();
+    final Bits delDocs = MultiFields.getDeletedDocs(reader);
     if (matchingVectorsReader != null) {
       // We can bulk-copy because the fieldInfos are "congruent"
       for (int docNum = 0; docNum < maxDoc;) {
-        if (reader.isDeleted(docNum)) {
+        if (delDocs.get(docNum)) {
           // skip deleted docs
           ++docNum;
           continue;
@@ -500,7 +502,7 @@ final class SegmentMerger {
           docNum++;
           numDocs++;
           if (docNum >= maxDoc) break;
-          if (reader.isDeleted(docNum)) {
+          if (delDocs.get(docNum)) {
             docNum++;
             break;
           }
@@ -512,7 +514,7 @@ final class SegmentMerger {
       }
     } else {
       for (int docNum = 0; docNum < maxDoc; docNum++) {
-        if (reader.isDeleted(docNum)) {
+        if (delDocs.get(docNum)) {
           // skip deleted docs
           continue;
         }
@@ -621,12 +623,13 @@ final class SegmentMerger {
       inputDocBase += reader.maxDoc();
       if (mergeState.delCounts[i] != 0) {
         int delCount = 0;
-        Bits deletedDocs = reader.getDeletedDocs();
+        final Bits delDocs = MultiFields.getDeletedDocs(reader);
+        assert delDocs != null;
         final int maxDoc = reader.maxDoc();
         final int[] docMap = mergeState.docMaps[i] = new int[maxDoc];
         int newDocID = 0;
         for(int j=0;j<maxDoc;j++) {
-          if (deletedDocs.get(j)) {
+          if (delDocs.get(j)) {
             docMap[j] = -1;
             delCount++;  // only for assert
           } else {
@@ -647,10 +650,7 @@ final class SegmentMerger {
     // NOTE: this is silly, yet, necessary -- we create a
     // MultiBits as our skip docs only to have it broken
     // apart when we step through the docs enums in
-    // MultidDcsEnum.... this only matters when we are
-    // interacting with a non-core IR subclass, because
-    // LegacyFieldsEnum.LegacyDocs[AndPositions]Enum checks
-    // that the skipDocs matches the delDocs for the reader
+    // MultiDocsEnum.
     mergeState.multiDeletedDocs = new MultiBits(bits, bitsStarts);
     
     try {
@@ -686,6 +686,7 @@ final class SegmentMerger {
           }
           for ( IndexReader reader : readers) {
             int maxDoc = reader.maxDoc();
+            final Bits delDocs = MultiFields.getDeletedDocs(reader);
             if (normBuffer == null || normBuffer.length < maxDoc) {
               // the buffer is too small for the current segment
               normBuffer = new byte[maxDoc];
@@ -698,7 +699,7 @@ final class SegmentMerger {
               // this segment has deleted docs, so we have to
               // check for every doc if it is deleted or not
               for (int k = 0; k < maxDoc; k++) {
-                if (!reader.isDeleted(k)) {
+                if (!delDocs.get(k)) {
                   output.writeByte(normBuffer[k]);
                 }
               }

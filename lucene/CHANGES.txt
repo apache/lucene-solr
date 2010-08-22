@@ -105,6 +105,9 @@ Changes in backwards compatibility policy
   calling setCalibrateSizeByDeletes(false) on the merge policy.  (Mike
   McCandless)
 
+* LUCENE-2600: Remove IndexReader.isDeleted in favor of
+  IndexReader.getDeletedDocs().  (Mike McCandless)
+
 API Changes
 
 * LUCENE-2302, LUCENE-1458, LUCENE-2111, LUCENE-2514: Terms are no longer

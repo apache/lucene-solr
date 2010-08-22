@@ -56,7 +56,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   CloseableThreadLocal<FieldsReader> fieldsReaderLocal = new FieldsReaderLocal();
   CloseableThreadLocal<TermVectorsReader> termVectorsLocal = new CloseableThreadLocal<TermVectorsReader>();
 
-  BitVector deletedDocs = null;
+  volatile BitVector deletedDocs;
   AtomicInteger deletedDocsRef = null;
   private boolean deletedDocsDirty = false;
   private boolean normsDirty = false;
@@ -525,7 +525,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
       codecs = CodecProvider.getDefault();
     }
     
-    SegmentReader instance = readOnly ? new ReadOnlySegmentReader() : new SegmentReader();
+    SegmentReader instance = new SegmentReader();
     instance.readOnly = readOnly;
     instance.si = si;
     instance.readBufferSize = readBufferSize;
@@ -559,7 +559,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
   }
 
   @Override
-  public synchronized Bits getDeletedDocs() {
+  public Bits getDeletedDocs() {
     return deletedDocs;
   }
 
@@ -663,7 +663,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     assert !doClone || (normsUpToDate && deletionsUpToDate);
 
     // clone reader
-    SegmentReader clone = openReadOnly ? new ReadOnlySegmentReader() : new SegmentReader();
+    SegmentReader clone = new SegmentReader();
 
     boolean success = false;
     try {
@@ -880,11 +880,6 @@ public class SegmentReader extends IndexReader implements Cloneable {
   public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     ensureOpen();
     return getFieldsReader().doc(n, fieldSelector);
-  }
-
-  @Override
-  public synchronized boolean isDeleted(int n) {
-    return (deletedDocs != null && deletedDocs.get(n));
   }
 
   @Override

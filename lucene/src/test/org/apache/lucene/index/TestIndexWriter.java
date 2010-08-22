@@ -76,6 +76,7 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.Bits;
 
 public class TestIndexWriter extends LuceneTestCase {
     Random random;
@@ -1897,8 +1898,10 @@ public class TestIndexWriter extends LuceneTestCase {
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
       int numDel = 0;
+      final Bits delDocs = MultiFields.getDeletedDocs(reader);
+      assertNotNull(delDocs);
       for(int j=0;j<reader.maxDoc();j++) {
-        if (reader.isDeleted(j))
+        if (delDocs.get(j))
           numDel++;
         else {
           reader.document(j);
@@ -1924,13 +1927,10 @@ public class TestIndexWriter extends LuceneTestCase {
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
       numDel = 0;
+      assertNull(MultiFields.getDeletedDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
-        if (reader.isDeleted(j))
-          numDel++;
-        else {
-          reader.document(j);
-          reader.getTermFreqVectors(j);
-        }
+        reader.document(j);
+        reader.getTermFreqVectors(j);
       }
       reader.close();
       assertEquals(0, numDel);
@@ -2011,8 +2011,10 @@ public class TestIndexWriter extends LuceneTestCase {
       assertEquals("i=" + i, expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
       int numDel = 0;
+      final Bits delDocs = MultiFields.getDeletedDocs(reader);
+      assertNotNull(delDocs);
       for(int j=0;j<reader.maxDoc();j++) {
-        if (reader.isDeleted(j))
+        if (delDocs.get(j))
           numDel++;
         else {
           reader.document(j);
@@ -2037,17 +2039,12 @@ public class TestIndexWriter extends LuceneTestCase {
       expected += 17-NUM_THREAD*NUM_ITER;
       assertEquals(expected, reader.docFreq(new Term("contents", "here")));
       assertEquals(expected, reader.maxDoc());
-      numDel = 0;
+      assertNull(MultiFields.getDeletedDocs(reader));
       for(int j=0;j<reader.maxDoc();j++) {
-        if (reader.isDeleted(j))
-          numDel++;
-        else {
-          reader.document(j);
-          reader.getTermFreqVectors(j);
-        }
+        reader.document(j);
+        reader.getTermFreqVectors(j);
       }
       reader.close();
-      assertEquals(0, numDel);
 
       dir.close();
     }
@@ -2487,8 +2484,9 @@ public class TestIndexWriter extends LuceneTestCase {
 
       if (success) {
         IndexReader reader = IndexReader.open(dir, true);
+        final Bits delDocs = MultiFields.getDeletedDocs(reader);
         for(int j=0;j<reader.maxDoc();j++) {
-          if (!reader.isDeleted(j)) {
+          if (delDocs == null || !delDocs.get(j)) {
             reader.document(j);
             reader.getTermFreqVectors(j);
           }

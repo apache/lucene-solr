@@ -788,9 +788,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
   // TODO (1.5): When we convert to JDK 1.5 make this Set<String>
   public abstract Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException;
   
-  /** Returns true if document <i>n</i> has been deleted */
-  public abstract boolean isDeleted(int n);
-
   /** Returns true if any documents have been deleted */
   public abstract boolean hasDeletions();
 
@@ -1120,7 +1117,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
    *  docs.
    *
    * @lucene.experimental */
-  public abstract Bits getDeletedDocs() throws IOException;
+  public abstract Bits getDeletedDocs();
 
   /**
    * Expert: return the IndexCommit that this reader has
@@ -1303,17 +1300,5 @@ public abstract class IndexReader implements Cloneable,Closeable {
   /** @lucene.internal */
   Fields retrieveFields() {
     return fields;
-  }
-
-  private Bits storedDelDocs;
-
-  /** @lucene.internal */
-  void storeDelDocs(Bits delDocs) {
-    this.storedDelDocs = delDocs;
-  }
-
-  /** @lucene.internal */
-  Bits retrieveDelDocs() {
-    return storedDelDocs;
   }
 }

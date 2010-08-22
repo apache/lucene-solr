@@ -131,7 +131,7 @@ public class LengthNormModifier {
       }
 
       for (int d = 0; d < termCounts.length; d++) {
-        if (! reader.isDeleted(d)) {
+        if (!delDocs.get(d)) {
           byte norm = Similarity.encodeNorm(sim.lengthNorm(fieldName, termCounts[d]));
           reader.setNorm(d, fieldName, norm);
         }

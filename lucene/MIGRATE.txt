@@ -265,4 +265,16 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
     DocsEnum docsEnum = reader.termDocsEnum(reader.getDeletedDocs(), field, text);
 
   Likewise for DocsAndPositionsEnum.
+
+* LUCENE-2600: remove IndexReader.isDeleted
+
+  Instead of IndexReader.isDeleted, do this:
+
+    import org.apache.lucene.util.Bits;
+    import org.apache.lucene.index.MultiFields;
+
+    Bits delDocs = MultiFields.getDeletedDocs(indexReader);
+    if (delDocs.get(docID)) {
+      // document is deleted...
+    }
     

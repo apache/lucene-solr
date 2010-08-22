@@ -1149,6 +1149,36 @@ public class TestIndexReader extends LuceneTestCase
       dir.close();
     }
 
+    public void testMultiReaderDeletes() throws Exception {
+      Directory dir = new MockRAMDirectory();
+      RandomIndexWriter w = new RandomIndexWriter(random, dir);
+      Document doc = new Document();
+      doc.add(new Field("f", "doctor", Field.Store.NO, Field.Index.NOT_ANALYZED));
+      w.addDocument(doc);
+      doc = new Document();
+      w.commit();
+      doc.add(new Field("f", "who", Field.Store.NO, Field.Index.NOT_ANALYZED));
+      w.addDocument(doc);
+      IndexReader r = w.getReader();
+      IndexReader wr = SlowMultiReaderWrapper.wrap(r);
+      w.close();
+
+      assertNull(wr.getDeletedDocs());
+      r.close();
+
+      r = IndexReader.open(dir, false);
+      wr = SlowMultiReaderWrapper.wrap(r);
+
+      assertNull(wr.getDeletedDocs());
+      assertEquals(1, r.deleteDocuments(new Term("f", "doctor")));
+      assertNotNull(wr.getDeletedDocs());
+      assertTrue(wr.getDeletedDocs().get(0));
+      assertEquals(1, r.deleteDocuments(new Term("f", "who")));
+      assertTrue(wr.getDeletedDocs().get(1));
+      r.close();
+      dir.close();
+    }
+
     private void deleteReaderReaderConflict(boolean optimize) throws IOException {
         Directory dir = getDirectory();
 
@@ -1250,7 +1280,6 @@ public class TestIndexReader extends LuceneTestCase
         dir.close();
     }
 
-
     private void addDocumentWithFields(IndexWriter writer) throws IOException
     {
         Document doc = new Document();
@@ -1333,13 +1362,17 @@ public class TestIndexReader extends LuceneTestCase
       }
       
       // check deletions
+      final Bits delDocs1 = MultiFields.getDeletedDocs(index1);
+      final Bits delDocs2 = MultiFields.getDeletedDocs(index2);
       for (int i = 0; i < index1.maxDoc(); i++) {
-        assertEquals("Doc " + i + " only deleted in one index.", index1.isDeleted(i), index2.isDeleted(i));
+        assertEquals("Doc " + i + " only deleted in one index.",
+                     delDocs1 == null || delDocs1.get(i),
+                     delDocs2 == null || delDocs2.get(i));
       }
       
       // check stored fields
       for (int i = 0; i < index1.maxDoc(); i++) {
-        if (!index1.isDeleted(i)) {
+        if (delDocs1 == null || !delDocs1.get(i)) {
           Document doc1 = index1.document(i);
           Document doc2 = index2.document(i);
           List<Fieldable> fieldable1 = doc1.getFields();
@@ -1670,7 +1703,7 @@ public class TestIndexReader extends LuceneTestCase
 
     // Reopen to readonly w/ no chnages
     IndexReader r3 = r.reopen(true);
-    assertTrue(r3 instanceof ReadOnlyDirectoryReader);
+    assertTrue(((DirectoryReader) r3).readOnly);
     r3.close();
 
     // Add new segment
@@ -1680,13 +1713,13 @@ public class TestIndexReader extends LuceneTestCase
     // Reopen reader1 --> reader2
     IndexReader r2 = r.reopen(true);
     r.close();
-    assertTrue(r2 instanceof ReadOnlyDirectoryReader);
+    assertTrue(((DirectoryReader) r2).readOnly);
     IndexReader[] subs = r2.getSequentialSubReaders();
     final int[] ints2 = FieldCache.DEFAULT.getInts(subs[0], "number");
     r2.close();
 
-    assertTrue(subs[0] instanceof ReadOnlySegmentReader);
-    assertTrue(subs[1] instanceof ReadOnlySegmentReader);
+    assertTrue(((SegmentReader) subs[0]).readOnly);
+    assertTrue(((SegmentReader) subs[1]).readOnly);
     assertTrue(ints == ints2);
 
     dir.close();

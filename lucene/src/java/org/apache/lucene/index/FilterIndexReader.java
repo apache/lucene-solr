@@ -273,7 +273,7 @@ public class FilterIndexReader extends IndexReader {
   }
   
   @Override
-  public Bits getDeletedDocs() throws IOException {
+  public Bits getDeletedDocs() {
     return MultiFields.getDeletedDocs(in);
   }
   
@@ -321,12 +321,6 @@ public class FilterIndexReader extends IndexReader {
   public Document document(int n, FieldSelector fieldSelector) throws CorruptIndexException, IOException {
     ensureOpen();
     return in.document(n, fieldSelector);
-  }
-
-  @Override
-  public boolean isDeleted(int n) {
-    // Don't call ensureOpen() here (it could affect performance)
-    return in.isDeleted(n);
   }
 
   @Override

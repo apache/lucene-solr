@@ -32,7 +32,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.util.Bits;
 
 /**
  * Test class to illustrate using IndexDeletionPolicy to provide multi-level rollback capability.
@@ -90,9 +90,11 @@ public class TestTransactionRollback extends LuceneTestCase {
   private void checkExpecteds(BitSet expecteds) throws Exception {
     IndexReader r = IndexReader.open(dir, true);
 		
-    //Perhaps not the most efficient approach but meets our needs here.
+    //Perhaps not the most efficient approach but meets our
+    //needs here.
+    final Bits delDocs = MultiFields.getDeletedDocs(r);
     for (int i = 0; i < r.maxDoc(); i++) {
-      if(!r.isDeleted(i)) {
+      if(delDocs == null || !delDocs.get(i)) {
         String sval=r.document(i).get(FIELD_RECORD_ID);
         if(sval!=null) {
           int val=Integer.parseInt(sval);

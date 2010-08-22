@@ -48,7 +48,7 @@ import org.apache.lucene.util.ReaderUtil;
 public final class SlowMultiReaderWrapper extends FilterIndexReader {
   /** This method may return the reader back, if the
    *  incoming reader is already atomic. */
-  public static IndexReader wrap(IndexReader reader) {
+  public static IndexReader wrap(IndexReader reader) throws IOException {
     final List<IndexReader> subs = new ArrayList<IndexReader>();
     ReaderUtil.gatherSubReaders(subs, reader);
     if (subs == null) {
@@ -61,7 +61,7 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
     }
   }
 
-  private SlowMultiReaderWrapper(IndexReader other) {
+  private SlowMultiReaderWrapper(IndexReader other) throws IOException {
     super(other);
   }
 
@@ -71,7 +71,7 @@ public final class SlowMultiReaderWrapper extends FilterIndexReader {
   }
 
   @Override
-  public Bits getDeletedDocs() throws IOException {
+  public Bits getDeletedDocs() {
     return MultiFields.getDeletedDocs(in);
   }
 
