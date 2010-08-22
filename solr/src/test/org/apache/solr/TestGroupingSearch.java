@@ -144,12 +144,15 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     assertU(adoc("id","1", f,"5",  f2,"4"));
     assertU(adoc("id","2", f,"4",  f2,"2"));
     assertU(adoc("id","3", f,"3",  f2,"7"));
+    assertU(commit());
     assertU(adoc("id","4", f,"2",  f2,"6"));
     assertU(adoc("id","5", f,"1",  f2,"2"));
     assertU(adoc("id","6", f,"3",  f2,"2"));
     assertU(adoc("id","7", f,"2",  f2,"3"));
+    assertU(commit());
     assertU(adoc("id","8", f,"1",  f2,"10"));
     assertU(adoc("id","9", f,"2",  f2,"1"));
+    assertU(commit());    
     assertU(adoc("id","10", f,"1", f2,"3"));
     assertU(commit());
   }
