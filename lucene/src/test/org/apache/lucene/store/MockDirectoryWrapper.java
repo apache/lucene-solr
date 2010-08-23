@@ -20,7 +20,6 @@ package org.apache.lucene.store;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Map;
@@ -95,6 +94,11 @@ public class MockDirectoryWrapper extends Directory {
     delegate.sync(names);
   }
   
+  @Override
+  public String toString() {
+    return "MockDirWrapper(" + delegate + ")";
+  }
+
   public synchronized final long sizeInBytes() throws IOException {
     if (delegate instanceof RAMDirectory)
       return ((RAMDirectory) delegate).sizeInBytes();

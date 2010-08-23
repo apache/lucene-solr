@@ -240,7 +240,8 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void testAddOldIndexes() throws IOException {
-    Random random = newRandom();
+    // nocommit seed
+    Random random = newRandom(-3990228165622894556L);
     for (String name : oldNames) {
       unzip(getDataFile("index." + name + ".zip"), name);
       String fullPath = fullDir(name);

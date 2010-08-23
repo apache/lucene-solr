@@ -51,7 +51,8 @@ public class TestPersistentSnapshotDeletionPolicy extends TestSnapshotDeletionPo
   
   @Override
   protected SnapshotDeletionPolicy getDeletionPolicy() throws IOException {
-    IndexWriter.unlock(snapshotDir);
+    snapshotDir.close();
+    snapshotDir = newDirectory(random);
     return new PersistentSnapshotDeletionPolicy(
         new KeepOnlyLastCommitDeletionPolicy(), snapshotDir, OpenMode.CREATE,
         TEST_VERSION_CURRENT);
