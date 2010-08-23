@@ -46,7 +46,10 @@ import static org.junit.Assert.*;
 public class CarrotClusteringEngineTest extends AbstractClusteringTest {
   @Test
   public void testCarrotLingo() throws Exception {
-    checkEngine(getClusteringEngine("default"), 10);
+  	// Note: the expected number of clusters may change after upgrading Carrot2
+  	// due to e.g. internal improvements or tuning of Carrot2 clustering.
+    final int expectedNumClusters = 10;
+		checkEngine(getClusteringEngine("default"), expectedNumClusters);
   }
 
   @Test
@@ -54,7 +57,11 @@ public class CarrotClusteringEngineTest extends AbstractClusteringTest {
     ModifiableSolrParams solrParams = new ModifiableSolrParams();
     solrParams.add(CarrotParams.SNIPPET_FIELD_NAME, "snippet");
     solrParams.add(CarrotParams.SUMMARY_FRAGSIZE, "200");//how do we validate this?
-    checkEngine(getClusteringEngine("default"), numberOfDocs -2 /*two don't have mining in the snippet*/, 15, new TermQuery(new Term("snippet", "mine")), solrParams);
+    
+  	// Note: the expected number of clusters may change after upgrading Carrot2
+  	// due to e.g. internal improvements or tuning of Carrot2 clustering.
+    final int expectedNumClusters = 15;
+    checkEngine(getClusteringEngine("default"), numberOfDocs -2 /*two don't have mining in the snippet*/, expectedNumClusters, new TermQuery(new Term("snippet", "mine")), solrParams);
   }
 
   @Test

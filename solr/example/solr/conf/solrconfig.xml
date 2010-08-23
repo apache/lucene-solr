@@ -56,7 +56,6 @@
   <!-- If a dir option (with or without a regex) is used and nothing is found
        that matches, it will be ignored
     -->
-  <lib dir="../../contrib/clustering/lib/downloads/" />
   <lib dir="../../contrib/clustering/lib/" />
   <lib dir="/total/crap/dir/ignored" /> 
   <!-- an exact path can be used to specify a specific file.  This will cause
@@ -808,6 +807,12 @@
            parameter name and attribute value as parameter value.
         -->
       <str name="LingoClusteringAlgorithm.desiredClusterCountBase">20</str>
+      
+      <!--
+           The language to assume for the documents. For a list of allowed values, see:
+           http://download.carrot2.org/stable/manual/#section.attribute.lingo.MultilingualClustering.defaultLanguage
+       -->
+      <str name="MultilingualClustering.defaultLanguage">ENGLISH</str>
     </lst>
     <lst name="engine">
       <str name="name">stc</str>
