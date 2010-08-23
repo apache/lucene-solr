@@ -29,7 +29,8 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -45,7 +46,11 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     private String term2 = "yy";
     private String term3 = "zz";
 
-    private class SeekCountingDirectory extends MockRAMDirectory {
+    private class SeekCountingDirectory extends MockDirectoryWrapper {
+      public SeekCountingDirectory(Directory delegate) {
+        super(delegate);
+      }
+
       @Override
       public IndexInput openInput(String name) throws IOException {
         IndexInput ii = super.openInput(name);
@@ -55,12 +60,13 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         }
         return ii;
       }
+      
     }
     
     private void createIndex(Random random, int numHits) throws IOException {
         int numDocs = 500;
         
-        Directory directory = new SeekCountingDirectory();
+        Directory directory = new SeekCountingDirectory(new RAMDirectory());
         IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(10));
         ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
         ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false);

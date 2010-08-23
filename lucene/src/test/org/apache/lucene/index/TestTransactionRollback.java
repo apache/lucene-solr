@@ -32,7 +32,6 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 
 /**
  * Test class to illustrate using IndexDeletionPolicy to provide multi-level rollback capability.

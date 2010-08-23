@@ -27,7 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
@@ -40,7 +40,7 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
   public void testMultiValuedNRQ() throws Exception {
     final Random rnd = newRandom();
 
-    MockRAMDirectory directory = newDirectory(rnd);
+    Directory directory = newDirectory(rnd);
     RandomIndexWriter writer = new RandomIndexWriter(rnd, directory);
     
     DecimalFormat format = new DecimalFormat("00000000000", new DecimalFormatSymbols(Locale.US));

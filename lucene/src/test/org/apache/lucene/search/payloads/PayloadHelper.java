@@ -22,12 +22,15 @@ import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.util.English;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Similarity;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.RAMDirectory;
+
 import static org.apache.lucene.util.LuceneTestCaseJ4.TEST_VERSION_CURRENT;
 
 import java.io.Reader;
@@ -105,7 +108,7 @@ public class PayloadHelper {
    */
   // TODO: randomize
   public IndexSearcher setUp(Similarity similarity, int numDocs) throws IOException {
-    MockRAMDirectory directory = new MockRAMDirectory();
+    Directory directory = new MockDirectoryWrapper(new RAMDirectory());
     PayloadAnalyzer analyzer = new PayloadAnalyzer();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer).setSimilarity(similarity));

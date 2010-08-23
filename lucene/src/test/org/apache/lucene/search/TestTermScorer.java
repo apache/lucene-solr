@@ -28,10 +28,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 
 public class TestTermScorer extends LuceneTestCase {
-  protected MockRAMDirectory directory;
+  protected Directory directory;
   private static final String FIELD = "field";
   
   protected String[] values = new String[] {"all", "dogs dogs", "like",

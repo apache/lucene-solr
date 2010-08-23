@@ -30,7 +30,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
@@ -244,7 +243,7 @@ public class TestMultiSearcher extends LuceneTestCase
     }
 
   public void testFieldSelector() throws Exception {
-    MockRAMDirectory ramDirectory1, ramDirectory2;
+    Directory ramDirectory1, ramDirectory2;
     IndexSearcher indexSearcher1, indexSearcher2;
 
     ramDirectory1 = newDirectory(random);
@@ -305,7 +304,7 @@ public class TestMultiSearcher extends LuceneTestCase
     private void testNormalization(int nDocs, String message) throws IOException {
         Query query=new TermQuery(new Term("contents", "doc0"));
         
-        MockRAMDirectory ramDirectory1;
+        Directory ramDirectory1;
         IndexSearcher indexSearcher1;
         ScoreDoc[] hits;
         
@@ -333,7 +332,7 @@ public class TestMultiSearcher extends LuceneTestCase
         
         
         
-        MockRAMDirectory ramDirectory2;
+        Directory ramDirectory2;
         IndexSearcher indexSearcher2;
         
         ramDirectory1=newDirectory(random);
@@ -379,7 +378,7 @@ public class TestMultiSearcher extends LuceneTestCase
      * @throws IOException 
      */
     public void testCustomSimilarity () throws IOException {
-        MockRAMDirectory dir = newDirectory(random);
+        Directory dir = newDirectory(random);
         initIndex(random, dir, 10, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
         IndexSearcher srchr = new IndexSearcher(dir, true);
         MultiSearcher msrchr = getMultiSearcherInstance(new Searcher[]{srchr});
@@ -422,8 +421,8 @@ public class TestMultiSearcher extends LuceneTestCase
     }
     
     public void testDocFreq() throws IOException{
-      MockRAMDirectory dir1 = newDirectory(random);
-      MockRAMDirectory dir2 = newDirectory(random);
+      Directory dir1 = newDirectory(random);
+      Directory dir2 = newDirectory(random);
 
       initIndex(random, dir1, 10, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
       initIndex(random, dir2, 5, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
@@ -440,8 +439,8 @@ public class TestMultiSearcher extends LuceneTestCase
     }
     
     public void testCreateDocFrequencyMap() throws IOException{
-      MockRAMDirectory dir1 = newDirectory(random);
-      MockRAMDirectory dir2 = newDirectory(random);
+      Directory dir1 = newDirectory(random);
+      Directory dir2 = newDirectory(random);
       Term template = new Term("contents") ;
       String[] contents  = {"a", "b", "c"};
       HashSet<Term> termsSet = new HashSet<Term>();

@@ -26,7 +26,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 
 /**
  * https://issues.apache.org/jira/browse/LUCENE-1974
@@ -41,7 +41,7 @@ import org.apache.lucene.store.MockRAMDirectory;
 public class TestPrefixInBooleanQuery extends LuceneTestCase {
 
   private static final String FIELD = "name";
-  private MockRAMDirectory directory;
+  private Directory directory;
   private IndexReader reader;
   private IndexSearcher searcher;
 

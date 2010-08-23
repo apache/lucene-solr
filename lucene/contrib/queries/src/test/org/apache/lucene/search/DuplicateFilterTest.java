@@ -28,12 +28,12 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermDocs;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class DuplicateFilterTest extends LuceneTestCase {
 	private static final String KEY_FIELD = "url";
-	private MockRAMDirectory directory;
+	private Directory directory;
 	private IndexReader reader;
 	TermQuery tq=new TermQuery(new Term("text","lucene"));
 	private IndexSearcher searcher;

@@ -142,7 +142,6 @@ final class FieldsWriter
 
     final void close() throws IOException {
       if (doClose) {
-
         try {
           if (fieldsStream != null) {
             try {

@@ -40,12 +40,11 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 public class TestFieldsReader extends LuceneTestCase {
-  private MockRAMDirectory dir;
+  private Directory dir;
   private Document testDoc = new Document();
   private FieldInfos fieldInfos = null;
   private Random random;

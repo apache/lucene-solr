@@ -21,7 +21,6 @@ import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
@@ -30,7 +29,6 @@ import org.apache.lucene.util.English;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-import java.io.IOException;
 import java.io.File;
 import java.util.Random;
 

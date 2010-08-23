@@ -28,7 +28,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PhraseQuery;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 
 public class TestSloppyPhraseQuery extends LuceneTestCase {
 
@@ -124,7 +124,7 @@ public class TestSloppyPhraseQuery extends LuceneTestCase {
   private float  checkPhraseQuery(Document doc, PhraseQuery query, int slop, int expectedNumResults) throws Exception {
     query.setSlop(slop);
 
-    MockRAMDirectory ramDir = newDirectory(random);
+    Directory ramDir = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, ramDir, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
     writer.addDocument(doc);
 

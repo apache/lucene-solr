@@ -27,7 +27,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 
 public class BaseTestRangeFilter extends LuceneTestCase {
   
@@ -46,7 +46,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     int maxR;
     int minR;
     boolean allowNegativeRandomInts;
-    MockRAMDirectory index;
+    Directory index;
     
     TestIndex(int minR, int maxR, boolean allowNegativeRandomInts) {
       this.minR = minR;

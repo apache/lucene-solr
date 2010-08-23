@@ -113,6 +113,8 @@ public class TestPayloadSpans extends LuceneTestCase {
     SpanQuery spq = new SpanNearQuery(clauses, 5, true);
     SpanNotQuery snq = new SpanNotQuery(spq, new SpanTermQuery(new Term(PayloadHelper.FIELD, "two")));
 
+
+
     Directory directory = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, directory,
                                                      newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
