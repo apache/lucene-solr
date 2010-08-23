@@ -179,7 +179,6 @@ public class TestDeletionPolicy extends LuceneTestCase {
       // Any commit older than expireTime should be deleted:
       double expireTime = dir.fileModified(lastCommit.getSegmentsFileName())/1000.0 - expirationTimeSeconds;
 
-
       for (final IndexCommit commit : commits) {
         double modTime = dir.fileModified(commit.getSegmentsFileName())/1000.0;
         if (commit != lastCommit && modTime < expireTime) {
@@ -211,8 +210,10 @@ public class TestDeletionPolicy extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.close();
 
+    final int ITER = 8;
+
     long lastDeleteTime = 0;
-    for(int i=0;i<7;i++) {
+    for(int i=0;i<ITER;i++) {
       // Record last time when writer performed deletes of
       // past commits
       lastDeleteTime = System.currentTimeMillis();
@@ -228,9 +229,11 @@ public class TestDeletionPolicy extends LuceneTestCase {
       }
       writer.close();
 
-      // Make sure to sleep long enough so that some commit
-      // points will be deleted:
-      Thread.sleep((int) (1000.0*(SECONDS/5.0)));
+      if (i < ITER-1) {
+        // Make sure to sleep long enough so that some commit
+        // points will be deleted:
+        Thread.sleep((int) (1000.0*(SECONDS/5.0)));
+      }
     }
 
     // First, make sure the policy in fact deleted something:
@@ -246,6 +249,9 @@ public class TestDeletionPolicy extends LuceneTestCase {
                                                             "",
                                                             gen);
     dir.deleteFile(IndexFileNames.SEGMENTS_GEN);
+
+    boolean oneSecondResolution = true;
+
     while(gen > 0) {
       try {
         IndexReader reader = IndexReader.open(dir, true);
@@ -253,8 +259,15 @@ public class TestDeletionPolicy extends LuceneTestCase {
         fileName = IndexFileNames.fileNameFromGeneration(IndexFileNames.SEGMENTS,
                                                          "",
                                                          gen);
+
+        // if we are on a filesystem that seems to have only
+        // 1 second resolution, allow +1 second in commit
+        // age tolerance:
         long modTime = dir.fileModified(fileName);
-        assertTrue("commit point was older than " + SECONDS + " seconds (" + (lastDeleteTime - modTime) + " msec) but did not get deleted", lastDeleteTime - modTime <= (SECONDS*1000));
+        oneSecondResolution &= (modTime % 1000) == 0;
+        final long leeway = (long) ((SECONDS + (oneSecondResolution ? 1.0:0.0))*1000);
+
+        assertTrue("commit point was older than " + SECONDS + " seconds (" + (lastDeleteTime - modTime) + " msec) but did not get deleted ", lastDeleteTime - modTime <= leeway);
       } catch (IOException e) {
         // OK
         break;

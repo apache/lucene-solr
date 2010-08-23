@@ -5009,20 +5009,31 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMaxBufferedDocs(2));
-    // Creating over empty dir should not create any files.
-    assertEquals(0, dir.listAll().length);
+    String[] files = dir.listAll();
+
+    // Creating over empty dir should not create any files,
+    // or, at most the write.lock file
+    final int extraFileCount;
+    if (files.length == 1) {
+      assertEquals("write.lock", files[0]);
+      extraFileCount = 1;
+    } else {
+      assertEquals(0, files.length);
+      extraFileCount = 0;
+    }
+
     Document doc = new Document();
     // create as many files as possible
     doc.add(new Field("c", "val", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
     writer.addDocument(doc);
     // Adding just one document does not call flush yet.
-    assertEquals("only the stored and term vector files should exist in the directory", 5, dir.listAll().length);
+    assertEquals("only the stored and term vector files should exist in the directory", 5 + extraFileCount, dir.listAll().length);
     
     doc = new Document();
     doc.add(new Field("c", "val", Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
     writer.addDocument(doc);
     // The second document should cause a flush.
-    assertTrue("flush should have occurred and files created", dir.listAll().length > 5);
+    assertTrue("flush should have occurred and files created", dir.listAll().length > 5 + extraFileCount);
    
     // After rollback, IW should remove all files
     writer.rollback();
