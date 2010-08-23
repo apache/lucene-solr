@@ -35,7 +35,7 @@ import java.util.Iterator;
 public class DummyCustomParamSpellChecker extends SolrSpellChecker {
 
   @Override
-  public void reload() throws IOException {
+  public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {
 
   }
 

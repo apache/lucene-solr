@@ -237,6 +237,9 @@ New Features
    Koji Sekiguchi, Iván de Prado, Ryan McKinley, Marc Sturlese, Peter Karich,
    Bojan Smid, Charles Hornberger, Dieter Grad, Dmitry Lihachev, Doug Steigerwald,
    Karsten Sperling, Michael Gundlach, Oleg Gnatovskiy, Thomas Traeger, yonik)
+
+* SOLR-1316: Create autosuggest component.
+  (Ankul Garg, Jason Rutherglen, Shalin Shekhar Mangar, Grant Ingersoll, Robert Muir, ab)
    
 
 Optimizations

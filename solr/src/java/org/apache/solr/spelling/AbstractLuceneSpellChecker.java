@@ -44,6 +44,7 @@ import org.apache.lucene.store.RAMDirectory;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.search.SolrIndexSearcher;
 
 
 /**
@@ -195,7 +196,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     return reader;
   }
 
-  public void reload() throws IOException {
+  public void reload(SolrCore core, SolrIndexSearcher searcher) throws IOException {
     spellChecker.setSpellIndex(index);
 
   }
