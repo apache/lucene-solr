@@ -596,7 +596,11 @@ public class LuceneTestCaseJ4 {
   
   public static MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     StackTraceElement[] stack = new Exception().getStackTrace();
-    MockDirectoryWrapper dir = new MockDirectoryWrapper(new RAMDirectory(d));
+    Directory impl = newDirectoryImpl(TEST_DIRECTORY);
+    for (String file : d.listAll()) {
+     d.copy(impl, file, file);
+    }
+    MockDirectoryWrapper dir = new MockDirectoryWrapper(impl);
     stores.put(dir, stack);
     return dir;
   }
