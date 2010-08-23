@@ -32,6 +32,7 @@ API Changes
     safety, serialization, and performance problems. If you have
     written a custom RegexCapabilities it will need to be updated
     to the new API.  (Robert Muir, Uwe Schindler)
+
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy
@@ -109,6 +110,10 @@ Bug fixes
 
 * LUCENE-2524: FastVectorHighlighter: use mod for getting colored tag.
   (Koji Sekiguchi)
+
+* LUCENE-2615: Fix DirectIOLinuxDirectory to not assign bogus
+  permissions to newly created files, and to not silently hardwire
+  buffer size to 1 MB.  (Mark Miller, Robert Muir, Mike McCandless)
    
 API Changes
 
