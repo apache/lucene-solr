@@ -22,8 +22,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
 
-import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -132,7 +131,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
    */
   public void testFilterIndexReader() throws Exception {
     Random random = newRandom();
-    MockRAMDirectory directory = newDirectory(random);
+    Directory directory = newDirectory(random);
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     Document d1 = new Document();
@@ -150,7 +149,7 @@ public class TestFilterIndexReader extends LuceneTestCase {
     writer.close();
 
     //IndexReader reader = new TestReader(IndexReader.open(directory, true));
-    MockRAMDirectory target = newDirectory(random);
+    Directory target = newDirectory(random);
     writer = new IndexWriter(target, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     IndexReader reader = new TestReader(IndexReader.open(directory, true));
     writer.addIndexes(reader);

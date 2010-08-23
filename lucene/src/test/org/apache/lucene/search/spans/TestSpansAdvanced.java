@@ -32,7 +32,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.*;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 
 /*******************************************************************************
  * Tests the span query bug in Lucene. It demonstrates that SpanTermQuerys don't

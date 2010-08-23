@@ -26,14 +26,14 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 
 public class TestParallelTermEnum extends LuceneTestCase {
     private IndexReader ir1;
     private IndexReader ir2;
-    private MockRAMDirectory rd1;
-    private MockRAMDirectory rd2;
+    private Directory rd1;
+    private Directory rd2;
     
     @Override
     protected void setUp() throws Exception {

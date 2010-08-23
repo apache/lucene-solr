@@ -25,7 +25,7 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -35,7 +35,7 @@ public class TestCheckIndex extends LuceneTestCase {
 
   public void testDeletedDocs() throws IOException {
     Random random = newRandom();
-    MockRAMDirectory dir = newDirectory(random);
+    Directory dir = newDirectory(random);
     IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
     Document doc = new Document();
     doc.add(new Field("field", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));

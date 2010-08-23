@@ -24,7 +24,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
@@ -137,9 +136,9 @@ public class TestDirectoryReader extends LuceneTestCase {
   }
         
   public void testIsCurrent() throws IOException {
-    MockRAMDirectory ramDir1=newDirectory(random);
+    Directory ramDir1=newDirectory(random);
     addDoc(random, ramDir1, "test foo", true);
-    MockRAMDirectory ramDir2=newDirectory(random);
+    Directory ramDir2=newDirectory(random);
     addDoc(random, ramDir2, "test blah", true);
     IndexReader[] readers = new IndexReader[]{IndexReader.open(ramDir1, false), IndexReader.open(ramDir2, false)};
     MultiReader mr = new MultiReader(readers);
@@ -160,11 +159,11 @@ public class TestDirectoryReader extends LuceneTestCase {
   }
 
   public void testMultiTermDocs() throws IOException {
-    MockRAMDirectory ramDir1=newDirectory(random);
+    Directory ramDir1=newDirectory(random);
     addDoc(random, ramDir1, "test foo", true);
-    MockRAMDirectory ramDir2=newDirectory(random);
+    Directory ramDir2=newDirectory(random);
     addDoc(random, ramDir2, "test blah", true);
-    MockRAMDirectory ramDir3=newDirectory(random);
+    Directory ramDir3=newDirectory(random);
     addDoc(random, ramDir3, "test wow", true);
 
     IndexReader[] readers1 = new IndexReader[]{IndexReader.open(ramDir1, false), IndexReader.open(ramDir3, false)};
@@ -204,7 +203,7 @@ public class TestDirectoryReader extends LuceneTestCase {
     ramDir3.close();
   }
 
-  private void addDoc(Random random, MockRAMDirectory ramDir1, String s, boolean create) throws IOException {
+  private void addDoc(Random random, Directory ramDir1, String s, boolean create) throws IOException {
     IndexWriter iw = new IndexWriter(ramDir1, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, 
         new MockAnalyzer()).setOpenMode(

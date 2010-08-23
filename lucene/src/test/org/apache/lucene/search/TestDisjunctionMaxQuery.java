@@ -26,7 +26,6 @@ import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 
 import java.text.DecimalFormat;
 import java.util.Random;

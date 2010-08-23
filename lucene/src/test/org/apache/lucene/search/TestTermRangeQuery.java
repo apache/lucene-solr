@@ -21,7 +21,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -43,7 +43,7 @@ import java.text.Collator;
 public class TestTermRangeQuery extends LuceneTestCase {
 
   private int docCount = 0;
-  private MockRAMDirectory dir;
+  private Directory dir;
   private Random random;
   
   @Override

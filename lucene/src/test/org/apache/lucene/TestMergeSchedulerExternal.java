@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
@@ -71,9 +71,9 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     }
   }
 
-  private static class FailOnlyOnMerge extends MockRAMDirectory.Failure {
+  private static class FailOnlyOnMerge extends MockDirectoryWrapper.Failure {
     @Override
-    public void eval(MockRAMDirectory dir)  throws IOException {
+    public void eval(MockDirectoryWrapper dir)  throws IOException {
       StackTraceElement[] trace = new Exception().getStackTrace();
       for (int i = 0; i < trace.length; i++) {
         if ("doMerge".equals(trace[i].getMethodName()))
@@ -84,7 +84,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
 
   public void testSubclassConcurrentMergeScheduler() throws IOException {
     Random random = newRandom();
-    MockRAMDirectory dir = newDirectory(random);
+    MockDirectoryWrapper dir = newDirectory(random);
     dir.failOn(new FailOnlyOnMerge());
 
     Document doc = new Document();

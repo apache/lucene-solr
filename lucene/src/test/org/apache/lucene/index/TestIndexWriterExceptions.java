@@ -22,8 +22,8 @@ import java.io.IOException;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -130,7 +130,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
   public void testRandomExceptions() throws Throwable {
     Random random = newRandom();
-    MockRAMDirectory dir = newDirectory(random);
+    MockDirectoryWrapper dir = newDirectory(random);
 
     MockIndexWriter writer  = new MockIndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
         .setRAMBufferSizeMB(0.1).setMergeScheduler(new ConcurrentMergeScheduler()));
@@ -171,7 +171,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
   public void testRandomExceptionsThreads() throws Throwable {
     Random random = newRandom();
-    MockRAMDirectory dir = newDirectory(random);
+    MockDirectoryWrapper dir = newDirectory(random);
     MockIndexWriter writer  = new MockIndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
         .setRAMBufferSizeMB(0.2).setMergeScheduler(new ConcurrentMergeScheduler()));
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();

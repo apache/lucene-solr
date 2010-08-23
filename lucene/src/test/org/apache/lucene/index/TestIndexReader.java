@@ -51,8 +51,10 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NoSuchDirectoryException;
+import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.store.LockReleaseFailedException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.BytesRef;
@@ -82,7 +84,7 @@ public class TestIndexReader extends LuceneTestCase
     }
     
     public void testCommitUserData() throws Exception {
-      MockRAMDirectory d = newDirectory(random);
+      Directory d = newDirectory(random);
 
       Map<String,String> commitUserData = new HashMap<String,String>();
       commitUserData.put("foo", "fighters");
@@ -137,7 +139,7 @@ public class TestIndexReader extends LuceneTestCase
     }
     
     public void testIsCurrent() throws Exception {
-      MockRAMDirectory d = newDirectory(random);
+      Directory d = newDirectory(random);
       IndexWriter writer = new IndexWriter(d, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, new MockAnalyzer()));
       addDocumentWithFields(writer);
@@ -166,7 +168,7 @@ public class TestIndexReader extends LuceneTestCase
      * @throws Exception on error
      */
     public void testGetFieldNames() throws Exception {
-        MockRAMDirectory d = newDirectory(random);
+        Directory d = newDirectory(random);
         // set up writer
         IndexWriter writer = new IndexWriter(d, newIndexWriterConfig(random, 
             TEST_VERSION_CURRENT, new MockAnalyzer()));
@@ -258,7 +260,7 @@ public class TestIndexReader extends LuceneTestCase
     }
 
   public void testTermVectors() throws Exception {
-    MockRAMDirectory d = newDirectory(random);
+    Directory d = newDirectory(random);
     // set up writer
     IndexWriter writer = new IndexWriter(d, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, new MockAnalyzer()));
@@ -794,7 +796,7 @@ public class TestIndexReader extends LuceneTestCase
       IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
       addDocumentWithFields(writer);
       writer.close();
-      writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+      writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
       IndexReader reader = IndexReader.open(dir, false);
       try {
         reader.deleteDocument(0);
@@ -802,7 +804,11 @@ public class TestIndexReader extends LuceneTestCase
       } catch(IOException e) {
         // expected exception
       }
-      IndexWriter.unlock(dir);		// this should not be done in the real world! 
+      try {
+        IndexWriter.unlock(dir);		// this should not be done in the real world! 
+      } catch (LockReleaseFailedException lrfe) {
+        writer.close();
+      }
       reader.deleteDocument(0);
       reader.close();
       writer.close();
@@ -881,7 +887,7 @@ public class TestIndexReader extends LuceneTestCase
       int END_COUNT = 144;
       
       // First build up a starting index:
-      MockRAMDirectory startDir = newDirectory(random);
+      MockDirectoryWrapper startDir = newDirectory(random);
       IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
       for(int i=0;i<157;i++) {
         Document d = new Document();
@@ -893,7 +899,7 @@ public class TestIndexReader extends LuceneTestCase
       }
       writer.close();
 
-      long diskUsage = ((MockRAMDirectory) startDir).getRecomputedActualSizeInBytes();
+      long diskUsage = startDir.getRecomputedActualSizeInBytes();
       long diskFree = diskUsage+100;
 
       IOException err = null;
@@ -903,7 +909,7 @@ public class TestIndexReader extends LuceneTestCase
 
       // Iterate w/ ever increasing free disk space:
       while(!done) {
-        MockRAMDirectory dir = new MockRAMDirectory(startDir);
+        MockDirectoryWrapper dir = new MockDirectoryWrapper(new RAMDirectory(startDir));
 
         // If IndexReader hits disk full, it can write to
         // the same files again.
@@ -1150,7 +1156,7 @@ public class TestIndexReader extends LuceneTestCase
     }
 
     public void testMultiReaderDeletes() throws Exception {
-      Directory dir = new MockRAMDirectory();
+      Directory dir = newDirectory(random);
       RandomIndexWriter w = new RandomIndexWriter(random, dir);
       Document doc = new Document();
       doc.add(new Field("f", "doctor", Field.Store.NO, Field.Index.NOT_ANALYZED));
@@ -1417,7 +1423,7 @@ public class TestIndexReader extends LuceneTestCase
 
     public void testGetIndexCommit() throws IOException {
 
-      MockRAMDirectory d = newDirectory(random);
+      Directory d = newDirectory(random);
 
       // set up writer
       IndexWriter writer = new IndexWriter(d, newIndexWriterConfig(random, 
@@ -1466,7 +1472,7 @@ public class TestIndexReader extends LuceneTestCase
     }      
 
     public void testReadOnly() throws Throwable {
-      MockRAMDirectory d = newDirectory(random);
+      Directory d = newDirectory(random);
       IndexWriter writer = new IndexWriter(d, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, new MockAnalyzer()));
       addDocumentWithFields(writer);
@@ -1553,7 +1559,7 @@ public class TestIndexReader extends LuceneTestCase
 
   // LUCENE-1647
   public void testIndexReaderUnDeleteAll() throws Exception {
-    MockRAMDirectory dir = newDirectory(random);
+    MockDirectoryWrapper dir = newDirectory(random);
     dir.setPreventDoubleWrite(false);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, 
         TEST_VERSION_CURRENT, new MockAnalyzer()));

@@ -18,6 +18,7 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
+import java.util.Map;
 
 /**
  * Used by MockRAMDirectory to create an output stream that
@@ -26,26 +27,27 @@ import java.io.IOException;
  * IOExceptions.
  */
 
-public class MockRAMOutputStream extends RAMOutputStream {
-  private MockRAMDirectory dir;
+public class MockIndexOutputWrapper extends IndexOutput {
+  private MockDirectoryWrapper dir;
+  private final IndexOutput delegate;
   private boolean first=true;
   private final String name;
   
   byte[] singleByte = new byte[1];
 
   /** Construct an empty output buffer. */
-  public MockRAMOutputStream(MockRAMDirectory dir, RAMFile f, String name) {
-    super(f);
+  public MockIndexOutputWrapper(MockDirectoryWrapper dir, IndexOutput delegate, String name) {
     this.dir = dir;
     this.name = name;
+    this.delegate = delegate;
   }
 
   @Override
   public void close() throws IOException {
-    super.close();
-
+    dir.maybeThrowDeterministicException();
+    delegate.close();
     // Now compute actual disk usage & track the maxUsedSize
-    // in the MockRAMDirectory:
+    // in the MockDirectoryWrapper:
     long size = dir.getRecomputedActualSizeInBytes();
     if (size > dir.maxUsedSize) {
       dir.maxUsedSize = size;
@@ -55,7 +57,7 @@ public class MockRAMOutputStream extends RAMOutputStream {
   @Override
   public void flush() throws IOException {
     dir.maybeThrowDeterministicException();
-    super.flush();
+    delegate.flush();
   }
 
   @Override
@@ -66,7 +68,7 @@ public class MockRAMOutputStream extends RAMOutputStream {
   
   @Override
   public void writeBytes(byte[] b, int offset, int len) throws IOException {
-    long freeSpace = dir.maxSize - dir.sizeInBytes();
+    long freeSpace = dir.maxSize == 0 ? 0 : dir.maxSize - dir.sizeInBytes();
     long realUsage = 0;
 
     // If MockRAMDir crashed since we were opened, then
@@ -85,14 +87,14 @@ public class MockRAMOutputStream extends RAMOutputStream {
     if (dir.maxSize != 0 && freeSpace <= len) {
       if (freeSpace > 0 && freeSpace < len) {
         realUsage += freeSpace;
-        super.writeBytes(b, offset, (int) freeSpace);
+        delegate.writeBytes(b, offset, (int) freeSpace);
       }
       if (realUsage > dir.maxUsedSize) {
         dir.maxUsedSize = realUsage;
       }
       throw new IOException("fake disk full at " + dir.getRecomputedActualSizeInBytes() + " bytes when writing " + name);
     } else {
-      super.writeBytes(b, offset, len);
+      delegate.writeBytes(b, offset, len);
     }
 
     dir.maybeThrowDeterministicException();
@@ -103,5 +105,79 @@ public class MockRAMOutputStream extends RAMOutputStream {
       first = false;
       dir.maybeThrowIOException();
     }
+  }
+
+  @Override
+  public long getFilePointer() {
+    return delegate.getFilePointer();
+  }
+
+  @Override
+  public void seek(long pos) throws IOException {
+    delegate.seek(pos);
+  }
+
+  @Override
+  public long length() throws IOException {
+    return delegate.length();
+  }
+
+  @Override
+  public void setLength(long length) throws IOException {
+    delegate.setLength(length);
+  }
+
+  /*
+  @Override
+  public void writeBytes(byte[] b, int length) throws IOException {
+    delegate.writeBytes(b, length);
+  }
+
+  @Override
+  public void writeInt(int i) throws IOException {
+    delegate.writeInt(i);
+  }
+
+  @Override
+  public void writeVInt(int i) throws IOException {
+    delegate.writeVInt(i);
+  }
+
+  @Override
+  public void writeLong(long i) throws IOException {
+    delegate.writeLong(i);
+  }
+
+  @Override
+  public void writeVLong(long i) throws IOException {
+    delegate.writeVLong(i);
+  }
+
+  @Override
+  public void writeString(String s) throws IOException {
+    delegate.writeString(s);
+  }
+
+  @Override
+  public void writeChars(String s, int start, int length) throws IOException {
+    delegate.writeChars(s, start, length);
+  }
+
+  @Override
+  public void writeChars(char[] s, int start, int length) throws IOException {
+    delegate.writeChars(s, start, length);
+  }
+
+  @Override
+  public void writeStringStringMap(Map<String,String> map) throws IOException {
+    delegate.writeStringStringMap(map);
+  }
+  */
+
+  @Override
+  public void copyBytes(DataInput input, long numBytes) throws IOException {
+    delegate.copyBytes(input, numBytes);
+    // TODO: we may need to check disk full here as well
+    dir.maybeThrowDeterministicException();
   }
 }

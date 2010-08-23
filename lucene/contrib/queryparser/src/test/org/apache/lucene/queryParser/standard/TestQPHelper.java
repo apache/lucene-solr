@@ -48,7 +48,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.messages.MessageImpl;
 import org.apache.lucene.queryParser.core.QueryNodeException;
@@ -73,8 +72,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LocalizedTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -655,7 +653,7 @@ public class TestQPHelper extends LocalizedTestCase {
 
   public void testFarsiRangeCollating() throws Exception {
     Random random = newRandom();
-    MockRAMDirectory ramDir = newDirectory(random);
+    Directory ramDir = newDirectory(random);
     IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     Document doc = new Document();
     doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
@@ -1079,7 +1077,7 @@ public class TestQPHelper extends LocalizedTestCase {
 
   public void testLocalDateFormat() throws IOException, QueryNodeException {
     Random random = newRandom();
-    MockRAMDirectory ramDir = newDirectory(random);
+    Directory ramDir = newDirectory(random);
     IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
     addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
@@ -1279,7 +1277,7 @@ public class TestQPHelper extends LocalizedTestCase {
 
   public void testMultiPhraseQuery() throws Exception {
     Random random = newRandom();
-    MockRAMDirectory dir = newDirectory(random);
+    Directory dir = newDirectory(random);
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new CannedAnalyzer()));
     Document doc = new Document();
     doc.add(new Field("field", "", Field.Store.NO, Field.Index.ANALYZED));

@@ -20,7 +20,7 @@ package org.apache.lucene.search;
 import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
@@ -34,7 +34,7 @@ import org.apache.lucene.document.Field;
 public class TestPrefixFilter extends LuceneTestCase {
   public void testPrefixFilter() throws Exception {
     Random random = newRandom();
-    MockRAMDirectory directory = newDirectory(random);
+    Directory directory = newDirectory(random);
 
     String[] categories = new String[] {"/Computers/Linux",
                                         "/Computers/Mac/One",

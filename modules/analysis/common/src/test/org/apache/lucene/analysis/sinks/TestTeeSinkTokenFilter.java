@@ -32,10 +32,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermVectorOffsetInfo;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.English;
 import java.io.IOException;
@@ -94,7 +93,7 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
   // with BaseTokenStreamTestCase now...
   public void testEndOffsetPositionWithTeeSinkTokenFilter() throws Exception {
     Random random = newRandom();
-    MockRAMDirectory dir = newDirectory(random);
+    Directory dir = newDirectory(random);
     Analyzer analyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();

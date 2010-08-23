@@ -21,10 +21,9 @@ import java.util.Random;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -33,7 +32,7 @@ import org.apache.lucene.document.Field;
 public class TestHighFreqTerms extends LuceneTestCase {
  
   private static IndexWriter writer =null;
-  private static MockRAMDirectory dir = null;
+  private static Directory dir = null;
   private static IndexReader reader =null;
   
   public void setUp() throws Exception {

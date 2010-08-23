@@ -48,7 +48,6 @@ import org.apache.lucene.search.payloads.PayloadHelper;
 import org.apache.lucene.search.payloads.PayloadSpanUtil;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestPayloadSpans extends LuceneTestCase {
@@ -117,7 +116,7 @@ public class TestPayloadSpans extends LuceneTestCase {
 
 
 
-    MockRAMDirectory directory = newDirectory(rand);
+    Directory directory = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, directory,
                                                      newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
 
@@ -261,7 +260,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   
   public void testShrinkToAfterShortestMatch() throws CorruptIndexException,
       LockObtainFailedException, IOException {
-    MockRAMDirectory directory = newDirectory(rand);
+    Directory directory = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, directory,
                                                      newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
 
@@ -299,7 +298,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   
   public void testShrinkToAfterShortestMatch2() throws CorruptIndexException,
       LockObtainFailedException, IOException {
-    MockRAMDirectory directory = newDirectory(rand);
+    Directory directory = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, directory,
                                                      newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
 
@@ -335,7 +334,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   
   public void testShrinkToAfterShortestMatch3() throws CorruptIndexException,
       LockObtainFailedException, IOException {
-    MockRAMDirectory directory = newDirectory(rand);
+    Directory directory = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, directory,
                                                      newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new TestPayloadAnalyzer()));
 
@@ -376,7 +375,7 @@ public class TestPayloadSpans extends LuceneTestCase {
   }
   
   public void testPayloadSpanUtil() throws Exception {
-    MockRAMDirectory directory = newDirectory(rand);
+    Directory directory = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, directory,
                                                      newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
 

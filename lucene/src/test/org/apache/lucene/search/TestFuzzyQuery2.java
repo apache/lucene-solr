@@ -29,7 +29,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /** 
@@ -86,7 +86,7 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     int bits = Integer.parseInt(reader.readLine());
     int terms = (int) Math.pow(2, bits);
     
-    MockRAMDirectory dir = newDirectory(random);
+    Directory dir = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(MockTokenizer.KEYWORD, false));
     
     Document doc = new Document();

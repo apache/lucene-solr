@@ -26,7 +26,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 
 import java.io.IOException;
 import java.util.LinkedList;
@@ -45,7 +45,7 @@ public class TestPhrasePrefixQuery extends LuceneTestCase {
      */
   public void testPhrasePrefix() throws IOException {
     Random random = newRandom();
-    MockRAMDirectory indexStore = newDirectory(random);
+    Directory indexStore = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     Document doc1 = new Document();
     Document doc2 = new Document();

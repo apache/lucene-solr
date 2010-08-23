@@ -25,7 +25,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
@@ -53,7 +53,7 @@ public class TermsFilterTest extends LuceneTestCase {
 	public void testMissingTerms() throws Exception {
 		String fieldName="field1";
 		Random random = newRandom();
-		MockRAMDirectory rd=newDirectory(random);
+		Directory rd=newDirectory(random);
 		RandomIndexWriter w = new RandomIndexWriter(random, rd);
 		for (int i = 0; i < 100; i++) {
 			Document doc=new Document();

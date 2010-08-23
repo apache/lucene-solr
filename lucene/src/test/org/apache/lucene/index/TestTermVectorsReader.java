@@ -32,7 +32,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -44,7 +44,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   private String[] testTerms = {"this", "is", "a", "test"};
   private int[][] positions = new int[testTerms.length][];
   private TermVectorOffsetInfo[][] offsets = new TermVectorOffsetInfo[testTerms.length][];
-  private MockRAMDirectory dir;
+  private Directory dir;
   private String seg;
   private FieldInfos fieldInfos = new FieldInfos();
   private static int TERM_FREQ = 3;
@@ -171,7 +171,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
     }
   }
 
-  public void test() {
+  public void test() throws IOException {
     //Check to see the files were created properly in setup
     assertTrue(dir.fileExists(IndexFileNames.segmentFileName(seg, "", IndexFileNames.VECTORS_DOCUMENTS_EXTENSION)));
     assertTrue(dir.fileExists(IndexFileNames.segmentFileName(seg, "", IndexFileNames.VECTORS_INDEX_EXTENSION)));

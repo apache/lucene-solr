@@ -29,11 +29,11 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.QueryWrapperFilter;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 
 public class TestDistance extends LuceneTestCase {
   
-  private MockRAMDirectory directory;
+  private Directory directory;
   // reston va
   private double lat = 38.969398; 
   private double lng= -77.386398;

@@ -26,7 +26,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -41,7 +41,7 @@ public class TestBooleanScorer extends LuceneTestCase
   
   public void testMethod() throws Exception {
     Random random = newRandom();
-    MockRAMDirectory directory = newDirectory(random);
+    Directory directory = newDirectory(random);
 
     String[] values = new String[] { "1", "2", "3", "4" };
 

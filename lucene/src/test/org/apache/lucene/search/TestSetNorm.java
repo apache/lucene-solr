@@ -25,9 +25,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 
 /** Document boost unit test.
  *
@@ -41,7 +40,7 @@ public class TestSetNorm extends LuceneTestCase {
 
   public void testSetNorm() throws Exception {
     Random random = newRandom();
-    MockRAMDirectory store = newDirectory(random);
+    Directory store = newDirectory(random);
     IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     // add the same document four times

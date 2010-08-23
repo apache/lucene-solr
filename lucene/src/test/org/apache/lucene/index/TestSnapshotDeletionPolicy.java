@@ -13,7 +13,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexWriterConfig;
@@ -102,7 +101,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
       _TestUtil.rmDir(dir);
     }
 
-    MockRAMDirectory dir2 = newDirectory(random);
+    Directory dir2 = newDirectory(random);
     runTest(random, dir2);
     dir2.close();
   }

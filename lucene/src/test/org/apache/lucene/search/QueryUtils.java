@@ -14,7 +14,10 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.RAMDirectory;
+
 import static org.apache.lucene.util.LuceneTestCaseJ4.TEST_VERSION_CURRENT;
 
 /**
@@ -197,9 +200,9 @@ public class QueryUtils {
     return out;
   }
 
-  private static MockRAMDirectory makeEmptyIndex(final int numDeletedDocs) 
+  private static Directory makeEmptyIndex(final int numDeletedDocs) 
     throws IOException {
-      MockRAMDirectory d = new MockRAMDirectory();
+      Directory d = new MockDirectoryWrapper(new RAMDirectory());
       IndexWriter w = new IndexWriter(d, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
       for (int i = 0; i < numDeletedDocs; i++) {

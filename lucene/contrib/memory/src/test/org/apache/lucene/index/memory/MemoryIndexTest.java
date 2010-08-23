@@ -37,7 +37,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TopDocs;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util._TestUtil;
 
 /**
@@ -106,7 +106,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       termField.append(randomTerm());
     }
     
-    MockRAMDirectory ramdir = newDirectory(random);
+    Directory ramdir = newDirectory(random);
     Analyzer analyzer = randomAnalyzer();
     IndexWriter writer = new IndexWriter(ramdir,
                                          new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
@@ -128,7 +128,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
   /**
    * Run all queries against both the RAMDirectory and MemoryIndex, ensuring they are the same.
    */
-  public void assertAllQueries(MemoryIndex memory, MockRAMDirectory ramdir, Analyzer analyzer) throws Exception {
+  public void assertAllQueries(MemoryIndex memory, Directory ramdir, Analyzer analyzer) throws Exception {
     IndexSearcher ram = new IndexSearcher(ramdir);
     IndexSearcher mem = memory.createSearcher();
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "foo", analyzer);

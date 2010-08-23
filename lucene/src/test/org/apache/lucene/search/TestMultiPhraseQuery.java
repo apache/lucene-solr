@@ -22,8 +22,8 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
@@ -45,7 +45,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   
   public void testPhrasePrefix() throws IOException {
     Random random = newRandom();
-    MockRAMDirectory indexStore = newDirectory(random);
+    Directory indexStore = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     add("blueberry pie", writer);
     add("blueberry strudel", writer);
@@ -139,7 +139,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   // LUCENE-2580
   public void testTall() throws IOException {
     Random random = newRandom();
-    MockRAMDirectory indexStore = newDirectory(random);
+    Directory indexStore = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     add("blueberry chocolate pie", writer);
     add("blueberry chocolate tart", writer);
@@ -169,7 +169,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     // and all terms required.
     // The contained PhraseMultiQuery must contain exactly one term array.
     Random random = newRandom();
-    MockRAMDirectory indexStore = newDirectory(random);
+    Directory indexStore = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     add("blueberry pie", writer);
     add("blueberry chewing gum", writer);
@@ -202,7 +202,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   
   public void testPhrasePrefixWithBooleanQuery() throws IOException {
     Random random = newRandom();
-    MockRAMDirectory indexStore = newDirectory(random);
+    Directory indexStore = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     add("This is a test", "object", writer);
     add("a note", "note", writer);
@@ -231,7 +231,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   
   public void testNoDocs() throws Exception {
     Random random = newRandom();
-    MockRAMDirectory indexStore = newDirectory(random);
+    Directory indexStore = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     add("a note", "note", writer);
     

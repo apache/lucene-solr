@@ -23,17 +23,15 @@ import java.util.Random;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
-import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 /** Test BooleanQuery2 against BooleanQuery by overriding the standard query parser.
  * This also tests the scoring order of BooleanQuery.
@@ -65,13 +63,13 @@ public class TestBoolean2 extends LuceneTestCase {
     searcher = new IndexSearcher(directory, true);
 
     // Make big index
-    dir2 = new MockRAMDirectory(directory);
+    dir2 = new MockDirectoryWrapper(new RAMDirectory(directory));
 
     // First multiply small test index:
     mulFactor = 1;
     int docCount = 0;
     do {
-      final Directory copy = new MockRAMDirectory(dir2);
+      final Directory copy = new MockDirectoryWrapper(new RAMDirectory(dir2));
       RandomIndexWriter w = new RandomIndexWriter(rnd, dir2);
       w.addIndexes(new Directory[] {copy});
       docCount = w.maxDoc();

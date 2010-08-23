@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -34,9 +34,9 @@ public class TestTransactions extends LuceneTestCase {
   private Random RANDOM;
   private static volatile boolean doFail;
 
-  private class RandomFailure extends MockRAMDirectory.Failure {
+  private class RandomFailure extends MockDirectoryWrapper.Failure {
     @Override
-    public void eval(MockRAMDirectory dir) throws IOException {
+    public void eval(MockDirectoryWrapper dir) throws IOException {
       if (TestTransactions.doFail && RANDOM.nextInt() % 10 <= 3)
         throw new IOException("now failing randomly but on purpose");
     }
@@ -195,8 +195,8 @@ public class TestTransactions extends LuceneTestCase {
 
   public void testTransactions() throws Throwable {
     RANDOM = newRandom();
-    MockRAMDirectory dir1 = newDirectory(RANDOM);
-    MockRAMDirectory dir2 = newDirectory(RANDOM);
+    MockDirectoryWrapper dir1 = newDirectory(RANDOM);
+    MockDirectoryWrapper dir2 = newDirectory(RANDOM);
     dir1.setPreventDoubleWrite(false);
     dir2.setPreventDoubleWrite(false);
     dir1.failOn(new RandomFailure());

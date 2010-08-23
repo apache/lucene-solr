@@ -39,13 +39,12 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeFilter;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class ChainedFilterTest extends LuceneTestCase {
   public static final int MAX = 500;
 
-  private MockRAMDirectory directory;
+  private Directory directory;
   private IndexSearcher searcher;
   private IndexReader reader;
   private Query query;

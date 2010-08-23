@@ -28,7 +28,7 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.apache.lucene.util.NumericUtils;
@@ -46,7 +46,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCaseJ4 {
   // number of docs to generate for testing
   private static final int noDocs = 10000 * RANDOM_MULTIPLIER;
   
-  private static MockRAMDirectory directory = null;
+  private static Directory directory = null;
   private static IndexReader reader = null;
   private static IndexSearcher searcher = null;
   private static Random random = null;
@@ -281,7 +281,7 @@ public class TestNumericRangeQuery32 extends LuceneTestCaseJ4 {
   
   @Test
   public void testInfiniteValues() throws Exception {
-    MockRAMDirectory dir = newDirectory(random);
+    Directory dir = newDirectory(random);
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     doc.add(new NumericField("float").setFloatValue(Float.NEGATIVE_INFINITY));

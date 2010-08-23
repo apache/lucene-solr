@@ -27,7 +27,8 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.Codec;
@@ -70,6 +71,7 @@ import java.util.WeakHashMap;
 import java.util.Collections;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
 import static org.junit.Assert.assertEquals;
@@ -149,6 +151,8 @@ public class LuceneTestCaseJ4 {
   static final String TEST_LOCALE = System.getProperty("tests.locale", "random");
   /** Gets the timezone to run tests with */
   static final String TEST_TIMEZONE = System.getProperty("tests.timezone", "random");
+  /** Gets the directory to run tests with */
+  static final String TEST_DIRECTORY = System.getProperty("tests.directory", "RAMDirectory");
   
   private static final Pattern codecWithParam = Pattern.compile("(.*)\\(\\s*(\\d+)\\s*\\)");
 
@@ -190,7 +194,7 @@ public class LuceneTestCaseJ4 {
   private static TimeZone timeZone;
   private static TimeZone savedTimeZone;
   
-  private static Map<MockRAMDirectory,StackTraceElement[]> stores;
+  private static Map<MockDirectoryWrapper,StackTraceElement[]> stores;
   
   private static final String[] TEST_CODECS = new String[] {"MockSep", "MockFixedIntBlock", "MockVariableIntBlock"};
 
@@ -279,7 +283,7 @@ public class LuceneTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
-    stores = Collections.synchronizedMap(new IdentityHashMap<MockRAMDirectory,StackTraceElement[]>());
+    stores = Collections.synchronizedMap(new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>());
     codec = installTestCodecs();
     savedLocale = Locale.getDefault();
     locale = TEST_LOCALE.equals("random") ? randomLocale(seedRnd) : localeForName(TEST_LOCALE);
@@ -295,7 +299,7 @@ public class LuceneTestCaseJ4 {
     Locale.setDefault(savedLocale);
     TimeZone.setDefault(savedTimeZone);
     // now look for unclosed resources
-    for (MockRAMDirectory d : stores.keySet()) {
+    for (MockDirectoryWrapper d : stores.keySet()) {
       if (d.isOpen()) {
         StackTraceElement elements[] = stores.get(d);
         StackTraceElement element = (elements.length > 1) ? elements[1] : null;
@@ -582,16 +586,17 @@ public class LuceneTestCaseJ4 {
     return c;
   }
 
-  public static MockRAMDirectory newDirectory(Random r) throws IOException {
+  public static MockDirectoryWrapper newDirectory(Random r) throws IOException {
     StackTraceElement[] stack = new Exception().getStackTrace();
-    MockRAMDirectory dir = new MockRAMDirectory();
+    Directory impl = newDirectoryImpl(TEST_DIRECTORY);
+    MockDirectoryWrapper dir = new MockDirectoryWrapper(impl);
     stores.put(dir, stack);
     return dir;
   }
   
-  public static MockRAMDirectory newDirectory(Random r, Directory d) throws IOException {
+  public static MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     StackTraceElement[] stack = new Exception().getStackTrace();
-    MockRAMDirectory dir = new MockRAMDirectory(d);
+    MockDirectoryWrapper dir = new MockDirectoryWrapper(new RAMDirectory(d));
     stores.put(dir, stack);
     return dir;
   }
@@ -619,6 +624,32 @@ public class LuceneTestCaseJ4 {
     }
   }
 
+  static Directory newDirectoryImpl(String clazzName) {
+    if (clazzName.indexOf(".") == -1) // if not fully qualified, assume .store
+      clazzName = "org.apache.lucene.store." + clazzName;
+    try {
+      final Class<? extends Directory> clazz = Class.forName(clazzName).asSubclass(Directory.class);
+      try {
+        // try empty ctor
+        return clazz.newInstance();
+      } catch (Exception e) {
+        final File tmpFile = File.createTempFile("test", "tmp", TEMP_DIR);
+        tmpFile.delete();
+        tmpFile.mkdir();
+        try {
+          Constructor<? extends Directory> ctor = clazz.getConstructor(File.class);
+          return ctor.newInstance(tmpFile);
+        } catch (Exception e2) {
+          // try .open(File)
+          Method method = clazz.getMethod("open", new Class[] { File.class });
+          return (Directory) method.invoke(null, tmpFile);
+        }
+      }
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    } 
+  }
+  
   public String getName() {
     return this.name;
   }

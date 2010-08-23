@@ -31,11 +31,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 /**
- * This is a subclass of RAMDirectory that adds methods
+ * This is a Directory Wrapper that adds methods
  * intended to be used only by unit tests.
  */
 
-public class MockRAMDirectory extends RAMDirectory {
+public class MockDirectoryWrapper extends Directory {
+  final Directory delegate;
   long maxSize;
 
   // Max actual bytes used. This is set by MockRAMOutputStream:
@@ -63,12 +64,8 @@ public class MockRAMDirectory extends RAMDirectory {
       unSyncedFiles = new HashSet<String>();
   }
 
-  public MockRAMDirectory() {
-    super();
-    init();
-  }
-  public MockRAMDirectory(Directory dir) throws IOException {
-    super(dir);
+  public MockDirectoryWrapper(Directory delegate) {
+    this.delegate = delegate;
     init();
   }
 
@@ -81,7 +78,11 @@ public class MockRAMDirectory extends RAMDirectory {
   @Deprecated
   @Override
   public void sync(String name) throws IOException {
-    sync(Collections.singleton(name));
+    maybeThrowDeterministicException();
+    if (crashed)
+      throw new IOException("cannot sync after crash");
+    unSyncedFiles.remove(name);
+    delegate.sync(name);
   }
 
   @Override
@@ -91,6 +92,19 @@ public class MockRAMDirectory extends RAMDirectory {
     if (crashed)
       throw new IOException("cannot sync after crash");
     unSyncedFiles.removeAll(names);
+    delegate.sync(names);
+  }
+  
+  public synchronized final long sizeInBytes() throws IOException {
+    if (delegate instanceof RAMDirectory)
+      return ((RAMDirectory) delegate).sizeInBytes();
+    else {
+      // hack
+      long size = 0;
+      for (String file : delegate.listAll())
+        size += delegate.fileLength(file);
+      return size;
+    }
   }
 
   /** Simulates a crash of OS or machine by overwriting
@@ -101,23 +115,52 @@ public class MockRAMDirectory extends RAMDirectory {
     Iterator<String> it = unSyncedFiles.iterator();
     unSyncedFiles = new HashSet<String>();
     int count = 0;
-    while(it.hasNext()) {
-      String name = it.next();
-      RAMFile file = fileMap.get(name);
-      if (count % 3 == 0) {
-        deleteFile(name, true);
-      } else if (count % 3 == 1) {
-        // Zero out file entirely
-        final int numBuffers = file.numBuffers();
-        for(int i=0;i<numBuffers;i++) {
-          byte[] buffer = file.getBuffer(i);
-          Arrays.fill(buffer, (byte) 0);
+    if (!(delegate instanceof RAMDirectory)) {
+      while(it.hasNext()) {
+        String name = it.next();
+        if (count % 3 == 0) {
+          deleteFile(name, true);
+        } else if (count % 3 == 1) {
+          // Zero out file entirely
+          long length = fileLength(name);
+          byte[] zeroes = new byte[256];
+          long upto = 0;
+          IndexOutput out = delegate.createOutput(name);
+          while(upto < length) {
+            final int limit = (int) Math.min(length-upto, zeroes.length);
+            out.writeBytes(zeroes, 0, limit);
+            upto += limit;
+          }
+          out.close();
+        } else if (count % 3 == 2) {
+          // Truncate the file:
+          IndexOutput out = delegate.createOutput(name);
+          out.setLength(fileLength(name)/2);
+          out.close();
         }
-      } else if (count % 3 == 2) {
-        // Truncate the file:
-        file.setLength(file.getLength()/2);
+        count++;
       }
-      count++;
+    } else {
+
+      RAMDirectory ramDir = (RAMDirectory) delegate;
+      while(it.hasNext()) {
+        String name = it.next();
+        RAMFile file = ramDir.fileMap.get(name);
+        if (count % 3 == 0) {
+          deleteFile(name, true);
+        } else if (count % 3 == 1) {
+          // Zero out file entirely
+          final int numBuffers = file.numBuffers();
+          for(int i=0;i<numBuffers;i++) {
+            byte[] buffer = file.getBuffer(i);
+            Arrays.fill(buffer, (byte) 0);
+          }
+        } else if (count % 3 == 2) {
+          // Truncate the file:
+          file.setLength(file.getLength()/2);
+        }
+        count++;
+      }
     }
   }
 
@@ -139,7 +182,7 @@ public class MockRAMDirectory extends RAMDirectory {
   public long getMaxUsedSizeInBytes() {
     return this.maxUsedSize;
   }
-  public void resetMaxUsedSizeInBytes() {
+  public void resetMaxUsedSizeInBytes() throws IOException {
     this.maxUsedSize = getRecomputedActualSizeInBytes();
   }
 
@@ -194,10 +237,10 @@ public class MockRAMDirectory extends RAMDirectory {
       unSyncedFiles.remove(name);
     if (!forced) {
       if (noDeleteOpenFile && openFiles.containsKey(name)) {
-        throw new IOException("MockRAMDirectory: file \"" + name + "\" is still open: cannot delete");
+        throw new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open: cannot delete");
       }
     }
-    super.deleteFile(name);
+    delegate.deleteFile(name);
   }
 
   @Override
@@ -210,32 +253,35 @@ public class MockRAMDirectory extends RAMDirectory {
         throw new IOException("file \"" + name + "\" was already written to");
     }
     if (noDeleteOpenFile && openFiles.containsKey(name))
-      throw new IOException("MockRAMDirectory: file \"" + name + "\" is still open: cannot overwrite");
-    RAMFile file = new RAMFile(this);
+      throw new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open: cannot overwrite");
+    
     if (crashed)
       throw new IOException("cannot createOutput after crash");
     unSyncedFiles.add(name);
     createdFiles.add(name);
-    RAMFile existing = fileMap.get(name);
-    // Enforce write once:
-    if (existing!=null && !name.equals("segments.gen") && preventDoubleWrite)
-      throw new IOException("file " + name + " already exists");
-    else {
-      if (existing!=null) {
-        sizeInBytes.getAndAdd(-existing.sizeInBytes);
-        existing.directory = null;
+    
+   if (delegate instanceof RAMDirectory) {
+      RAMDirectory ramdir = (RAMDirectory) delegate;
+      RAMFile file = new RAMFile(ramdir);
+      RAMFile existing = ramdir.fileMap.get(name);
+    
+      // Enforce write once:
+      if (existing!=null && !name.equals("segments.gen") && preventDoubleWrite)
+        throw new IOException("file " + name + " already exists");
+      else {
+        if (existing!=null) {
+          ramdir.sizeInBytes.getAndAdd(-existing.sizeInBytes);
+          existing.directory = null;
+        }
+        ramdir.fileMap.put(name, file);
       }
-
-      fileMap.put(name, file);
     }
-
-    return new MockRAMOutputStream(this, file, name);
+    return new MockIndexOutputWrapper(this, delegate.createOutput(name), name);
   }
 
   @Override
   public synchronized IndexInput openInput(String name) throws IOException {
-    RAMFile file = fileMap.get(name);
-    if (file == null)
+    if (!delegate.fileExists(name))
       throw new FileNotFoundException(name);
     else {
       if (openFiles.containsKey(name)) {
@@ -246,13 +292,16 @@ public class MockRAMDirectory extends RAMDirectory {
          openFiles.put(name, Integer.valueOf(1));
       }
     }
-    return new MockRAMInputStream(this, name, file);
+
+    return new MockIndexInputWrapper(this, name, delegate.openInput(name));
   }
 
   /** Provided for testing purposes.  Use sizeInBytes() instead. */
-  public synchronized final long getRecomputedSizeInBytes() {
+  public synchronized final long getRecomputedSizeInBytes() throws IOException {
+    if (!(delegate instanceof RAMDirectory))
+      return sizeInBytes();
     long size = 0;
-    for(final RAMFile file: fileMap.values()) {
+    for(final RAMFile file: ((RAMDirectory)delegate).fileMap.values()) {
       size += file.getSizeInBytes();
     }
     return size;
@@ -264,15 +313,17 @@ public class MockRAMDirectory extends RAMDirectory {
    * RAMOutputStream.BUFFER_SIZE (now 1024) bytes.
    */
 
-  public final synchronized long getRecomputedActualSizeInBytes() {
+  public final synchronized long getRecomputedActualSizeInBytes() throws IOException {
+    if (!(delegate instanceof RAMDirectory))
+      return sizeInBytes();
     long size = 0;
-    for (final RAMFile file : fileMap.values())
+    for (final RAMFile file : ((RAMDirectory)delegate).fileMap.values())
       size += file.length;
     return size;
   }
 
   @Override
-  public synchronized void close() {
+  public synchronized void close() throws IOException {
     if (openFiles == null) {
       openFiles = new HashMap<String,Integer>();
     }
@@ -282,6 +333,7 @@ public class MockRAMDirectory extends RAMDirectory {
       throw new RuntimeException("MockRAMDirectory: cannot close: there are still open files: " + openFiles);
     }
     open = false;
+    delegate.close();
   }
 
   boolean open = true;
@@ -300,7 +352,7 @@ public class MockRAMDirectory extends RAMDirectory {
     /**
      * eval is called on the first write of every new file.
      */
-    public void eval(MockRAMDirectory dir) throws IOException { }
+    public void eval(MockDirectoryWrapper dir) throws IOException { }
 
     /**
      * reset should set the state of the failure to its default
@@ -353,5 +405,58 @@ public class MockRAMDirectory extends RAMDirectory {
     }
   }
 
+  @Override
+  public synchronized String[] listAll() throws IOException {
+    return delegate.listAll();
+  }
 
+  @Override
+  public synchronized boolean fileExists(String name) throws IOException {
+    return delegate.fileExists(name);
+  }
+
+  @Override
+  public synchronized long fileModified(String name) throws IOException {
+    return delegate.fileModified(name);
+  }
+
+  @Override
+  public synchronized void touchFile(String name) throws IOException {
+    delegate.touchFile(name);
+  }
+
+  @Override
+  public synchronized long fileLength(String name) throws IOException {
+    return delegate.fileLength(name);
+  }
+
+  @Override
+  public synchronized Lock makeLock(String name) {
+    return delegate.makeLock(name);
+  }
+
+  @Override
+  public synchronized void clearLock(String name) throws IOException {
+    delegate.clearLock(name);
+  }
+
+  @Override
+  public synchronized void setLockFactory(LockFactory lockFactory) {
+    delegate.setLockFactory(lockFactory);
+  }
+
+  @Override
+  public synchronized LockFactory getLockFactory() {
+    return delegate.getLockFactory();
+  }
+
+  @Override
+  public synchronized String getLockID() {
+    return delegate.getLockID();
+  }
+
+  @Override
+  public synchronized void copy(Directory to, String src, String dest) throws IOException {
+    delegate.copy(to, src, dest);
+  }
 }

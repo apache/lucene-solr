@@ -25,7 +25,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import java.io.IOException;
 import java.text.Collator;
 import java.util.Locale;
@@ -609,7 +608,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public void testFarsi() throws Exception {
 
     /* build an index */
-    MockRAMDirectory farsiIndex = newDirectory(rand);
+    Directory farsiIndex = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, farsiIndex, new MockAnalyzer(MockTokenizer.SIMPLE, true));
     Document doc = new Document();
     doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
@@ -649,7 +648,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public void testDanish() throws Exception {
 
     /* build an index */
-    MockRAMDirectory danishIndex = newDirectory(rand);
+    Directory danishIndex = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, danishIndex, new MockAnalyzer(MockTokenizer.SIMPLE, true));
 
     // Danish collation orders the words below in the given order

@@ -23,11 +23,9 @@ import java.util.Collection;
 import java.util.Random;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -66,7 +64,7 @@ public class TestSimilarity extends LuceneTestCase {
 
   public void testSimilarity() throws Exception {
     Random random = newRandom();
-    MockRAMDirectory store = newDirectory(random);
+    Directory store = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, store, 
         newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
         .setSimilarity(new SimpleSimilarity()));

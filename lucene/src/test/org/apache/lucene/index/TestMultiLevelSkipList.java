@@ -31,7 +31,8 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.BytesRef;
@@ -46,7 +47,11 @@ import org.apache.lucene.util.BytesRef;
  */
 public class TestMultiLevelSkipList extends LuceneTestCase {
   
-  class CountingRAMDirectory extends MockRAMDirectory {
+  class CountingRAMDirectory extends MockDirectoryWrapper {
+    public CountingRAMDirectory(Directory delegate) {
+      super(delegate);
+    }
+
     public IndexInput openInput(String fileName) throws IOException {
       IndexInput in = super.openInput(fileName);
       if (fileName.endsWith(".frq"))
@@ -56,7 +61,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
   }
 
   public void testSimpleSkip() throws IOException {
-    Directory dir = new CountingRAMDirectory();
+    Directory dir = new CountingRAMDirectory(new RAMDirectory());
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new PayloadAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
     Term term = new Term("test", "a");
     for (int i = 0; i < 5000; i++) {

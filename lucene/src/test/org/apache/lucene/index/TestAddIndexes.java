@@ -26,8 +26,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util._TestUtil;
 
 import org.apache.lucene.search.DocIdSetIterator;
@@ -368,7 +368,7 @@ public class TestAddIndexes extends LuceneTestCase {
         .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(10));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
 
-    writer.addIndexes(new Directory[] { aux, new MockRAMDirectory(aux) });
+    writer.addIndexes(new Directory[] { aux, new MockDirectoryWrapper(new RAMDirectory(aux)) });
     assertEquals(1060, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();
@@ -400,7 +400,7 @@ public class TestAddIndexes extends LuceneTestCase {
         .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(4));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(4);
 
-    writer.addIndexes(new Directory[] { aux, new MockRAMDirectory(aux) });
+    writer.addIndexes(new Directory[] { aux, new MockDirectoryWrapper(new RAMDirectory(aux)) });
     assertEquals(1060, writer.maxDoc());
     assertEquals(1000, writer.getDocCount(0));
     writer.close();

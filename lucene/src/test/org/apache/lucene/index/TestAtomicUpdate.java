@@ -189,7 +189,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
     Directory directory;
 
     // First in a RAM directory:
-    directory = new MockRAMDirectory();
+    directory = new MockDirectoryWrapper(new RAMDirectory());
     runTest(directory);
     directory.close();
 

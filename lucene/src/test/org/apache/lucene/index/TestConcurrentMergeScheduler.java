@@ -17,8 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -30,7 +29,7 @@ import java.util.Random;
 
 public class TestConcurrentMergeScheduler extends LuceneTestCase {
   
-  private static class FailOnlyOnFlush extends MockRAMDirectory.Failure {
+  private static class FailOnlyOnFlush extends MockDirectoryWrapper.Failure {
     boolean doFail;
     boolean hitExc;
 
@@ -45,7 +44,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     }
 
     @Override
-    public void eval(MockRAMDirectory dir)  throws IOException {
+    public void eval(MockDirectoryWrapper dir)  throws IOException {
       if (doFail && Thread.currentThread().getName().equals("main")) {
         StackTraceElement[] trace = new Exception().getStackTrace();
         for (int i = 0; i < trace.length; i++) {
@@ -62,7 +61,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   // we are hitting exceptions during flushing.
   public void testFlushExceptions() throws IOException {
     Random random = newRandom();
-    MockRAMDirectory directory = newDirectory(random);
+    MockDirectoryWrapper directory = newDirectory(random);
     FailOnlyOnFlush failure = new FailOnlyOnFlush();
     directory.failOn(failure);
 
@@ -108,7 +107,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   // before it finishes, are correctly merged back:
   public void testDeleteMerging() throws IOException {
     Random random = newRandom();
-    MockRAMDirectory directory = newDirectory(random);
+    MockDirectoryWrapper directory = newDirectory(random);
 
     LogDocMergePolicy mp = new LogDocMergePolicy();
     // Force degenerate merging so we can get a mix of
@@ -147,7 +146,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
   public void testNoExtraFiles() throws IOException {
     Random random = newRandom();
-    MockRAMDirectory directory = newDirectory(random);
+    MockDirectoryWrapper directory = newDirectory(random);
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMaxBufferedDocs(2));
@@ -176,7 +175,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
   public void testNoWaitClose() throws IOException {
     Random random = newRandom();
-    MockRAMDirectory directory = newDirectory(random);
+    MockDirectoryWrapper directory = newDirectory(random);
     Document doc = new Document();
     Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);

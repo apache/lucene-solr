@@ -39,8 +39,6 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.MultiCodecTestCase;
 import org.apache.lucene.util.Version;

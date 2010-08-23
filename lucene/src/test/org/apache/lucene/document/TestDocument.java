@@ -10,7 +10,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -155,7 +155,7 @@ public class TestDocument extends LuceneTestCase {
    */
   public void testGetValuesForIndexedDocument() throws Exception {
     Random random = newRandom();
-    MockRAMDirectory dir = newDirectory(random);
+    Directory dir = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.addDocument(makeDocumentWithFields());
     IndexReader reader = writer.getReader();
@@ -234,7 +234,7 @@ public class TestDocument extends LuceneTestCase {
         Field.Index.NOT_ANALYZED));
     
     Random random = newRandom();
-    MockRAMDirectory dir = newDirectory(random);
+    Directory dir = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.addDocument(doc);
     field.setValue("id2");

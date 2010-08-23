@@ -30,10 +30,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -49,7 +48,7 @@ import org.junit.Test;
 public class TestRemoteSort extends RemoteTestCaseJ4 {
 
   private static IndexSearcher full;
-  private static MockRAMDirectory indexStore;
+  private static Directory indexStore;
   private Query queryX;
   private Query queryY;
   private Query queryA;

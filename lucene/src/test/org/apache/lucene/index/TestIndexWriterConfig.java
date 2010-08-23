@@ -34,7 +34,6 @@ import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.junit.Test;
 

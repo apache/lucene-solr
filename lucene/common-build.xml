@@ -60,6 +60,7 @@
   <property name="tests.codec" value="random" />
   <property name="tests.locale" value="random" />
   <property name="tests.timezone" value="random" />
+  <property name="tests.directory" value="RAMDirectory" />
     
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
@@ -444,6 +445,8 @@
 	      <sysproperty key="tests.locale" value="${tests.locale}"/>
               <!-- set the timezone tests should run with -->
 	      <sysproperty key="tests.timezone" value="${tests.timezone}"/>
+              <!-- set the directory tests should run with -->
+              <sysproperty key="tests.directory" value="${tests.directory}"/>
 	
 	      <!-- TODO: create propertyset for test properties, so each project can have its own set -->
               <sysproperty key="random.multiplier" value="${random.multiplier}"/>

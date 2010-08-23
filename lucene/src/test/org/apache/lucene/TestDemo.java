@@ -33,7 +33,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -49,7 +49,7 @@ public class TestDemo extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer();
 
     // Store the index in memory:
-    Directory directory = new MockRAMDirectory();
+    Directory directory = newDirectory(newRandom());
     // To store an index on disk, use this instead:
     //Directory directory = FSDirectory.open("/tmp/testindex");
     IndexWriter iwriter = new IndexWriter(directory, new IndexWriterConfig(

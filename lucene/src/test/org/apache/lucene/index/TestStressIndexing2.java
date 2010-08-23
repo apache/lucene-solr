@@ -35,7 +35,6 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 
 public class TestStressIndexing2 extends MultiCodecTestCase {
   static int maxFields=4;

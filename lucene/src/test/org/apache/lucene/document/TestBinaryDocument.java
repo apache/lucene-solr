@@ -6,7 +6,7 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -58,7 +58,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     /** add the doc to a ram index */
     Random random = newRandom();
-    MockRAMDirectory dir = newDirectory(random);
+    Directory dir = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.addDocument(doc);
     
@@ -98,7 +98,7 @@ public class TestBinaryDocument extends LuceneTestCase {
     
     /** add the doc to a ram index */
     Random random = newRandom();
-    MockRAMDirectory dir = newDirectory(random);
+    Directory dir = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.addDocument(doc);
     

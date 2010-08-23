@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.NoLockFactory;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -33,7 +33,7 @@ public class TestCrash extends LuceneTestCase {
     return initIndex(random, newDirectory(random), initialCommit);
   }
 
-  private IndexWriter initIndex(Random random, MockRAMDirectory dir, boolean initialCommit) throws IOException {
+  private IndexWriter initIndex(Random random, MockDirectoryWrapper dir, boolean initialCommit) throws IOException {
     dir.setLockFactory(NoLockFactory.getNoLockFactory());
 
     IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
@@ -53,7 +53,7 @@ public class TestCrash extends LuceneTestCase {
   }
 
   private void crash(final IndexWriter writer) throws IOException {
-    final MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
+    final MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
     ConcurrentMergeScheduler cms = (ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler();
     cms.sync();
     dir.crash();
@@ -66,7 +66,7 @@ public class TestCrash extends LuceneTestCase {
     // happened, so we must create an initial commit just to allow that, but
     // before any documents were added.
     IndexWriter writer = initIndex(newRandom(), true);
-    MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
+    MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
     crash(writer);
     IndexReader reader = IndexReader.open(dir, false);
     assertTrue(reader.numDocs() < 157);
@@ -80,7 +80,7 @@ public class TestCrash extends LuceneTestCase {
     // before any documents were added.
     Random random = newRandom();
     IndexWriter writer = initIndex(random, true);
-    MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
+    MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
     dir.setPreventDoubleWrite(false);
     crash(writer);
     writer = initIndex(random, dir, false);
@@ -95,7 +95,7 @@ public class TestCrash extends LuceneTestCase {
   public void testCrashAfterReopen() throws IOException {
     Random random = newRandom();
     IndexWriter writer = initIndex(random, false);
-    MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
+    MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
     writer.close();
     writer = initIndex(random, dir, false);
     assertEquals(314, writer.maxDoc());
@@ -119,7 +119,7 @@ public class TestCrash extends LuceneTestCase {
   public void testCrashAfterClose() throws IOException {
     
     IndexWriter writer = initIndex(newRandom(), false);
-    MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
+    MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 
     writer.close();
     dir.crash();
@@ -140,7 +140,7 @@ public class TestCrash extends LuceneTestCase {
   public void testCrashAfterCloseNoWait() throws IOException {
     
     IndexWriter writer = initIndex(newRandom(), false);
-    MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
+    MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 
     writer.close(false);
 
@@ -161,7 +161,7 @@ public class TestCrash extends LuceneTestCase {
   public void testCrashReaderDeletes() throws IOException {
     
     IndexWriter writer = initIndex(newRandom(), false);
-    MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
+    MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 
     writer.close(false);
     IndexReader reader = IndexReader.open(dir, false);
@@ -184,7 +184,7 @@ public class TestCrash extends LuceneTestCase {
   public void testCrashReaderDeletesAfterClose() throws IOException {
     
     IndexWriter writer = initIndex(newRandom(), false);
-    MockRAMDirectory dir = (MockRAMDirectory) writer.getDirectory();
+    MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 
     writer.close(false);
     IndexReader reader = IndexReader.open(dir, false);

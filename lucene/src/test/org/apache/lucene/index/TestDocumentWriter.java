@@ -35,14 +35,14 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.BytesRef;
 
 public class TestDocumentWriter extends LuceneTestCase {
-  private MockRAMDirectory dir;
+  private Directory dir;
   private Random random;
   
   public TestDocumentWriter(String s) {

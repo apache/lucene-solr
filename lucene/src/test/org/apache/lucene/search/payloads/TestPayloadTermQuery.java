@@ -39,7 +39,7 @@ import org.apache.lucene.index.Payload;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.SlowMultiReaderWrapper;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
@@ -59,7 +59,7 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   private byte[] payloadField = new byte[]{1};
   private byte[] payloadMultiField1 = new byte[]{2};
   private byte[] payloadMultiField2 = new byte[]{4};
-  protected MockRAMDirectory directory;
+  protected Directory directory;
 
   public TestPayloadTermQuery(String s) {
     super(s);

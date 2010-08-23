@@ -48,7 +48,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   private IndexSearcher searcher;
   private IndexReader reader;
   private PhraseQuery query;
-  private MockRAMDirectory directory;
+  private Directory directory;
   private Random random;
 
   @Override
@@ -213,7 +213,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testPhraseQueryWithStopAnalyzer() throws Exception {
-    MockRAMDirectory directory = newDirectory(random);
+    Directory directory = newDirectory(random);
     Analyzer stopAnalyzer = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, false);
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig(random, Version.LUCENE_24, stopAnalyzer));
@@ -249,7 +249,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testPhraseQueryInConjunctionScorer() throws Exception {
-    MockRAMDirectory directory = newDirectory(random);
+    Directory directory = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     
     Document doc = new Document();

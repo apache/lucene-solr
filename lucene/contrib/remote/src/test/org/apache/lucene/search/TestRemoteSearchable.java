@@ -21,7 +21,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,7 +34,7 @@ import java.util.Set;
 import java.util.HashSet;
 
 public class TestRemoteSearchable extends RemoteTestCaseJ4 {
-  private static MockRAMDirectory indexStore;
+  private static Directory indexStore;
   private static Searchable local;
   
   @BeforeClass

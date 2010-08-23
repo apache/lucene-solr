@@ -28,7 +28,8 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
@@ -423,7 +424,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     int END_COUNT = 144;
 
     // First build up a starting index:
-    MockRAMDirectory startDir = newDirectory(random);
+    MockDirectoryWrapper startDir = newDirectory(random);
     // TODO: find the resource leak that only occurs sometimes here.
     startDir.setNoDeleteOpenFile(false);
     IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
@@ -446,7 +447,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     // Iterate w/ ever increasing free disk space:
     while (!done) {
-      MockRAMDirectory dir = new MockRAMDirectory(startDir);
+      MockDirectoryWrapper dir = new MockDirectoryWrapper(new RAMDirectory(startDir));
       dir.setPreventDoubleWrite(false);
       IndexWriter modifier = new IndexWriter(dir,
                                              newIndexWriterConfig(random,
@@ -599,34 +600,34 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         }
         searcher.close();
         newReader.close();
-        dir.close();
         if (result2 == END_COUNT) {
           break;
         }
       }
+      dir.close();
       modifier.close();
-      startDir.close();
 
       // Try again with 10 more bytes of free space:
       diskFree += 10;
     }
+    startDir.close();
   }
 
   // This test tests that buffered deletes are cleared when
   // an Exception is hit during flush.
   public void testErrorAfterApplyDeletes() throws IOException {
     
-    MockRAMDirectory.Failure failure = new MockRAMDirectory.Failure() {
+    MockDirectoryWrapper.Failure failure = new MockDirectoryWrapper.Failure() {
         boolean sawMaybe = false;
         boolean failed = false;
         @Override
-        public MockRAMDirectory.Failure reset() {
+        public MockDirectoryWrapper.Failure reset() {
           sawMaybe = false;
           failed = false;
           return this;
         }
         @Override
-        public void eval(MockRAMDirectory dir)  throws IOException {
+        public void eval(MockDirectoryWrapper dir)  throws IOException {
           if (sawMaybe && !failed) {
             boolean seen = false;
             StackTraceElement[] trace = new Exception().getStackTrace();
@@ -662,7 +663,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         "Venice has lots of canals" };
     String[] text = { "Amsterdam", "Venice" };
 
-    MockRAMDirectory dir = newDirectory(random);
+    MockDirectoryWrapper dir = newDirectory(random);
     IndexWriter modifier = new IndexWriter(dir, newIndexWriterConfig(random,
                                                                      TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)).setMaxBufferedDeleteTerms(2).setReaderPooling(false));
     LogMergePolicy lmp = (LogMergePolicy) modifier.getConfig().getMergePolicy();
@@ -748,15 +749,15 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
   public void testErrorInDocsWriterAdd() throws IOException {
     
-    MockRAMDirectory.Failure failure = new MockRAMDirectory.Failure() {
+    MockDirectoryWrapper.Failure failure = new MockDirectoryWrapper.Failure() {
         boolean failed = false;
         @Override
-        public MockRAMDirectory.Failure reset() {
+        public MockDirectoryWrapper.Failure reset() {
           failed = false;
           return this;
         }
         @Override
-        public void eval(MockRAMDirectory dir)  throws IOException {
+        public void eval(MockDirectoryWrapper dir)  throws IOException {
           if (!failed) {
             failed = true;
             throw new IOException("fail in add doc");
@@ -772,7 +773,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
         "Venice has lots of canals" };
     String[] text = { "Amsterdam", "Venice" };
 
-    MockRAMDirectory dir = newDirectory(random);
+    MockDirectoryWrapper dir = newDirectory(random);
     IndexWriter modifier = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     modifier.commit();
     dir.failOn(failure.reset());

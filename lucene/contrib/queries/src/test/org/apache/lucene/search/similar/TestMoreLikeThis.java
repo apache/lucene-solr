@@ -34,11 +34,11 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestMoreLikeThis extends LuceneTestCase {
-  private MockRAMDirectory directory;
+  private Directory directory;
   private IndexReader reader;
   private IndexSearcher searcher;
   

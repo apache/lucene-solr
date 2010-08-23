@@ -12,10 +12,9 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
@@ -45,7 +44,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
 	CoreParser builder;
 	Analyzer analyzer=new MockAnalyzer();
 	private IndexSearcher searcher;
-	private MockRAMDirectory dir;
+	private Directory dir;
 	
 	//A collection of documents' field values for use in our tests
 	String docFieldValues []=

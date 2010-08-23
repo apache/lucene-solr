@@ -24,7 +24,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.apache.lucene.util.FieldCacheSanityChecker.InsanityType;
 
@@ -36,7 +36,7 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
   protected IndexReader readerA;
   protected IndexReader readerB;
   protected IndexReader readerX;
-  protected MockRAMDirectory dirA, dirB;
+  protected Directory dirA, dirB;
   private static final int NUM_DOCS = 1000;
 
   @Override

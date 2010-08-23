@@ -23,7 +23,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.DocIdBitSet;
 import java.util.BitSet;
@@ -41,7 +41,7 @@ public class TestFilteredQuery extends LuceneTestCase {
 
   private IndexSearcher searcher;
   private IndexReader reader;
-  private MockRAMDirectory directory;
+  private Directory directory;
   private Query query;
   private Filter filter;
 

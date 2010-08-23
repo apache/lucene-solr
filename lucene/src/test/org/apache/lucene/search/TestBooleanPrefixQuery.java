@@ -23,7 +23,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 import junit.textui.TestRunner;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
@@ -32,6 +31,7 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.store.Directory;
 
 /**
  *
@@ -68,7 +68,7 @@ public class TestBooleanPrefixQuery extends LuceneTestCase {
 
   public void testMethod() throws Exception {
     Random random = newRandom();
-    MockRAMDirectory directory = newDirectory(random);
+    Directory directory = newDirectory(random);
 
     String[] categories = new String[]{"food",
                                        "foodanddrink",

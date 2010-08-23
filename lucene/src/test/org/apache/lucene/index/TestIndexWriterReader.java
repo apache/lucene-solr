@@ -34,8 +34,9 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.BytesRef;
@@ -355,7 +356,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
             try {
               final Directory[] dirs = new Directory[numDirs];
               for (int k = 0; k < numDirs; k++)
-                dirs[k] = new MockRAMDirectory(addDir);
+                dirs[k] = new MockDirectoryWrapper(new RAMDirectory(addDir));
               //int j = 0;
               //while (true) {
                 // System.out.println(Thread.currentThread().getName() + ": iter
@@ -631,7 +632,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     final Directory[] dirs = new Directory[10];
     for (int i=0;i<10;i++) {
-      dirs[i] = new MockRAMDirectory(dir1);
+      dirs[i] = new MockDirectoryWrapper(new RAMDirectory(dir1));
     }
 
     IndexReader r = writer.getReader();

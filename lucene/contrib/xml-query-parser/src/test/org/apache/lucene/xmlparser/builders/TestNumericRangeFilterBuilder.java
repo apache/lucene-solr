@@ -30,11 +30,10 @@ import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.search.Filter;
 import org.apache.lucene.search.NumericRangeFilter;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.xmlparser.ParserException;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
@@ -63,7 +62,7 @@ public class TestNumericRangeFilterBuilder extends LuceneTestCase {
 		Document doc = getDocumentFromString(xml);
 		Filter filter = filterBuilder.getFilter(doc.getDocumentElement());
 		Random random = newRandom();
-		MockRAMDirectory ramDir = newDirectory(random);
+		Directory ramDir = newDirectory(random);
 		IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, null));
 		writer.commit();
 		try

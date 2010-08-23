@@ -28,11 +28,11 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class FuzzyLikeThisQueryTest extends LuceneTestCase {
-	private MockRAMDirectory directory;
+	private Directory directory;
 	private IndexSearcher searcher;
 	private IndexReader reader;
 	private Analyzer analyzer=new MockAnalyzer();

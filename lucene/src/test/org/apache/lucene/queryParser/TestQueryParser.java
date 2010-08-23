@@ -43,7 +43,6 @@ import org.apache.lucene.document.DateTools;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.BooleanQuery;
@@ -59,9 +58,7 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LocalizedTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -571,7 +568,7 @@ public class TestQueryParser extends LocalizedTestCase {
     
   public void testFarsiRangeCollating() throws Exception {
     Random random = newRandom();
-    MockRAMDirectory ramDir = newDirectory(random);
+    Directory ramDir = newDirectory(random);
     IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     Document doc = new Document();
     doc.add(new Field("content","\u0633\u0627\u0628", 
@@ -981,7 +978,7 @@ public class TestQueryParser extends LocalizedTestCase {
 
   public void testLocalDateFormat() throws IOException, ParseException {
     Random random = newRandom();
-    MockRAMDirectory ramDir = newDirectory(random);
+    Directory ramDir = newDirectory(random);
     IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
     addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);

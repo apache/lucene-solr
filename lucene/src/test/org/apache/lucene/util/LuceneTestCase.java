@@ -42,7 +42,9 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 
 /** 
@@ -84,6 +86,8 @@ public abstract class LuceneTestCase extends TestCase {
   static final String TEST_LOCALE = LuceneTestCaseJ4.TEST_LOCALE;
   /** Gets the timezone to run tests with */
   static final String TEST_TIMEZONE = LuceneTestCaseJ4.TEST_TIMEZONE;
+  /** Gets the directory to run tests with */
+  static final String TEST_DIRECTORY = LuceneTestCaseJ4.TEST_DIRECTORY;
   
   /**
    * A random multiplier which you should use when writing random tests:
@@ -102,7 +106,7 @@ public abstract class LuceneTestCase extends TestCase {
   private TimeZone timeZone;
   private TimeZone savedTimeZone;
 
-  private Map<MockRAMDirectory,StackTraceElement[]> stores;
+  private Map<MockDirectoryWrapper,StackTraceElement[]> stores;
 
   /** Used to track if setUp and tearDown are called correctly from subclasses */
   private boolean setup;
@@ -131,7 +135,7 @@ public abstract class LuceneTestCase extends TestCase {
     super.setUp();
     assertFalse("ensure your tearDown() calls super.tearDown()!!!", setup);
     setup = true;
-    stores = new IdentityHashMap<MockRAMDirectory,StackTraceElement[]>();
+    stores = new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>();
     savedUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
       public void uncaughtException(Thread t, Throwable e) {
@@ -211,7 +215,7 @@ public abstract class LuceneTestCase extends TestCase {
     }
 
     // now look for unclosed resources
-    for (MockRAMDirectory d : stores.keySet()) {
+    for (MockDirectoryWrapper d : stores.keySet()) {
       if (d.isOpen()) {
         StackTraceElement elements[] = stores.get(d);
         StackTraceElement element = (elements.length > 1) ? elements[1] : null;
@@ -329,16 +333,17 @@ public abstract class LuceneTestCase extends TestCase {
     return LuceneTestCaseJ4.newIndexWriterConfig(r, v, a);
   }
 
-  public MockRAMDirectory newDirectory(Random r) throws IOException {
+  public MockDirectoryWrapper newDirectory(Random r) throws IOException {
     StackTraceElement[] stack = new Exception().getStackTrace();
-    MockRAMDirectory dir = new MockRAMDirectory();
+    Directory impl = LuceneTestCaseJ4.newDirectoryImpl(TEST_DIRECTORY);
+    MockDirectoryWrapper dir = new MockDirectoryWrapper(impl);
     stores.put(dir, stack);
     return dir;
   }
   
-  public MockRAMDirectory newDirectory(Random r, Directory d) throws IOException {
+  public MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     StackTraceElement[] stack = new Exception().getStackTrace();
-    MockRAMDirectory dir = new MockRAMDirectory(d);
+    MockDirectoryWrapper dir = new MockDirectoryWrapper(new RAMDirectory(d));
     stores.put(dir, stack);
     return dir;
   }

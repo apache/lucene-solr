@@ -4,10 +4,8 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 
-import java.util.Collections;
 import java.util.Random;
 /*
  *  Licensed under the Apache License, Version 2.0 (the "License");

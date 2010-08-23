@@ -18,7 +18,8 @@ package org.apache.lucene.queryParser.surround.query;
  */
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -33,7 +34,7 @@ public class SingleFieldTestDb {
   
   public SingleFieldTestDb(String[] documents, String fName) {
     try {
-      db = new MockRAMDirectory();
+      db = new MockDirectoryWrapper(new RAMDirectory());
       docs = documents;
       fieldName = fName;
       IndexWriter writer = new IndexWriter(db, new IndexWriterConfig(

@@ -28,10 +28,10 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.search.Similarity;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 
 public class TestSegmentReader extends LuceneTestCase {
-  private MockRAMDirectory dir;
+  private Directory dir;
   private Document testDoc = new Document();
   private SegmentReader reader = null;
 

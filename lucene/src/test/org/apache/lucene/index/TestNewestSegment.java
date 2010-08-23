@@ -22,14 +22,13 @@ import java.util.Random;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.index.IndexWriter.MaxFieldLength;
-import org.apache.lucene.store.MockRAMDirectory;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestNewestSegment extends LuceneTestCase {
   public void testNewestSegment() throws Exception {
     Random random = newRandom();
-    MockRAMDirectory directory = newDirectory(random);
-    Analyzer analyzer = new MockAnalyzer();
+    Directory directory = newDirectory(random);
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
     assertNull(writer.newestSegment());
     writer.close();
