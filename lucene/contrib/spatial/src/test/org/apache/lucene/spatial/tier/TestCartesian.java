@@ -150,6 +150,8 @@ public class TestCartesian extends LuceneTestCase {
     addPoint(writer,"North Pole Way",55.0, 4.0);
    
     writer.commit();
+    // TODO: fix CustomScoreQuery usage in testRange/testGeoHashRange so we don't need this.
+    writer.optimize();
     writer.close();
   }
 
