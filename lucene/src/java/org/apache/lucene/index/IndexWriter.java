@@ -2870,7 +2870,7 @@ public class IndexWriter implements Closeable {
     try {
       if (infoStream != null)
         message("flush at addIndexes(Directory...)");
-      flush(true, false, true);
+      flush(false, false, true);
 
       int docCount = 0;
       List<SegmentInfo> infos = new ArrayList<SegmentInfo>();

@@ -327,6 +327,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
     writer.commit();
     writer.deleteUnusedFiles();
     assertSnapshotExists(dir, sdp, numSnapshots - 1);
+    writer.close();
     
     // but 'snapshot1' files will still exist (need to release snapshot before they can be deleted).
     String segFileName = sdp.getSnapshot("snapshot1").getSegmentsFileName();
@@ -358,6 +359,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
     }
     assertNull(sdp.getSnapshots().get(snapId));
     writer.deleteUnusedFiles();
+    writer.close();
     assertFalse("segments file should not be found in dirctory: " + segFileName, dir.fileExists(segFileName));
     dir.close();
   }
