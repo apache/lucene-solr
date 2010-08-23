@@ -27,12 +27,10 @@
     Clustering Integraton
   </description>
 
-  <property name="download.dir" value="lib/downloads"/>
   <property name="example.local" value="example"/>
   
   <path id="common.classpath">
     <fileset dir="lib"/>
-    <fileset dir="${download.dir}"/>
     <pathelement location="${solr-path}/build/solr"/>
     <pathelement location="${solr-path}/build/solrj"/>
     <path refid="lucene.classpath"/>
@@ -56,51 +54,22 @@
       -->
     <delete dir="example/lib" />
   </target>
-  <target name="clean-downloads">
-    <delete>
-      <fileset dir="${download.dir}"/>
-    </delete>
-  </target>
+
 
   <target name="init">
     <mkdir dir="${dest}/classes"/>
-    <mkdir dir="${download.dir}" />
+    
     <mkdir dir="${build.javadoc}"/>
-    <ant dir="../../" inheritall="false" target="compileTests"/> <!-- compiles src and tests -->
-    <ant dir="../../" inheritall="false" target="make-manifest"/>
+    <subant target="compileTests">
+      <fileset dir="${solr-path}" includes="build.xml"/>
+    </subant>
+    <subant target="make-manifest">
+      <fileset dir="${solr-path}" includes="build.xml"/>
+    </subant>
   </target>
 
-  <target name="check-files" depends="proxy.setup">
-    <available file="${download.dir}/colt-1.2.0.jar" property="colt.exists"/>
-    <available file="${download.dir}/pcj-1.2.jar" property="pcj.exists"/>
-    <available file="${download.dir}/nni-1.0.0.jar" property="nni.exists"/>
-    <available file="${download.dir}/simple-xml-1.7.3.jar" property="simplexml.exists"/>
-  </target>
-  <!-- http://mirrors.ibiblio.org/pub/mirrors/maven2/org/simpleframework/simple-xml/1.7.3/simple-xml-1.7.3.jar -->
-  <target name="get-colt" depends="check-files" unless="colt.exists">
-    <!-- Get the LGPL deps and put them in a separate dir -->
-    <get src="http://repo1.maven.org/maven2/colt/colt/1.2.0/colt-1.2.0.jar" dest="${download.dir}/colt-1.2.0.jar"/>
-  </target>
-  <target name="get-nni" depends="check-files" unless="nni.exists">
-    <!-- Get the LGPL deps and put them in a separate dir -->
-    <get src="http://download.carrot2.org/maven2/org/carrot2/nni/1.0.0/nni-1.0.0.jar"
-         dest="${download.dir}/nni-1.0.0.jar"/>
-  </target>
 
-  <!-- Compile time dep. only -->
-  <target name="get-simple-xml" depends="check-files" unless="simplexml.exists">
-    <!-- Get the LGPL deps and put them in a separate dir -->
-    <get src="http://mirrors.ibiblio.org/pub/mirrors/maven2/org/simpleframework/simple-xml/1.7.3/simple-xml-1.7.3.jar"
-         dest="${download.dir}/simple-xml-1.7.3.jar"/>
-
-  </target>
-  <target name="get-pcj" depends="check-files" unless="pcj.exists">
-    <!-- Get the LGPL deps and put them in a separate dir -->
-    <get src="http://repo1.maven.org/maven2/pcj/pcj/1.2/pcj-1.2.jar" dest="${download.dir}/pcj-1.2.jar"/>
-  </target>
-  <target name="get-libraries" depends="init, get-colt, get-pcj, get-nni, get-simple-xml"/>
-
-  <target name="compile" depends="init, get-libraries">
+  <target name="compile" depends="init">
     <solr-javac destdir="${dest}/classes"
                 classpathref="common.classpath">
       <src path="src/main/java"/>
@@ -126,14 +95,9 @@
       -->
   </target>
 
-  <property name="tempDir" value="${junit.output.dir}/temp" />
 
   <target name="test" depends="compileTests">
     <mkdir dir="${junit.output.dir}"/>
-    <!-- <mkdir dir="@{tempDir}/@{pattern}"/> 
-       This is very loud and obnoxious. abuse touch instead for a "quiet" mkdir
-    -->
-  	<touch file="${tempDir}/quiet.ant" verbose="false" mkdirs="true"/>
 
     <junit printsummary="on"
            haltonfailure="no"
@@ -141,11 +105,8 @@
            errorProperty="tests.failed"
            failureProperty="tests.failed"
            dir="src/test/resources/"
-           tempdir="${tempDir}"
+           tempdir="${junit.output.dir}"
             >
-      <sysproperty key="jetty.insecurerandom" value="1"/>
-      <sysproperty key="tempDir" file="${tempDir}"/>
-      <sysproperty key="testmethod" value="${testmethod}"/>
       <formatter type="brief" usefile="false" if="junit.details"/>
       <classpath refid="test.classpath"/>
       <assertions>

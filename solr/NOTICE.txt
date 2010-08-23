@@ -148,7 +148,7 @@ Copyright (c) 2000-2005 INRIA, France Telecom
 =========================================================================
 ==     Carrot2 Notice                                                  ==
 =========================================================================
-Copyright (C) 2002-2008, Dawid Weiss, Stanislaw Osinski.
+Copyright (C) 2002-2010, Dawid Weiss, Stanislaw Osinski.
 Portions (C) Contributors listed in "carrot2.CONTRIBUTORS" file.
 All rights reserved.
 
@@ -156,24 +156,16 @@ This product includes software developed by the Carrot2 Project.
 
 See http://project.carrot2.org/
 
-=========================================================================
-==     EHCache Notice                                                  ==
-=========================================================================
-Copyright 2003-2008 Luck Consulting Pty Ltd
-
-This product includes software developed by the EHCache Project
-
-See ????
 
 =========================================================================
-==     Google Collections Notice                                       ==
+==     Guava Notice                                                    ==
 =========================================================================
 
 Copyright ???? Google, Inc.
 
-This product includes software developed by the Google Collections project.
+This product includes software developed by the Google Guava project.
 
-See ????
+See http://code.google.com/p/guava-libraries/
 
 =========================================================================
 ==     Jackson Notice                                                  ==
@@ -182,7 +174,7 @@ Copyright ????
 
 This product includes software developed by the Jackson project.
 
-See ????
+See http://jackson.codehaus.org/
 
 =========================================================================
 ==     HSQLDB Notice                                                   ==
