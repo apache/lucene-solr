@@ -89,6 +89,37 @@ public class SortByFunctionTest extends AbstractSolrTestCase {
             "//result/doc[4]/int[@name='id'][.='3']"
     );
   }
+  
+  public void testSortJoinDocFreq() throws Exception
+  {
+    assertU(adoc("id", "4", "id_s", "D", "links_mfacet", "A", "links_mfacet", "B", "links_mfacet", "C" ) );
+    assertU(adoc("id", "3", "id_s", "C", "links_mfacet", "A", "links_mfacet", "B" ) );
+    assertU(adoc("id", "2", "id_s", "B", "links_mfacet", "A" ) );
+    assertU(adoc("id", "1", "id_s", "A"  ) );
+    assertU(commit());
+
+    assertQ(req("q", "links_mfacet:B", "fl", "id", "sort", "id asc"),
+            "//*[@numFound='2']",
+            "//result/doc[1]/int[@name='id'][.='3']",
+            "//result/doc[2]/int[@name='id'][.='4']"
+    );
+    
+    assertQ(req("q", "*:*", "fl", "id", "sort", "joindf(id_s, links_mfacet) desc"),
+            "//*[@numFound='4']",
+            "//result/doc[1]/int[@name='id'][.='1']",
+            "//result/doc[2]/int[@name='id'][.='2']",
+            "//result/doc[3]/int[@name='id'][.='3']",
+            "//result/doc[4]/int[@name='id'][.='4']"
+    );
+
+    assertQ(req("q", "*:*", "fl", "id", "sort", "joindf(id_s, links_mfacet) asc"),
+            "//*[@numFound='4']",
+            "//result/doc[1]/int[@name='id'][.='4']",
+            "//result/doc[2]/int[@name='id'][.='3']",
+            "//result/doc[3]/int[@name='id'][.='2']",
+            "//result/doc[4]/int[@name='id'][.='1']"
+    );
+  }
 }
 
 /*

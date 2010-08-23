@@ -229,6 +229,14 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return new QueryValueSource(bq, 0.0f);
       }
     });
+    addParser("joindf", new ValueSourceParser() {
+      public ValueSource parse(FunctionQParser fp) throws ParseException {
+        String f0 = fp.parseArg();
+        String qf = fp.parseArg();
+        return new JoinDocFreqValueSource( f0, qf );
+      }
+    });
+    
     addParser("hsin", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
 
