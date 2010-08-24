@@ -274,10 +274,12 @@ public abstract class FSDirectory extends Directory {
   public long fileLength(String name) throws IOException {
     ensureOpen();
     File file = new File(directory, name);
-    if (!file.exists()) {
+    final long len = file.length();
+    if (len == 0 && !file.exists()) {
       throw new FileNotFoundException(name);
+    } else {
+      return len;
     }
-    return file.length();
   }
 
   /** Removes an existing file in the directory. */

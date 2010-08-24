@@ -215,4 +215,13 @@ public class _TestUtil {
   public static int nextInt(Random r, int start, int end) {
     return start + r.nextInt(end-start+1);
   }
+
+  public static boolean anyFilesExceptWriteLock(Directory dir) throws IOException {
+    String[] files = dir.listAll();
+    if (files.length > 1 || (files.length == 1 && !files[0].equals("write.lock"))) {
+      return true;
+    } else {
+      return false;
+    }
+  }
 }
