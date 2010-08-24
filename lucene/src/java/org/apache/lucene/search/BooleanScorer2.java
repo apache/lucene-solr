@@ -41,9 +41,9 @@ class BooleanScorer2 extends Scorer {
     int nrMatchers; // to be increased by score() of match counting scorers.
     
     void init() { // use after all scorers have been added.
-      coordFactors = new float[maxCoord + 1];
+      coordFactors = new float[optionalScorers.size() + requiredScorers.size() + 1];
       Similarity sim = getSimilarity();
-      for (int i = 0; i <= maxCoord; i++) {
+      for (int i = 0; i < coordFactors.length; i++) {
         coordFactors[i] = sim.coord(i, maxCoord);
       }
     }
@@ -81,20 +81,17 @@ class BooleanScorer2 extends Scorer {
    *          the list of optional scorers.
    */
   public BooleanScorer2(Similarity similarity, int minNrShouldMatch,
-      List<Scorer> required, List<Scorer> prohibited, List<Scorer> optional) throws IOException {
+      List<Scorer> required, List<Scorer> prohibited, List<Scorer> optional, int maxCoord) throws IOException {
     super(similarity);
     if (minNrShouldMatch < 0) {
       throw new IllegalArgumentException("Minimum number of optional scorers should not be negative");
     }
     coordinator = new Coordinator();
     this.minNrShouldMatch = minNrShouldMatch;
+    coordinator.maxCoord = maxCoord;
 
     optionalScorers = optional;
-    coordinator.maxCoord += optional.size();
-
-    requiredScorers = required;
-    coordinator.maxCoord += required.size();
-    
+    requiredScorers = required;    
     prohibitedScorers = prohibited;
     
     coordinator.init();

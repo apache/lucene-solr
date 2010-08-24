@@ -71,7 +71,9 @@ public class TestBooleanScorer extends LuceneTestCase
 
   }
   
-  public void testEmptyBucketWithMoreDocs() throws Exception {
+  // Test disabled for back-compat purposes since it uses a package-private
+  // constructor BooleanScorer() and the signature has changed (LUCENE-2617)
+  public void XXXtestEmptyBucketWithMoreDocs() throws Exception {
     // This test checks the logic of nextDoc() when all sub scorers have docs
     // beyond the first bucket (for example). Currently, the code relies on the
     // 'more' variable to work properly, and this test ensures that if the logic

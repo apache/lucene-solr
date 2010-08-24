@@ -177,7 +177,6 @@ final class BooleanScorer extends Scorer {
   
   private SubScorer scorers = null;
   private BucketTable bucketTable = new BucketTable();
-  private int maxCoord = 1;
   private final float[] coordFactors;
   private int requiredMask = 0;
   private int prohibitedMask = 0;
@@ -188,13 +187,12 @@ final class BooleanScorer extends Scorer {
   private int doc = -1;
 
   BooleanScorer(Similarity similarity, int minNrShouldMatch,
-      List<Scorer> optionalScorers, List<Scorer> prohibitedScorers) throws IOException {
+      List<Scorer> optionalScorers, List<Scorer> prohibitedScorers, int maxCoord) throws IOException {
     super(similarity);
     this.minNrShouldMatch = minNrShouldMatch;
 
     if (optionalScorers != null && optionalScorers.size() > 0) {
       for (Scorer scorer : optionalScorers) {
-        maxCoord++;
         if (scorer.nextDoc() != NO_MORE_DOCS) {
           scorers = new SubScorer(scorer, false, false, bucketTable.newCollector(0), scorers);
         }
@@ -212,10 +210,10 @@ final class BooleanScorer extends Scorer {
       }
     }
 
-    coordFactors = new float[maxCoord];
+    coordFactors = new float[optionalScorers.size() + 1];
     Similarity sim = getSimilarity();
-    for (int i = 0; i < maxCoord; i++) {
-      coordFactors[i] = sim.coord(i, maxCoord - 1); 
+    for (int i = 0; i < coordFactors.length; i++) {
+      coordFactors[i] = sim.coord(i, maxCoord); 
     }
   }
 
