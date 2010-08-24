@@ -93,7 +93,6 @@ public class DirectIOLinuxDirectory extends FSDirectory {
 
     public DirectIOLinuxIndexOutput(File path, int bufferSize) throws IOException {
       //this.path = path;
-      bufferSize = 1024*1024;
       FileDescriptor fd = NativePosixUtil.open_direct(path.toString(), false);
       fos = new FileOutputStream(fd);
       //fos = new FileOutputStream(path);
@@ -236,7 +235,6 @@ public class DirectIOLinuxDirectory extends FSDirectory {
     private int bufferPos;
 
     public DirectIOLinuxIndexInput(File path, int bufferSize) throws IOException {
-      bufferSize = 1024*1024;
       FileDescriptor fd = NativePosixUtil.open_direct(path.toString(), true);
       fis = new FileInputStream(fd);
       channel = fis.getChannel();
