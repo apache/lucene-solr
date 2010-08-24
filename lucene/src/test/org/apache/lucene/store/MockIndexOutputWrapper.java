@@ -53,6 +53,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
         dir.maxUsedSize = size;
       }
     }
+    dir.files.remove(this);
   }
 
   @Override

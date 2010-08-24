@@ -17,9 +17,12 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Map;
@@ -27,7 +30,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 /**
  * This is a Directory Wrapper that adds methods
@@ -49,6 +51,11 @@ public class MockDirectoryWrapper extends Directory {
   private Set<String> createdFiles;
   volatile boolean crashed;
 
+  // use this for tracking files for crash.
+  // additionally: provides debugging information in case you leave one open
+  Map<Closeable,Exception> files
+   = Collections.synchronizedMap(new IdentityHashMap<Closeable,Exception>());
+  
   // NOTE: we cannot initialize the Map here due to the
   // order in which our constructor actually does this
   // member initialization vs when it calls super.  It seems
@@ -123,53 +130,38 @@ public class MockDirectoryWrapper extends Directory {
     openFiles = new HashMap<String,Integer>();
     Iterator<String> it = unSyncedFiles.iterator();
     unSyncedFiles = new HashSet<String>();
+    // first force-close all files, so we can corrupt on windows etc.
+    // clone the file map, as these guys want to remove themselves on close.
+    Map<Closeable,Exception> m = new IdentityHashMap<Closeable,Exception>(files);
+    for (Closeable f : m.keySet())
+      try {
+        f.close();
+      } catch (Exception ignored) {}
+    
     int count = 0;
-    if (!(delegate instanceof RAMDirectory)) {
-      while(it.hasNext()) {
-        String name = it.next();
-        if (count % 3 == 0) {
-          deleteFile(name, true);
-        } else if (count % 3 == 1) {
-          // Zero out file entirely
-          long length = fileLength(name);
-          byte[] zeroes = new byte[256];
-          long upto = 0;
-          IndexOutput out = delegate.createOutput(name);
-          while(upto < length) {
-            final int limit = (int) Math.min(length-upto, zeroes.length);
-            out.writeBytes(zeroes, 0, limit);
-            upto += limit;
-          }
-          out.close();
-        } else if (count % 3 == 2) {
-          // Truncate the file:
-          IndexOutput out = delegate.createOutput(name);
-          out.setLength(fileLength(name)/2);
-          out.close();
+    while(it.hasNext()) {
+      String name = it.next();
+      if (count % 3 == 0) {
+        deleteFile(name, true);
+      } else if (count % 3 == 1) {
+        // Zero out file entirely
+        long length = fileLength(name);
+        byte[] zeroes = new byte[256];
+        long upto = 0;
+        IndexOutput out = delegate.createOutput(name);
+        while(upto < length) {
+          final int limit = (int) Math.min(length-upto, zeroes.length);
+          out.writeBytes(zeroes, 0, limit);
+          upto += limit;
         }
-        count++;
+        out.close();
+      } else if (count % 3 == 2) {
+        // Truncate the file:
+        IndexOutput out = delegate.createOutput(name);
+        out.setLength(fileLength(name)/2);
+        out.close();
       }
-    } else {
-
-      RAMDirectory ramDir = (RAMDirectory) delegate;
-      while(it.hasNext()) {
-        String name = it.next();
-        RAMFile file = ramDir.fileMap.get(name);
-        if (count % 3 == 0) {
-          deleteFile(name, true);
-        } else if (count % 3 == 1) {
-          // Zero out file entirely
-          final int numBuffers = file.numBuffers();
-          for(int i=0;i<numBuffers;i++) {
-            byte[] buffer = file.getBuffer(i);
-            Arrays.fill(buffer, (byte) 0);
-          }
-        } else if (count % 3 == 2) {
-          // Truncate the file:
-          file.setLength(file.getLength()/2);
-        }
-        count++;
-      }
+      count++;
     }
   }
 
@@ -285,7 +277,9 @@ public class MockDirectoryWrapper extends Directory {
         ramdir.fileMap.put(name, file);
       }
     }
-    return new MockIndexOutputWrapper(this, delegate.createOutput(name), name);
+    IndexOutput io = new MockIndexOutputWrapper(this, delegate.createOutput(name), name);
+    files.put(io, new RuntimeException("unclosed IndexOutput"));
+    return io;
   }
 
   @Override
@@ -302,7 +296,9 @@ public class MockDirectoryWrapper extends Directory {
       }
     }
 
-    return new MockIndexInputWrapper(this, name, delegate.openInput(name));
+    IndexInput ii = new MockIndexInputWrapper(this, name, delegate.openInput(name));
+    files.put(ii, new RuntimeException("unclosed IndexInput"));
+    return ii;
   }
 
   /** Provided for testing purposes.  Use sizeInBytes() instead. */
@@ -337,9 +333,14 @@ public class MockDirectoryWrapper extends Directory {
       openFiles = new HashMap<String,Integer>();
     }
     if (noDeleteOpenFile && openFiles.size() > 0) {
+      // print the first one as its very verbose otherwise
+      Exception cause = null;
+      Iterator<Exception> stacktraces = files.values().iterator();
+      if (stacktraces.hasNext())
+        cause = stacktraces.next();
       // RuntimeException instead of IOException because
       // super() does not throw IOException currently:
-      throw new RuntimeException("MockRAMDirectory: cannot close: there are still open files: " + openFiles);
+      throw new RuntimeException("MockRAMDirectory: cannot close: there are still open files: " + openFiles, cause);
     }
     open = false;
     delegate.close();

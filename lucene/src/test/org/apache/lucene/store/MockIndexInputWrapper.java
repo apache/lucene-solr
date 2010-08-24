@@ -57,6 +57,7 @@ public class MockIndexInputWrapper extends IndexInput {
             dir.openFiles.put(name, v);
           }
         }
+        dir.files.remove(this);
       }
     }
   }
