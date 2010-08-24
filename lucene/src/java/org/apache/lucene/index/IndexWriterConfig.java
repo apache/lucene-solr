@@ -601,7 +601,7 @@ public final class IndexWriterConfig implements Cloneable {
     return this;
   }
 
-  /** @see #setReaderTermsIndexDivisor() */
+  /** @see #setReaderTermsIndexDivisor(int) */
   public int getReaderTermsIndexDivisor() {
     return readerTermsIndexDivisor;
   }
@@ -610,7 +610,7 @@ public final class IndexWriterConfig implements Cloneable {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("matchVersion=").append(matchVersion).append("\n");
-    sb.append("analyzer=").append(analyzer.getClass().getName()).append("\n");
+    sb.append("analyzer=").append(analyzer == null ? "null" : analyzer.getClass().getName()).append("\n");
     sb.append("delPolicy=").append(delPolicy.getClass().getName()).append("\n");
     sb.append("commit=").append(commit == null ? "null" : commit.getClass().getName()).append("\n");
     sb.append("openMode=").append(openMode).append("\n");

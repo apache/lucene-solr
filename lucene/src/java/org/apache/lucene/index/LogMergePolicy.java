@@ -485,4 +485,18 @@ public abstract class LogMergePolicy extends MergePolicy {
     return maxMergeDocs;
   }
 
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder("[");
+    sb.append("minMergeSize=").append(minMergeSize).append(", ");
+    sb.append("mergeFactor=").append(mergeFactor).append(", ");
+    sb.append("maxMergeSize=").append(maxMergeSize).append(", ");
+    sb.append("calibrateSizeByDeletes=").append(calibrateSizeByDeletes).append(", ");
+    sb.append("maxMergeDocs=").append(maxMergeDocs).append(", ");
+    sb.append("useCompoundFile=").append(useCompoundFile).append(", ");
+    sb.append("useCompoundDocStore=").append(useCompoundDocStore);
+    sb.append("]");
+    return sb.toString();
+  }
+  
 }

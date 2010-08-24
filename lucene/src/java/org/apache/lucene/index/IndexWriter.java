@@ -1555,7 +1555,6 @@ public class IndexWriter implements Closeable {
 
   private void messageState() {
     message("\ndir=" + directory + "\n" +
-            "mergePolicy=" + mergePolicy + "\n" + 
             "index=" + segString() + "\n" +
             "version=" + Constants.LUCENE_VERSION + "\n" +
             config.toString());
