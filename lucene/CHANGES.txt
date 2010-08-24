@@ -255,6 +255,9 @@ Bug fixes
 * LUCENE-2593: Fixed certain rare cases where a disk full could lead
   to a corrupted index (Robert Muir, Mike McCandless)
 
+* LUCENE-2620: Fixed a bug in WildcardQuery where too many asterisks
+  would result in unbearably slow performance.  (Nick Barkas via Robert Muir)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight

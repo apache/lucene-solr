@@ -168,8 +168,9 @@ public class WildcardTermEnum extends FilteredTermEnum {
         //
         if (pattern.charAt(p) == WILDCARD_STRING)
         {
-          // Look at the character beyond the '*'.
-          ++p;
+          // Look at the character beyond the '*' characters.
+          while (p < pattern.length() && pattern.charAt(p) == WILDCARD_STRING)
+            ++p;
           // Examine the string, starting at the last character.
           for (int i = string.length(); i >= s; --i)
           {

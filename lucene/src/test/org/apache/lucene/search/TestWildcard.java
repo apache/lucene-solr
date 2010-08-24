@@ -200,6 +200,26 @@ public class TestWildcard
   }
 
   /**
+   * LUCENE-2620
+   */
+  public void testLotsOfAsterisks()
+      throws IOException {
+    Directory indexStore = getIndexStore("body", new String[]
+    {"metal", "metals"});
+    IndexSearcher searcher = new IndexSearcher(indexStore, true);
+    StringBuilder term = new StringBuilder();
+    term.append("m");
+    for (int i = 0; i < 512; i++)
+      term.append("*");
+    term.append("tal");
+    Query query3 = new WildcardQuery(new Term("body", term.toString()));
+
+    assertMatches(searcher, query3, 1);
+    searcher.close();
+    indexStore.close();
+  }
+  
+  /**
    * Tests Wildcard queries with a question mark.
    *
    * @throws IOException if an error occurs
