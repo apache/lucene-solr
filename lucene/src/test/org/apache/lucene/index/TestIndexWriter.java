@@ -467,6 +467,7 @@ public class TestIndexWriter extends LuceneTestCase {
     /*
      * Make sure IndexWriter cleans up on hitting a disk
      * full exception in addDocument.
+     * TODO: how to do this on windows with FSDirectory?
      */
     public void testAddDocumentOnDiskFull() throws IOException {
 
@@ -478,7 +479,7 @@ public class TestIndexWriter extends LuceneTestCase {
         while(true) {
           if (VERBOSE)
             System.out.println("TEST: cycle: diskFree=" + diskFree);
-          MockDirectoryWrapper dir = newDirectory(random);
+          MockDirectoryWrapper dir = new MockDirectoryWrapper(new RAMDirectory());
           dir.setMaxSizeInBytes(diskFree);
           IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
           MergeScheduler ms = writer.getConfig().getMergeScheduler();
