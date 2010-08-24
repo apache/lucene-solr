@@ -24,6 +24,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -158,6 +160,14 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     Directory dir = newDirectory(rand);
     RandomIndexWriter writer = new RandomIndexWriter(rand, dir);
 
+    MergeScheduler ms = writer.w.getMergeScheduler();
+    ConcurrentMergeScheduler cms;
+    if (ms instanceof ConcurrentMergeScheduler) {
+      cms = (ConcurrentMergeScheduler) ms;
+    } else {
+      cms = null;
+    }
+
     // NOTE: cannot use writer.getReader because RIW (on
     // flipping a coin) may give us a newly opened reader,
     // but we use .reopen on this reader below and expect to
@@ -170,6 +180,9 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     doc.add(new Field("id", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
     writer.addDocument(doc);
 
+    if (cms != null) {
+      cms.sync();
+    }
     reader = refreshReader(reader);
     searcher = new IndexSearcher(reader);
 
@@ -190,6 +203,9 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     // now delete the doc, refresh the reader, and see that it's not there
     writer.deleteDocuments(new Term("id", "1"));
 
+    if (cms != null) {
+      cms.sync();
+    }
     reader = refreshReader(reader);
     searcher = new IndexSearcher(reader);
 
@@ -204,6 +220,10 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     filter = new CachingWrapperFilter(startFilter, CachingWrapperFilter.DeletesMode.RECACHE);
 
     writer.addDocument(doc);
+
+    if (cms != null) {
+      cms.sync();
+    }
     reader = refreshReader(reader);
     searcher = new IndexSearcher(reader);
         
@@ -216,6 +236,9 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     // make sure we get a cache hit when we reopen reader
     // that had no change to deletions
+    if (cms != null) {
+      cms.sync();
+    }
     IndexReader newReader = refreshReader(reader);
     assertTrue(reader != newReader);
     reader = newReader;
@@ -228,6 +251,9 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     // now delete the doc, refresh the reader, and see that it's not there
     writer.deleteDocuments(new Term("id", "1"));
 
+    if (cms != null) {
+      cms.sync();
+    }
     reader = refreshReader(reader);
     searcher = new IndexSearcher(reader);
 
@@ -243,6 +269,9 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     filter = new CachingWrapperFilter(startFilter, CachingWrapperFilter.DeletesMode.DYNAMIC);
 
     writer.addDocument(doc);
+    if (cms != null) {
+      cms.sync();
+    }
     reader = refreshReader(reader);
     searcher = new IndexSearcher(reader);
         
@@ -255,6 +284,9 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
     // now delete the doc, refresh the reader, and see that it's not there
     writer.deleteDocuments(new Term("id", "1"));
 
+    if (cms != null) {
+      cms.sync();
+    }
     reader = refreshReader(reader);
     searcher = new IndexSearcher(reader);
 
