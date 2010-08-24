@@ -314,6 +314,7 @@ public class TestIndexWriter extends LuceneTestCase {
             if (VERBOSE)
               System.out.println("\ncycle: " + testName);
 
+            dir.setTrackDiskUsage(true);
             dir.setMaxSizeInBytes(thisDiskFree);
             dir.setRandomIOExceptionRate(rate, diskFree);
 
@@ -519,7 +520,7 @@ public class TestIndexWriter extends LuceneTestCase {
 
             //_TestUtil.syncConcurrentMerges(ms);
 
-            if (dir.listAll().length > 0) {
+            if (_TestUtil.anyFilesExceptWriteLock(dir)) {
               assertNoUnreferencedFiles(dir, "after disk full during addDocument");
               
               // Make sure reader can open the index:
@@ -661,6 +662,8 @@ public class TestIndexWriter extends LuceneTestCase {
       }
 
       dir.resetMaxUsedSizeInBytes();
+      dir.setTrackDiskUsage(true);
+
       writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
       writer.optimize();
       writer.close();
@@ -1027,6 +1030,7 @@ public class TestIndexWriter extends LuceneTestCase {
       writer.close();
       dir.resetMaxUsedSizeInBytes();
 
+      dir.setTrackDiskUsage(true);
       long startDiskUsage = dir.getMaxUsedSizeInBytes();
       writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
         .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(10).setMergeScheduler(
@@ -4377,7 +4381,6 @@ public class TestIndexWriter extends LuceneTestCase {
         dir = newDirectory(random); 
       } catch (IOException e) { throw new RuntimeException(e); }
       IndexWriter w = null;
-      boolean first = true;
       while(!finish) {
         try {
 
@@ -4386,40 +4389,32 @@ public class TestIndexWriter extends LuceneTestCase {
               w.close();
             }
             IndexWriterConfig conf = newIndexWriterConfig(random, 
-                TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2);
+                                                          TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2);
             ((LogMergePolicy) conf.getMergePolicy()).setMergeFactor(2);
             w = new IndexWriter(dir, conf);
-
-            //((ConcurrentMergeScheduler) w.getMergeScheduler()).setSuppressExceptions();
-            if (!first && !allowInterrupt) {
-              // tell main thread it can interrupt us any time,
-              // starting now
-              allowInterrupt = true;
-            }
 
             Document doc = new Document();
             doc.add(new Field("field", "some text contents", Field.Store.YES, Field.Index.ANALYZED));
             for(int i=0;i<100;i++) {
               w.addDocument(doc);
-              w.commit();
+              if (i%10 == 0) {
+                w.commit();
+              }
             }
             w.close();
             _TestUtil.checkIndex(dir);
             IndexReader.open(dir, true).close();
 
-            if (first && !allowInterrupt) {
-              // Strangely, if we interrupt a thread before
-              // all classes are loaded, the class loader
-              // seems to do scary things with the interrupt
-              // status.  In java 1.5, it'll throw an
-              // incorrect ClassNotFoundException.  In java
-              // 1.6, it'll silently clear the interrupt.
-              // So, on first iteration through here we
-              // don't open ourselves up for interrupts
-              // until we've done the above loop.
-              allowInterrupt = true;
-              first = false;
-            }
+            // Strangely, if we interrupt a thread before
+            // all classes are loaded, the class loader
+            // seems to do scary things with the interrupt
+            // status.  In java 1.5, it'll throw an
+            // incorrect ClassNotFoundException.  In java
+            // 1.6, it'll silently clear the interrupt.
+            // So, on first iteration through here we
+            // don't open ourselves up for interrupts
+            // until we've done the above loop.
+            allowInterrupt = true;
           }
         } catch (ThreadInterruptedException re) {
           Throwable e = re.getCause();
@@ -4427,16 +4422,6 @@ public class TestIndexWriter extends LuceneTestCase {
           if (finish) {
             break;
           }
-          
-          // Make sure IW cleared the interrupted bit
-          // TODO: remove that false once test is fixed for real
-          if (false && interrupted()) {
-            System.out.println("FAILED; InterruptedException hit but thread.interrupted() was true");
-            e.printStackTrace(System.out);
-            failed = true;
-            break;
-          }
-
         } catch (Throwable t) {
           System.out.println("FAILED; unexpected exception");
           t.printStackTrace(System.out);
@@ -4487,18 +4472,15 @@ public class TestIndexWriter extends LuceneTestCase {
     // issue 100 interrupts to child thread
     int i = 0;
     while(i < 100) {
-      Thread.sleep(1);
-
+      Thread.sleep(10);
       if (t.allowInterrupt) {
         i++;
-        t.allowInterrupt = false;
         t.interrupt();
       }
       if (!t.isAlive()) {
         break;
       }
     }
-    t.allowInterrupt = false;
     t.finish = true;
     t.join();
     assertFalse(t.failed);

@@ -44,6 +44,7 @@ public class MockDirectoryWrapper extends Directory {
   Random randomState;
   boolean noDeleteOpenFile = true;
   boolean preventDoubleWrite = true;
+  boolean trackDiskUsage = false;
   private Set<String> unSyncedFiles;
   private Set<String> createdFiles;
   volatile boolean crashed;
@@ -66,6 +67,10 @@ public class MockDirectoryWrapper extends Directory {
   public MockDirectoryWrapper(Directory delegate) {
     this.delegate = delegate;
     init();
+  }
+
+  public void setTrackDiskUsage(boolean v) {
+    trackDiskUsage = v;
   }
 
   /** If set to true, we throw an IOException if the same

@@ -18,7 +18,6 @@ package org.apache.lucene.store;
  */
 
 import java.io.IOException;
-import java.util.Map;
 
 /**
  * Used by MockRAMDirectory to create an output stream that
@@ -46,11 +45,13 @@ public class MockIndexOutputWrapper extends IndexOutput {
   public void close() throws IOException {
     dir.maybeThrowDeterministicException();
     delegate.close();
-    // Now compute actual disk usage & track the maxUsedSize
-    // in the MockDirectoryWrapper:
-    long size = dir.getRecomputedActualSizeInBytes();
-    if (size > dir.maxUsedSize) {
-      dir.maxUsedSize = size;
+    if (dir.trackDiskUsage) {
+      // Now compute actual disk usage & track the maxUsedSize
+      // in the MockDirectoryWrapper:
+      long size = dir.getRecomputedActualSizeInBytes();
+      if (size > dir.maxUsedSize) {
+        dir.maxUsedSize = size;
+      }
     }
   }
 
@@ -126,53 +127,6 @@ public class MockIndexOutputWrapper extends IndexOutput {
   public void setLength(long length) throws IOException {
     delegate.setLength(length);
   }
-
-  /*
-  @Override
-  public void writeBytes(byte[] b, int length) throws IOException {
-    delegate.writeBytes(b, length);
-  }
-
-  @Override
-  public void writeInt(int i) throws IOException {
-    delegate.writeInt(i);
-  }
-
-  @Override
-  public void writeVInt(int i) throws IOException {
-    delegate.writeVInt(i);
-  }
-
-  @Override
-  public void writeLong(long i) throws IOException {
-    delegate.writeLong(i);
-  }
-
-  @Override
-  public void writeVLong(long i) throws IOException {
-    delegate.writeVLong(i);
-  }
-
-  @Override
-  public void writeString(String s) throws IOException {
-    delegate.writeString(s);
-  }
-
-  @Override
-  public void writeChars(String s, int start, int length) throws IOException {
-    delegate.writeChars(s, start, length);
-  }
-
-  @Override
-  public void writeChars(char[] s, int start, int length) throws IOException {
-    delegate.writeChars(s, start, length);
-  }
-
-  @Override
-  public void writeStringStringMap(Map<String,String> map) throws IOException {
-    delegate.writeStringStringMap(map);
-  }
-  */
 
   @Override
   public void copyBytes(DataInput input, long numBytes) throws IOException {

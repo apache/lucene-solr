@@ -210,4 +210,13 @@ public class _TestUtil {
   public static CodecProvider alwaysCodec(final String codec) {
     return alwaysCodec(CodecProvider.getDefault().lookup(codec));
   }
+
+  public static boolean anyFilesExceptWriteLock(Directory dir) throws IOException {
+    String[] files = dir.listAll();
+    if (files.length > 1 || (files.length == 1 && !files[0].equals("write.lock"))) {
+      return true;
+    } else {
+      return false;
+    }
+  }
 }
