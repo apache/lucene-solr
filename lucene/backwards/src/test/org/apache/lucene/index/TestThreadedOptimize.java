@@ -122,7 +122,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
       writer.setMaxBufferedDocs(2);
 
       IndexReader reader = IndexReader.open(directory, true);
-      assertTrue(reader.isOptimized());
+      assertTrue("reader=" + reader + " numDocs=" + reader.numDocs() + " expectedDocCount=" + expectedDocCount + " iter=" + iter, reader.isOptimized());
       assertEquals(expectedDocCount, reader.numDocs());
       reader.close();
     }
