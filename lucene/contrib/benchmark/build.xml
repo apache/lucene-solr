@@ -9,7 +9,7 @@
     <property name="working.dir" location="work"/>
 
     <!-- the tests have some parallel problems -->
-    <property name="runsequential" value="true"/>
+    <property name="tests.threadspercpu" value="0"/>
 
     <contrib-uptodate name="highlighter" property="highlighter.uptodate" classpath.property="highlighter.jar"/>
     <contrib-uptodate name="icu" property="icu.uptodate" classpath.property="icu.jar"/>
