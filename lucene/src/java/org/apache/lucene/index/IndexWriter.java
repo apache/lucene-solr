@@ -2904,9 +2904,9 @@ public class IndexWriter implements Closeable {
             merger.createCompoundFile(mergedName + ".cfs");
             synchronized(this) {
               info.setUseCompoundFile(true);
+              checkpoint();
             }
           } finally {
-            checkpoint();
             deleter.decRef(files);
           }
         }
