@@ -42,11 +42,22 @@
   <property name="args" value="" />
 
   <!-- TODO: measure toning this down by default to 1 -->
-  <property name="threadsPerProcessor" value="2"/>
+  <property name="tests.threadspercpu" value="2"/>
+  <condition property="tests.sequential">
+    <or>
+      <isset property="testcase"/>
+      <equals arg1="${tests.threadspercpu}" arg2="0"/>
+    </or>
+  </condition>
 
+  <property name="tests.multiplier" value="1" />
   <property name="tests.codec" value="random" />
   <property name="tests.locale" value="random" />
   <property name="tests.timezone" value="random" />
+
+  <condition property="dir.prop" value="-Dsolr.directoryFactory=solr.StandardDirectoryFactory">
+    <isset property="use.fsdir"/>
+  </condition>
 
   <!-- Example directory -->
   <property name="example" value="${common-solr.dir}/example" />

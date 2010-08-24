@@ -160,7 +160,7 @@ public class LuceneTestCaseJ4 {
    * A random multiplier which you should use when writing random tests:
    * multiply it by the number of iterations
    */
-  public static final int RANDOM_MULTIPLIER = Integer.parseInt(System.getProperty("random.multiplier", "1"));
+  public static final int RANDOM_MULTIPLIER = Integer.parseInt(System.getProperty("tests.multiplier", "1"));
   
   private int savedBoolMaxClauseCount;
 

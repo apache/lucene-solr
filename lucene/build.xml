@@ -116,12 +116,12 @@
   	</sequential>
   </macrodef>
 
-  <target name="junit-backwards-sequential" if="runsequential">
+  <target name="junit-backwards-sequential" if="tests.sequential">
     <backwards-test-macro/>
   </target>
 
-  <target name="junit-backwards-parallel" unless="runsequential">
-    <parallel threadsPerProcessor="${threadsPerProcessor}">
+  <target name="junit-backwards-parallel" unless="tests.sequential">
+    <parallel threadsPerProcessor="${tests.threadspercpu}">
      <backwards-test-macro threadNum="1" threadTotal="8"/>
      <backwards-test-macro threadNum="2" threadTotal="8"/>
      <backwards-test-macro threadNum="3" threadTotal="8"/>

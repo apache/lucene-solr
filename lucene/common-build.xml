@@ -55,8 +55,14 @@
   <!-- default arguments to pass to JVM executing tests -->
   <property name="testmethod" value=""/>
   <property name="args" value=""/>
-  <property name="threadsPerProcessor" value="1" />
-  <property name="random.multiplier" value="1" />
+  <property name="tests.threadspercpu" value="1" />
+  <condition property="tests.sequential">
+    <or>
+      <isset property="testcase"/>
+      <equals arg1="${tests.threadspercpu}" arg2="0"/>
+    </or>
+  </condition>
+  <property name="tests.multiplier" value="1" />
   <property name="tests.codec" value="random" />
   <property name="tests.locale" value="random" />
   <property name="tests.timezone" value="random" />
@@ -124,12 +130,6 @@
   <property name="junit.excludes" value=""/>
   <property name="junit.details.formatter" value="org.apache.lucene.util.LuceneJUnitResultFormatter"/>
   <property name="junit.parallel.selector" value="org.apache.lucene.util.LuceneJUnitDividingSelector"/>
-  <condition property="runsequential">
-    <or>
-      <isset property="testcase"/>
-      <isset property="sequential-tests"/>
-    </or>
-  </condition>
 
   <property name="manifest.file" location="${common.dir}/build/MANIFEST.MF"/>
 
@@ -449,7 +449,7 @@
               <sysproperty key="tests.directory" value="${tests.directory}"/>
 	
 	      <!-- TODO: create propertyset for test properties, so each project can have its own set -->
-              <sysproperty key="random.multiplier" value="${random.multiplier}"/>
+              <sysproperty key="tests.multiplier" value="${tests.multiplier}"/>
 	      <sysproperty key="tempDir" file="@{tempDir}/@{threadNum}"/>
 
 	      <sysproperty key="lucene.version" value="${dev.version}"/>
@@ -496,12 +496,12 @@
   	<mkdir dir="${junit.output.dir}"/>
   </target>
 
-  <target name="junit-sequential" if="runsequential">
+  <target name="junit-sequential" if="tests.sequential">
     <test-macro/>
   </target>
 
-  <target name="junit-parallel" unless="runsequential">
-    <parallel threadsPerProcessor="${threadsPerProcessor}">
+  <target name="junit-parallel" unless="tests.sequential">
+    <parallel threadsPerProcessor="${tests.threadspercpu}">
      <test-macro threadNum="1" threadTotal="8"/>
      <test-macro threadNum="2" threadTotal="8"/>
      <test-macro threadNum="3" threadTotal="8"/>
