@@ -481,6 +481,11 @@ Bug fixes
 * LUCENE-2593: Fixed certain rare cases where a disk full could lead
   to a corrupted index (Robert Muir, Mike McCandless)
 
+* LUCENE-2617: Optional clauses of a BooleanQuery were not factored
+  into coord if the scorer for that segment returned null.  This
+  can cause the same document to score to differently depending on
+  what segment it resides in. (yonik)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight

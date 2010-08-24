@@ -90,7 +90,7 @@ public class TestBooleanScorer extends LuceneTestCase
       }
       
     }};
-    BooleanScorer bs = new BooleanScorer(sim, 1, Arrays.asList(scorers), null);
+    BooleanScorer bs = new BooleanScorer(sim, 1, Arrays.asList(scorers), null, scorers.length);
     
     assertEquals("should have received 3000", 3000, bs.nextDoc());
     assertEquals("should have received NO_MORE_DOCS", DocIdSetIterator.NO_MORE_DOCS, bs.nextDoc());
