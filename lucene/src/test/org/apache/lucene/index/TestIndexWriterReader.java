@@ -651,6 +651,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
             do {
               try {
                 writer.addIndexes(dirs);
+                writer.maybeMerge();
               } catch (Throwable t) {
                 excs.add(t);
                 throw new RuntimeException(t);
