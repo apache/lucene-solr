@@ -155,7 +155,7 @@ public class LuceneTestCaseJ4 {
   /** Gets the timezone to run tests with */
   static final String TEST_TIMEZONE = System.getProperty("tests.timezone", "random");
   /** Gets the directory to run tests with */
-  static final String TEST_DIRECTORY = System.getProperty("tests.directory", "RAMDirectory");
+  static final String TEST_DIRECTORY = System.getProperty("tests.directory", "random");
   /** Get the number of times to run tests */
   static final int TEST_ITER = Integer.parseInt(System.getProperty("tests.iter", "1"));
   

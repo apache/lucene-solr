@@ -66,7 +66,7 @@
   <property name="tests.codec" value="random" />
   <property name="tests.locale" value="random" />
   <property name="tests.timezone" value="random" />
-  <property name="tests.directory" value="RAMDirectory" />
+  <property name="tests.directory" value="random" />
   <property name="tests.iter" value="1" />
     
   <property name="javac.deprecation" value="off"/>
