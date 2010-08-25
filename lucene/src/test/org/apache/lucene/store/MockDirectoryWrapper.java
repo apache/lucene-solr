@@ -340,7 +340,7 @@ public class MockDirectoryWrapper extends Directory {
         cause = stacktraces.next();
       // RuntimeException instead of IOException because
       // super() does not throw IOException currently:
-      throw new RuntimeException("MockRAMDirectory: cannot close: there are still open files: " + openFiles, cause);
+      throw new RuntimeException("MockDirectoryWrapper: cannot close: there are still open files: " + openFiles, cause);
     }
     open = false;
     delegate.close();
