@@ -4377,10 +4377,8 @@ public class TestIndexWriter extends LuceneTestCase {
 
     @Override
     public void run() {
-      Directory dir;
-      try { 
-        dir = newDirectory(random); 
-      } catch (IOException e) { throw new RuntimeException(e); }
+      // LUCENE-2239: won't work with NIOFS/MMAP
+      Directory dir = new MockDirectoryWrapper(new RAMDirectory()); 
       IndexWriter w = null;
       while(!finish) {
         try {

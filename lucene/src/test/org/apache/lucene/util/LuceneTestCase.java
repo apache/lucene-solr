@@ -335,7 +335,7 @@ public abstract class LuceneTestCase extends TestCase {
 
   public MockDirectoryWrapper newDirectory(Random r) throws IOException {
     StackTraceElement[] stack = new Exception().getStackTrace();
-    Directory impl = LuceneTestCaseJ4.newDirectoryImpl(TEST_DIRECTORY);
+    Directory impl = LuceneTestCaseJ4.newDirectoryImpl(r, TEST_DIRECTORY);
     MockDirectoryWrapper dir = new MockDirectoryWrapper(impl);
     stores.put(dir, stack);
     return dir;
@@ -343,7 +343,7 @@ public abstract class LuceneTestCase extends TestCase {
   
   public MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     StackTraceElement[] stack = new Exception().getStackTrace();
-    Directory impl = LuceneTestCaseJ4.newDirectoryImpl(TEST_DIRECTORY);
+    Directory impl = LuceneTestCaseJ4.newDirectoryImpl(r, TEST_DIRECTORY);
     for (String file : d.listAll()) {
      d.copy(impl, file, file);
     }

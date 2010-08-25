@@ -126,8 +126,8 @@ public class TestTransactionRollback extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
+    random = newRandom();
     dir = newDirectory(random);
-		random = newRandom();
     //Build index, of records 1 to 100, committing after each batch of 10
     IndexDeletionPolicy sdp=new KeepAllDeletionPolicy();
     IndexWriter w=new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexDeletionPolicy(sdp));

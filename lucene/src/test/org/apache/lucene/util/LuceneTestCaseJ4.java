@@ -27,6 +27,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
@@ -72,6 +73,7 @@ import java.util.Collections;
 import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 import static org.junit.Assert.assertEquals;
@@ -588,7 +590,7 @@ public class LuceneTestCaseJ4 {
 
   public static MockDirectoryWrapper newDirectory(Random r) throws IOException {
     StackTraceElement[] stack = new Exception().getStackTrace();
-    Directory impl = newDirectoryImpl(TEST_DIRECTORY);
+    Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     MockDirectoryWrapper dir = new MockDirectoryWrapper(impl);
     stores.put(dir, stack);
     return dir;
@@ -596,7 +598,7 @@ public class LuceneTestCaseJ4 {
   
   public static MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     StackTraceElement[] stack = new Exception().getStackTrace();
-    Directory impl = newDirectoryImpl(TEST_DIRECTORY);
+    Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     for (String file : d.listAll()) {
      d.copy(impl, file, file);
     }
@@ -628,7 +630,24 @@ public class LuceneTestCaseJ4 {
     }
   }
 
-  static Directory newDirectoryImpl(String clazzName) {
+  private static String CORE_DIRECTORIES[] = {
+    "RAMDirectory",
+    "SimpleFSDirectory",
+    "NIOFSDirectory",
+    "MMapDirectory"
+  };
+  
+  public static String randomDirectory(Random random) {
+    if (random.nextInt(10) == 0) {
+      return CORE_DIRECTORIES[random.nextInt(CORE_DIRECTORIES.length)];
+    } else {
+      return "RAMDirectory";
+    }
+  }
+  
+  static Directory newDirectoryImpl(Random random, String clazzName) {
+    if (clazzName.equals("random"))
+      clazzName = randomDirectory(random);
     if (clazzName.indexOf(".") == -1) // if not fully qualified, assume .store
       clazzName = "org.apache.lucene.store." + clazzName;
     try {
@@ -642,7 +661,11 @@ public class LuceneTestCaseJ4 {
         tmpFile.mkdir();
         try {
           Constructor<? extends Directory> ctor = clazz.getConstructor(File.class);
-          return ctor.newInstance(tmpFile);
+          Directory d = ctor.newInstance(tmpFile);
+          // try not to enable this hack unless we must.
+          if (d instanceof MMapDirectory && Constants.WINDOWS && MMapDirectory.UNMAP_SUPPORTED)
+            ((MMapDirectory)d).setUseUnmap(true);
+          return d;
         } catch (Exception e2) {
           // try .open(File)
           Method method = clazz.getMethod("open", new Class[] { File.class });
