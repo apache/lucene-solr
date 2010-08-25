@@ -44,6 +44,7 @@ import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runner.manipulation.Filter;
 import org.junit.runner.manipulation.NoTestsRemainException;
+import org.junit.runner.notification.RunNotifier;
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
@@ -141,6 +142,8 @@ public class LuceneTestCaseJ4 {
   static final String TEST_TIMEZONE = System.getProperty("tests.timezone", "random");
   /** Gets the directory to run tests with */
   static final String TEST_DIRECTORY = System.getProperty("tests.directory", "RAMDirectory");
+  /** Get the number of times to run tests */
+  static final int TEST_ITER = Integer.parseInt(System.getProperty("tests.iter", "1"));
   
   /**
    * A random multiplier which you should use when writing random tests:
@@ -599,6 +602,13 @@ public class LuceneTestCaseJ4 {
   
   /** optionally filters the tests to be run by TEST_METHOD */
   public static class LuceneTestCaseRunner extends BlockJUnit4ClassRunner {
+
+    @Override
+    protected void runChild(FrameworkMethod arg0, RunNotifier arg1) {
+      for (int i = 0; i < TEST_ITER; i++)
+        super.runChild(arg0, arg1);
+    }
+
     public LuceneTestCaseRunner(Class<?> clazz) throws InitializationError {
       super(clazz);
       Filter f = new Filter() {
