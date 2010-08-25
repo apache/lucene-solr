@@ -270,6 +270,12 @@ Optimizations
   for the first facet request is anywhere from 30% to 32x, depending on how many
   terms are in the field and how many documents match per term.  (yonik) 
 
+* SOLR-2089: Speed up UnInvertedField faceting (facet.method=fc for
+  multi-valued fields) when facet.limit is both high, and a high enough
+  percentage of the number of unique terms in the field.  Extreme cases
+  yield speedups over 3x. (yonik)
+  
+
 Bug Fixes
 ----------------------
 

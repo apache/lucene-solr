@@ -37,6 +37,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.*;
+import org.apache.solr.util.PrimUtils;
 import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.handler.component.StatsValues;
 import org.apache.solr.handler.component.FieldFacetStats;
@@ -584,7 +585,7 @@ public class UnInvertedField {
             // important if a lot of the counts are repeated (like zero counts would be).
 
             // minimize object creation and speed comparison by creating a long that
-            // encompases both count and term number.
+            // encompasses both count and term number.
             // Since smaller values are kept in the TreeSet, make higher counts smaller.
             //
             //   for equal counts, lower term numbers
@@ -597,15 +598,41 @@ public class UnInvertedField {
           }
         }
         // now select the right page from the results
+
+
+        final int[] tnums = new int[Math.min(queue.size()-off, lim)];
+        final int[] indirect = counts;  // reuse the counts array for the index into the tnums array
+        int tnumCount = 0;
+
         for (Long p : queue) {
           if (--off>=0) continue;
           if (--lim<0) break;
           int c = -(int)(p.longValue() >>> 32);
           //int tnum = 0x7fffffff - (int)p.longValue();  // use if priority queue
           int tnum = (int)p.longValue();
-          String label = getReadableValue(getTermValue(te, tnum), ft, spare);
-          res.add(label, c);
+          indirect[tnumCount] = tnumCount;
+          tnums[tnumCount++] = tnum;
+          // String label = ft.indexedToReadable(getTermText(te, tnum));
+          // add a null label for now... we'll fill it in later.
+          res.add(null, c);
         }
+
+        // now sort the indexes by the term numbers
+        PrimUtils.sort(0, tnumCount, indirect, new PrimUtils.IntComparator() {
+          @Override
+          public int compare(int a, int b) {
+            return tnums[a] - tnums[b];
+          }
+        });
+
+        // convert the term numbers to term values and set as the label
+        for (int i=0; i<tnumCount; i++) {
+          int idx = indirect[i];
+          int tnum = tnums[idx];
+          String label = getReadableValue(getTermValue(te, tnum), ft, spare);          
+          res.setName(idx, label);
+        }
+
       } else {
         // add results in index order
         int i=startTerm;
