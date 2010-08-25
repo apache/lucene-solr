@@ -210,7 +210,7 @@ public class TestDeletionPolicy extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     writer.close();
 
-    final int ITER = 8;
+    final int ITER = 9;
 
     long lastDeleteTime = 0;
     for(int i=0;i<ITER;i++) {
