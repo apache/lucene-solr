@@ -486,6 +486,9 @@ Bug fixes
   can cause the same document to score to differently depending on
   what segment it resides in. (yonik)
 
+* LUCENE-2616: FastVectorHighlighter: out of alignment when the first value is
+  empty in multiValued field (Koji Sekiguchi)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
