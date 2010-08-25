@@ -367,7 +367,8 @@ public abstract class LuceneTestCase extends TestCase {
 
   @Override
   public void run(TestResult result) {
-    if (LuceneTestCaseJ4.TEST_METHOD == null || 
+    for (int i = 0; i < LuceneTestCaseJ4.TEST_ITER; i++)
+      if (LuceneTestCaseJ4.TEST_METHOD == null || 
         getName().equals(LuceneTestCaseJ4.TEST_METHOD))
         super.run(result);
   }
