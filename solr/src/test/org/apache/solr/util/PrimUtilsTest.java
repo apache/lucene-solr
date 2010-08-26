@@ -21,7 +21,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import java.util.Arrays;
 import java.util.Random;
 
-public class IntUtilsTest extends LuceneTestCase {
+public class PrimUtilsTest extends LuceneTestCase {
   Random r = newRandom();
 
   public void testSort() {
