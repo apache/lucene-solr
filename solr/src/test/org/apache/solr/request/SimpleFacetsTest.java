@@ -252,6 +252,7 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,"//lst[@name='trait_s']/int[@name='Pig'][.='0']"
             );
 
+    // check that the default sort is by count
     assertQ("check sorted paging",
             req("q", "id:[42 TO 47]"
                 ,"facet", "true"
@@ -262,11 +263,43 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
                 ,"facet.limit","3"
                 )
             ,"*[count(//lst[@name='trait_s']/int)=3]"
-            ,"//lst[@name='trait_s']/int[@name='Tool'][.='2']"
-            ,"//lst[@name='trait_s']/int[@name='Obnoxious'][.='1']"
-            ,"//lst[@name='trait_s']/int[@name='Chauvinist'][.='1']"
+            ,"//int[1][@name='Tool'][.='2']"
+            ,"//int[2][@name='Chauvinist'][.='1']"
+            ,"//int[3][@name='Obnoxious'][.='1']"
             );
 
+    //
+    // check that legacy facet.sort=true/false works
+    //
+    assertQ(req("q", "id:[42 TO 47]"
+                ,"facet", "true"
+                ,"fq", "id:[42 TO 45]"
+                ,"facet.field", "trait_s"
+                ,"facet.mincount","0"
+                ,"facet.offset","0"
+                ,"facet.limit","3"
+                ,"facet.sort","true"  // true means sort-by-count
+                )
+            ,"*[count(//lst[@name='trait_s']/int)=3]"
+            ,"//int[1][@name='Tool'][.='2']"
+            ,"//int[2][@name='Chauvinist'][.='1']"
+            ,"//int[3][@name='Obnoxious'][.='1']"
+            );
+
+     assertQ(req("q", "id:[42 TO 47]"
+                ,"facet", "true"
+                ,"fq", "id:[42 TO 45]"
+                ,"facet.field", "trait_s"
+                ,"facet.mincount","1"
+                ,"facet.offset","0"
+                ,"facet.limit","3"
+                ,"facet.sort","false"  // false means sort by index order
+                )
+            ,"*[count(//lst[@name='trait_s']/int)=3]"
+            ,"//int[1][@name='Chauvinist'][.='1']"
+            ,"//int[2][@name='Obnoxious'][.='1']"
+            ,"//int[3][@name='Tool'][.='2']"
+            );
   }
 
   public static void indexDateFacets() {
@@ -1572,5 +1605,19 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,"*[count(//lst[@name='facet_fields']/lst/int)=0]"
     );
 
+    // test offset beyond what is collected internally in queue
+    assertQ(
+            req(params, "q", "id:[* TO *]"
+                    ,"indent",indent
+                    ,"facet","true"
+                    ,"facet.field", lf
+                    ,"facet.mincount","3"
+                    ,"facet.offset","5"
+                    ,"facet.limit","10"
+                    ,"facet.sort","count"
+                    ,"facet.prefix","CC"
+            )
+            ,"*[count(//lst[@name='facet_fields']/lst/int)=0]"
+    );
   }
 }
