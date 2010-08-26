@@ -31,6 +31,7 @@ public class PrimUtils {
 
   /** Sort the integer array from "start" inclusive to "end" exclusive in ascending order,
    *  using the provided comparator.
+   * TODO: is this an unstable sort?
    */
   public static void sort(int start, int end, int[] array, IntComparator comparator) {
     // This code was copied from Apache Harmony's Arrays.sort(double[]) and modified
