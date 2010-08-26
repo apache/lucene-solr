@@ -600,8 +600,10 @@ public class UnInvertedField {
         // now select the right page from the results
 
 
-        final int[] tnums = new int[Math.min(queue.size()-off, lim)];
+        final int[] tnums = new int[Math.min(Math.max(0, queue.size()-off), lim)];
         final int[] indirect = counts;  // reuse the counts array for the index into the tnums array
+        assert indirect.length >= tnums.length;
+        
         int tnumCount = 0;
 
         for (Long p : queue) {
