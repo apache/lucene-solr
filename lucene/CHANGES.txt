@@ -226,6 +226,10 @@ Documentation
 
 * LUCENE-2579: Fix oal.search's package.html description of abstract
   methods.  (Santiago M. Mola via Mike McCandless)
+  
+* LUCENE-2239: Documented limitations in NIOFSDirectory and MMapDirectory due to
+  Java NOI behavior when a Thread is interrupted while blocking on IO.
+  (Simon Willnauer, Robert Muir)
 
 ======================= Lucene 3.x (not yet released) =======================
 
