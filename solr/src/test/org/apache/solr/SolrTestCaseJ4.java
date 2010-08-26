@@ -315,12 +315,24 @@ public class SolrTestCaseJ4 extends LuceneTestCaseJ4 {
     try {
       String m = (null == message) ? "" : message + " ";
       String response = h.query(req);
+
+      if (req.getParams().getBool("facet", false)) {
+        // add a test to ensure that faceting did not throw an exception
+        // internally, where it would be added to facet_counts/exception
+        String[] allTests = new String[tests.length+1];
+        System.arraycopy(tests,0,allTests,1,tests.length);
+        allTests[0] = "*[count(//lst[@name='facet_counts']/*[@name='exception'])=0]";
+        tests = allTests;
+      }
+
       String results = h.validateXPath(response, tests);
+
       if (null != results) {
         fail(m + "query failed XPath: " + results +
              "\n xml response was: " + response +
              "\n request was: " + req.getParamString());
       }
+
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
