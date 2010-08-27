@@ -309,7 +309,7 @@ public class MMapDirectory extends FSDirectory {
            + raf.toString());
       
       int nrBuffers = (int) (length / maxBufSize);
-      if (((long) nrBuffers * maxBufSize) < length) nrBuffers++;
+      if (((long) nrBuffers * maxBufSize) <= length) nrBuffers++;
       
       this.buffers = new ByteBuffer[nrBuffers];
       this.bufSizes = new int[nrBuffers];
