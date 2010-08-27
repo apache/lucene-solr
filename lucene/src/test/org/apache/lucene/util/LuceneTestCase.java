@@ -333,6 +333,16 @@ public abstract class LuceneTestCase extends TestCase {
     return LuceneTestCaseJ4.newIndexWriterConfig(r, v, a);
   }
 
+  /**
+   * Returns a new Dictionary instance. Use this when the test does not
+   * care about the specific Directory implementation (most tests).
+   * <p>
+   * The Directory is wrapped with {@link MockDirectoryWrapper}.
+   * By default this means it will be picky, such as ensuring that you
+   * properly close it and all open files in your test. It will emulate
+   * some features of Windows, such as not allowing open files to be
+   * overwritten.
+   */
   public MockDirectoryWrapper newDirectory(Random r) throws IOException {
     StackTraceElement[] stack = new Exception().getStackTrace();
     Directory impl = LuceneTestCaseJ4.newDirectoryImpl(r, TEST_DIRECTORY);
@@ -341,6 +351,11 @@ public abstract class LuceneTestCase extends TestCase {
     return dir;
   }
   
+  /**
+   * Returns a new Dictionary instance, with contents copied from the
+   * provided directory. See {@link #newDirectory(Random)} for more
+   * information.
+   */
   public MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     StackTraceElement[] stack = new Exception().getStackTrace();
     Directory impl = LuceneTestCaseJ4.newDirectoryImpl(r, TEST_DIRECTORY);
