@@ -45,7 +45,7 @@ public class BinaryResponseParser extends ResponseParser {
 
 
   public String getVersion() {
-    return "1";
+    return "2";
   }
 
   public NamedList<Object> processResponse(Reader reader) {

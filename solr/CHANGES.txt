@@ -39,6 +39,9 @@ Upgrading from Solr 1.4
   before the master.  If the master were to be updated first, the older
   searchers would not be able to read the new index format.
 
+* The Solr JavaBin format has changed as of Solr 3.1. If you are using the 
+  JavaBin format, you will need to upgrade your SolrJ client. (SOLR-2034)
+
 * The experimental ALIAS command has been removed (SOLR-1637)
 
 * Using solr.xml is recommended for single cores also (SOLR-1621)
@@ -531,6 +534,11 @@ Other Changes
   silently using replacement characters for invalid inputs (blargy via rmuir)
 
 * SOLR-1804: Google collections updated to Google Guava (which is a superset of collections and contains bug fixes) (gsingers)  
+
+* SOLR-2034: Switch to JavaBin codec version 2. Strings are now serialized
+  as the number of UTF-8 bytes, followed by the bytes in UTF-8. Previously
+  Strings were serialized as the number of UTF-16 chars, followed by the
+  bytes in Modified UTF-8. (hossman, yonik, rmuir)
 
 Build
 ----------------------
