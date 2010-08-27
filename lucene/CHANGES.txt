@@ -436,6 +436,9 @@ Optimizations
 * LUCENE-2574: IndexInput exposes copyBytes(IndexOutput, long) to allow for 
   efficient copying by sub-classes. Optimized copy is implemented for RAM and FS
   streams. (Shai Erera)
+
+* LUCENE-2098: Improve the performance of BaseCharFilter, especially for
+  large documents.  (Robin Wojciki, Koji Sekiguchi, Robert Muir)
   
 Build
 
