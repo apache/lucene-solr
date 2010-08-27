@@ -69,7 +69,7 @@ public class JavaBinCodec {
           EXTERN_STRING = (byte) (7 << 5);
 
 
-  private static byte VERSION = 1;
+  private static byte VERSION = 2;
   private ObjectResolver resolver;
   protected FastOutputStream daos;
 
@@ -416,31 +416,90 @@ public class JavaBinCodec {
   }
 
   /**
-   * write the string as tag+length, with length being the number of UTF-16 characters, followed by the string encoded
-   * in modified-UTF8
+   * write the string as tag+length, with length being the number of UTF-8 bytes
    */
   public void writeStr(String s) throws IOException {
     if (s == null) {
       writeTag(NULL);
       return;
     }
-    // Can't use string serialization or toUTF()... it's limited to 64K
-    // plus it's bigger than it needs to be for small strings anyway
-    int len = s.length();
-    writeTag(STR, len);
-    writeChars(daos, s, 0, len);
+    int end = s.length();
+    int maxSize = end * 4;
+    if (bytes == null || bytes.length < maxSize) bytes = new byte[maxSize];
+    int upto = 0;
+    for(int i=0;i<end;i++) {
+      final int code = (int) s.charAt(i);
+
+      if (code < 0x80)
+        bytes[upto++] = (byte) code;
+      else if (code < 0x800) {
+        bytes[upto++] = (byte) (0xC0 | (code >> 6));
+        bytes[upto++] = (byte)(0x80 | (code & 0x3F));
+      } else if (code < 0xD800 || code > 0xDFFF) {
+        bytes[upto++] = (byte)(0xE0 | (code >> 12));
+        bytes[upto++] = (byte)(0x80 | ((code >> 6) & 0x3F));
+        bytes[upto++] = (byte)(0x80 | (code & 0x3F));
+      } else {
+        // surrogate pair
+        // confirm valid high surrogate
+        if (code < 0xDC00 && (i < end-1)) {
+          int utf32 = (int) s.charAt(i+1);
+          // confirm valid low surrogate and write pair
+          if (utf32 >= 0xDC00 && utf32 <= 0xDFFF) { 
+            utf32 = ((code - 0xD7C0) << 10) + (utf32 & 0x3FF);
+            i++;
+            bytes[upto++] = (byte)(0xF0 | (utf32 >> 18));
+            bytes[upto++] = (byte)(0x80 | ((utf32 >> 12) & 0x3F));
+            bytes[upto++] = (byte)(0x80 | ((utf32 >> 6) & 0x3F));
+            bytes[upto++] = (byte)(0x80 | (utf32 & 0x3F));
+            continue;
+          }
+        }
+        // replace unpaired surrogate or out-of-order low surrogate
+        // with substitution character
+        bytes[upto++] = (byte) 0xEF;
+        bytes[upto++] = (byte) 0xBF;
+        bytes[upto++] = (byte) 0xBD;
+      }
+    }
+    writeTag(STR, upto);
+    daos.write(bytes, 0, upto);
   }
 
-
-  char[] charArr;
+  byte[] bytes;
+  char[] chars;
 
   public String readStr(FastInputStream dis) throws IOException {
     int sz = readSize(dis);
-    if (charArr == null || charArr.length < sz) {
-      charArr = new char[sz];
+    if (chars == null || chars.length < sz) chars = new char[sz];
+    if (bytes == null || bytes.length < sz) bytes = new byte[sz];
+    dis.readFully(bytes, 0, sz);
+    int outUpto=0;
+    for (int i = 0; i < sz;) {
+      final int b = bytes[i++]&0xff;
+      final int ch;
+      if (b < 0xc0) {
+        assert b < 0x80;
+        ch = b;
+      } else if (b < 0xe0) {
+        ch = ((b&0x1f)<<6) + (bytes[i++]&0x3f);
+      } else if (b < 0xf0) {
+        ch = ((b&0xf)<<12) + ((bytes[i++]&0x3f)<<6) + (bytes[i++]&0x3f);
+      } else {
+        assert b < 0xf8;
+        ch = ((b&0x7)<<18) + ((bytes[i++]&0x3f)<<12) + ((bytes[i++]&0x3f)<<6) + (bytes[i++]&0x3f);
+      }
+      if (ch <= 0xFFFF) {
+        // target is a character <= 0xFFFF
+        chars[outUpto++] = (char) ch;
+      } else {
+        // target is a character in range 0xFFFF - 0x10FFFF
+        final int chHalf = ch - 0x10000;
+        chars[outUpto++] = (char) ((chHalf >> 0xA) + 0xD800);
+        chars[outUpto++] = (char) ((chHalf & 0x3FF) + 0xDC00);
+      }
     }
-    readChars(dis, charArr, 0, sz);
-    return new String(charArr, 0, sz);
+    return new String(chars, 0, outUpto);
   }
 
   public void writeInt(int val) throws IOException {
@@ -620,59 +679,6 @@ public class JavaBinCodec {
       i |= (long) (b & 0x7F) << shift;
     }
     return i;
-  }
-
-  /**
-   * Writes a sequence of UTF-8 encoded characters from a string.
-   *
-   * @param s      the source of the characters
-   * @param start  the first character in the sequence
-   * @param length the number of characters in the sequence
-   *
-   * @see org.apache.lucene.store.IndexInput#readChars(char[],int,int)
-   */
-  public static void writeChars(FastOutputStream os, String s, int start, int length)
-          throws IOException {
-    final int end = start + length;
-    for (int i = start; i < end; i++) {
-      final int code = (int) s.charAt(i);
-      if (code >= 0x01 && code <= 0x7F)
-        os.write(code);
-      else if (((code >= 0x80) && (code <= 0x7FF)) || code == 0) {
-        os.write(0xC0 | (code >> 6));
-        os.write(0x80 | (code & 0x3F));
-      } else {
-        os.write(0xE0 | (code >>> 12));
-        os.write(0x80 | ((code >> 6) & 0x3F));
-        os.write(0x80 | (code & 0x3F));
-      }
-    }
-  }
-
-  /**
-   * Reads UTF-8 encoded characters into an array.
-   *
-   * @param buffer the array to read characters into
-   * @param start  the offset in the array to start storing characters
-   * @param length the number of characters to read
-   *
-   * @see org.apache.lucene.store.IndexOutput#writeChars(String,int,int)
-   */
-  public static void readChars(FastInputStream in, char[] buffer, int start, int length)
-          throws IOException {
-    final int end = start + length;
-    for (int i = start; i < end; i++) {
-      int b = in.read();
-      if ((b & 0x80) == 0)
-        buffer[i] = (char) b;
-      else if ((b & 0xE0) != 0xE0) {
-        buffer[i] = (char) (((b & 0x1F) << 6)
-                | (in.read() & 0x3F));
-      } else
-        buffer[i] = (char) (((b & 0x0F) << 12)
-                | ((in.read() & 0x3F) << 6)
-                | (in.read() & 0x3F));
-    }
   }
 
   private int stringsCount = 0;
