@@ -22,7 +22,6 @@ orig_dir=$(pwd)
 cd ${0%/*}/..
 solr_root=$(pwd)
 cd ${orig_dir}
-curl_url=""
 
 unset solr_hostname solr_port webapp_name user verbose debug solr_url
 . ${solr_root}/bin/scripts-util
@@ -76,30 +75,7 @@ done
 
 [[ -n $debug ]] && set -x
 
-if [[ -n ${solr_url} ]]
-then
-  curl_url=${solr_url}
-else
-  if [[ -z ${solr_port} ]]
-  then
-    echo "Solr port number missing in $confFile or command line."
-    echo "$USAGE"
-    exit 1
-  fi
-
-  # use default hostname if not specified
-  if [[ -z ${solr_hostname} ]]
-  then
-    solr_hostname=localhost
-  fi
-
-  # use default webapp name if not specified
-  if [[ -z ${webapp_name} ]]
-  then
-    webapp_name=solr
-  fi
-  curl_url=http://${solr_hostname}:${solr_port}/${webapp_name}/update
-fi
+curlUrl
 
 fixUser "$@"
 

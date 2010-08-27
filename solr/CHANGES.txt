@@ -83,6 +83,8 @@ Upgrading from Solr 1.4
   backward compatible, it should be trivial to migrate as the SpellingOptions class
   just encapsulates the parameters that were passed in to the methods before the change. (gsingers)
 
+* readercycle script was removed. (SOLR-2046)
+
 Detailed Change List
 ----------------------
 
@@ -274,8 +276,9 @@ Optimizations
   multi-valued fields) when facet.limit is both high, and a high enough
   percentage of the number of unique terms in the field.  Extreme cases
   yield speedups over 3x. (yonik)
-  
 
+* SOLR-2046: add common functions to scripts-util. (koji)
+  
 Bug Fixes
 ----------------------
 
