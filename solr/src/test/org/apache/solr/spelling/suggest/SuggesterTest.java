@@ -1,130 +1,72 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.solr.spelling.suggest;
 
-import java.io.StringWriter;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.params.SpellingParams;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.spelling.suggest.Lookup.LookupResult;
+import org.apache.solr.spelling.suggest.jaspell.JaspellLookup;
+import org.apache.solr.spelling.suggest.tst.TSTLookup;
+import org.apache.solr.util.RefCounted;
+import org.apache.solr.util.TermFreqIterator;
+import org.apache.solr.util.TestHarness;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import static org.junit.Assert.*;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SpellingParams;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
-import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.spelling.suggest.Lookup.LookupResult;
-import org.apache.solr.spelling.suggest.jaspell.JaspellLookup;
-import org.apache.solr.spelling.suggest.tst.TSTLookup;
-import org.apache.solr.util.AbstractSolrTestCase;
-import org.apache.solr.util.RefCounted;
-import org.apache.solr.util.TermFreqIterator;
-import org.apache.solr.util.TestHarness;
-
-public class SuggesterTest extends AbstractSolrTestCase {
-  SolrRequestHandler handler;
-
-  @Override
-  public String getSchemaFile() {
-    return "schema-spellchecker.xml";
+public class SuggesterTest extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-spellchecker.xml","schema-spellchecker.xml");
   }
 
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig-spellchecker.xml";
+  public static void addDocs() throws Exception {
+    assertU(adoc("id", "1",
+                 "text", "acceptable accidentally accommodate acquire"
+               ));
+    assertU(adoc("id", "2",
+                 "text", "believe bellwether accommodate acquire"
+               ));
+    assertU(adoc("id", "3",
+                "text", "cemetery changeable conscientious consensus acquire bellwether"
+               ));
   }
   
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    // empty
-    h.validateUpdate("<delete><query>*:*</query></delete>");
-    // populate
-    h.validateAddDoc(
-            "id", "1",
-            "text", "acceptable accidentally accommodate acquire"
-            );
-    h.validateAddDoc(
-            "id", "2",
-            "text", "believe bellwether accommodate acquire"
-            );
-    h.validateAddDoc(
-            "id", "3",
-            "text", "cemetery changeable conscientious consensus acquire bellwether"
-            );
-    h.validateUpdate("<commit/>");
-    handler = h.getCore().getRequestHandler("/suggest");
-    // build
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(SpellingParams.SPELLCHECK_BUILD, true);
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params);
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    handler.handleRequest(req, rsp);
-  }
-  
-  private String assertXPath(SolrCore core, SolrQueryRequest req, SolrQueryResponse rsp, String... tests) throws Exception {
-    StringWriter sw = new StringWriter(32000);
-    QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
-    responseWriter.write(sw,req,rsp);
-    req.close();
-    System.out.println(sw.toString());
-    return h.validateXPath(sw.toString(), tests);
-  }
-
+  @Test
   public void testSuggestions() throws Exception {
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "ac");
-    params.set(SpellingParams.SPELLCHECK_COUNT, 2);
-    params.set(SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR, true);
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params);
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    handler.handleRequest(req, rsp);
-    String res = assertXPath(h.getCore(), req, rsp, 
-            "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/int[@name='numFound'][.='2']",
-            "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/arr[@name='suggestion']/str[1][.='acquire']",
-            "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/arr[@name='suggestion']/str[2][.='accommodate']"
-            );
-    assertNull(res, res);
+    addDocs();
+
+    assertU(commit()); // configured to do a rebuild on commit
+
+    assertQ(req("qt","/suggest", "q","ac", SpellingParams.SPELLCHECK_COUNT, "2", SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR, "true"),
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/int[@name='numFound'][.='2']",
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/arr[@name='suggestion']/str[1][.='acquire']",
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/arr[@name='suggestion']/str[2][.='accommodate']"
+    );
   }
-  
-  public void testReload() throws Exception {
-    String coreName = h.getCore().getName();
-    RefCounted<SolrIndexSearcher> searcher = h.getCore().getSearcher();
-    SolrIndexSearcher indexSearcher = searcher.get();
-    log.info("Core " + coreName + ", NumDocs before reload: " + indexSearcher.getIndexReader().numDocs());
-    log.info("Directory: " + indexSearcher.getIndexDir());
-    searcher.decref();
-    h.close();
-    solrConfig = TestHarness.createConfig(getSolrConfigFile());
-    h = new TestHarness( dataDir.getAbsolutePath(),
-            solrConfig,
-            getSchemaFile());
-    searcher = h.getCore().getSearcher();
-    indexSearcher = searcher.get();
-    log.info("Core " + coreName + ", NumDocs now: " + indexSearcher.getIndexReader().numDocs());
-    log.info("Directory: " + indexSearcher.getIndexDir());
-    searcher.decref();
-    // rebuilds on commit
-    h.validateUpdate("<commit/>");
-    handler = h.getCore().getRequestHandler("/suggest");
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.set(CommonParams.Q, "ac");
-    params.set(SpellingParams.SPELLCHECK_COUNT, 2);
-    params.set(SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR, true);
-    LocalSolrQueryRequest req = new LocalSolrQueryRequest(h.getCore(), params);
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    handler.handleRequest(req, rsp);
-    String res = assertXPath(h.getCore(), req, rsp, 
-            "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/int[@name='numFound'][.='2']",
-            "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/arr[@name='suggestion']/str[1][.='acquire']",
-            "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/arr[@name='suggestion']/str[2][.='accommodate']"
-            );
-    assertNull(res, res);
-  }
+
   
   private TermFreqIterator getTFIT() {
     final int count = 100000;
@@ -133,23 +75,19 @@ public class SuggesterTest extends AbstractSolrTestCase {
       Random r1 = new Random(1234567890L);
       int pos;
 
-      @Override
       public float freq() {
         return r1.nextInt(4);
       }
 
-      @Override
       public boolean hasNext() {
         return pos < count;
       }
 
-      @Override
       public String next() {
         pos++;
         return Long.toString(r.nextLong());
       }
 
-      @Override
       public void remove() {
         throw new UnsupportedOperationException();
       }
@@ -200,7 +138,8 @@ public class SuggesterTest extends AbstractSolrTestCase {
     long buildTime;
     long lookupTime;
   }
-  
+
+  @Test
   public void testBenchmark() throws Exception {
     // this benchmark is very time consuming
     boolean doTest = false;
