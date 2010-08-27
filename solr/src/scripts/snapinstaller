@@ -36,7 +36,7 @@ PIDFILE="${LOCKDIR}/PID"
 
 # define usage string
 USAGE="\
-usage: $prog [-M master] [-S sdir] [-d dir] [-u username] [-v]
+usage: $prog [-M master] [-S sdir] [-d dir] [-u username] [-v] [-V]
        -M master   specify hostname of master server from where to pull index
                    snapshot
        -S          specify directory holding snapshot status on master server
@@ -92,15 +92,7 @@ fi
 
 fixUser "$@"
 
-# use default value for data_dir if not specified
-# relative path starts at ${solr_root}
-if [[ -z ${data_dir} ]]
-then
-    data_dir=${solr_root}/data
-elif [[ "`echo ${data_dir}|cut -c1`" != "/" ]]
-then
-    data_dir=${solr_root}/${data_dir}
-fi
+dataDir
 
 # assume relative path to start at ${solr_root}
 if [[ "`echo ${master_status_dir}|cut -c1`" != "/" ]]

@@ -32,7 +32,7 @@ log=${solr_root}/logs/${prog}.log
 
 # define usage string
 USAGE="\
-usage: $prog [-M master] [-P portnum] [-D mdir] [-S sdir] [-n snapshot] [-d dir] [-u username] [-svz]
+usage: $prog [-M master] [-P portnum] [-D mdir] [-S sdir] [-n snapshot] [-d dir] [-u username] [-svVz]
        -M master   specify hostname of master server from where to pull index
                    snapshot
        -P port     specify rsyncd port number of master server from where to
@@ -130,15 +130,7 @@ fi
 
 fixUser "$@"
 
-# use default value for data_dir if not specified
-# relative path starts at ${solr_root}
-if [[ -z ${data_dir} ]]
-then
-    data_dir=${solr_root}/data
-elif [[ "`echo ${data_dir}|cut -c1`" != "/" ]]
-then
-    data_dir=${solr_root}/${data_dir}
-fi
+dataDir
 
 # assume relative path to start at ${solr_root}
 if [[ "`echo ${master_data_dir}|cut -c1`" != "/" ]]

@@ -31,7 +31,7 @@ log=${solr_root}/logs/${prog}.log
 
 # define usage string
 USAGE="\
-usage: $prog [-d dir] [-u username] [-v]
+usage: $prog [-d dir] [-u username] [-v] [-V]
        -d          specify directory holding index data
        -u          specify user to sudo to before running script
        -v          increase verbosity
@@ -62,15 +62,7 @@ done
 
 [[ -n $debug ]] && set -x
 
-# use default value for data_dir if not specified
-# relative path starts at ${solr_root}
-if [[ -z ${data_dir} ]]
-then
-    data_dir=${solr_root}/data
-elif [[ "`echo ${data_dir}|cut -c1`" != "/" ]]
-then
-    data_dir=${solr_root}/${data_dir}
-fi
+dataDir
 
 fixUser "$@"
 
