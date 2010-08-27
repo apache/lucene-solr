@@ -301,8 +301,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     return frag.getFragmenter( fieldName, params );
   }
   
-  protected FragListBuilder getFragListBuilder( SolrParams params ){
-    String flb = params.get( HighlightParams.FRAG_LIST_BUILDER );
+  protected FragListBuilder getFragListBuilder( String fieldName, SolrParams params ){
+    String flb = params.getFieldParam( fieldName, HighlightParams.FRAG_LIST_BUILDER );
     SolrFragListBuilder solrFlb = fragListBuilders.get( flb );
     if( solrFlb == null ){
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unknown fragListBuilder: " + flb );
@@ -310,12 +310,12 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
     return solrFlb.getFragListBuilder( params );
   }
   
-  protected FragmentsBuilder getFragmentsBuilder( SolrParams params ){
-    return getSolrFragmentsBuilder( params ).getFragmentsBuilder( params );
+  protected FragmentsBuilder getFragmentsBuilder( String fieldName, SolrParams params ){
+    return getSolrFragmentsBuilder( fieldName, params ).getFragmentsBuilder( params );
   }
   
-  private SolrFragmentsBuilder getSolrFragmentsBuilder( SolrParams params ){
-    String fb = params.get( HighlightParams.FRAGMENTS_BUILDER );
+  private SolrFragmentsBuilder getSolrFragmentsBuilder( String fieldName, SolrParams params ){
+    String fb = params.getFieldParam( fieldName, HighlightParams.FRAGMENTS_BUILDER );
     SolrFragmentsBuilder solrFb = fragmentsBuilders.get( fb );
     if( solrFb == null ){
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "Unknown fragmentsBuilder: " + fb );
@@ -361,11 +361,8 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
         // FVH cannot process hl.usePhraseHighlighter parameter per-field basis
         params.getBool( HighlightParams.USE_PHRASE_HIGHLIGHTER, true ),
         // FVH cannot process hl.requireFieldMatch parameter per-field basis
-        params.getBool( HighlightParams.FIELD_MATCH, false ),
-        getFragListBuilder( params ),
-        getFragmentsBuilder( params ) );
+        params.getBool( HighlightParams.FIELD_MATCH, false ) );
     FieldQuery fieldQuery = fvh.getFieldQuery( query );
-    SolrFragmentsBuilder solrFb = getSolrFragmentsBuilder( params );
 
     // Highlight each document
     DocIterator iterator = docs.iterator();
@@ -376,7 +373,7 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
       for (String fieldName : fieldNames) {
         fieldName = fieldName.trim();
         if( useFastVectorHighlighter( params, schema, fieldName ) )
-          doHighlightingByFastVectorHighlighter( fvh, fieldQuery, solrFb, req, docSummaries, docId, doc, fieldName );
+          doHighlightingByFastVectorHighlighter( fvh, fieldQuery, req, docSummaries, docId, doc, fieldName );
         else
           doHighlightingByHighlighter( query, req, docSummaries, docId, doc, fieldName );
       }
@@ -504,12 +501,15 @@ public class DefaultSolrHighlighter extends SolrHighlighter implements PluginInf
   }
 
   private void doHighlightingByFastVectorHighlighter( FastVectorHighlighter highlighter, FieldQuery fieldQuery,
-      SolrFragmentsBuilder solrFb, SolrQueryRequest req, NamedList docSummaries, int docId, Document doc,
+      SolrQueryRequest req, NamedList docSummaries, int docId, Document doc,
       String fieldName ) throws IOException {
     SolrParams params = req.getParams(); 
+    SolrFragmentsBuilder solrFb = getSolrFragmentsBuilder( fieldName, params );
     String[] snippets = highlighter.getBestFragments( fieldQuery, req.getSearcher().getReader(), docId, fieldName,
         params.getFieldInt( fieldName, HighlightParams.FRAGSIZE, 100 ),
         params.getFieldInt( fieldName, HighlightParams.SNIPPETS, 1 ),
+        getFragListBuilder( fieldName, params ),
+        getFragmentsBuilder( fieldName, params ),
         solrFb.getPreTags( params, fieldName ),
         solrFb.getPostTags( params, fieldName ),
         getEncoder( fieldName, params ) );

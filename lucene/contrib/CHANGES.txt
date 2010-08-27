@@ -133,6 +133,9 @@ API Changes
  * LUCENE-2603: Add setMultiValuedSeparator(char) method to set an arbitrary
    char that is used when concatenating multiValued data. Default is a space
    (' '). It is applied on ANALYZED field only. (Koji Sekiguchi)
+
+ * LUCENE-2626: FastVectorHighlighter: enable FragListBuilder and FragmentsBuilder
+   to be set per-field override. (Koji Sekiguchi)
    
 New features
 
