@@ -17,79 +17,70 @@
 
 package org.apache.lucene.analysis.charfilter;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.lucene.analysis.CharStream;
+import org.apache.lucene.util.ArrayUtil;
 
 /**
  * Base utility class for implementing a {@link CharFilter}.
  * You subclass this, and then record mappings by calling
  * {@link #addOffCorrectMap}, and then invoke the correct
  * method to correct an offset.
- *
- * <p><b>NOTE</b>: This class is not particularly efficient.
- * For example, a new class instance is created for every
- * call to {@link #addOffCorrectMap}, which is then appended
- * to a private list.
  */
 public abstract class BaseCharFilter extends CharFilter {
 
-  private List<OffCorrectMap> pcmList;
+  private int offsets[];
+  private int diffs[];
+  private int size = 0;
   
   public BaseCharFilter(CharStream in) {
     super(in);
   }
 
-  /** Retrieve the corrected offset.  Note that this method
-   *  is slow, if you correct positions far before the most
-   *  recently added position, as it's a simple linear
-   *  search backwards through all offset corrections added
-   *  by {@link #addOffCorrectMap}. */
+  /** Retrieve the corrected offset. */
   @Override
   protected int correct(int currentOff) {
-    if (pcmList == null || pcmList.isEmpty()) {
+    if (offsets == null || currentOff < offsets[0]) {
       return currentOff;
     }
-    for (int i = pcmList.size() - 1; i >= 0; i--) {
-      if (currentOff >=  pcmList.get(i).off) {
-        return currentOff + pcmList.get(i).cumulativeDiff;
-      }
+    
+    int hi = size - 1;
+    if(currentOff >= offsets[hi])
+      return currentOff + diffs[hi];
+
+    int lo = 0;
+    int mid = -1;
+    
+    while (hi >= lo) {
+      mid = (lo + hi) >>> 1;
+      if (currentOff < offsets[mid])
+        hi = mid - 1;
+      else if (currentOff > offsets[mid])
+        lo = mid + 1;
+      else
+        return currentOff + diffs[mid];
     }
-    return currentOff;
+
+    if (currentOff < offsets[mid])
+      return mid == 0 ? currentOff : currentOff + diffs[mid-1];
+    else
+      return currentOff + diffs[mid];
   }
   
   protected int getLastCumulativeDiff() {
-    return pcmList == null || pcmList.isEmpty() ?
-      0 : pcmList.get(pcmList.size() - 1).cumulativeDiff;
+    return offsets == null ?
+      0 : diffs[size-1];
   }
 
   protected void addOffCorrectMap(int off, int cumulativeDiff) {
-    if (pcmList == null) {
-      pcmList = new ArrayList<OffCorrectMap>();
+    if (offsets == null) {
+      offsets = new int[64];
+      diffs = new int[64];
+    } else if (size == offsets.length) {
+      offsets = ArrayUtil.grow(offsets);
+      diffs = ArrayUtil.grow(diffs);
     }
-    pcmList.add(new OffCorrectMap(off, cumulativeDiff));
-  }
-
-  static class OffCorrectMap {
-
-    int off;
-    int cumulativeDiff;
-
-    OffCorrectMap(int off, int cumulativeDiff) {
-      this.off = off;
-      this.cumulativeDiff = cumulativeDiff;
-    }
-
-    @Override
-    public String toString() {
-      StringBuilder sb = new StringBuilder();
-      sb.append('(');
-      sb.append(off);
-      sb.append(',');
-      sb.append(cumulativeDiff);
-      sb.append(')');
-      return sb.toString();
-    }
+    
+    offsets[size] = off;
+    diffs[size++] = cumulativeDiff; 
   }
 }

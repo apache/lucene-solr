@@ -647,6 +647,9 @@ Optimizations
   (getStrings, getStringIndex), consume quite a bit less RAM in most
   cases.  (Mike McCandless)
 
+* LUCENE-2098: Improve the performance of BaseCharFilter, especially for
+  large documents.  (Robin Wojciki, Koji Sekiguchi, Robert Muir)
+
 Build
 
 * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
