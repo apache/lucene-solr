@@ -207,6 +207,10 @@ New Features
 
 * SOLR-2049: Add hl.multiValuedSeparatorChar for FastVectorHighlighter, per LUCENE-2603. (koji)
 
+* SOLR-2059: Add "types" attribute to WordDelimiterFilterFactory, which
+  allows you to customize how WordDelimiterFilter tokenizes text with
+  a configuration file.  (Peter Karich, rmuir)
+
 Optimizations
 ----------------------
 
