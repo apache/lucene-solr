@@ -220,6 +220,9 @@ New features
  * LUCENE-2581: FastVectorHighlighter: add Encoder to FragmentsBuilder.
    (Koji Sekiguchi)
 
+ * LUCENE-2624: Add Analyzers for Armenian, Basque, and Catalan, from snowball.
+   (Robert Muir)
+
 Build
 
  * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
