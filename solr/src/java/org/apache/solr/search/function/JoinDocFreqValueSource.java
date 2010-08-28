@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrException;
 
 /**
  * Use a field value and find the Document Frequency within another field.
@@ -60,9 +61,8 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
           return v;
         } 
         catch (IOException e) {
-          e.printStackTrace();
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "caught exception in function "+description()+" : doc="+doc, e);
         }
-        return 0;
       }
 
       public float floatVal(int doc) {
