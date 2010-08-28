@@ -245,6 +245,10 @@ New Features
 
 * SOLR-1316: Create autosuggest component.
   (Ankul Garg, Jason Rutherglen, Shalin Shekhar Mangar, gsingers, Robert Muir, ab)
+
+* SOLR-2059: Add "types" attribute to WordDelimiterFilterFactory, which
+  allows you to customize how WordDelimiterFilter tokenizes text with
+  a configuration file.  (Peter Karich, rmuir)
    
 
 Optimizations

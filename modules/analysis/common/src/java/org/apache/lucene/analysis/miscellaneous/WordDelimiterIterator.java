@@ -21,8 +21,9 @@ import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.*;
 
 /**
  * A BreakIterator-like API for iterating over subwords in text, according to WordDelimiterFilter rules.
+ * @lucene.internal
  */
-final class WordDelimiterIterator {
+public final class WordDelimiterIterator {
 
   /** Indicates the end of iteration */
   public static final int DONE = -1;
@@ -270,6 +271,16 @@ final class WordDelimiterIterator {
     if (ch < charTypeTable.length) {
       return charTypeTable[ch];
     }
+    return getType(ch);
+  }
+  
+  /**
+   * Computes the type of the given character
+   *
+   * @param ch Character whose type is to be determined
+   * @return Type of the character
+   */
+  public static byte getType(int ch) {
     switch (Character.getType(ch)) {
       case Character.UPPERCASE_LETTER: return UPPER;
       case Character.LOWERCASE_LETTER: return LOWER;
