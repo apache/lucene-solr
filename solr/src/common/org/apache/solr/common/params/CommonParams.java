@@ -58,8 +58,28 @@ public interface CommonParams {
   /** default query field */
   public static final String DF = "df";
   
-  /** whether to include debug data */
+  /** whether to include debug data for all components pieces, including doing explains*/
   public static final String DEBUG_QUERY = "debugQuery";
+
+  /**
+   * Whether to provide debug info for specific items.
+   *
+   * @see #DEBUG_QUERY
+   */
+  public static final String DEBUG = "debug";
+
+  /**
+   * {@link #DEBUG} value indicating an interest in debug output related to timing
+   */
+  public static final String TIMING = "timing";
+  /**
+   * {@link #DEBUG} value indicating an interest in debug output related to the results (explains)
+   */
+  public static final String RESULTS = "results";
+  /**
+   * {@link #DEBUG} value indicating an interest in debug output related to the Query (parsing, etc.)
+   */
+  public static final String QUERY = "query";
   
   /** 
    * boolean indicating whether score explanations should structured (true), 

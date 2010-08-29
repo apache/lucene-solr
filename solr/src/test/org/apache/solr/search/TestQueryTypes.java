@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.util.AbstractSolrTestCase;
 
 public class TestQueryTypes extends AbstractSolrTestCase {
@@ -262,7 +263,7 @@ public class TestQueryTypes extends AbstractSolrTestCase {
                 ,"qf","v_t"
                 ,"bf","sqrt(v_f)^100 log(sum(v_f,1))^50"
                 ,"bq","{!prefix f=v_t}he"
-                ,"debugQuery","on"
+                , CommonParams.DEBUG_QUERY,"on"
              )
              ,"//result[@numFound='2']"
              );

@@ -249,7 +249,8 @@ New Features
 * SOLR-2059: Add "types" attribute to WordDelimiterFilterFactory, which
   allows you to customize how WordDelimiterFilter tokenizes text with
   a configuration file.  (Peter Karich, rmuir)
-   
+
+* SOLR-1665: Add debug component options for timings, results and query info only (gsingers, hossman, yonik)    
 
 Optimizations
 ----------------------

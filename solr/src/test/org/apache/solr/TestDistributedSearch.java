@@ -20,6 +20,7 @@ package org.apache.solr;
 import junit.framework.TestCase;
 
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.common.params.CommonParams;
 
 /**
  * TODO? perhaps use:
@@ -133,7 +134,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     handle.put("time", SKIPVAL);
 
     query("q","now their fox sat had put","fl","*,score",
-            "debugQuery", "true");
+            CommonParams.DEBUG_QUERY, "true");
 
     // TODO: This test currently fails because debug info is obtained only
     // on shards with matches.

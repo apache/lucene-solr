@@ -23,9 +23,12 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Comparator;
+
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.document.Document;
@@ -56,6 +59,7 @@ import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
+
 import org.apache.solr.util.SolrPluginUtils;
 
 /**
@@ -192,24 +196,41 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         rsp.add( "facet_counts", f.getFacetCounts() );
       }
     }
-    
-    // Copied from StandardRequestHandler... perhaps it should be added to doStandardDebug?
-    try {
-      NamedList<Object> dbg = SolrPluginUtils.doStandardDebug(req, q, mlt.mltquery, mltDocs.docList );
-      if (null != dbg) {
-        if (null != filters) {
-          dbg.add("filter_queries",req.getParams().getParams(CommonParams.FQ));
-          List<String> fqs = new ArrayList<String>(filters.size());
-          for (Query fq : filters) {
-            fqs.add(QueryParsing.toString(fq, req.getSchema()));
-          }
-          dbg.add("parsed_filter_queries",fqs);
+    boolean dbg = req.getParams().getBool(CommonParams.DEBUG_QUERY, false);
+
+    boolean dbgQuery = false, dbgResults = false;
+    if (dbg == false){//if it's true, we are doing everything anyway.
+      String[] dbgParams = req.getParams().getParams(CommonParams.DEBUG);
+      for (int i = 0; i < dbgParams.length; i++) {
+        if (dbgParams[i].equals(CommonParams.QUERY)){
+          dbgQuery = true;
+        } else if (dbgParams[i].equals(CommonParams.RESULTS)){
+          dbgResults = true;
         }
-        rsp.add("debug", dbg);
       }
-    } catch (Exception e) {
-      SolrException.logOnce(SolrCore.log, "Exception during debug", e);
-      rsp.add("exception_during_debug", SolrException.toStr(e));
+    } else {
+      dbgQuery = true;
+      dbgResults = true;
+    }
+    // Copied from StandardRequestHandler... perhaps it should be added to doStandardDebug?
+    if (dbg == true) {
+      try {
+        NamedList<Object> dbgInfo = SolrPluginUtils.doStandardDebug(req, q, mlt.mltquery, mltDocs.docList, dbgQuery, dbgResults);
+        if (null != dbgInfo) {
+          if (null != filters) {
+            dbgInfo.add("filter_queries",req.getParams().getParams(CommonParams.FQ));
+            List<String> fqs = new ArrayList<String>(filters.size());
+            for (Query fq : filters) {
+              fqs.add(QueryParsing.toString(fq, req.getSchema()));
+            }
+            dbgInfo.add("parsed_filter_queries",fqs);
+          }
+          rsp.add("debug", dbgInfo);
+        }
+      } catch (Exception e) {
+        SolrException.logOnce(SolrCore.log, "Exception during debug", e);
+        rsp.add("exception_during_debug", SolrException.toStr(e));
+      }
     }
   }
   

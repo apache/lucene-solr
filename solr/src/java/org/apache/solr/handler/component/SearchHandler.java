@@ -20,7 +20,6 @@ package org.apache.solr.handler.component;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.RTimer;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -32,7 +31,8 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
-import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+
+import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.apache.solr.core.SolrCore;
 import org.apache.lucene.queryParser.ParseException;
@@ -175,7 +175,11 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
     rb.req = req;
     rb.rsp = rsp;
     rb.components = components;
-    rb.setDebug(req.getParams().getBool(CommonParams.DEBUG_QUERY, false));
+    boolean dbg = req.getParams().getBool(CommonParams.DEBUG_QUERY, false);
+    rb.setDebug(dbg);
+    if (dbg == false){//if it's true, we are doing everything anyway.
+      SolrPluginUtils.getDebugInterests(req.getParams().getParams(CommonParams.DEBUG), rb);
+    }
 
     final RTimer timer = rb.isDebug() ? new RTimer() : null;
 
@@ -218,10 +222,9 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
         timer.stop();
 
         // add the timing info
-        if( rb.getDebugInfo() == null ) {
-          rb.setDebugInfo( new SimpleOrderedMap<Object>() );
+        if (rb.isDebugTimings()) {
+          rb.addDebugInfo("timing", timer.asNamedList() );
         }
-        rb.getDebugInfo().add( "timing", timer.asNamedList() );
       }
 
     } else {

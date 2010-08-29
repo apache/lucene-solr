@@ -18,7 +18,8 @@
 package org.apache.solr.handler.component;
 
 import static org.apache.solr.common.params.CommonParams.FQ;
-import org.apache.solr.common.params.HighlightParams;
+
+import org.apache.solr.common.params.CommonParams;
 
 import java.io.IOException;
 import java.net.URL;
@@ -51,8 +52,9 @@ public class DebugComponent extends SearchComponent
   public void process(ResponseBuilder rb) throws IOException
   {
     if( rb.isDebug() ) {
+
       NamedList stdinfo = SolrPluginUtils.doStandardDebug( rb.req,
-          rb.getQueryString(), rb.getQuery(), rb.getResults().docList);
+          rb.getQueryString(), rb.getQuery(), rb.getResults().docList, rb.isDebugQuery(), rb.isDebugResults());
       
       NamedList info = rb.getDebugInfo();
       if( info == null ) {
@@ -63,12 +65,12 @@ public class DebugComponent extends SearchComponent
         info.addAll( stdinfo );
       }
       
-      if (rb.getQparser() != null) {
+      if (rb.isDebugQuery() && rb.getQparser() != null) {
         rb.getQparser().addDebugInfo(rb.getDebugInfo());
       }
 
       if (null != rb.getDebugInfo() ) {
-        if (null != rb.getFilters() ) {
+        if (rb.isDebugQuery() && null != rb.getFilters() ) {
           info.add("filter_queries",rb.req.getParams().getParams(FQ));
           List<String> fqs = new ArrayList<String>(rb.getFilters().size());
           for (Query fq : rb.getFilters()) {
@@ -90,9 +92,9 @@ public class DebugComponent extends SearchComponent
     // Turn on debug to get explain only when retrieving fields
     if ((sreq.purpose & ShardRequest.PURPOSE_GET_FIELDS) != 0) {
         sreq.purpose |= ShardRequest.PURPOSE_GET_DEBUG;
-        sreq.params.set("debugQuery", "true");
+        sreq.params.set(CommonParams.DEBUG_QUERY, "true");
     } else {
-      sreq.params.set("debugQuery", "false");
+      sreq.params.set(CommonParams.DEBUG_QUERY, "false");
     }
   }
 

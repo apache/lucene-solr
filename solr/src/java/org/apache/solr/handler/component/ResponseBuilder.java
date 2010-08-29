@@ -26,11 +26,15 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.DocListAndSet;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.SortSpec;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SortSpec;
+import org.apache.solr.util.SolrPluginUtils;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This class is experimental and will be changing in the future.
@@ -38,8 +42,9 @@ import java.util.Map;
  * @version $Id$
  * @since solr 1.3
  */
-public class ResponseBuilder
-{
+public class ResponseBuilder {
+
+
   public SolrQueryRequest req;
   public SolrQueryResponse rsp;
   public boolean doHighlights;
@@ -50,7 +55,8 @@ public class ResponseBuilder
   private boolean needDocList = false;
   private boolean needDocSet = false;
   private int fieldFlags = 0;
-  private boolean debug = false;
+  //private boolean debug = false;
+  private boolean debugTimings, debugQuery, debugResults;
 
   private QParser qparser = null;
   private String queryString = null;
@@ -76,20 +82,21 @@ public class ResponseBuilder
   public static final String SHARDS = "shards";
   public static final String IDS = "ids";
 
-  /***
-  public static final String NUMDOCS = "nd";
-  public static final String DOCFREQS = "tdf";
-  public static final String TERMS = "terms";
-  public static final String EXTRACT_QUERY_TERMS = "eqt";
-  public static final String LOCAL_SHARD = "local";
-  public static final String DOC_QUERY = "dq";
-  ***/
+  /**
+   * public static final String NUMDOCS = "nd";
+   * public static final String DOCFREQS = "tdf";
+   * public static final String TERMS = "terms";
+   * public static final String EXTRACT_QUERY_TERMS = "eqt";
+   * public static final String LOCAL_SHARD = "local";
+   * public static final String DOC_QUERY = "dq";
+   * *
+   */
 
-  public static int STAGE_START           = 0;
-  public static int STAGE_PARSE_QUERY     = 1000;
-  public static int STAGE_EXECUTE_QUERY   = 2000;
-  public static int STAGE_GET_FIELDS      = 3000;
-  public static int STAGE_DONE            = Integer.MAX_VALUE;
+  public static int STAGE_START = 0;
+  public static int STAGE_PARSE_QUERY = 1000;
+  public static int STAGE_EXECUTE_QUERY = 2000;
+  public static int STAGE_GET_FIELDS = 3000;
+  public static int STAGE_DONE = Integer.MAX_VALUE;
 
   public int stage;  // What stage is this current request at?
 
@@ -102,15 +109,15 @@ public class ResponseBuilder
 
 
   public int getShardNum(String shard) {
-    for (int i=0; i<shards.length; i++) {
-      if (shards[i]==shard || shards[i].equals(shard)) return i;
+    for (int i = 0; i < shards.length; i++) {
+      if (shards[i] == shard || shards[i].equals(shard)) return i;
     }
     return -1;
   }
 
   public void addRequest(SearchComponent me, ShardRequest sreq) {
     outgoing.add(sreq);
-    if ((sreq.purpose & ShardRequest.PURPOSE_PRIVATE)==0) {
+    if ((sreq.purpose & ShardRequest.PURPOSE_PRIVATE) == 0) {
       // if this isn't a private request, let other components modify it.
       for (SearchComponent component : components) {
         if (component != me) {
@@ -151,11 +158,37 @@ public class ResponseBuilder
   //-------------------------------------------------------------------------
 
   public boolean isDebug() {
-    return debug;
+    return debugQuery || debugTimings || debugResults;
+  }
+  
+  public void setDebug(boolean dbg){
+    debugQuery = dbg;
+    debugTimings = dbg;
+    debugResults = dbg;
   }
 
-  public void setDebug(boolean debug) {
-    this.debug = debug;
+  public boolean isDebugTimings() {
+    return debugTimings;
+  }
+
+  public void setDebugTimings(boolean debugTimings) {
+    this.debugTimings = debugTimings;
+  }
+
+  public boolean isDebugQuery() {
+    return debugQuery;
+  }
+
+  public void setDebugQuery(boolean debugQuery) {
+    this.debugQuery = debugQuery;
+  }
+
+  public boolean isDebugResults() {
+    return debugResults;
+  }
+
+  public void setDebugResults(boolean debugResults) {
+    this.debugResults = debugResults;
   }
 
   public NamedList<Object> getDebugInfo() {
@@ -272,23 +305,23 @@ public class ResponseBuilder
    */
   public SolrIndexSearcher.QueryCommand getQueryCommand() {
     SolrIndexSearcher.QueryCommand cmd = new SolrIndexSearcher.QueryCommand();
-    cmd.setQuery( getQuery() )
-      .setFilterList( getFilters() )
-      .setSort( getSortSpec().getSort() )
-      .setOffset( getSortSpec().getOffset() )
-      .setLen( getSortSpec().getCount() )
-      .setFlags( getFieldFlags() )
-      .setNeedDocSet( isNeedDocSet() );
+    cmd.setQuery(getQuery())
+            .setFilterList(getFilters())
+            .setSort(getSortSpec().getSort())
+            .setOffset(getSortSpec().getOffset())
+            .setLen(getSortSpec().getCount())
+            .setFlags(getFieldFlags())
+            .setNeedDocSet(isNeedDocSet());
     return cmd;
   }
 
   /**
    * Sets results from a SolrIndexSearcher.QueryResult.
    */
-  public void setResult( SolrIndexSearcher.QueryResult result ) {
-    setResults( result.getDocListAndSet() );
-    if( result.isPartialResults() ) {
-      rsp.getResponseHeader().add( "partialResults", Boolean.TRUE );
+  public void setResult(SolrIndexSearcher.QueryResult result) {
+    setResults(result.getDocListAndSet());
+    if (result.isPartialResults()) {
+      rsp.getResponseHeader().add("partialResults", Boolean.TRUE);
     }
   }
 }

@@ -30,7 +30,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.WeakHashMap;
 
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.QueryElevationParams;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -406,7 +408,9 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
       SimpleOrderedMap<Object> dbg = new SimpleOrderedMap<Object>();
       dbg.add( "q", qstr );
       dbg.add( "match", match );
-      rb.addDebugInfo( "queryBoosting", dbg );
+      if (rb.isDebugQuery()) {
+        rb.addDebugInfo("queryBoosting", dbg );
+      }
     }
   }
 
