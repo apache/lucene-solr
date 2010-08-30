@@ -47,7 +47,7 @@ public class TestMultiMMap extends LuceneTestCase {
   public void testRandomChunkSizes() throws Exception {
     Random random = newRandom();
     for (int i = 0; i < 10*RANDOM_MULTIPLIER; i++)
-      assertChunking(random, _TestUtil.nextInt(random, 1, 1000*RANDOM_MULTIPLIER));
+      assertChunking(random, _TestUtil.nextInt(random, 20, 100));
   }
   
   private void assertChunking(Random random, int chunkSize) throws Exception {
@@ -66,7 +66,7 @@ public class TestMultiMMap extends LuceneTestCase {
     doc.add(docid);
     doc.add(junk);
     
-    int numDocs = 1000*RANDOM_MULTIPLIER;
+    int numDocs = 100;
     for (int i = 0; i < numDocs; i++) {
       docid.setValue("" + i);
       junk.setValue(_TestUtil.randomUnicodeString(random));
