@@ -131,6 +131,10 @@ API Changes
 
 New features
 
+* LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions
+  are directly supported by the standard queryparser.
+  (Simon Willnauer, Robert Muir)
+
 * LUCENE-1606, LUCENE-2089: Adds AutomatonQuery, a MultiTermQuery that 
   matches terms against a finite-state machine. Implement WildcardQuery
   and FuzzyQuery with finite-state methods. Adds RegexpQuery.

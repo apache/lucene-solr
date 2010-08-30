@@ -28,15 +28,19 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.LocalizedTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -689,6 +693,35 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
     query1 = parser.parse("A OR NOT B AND C");
     query2 = parser.parse("A (-B +C)");
     assertEquals(query1, query2);
+  }
+  
+  public void testRegexps() throws Exception {
+    PrecedenceQueryParser qp =  getParser(new MockAnalyzer(MockTokenizer.WHITESPACE, false));
+    RegexpQuery q = new RegexpQuery(new Term("field", "[a-z][123]"));
+    assertEquals(q, qp.parse("/[a-z][123]/"));
+    qp.setLowercaseExpandedTerms(true);
+    assertEquals(q, qp.parse("/[A-Z][123]/"));
+    q.setBoost(0.5f);
+    assertEquals(q, qp.parse("/[A-Z][123]/^0.5"));
+    qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    q.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    assertTrue(qp.parse("/[A-Z][123]/^0.5") instanceof RegexpQuery);
+    assertEquals(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE, ((RegexpQuery)qp.parse("/[A-Z][123]/^0.5")).getRewriteMethod());
+    assertEquals(q, qp.parse("/[A-Z][123]/^0.5"));
+    qp.setMultiTermRewriteMethod(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
+    
+    Query escaped = new RegexpQuery(new Term("field", "[a-z]\\/[123]"));
+    assertEquals(escaped, qp.parse("/[a-z]\\/[123]/"));
+    Query escaped2 = new RegexpQuery(new Term("field", "[a-z]\\*[123]"));
+    assertEquals(escaped2, qp.parse("/[a-z]\\*[123]/"));
+    
+    BooleanQuery complex = new BooleanQuery();
+    BooleanQuery inner = new BooleanQuery();
+    inner.add(new RegexpQuery(new Term("field", "[a-z]\\/[123]")), Occur.MUST);
+    inner.add(new TermQuery(new Term("path", "/etc/init.d/")), Occur.MUST);
+    complex.add(inner, Occur.SHOULD);
+    complex.add(new TermQuery(new Term("field", "/etc/init[.]d/lucene/")), Occur.SHOULD);
+    assertEquals(complex, qp.parse("/[a-z]\\/[123]/ AND path:/etc/init.d/ OR /etc\\/init\\[.\\]d/lucene/ "));
   }
 
 

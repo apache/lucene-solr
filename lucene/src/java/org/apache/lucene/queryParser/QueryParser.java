@@ -29,6 +29,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
@@ -862,6 +863,17 @@ public class QueryParser implements QueryParserConstants {
   }
 
   /**
+   * Builds a new RegexpQuery instance
+   * @param prefix Regexp term
+   * @return new RegexpQuery instance
+   */
+  protected Query newRegexpQuery(Term regexp) {
+    RegexpQuery query = new RegexpQuery(regexp);
+    query.setRewriteMethod(multiTermRewriteMethod);
+    return query;
+  }
+
+  /**
    * Builds a new FuzzyQuery instance
    * @param term Term
    * @param minimumSimilarity minimum similarity
@@ -983,6 +995,35 @@ public class QueryParser implements QueryParserConstants {
     }
     Term t = new Term(field, termStr);
     return newWildcardQuery(t);
+  }
+
+  /**
+   * Factory method for generating a query. Called when parser
+   * parses an input term token that contains a regular expression
+   * query.
+   *<p>
+   * Depending on settings, pattern term may be lower-cased
+   * automatically. It will not go through the default Analyzer,
+   * however, since normal Analyzers are unlikely to work properly
+   * with regular expression templates.
+   *<p>
+   * Can be overridden by extending classes, to provide custom handling for
+   * regular expression queries, which may be necessary due to missing analyzer 
+   * calls.
+   *
+   * @param field Name of the field query will use.
+   * @param termStr Term token that contains a regular expression
+   *
+   * @return Resulting {@link Query} built for the term
+   * @exception ParseException throw in overridden method to disallow
+   */
+  protected Query getRegexpQuery(String field, String termStr) throws ParseException
+  {
+    if (lowercaseExpandedTerms) {
+      termStr = termStr.toLowerCase();
+    }
+    Term t = new Term(field, termStr);
+    return newRegexpQuery(t);
   }
 
   /**
@@ -1234,6 +1275,7 @@ public class QueryParser implements QueryParserConstants {
       case TERM:
       case PREFIXTERM:
       case WILDTERM:
+      case REGEXPTERM:
       case RANGEIN_START:
       case RANGEEX_START:
       case NUMBER:
@@ -1285,6 +1327,7 @@ public class QueryParser implements QueryParserConstants {
     case TERM:
     case PREFIXTERM:
     case WILDTERM:
+    case REGEXPTERM:
     case RANGEIN_START:
     case RANGEEX_START:
     case NUMBER:
@@ -1325,12 +1368,14 @@ public class QueryParser implements QueryParserConstants {
   boolean prefix = false;
   boolean wildcard = false;
   boolean fuzzy = false;
+  boolean regexp = false;
   Query q;
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case STAR:
     case TERM:
     case PREFIXTERM:
     case WILDTERM:
+    case REGEXPTERM:
     case NUMBER:
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case TERM:
@@ -1347,6 +1392,10 @@ public class QueryParser implements QueryParserConstants {
       case WILDTERM:
         term = jj_consume_token(WILDTERM);
                            wildcard=true;
+        break;
+      case REGEXPTERM:
+        term = jj_consume_token(REGEXPTERM);
+                             regexp=true;
         break;
       case NUMBER:
         term = jj_consume_token(NUMBER);
@@ -1390,6 +1439,8 @@ public class QueryParser implements QueryParserConstants {
          q = getPrefixQuery(field,
            discardEscapeChar(term.image.substring
           (0, term.image.length()-1)));
+       } else if (regexp) {
+         q = getRegexpQuery(field, term.image.substring(1, term.image.length()-1));
        } else if (fuzzy) {
           float fms = fuzzyMinSim;
           try {
@@ -1569,6 +1620,12 @@ public class QueryParser implements QueryParserConstants {
     finally { jj_save(0, xla); }
   }
 
+  private boolean jj_3R_2() {
+    if (jj_scan_token(TERM)) return true;
+    if (jj_scan_token(COLON)) return true;
+    return false;
+  }
+
   private boolean jj_3_1() {
     Token xsp;
     xsp = jj_scanpos;
@@ -1581,12 +1638,6 @@ public class QueryParser implements QueryParserConstants {
 
   private boolean jj_3R_3() {
     if (jj_scan_token(STAR)) return true;
-    if (jj_scan_token(COLON)) return true;
-    return false;
-  }
-
-  private boolean jj_3R_2() {
-    if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
     return false;
   }
@@ -1609,10 +1660,10 @@ public class QueryParser implements QueryParserConstants {
       jj_la1_init_1();
    }
    private static void jj_la1_init_0() {
-      jj_la1_0 = new int[] {0x300,0x300,0x1c00,0x1c00,0x3ed3f00,0x90000,0x20000,0x3ed2000,0x2690000,0x100000,0x100000,0x20000,0x30000000,0x4000000,0x30000000,0x20000,0x0,0x40000000,0x0,0x20000,0x100000,0x20000,0x3ed0000,};
+      jj_la1_0 = new int[] {0x300,0x300,0x1c00,0x1c00,0x7ed3f00,0x90000,0x20000,0x7ed2000,0x4e90000,0x100000,0x100000,0x20000,0x60000000,0x8000000,0x60000000,0x20000,0x0,0x80000000,0x0,0x20000,0x100000,0x20000,0x7ed0000,};
    }
    private static void jj_la1_init_1() {
-      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x3,0x0,0x3,0x0,0x0,0x0,0x0,};
+      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x6,0x0,0x6,0x0,0x0,0x0,0x0,};
    }
   final private JJCalls[] jj_2_rtns = new JJCalls[1];
   private boolean jj_rescan = false;
@@ -1766,7 +1817,7 @@ public class QueryParser implements QueryParserConstants {
   /** Generate ParseException. */
   public ParseException generateParseException() {
     jj_expentries.clear();
-    boolean[] la1tokens = new boolean[34];
+    boolean[] la1tokens = new boolean[35];
     if (jj_kind >= 0) {
       la1tokens[jj_kind] = true;
       jj_kind = -1;
@@ -1783,7 +1834,7 @@ public class QueryParser implements QueryParserConstants {
         }
       }
     }
-    for (int i = 0; i < 34; i++) {
+    for (int i = 0; i < 35; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;

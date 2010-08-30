@@ -9,6 +9,9 @@ Build
 
 New Features
 
+  * LUCENE-2604: Added RegexpQuery support to contrib/queryparser.
+    (Simon Willnauer, Robert Muir)
+
   * LUCENE-2500: Added DirectIOLinuxDirectory, a Linux-specific
     Directory impl that uses the O_DIRECT flag to bypass the buffer
     cache.  This is useful to prevent segment merging from evicting

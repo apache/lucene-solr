@@ -17,9 +17,11 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
@@ -95,6 +97,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
   private Operator operator = OR_OPERATOR;
 
   boolean lowercaseExpandedTerms = true;
+  MultiTermQuery.RewriteMethod multiTermRewriteMethod = MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT;
 
   Analyzer analyzer;
   String field;
@@ -231,6 +234,27 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
    */
   public boolean getLowercaseExpandedTerms() {
     return lowercaseExpandedTerms;
+  }
+  /**
+   * By default PrecedenceQueryParser uses {@link MultiTermQuery#CONSTANT_SCORE_AUTO_REWRITE_DEFAULT}
+   * when creating a PrefixQuery, WildcardQuery or RangeQuery. This implementation is generally preferable because it 
+   * a) Runs faster b) Does not have the scarcity of terms unduly influence score 
+   * c) avoids any "TooManyBooleanClauses" exception.
+   * However, if your application really needs to use the
+   * old-fashioned BooleanQuery expansion rewriting and the above
+   * points are not relevant then use this to change
+   * the rewrite method.
+   */
+  public void setMultiTermRewriteMethod(MultiTermQuery.RewriteMethod method) {
+    multiTermRewriteMethod = method;
+  }
+
+
+  /**
+   * @see #setMultiTermRewriteMethod
+   */
+  public MultiTermQuery.RewriteMethod getMultiTermRewriteMethod() {
+    return multiTermRewriteMethod;
   }
 
   /**
@@ -426,7 +450,9 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     }
     catch (Exception e) { }
 
-    return new TermRangeQuery(field, part1, part2, inclusive, inclusive);
+    final TermRangeQuery query = new TermRangeQuery(field, part1, part2, inclusive, inclusive);
+    query.setRewriteMethod(multiTermRewriteMethod);
+    return query;
   }
 
   /**
@@ -500,7 +526,9 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
       termStr = termStr.toLowerCase();
     }
     Term t = new Term(field, termStr);
-    return new WildcardQuery(t);
+    final WildcardQuery query = new WildcardQuery(t);
+    query.setRewriteMethod(multiTermRewriteMethod);
+    return query;
   }
 
   /**
@@ -532,7 +560,40 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
       termStr = termStr.toLowerCase();
     }
     Term t = new Term(field, termStr);
-    return new PrefixQuery(t);
+    final PrefixQuery query = new PrefixQuery(t);
+    query.setRewriteMethod(multiTermRewriteMethod);
+    return query;
+  }
+
+  /**
+   * Factory method for generating a query. Called when parser
+   * parses an input term token that contains a regular expression
+   * query.
+   *<p>
+   * Depending on settings, pattern term may be lower-cased
+   * automatically. It will not go through the default Analyzer,
+   * however, since normal Analyzers are unlikely to work properly
+   * with regular expression templates.
+   *<p>
+   * Can be overridden by extending classes, to provide custom handling for
+   * regular expression queries, which may be necessary due to missing analyzer 
+   * calls.
+   *
+   * @param field Name of the field query will use.
+   * @param termStr Term token that contains a regular expression
+   *
+   * @return Resulting {@link Query} built for the term
+   * @exception ParseException throw in overridden method to disallow
+   */
+  protected Query getRegexpQuery(String field, String termStr) throws ParseException
+  {
+    if (lowercaseExpandedTerms) {
+      termStr = termStr.toLowerCase();
+    }
+    final Term regexp = new Term(field, termStr);
+    final RegexpQuery query = new RegexpQuery(regexp);
+    query.setRewriteMethod(multiTermRewriteMethod);
+    return query;
   }
 
    /**
@@ -675,6 +736,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
       case TERM:
       case PREFIXTERM:
       case WILDTERM:
+      case REGEXPTERM:
       case RANGEIN_START:
       case RANGEEX_START:
       case NUMBER:
@@ -750,6 +812,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
     case TERM:
     case PREFIXTERM:
     case WILDTERM:
+    case REGEXPTERM:
     case RANGEIN_START:
     case RANGEEX_START:
     case NUMBER:
@@ -790,11 +853,14 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
   boolean prefix = false;
   boolean wildcard = false;
   boolean fuzzy = false;
+  boolean regexp = false;
+
   Query q;
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case TERM:
     case PREFIXTERM:
     case WILDTERM:
+    case REGEXPTERM:
     case NUMBER:
       switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
       case TERM:
@@ -807,6 +873,10 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
       case WILDTERM:
         term = jj_consume_token(WILDTERM);
                            wildcard=true;
+        break;
+      case REGEXPTERM:
+        term = jj_consume_token(REGEXPTERM);
+                             regexp=true;
         break;
       case NUMBER:
         term = jj_consume_token(NUMBER);
@@ -850,6 +920,8 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
          q = getPrefixQuery(field,
            discardEscapeChar(term.image.substring
           (0, term.image.length()-1)));
+       } else if (regexp) {
+         q = getRegexpQuery(field, term.image.substring(1, term.image.length()-1));
        } else if (fuzzy) {
           float fms = fuzzyMinSim;
           try {
@@ -1055,11 +1127,16 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
   private int jj_gen;
   final private int[] jj_la1 = new int[24];
   static private int[] jj_la1_0;
+  static private int[] jj_la1_1;
   static {
       jj_la1_init_0();
+      jj_la1_init_1();
    }
    private static void jj_la1_init_0() {
-      jj_la1_0 = new int[] {0x180,0x180,0xe00,0xe00,0xfb1f00,0x100,0x80,0x8000,0xfb1000,0x9a0000,0x40000,0x40000,0x8000,0xc000000,0x1000000,0xc000000,0x8000,0xc0000000,0x10000000,0xc0000000,0x8000,0x40000,0x8000,0xfb0000,};
+      jj_la1_0 = new int[] {0x180,0x180,0xe00,0xe00,0x1fb1f00,0x100,0x80,0x8000,0x1fb1000,0x13a0000,0x40000,0x40000,0x8000,0x18000000,0x2000000,0x18000000,0x8000,0x80000000,0x20000000,0x80000000,0x8000,0x40000,0x8000,0x1fb0000,};
+   }
+   private static void jj_la1_init_1() {
+      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x1,0x0,0x0,0x0,0x0,};
    }
   final private JJCalls[] jj_2_rtns = new JJCalls[1];
   private boolean jj_rescan = false;
@@ -1213,7 +1290,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
   /** Generate ParseException. */
   public ParseException generateParseException() {
     jj_expentries.clear();
-    boolean[] la1tokens = new boolean[32];
+    boolean[] la1tokens = new boolean[33];
     if (jj_kind >= 0) {
       la1tokens[jj_kind] = true;
       jj_kind = -1;
@@ -1224,10 +1301,13 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
           if ((jj_la1_0[i] & (1<<j)) != 0) {
             la1tokens[j] = true;
           }
+          if ((jj_la1_1[i] & (1<<j)) != 0) {
+            la1tokens[32+j] = true;
+          }
         }
       }
     }
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 33; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;

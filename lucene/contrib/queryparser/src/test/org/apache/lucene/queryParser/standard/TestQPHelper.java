@@ -68,10 +68,12 @@ import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LocalizedTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
@@ -1154,6 +1156,34 @@ public class TestQPHelper extends LocalizedTestCase {
     // assertEquals("*",tq.getTerm().text());
     // assertEquals(1,type[0]);
 
+  }
+  
+  public void testRegexps() throws Exception {
+    StandardQueryParser qp = new StandardQueryParser();
+    final String df = "field" ;
+    RegexpQuery q = new RegexpQuery(new Term("field", "[a-z][123]"));
+    assertEquals(q, qp.parse("/[a-z][123]/", df));
+    qp.setLowercaseExpandedTerms(true);
+    assertEquals(q, qp.parse("/[A-Z][123]/", df));
+    q.setBoost(0.5f);
+    assertEquals(q, qp.parse("/[A-Z][123]/^0.5", df));
+    qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    q.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
+    assertTrue(qp.parse("/[A-Z][123]/^0.5", df) instanceof RegexpQuery);
+    assertEquals(q, qp.parse("/[A-Z][123]/^0.5", df));
+    assertEquals(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE, ((RegexpQuery)qp.parse("/[A-Z][123]/^0.5", df)).getRewriteMethod());
+    qp.setMultiTermRewriteMethod(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT);
+    
+    Query escaped = new RegexpQuery(new Term("field", "[a-z]\\/[123]"));
+    assertEquals(escaped, qp.parse("/[a-z]\\/[123]/", df));
+    Query escaped2 = new RegexpQuery(new Term("field", "[a-z]\\*[123]"));
+    assertEquals(escaped2, qp.parse("/[a-z]\\*[123]/", df));
+    
+    BooleanQuery complex = new BooleanQuery();
+    complex.add(new RegexpQuery(new Term("field", "[a-z]\\/[123]")), Occur.MUST);
+    complex.add(new TermQuery(new Term("path", "/etc/init.d/")), Occur.MUST);
+    complex.add(new TermQuery(new Term("field", "/etc/init[.]d/lucene/")), Occur.SHOULD);
+    assertEquals(complex, qp.parse("/[a-z]\\/[123]/ AND path:/etc/init.d/ OR /etc\\/init\\[.\\]d/lucene/ ", df));
   }
 
   public void testStopwords() throws Exception {

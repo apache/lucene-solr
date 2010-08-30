@@ -33,6 +33,7 @@ import org.apache.lucene.queryParser.core.nodes.TokenizedPhraseQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.MultiPhraseQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.PrefixWildcardQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.RangeQueryNode;
+import org.apache.lucene.queryParser.standard.nodes.RegexpQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.StandardBooleanQueryNode;
 import org.apache.lucene.queryParser.standard.nodes.WildcardQueryNode;
 import org.apache.lucene.queryParser.standard.processors.StandardQueryNodeProcessorPipeline;
@@ -63,6 +64,7 @@ public class StandardQueryTreeBuilder extends QueryTreeBuilder implements
     setBuilder(PrefixWildcardQueryNode.class,
         new PrefixWildcardQueryNodeBuilder());
     setBuilder(RangeQueryNode.class, new RangeQueryNodeBuilder());
+    setBuilder(RegexpQueryNode.class, new RegexpQueryNodeBuilder());
     setBuilder(SlopQueryNode.class, new SlopQueryNodeBuilder());
     setBuilder(StandardBooleanQueryNode.class,
         new StandardBooleanQueryNodeBuilder());

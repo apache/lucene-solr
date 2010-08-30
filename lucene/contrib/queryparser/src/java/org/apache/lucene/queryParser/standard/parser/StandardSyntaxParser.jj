@@ -52,6 +52,7 @@ import org.apache.lucene.queryParser.core.nodes.OpaqueQueryNode;
 import org.apache.lucene.queryParser.core.nodes.OrQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ParametricRangeQueryNode;
+import org.apache.lucene.queryParser.standard.nodes.RegexpQueryNode;
 import org.apache.lucene.queryParser.core.nodes.SlopQueryNode;
 import org.apache.lucene.queryParser.core.nodes.ProximityQueryNode;
 import org.apache.lucene.queryParser.core.nodes.QueryNode;
@@ -132,6 +133,7 @@ PARSER_END(StandardSyntaxParser)
 | <QUOTED:     "\"" (<_QUOTED_CHAR>)* "\"">
 | <TERM:      <_TERM_START_CHAR> (<_TERM_CHAR>)*  >
 | <FUZZY_SLOP:     "~" ( (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? )? >
+| <REGEXPTERM: "/" (~[ "/" ] | "\\/" )* "/" >
 | <RANGEIN_START: "[" > : RangeIn
 | <RANGEEX_START: "{" > : RangeEx
 }
@@ -374,6 +376,7 @@ QueryNode Clause(CharSequence field) : {
 QueryNode Term(CharSequence field) : {
   Token term, boost=null, fuzzySlop=null, goop1, goop2;
   boolean fuzzy = false;
+  boolean regexp = false;
   QueryNode q =null; 
   ParametricQueryNode qLower, qUpper;
   float defaultMinSimilarity = 0.5f;
@@ -382,6 +385,7 @@ QueryNode Term(CharSequence field) : {
   (
      (
  	   term=<TERM> { q = new FieldQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), term.beginColumn, term.endColumn); }
+       | term=<REGEXPTERM> { regexp=true; }
        | term=<NUMBER>
      )
      [ fuzzySlop=<FUZZY_SLOP> { fuzzy=true; } ]
@@ -396,6 +400,8 @@ QueryNode Term(CharSequence field) : {
        	   throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_LIMITS));
        	 }
        	 q = new FuzzyQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), fms, term.beginColumn, term.endColumn);
+       } else if (regexp) {
+         q = new RegexpQueryNode(field, term.image, term.beginColumn, term.endColumn-1);
        }
      }
      | ( <RANGEIN_START> ( goop1=<RANGEIN_GOOP>|goop1=<RANGEIN_QUOTED> )

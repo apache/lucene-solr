@@ -53,6 +53,7 @@ import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
@@ -886,6 +887,17 @@ public class QueryParser {
   }
  
   /**
+   * Builds a new RegexpQuery instance
+   * @param prefix Regexp term
+   * @return new RegexpQuery instance
+   */
+  protected Query newRegexpQuery(Term regexp) {
+    RegexpQuery query = new RegexpQuery(regexp);
+    query.setRewriteMethod(multiTermRewriteMethod);
+    return query;
+  }
+  
+  /**
    * Builds a new FuzzyQuery instance
    * @param term Term
    * @param minimumSimilarity minimum similarity
@@ -1009,6 +1021,35 @@ public class QueryParser {
     return newWildcardQuery(t);
   }
 
+  /**
+   * Factory method for generating a query. Called when parser
+   * parses an input term token that contains a regular expression
+   * query.
+   *<p>
+   * Depending on settings, pattern term may be lower-cased
+   * automatically. It will not go through the default Analyzer,
+   * however, since normal Analyzers are unlikely to work properly
+   * with regular expression templates.
+   *<p>
+   * Can be overridden by extending classes, to provide custom handling for
+   * regular expression queries, which may be necessary due to missing analyzer 
+   * calls.
+   *
+   * @param field Name of the field query will use.
+   * @param termStr Term token that contains a regular expression
+   *
+   * @return Resulting {@link Query} built for the term
+   * @exception ParseException throw in overridden method to disallow
+   */
+  protected Query getRegexpQuery(String field, String termStr) throws ParseException
+  {
+    if (lowercaseExpandedTerms) {
+      termStr = termStr.toLowerCase();
+    }
+    Term t = new Term(field, termStr);
+    return newRegexpQuery(t);
+  }
+  
   /**
    * Factory method for generating a query (similar to
    * {@link #getWildcardQuery}). Called when parser parses an input term
@@ -1218,6 +1259,7 @@ PARSER_END(QueryParser)
 | <FUZZY_SLOP:     "~" ( (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? )? >
 | <PREFIXTERM:  ("*") | ( <_TERM_START_CHAR> (<_TERM_CHAR>)* "*" ) >
 | <WILDTERM:  (<_TERM_START_CHAR> | [ "*", "?" ]) (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
+| <REGEXPTERM: "/" (~[ "/" ] | "\\/" )* "/" >
 | <RANGEIN_START: "[" > : RangeIn
 | <RANGEEX_START: "{" > : RangeEx
 }
@@ -1340,6 +1382,7 @@ Query Term(String field) : {
   boolean prefix = false;
   boolean wildcard = false;
   boolean fuzzy = false;
+  boolean regexp = false;
   Query q;
 }
 {
@@ -1349,6 +1392,7 @@ Query Term(String field) : {
        | term=<STAR> { wildcard=true; }
        | term=<PREFIXTERM> { prefix=true; }
        | term=<WILDTERM> { wildcard=true; }
+       | term=<REGEXPTERM> { regexp=true; }
        | term=<NUMBER>
      )
      [ fuzzySlop=<FUZZY_SLOP> { fuzzy=true; } ]
@@ -1361,6 +1405,8 @@ Query Term(String field) : {
          q = getPrefixQuery(field,
            discardEscapeChar(term.image.substring
           (0, term.image.length()-1)));
+       } else if (regexp) {
+         q = getRegexpQuery(field, term.image.substring(1, term.image.length()-1));
        } else if (fuzzy) {
        	  float fms = fuzzyMinSim;
        	  try {

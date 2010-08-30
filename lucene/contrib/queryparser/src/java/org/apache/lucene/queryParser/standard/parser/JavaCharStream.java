@@ -613,4 +613,4 @@ public class JavaCharStream
   }
 
 }
-/* JavaCC - OriginalChecksum=f19c73b8f7faf94cc4a581e7b2933cc6 (do not edit this line) */
+/* JavaCC - OriginalChecksum=31519f95b41182c6740c2afd8dfbf344 (do not edit this line) */
