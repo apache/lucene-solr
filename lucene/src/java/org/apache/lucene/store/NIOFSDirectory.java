@@ -20,6 +20,7 @@ package org.apache.lucene.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException; // javadoc @link
 import java.nio.channels.FileChannel;
 import java.util.concurrent.Future; // javadoc
 
@@ -29,7 +30,7 @@ import java.util.concurrent.Future; // javadoc
  * without synchronizing.
  * <p>
  * This class only uses FileChannel when reading; writing is achieved with
- * {@link SimpleFSDirectory.SimpleFSIndexOutput}.
+ * {@link FSDirectory.FSIndexOutput}.
  * <p>
  * <b>NOTE</b>: NIOFSDirectory is not recommended on Windows because of a bug in
  * how FileChannel.read is implemented in Sun's JRE. Inside of the

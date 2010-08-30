@@ -30,7 +30,7 @@ import org.apache.lucene.util.ArrayUtil;
  *  To store payloads in the index a {@link TokenStream} has to be used that
  *  produces payload data.
  *  <p>
- *  Use {@link TermPositions#getPayloadLength()} and {@link TermPositions#getPayload(byte[], int)}
+ *  Use {@link DocsAndPositionsEnum#getPayload()}
  *  to retrieve the payloads from the index.<br>
  *
  */

@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.DocsEnum; // javadoc @link
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.BytesRef;
@@ -40,7 +41,7 @@ import org.apache.lucene.util.BytesRef;
  * <p/>
  * 
  * The first invocation of this filter on a given field will
- * be slower, since a {@link FieldCache.StringIndex} must be
+ * be slower, since a {@link FieldCache.DocTermsIndex} must be
  * created.  Subsequent invocations using the same field
  * will re-use this cache.  However, as with all
  * functionality based on {@link FieldCache}, persistent RAM

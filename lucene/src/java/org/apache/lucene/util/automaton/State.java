@@ -238,7 +238,7 @@ public class State implements Serializable, Comparable<State> {
   /**
    * Return this state's number. 
    * <p>
-   * Expert: Will be useless unless {@link Automaton#setStateNumbers(Set)}
+   * Expert: Will be useless unless {@link Automaton#getNumberedStates}
    * has been called first to number the states.
    * @return the number
    */

@@ -115,7 +115,6 @@ public class Automaton implements Serializable, Cloneable {
    * constructor, automata can be constructed manually from {@link State} and
    * {@link Transition} objects.
    * 
-   * @see #setInitialState(State)
    * @see State
    * @see Transition
    */

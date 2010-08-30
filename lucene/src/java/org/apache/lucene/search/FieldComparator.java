@@ -699,7 +699,7 @@ public abstract class FieldComparator {
    *  ordinals.  This is functionally equivalent to {@link
    *  TermValComparator}, but it first resolves the string
    *  to their relative ordinal positions (using the index
-   *  returned by {@link FieldCache#getStringIndex}), and
+   *  returned by {@link FieldCache#getTermsIndex}), and
    *  does most comparisons using the ordinals.  For medium
    *  to large results, this comparator will be much faster
    *  than {@link TermValComparator}.  For very small

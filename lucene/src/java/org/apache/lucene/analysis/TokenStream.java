@@ -74,7 +74,7 @@ import org.apache.lucene.util.AttributeSource;
  * <p>
  * Sometimes it is desirable to capture a current state of a <code>TokenStream</code>,
  * e.g., for buffering purposes (see {@link CachingTokenFilter},
- * {@link TeeSinkTokenFilter}). For this usecase
+ * TeeSinkTokenFilter). For this usecase
  * {@link AttributeSource#captureState} and {@link AttributeSource#restoreState}
  * can be used.
  * <p>The {@code TokenStream}-API in Lucene is based on the decorator pattern.

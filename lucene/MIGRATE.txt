@@ -128,7 +128,7 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
 
       do this:
       
-        if ((doc=td.skipTo(target)) != DocsEnum.NO_MORE_DOCS) {
+        if ((doc=td.advance(target)) != DocsEnum.NO_MORE_DOCS) {
 	  ...
 	}
 

@@ -45,8 +45,8 @@ import org.apache.lucene.util.AttributeImpl;
   with type "eos".  The default token type is "word".  
   <p>
   A Token can optionally have metadata (a.k.a. Payload) in the form of a variable
-  length byte array. Use {@link DocsAndPositionsEnum#getPayloadLength()} and 
-  {@link DocsAndPositionsEnum#getPayload(byte[], int)} to retrieve the payloads from the index.
+  length byte array. Use {@link DocsAndPositionsEnum#getPayload()} to retrieve the 
+  payloads from the index.
   
   <br><br>
   
@@ -253,7 +253,7 @@ public class Token extends CharTermAttributeImpl
    *
    * </ul>
    * @param positionIncrement the distance from the prior term
-   * @see org.apache.lucene.index.TermPositions
+   * @see org.apache.lucene.index.DocsAndPositionsEnum
    */
   public void setPositionIncrement(int positionIncrement) {
     if (positionIncrement < 0)

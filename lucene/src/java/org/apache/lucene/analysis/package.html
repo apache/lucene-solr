@@ -98,27 +98,22 @@ There are many post tokenization steps that can be done, including (but not limi
    </ul>
 </p>
 <p>
-  Lucene Java provides a number of analysis capabilities, the most commonly used one being the {@link
-  org.apache.lucene.analysis.standard.StandardAnalyzer}.  Many applications will have a long and industrious life with nothing more
+  Lucene Java provides a number of analysis capabilities, the most commonly used one being the StandardAnalyzer.  
+  Many applications will have a long and industrious life with nothing more
   than the StandardAnalyzer.  However, there are a few other classes/packages that are worth mentioning:
   <ol>
-    <li>{@link org.apache.lucene.analysis.PerFieldAnalyzerWrapper} &ndash; Most Analyzers perform the same operation on all
+    <li>PerFieldAnalyzerWrapper &ndash; Most Analyzers perform the same operation on all
       {@link org.apache.lucene.document.Field}s.  The PerFieldAnalyzerWrapper can be used to associate a different Analyzer with different
       {@link org.apache.lucene.document.Field}s.</li>
     <li>The modules/analysis library located at the root of the Lucene distribution has a number of different Analyzer implementations to solve a variety
     of different problems related to searching.  Many of the Analyzers are designed to analyze non-English languages.</li>
-    <li>The contrib/snowball library 
-        located at the root of the Lucene distribution has Analyzer and TokenFilter 
-        implementations for a variety of Snowball stemmers.  
-        See <a href="http://snowball.tartarus.org">http://snowball.tartarus.org</a> 
-        for more information on Snowball stemmers.</li>
     <li>There are a variety of Tokenizer and TokenFilter implementations in this package.  Take a look around, chances are someone has implemented what you need.</li>
   </ol>
 </p>
 <p>
   Analysis is one of the main causes of performance degradation during indexing.  Simply put, the more you analyze the slower the indexing (in most cases).
-  Perhaps your application would be just fine using the simple {@link org.apache.lucene.analysis.WhitespaceTokenizer} combined with a
-  {@link org.apache.lucene.analysis.StopFilter}. The contrib/benchmark library can be useful for testing out the speed of the analysis process.
+  Perhaps your application would be just fine using the simple WhitespaceTokenizer combined with a StopFilter. The contrib/benchmark library can be useful 
+  for testing out the speed of the analysis process.
 </p>
 <h2>Invoking the Analyzer</h2>
 <p>
@@ -229,7 +224,7 @@ the source code of any one of the many samples located in this package.
       public TokenStream tokenStream(final String fieldName, Reader reader) {
         final TokenStream ts = someAnalyzer.tokenStream(fieldName, reader);
         TokenStream res = new TokenStream() {
-          TermAttribute termAtt = addAttribute(TermAttribute.class);
+          CharTermAttribute termAtt = addAttribute(CharTermAttribute.class);
           PositionIncrementAttribute posIncrAtt = addAttribute(PositionIncrementAttribute.class);
         
           public boolean incrementToken() throws IOException {
@@ -237,7 +232,7 @@ the source code of any one of the many samples located in this package.
             while (true) {
               boolean hasNext = ts.incrementToken();
               if (hasNext) {
-                if (stopWords.contains(termAtt.term())) {
+                if (stopWords.contains(termAtt.toString())) {
                   extraIncrement++; // filter this word
                   continue;
                 } 
@@ -282,7 +277,7 @@ is necessary that can transport custom types of data from the documents to the i
 <h3>Attribute and AttributeSource</h3> 
 Lucene 2.9 therefore introduces a new pair of classes called {@link org.apache.lucene.util.Attribute} and
 {@link org.apache.lucene.util.AttributeSource}. An Attribute serves as a
-particular piece of information about a text token. For example, {@link org.apache.lucene.analysis.tokenattributes.TermAttribute}
+particular piece of information about a text token. For example, {@link org.apache.lucene.analysis.tokenattributes.CharTermAttribute}
  contains the term text of a token, and {@link org.apache.lucene.analysis.tokenattributes.OffsetAttribute} contains the start and end character offsets of a token.
 An AttributeSource is a collection of Attributes with a restriction: there may be only one instance of each attribute type. TokenStream now extends AttributeSource, which
 means that one can add Attributes to a TokenStream. Since TokenFilter extends TokenStream, all filters are also
@@ -290,7 +285,7 @@ AttributeSources.
 <p>
 	Lucene now provides six Attributes out of the box, which replace the variables the Token class has:
 	<ul>
-	  <li>{@link org.apache.lucene.analysis.tokenattributes.TermAttribute}<p>The term text of a token.</p></li>
+	  <li>{@link org.apache.lucene.analysis.tokenattributes.CharTermAttribute}<p>The term text of a token.</p></li>
   	  <li>{@link org.apache.lucene.analysis.tokenattributes.OffsetAttribute}<p>The start and end offset of token in characters.</p></li>
 	  <li>{@link org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute}<p>See above for detailed information about position increment.</p></li>
 	  <li>{@link org.apache.lucene.analysis.tokenattributes.PayloadAttribute}<p>The payload that a Token can optionally have.</p></li>
@@ -354,14 +349,14 @@ public class MyAnalyzer extends Analyzer {
     MyAnalyzer analyzer = new MyAnalyzer();
     TokenStream stream = analyzer.tokenStream("field", new StringReader(text));
     
-    // get the TermAttribute from the TokenStream
-    TermAttribute termAtt = stream.addAttribute(TermAttribute.class);
+    // get the CharTermAttribute from the TokenStream
+    CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
 
     stream.reset();
     
     // print all tokens until stream is exhausted
     while (stream.incrementToken()) {
-      System.out.println(termAtt.term());
+      System.out.println(termAtt.toString());
     }
     
     stream.end()
@@ -370,7 +365,7 @@ public class MyAnalyzer extends Analyzer {
 }
 </pre>
 In this easy example a simple white space tokenization is performed. In main() a loop consumes the stream and
-prints the term text of the tokens by accessing the TermAttribute that the WhitespaceTokenizer provides. 
+prints the term text of the tokens by accessing the CharTermAttribute that the WhitespaceTokenizer provides. 
 Here is the output:
 <pre>
 This
@@ -409,7 +404,7 @@ public final class LengthFilter extends TokenFilter {
   final int min;
   final int max;
   
-  private TermAttribute termAtt;
+  private CharTermAttribute termAtt;
 
   /**
    * Build a filter that removes words that are too long or too
@@ -420,7 +415,7 @@ public final class LengthFilter extends TokenFilter {
     super(in);
     this.min = min;
     this.max = max;
-    termAtt = addAttribute(TermAttribute.class);
+    termAtt = addAttribute(CharTermAttribute.class);
   }
   
   /**
@@ -431,7 +426,7 @@ public final class LengthFilter extends TokenFilter {
     assert termAtt != null;
     // return the first non-stop word found
     while (input.incrementToken()) {
-      int len = termAtt.termLength();
+      int len = termAtt.length();
       if (len >= min && len <= max) {
           return true;
       }
@@ -442,11 +437,11 @@ public final class LengthFilter extends TokenFilter {
   }
 }
 </pre>
-The TermAttribute is added in the constructor and stored in the instance variable <code>termAtt</code>.
-Remember that there can only be a single instance of TermAttribute in the chain, so in our example the 
+The CharTermAttribute is added in the constructor and stored in the instance variable <code>termAtt</code>.
+Remember that there can only be a single instance of CharTermAttribute in the chain, so in our example the 
 <code>addAttribute()</code> call in LengthFilter returns the TermAttribute that the WhitespaceTokenizer already added. The tokens
 are retrieved from the input stream in the <code>incrementToken()</code> method. By looking at the term text
-in the TermAttribute the length of the term can be determined and too short or too long tokens are skipped. 
+in the CharTermAttribute the length of the term can be determined and too short or too long tokens are skipped. 
 Note how <code>incrementToken()</code> can efficiently access the instance variable; no attribute lookup
 is neccessary. The same is true for the consumer, which can simply use local references to the Attributes.
 
@@ -521,17 +516,17 @@ that tags every word with a leading upper-case letter as a 'Noun' and all other 
 <pre>
   public static class PartOfSpeechTaggingFilter extends TokenFilter {
     PartOfSpeechAttribute posAtt;
-    TermAttribute termAtt;
+    CharTermAttribute termAtt;
     
     protected PartOfSpeechTaggingFilter(TokenStream input) {
       super(input);
       posAtt = addAttribute(PartOfSpeechAttribute.class);
-      termAtt = addAttribute(TermAttribute.class);
+      termAtt = addAttribute(CharTermAttribute.class);
     }
     
     public boolean incrementToken() throws IOException {
       if (!input.incrementToken()) {return false;}
-      posAtt.setPartOfSpeech(determinePOS(termAtt.termBuffer(), 0, termAtt.termLength()));
+      posAtt.setPartOfSpeech(determinePOS(termAtt.buffer(), 0, termAtt.length()));
       return true;
     }
     
@@ -577,8 +572,8 @@ to make use of the new PartOfSpeechAttribute and print it out:
     MyAnalyzer analyzer = new MyAnalyzer();
     TokenStream stream = analyzer.tokenStream("field", new StringReader(text));
     
-    // get the TermAttribute from the TokenStream
-    TermAttribute termAtt = stream.addAttribute(TermAttribute.class);
+    // get the CharTermAttribute from the TokenStream
+    CharTermAttribute termAtt = stream.addAttribute(CharTermAttribute.class);
     
     // get the PartOfSpeechAttribute from the TokenStream
     PartOfSpeechAttribute posAtt = stream.addAttribute(PartOfSpeechAttribute.class);
@@ -587,7 +582,7 @@ to make use of the new PartOfSpeechAttribute and print it out:
 
     // print all tokens until stream is exhausted
     while (stream.incrementToken()) {
-      System.out.println(termAtt.term() + ": " + posAtt.getPartOfSpeech());
+      System.out.println(termAtt.toString() + ": " + posAtt.getPartOfSpeech());
     }
     
     stream.end();
