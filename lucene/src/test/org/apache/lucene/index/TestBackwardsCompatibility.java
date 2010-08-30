@@ -404,7 +404,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     Directory dir = FSDirectory.open(new File(dirName));
     // open writer
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
-
     // add 10 docs
     for(int i=0;i<10;i++) {
       addDoc(writer, 35+i);
@@ -413,11 +412,11 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     // make sure writer sees right total -- writer seems not to know about deletes in .del?
     final int expected;
     if (compare(origDirName, "24") < 0) {
-      expected = 45;
+      expected = 44;
     } else {
-      expected = 46;
+      expected = 45;
     }
-    assertEquals("wrong doc count", expected, writer.maxDoc());
+    assertEquals("wrong doc count", expected, writer.numDocs());
     writer.close();
 
     // make sure searching sees right # hits
