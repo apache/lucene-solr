@@ -17,6 +17,7 @@ package org.apache.lucene.search.payloads;
  */
 
 import java.io.Serializable;
+import org.apache.lucene.search.Explanation;
 
 /**
  * An abstract class that defines a way for Payload*Query instances to transform
@@ -54,6 +55,13 @@ public abstract class PayloadFunction implements Serializable {
    * @return The final score for the payloads
    */
   public abstract float docScore(int docId, String field, int numPayloadsSeen, float payloadScore);
+  
+  public Explanation explain(int docId, int numPayloadsSeen, float payloadScore){
+	  Explanation result = new Explanation();
+	  result.setDescription("Unimpl Payload Function Explain");
+	  result.setValue(1);
+	  return result;
+  };
   
   @Override
   public abstract int hashCode();
