@@ -500,6 +500,8 @@ Bug fixes
 * LUCENE-2627: Fixed bug in MMapDirectory chunking when a file is an
   exact multiple of the chunk size.  (Robert Muir)
 
+* LUCENE-2272: Fix explain in PayloadNearQuery and also fix scoring issue (Peter Keegan via Grant Ingersoll)  
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
