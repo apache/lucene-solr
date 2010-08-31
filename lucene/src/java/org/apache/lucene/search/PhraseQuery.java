@@ -275,11 +275,7 @@ public class PhraseQuery extends Query {
       int d = scorer.advance(doc);
       float phraseFreq;
       if (d == doc) {
-        if (slop == 0) {
-          phraseFreq = ((ExactPhraseScorer) scorer).currentFreq();
-        } else {
-          phraseFreq = ((SloppyPhraseScorer) scorer).currentFreq();
-        }
+        phraseFreq = scorer.freq();
       } else {
         phraseFreq = 0.0f;
       }

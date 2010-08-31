@@ -54,7 +54,7 @@ public class MatchAllDocsQuery extends Query {
     
     MatchAllScorer(IndexReader reader, Similarity similarity, Weight w,
         byte[] norms) throws IOException {
-      super(similarity);
+      super(similarity,w);
       delDocs = MultiFields.getDeletedDocs(reader);
       score = w.getValue();
       maxDoc = reader.maxDoc();

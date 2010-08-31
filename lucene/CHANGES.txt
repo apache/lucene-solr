@@ -208,6 +208,11 @@ New features
 * LUCENE-2559: Added SegmentReader.reopen methods (John Wang via Mike
   McCandless)
 
+* LUCENE-2590: Added Scorer.visitSubScorers, and Scorer.freq.  Along
+  with a custom Collector these experimental methods make it possible
+  to gather the hit-count per sub-clause and per document while a
+  search is running.  (Simon Willnauer, Mike McCandless)
+
 Optimizations
 
 * LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.

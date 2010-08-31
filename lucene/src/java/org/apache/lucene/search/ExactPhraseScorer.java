@@ -21,9 +21,9 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.index.*;
+import org.apache.lucene.search.BooleanClause.Occur;
 
 final class ExactPhraseScorer extends Scorer {
-  private final Weight weight;
   private final byte[] norms;
   private final float value;
 
@@ -63,8 +63,7 @@ final class ExactPhraseScorer extends Scorer {
 
   ExactPhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
                     Similarity similarity, byte[] norms) throws IOException {
-    super(similarity);
-    this.weight = weight;
+    super(similarity, weight);
     this.norms = norms;
     this.value = weight.getValue();
 
@@ -193,8 +192,8 @@ final class ExactPhraseScorer extends Scorer {
     return "ExactPhraseScorer(" + weight + ")";
   }
 
-  // used by MultiPhraseQuery
-  float currentFreq() {
+  @Override
+  public float freq() {
     return freq;
   }
 

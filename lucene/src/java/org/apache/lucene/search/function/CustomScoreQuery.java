@@ -300,7 +300,7 @@ public class CustomScoreQuery extends Query {
     // constructor
     private CustomScorer(Similarity similarity, IndexReader reader, CustomWeight w,
         Scorer subQueryScorer, Scorer[] valSrcScorers) throws IOException {
-      super(similarity);
+      super(similarity,w);
       this.qWeight = w.getValue();
       this.subQueryScorer = subQueryScorer;
       this.valSrcScorers = valSrcScorers;

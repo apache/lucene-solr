@@ -19,6 +19,8 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
+import org.apache.lucene.search.BooleanClause.Occur;
+
 /** Expert: Scoring functionality for phrase queries.
  * <br>A document is considered matching if it contains the phrase-query terms  
  * at "valid" positions. What "valid positions" are
@@ -30,7 +32,6 @@ import java.io.IOException;
  * means a match. 
  */
 abstract class PhraseScorer extends Scorer {
-  private Weight weight;
   protected byte[] norms;
   protected float value;
 
@@ -43,9 +44,8 @@ abstract class PhraseScorer extends Scorer {
 
   PhraseScorer(Weight weight, PhraseQuery.PostingsAndFreq[] postings,
       Similarity similarity, byte[] norms) {
-    super(similarity);
+    super(similarity, weight);
     this.norms = norms;
-    this.weight = weight;
     this.value = weight.getValue();
 
     // convert tps to a list of phrase positions.
@@ -129,8 +129,11 @@ abstract class PhraseScorer extends Scorer {
   /**
    * phrase frequency in current doc as computed by phraseFreq().
    */
-  public final float currentFreq() { return freq; }
-  
+  @Override
+  public final float freq() {
+    return freq;
+  }
+
   /**
    * For a document containing all the phrase query terms, compute the
    * frequency of the phrase in that document. 
@@ -179,5 +182,5 @@ abstract class PhraseScorer extends Scorer {
 
   @Override
   public String toString() { return "scorer(" + weight + ")"; }
-
+ 
 }

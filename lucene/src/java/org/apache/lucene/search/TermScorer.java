@@ -20,11 +20,11 @@ package org.apache.lucene.search;
 import java.io.IOException;
 
 import org.apache.lucene.index.DocsEnum;
+import org.apache.lucene.search.BooleanClause.Occur;
 
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
 final class TermScorer extends Scorer {
-  private Weight weight;
   private DocsEnum docsEnum;
   private byte[] norms;
   private float weightValue;
@@ -54,9 +54,8 @@ final class TermScorer extends Scorer {
    *          The field norms of the document fields for the <code>Term</code>.
    */
   TermScorer(Weight weight, DocsEnum td, Similarity similarity, byte[] norms) {
-    super(similarity);
+    super(similarity, weight);
     
-    this.weight = weight;
     this.docsEnum = td;
     this.norms = norms;
     this.weightValue = weight.getValue();
@@ -101,6 +100,11 @@ final class TermScorer extends Scorer {
   @Override
   public int docID() {
     return doc;
+  }
+
+  @Override
+  public float freq() {
+    return freq;
   }
 
   /**
@@ -172,4 +176,5 @@ final class TermScorer extends Scorer {
   /** Returns a string representation of this <code>TermScorer</code>. */
   @Override
   public String toString() { return "scorer(" + weight + ")"; }
+
 }

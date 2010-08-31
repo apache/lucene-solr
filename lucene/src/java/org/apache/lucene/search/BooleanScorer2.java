@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.lucene.search.BooleanClause.Occur;
+
 /* See the description in BooleanScorer.java, comparing
  * BooleanScorer & BooleanScorer2 */
 
@@ -59,7 +61,7 @@ class BooleanScorer2 extends Scorer {
 
   /** The number of optionalScorers that need to match (if there are any) */
   private final int minNrShouldMatch;
-  
+
   private int doc = -1;
 
   /**
@@ -80,9 +82,9 @@ class BooleanScorer2 extends Scorer {
    * @param optional
    *          the list of optional scorers.
    */
-  public BooleanScorer2(Similarity similarity, int minNrShouldMatch,
+  public BooleanScorer2(Weight weight, Similarity similarity, int minNrShouldMatch,
       List<Scorer> required, List<Scorer> prohibited, List<Scorer> optional, int maxCoord) throws IOException {
-    super(similarity);
+    super(similarity, weight);
     if (minNrShouldMatch < 0) {
       throw new IllegalArgumentException("Minimum number of optional scorers should not be negative");
     }
@@ -302,9 +304,27 @@ class BooleanScorer2 extends Scorer {
   }
 
   @Override
+  public float freq() {
+    return coordinator.nrMatchers;
+  }
+
+  @Override
   public int advance(int target) throws IOException {
     return doc = countingSumScorer.advance(target);
   }
+
+  @Override
+  protected void visitSubScorers(Query parent, Occur relationship, ScorerVisitor<Query, Query, Scorer> visitor) {
+    super.visitSubScorers(parent, relationship, visitor);
+    final Query q = weight.getQuery();
+    for (Scorer s : optionalScorers) {
+      s.visitSubScorers(q, Occur.SHOULD, visitor);
+    }
+    for (Scorer s : prohibitedScorers) {
+      s.visitSubScorers(q, Occur.MUST_NOT, visitor);
+    }
+    for (Scorer s : requiredScorers) {
+      s.visitSubScorers(q, Occur.MUST, visitor);
+    }
+  }
 }
-
-
