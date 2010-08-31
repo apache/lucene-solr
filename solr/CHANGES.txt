@@ -545,6 +545,9 @@ Other Changes
   Strings were serialized as the number of UTF-16 chars, followed by the
   bytes in Modified UTF-8. (hossman, yonik, rmuir)
 
+* SOLR-2013: Add mapping-FoldToASCII.txt to example conf directory.
+  (Steven Rowe via koji)
+
 Build
 ----------------------
 
