@@ -68,5 +68,12 @@ public class TestICUFoldingFilter extends BaseTokenStreamTestCase {
     
     // ascii-folding-filter type stuff
     assertAnalyzesTo(a, "đis is cræzy", new String[] { "dis", "is", "craezy" });
+
+    // proper downcasing of Turkish dotted-capital I
+    // (according to default case folding rules)
+    assertAnalyzesTo(a, "ELİF", new String[] { "elif" });
+    
+    // handling of decomposed combining-dot-above
+    assertAnalyzesTo(a, "eli\u0307f", new String[] { "elif" });
   }
 }

@@ -117,6 +117,11 @@ Bug fixes
 * LUCENE-2615: Fix DirectIOLinuxDirectory to not assign bogus
   permissions to newly created files, and to not silently hardwire
   buffer size to 1 MB.  (Mark Miller, Robert Muir, Mike McCandless)
+
+* LUCENE-2629: Fix gennorm2 task for generating ICUFoldingFilter's .nrm file. This allows
+  you to customize its normalization/folding, by editing the source data files in src/data
+  and regenerating a new .nrm with 'ant gennorm2'.  (David Bowen via Robert Muir)
+
    
 API Changes
 
