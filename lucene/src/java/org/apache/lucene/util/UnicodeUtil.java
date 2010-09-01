@@ -103,7 +103,6 @@ final public class UnicodeUtil {
 
   private static final long UNI_MAX_BMP = 0x0000FFFF;
 
-  private static final int HALF_BASE = 0x0010000;
   private static final long HALF_SHIFT = 10;
   private static final long HALF_MASK = 0x3FFL;
 
@@ -353,9 +352,8 @@ final public class UnicodeUtil {
         out[outUpto++] = (char) ch;
       } else {
         // target is a character in range 0xFFFF - 0x10FFFF
-        final int chHalf = ch - HALF_BASE;
-        out[outUpto++] = (char) ((chHalf >> HALF_SHIFT) + UNI_SUR_HIGH_START);
-        out[outUpto++] = (char) ((chHalf & HALF_MASK) + UNI_SUR_LOW_START);
+        out[outUpto++] = (char) ((ch >> HALF_SHIFT) + 0xD7C0 /* UNI_SUR_HIGH_START - 64 */);
+        out[outUpto++] = (char) ((ch & HALF_MASK) + UNI_SUR_LOW_START);
       }
     }
     offsets[upto] = outUpto;
