@@ -52,7 +52,7 @@ public class MatchAllDocsQuery extends Query {
     
     MatchAllScorer(IndexReader reader, Similarity similarity, Weight w,
         byte[] norms) throws IOException {
-      super(similarity);
+      super(similarity,w);
       this.termDocs = reader.termDocs(null);
       score = w.getValue();
       this.norms = norms;

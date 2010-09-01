@@ -132,7 +132,7 @@ public class ValueSourceQuery extends Query {
 
     // constructor
     private ValueSourceScorer(Similarity similarity, IndexReader reader, ValueSourceWeight w) throws IOException {
-      super(similarity);
+      super(similarity,w);
       qWeight = w.getValue();
       // this is when/where the values are first created.
       vals = valSrc.getValues(reader);

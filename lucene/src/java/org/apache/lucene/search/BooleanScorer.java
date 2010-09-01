@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.BooleanClause.Occur;
 
 /* Description from Doug Cutting (excerpted from
  * LUCENE-1483):
@@ -115,6 +116,7 @@ final class BooleanScorer extends Scorer {
 
     float score;
     int doc = NO_MORE_DOCS;
+    int freq;
     
     public BucketScorer() { super(null); }
     
@@ -123,6 +125,9 @@ final class BooleanScorer extends Scorer {
 
     @Override
     public int docID() { return doc; }
+
+    @Override
+    public float freq() { return freq; }
 
     @Override
     public int nextDoc() throws IOException { return NO_MORE_DOCS; }
@@ -159,7 +164,8 @@ final class BooleanScorer extends Scorer {
 
   static final class SubScorer {
     public Scorer scorer;
-    public boolean required = false;
+    // TODO: re-enable this if BQ ever sends us required clauses
+    //public boolean required = false;
     public boolean prohibited = false;
     public Collector collector;
     public SubScorer next;
@@ -167,8 +173,12 @@ final class BooleanScorer extends Scorer {
     public SubScorer(Scorer scorer, boolean required, boolean prohibited,
         Collector collector, SubScorer next)
       throws IOException {
+      if (required) {
+        throw new IllegalArgumentException("this scorer cannot handle required=true");
+      }
       this.scorer = scorer;
-      this.required = required;
+      // TODO: re-enable this if BQ ever sends us required clauses
+      //this.required = required;
       this.prohibited = prohibited;
       this.collector = collector;
       this.next = next;
@@ -178,17 +188,18 @@ final class BooleanScorer extends Scorer {
   private SubScorer scorers = null;
   private BucketTable bucketTable = new BucketTable();
   private final float[] coordFactors;
-  private int requiredMask = 0;
+  // TODO: re-enable this if BQ ever sends us required clauses
+  //private int requiredMask = 0;
   private int prohibitedMask = 0;
   private int nextMask = 1;
   private final int minNrShouldMatch;
   private int end;
   private Bucket current;
   private int doc = -1;
-
-  BooleanScorer(Similarity similarity, int minNrShouldMatch,
+  
+  BooleanScorer(Weight weight, Similarity similarity, int minNrShouldMatch,
       List<Scorer> optionalScorers, List<Scorer> prohibitedScorers, int maxCoord) throws IOException {
-    super(similarity);
+    super(similarity, weight);
     this.minNrShouldMatch = minNrShouldMatch;
 
     if (optionalScorers != null && optionalScorers.size() > 0) {
@@ -231,8 +242,11 @@ final class BooleanScorer extends Scorer {
       while (current != null) {         // more queued 
 
         // check prohibited & required
-        if ((current.bits & prohibitedMask) == 0 && 
-            (current.bits & requiredMask) == requiredMask) {
+        if ((current.bits & prohibitedMask) == 0) {
+
+            // TODO: re-enable this if BQ ever sends us required
+            // clauses
+            //&& (current.bits & requiredMask) == requiredMask) {
           
           if (current.doc >= max){
             tmp = current;
@@ -245,6 +259,7 @@ final class BooleanScorer extends Scorer {
           if (current.coord >= minNrShouldMatch) {
             bs.score = current.score * coordFactors[current.coord];
             bs.doc = current.doc;
+            bs.freq = current.coord;
             collector.collect(current.doc);
           }
         }
@@ -294,8 +309,9 @@ final class BooleanScorer extends Scorer {
 
         // check prohibited & required, and minNrShouldMatch
         if ((current.bits & prohibitedMask) == 0 &&
-            (current.bits & requiredMask) == requiredMask &&
             current.coord >= minNrShouldMatch) {
+          // TODO: re-enable this if BQ ever sends us required clauses
+          // (current.bits & requiredMask) == requiredMask &&
           return doc = current.doc;
         }
       }
@@ -338,6 +354,29 @@ final class BooleanScorer extends Scorer {
     }
     buffer.append(")");
     return buffer.toString();
+  }
+  
+  @Override
+  protected void visitSubScorers(Query parent, Occur relationship, ScorerVisitor<Query, Query, Scorer> visitor) {
+    super.visitSubScorers(parent, relationship, visitor);
+    final Query q = weight.getQuery();
+    SubScorer sub = scorers;
+    while(sub != null) {
+      // TODO: re-enable this if BQ ever sends us required
+      //clauses
+      //if (sub.required) {
+      //relationship = Occur.MUST;
+      if (!sub.prohibited) {
+        relationship = Occur.SHOULD;
+      } else {
+        // TODO: maybe it's pointless to do this, but, it is
+        // possible the doc may still be collected, eg foo
+        // OR (bar -fee)
+        relationship = Occur.MUST_NOT;
+      }
+      sub.scorer.visitSubScorers(q, relationship, visitor);
+      sub = sub.next;
+    }
   }
 
 }

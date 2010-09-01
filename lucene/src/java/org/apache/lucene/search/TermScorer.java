@@ -24,12 +24,11 @@ import org.apache.lucene.index.TermDocs;
 /** Expert: A <code>Scorer</code> for documents matching a <code>Term</code>.
  */
 final class TermScorer extends Scorer {
-  
-  private Weight weight;
   private TermDocs termDocs;
   private byte[] norms;
   private float weightValue;
   private int doc = -1;
+  private int freq;
 
   private final int[] docs = new int[32];         // buffered doc numbers
   private final int[] freqs = new int[32];        // buffered term freqs
@@ -53,9 +52,8 @@ final class TermScorer extends Scorer {
    *          The field norms of the document fields for the <code>Term</code>.
    */
   TermScorer(Weight weight, TermDocs td, Similarity similarity, byte[] norms) {
-    super(similarity);
+    super(similarity, weight);
     
-    this.weight = weight;
     this.termDocs = td;
     this.norms = norms;
     this.weightValue = weight.getValue();
@@ -87,6 +85,7 @@ final class TermScorer extends Scorer {
         }
       } 
       doc = docs[pointer];
+      freq = freqs[pointer];
     }
     return true;
   }
@@ -94,12 +93,17 @@ final class TermScorer extends Scorer {
   @Override
   public int docID() { return doc; }
 
+  @Override
+  public float freq() {
+    return freq;
+  }
+
   /**
    * Advances to the next document matching the query. <br>
    * The iterator over the matching documents is buffered using
    * {@link TermDocs#read(int[],int[])}.
    * 
-   * @return the document matching the query or -1 if there are no more documents.
+   * @return the document matching the query or NO_MORE_DOCS if there are no more documents.
    */
   @Override
   public int nextDoc() throws IOException {
@@ -114,17 +118,17 @@ final class TermScorer extends Scorer {
       }
     } 
     doc = docs[pointer];
+    freq = freqs[pointer];
     return doc;
   }
   
   @Override
   public float score() {
     assert doc != -1;
-    int f = freqs[pointer];
     float raw =                                   // compute tf(f)*weight
-      f < SCORE_CACHE_SIZE                        // check cache
-      ? scoreCache[f]                             // cache hit
-      : getSimilarity().tf(f)*weightValue;        // cache miss
+      freq < SCORE_CACHE_SIZE                        // check cache
+      ? scoreCache[freq]                             // cache hit
+      : getSimilarity().tf(freq)*weightValue;        // cache miss
 
     return norms == null ? raw : raw * getSimilarity().decodeNormValue(norms[doc]); // normalize for field
   }
@@ -136,13 +140,14 @@ final class TermScorer extends Scorer {
    * 
    * @param target
    *          The target document number.
-   * @return the matching document or -1 if none exist.
+   * @return the matching document or NO_MORE_DOCS if none exist.
    */
   @Override
   public int advance(int target) throws IOException {
     // first scan in cache
     for (pointer++; pointer < pointerMax; pointer++) {
       if (docs[pointer] >= target) {
+    	freq = freqs[pointer];
         return doc = docs[pointer];
       }
     }
@@ -153,7 +158,7 @@ final class TermScorer extends Scorer {
       pointerMax = 1;
       pointer = 0;
       docs[pointer] = doc = termDocs.doc();
-      freqs[pointer] = termDocs.freq();
+      freqs[pointer] = freq = termDocs.freq();
     } else {
       doc = NO_MORE_DOCS;
     }
@@ -163,4 +168,5 @@ final class TermScorer extends Scorer {
   /** Returns a string representation of this <code>TermScorer</code>. */
   @Override
   public String toString() { return "scorer(" + weight + ")"; }
+
 }
