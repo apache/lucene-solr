@@ -726,6 +726,22 @@ public class SolrPluginUtils {
     return s.toString().replace("\"","");
   }
 
+  public static NamedList removeNulls(NamedList nl) {
+    for (int i=0; i<nl.size(); i++) {
+      if (nl.getName(i)==null) {
+        NamedList newList = nl instanceof SimpleOrderedMap ? new SimpleOrderedMap() : new NamedList();
+        for (int j=0; j<nl.size(); j++) {
+          String n = nl.getName(j);
+          if (n != null) {
+            newList.add(n, nl.getVal(j));
+          }
+        }
+        return newList;
+      }
+    }
+    return nl;
+  }
+
   /**
    * A subclass of SolrQueryParser that supports aliasing fields for
    * constructing DisjunctionMaxQueries.

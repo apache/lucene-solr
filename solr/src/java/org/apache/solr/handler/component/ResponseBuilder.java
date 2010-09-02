@@ -160,6 +160,14 @@ public class ResponseBuilder {
   public boolean isDebug() {
     return debugQuery || debugTimings || debugResults;
   }
+
+  /**
+   *
+   * @return true if all debugging options are on
+   */
+  public boolean isDebugAll(){
+    return debugQuery && debugTimings && debugResults;
+  }
   
   public void setDebug(boolean dbg){
     debugQuery = dbg;
