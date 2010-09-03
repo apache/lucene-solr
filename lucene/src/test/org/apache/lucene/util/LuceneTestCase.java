@@ -179,7 +179,8 @@ public abstract class LuceneTestCase extends TestCase {
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
     Locale.setDefault(savedLocale);
     TimeZone.setDefault(savedTimeZone);
-    
+    System.clearProperty("solr.solr.home");
+    System.clearProperty("solr.data.dir");
     try {
       Thread.setDefaultUncaughtExceptionHandler(savedUncaughtExceptionHandler);
       if (!uncaughtExceptions.isEmpty()) {

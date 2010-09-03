@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 
 import java.util.LinkedList;
 import java.util.List;
+import org.apache.solr.core.SolrConfig;
 
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
@@ -42,6 +43,7 @@ public class BadIndexSchemaTest extends AbstractSolrTestCase {
   
   @Override 
   public void tearDown() throws Exception {
+    SolrConfig.severeErrors.clear();
     super.tearDown();
   }
 

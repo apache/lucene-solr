@@ -144,6 +144,7 @@
            failureProperty="tests.failed"
            dir="src/test/resources/"
            tempdir="${tempDir}"
+           forkmode="perBatch"
            >
       <sysproperty key="java.util.logging.config.file" value="${common-solr.dir}/testlogging.properties"/>
       <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
@@ -183,6 +184,7 @@
            failureProperty="tests.failed"
            dir="src/extras/test/resources/"
            tempdir="${tempDir}"
+           forkmode="perBatch"
            >
       <sysproperty key="java.util.logging.config.file" value="${common-solr.dir}/testlogging.properties"/>
       <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>

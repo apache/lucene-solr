@@ -33,6 +33,7 @@ public class TestBadConfig extends AbstractSolrTestCase {
       assertTrue(e.getMessage().contains("unset.sys.property"));
     } finally {
       resetExceptionIgnores();
+      SolrConfig.severeErrors.clear();
     }
   }
     

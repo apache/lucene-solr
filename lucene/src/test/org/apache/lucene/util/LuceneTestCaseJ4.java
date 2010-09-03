@@ -29,7 +29,6 @@ import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 
 import org.junit.After;
@@ -50,23 +49,22 @@ import org.junit.runners.model.FrameworkMethod;
 import org.junit.runners.model.InitializationError;
 
 import java.io.File;
-import java.io.PrintStream;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Hashtable;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
-import java.util.Locale;
-import java.util.Random;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Random;
 import java.util.TimeZone;
 import java.util.WeakHashMap;
-import java.util.Collections;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -107,7 +105,7 @@ import static org.junit.Assert.fail;
 // get from that override is provided by InterceptTestCaseEvents
 //@RunWith(RunBareWrapper.class)
 @RunWith(LuceneTestCaseJ4.LuceneTestCaseRunner.class)
-public class LuceneTestCaseJ4 {
+public abstract class LuceneTestCaseJ4 {
 
   /**
    * true iff tests are run in verbose mode. Note: if it is false, tests are not
@@ -196,6 +194,8 @@ public class LuceneTestCaseJ4 {
   public static void afterClassLuceneTestCaseJ4() {
     Locale.setDefault(savedLocale);
     TimeZone.setDefault(savedTimeZone);
+    System.clearProperty("solr.solr.home");
+    System.clearProperty("solr.data.dir");
     // now look for unclosed resources
     for (MockDirectoryWrapper d : stores.keySet()) {
       if (d.isOpen()) {

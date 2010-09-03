@@ -113,6 +113,7 @@ public class TestVariableResolver extends SolrTestCaseJ4 {
 
       SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
       format.setTimeZone(TimeZone.getTimeZone("UTC"));
+      resetEvaluatorBagDateMathParser();
       DateMathParser dmp = new DateMathParser(TimeZone.getDefault(), Locale.getDefault());
 
       String s = vri.replaceTokens("${dataimporter.functions.formatDate('NOW/DAY','yyyy-MM-dd HH:mm')}");
@@ -154,6 +155,7 @@ public class TestVariableResolver extends SolrTestCaseJ4 {
 
       SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
       format.setTimeZone(TimeZone.getTimeZone("UTC"));
+      resetEvaluatorBagDateMathParser();
       DateMathParser dmp = new DateMathParser(TimeZone.getDefault(), Locale.getDefault());
 
       resolver.addNamespace("dataimporter.functions", EvaluatorBag
@@ -173,5 +175,15 @@ public class TestVariableResolver extends SolrTestCaseJ4 {
       public String evaluate(String expression, Context context) {
         return "Hello World";
       }
+  }
+
+  private void resetEvaluatorBagDateMathParser() {
+    EvaluatorBag.dateMathParser = new DateMathParser(TimeZone
+            .getDefault(), Locale.getDefault()){
+      @Override
+      public Date getNow() {
+        return new Date();
+      }
+    };
   }
 }
