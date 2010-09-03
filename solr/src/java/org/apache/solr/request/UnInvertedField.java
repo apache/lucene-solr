@@ -599,7 +599,7 @@ public class UnInvertedField {
 
         // if we are deep paging, we don't have to order the highest "offset" counts.
         int collectCount = Math.max(0, queue.size() - off);
-        assert collectCount < lim;
+        assert collectCount <= lim;
 
         // the start and end indexes of our list "sorted" (starting with the highest value)
         int sortedIdxStart = queue.size() - (collectCount - 1);
