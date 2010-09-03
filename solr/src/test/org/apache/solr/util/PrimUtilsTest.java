@@ -51,4 +51,44 @@ public class PrimUtilsTest extends LuceneTestCase {
     }
   }
 
+  public void testLongPriorityQueue() {
+    int maxSize = 100;
+    long[] a = new long[maxSize];
+    long[] discards = new long[maxSize];
+
+    for (int iter=0; iter<100; iter++) {
+      int discardCount = 0;
+      int startSize = r.nextInt(maxSize) + 1;
+      int endSize = startSize==maxSize ? maxSize : startSize + r.nextInt(maxSize-startSize);
+      int adds = r.nextInt(maxSize+1);
+      // System.out.println("startSize=" + startSize + " endSize=" + endSize + " adds="+adds);
+      LongPriorityQueue pq = new LongPriorityQueue(startSize, endSize, Long.MIN_VALUE);
+
+      for (int i=0; i<adds; i++) {
+        long v = r.nextLong();
+        a[i] = v;
+        long out = pq.insertWithOverflow(v);
+        if (i < endSize) {
+          assertEquals(out, Long.MIN_VALUE);
+        } else {
+          discards[discardCount++] = out;
+        }
+      }
+      assertEquals(Math.min(adds,endSize), pq.size());
+      assertEquals(adds, pq.size() + discardCount);
+
+      Arrays.sort(a, 0, adds);
+      Arrays.sort(discards, 0, discardCount);
+      for (int i=0; i<discardCount; i++) {
+        assertEquals(a[i], discards[i]);
+      }
+
+      for (int i=discardCount; i<adds; i++) {
+        assertEquals(a[i], pq.pop());
+      }
+
+      assertEquals(0, pq.size());
+    }
+  }
+
 }

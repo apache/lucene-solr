@@ -288,6 +288,12 @@ Optimizations
 * SOLR-2046: Simplify legacy replication scripts by adding common functions
   to scripts-util. (koji)
 
+* SOLR-2092: Speed up single-valued and multi-valued "fc" faceting. Typical
+  improvement is 5%, but can be much greater (up to 10x faster) when facet.offset
+  is very large (deep paging). (yonik)
+
+
+
 Bug Fixes
 ----------------------
 

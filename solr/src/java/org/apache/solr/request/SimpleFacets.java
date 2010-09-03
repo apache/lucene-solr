@@ -44,6 +44,7 @@ import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.util.ByteUtils;
 import org.apache.solr.util.DateMathParser;
 import org.apache.solr.handler.component.ResponseBuilder;
+import org.apache.solr.util.LongPriorityQueue;
 
 import java.io.IOException;
 import java.util.*;
@@ -416,9 +417,9 @@ public class SimpleFacets {
     }
 
     final int nTerms=endTermIndex-startTermIndex;
+    int missingCount = -1; 
 
     CharArr spare = new CharArr();
-
     if (nTerms>0 && docs.size() >= mincount) {
 
       // count collection array only needs to be as big as the number of terms we are
@@ -475,6 +476,10 @@ public class SimpleFacets {
         }
       }
 
+      if (startTermIndex == 0) {
+        missingCount = counts[0];
+      }
+
       // IDEA: we could also maintain a count of "other"... everything that fell outside
       // of the top 'N'
 
@@ -484,7 +489,8 @@ public class SimpleFacets {
       if (sort.equals(FacetParams.FACET_SORT_COUNT) || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY)) {
         int maxsize = limit>0 ? offset+limit : Integer.MAX_VALUE-1;
         maxsize = Math.min(maxsize, nTerms);
-        final BoundedTreeSet<CountPair<BytesRef,Integer>> queue = new BoundedTreeSet<CountPair<BytesRef,Integer>>(maxsize);
+        LongPriorityQueue queue = new LongPriorityQueue(Math.min(maxsize,1000), maxsize, Long.MIN_VALUE);
+
         int min=mincount-1;  // the smallest value in the top 'N' values
         for (int i=(startTermIndex==0)?1:0; i<nTerms; i++) {
           int c = counts[i];
@@ -492,18 +498,33 @@ public class SimpleFacets {
             // NOTE: we use c>min rather than c>=min as an optimization because we are going in
             // index order, so we already know that the keys are ordered.  This can be very
             // important if a lot of the counts are repeated (like zero counts would be).
-            queue.add(new CountPair<BytesRef,Integer>(si.lookup(startTermIndex+i, new BytesRef()), c));
-            if (queue.size()>=maxsize) min=queue.last().val;
+
+            // smaller term numbers sort higher, so subtract the term number instead
+            long pair = (((long)c)<<32) + (Integer.MAX_VALUE - i);
+            boolean displaced = queue.insert(pair);
+            if (displaced) min=(int)(queue.top() >>> 32);
           }
         }
-        // now select the right page from the results
-        for (CountPair<BytesRef,Integer> p : queue) {
-          if (--off>=0) continue;
-          if (--lim<0) break;
+
+        // if we are deep paging, we don't have to order the highest "offset" counts.
+        int collectCount = Math.max(0, queue.size() - off);
+        assert collectCount < lim;
+
+        // the start and end indexes of our list "sorted" (starting with the highest value)
+        int sortedIdxStart = queue.size() - (collectCount - 1);
+        int sortedIdxEnd = queue.size() + 1;
+        final long[] sorted = queue.sort(collectCount);
+
+        for (int i=sortedIdxStart; i<sortedIdxEnd; i++) {
+          long pair = sorted[i];
+          int c = (int)(pair >>> 32);
+          int tnum = Integer.MAX_VALUE - (int)pair;
+
           spare.reset();
-          ft.indexedToReadable(p.key, spare);
-          res.add(spare.toString(), p.val);
+          ft.indexedToReadable(si.lookup(startTermIndex+tnum, br), spare);
+          res.add(spare.toString(), c);
         }
+      
       } else {
         // add results in index order
         int i=(startTermIndex==0)?1:0;
@@ -526,7 +547,10 @@ public class SimpleFacets {
     }
 
     if (missing) {
-      res.add(null, getFieldMissingCount(searcher,docs,fieldName));
+      if (missingCount < 0) {
+        missingCount = getFieldMissingCount(searcher,docs,fieldName);
+      }
+      res.add(null, missingCount);
     }
     
     return res;
