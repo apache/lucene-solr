@@ -285,8 +285,9 @@ Optimizations
   percentage of the number of unique terms in the field.  Extreme cases
   yield speedups over 3x. (yonik)
 
-* SOLR-2046: add common functions to scripts-util. (koji)
-  
+* SOLR-2046: Simplify legacy replication scripts by adding common functions
+  to scripts-util. (koji)
+
 Bug Fixes
 ----------------------
 
