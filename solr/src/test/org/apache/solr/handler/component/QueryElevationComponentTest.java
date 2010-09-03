@@ -35,6 +35,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.component.QueryElevationComponent.ElevationObj;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -47,6 +48,14 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-elevate.xml","schema12.xml");
+  }
+  
+  @Before
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    clearIndex();
+    assertU(commit());
   }
   
   @Test
