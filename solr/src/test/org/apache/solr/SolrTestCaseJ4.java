@@ -51,7 +51,7 @@ import static org.junit.Assert.fail;
  * Unlike AbstractSolrTestCase, a new core is not created for each test method.
  *
  */
-public class SolrTestCaseJ4 extends LuceneTestCaseJ4 {
+public abstract class SolrTestCaseJ4 extends LuceneTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClassSolrTestCase() throws Exception {

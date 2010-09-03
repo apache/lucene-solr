@@ -17,6 +17,8 @@
 package org.apache.solr.schema;
 
 import junit.framework.TestCase;
+
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.beans.Field;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -32,26 +34,19 @@ import java.nio.ByteBuffer;
 import java.io.File;
 import java.util.List;
 
-public class TestBinaryField extends AbstractSolrTestCase {
+public class TestBinaryField extends LuceneTestCase {
   CommonsHttpSolrServer server;
   JettySolrRunner jetty;
 
   int port = 0;
   static final String context = "/example";
 
-
-  public String getSchemaFile() {
-    return null;
-  }
-  public String getSolrConfigFile() {
-    return null;
-  }
-
   @Override
   public void setUp() throws Exception {
     super.setUp();
 
-    File home = dataDir;
+    File home = new File(TEMP_DIR,
+        "solrtest-TestBinaryField-" + System.currentTimeMillis());
 
     File homeDir = new File(home, "example");
     File dataDir = new File(homeDir, "data");
@@ -67,12 +62,10 @@ public class TestBinaryField extends AbstractSolrTestCase {
     f = new File(confDir, "schema.xml");
     fname = "." + File.separator + "solr" + File.separator + "conf" + File.separator + "schema-binaryfield.xml";
     FileUtils.copyFile(new File(fname), f);
-
-    jetty = new JettySolrRunner("/solr", port);
     System.setProperty("solr.solr.home", homeDir.getAbsolutePath());
     System.setProperty("solr.data.dir", dataDir.getAbsolutePath());
-    jetty.start();
-
+    System.setProperty("solr.test.sys.prop1", "propone");
+    System.setProperty("solr.test.sys.prop2", "proptwo");
 
     jetty = new JettySolrRunner(context, 0);
     jetty.start();
@@ -80,8 +73,6 @@ public class TestBinaryField extends AbstractSolrTestCase {
 
     String url = "http://localhost:" + jetty.getLocalPort() + context;
     server = new CommonsHttpSolrServer(url);
-//    server.setRequestWriter(new BinaryRequestWriter());
-    super.postSetUp();
   }
 
   public void testSimple() throws Exception {

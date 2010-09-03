@@ -106,6 +106,7 @@
            failureProperty="tests.failed"
            dir="src/test/resources/"
            tempdir="${junit.output.dir}"
+           forkmode="perBatch"
             >
       <sysproperty key="java.util.logging.config.file" value="${common-solr.dir}/testlogging.properties"/>
       <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>

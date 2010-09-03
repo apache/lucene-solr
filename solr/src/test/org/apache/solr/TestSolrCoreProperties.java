@@ -16,6 +16,7 @@
  */
 package org.apache.solr;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.SolrServer;
@@ -35,17 +36,18 @@ import java.util.Properties;
  * @version $Id$
  * @since solr 1.4
  */
-public class TestSolrCoreProperties extends AbstractSolrTestCase {
+public class TestSolrCoreProperties extends LuceneTestCase {
   private static final String CONF_DIR = "." + File.separator + "solr" + File.separator + "conf" + File.separator;
   JettySolrRunner solrJetty;
   SolrServer client;
 
   @Override
   public void setUp() throws Exception {
+    super.setUp();
     setUpMe();
     System.setProperty("solr.solr.home", getHomeDir());
     System.setProperty("solr.data.dir", getDataDir());
-
+    
     solrJetty = new JettySolrRunner("/solr", 0);
 
     solrJetty.start();
@@ -58,6 +60,7 @@ public class TestSolrCoreProperties extends AbstractSolrTestCase {
   public void tearDown() throws Exception {
     solrJetty.stop();
     AbstractSolrTestCase.recurseDelete(homeDir);
+    super.tearDown();
   }
 
   public void testSimple() throws SolrServerException {
@@ -70,6 +73,7 @@ public class TestSolrCoreProperties extends AbstractSolrTestCase {
 
   File homeDir;
   File confDir;
+  File dataDir;
 
   /**
    * if masterPort is null, this instance is a master -- otherwise this instance is a slave, and assumes the master is
@@ -81,7 +85,6 @@ public class TestSolrCoreProperties extends AbstractSolrTestCase {
     return homeDir.toString();
   }
 
-  @Override
   public String getSchemaFile() {
     return CONF_DIR + "schema-replication1.xml";
   }
@@ -94,7 +97,6 @@ public class TestSolrCoreProperties extends AbstractSolrTestCase {
     return dataDir.toString();
   }
 
-  @Override
   public String getSolrConfigFile() {
     return CONF_DIR + "solrconfig-solcoreproperties.xml";
   }

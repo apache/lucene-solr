@@ -27,6 +27,10 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.util.List;
@@ -37,19 +41,27 @@ import java.util.List;
  * @version $Id$
  * @since solr 1.4
  */
-public class TestContentStreamDataSource extends TestCase {
+public class TestContentStreamDataSource extends SolrTestCaseJ4 {
   private static final String CONF_DIR = "." + File.separator + "solr" + File.separator + "conf" + File.separator;
   SolrInstance instance = null;
   JettySolrRunner jetty;
 
-
+  @Before
   public void setUp() throws Exception {
+    super.setUp();
     instance = new SolrInstance("inst", null);
     instance.setUp();
     jetty = createJetty(instance);
-
+  }
+  
+  @After
+  public void tearDown() throws Exception {
+    jetty.stop();
+    instance.tearDown();
+    super.tearDown();
   }
 
+  @Test
   public void testSimple() throws Exception {
     DirectXmlRequest req = new DirectXmlRequest("/dataimport", xml);
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -69,12 +81,13 @@ public class TestContentStreamDataSource extends TestCase {
     assertEquals("Hello C1", ((List)doc.getFieldValue("desc")).get(0));
   }
 
-  private class SolrInstance extends AbstractSolrTestCase {
+  private class SolrInstance {
     String name;
     Integer port;
     File homeDir;
     File confDir;
-
+    File dataDir;
+    
     /**
      * if masterPort is null, this instance is a master -- otherwise this instance is a slave, and assumes the master is
      * on localhost at the specified port.
@@ -88,7 +101,6 @@ public class TestContentStreamDataSource extends TestCase {
       return homeDir.toString();
     }
 
-    @Override
     public String getSchemaFile() {
       return CONF_DIR + "dataimport-schema.xml";
     }
@@ -101,7 +113,6 @@ public class TestContentStreamDataSource extends TestCase {
       return dataDir.toString();
     }
 
-    @Override
     public String getSolrConfigFile() {
       return CONF_DIR + "contentstream-solrconfig.xml";
     }
@@ -130,7 +141,6 @@ public class TestContentStreamDataSource extends TestCase {
     }
 
     public void tearDown() throws Exception {
-      super.tearDown();
       AbstractSolrTestCase.recurseDelete(homeDir);
     }
   }
