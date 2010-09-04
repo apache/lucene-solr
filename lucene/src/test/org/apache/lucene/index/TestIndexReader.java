@@ -615,7 +615,7 @@ public class TestIndexReader extends LuceneTestCase
 
     private void deleteReaderWriterConflict(boolean optimize) throws IOException {
         //Directory dir = new RAMDirectory();
-        Directory dir = getDirectory();
+        Directory dir = newDirectory(random);
 
         Term searchTerm = new Term("content", "aaa");
         Term searchTerm2 = new Term("content", "bbb");
@@ -691,16 +691,13 @@ public class TestIndexReader extends LuceneTestCase
         assertTermDocsCount("deleted termDocs", reader, searchTerm, 0);
         assertTermDocsCount("deleted termDocs", reader, searchTerm2, 100);
         reader.close();
+        dir.close();
     }
-
-  private Directory getDirectory() throws IOException {
-    return FSDirectory.open(new File(TEMP_DIR, "testIndex"));
-  }
 
   public void testFilesOpenClose() throws IOException {
         // Create initial data set
-        File dirFile = new File(TEMP_DIR, "testIndex");
-        Directory dir = getDirectory();
+        File dirFile = _TestUtil.getTempDir("TestIndexReader.testFilesOpenClose");
+        Directory dir = FSDirectory.open(dirFile);
         IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
         addDoc(writer, "test");
         writer.close();
@@ -708,7 +705,7 @@ public class TestIndexReader extends LuceneTestCase
 
         // Try to erase the data - this ensures that the writer closed all files
         _TestUtil.rmDir(dirFile);
-        dir = getDirectory();
+        dir = FSDirectory.open(dirFile);
 
         // Now create the data set again, just as before
         writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
@@ -717,7 +714,7 @@ public class TestIndexReader extends LuceneTestCase
         dir.close();
 
         // Now open existing directory and test that reader closes all files
-        dir = getDirectory();
+        dir = FSDirectory.open(dirFile);
         IndexReader reader1 = IndexReader.open(dir, false);
         reader1.close();
         dir.close();
@@ -728,43 +725,33 @@ public class TestIndexReader extends LuceneTestCase
     }
 
     public void testLastModified() throws Exception {
-      final File fileDir = new File(TEMP_DIR, "testIndex");
       for(int i=0;i<2;i++) {
-        try {
-          final Directory dir;
-          if (0 == i)
-            dir = newDirectory(random);
-          else
-            dir = getDirectory();
-          assertFalse(IndexReader.indexExists(dir));
-          IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
-          addDocumentWithFields(writer);
-          assertTrue(IndexWriter.isLocked(dir));		// writer open, so dir is locked
-          writer.close();
-          assertTrue(IndexReader.indexExists(dir));
-          IndexReader reader = IndexReader.open(dir, false);
-          assertFalse(IndexWriter.isLocked(dir));		// reader only, no lock
-          long version = IndexReader.lastModified(dir);
-          if (i == 1) {
-            long version2 = IndexReader.lastModified(dir);
-            assertEquals(version, version2);
-          }
-          reader.close();
-          // modify index and check version has been
-          // incremented:
-          Thread.sleep(1000);
-
-          writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
-          addDocumentWithFields(writer);
-          writer.close();
-          reader = IndexReader.open(dir, false);
-          assertTrue("old lastModified is " + version + "; new lastModified is " + IndexReader.lastModified(dir), version <= IndexReader.lastModified(dir));
-          reader.close();
-          dir.close();
-        } finally {
-          if (i == 1)
-            _TestUtil.rmDir(fileDir);
+        final Directory dir = newDirectory(random);
+        assertFalse(IndexReader.indexExists(dir));
+        IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
+        addDocumentWithFields(writer);
+        assertTrue(IndexWriter.isLocked(dir));		// writer open, so dir is locked
+        writer.close();
+        assertTrue(IndexReader.indexExists(dir));
+        IndexReader reader = IndexReader.open(dir, false);
+        assertFalse(IndexWriter.isLocked(dir));		// reader only, no lock
+        long version = IndexReader.lastModified(dir);
+        if (i == 1) {
+          long version2 = IndexReader.lastModified(dir);
+          assertEquals(version, version2);
         }
+        reader.close();
+        // modify index and check version has been
+        // incremented:
+        Thread.sleep(1000);
+
+        writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
+        addDocumentWithFields(writer);
+        writer.close();
+        reader = IndexReader.open(dir, false);
+        assertTrue("old lastModified is " + version + "; new lastModified is " + IndexReader.lastModified(dir), version <= IndexReader.lastModified(dir));
+        reader.close();
+        dir.close();
       }
     }
 
@@ -1186,7 +1173,7 @@ public class TestIndexReader extends LuceneTestCase
     }
 
     private void deleteReaderReaderConflict(boolean optimize) throws IOException {
-        Directory dir = getDirectory();
+        Directory dir = newDirectory(random);
 
         Term searchTerm1 = new Term("content", "aaa");
         Term searchTerm2 = new Term("content", "bbb");
