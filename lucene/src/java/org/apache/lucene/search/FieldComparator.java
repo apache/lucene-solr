@@ -716,10 +716,7 @@ public abstract class FieldComparator {
     @Override
     public int compare(int slot1, int slot2) {
       if (readerGen[slot1] == readerGen[slot2]) {
-        int cmp = ords[slot1] - ords[slot2];
-        if (cmp != 0) {
-          return cmp;
-        }
+        return ords[slot1] - ords[slot2];
       }
 
       final String val1 = values[slot1];
@@ -792,20 +789,29 @@ public abstract class FieldComparator {
       bottomSlot = bottom;
 
       bottomValue = values[bottomSlot];
-      if (bottomValue == null) {
-        ords[bottomSlot] = 0;
-        bottomOrd = 0;
+      if (currentReaderGen == readerGen[bottomSlot]) {
+        bottomOrd = ords[bottomSlot];
         bottomSameReader = true;
       } else {
-        final int index = binarySearch(lookup, bottomValue);
-        if (index < 0) {
-          bottomOrd = -index - 2;
-          bottomSameReader = false;
-        } else {
-          bottomOrd = index;
-          // exact value match
+        if (bottomValue == null) {
+          ords[bottomSlot] = 0;
+          bottomOrd = 0;
           bottomSameReader = true;
+        } else {
+          final int index = binarySearch(lookup, bottomValue);
+          if (index < 0) {
+            bottomOrd = -index - 2;
+            bottomSameReader = false;
+          } else {
+            bottomOrd = index;
+            // exact value match
+            bottomSameReader = true;
+          }
         }
+      }
+
+      if (bottomSameReader) {
+        readerGen[bottomSlot] = currentReaderGen;
       }
     }
 
