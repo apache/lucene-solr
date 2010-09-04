@@ -22,16 +22,18 @@ public class ModifiableSolrParamsTest extends LuceneTestCase
 {
 
   @Override
-  public void setUp()
+  public void setUp() throws Exception
   {
+    super.setUp();
     modifiable = new ModifiableSolrParams();
   }
 
 
   @Override
-  public void tearDown()
+  public void tearDown() throws Exception
   {
     modifiable.clear();
+    super.tearDown();
   }
 
 

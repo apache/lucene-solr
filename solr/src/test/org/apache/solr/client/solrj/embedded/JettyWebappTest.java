@@ -45,6 +45,7 @@ public class JettyWebappTest extends LuceneTestCase
   @Override
   public void setUp() throws Exception 
   {
+    super.setUp();
     System.setProperty("solr.solr.home", "../../../example/solr");
     
     File dataDir = new File(SolrTestCaseJ4.TEMP_DIR,
@@ -75,6 +76,7 @@ public class JettyWebappTest extends LuceneTestCase
     try {
       server.stop();
     } catch( Exception ex ) {}
+    super.tearDown();
   }
   
   public void testJSP() throws Exception
