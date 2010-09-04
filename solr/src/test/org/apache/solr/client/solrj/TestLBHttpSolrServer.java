@@ -48,6 +48,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
   HttpClient httpClient = new HttpClient();
 
   public void setUp() throws Exception {
+    super.setUp();
     for (int i = 0; i < solr.length; i++) {
       solr[i] = new SolrInstance("solr" + i, 0);
       solr[i].setUp();
@@ -76,6 +77,7 @@ public class TestLBHttpSolrServer extends LuceneTestCase {
     for (SolrInstance aSolr : solr) {
       aSolr.tearDown();
     }
+    super.tearDown();
   }
 
   public void testSimple() throws Exception {
