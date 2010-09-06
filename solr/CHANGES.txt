@@ -211,6 +211,9 @@ New Features
   allows you to customize how WordDelimiterFilter tokenizes text with
   a configuration file.  (Peter Karich, rmuir)
 
+* SOLR-2099: Add ability to throttle rsync based replication using rsync option --bwlimit.
+  (Brandon Evans via koji)
+
 Optimizations
 ----------------------
 
