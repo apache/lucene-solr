@@ -282,10 +282,9 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
       if(indexCommit == null) {
         indexCommit = req.getSearcher().getReader().getIndexCommit();
-        // race?
-        delPolicy.setReserveDuration(indexCommit.getVersion(), reserveCommitDuration);
       }
- 
+
+      // small race here before the commit point is saved
       new SnapShooter(core, params.get("location")).createSnapAsync(indexCommit, this);
 
     } catch (Exception e) {
@@ -793,14 +792,14 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
       }
       List backup = master.getAll("backupAfter");
       boolean backupOnCommit = backup.contains("commit");
-      boolean backupOnOptimize = backup.contains("optimize");
+      boolean backupOnOptimize = !backupOnCommit && backup.contains("optimize");
       List replicateAfter = master.getAll(REPLICATE_AFTER);
       replicateOnCommit = replicateAfter.contains("commit");
-      replicateOnOptimize = replicateAfter.contains("optimize");
+      replicateOnOptimize = !replicateOnCommit && replicateAfter.contains("optimize");
 
       // if we only want to replicate on optimize, we need the deletion policy to
       // save the last optimized commit point.
-      if (replicateOnOptimize && !replicateOnCommit) {
+      if (replicateOnOptimize) {
         IndexDeletionPolicyWrapper wrapper = core.getDeletionPolicy();
         IndexDeletionPolicy policy = wrapper == null ? null : wrapper.getWrappedDeletionPolicy();
         if (policy instanceof SolrDeletionPolicy) {
@@ -827,7 +826,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
           IndexReader reader = s==null ? null : s.get().getReader();
           if (reader!=null && reader.getIndexCommit() != null && reader.getIndexCommit().getGeneration() != 1L) {
             try {
-              if(!replicateOnCommit && replicateOnOptimize){
+              if(replicateOnOptimize){
                 Collection<IndexCommit> commits = IndexReader.listCommits(reader.directory());
                 for (IndexCommit ic : commits) {
                   if(ic.isOptimized()){
@@ -928,20 +927,27 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
        * This refreshes the latest replicateable index commit and optionally can create Snapshots as well
        */
       public void postCommit() {
+        IndexCommit currentCommitPoint = core.getDeletionPolicy().getLatestCommit();
+
         if (getCommit) {
-          IndexCommit oldCommitPoint = indexCommitPoint;
-          indexCommitPoint = core.getDeletionPolicy().getLatestCommit();
+          // IndexCommit oldCommitPoint = indexCommitPoint;
+          indexCommitPoint = currentCommitPoint;
+
+          // We don't need to save commit points for replication, the SolrDeletionPolicy
+          // always saves the last commit point (and the last optimized commit point, if needed)
+          /***
           if (indexCommitPoint != null) {
             core.getDeletionPolicy().saveCommitPoint(indexCommitPoint.getVersion());
           }
           if(oldCommitPoint != null){
             core.getDeletionPolicy().releaseCommitPoint(oldCommitPoint.getVersion());
           }
+          ***/
         }
         if (snapshoot) {
           try {
             SnapShooter snapShooter = new SnapShooter(core, null);
-            snapShooter.createSnapAsync(core.getDeletionPolicy().getLatestCommit(), ReplicationHandler.this);
+            snapShooter.createSnapAsync(currentCommitPoint, ReplicationHandler.this);
           } catch (Exception e) {
             LOG.error("Exception while snapshooting", e);
           }

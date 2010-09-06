@@ -453,6 +453,11 @@ Bug Fixes
 
 * SOLR-1630: Fix spell checking collation issue related to token positions (rmuir, gsingers) 
 
+* SOLR-2100: The replication handler backup command didn't save the commit
+  point and hence could fail when a newer commit caused the older commit point
+  to be removed before it was finished being copied.  This did not affect
+  normal master/slave replication.  (Peter Sturge via yonik)
+
 
 Other Changes
 ----------------------
