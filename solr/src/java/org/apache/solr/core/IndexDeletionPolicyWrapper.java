@@ -107,6 +107,7 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
     AtomicInteger reserveCount = savedCommits.get(indexCommitVersion);
     if (reserveCount == null) reserveCount = new AtomicInteger();
     reserveCount.incrementAndGet();
+    savedCommits.put(indexCommitVersion, reserveCount);
   }
 
   /** Release a previously saved commit point */
@@ -167,7 +168,7 @@ public class IndexDeletionPolicyWrapper implements IndexDeletionPolicy {
       Long version = delegate.getVersion();
       Long reserve = reserves.get(version);
       if (reserve != null && System.currentTimeMillis() < reserve) return;
-      if(savedCommits.contains(version)) return;
+      if(savedCommits.containsKey(version)) return;
       delegate.delete();
     }
 
