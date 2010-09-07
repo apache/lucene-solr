@@ -4467,6 +4467,12 @@ public class TestIndexWriter extends LuceneTestCase {
     IndexerThreadInterrupt t = new IndexerThreadInterrupt();
     t.setDaemon(true);
     t.start();
+
+    // Force class loader to load ThreadInterruptedException
+    // up front... else we can see a false failure if 2nd
+    // interrupt arrives while class loader is trying to
+    // init this class (in servicing a first interrupt):
+    assertTrue(new ThreadInterruptedException(new InterruptedException()).getCause() instanceof InterruptedException);
     
     // issue 100 interrupts to child thread
     int i = 0;
