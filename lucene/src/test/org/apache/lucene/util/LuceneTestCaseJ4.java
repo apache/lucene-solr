@@ -140,6 +140,7 @@ public abstract class LuceneTestCaseJ4 {
     if (s == null)
       throw new RuntimeException("To run tests, you need to define system property 'tempDir' or 'java.io.tmpdir'.");
     TEMP_DIR = new File(s);
+    TEMP_DIR.mkdirs();
   }
 
   // by default we randomly pick a different codec for
