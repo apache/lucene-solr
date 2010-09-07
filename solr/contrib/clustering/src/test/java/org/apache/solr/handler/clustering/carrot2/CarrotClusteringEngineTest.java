@@ -25,7 +25,7 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.handler.clustering.AbstractClusteringTest;
+import org.apache.solr.handler.clustering.AbstractClusteringTestCase;
 import org.apache.solr.handler.clustering.ClusteringComponent;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.search.DocList;
@@ -43,7 +43,7 @@ import static org.junit.Assert.*;
  *
  */
 @SuppressWarnings("unchecked")
-public class CarrotClusteringEngineTest extends AbstractClusteringTest {
+public class CarrotClusteringEngineTest extends AbstractClusteringTestCase {
   @Test
   public void testCarrotLingo() throws Exception {
   	// Note: the expected number of clusters may change after upgrading Carrot2

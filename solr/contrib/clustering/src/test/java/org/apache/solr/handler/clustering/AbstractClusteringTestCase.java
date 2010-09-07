@@ -25,7 +25,7 @@ import static org.junit.Assert.*;
 /**
  *
  */
-public class AbstractClusteringTest extends SolrTestCaseJ4 {
+public abstract class AbstractClusteringTestCase extends SolrTestCaseJ4 {
   protected static int numberOfDocs = 0;
 
   @BeforeClass
