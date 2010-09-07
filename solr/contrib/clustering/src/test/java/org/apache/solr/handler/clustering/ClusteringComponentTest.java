@@ -34,7 +34,7 @@ import static org.junit.Assert.*;
  *
  *
  **/
-public class ClusteringComponentTest extends AbstractClusteringTest {
+public class ClusteringComponentTest extends AbstractClusteringTestCase {
 
   @Test
   public void testComponent() throws Exception {
