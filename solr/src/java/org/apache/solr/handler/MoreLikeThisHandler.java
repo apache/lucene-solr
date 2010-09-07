@@ -201,11 +201,13 @@ public class MoreLikeThisHandler extends RequestHandlerBase
     boolean dbgQuery = false, dbgResults = false;
     if (dbg == false){//if it's true, we are doing everything anyway.
       String[] dbgParams = req.getParams().getParams(CommonParams.DEBUG);
-      for (int i = 0; i < dbgParams.length; i++) {
-        if (dbgParams[i].equals(CommonParams.QUERY)){
-          dbgQuery = true;
-        } else if (dbgParams[i].equals(CommonParams.RESULTS)){
-          dbgResults = true;
+      if (dbgParams != null) {
+        for (int i = 0; i < dbgParams.length; i++) {
+          if (dbgParams[i].equals(CommonParams.QUERY)){
+            dbgQuery = true;
+          } else if (dbgParams[i].equals(CommonParams.RESULTS)){
+            dbgResults = true;
+          }
         }
       }
     } else {
