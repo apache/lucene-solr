@@ -255,6 +255,6 @@
       </subant>
     </target>
 
-    <target name="init" depends="common.init,compile-demo,compile-memory,compile-highlighter,compile-analyzers-common"/>
+    <target name="init" depends="contrib-build.init,compile-demo,compile-memory,compile-highlighter,compile-analyzers-common"/>
     
 </project>
