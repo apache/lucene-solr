@@ -214,6 +214,9 @@ New Features
 * SOLR-2099: Add ability to throttle rsync based replication using rsync option --bwlimit.
   (Brandon Evans via koji)
 
+* SOLR-1316: Create autosuggest component.
+   (Ankul Garg, Jason Rutherglen, Shalin Shekhar Mangar, Grant Ingersoll, Robert Muir, ab)
+
 Optimizations
 ----------------------
 

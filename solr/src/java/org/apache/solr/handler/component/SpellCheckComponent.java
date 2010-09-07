@@ -111,7 +111,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       spellChecker.build(rb.req.getCore(), rb.req.getSearcher());
       rb.rsp.add("command", "build");
     } else if (params.getBool(SPELLCHECK_RELOAD, false)) {
-      spellChecker.reload();
+      spellChecker.reload(rb.req.getCore(), rb.req.getSearcher());
       rb.rsp.add("command", "reload");
     }
   }
@@ -555,7 +555,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         try {
           LOG.info("Loading spell index for spellchecker: "
                   + checker.getDictionaryName());
-          checker.reload();
+          checker.reload(core, newSearcher);
         } catch (IOException e) {
           log.error( "Exception in reloading spell check index for spellchecker: " + checker.getDictionaryName(), e);
         }

@@ -1,4 +1,4 @@
-/**
+/*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
  * this work for additional information regarding copyright ownership.
@@ -54,9 +54,10 @@ public class HighFrequencyDictionary implements Dictionary {
     return new HighFrequencyIterator();
   }
 
-  final class HighFrequencyIterator implements Iterator {
+  final class HighFrequencyIterator implements TermFreqIterator {
     private TermEnum termEnum;
     private Term actualTerm;
+    private int actualFreq;
     private boolean hasNextCalled;
     private int minNumDocs;
 
@@ -77,7 +78,7 @@ public class HighFrequencyDictionary implements Dictionary {
       }
     }
 
-    public Object next() {
+    public String next() {
       if (!hasNextCalled) {
         hasNext();
       }
@@ -92,6 +93,11 @@ public class HighFrequencyDictionary implements Dictionary {
       return (actualTerm != null) ? actualTerm.text() : null;
     }
 
+    public float freq() {
+      return actualFreq;
+    }
+
+
     public boolean hasNext() {
       if (hasNextCalled) {
         return actualTerm != null;
@@ -100,6 +106,7 @@ public class HighFrequencyDictionary implements Dictionary {
 
       do {
         actualTerm = termEnum.term();
+        actualFreq = termEnum.docFreq();
 
         // if there are no words return false
         if (actualTerm == null) {
