@@ -189,7 +189,7 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
         );
     
     // Try normal sort by 'id'
-    // default 'forceBoost' shoudl be false
+    // default 'forceBoost' should be false
     assertEquals( false, booster.forceElevation );
     args.put( CommonParams.SORT, "str_s asc" );
     assertQ( null, req
