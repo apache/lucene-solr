@@ -132,7 +132,7 @@ public class PointType extends CoordinateFieldType implements SpatialQueryable {
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
-    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Sorting not suported on PointType " + field.getName());
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Sorting not supported on PointType " + field.getName());
   }
 
   @Override
