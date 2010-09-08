@@ -44,16 +44,18 @@ public class DistanceFunctionTest extends SolrTestCaseJ4 {
     assertU(adoc("id", "4", "x_td", String.valueOf(Math.PI / 4), "y_td", String.valueOf(Math.PI / 4), "gh_s", GeoHashUtils.encode(32.7693246, -81.9289094)));
     assertU(adoc("id", "5", "x_td", "45.0", "y_td", "45.0",
             "gh_s", GeoHashUtils.encode(32.7693246, -81.9289094)));
-    assertU(adoc("id", "6", "point_hash", "32.5, -79.0"));
-    assertU(adoc("id", "7", "point_hash", "32.6, -78.0"));
+    assertU(adoc("id", "6", "point_hash", "32.5, -79.0", "point", "32.5, -79.0"));
+    assertU(adoc("id", "7", "point_hash", "32.6, -78.0", "point", "32.6, -78.0"));
     assertU(commit());
     //Get the haversine distance between the point 0,0 and the docs above assuming a radius of 1
-    assertQ(req("fl", "*,score", "q", "{!func}hsin(1, x_td, y_td, 0, 0)", "fq", "id:1"), "//float[@name='score']='0.0'");
-    assertQ(req("fl", "*,score", "q", "{!func}hsin(1, x_td, y_td, 0, 0)", "fq", "id:2"), "//float[@name='score']='" + (float) (Math.PI / 2) + "'");
-    assertQ(req("fl", "*,score", "q", "{!func}hsin(1, x_td, y_td, 0, 0)", "fq", "id:3"), "//float[@name='score']='" + (float) (Math.PI / 2) + "'");
-    assertQ(req("fl", "*,score", "q", "{!func}hsin(1, x_td, y_td, 0, 0)", "fq", "id:4"), "//float[@name='score']='1.0471976'");
-    assertQ(req("fl", "*,score", "q", "{!func}hsin(1, x_td, y_td, 0, 0, true)", "fq", "id:5"), "//float[@name='score']='1.0471976'");
-
+    assertQ(req("fl", "*,score", "q", "{!func}hsin(1, false, x_td, y_td, 0, 0)", "fq", "id:1"), "//float[@name='score']='0.0'");
+    assertQ(req("fl", "*,score", "q", "{!func}hsin(1, false, x_td, y_td, 0, 0)", "fq", "id:2"), "//float[@name='score']='" + (float) (Math.PI / 2) + "'");
+    assertQ(req("fl", "*,score", "q", "{!func}hsin(1, false, x_td, y_td, 0, 0)", "fq", "id:3"), "//float[@name='score']='" + (float) (Math.PI / 2) + "'");
+    assertQ(req("fl", "*,score", "q", "{!func}hsin(1, false, x_td, y_td, 0, 0)", "fq", "id:4"), "//float[@name='score']='1.0471976'");
+    assertQ(req("fl", "*,score", "q", "{!func}hsin(1, true, x_td, y_td, 0, 0)", "fq", "id:5"), "//float[@name='score']='1.0471976'");
+    //SOLR-2114
+    assertQ(req("fl", "*,score", "q", "{!func}hsin(6371.009, true, point, vector(0, 0))", "fq", "id:6"), "//float[@name='score']='8977.814'");
+    
     //Geo Hash Haversine
     //Can verify here: http://www.movable-type.co.uk/scripts/latlong.html, but they use a slightly different radius for the earth, so just be close
     assertQ(req("fl", "*,score", "q", "{!func}ghhsin(" + DistanceUtils.EARTH_MEAN_RADIUS_KM + ", gh_s, \"" + GeoHashUtils.encode(32, -79) +
@@ -67,6 +69,7 @@ public class DistanceFunctionTest extends SolrTestCaseJ4 {
 
 
     assertQ(req("fl", "*,score", "q", "{!func}ghhsin(" + DistanceUtils.EARTH_MEAN_RADIUS_KM + ", gh_s, geohash(32, -79))", "fq", "id:1"), "//float[@name='score']='122.171875'");
+
   }
 
   @Test

@@ -241,12 +241,17 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
 
         double radius = fp.parseDouble();
+        //SOLR-2114, make the convert flag required, since the parser doesn't support much in the way of lookahead or the ability to convert a String into a ValueSource
+        boolean convert = Boolean.parseBoolean(fp.parseArg());
+        
         MultiValueSource pv1;
         MultiValueSource pv2;
 
         ValueSource one = fp.parseValueSource();
         ValueSource two = fp.parseValueSource();
         if (fp.hasMoreArguments()) {
+
+
           List<ValueSource> s1 = new ArrayList<ValueSource>();
           s1.add(one);
           s1.add(two);
@@ -267,10 +272,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
                     "Input must either be 2 MultiValueSources, or there must be 4 ValueSources");
           }
         }
-        boolean convert = false;
-        if (fp.hasMoreArguments()){
-          convert = Boolean.parseBoolean(fp.parseArg());
-        }
+
         return new HaversineFunction(pv1, pv2, radius, convert);
       }
     });
