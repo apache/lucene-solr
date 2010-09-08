@@ -96,7 +96,6 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       query("q","*:*", "sort",f+" asc");
     }
 
-
     // these queries should be exactly ordered and scores should exactly match
     query("q","*:*", "sort",i1+" desc");
     query("q","*:*", "sort",i1+" asc");
@@ -129,21 +128,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     query("q","now their fox sat had put","fl","foofoofoo",
             "hl","true","hl.fl",t1);
 
-
-    handle.put("debug", UNORDERED);
-    handle.put("time", SKIPVAL);
-
-    query("q","now their fox sat had put","fl","*,score",
-            CommonParams.DEBUG_QUERY, "true");
-
-    // TODO: This test currently fails because debug info is obtained only
-    // on shards with matches.
-    /***
-    query("q","matchesnothing","fl","*,score",
-            "debugQuery", "true");    
-    ***/
     query("q","matchesnothing","fl","*,score");  
-
 
     query("q","*:*", "rows",100, "facet","true", "facet.field",t1);
     query("q","*:*", "rows",100, "facet","true", "facet.field",t1, "facet.limit",-1, "facet.sort","count");
@@ -196,6 +181,20 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
       query("q","fox duplicate horses", "hl","true", "hl.fl", t1);
       query("q","*:*", "rows",100);
     }
+
+    // test debugging
+    handle.put("explain", UNORDERED);
+    handle.put("debug", UNORDERED);
+    handle.put("time", SKIPVAL);
+    query("q","now their fox sat had put","fl","*,score",CommonParams.DEBUG_QUERY, "true");
+    query("q", "id:[1 TO 5]", CommonParams.DEBUG_QUERY, "true");
+    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.TIMING);
+    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.RESULTS);
+    query("q", "id:[1 TO 5]", CommonParams.DEBUG, CommonParams.QUERY);
+
+    // TODO: This test currently fails because debug info is obtained only
+    // on shards with matches.
+    // query("q","matchesnothing","fl","*,score", "debugQuery", "true");
 
     // Thread.sleep(10000000000L);
   }
