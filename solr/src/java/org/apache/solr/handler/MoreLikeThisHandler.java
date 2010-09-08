@@ -34,10 +34,8 @@ import java.util.regex.Pattern;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.search.*;
 import org.apache.lucene.search.similar.MoreLikeThis;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
@@ -54,11 +52,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.DocIterator;
-import org.apache.solr.search.DocList;
-import org.apache.solr.search.DocListAndSet;
-import org.apache.solr.search.QueryParsing;
-import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.*;
 
 import org.apache.solr.util.SolrPluginUtils;
 
@@ -83,20 +77,52 @@ public class MoreLikeThisHandler extends RequestHandlerBase
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception 
   {
     SolrParams params = req.getParams();
+
+    // Set field flags
+    String fl = params.get(CommonParams.FL);
+    int flags = 0;
+    if (fl != null) {
+      flags |= SolrPluginUtils.setReturnFields(fl, rsp);
+    }
+
+    String defType = params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE);
+    String q = params.get( CommonParams.Q );
+    Query query = null;
+    SortSpec sortSpec = null;
+    List<Query> filters = null;
+
+    try {
+      if (q != null) {
+        QParser parser = QParser.getParser(q, defType, req);
+        query = parser.getQuery();
+        sortSpec = parser.getSort(true);
+      }
+
+      String[] fqs = req.getParams().getParams(CommonParams.FQ);
+      if (fqs!=null && fqs.length!=0) {
+          filters = new ArrayList<Query>();
+        for (String fq : fqs) {
+          if (fq != null && fq.trim().length()!=0) {
+            QParser fqp = QParser.getParser(fq, null, req);
+            filters.add(fqp.getQuery());
+          }
+        }
+      }
+    } catch (ParseException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+
     SolrIndexSearcher searcher = req.getSearcher();
-    
-    
+
     MoreLikeThisHelper mlt = new MoreLikeThisHelper( params, searcher );
-    List<Query> filters = SolrPluginUtils.parseFilterQueries(req);
-    
+
     // Hold on to the interesting terms if relevant
     TermStyle termStyle = TermStyle.get( params.get( MoreLikeThisParams.INTERESTING_TERMS ) );
     List<InterestingTerm> interesting = (termStyle == TermStyle.NONE )
       ? null : new ArrayList<InterestingTerm>( mlt.mlt.getMaxQueryTerms() );
     
     DocListAndSet mltDocs = null;
-    String q = params.get( CommonParams.Q );
-    
+
     // Parse Required Params
     // This will either have a single Reader or valid query
     Reader reader = null;
@@ -115,13 +141,6 @@ public class MoreLikeThisHandler extends RequestHandlerBase
         }
       }
 
-      // What fields do we need to return
-      String fl = params.get(CommonParams.FL);
-      int flags = 0;
-      if (fl != null) {
-        flags |= SolrPluginUtils.setReturnFields(fl, rsp);
-      }
-
       int start = params.getInt(CommonParams.START, 0);
       int rows = params.getInt(CommonParams.ROWS, 10);
 
@@ -136,8 +155,6 @@ public class MoreLikeThisHandler extends RequestHandlerBase
             true);
         int matchOffset = params.getInt(MoreLikeThisParams.MATCH_OFFSET, 0);
         // Find the base match
-        Query query = QueryParsing.parseQuery(q, params.get(CommonParams.DF),
-            params, req.getSchema());
         DocList match = searcher.getDocList(query, null, null, matchOffset, 1,
             flags); // only get the first one...
         if (includeMatch) {

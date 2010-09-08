@@ -423,6 +423,10 @@
       <str>tvComponent</str>
     </arr>
   </requestHandler>
+
+  <requestHandler name="/mlt" class="solr.MoreLikeThisHandler">
+  </requestHandler>
+
   <searchComponent class="solr.HighlightComponent" name="highlight">
   <highlighting>
    <!-- Configure the standard fragmenter -->

@@ -21,10 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.MoreLikeThisParams;
-import org.apache.solr.common.params.MultiMapSolrParams;
-import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.core.SolrCore;
@@ -53,9 +50,8 @@ public class MoreLikeThisHandlerTest extends AbstractSolrTestCase {
     SolrCore core = h.getCore();
     MoreLikeThisHandler mlt = new MoreLikeThisHandler();
     
-    Map<String,String[]> params = new HashMap<String,String[]>();
-    MultiMapSolrParams mmparams = new MultiMapSolrParams( params );
-    SolrQueryRequestBase req = new SolrQueryRequestBase( core, (SolrParams)mmparams ) {};
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    SolrQueryRequestBase req = new SolrQueryRequestBase( core, params) {};
     
     // requires 'q' or single content stream
     try {
@@ -80,28 +76,48 @@ public class MoreLikeThisHandlerTest extends AbstractSolrTestCase {
     assertU(adoc("id","46","name","Nicole Kidman","subword","Batman","subword","Days of Thunder","subword","Eyes Wide Shut","subword","Far and Away"));
     assertU(commit());
 
-    params.put(CommonParams.Q, new String[]{"id:42"});
-    params.put(MoreLikeThisParams.MLT, new String[]{"true"});
-    params.put(MoreLikeThisParams.SIMILARITY_FIELDS, new String[]{"name,subword,foo_ti"});
-    params.put(MoreLikeThisParams.INTERESTING_TERMS,new String[]{"details"});
-    params.put(MoreLikeThisParams.MIN_TERM_FREQ,new String[]{"1"});
-    params.put(MoreLikeThisParams.MIN_DOC_FREQ,new String[]{"1"});
-    params.put("indent",new String[]{"true"});
+    params.set(CommonParams.Q, "id:42");
+    params.set(MoreLikeThisParams.MLT, "true");
+    params.set(MoreLikeThisParams.SIMILARITY_FIELDS, "name,subword,foo_ti");
+    params.set(MoreLikeThisParams.INTERESTING_TERMS, "details");
+    params.set(MoreLikeThisParams.MIN_TERM_FREQ,"1");
+    params.set(MoreLikeThisParams.MIN_DOC_FREQ,"1");
+    params.set("indent","true");
 
-    SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, (SolrParams)mmparams);
+    SolrQueryRequest mltreq = new LocalSolrQueryRequest( core, params);
     assertQ("morelikethis - tom cruise",mltreq
         ,"//result/doc[1]/int[@name='id'][.='46']"
         ,"//result/doc[2]/int[@name='id'][.='43']");
     
-    params.put(CommonParams.Q, new String[]{"id:44"});
+    params.set(CommonParams.Q, "id:44");
     assertQ("morelike this - harrison ford",mltreq
         ,"//result/doc[1]/int[@name='id'][.='45']");
-    
-    params.put(CommonParams.Q, new String[]{"id:42"}); 
-    params.put(MoreLikeThisParams.QF,new String[]{"name^5.0 subword^0.1"});
+
+    // test that qparser plugins work
+    params.set(CommonParams.Q, "{!field f=id}44");
+    assertQ(mltreq
+        ,"//result/doc[1]/int[@name='id'][.='45']");
+
+    params.set(CommonParams.Q, "id:42");
+    params.set(MoreLikeThisParams.QF,"name^5.0 subword^0.1");
     assertQ("morelikethis with weights",mltreq
         ,"//result/doc[1]/int[@name='id'][.='43']"
         ,"//result/doc[2]/int[@name='id'][.='46']");
+
+
+    // test that qparser plugins work w/ the MoreLikeThisHandler
+    params.set(CommonParams.QT, "/mlt");
+    params.set(CommonParams.Q, "{!field f=id}44");
+    assertQ(mltreq
+        ,"//result/doc[1]/int[@name='id'][.='45']");
+
+    // test that debugging works
+    params.set(CommonParams.QT, "/mlt");
+    params.set("debugQuery", "true");
+    assertQ(mltreq
+        ,"//result/doc[1]/int[@name='id'][.='45']"
+        ,"//lst[@name='debug']/lst[@name='explain']"
+    );
 
     // params.put(MoreLikeThisParams.QF,new String[]{"foo_ti"});
     // String response = h.query(mltreq);

@@ -458,6 +458,8 @@ Bug Fixes
   to be removed before it was finished being copied.  This did not affect
   normal master/slave replication.  (Peter Sturge via yonik)
 
+* SOLR-2107: MoreLikeThisHandler doesn't work with alternate qparsers. (yonik)
+
 
 Other Changes
 ----------------------
