@@ -240,6 +240,11 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
         Weight w = wIter.next();
         BooleanClause c = cIter.next();
         if (w.scorer(reader, true, true) == null) {
+          if (c.isRequired()) {
+            fail = true;
+            Explanation r = new Explanation(0.0f, "no match on required clause (" + c.getQuery().toString() + ")");
+            sumExpl.addDetail(r);
+          }
           continue;
         }
         Explanation e = w.explain(reader, doc);
