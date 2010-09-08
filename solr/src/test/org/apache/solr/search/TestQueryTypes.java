@@ -210,6 +210,14 @@ public class TestQueryTypes extends AbstractSolrTestCase {
             ,"//result[@numFound='2']"
     );
 
+    // test wacky param names
+    assertQ(
+            req("q","{!prefix f=$a/b/c v=$'a b/c'}"
+                ,"a/b/c","v_t", "a b/c", "hel"
+            )
+            ,"//result[@numFound='2']"
+    );
+
     assertQ("test param subst with literal",
             req("q","{!prefix f=$myf v=$my.v}"
                 ,"myf","v_s", "my.v", "{!lit"

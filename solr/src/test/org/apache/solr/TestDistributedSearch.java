@@ -177,7 +177,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     handle.put("facet_fields", SKIPVAL);    
     query("q","*:*", "rows",0, "facet","true", "facet.field",t1,"facet.limit",5, "facet.shard.limit",5);
     // check a complex key name
-   // query("q","*:*", "rows",0, "facet","true", "facet.field","{!key=a/b/c}"+t1,"facet.limit",5, "facet.shard.limit",5);
+    query("q","*:*", "rows",0, "facet","true", "facet.field","{!key=a/b/c}"+t1,"facet.limit",5, "facet.shard.limit",5);
     handle.remove("facet_fields");
 
 

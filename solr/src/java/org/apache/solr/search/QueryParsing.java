@@ -178,15 +178,15 @@ public class QueryParsing {
         // saw equals, so read value
         p.pos++;
         ch = p.peek();
+        boolean deref = false;
+        if (ch == '$') {
+          p.pos++;
+          ch = p.peek();
+          deref = true;  // dereference whatever value is read by treating it as a variable name
+        }
+
         if (ch == '\"' || ch == '\'') {
           val = p.getQuotedString();
-        } else if (ch == '$') {
-          p.pos++;
-          // dereference parameter
-          String pname = p.getId();
-          if (params != null) {
-            val = params.get(pname);
-          }
         } else {
           // read unquoted literal ended by whitespace or '}'
           // there is no escaping.
@@ -201,6 +201,12 @@ public class QueryParsing {
               break;
             }
             p.pos++;
+          }
+        }
+
+        if (deref) {  // dereference parameter
+          if (params != null) {
+            val = params.get(val);
           }
         }
       }
