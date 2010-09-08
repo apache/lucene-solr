@@ -110,8 +110,16 @@ public class RandomIndexWriter implements Closeable {
     w.commit();
   }
   
+  public int numDocs() throws IOException {
+    return w.numDocs();
+  }
+
   public int maxDoc() {
     return w.maxDoc();
+  }
+
+  public void deleteAll() throws IOException {
+    w.deleteAll();
   }
 
   public IndexReader getReader() throws IOException {

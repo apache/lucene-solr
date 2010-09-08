@@ -507,6 +507,9 @@ Bug fixes
 
 * LUCENE-2272: Fix explain in PayloadNearQuery and also fix scoring issue (Peter Keegan via Grant Ingersoll)  
 
+* LUCENE-2634: isCurrent on an NRT reader was failing to return false
+  if the writer had just committed (Nikolay Zamosenchuk via Mike McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight

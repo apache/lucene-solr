@@ -156,7 +156,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     assertTrue(r1.isCurrent());
 
     writer.commit();
-    assertTrue(r1.isCurrent());
+    assertFalse(r1.isCurrent());
 
     assertEquals(200, r1.maxDoc());
 
@@ -725,12 +725,12 @@ public class TestIndexWriterReader extends LuceneTestCase {
             final Random r = new Random();
             do {
               try {
-                for(int i=0;i<10;i++) {
-                  writer.addDocument(createDocument(10*count+i, "test", 4));
+                for(int docUpto=0;docUpto<10;docUpto++) {
+                  writer.addDocument(createDocument(10*count+docUpto, "test", 4));
                 }
                 count++;
                 final int limit = count*10;
-                for(int i=0;i<5;i++) {
+                for(int delUpto=0;delUpto<5;delUpto++) {
                   int x = r.nextInt(limit);
                   writer.deleteDocuments(new Term("field3", "b"+x));
                 }
