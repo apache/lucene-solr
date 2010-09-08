@@ -460,6 +460,12 @@ Bug Fixes
 
 * SOLR-2107: MoreLikeThisHandler doesn't work with alternate qparsers. (yonik)
 
+* SOLR-2111: Change exception handling in distributed faceting to work more
+  like non-distributed faceting, change facet_counts/exception from a String
+  to a List<String> to enable listing all exceptions that happened, and
+  prevent an exception in one facet command from affecting another
+  facet command. (yonik)
+
 
 Other Changes
 ----------------------

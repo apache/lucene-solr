@@ -161,6 +161,7 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
 
     query("q","*:*", "sort",i1+" desc", "stats", "true", "stats.field", i1);
 
+    /*** TODO: the failure may come back in "exception"
     try {
       // test error produced for field that is invalid for schema
       query("q","*:*", "rows",100, "facet","true", "facet.field",invalidField, "facet.mincount",2);
@@ -168,6 +169,17 @@ public class TestDistributedSearch extends BaseDistributedSearchTestCase {
     } catch (SolrServerException ex) {
       // expected
     }
+    ***/
+
+    // Try to get better coverage for refinement queries by turning off over requesting.
+    // This makes it much more likely that we may not get the top facet values and hence
+    // we turn of that checking.
+    handle.put("facet_fields", SKIPVAL);    
+    query("q","*:*", "rows",0, "facet","true", "facet.field",t1,"facet.limit",5, "facet.shard.limit",5);
+    // check a complex key name
+   // query("q","*:*", "rows",0, "facet","true", "facet.field","{!key=a/b/c}"+t1,"facet.limit",5, "facet.shard.limit",5);
+    handle.remove("facet_fields");
+
 
     // index the same document to two servers and make sure things
     // don't blow up.
