@@ -5066,6 +5066,9 @@ public class TestIndexWriter extends LuceneTestCase {
     Directory dir = FSDirectory.open(index);
     Random rand = random;
     RandomIndexWriter w = new RandomIndexWriter(rand, dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer()).setMaxBufferedDocs(_TestUtil.nextInt(rand, 5, 20)));
+    if (VERBOSE) {
+      w.w.setInfoStream(System.out);
+    }
     final int docCount = 200*RANDOM_MULTIPLIER;
     final int fieldCount = _TestUtil.nextInt(rand, 1, 5);
       
@@ -5079,6 +5082,10 @@ public class TestIndexWriter extends LuceneTestCase {
 
     final Map<String,Document> docs = new HashMap<String,Document>();
     
+    if (VERBOSE) {
+      System.out.println("TEST: build index docCount=" + docCount);
+    }
+
     for(int i=0;i<docCount;i++) {
       Document doc = new Document();
       doc.add(idField);
@@ -5102,17 +5109,27 @@ public class TestIndexWriter extends LuceneTestCase {
       }
       if (rand.nextInt(5) == 3 && i > 0) {
         final String delID = ""+rand.nextInt(i);
+        if (VERBOSE) {
+          System.out.println("TEST: delete doc " + delID);
+        }
         w.deleteDocuments(new Term("id", delID));
         docs.remove(delID);
       }
     }
 
+    if (VERBOSE) {
+      System.out.println("TEST: " + docs.size() + " docs in index; now load fields");
+    }
     if (docs.size() > 0) {
       String[] idsList = docs.keySet().toArray(new String[docs.size()]);
 
       for(int x=0;x<2;x++) {
         IndexReader r = w.getReader();
         IndexSearcher s = new IndexSearcher(r);
+
+        if (VERBOSE) {
+          System.out.println("TEST: cycle x=" + x + " r=" + r);
+        }
 
         for(int iter=0;iter<1000*RANDOM_MULTIPLIER;iter++) {
           String testID = idsList[rand.nextInt(idsList.length)];
