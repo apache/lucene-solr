@@ -216,10 +216,12 @@ public class QueryParsing {
 
   public static String encodeLocalParamVal(String val) {
     int len = val.length();
-    int i;
-    for (i=0; i<len; i++) {
-      char ch = val.charAt(i);
-      if (Character.isWhitespace(ch) || ch=='}') break;
+    int i = 0;
+    if (len > 0 && val.charAt(0) != '$') {
+      for (;i<len; i++) {
+        char ch = val.charAt(i);
+        if (Character.isWhitespace(ch) || ch=='}') break;
+      }
     }
 
     if (i>=len) return val;
