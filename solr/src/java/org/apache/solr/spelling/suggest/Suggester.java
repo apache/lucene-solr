@@ -140,7 +140,7 @@ public class Suggester extends SolrSpellChecker {
           lookup.store(storeDir);
         }
       } catch (Exception e) {
-        throw new IOException(e);
+        throw new IOException(e.toString());
       }
     }
   }
