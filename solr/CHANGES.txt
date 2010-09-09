@@ -466,6 +466,10 @@ Bug Fixes
   prevent an exception in one facet command from affecting another
   facet command. (yonik)
 
+* SOLR-2110: Remove the restriction on names for local params
+  substitution/dereferencing.  Properly encode local params in
+  distributed faceting.  (yonik)
+
 * SOLR-2114: Fixed parsing error in hsin function.  The function signature has changed slightly. (gsingers)  
 
 
