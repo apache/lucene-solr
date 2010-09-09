@@ -5062,8 +5062,7 @@ public class TestIndexWriter extends LuceneTestCase {
   }
 
   public void testRandomStoredFields() throws IOException {
-    File index = _TestUtil.getTempDir("lucenerandfields");
-    Directory dir = FSDirectory.open(index);
+    Directory dir = newDirectory(random);
     Random rand = random;
     RandomIndexWriter w = new RandomIndexWriter(rand, dir, new IndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer()).setMaxBufferedDocs(_TestUtil.nextInt(rand, 5, 20)));
     if (VERBOSE) {
@@ -5147,7 +5146,6 @@ public class TestIndexWriter extends LuceneTestCase {
     }
     w.close();
     dir.close();
-    _TestUtil.rmDir(index);
   }
 
   private static class FailTwiceDuringMerge extends MockDirectoryWrapper.Failure {
