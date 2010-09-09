@@ -110,7 +110,7 @@ public class TermsComponent extends SearchComponent {
       NamedList fieldTerms = new NamedList();
       termsResult.add(field, fieldTerms);
 
-      Terms terms = lfields.terms(field);
+      Terms terms = lfields == null ? null : lfields.terms(field);
       if (terms == null) {
         // no terms for this field
         continue;
