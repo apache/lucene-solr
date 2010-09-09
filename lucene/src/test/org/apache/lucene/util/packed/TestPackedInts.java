@@ -232,4 +232,26 @@ public class TestPackedInts extends LuceneTestCase {
     mutable.set(4, 16);
     assertEquals("The value #24 should remain unchanged", 31, mutable.get(24));
   }
+
+  /*
+    Check if the structures properly handle the case where
+    index * bitsPerValue > Integer.MAX_VALUE
+    
+    NOTE: this test allocates 256 MB
+   */
+  public void testIntOverflow() {
+    int INDEX = (int)Math.pow(2, 30)+1;
+    int BITS = 2;
+
+    Packed32 p32 = new Packed32(INDEX, BITS);
+    p32.set(INDEX-1, 1);
+    assertEquals("The value at position " + (INDEX-1)
+        + " should be correct for Packed32", 1, p32.get(INDEX-1));
+    p32 = null; // To free the 256MB used
+
+    Packed64 p64 = new Packed64(INDEX, BITS);
+    p64.set(INDEX-1, 1);
+    assertEquals("The value at position " + (INDEX-1)
+        + " should be correct for Packed64", 1, p64.get(INDEX-1));
+  }
 }

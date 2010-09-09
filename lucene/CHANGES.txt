@@ -243,6 +243,11 @@ Documentation
   Java NOI behavior when a Thread is interrupted while blocking on IO.
   (Simon Willnauer, Robert Muir)
 
+Bug fixes
+
+* LUCENE-2633: PackedInts Packed32 and Packed64 did not support internal
+  structures larger than 256MB (Toke Eskildsen via Mike McCandless)
+
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy

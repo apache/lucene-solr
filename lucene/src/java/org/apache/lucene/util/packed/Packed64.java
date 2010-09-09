@@ -177,7 +177,7 @@ class Packed64 extends PackedInts.ReaderImpl implements PackedInts.Mutable {
    * @return the value at the given index.
    */
   public long get(final int index) {
-    final long majorBitPos = index * bitsPerValue;
+    final long majorBitPos = (long)index * bitsPerValue;
     final int elementPos = (int)(majorBitPos >>> BLOCK_BITS); // / BLOCK_SIZE
     final int bitPos =     (int)(majorBitPos & MOD_MASK); // % BLOCK_SIZE);
 
@@ -188,7 +188,7 @@ class Packed64 extends PackedInts.ReaderImpl implements PackedInts.Mutable {
   }
 
   public void set(final int index, final long value) {
-    final long majorBitPos = index * bitsPerValue;
+    final long majorBitPos = (long)index * bitsPerValue;
     final int elementPos = (int)(majorBitPos >>> BLOCK_BITS); // / BLOCK_SIZE
     final int bitPos =     (int)(majorBitPos & MOD_MASK); // % BLOCK_SIZE);
     final int base = bitPos * FAC_BITPOS;
