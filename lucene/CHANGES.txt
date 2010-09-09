@@ -213,6 +213,9 @@ New features
   to gather the hit-count per sub-clause and per document while a
   search is running.  (Simon Willnauer, Mike McCandless)
 
+* LUCENE-2636: Added ChainingCollector which allows chaining several Collectors
+  together and be passed to IndexSearcher.search methods. (Shai Erera)
+
 Optimizations
 
 * LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.
