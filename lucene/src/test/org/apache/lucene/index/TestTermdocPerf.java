@@ -70,7 +70,7 @@ public class TestTermdocPerf extends LuceneTestCase {
 
     Document doc = new Document();
     doc.add(new Field(field,val, Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS));
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer)
         .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(100));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);
@@ -85,8 +85,7 @@ public class TestTermdocPerf extends LuceneTestCase {
 
 
   public int doTest(int iter, int ndocs, int maxTF, float percentDocs) throws IOException {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
 
     long start = System.currentTimeMillis();
     addDocs(random, dir, ndocs, "foo", "val", maxTF, percentDocs);

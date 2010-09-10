@@ -59,9 +59,8 @@ public class TestEmptyIndex extends LuceneTestCase {
     ii.close();
 
     // make sure a Directory acts the same
-    Random random = newRandom();
-    Directory d = newDirectory(random);
-    new IndexWriter(d, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())).close();
+    Directory d = newDirectory();
+    new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())).close();
     r = IndexReader.open(d, false);
     testNorms(r);
     r.close();
@@ -92,9 +91,8 @@ public class TestEmptyIndex extends LuceneTestCase {
     ii.close();
 
     // make sure a Directory acts the same
-    Random random = newRandom();
-    Directory d = newDirectory(random);
-    new IndexWriter(d, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())).close();
+    Directory d = newDirectory();
+    new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())).close();
     r = IndexReader.open(d, false);
     termsEnumTest(r);
     r.close();

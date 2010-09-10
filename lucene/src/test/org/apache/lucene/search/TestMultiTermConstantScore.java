@@ -54,8 +54,8 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
         "B   2   4 5 6", "Y     3   5 6", null, "C     3     6",
         "X       4 5 6" };
 
-    small = newDirectory(rand);
-    RandomIndexWriter writer = new RandomIndexWriter(rand, small, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
+    small = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, small, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
 
     for (int i = 0; i < data.length; i++) {
       Document doc = new Document();
@@ -608,8 +608,8 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public void testFarsi() throws Exception {
 
     /* build an index */
-    Directory farsiIndex = newDirectory(rand);
-    RandomIndexWriter writer = new RandomIndexWriter(rand, farsiIndex, new MockAnalyzer(MockTokenizer.SIMPLE, true));
+    Directory farsiIndex = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, farsiIndex, new MockAnalyzer(MockTokenizer.SIMPLE, true));
     Document doc = new Document();
     doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
         Field.Index.NOT_ANALYZED));
@@ -648,8 +648,8 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   public void testDanish() throws Exception {
 
     /* build an index */
-    Directory danishIndex = newDirectory(rand);
-    RandomIndexWriter writer = new RandomIndexWriter(rand, danishIndex, new MockAnalyzer(MockTokenizer.SIMPLE, true));
+    Directory danishIndex = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, danishIndex, new MockAnalyzer(MockTokenizer.SIMPLE, true));
 
     // Danish collation orders the words below in the given order
     // (example taken from TestSort.testInternationalSort() ).

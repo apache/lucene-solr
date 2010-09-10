@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -62,8 +61,6 @@ import org.apache.lucene.util.Version;
 //   - skipTo(doc)
 
 public class TestCodecs extends MultiCodecTestCase {
-
-  private Random RANDOM;
   private static String[] fieldNames = new String[] {"one", "two", "three", "four"};
 
   private final static int NUM_TEST_ITER = 20 * RANDOM_MULTIPLIER;
@@ -75,11 +72,11 @@ public class TestCodecs extends MultiCodecTestCase {
 
   // start is inclusive and end is exclusive
   public int nextInt(final int start, final int end) {
-    return start + RANDOM.nextInt(end-start);
+    return start + random.nextInt(end-start);
   }
 
   private int nextInt(final int lim) {
-    return RANDOM.nextInt(lim);
+    return random.nextInt(lim);
   }
 
   char[] getRandomText() {
@@ -260,9 +257,6 @@ public class TestCodecs extends MultiCodecTestCase {
   }
 
   public void testFixedPostings() throws Throwable {
-
-    RANDOM = this.newRandom();
-
     final int NUM_TERMS = 100;
     final TermData[] terms = new TermData[NUM_TERMS];
     for(int i=0;i<NUM_TERMS;i++) {
@@ -276,7 +270,7 @@ public class TestCodecs extends MultiCodecTestCase {
     final FieldData field = new FieldData("field", fieldInfos, terms, true, false);
     final FieldData[] fields = new FieldData[] {field};
 
-    final Directory dir = newDirectory(RANDOM);
+    final Directory dir = newDirectory();
     this.write(fieldInfos, dir, fields);
     final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, -1, SEGMENT, false, true, CodecProvider.getDefault().getWriter(null));
     si.setHasProx(false);
@@ -314,9 +308,6 @@ public class TestCodecs extends MultiCodecTestCase {
   }
 
   public void testRandomPostings() throws Throwable {
-
-    RANDOM = this.newRandom();
-
     final FieldInfos fieldInfos = new FieldInfos();
 
     final FieldData[] fields = new FieldData[NUM_FIELDS];
@@ -326,7 +317,7 @@ public class TestCodecs extends MultiCodecTestCase {
       fields[i] = new FieldData(fieldNames[i], fieldInfos, this.makeRandomTerms(omitTF, storePayloads), omitTF, storePayloads);
     }
 
-    final Directory dir = newDirectory(RANDOM);
+    final Directory dir = newDirectory();
 
     this.write(fieldInfos, dir, fields);
     final SegmentInfo si = new SegmentInfo(SEGMENT, 10000, dir, false, -1, SEGMENT, false, true, CodecProvider.getDefault().getWriter(null));
@@ -352,9 +343,8 @@ public class TestCodecs extends MultiCodecTestCase {
   }
 
   public void testSepPositionAfterMerge() throws IOException {
-    Random random = newRandom();
-    final Directory dir = newDirectory(random);
-    final IndexWriterConfig config = newIndexWriterConfig(random, Version.LUCENE_31,
+    final Directory dir = newDirectory();
+    final IndexWriterConfig config = newIndexWriterConfig(Version.LUCENE_31,
       new MockAnalyzer());
     config.setCodecProvider(new MockSepCodecs());
     final IndexWriter writer = new IndexWriter(dir, config);

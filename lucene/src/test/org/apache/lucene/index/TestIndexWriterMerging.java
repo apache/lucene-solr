@@ -34,11 +34,10 @@ public class TestIndexWriterMerging extends LuceneTestCase
    * change the index order of documents.
    */
   public void testLucene() throws IOException {
-    Random random = newRandom();
     int num=100;
 
-    Directory indexA = newDirectory(random);
-    Directory indexB = newDirectory(random);
+    Directory indexA = newDirectory();
+    Directory indexB = newDirectory();
 
     fillIndex(random, indexA, 0, num);
     boolean fail = verifyIndex(indexA, 0);
@@ -54,9 +53,9 @@ public class TestIndexWriterMerging extends LuceneTestCase
       fail("Index b is invalid");
     }
 
-    Directory merged = newDirectory(random);
+    Directory merged = newDirectory();
 
-    IndexWriter writer = new IndexWriter(merged, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(merged, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(2);
 
     writer.addIndexes(new Directory[]{indexA, indexB});
@@ -95,7 +94,7 @@ public class TestIndexWriterMerging extends LuceneTestCase
 
   private void fillIndex(Random random, Directory dir, int start, int numDocs) throws IOException {
 
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, 
         new MockAnalyzer())
         .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(2));

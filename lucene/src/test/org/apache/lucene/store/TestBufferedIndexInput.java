@@ -78,10 +78,8 @@ public class TestBufferedIndexInput extends LuceneTestCase {
   // Our input comes from a dynamically generated "file" -
   // see MyBufferedIndexInput below.
   public void testReadBytes() throws Exception {
-    final Random r = newRandom();
-
     MyBufferedIndexInput input = new MyBufferedIndexInput();
-    runReadBytes(input, BufferedIndexInput.BUFFER_SIZE, r);
+    runReadBytes(input, BufferedIndexInput.BUFFER_SIZE, random);
 
     // This tests the workaround code for LUCENE-1566 where readBytesInternal
     // provides a workaround for a JVM Bug that incorrectly raises a OOM Error
@@ -95,11 +93,11 @@ public class TestBufferedIndexInput extends LuceneTestCase {
 
     // run test with chunk size of 10 bytes
     runReadBytesAndClose(new SimpleFSIndexInput(tmpInputFile,
-                                                inputBufferSize, 10), inputBufferSize, r);
+                                                inputBufferSize, 10), inputBufferSize, random);
 
     // run test with chunk size of 10 bytes
     runReadBytesAndClose(new NIOFSIndexInput(tmpInputFile,
-                                             inputBufferSize, 10), inputBufferSize, r);
+                                             inputBufferSize, 10), inputBufferSize, random);
   }
 
   private void runReadBytesAndClose(IndexInput input, int bufferSize, Random r)
@@ -243,7 +241,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
 
     public void testSetBufferSize() throws IOException {
       File indexDir = new File(TEMP_DIR, "testSetBufferSize");
-      MockFSDirectory dir = new MockFSDirectory(indexDir, newRandom());
+      MockFSDirectory dir = new MockFSDirectory(indexDir, random);
       try {
         IndexWriter writer = new IndexWriter(dir, new IndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer())

@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.BitSet;
-import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -76,8 +75,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
         "blueberry strudel",
         "blueberry pizza",
     };
-    Random random = newRandom();
-    directory = newDirectory(random);
+    directory = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random, directory);
     
     for (int i=0; i<N_DOCS; i++) {

@@ -263,7 +263,7 @@ public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
     // iw.getConfig().getXYZ(), he'll get the same value he passed to
     // iw.setXYZ().
     IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
-    Directory dir = newDirectory(newRandom());
+    Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, conf);
 
     writer.setSimilarity(new MySimilarity());

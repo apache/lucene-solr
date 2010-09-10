@@ -18,7 +18,6 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -60,8 +59,7 @@ public class TestBasics extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    Random random = newRandom();
-    directory = newDirectory(random);
+    directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         new MockAnalyzer(MockTokenizer.SIMPLE, true));
     //writer.infoStream = System.out;

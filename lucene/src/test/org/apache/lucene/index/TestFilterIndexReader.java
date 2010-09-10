@@ -30,7 +30,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
 
 import java.io.IOException;
-import java.util.Random;
 
 public class TestFilterIndexReader extends LuceneTestCase {
 
@@ -130,9 +129,8 @@ public class TestFilterIndexReader extends LuceneTestCase {
    * @throws Exception on error
    */
   public void testFilterIndexReader() throws Exception {
-    Random random = newRandom();
-    Directory directory = newDirectory(random);
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Directory directory = newDirectory();
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     Document d1 = new Document();
     d1.add(new Field("default","one two", Field.Store.YES, Field.Index.ANALYZED));
@@ -149,8 +147,8 @@ public class TestFilterIndexReader extends LuceneTestCase {
     writer.close();
 
     //IndexReader reader = new TestReader(IndexReader.open(directory, true));
-    Directory target = newDirectory(random);
-    writer = new IndexWriter(target, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Directory target = newDirectory();
+    writer = new IndexWriter(target, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
     IndexReader reader = new TestReader(IndexReader.open(directory, true));
     writer.addIndexes(reader);
     writer.close();

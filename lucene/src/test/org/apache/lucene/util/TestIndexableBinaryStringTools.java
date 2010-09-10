@@ -17,7 +17,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.util.Random;
 import java.nio.CharBuffer;
 import java.nio.ByteBuffer;
 
@@ -75,7 +74,6 @@ public class TestIndexableBinaryStringTools extends LuceneTestCase {
   /** @deprecated remove this test for Lucene 4.0 */
   @Deprecated
   public void testEncodedSortabilityNIO() {
-    Random random = newRandom();
     byte[] originalArray1 = new byte[MAX_RANDOM_BINARY_LENGTH];
     ByteBuffer originalBuf1 = ByteBuffer.wrap(originalArray1);
     char[] originalString1 = new char[MAX_RANDOM_BINARY_LENGTH];
@@ -132,7 +130,6 @@ public class TestIndexableBinaryStringTools extends LuceneTestCase {
   }
 
   public void testEncodedSortability() {
-    Random random = newRandom();
     byte[] originalArray1 = new byte[MAX_RANDOM_BINARY_LENGTH];
     char[] originalString1 = new char[MAX_RANDOM_BINARY_LENGTH];
     char[] encoded1 = new char[MAX_RANDOM_BINARY_LENGTH * 10];
@@ -266,7 +263,6 @@ public class TestIndexableBinaryStringTools extends LuceneTestCase {
   /** @deprecated remove this test for Lucene 4.0 */
   @Deprecated
   public void testRandomBinaryRoundTripNIO() {
-    Random random = newRandom();
     byte[] binary = new byte[MAX_RANDOM_BINARY_LENGTH];
     ByteBuffer binaryBuf = ByteBuffer.wrap(binary);
     char[] encoded = new char[IndexableBinaryStringTools.getEncodedLength(binaryBuf)];
@@ -294,7 +290,6 @@ public class TestIndexableBinaryStringTools extends LuceneTestCase {
   }
 
   public void testRandomBinaryRoundTrip() {
-    Random random = newRandom();
     byte[] binary = new byte[MAX_RANDOM_BINARY_LENGTH];
     char[] encoded = new char[MAX_RANDOM_BINARY_LENGTH * 10];
     byte[] decoded = new byte[MAX_RANDOM_BINARY_LENGTH];

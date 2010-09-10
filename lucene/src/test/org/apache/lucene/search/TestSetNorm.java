@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -39,9 +38,8 @@ public class TestSetNorm extends LuceneTestCase {
   }
 
   public void testSetNorm() throws Exception {
-    Random random = newRandom();
-    Directory store = newDirectory(random);
-    IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Directory store = newDirectory();
+    IndexWriter writer = new IndexWriter(store, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     // add the same document four times
     Fieldable f1 = new Field("field", "word", Field.Store.YES, Field.Index.ANALYZED);

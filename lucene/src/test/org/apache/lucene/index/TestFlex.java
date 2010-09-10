@@ -17,12 +17,7 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.io.*;
-import java.util.*;
 import org.apache.lucene.store.*;
-import org.apache.lucene.index.codecs.*;
-import org.apache.lucene.index.codecs.standard.*;
-import org.apache.lucene.search.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.util.*;
@@ -31,7 +26,7 @@ public class TestFlex extends LuceneTestCase {
 
   // Test non-flex API emulated on flex index
   public void testNonFlex() throws Exception {
-    Directory d = newDirectory(newRandom());
+    Directory d = newDirectory();
 
     final int DOC_COUNT = 177;
 
@@ -65,9 +60,8 @@ public class TestFlex extends LuceneTestCase {
   }
 
   public void testTermOrd() throws Exception {
-    Random random = newRandom();
-    Directory d = newDirectory(random);
-    IndexWriter w = new IndexWriter(d, newIndexWriterConfig(random, TEST_VERSION_CURRENT,
+    Directory d = newDirectory();
+    IndexWriter w = new IndexWriter(d, newIndexWriterConfig(TEST_VERSION_CURRENT,
                                                              new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
     Document doc = new Document();
     doc.add(new Field("f", "a b c", Field.Store.NO, Field.Index.ANALYZED));

@@ -26,7 +26,6 @@ import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Random;
 
 public class TestSegmentMerger extends LuceneTestCase {
   //The variables for the new merged segment
@@ -49,10 +48,9 @@ public class TestSegmentMerger extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    Random random = newRandom();
-    mergedDir = newDirectory(random);
-    merge1Dir = newDirectory(random);
-    merge2Dir = newDirectory(random);
+    mergedDir = newDirectory();
+    merge1Dir = newDirectory();
+    merge2Dir = newDirectory();
     DocHelper.setupDoc(doc1);
     SegmentInfo info1 = DocHelper.writeDoc(merge1Dir, doc1);
     DocHelper.setupDoc(doc2);

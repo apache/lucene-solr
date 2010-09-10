@@ -28,7 +28,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
 
 import java.io.IOException;
-import java.util.Random;
 
 public class TestMultiThreadTermVectors extends LuceneTestCase {
   private Directory directory;
@@ -42,9 +41,8 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    Random random = newRandom();
-    directory = newDirectory(random);
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    directory = newDirectory();
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     //writer.setUseCompoundFile(false);
     //writer.infoStream = System.out;
     for (int i = 0; i < numDocs; i++) {

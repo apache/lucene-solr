@@ -515,8 +515,8 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
   
   // test using a sparse index (with deleted docs).
   public void testSparseIndex() throws IOException {
-    Directory dir = newDirectory(rand);
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     for (int d = -20; d <= 20; d++) {
       Document doc = new Document();

@@ -59,7 +59,6 @@ public class TestSearchForDuplicates extends LuceneTestCase {
   public void testRun() throws Exception {
       StringWriter sw = new StringWriter();
       PrintWriter pw = new PrintWriter(sw, true);
-      Random random = newRandom();
       doTest(random, pw, false);
       pw.close();
       sw.close();
@@ -78,9 +77,9 @@ public class TestSearchForDuplicates extends LuceneTestCase {
 
 
   private void doTest(Random random, PrintWriter out, boolean useCompoundFiles) throws Exception {
-      Directory directory = newDirectory(random);
+      Directory directory = newDirectory();
       Analyzer analyzer = new MockAnalyzer();
-      IndexWriterConfig conf = newIndexWriterConfig(random, TEST_VERSION_CURRENT, analyzer);
+      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
       LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFiles);
       lmp.setUseCompoundDocStore(useCompoundFiles);

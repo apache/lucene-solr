@@ -46,7 +46,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
     
     // create test index
     final RandomIndexWriter writer = new RandomIndexWriter(random, mDirectory,
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(
             MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true))
             .setOpenMode(OpenMode.APPEND));
     addDocument(writer, "A", "Should we, could we, would we?");

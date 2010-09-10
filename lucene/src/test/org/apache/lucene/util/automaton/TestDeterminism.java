@@ -17,8 +17,6 @@ package org.apache.lucene.util.automaton;
  * limitations under the License.
  */
 
-import java.util.Random;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -26,12 +24,10 @@ import org.apache.lucene.util.LuceneTestCase;
  * somewhat randomly.
  */
 public class TestDeterminism extends LuceneTestCase {
-  private Random random;
   
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
   }
   
   /** test a bunch of random regular expressions */

@@ -33,7 +33,7 @@ public class TestPlainTextDictionary extends LuceneTestCase {
     final String LF = System.getProperty("line.separator");
     String input = "oneword" + LF + "twoword" + LF + "threeword";
     PlainTextDictionary ptd = new PlainTextDictionary(new StringReader(input));
-    Directory ramDir = newDirectory(newRandom());
+    Directory ramDir = newDirectory();
     SpellChecker spellChecker = new SpellChecker(ramDir);
     spellChecker.indexDictionary(ptd);
     String[] similar = spellChecker.suggestSimilar("treeword", 2);

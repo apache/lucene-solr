@@ -83,7 +83,6 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
    */
   public void testNorms() throws IOException {
     // test with a single index: index1
-    Random random = newRandom();
     File indexDir1 = new File(TEMP_DIR, "lucenetestindex1");
     Directory dir1 = FSDirectory.open(indexDir1);
     IndexWriter.unlock(dir1);
@@ -114,7 +113,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     Directory dir3 = FSDirectory.open(indexDir3);
 
     createIndex(random, dir3);
-    IndexWriter iw = new IndexWriter(dir3, newIndexWriterConfig(random,
+    IndexWriter iw = new IndexWriter(dir3, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
         .setMaxBufferedDocs(5));
     ((LogMergePolicy) iw.getConfig().getMergePolicy()).setMergeFactor(3);
@@ -133,7 +132,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     doTestNorms(random, dir3);
 
     // now with optimize
-    iw = new IndexWriter(dir3, newIndexWriterConfig(random, TEST_VERSION_CURRENT,
+    iw = new IndexWriter(dir3, newIndexWriterConfig( TEST_VERSION_CURRENT,
         anlzr).setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(5));
     ((LogMergePolicy) iw.getConfig().getMergePolicy()).setMergeFactor(3);
     iw.optimize();
@@ -165,8 +164,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   }
   
   public void testNormsClose() throws IOException { 
-    Random random = newRandom();
-    Directory dir1 = newDirectory(random); 
+    Directory dir1 = newDirectory(); 
     TestIndexReaderReopen.createIndex(random, dir1, false);
     SegmentReader reader1 = SegmentReader.getOnlySegmentReader(dir1);
     reader1.norms("field1");
@@ -182,8 +180,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   }
   
   public void testNormsRefCounting() throws IOException { 
-    Random random = newRandom();
-    Directory dir1 = newDirectory(random); 
+    Directory dir1 = newDirectory(); 
     TestIndexReaderReopen.createIndex(random, dir1, false);
     IndexReader reader1 = IndexReader.open(dir1, false);
         
@@ -236,7 +233,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
   }
   
   private void createIndex(Random random, Directory dir) throws IOException {
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(random,
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.CREATE)
         .setMaxBufferedDocs(5).setSimilarity(similarityOne));
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
@@ -289,7 +286,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
 
   private void addDocs(Random random, Directory dir, int ndocs, boolean compound)
       throws IOException {
-    IndexWriterConfig conf = newIndexWriterConfig(random,
+    IndexWriterConfig conf = newIndexWriterConfig(
             TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
             .setMaxBufferedDocs(5).setSimilarity(similarityOne);
     LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();

@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -39,9 +38,8 @@ public class TestParallelTermEnum extends LuceneTestCase {
     protected void setUp() throws Exception {
         super.setUp();
         Document doc;
-        Random random = newRandom();
-        rd1 = newDirectory(random);
-        IndexWriter iw1 = new IndexWriter(rd1, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+        rd1 = newDirectory();
+        IndexWriter iw1 = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
 
         doc = new Document();
         doc.add(new Field("field1", "the quick brown fox jumps", Store.YES,
@@ -52,8 +50,8 @@ public class TestParallelTermEnum extends LuceneTestCase {
         iw1.addDocument(doc);
 
         iw1.close();
-        rd2 = newDirectory(random);
-        IndexWriter iw2 = new IndexWriter(rd2, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+        rd2 = newDirectory();
+        IndexWriter iw2 = new IndexWriter(rd2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
 
         doc = new Document();
         doc.add(new Field("field0", "", Store.NO, Index.ANALYZED));

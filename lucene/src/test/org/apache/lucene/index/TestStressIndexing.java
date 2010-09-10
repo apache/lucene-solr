@@ -23,12 +23,9 @@ import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.*;
 
-import java.util.Random;
 import java.io.File;
 
 public class TestStressIndexing extends MultiCodecTestCase {
-  private Random RANDOM;
-
   private static abstract class TimedThread extends Thread {
     volatile boolean failed;
     int count;
@@ -82,7 +79,7 @@ public class TestStressIndexing extends MultiCodecTestCase {
       // Add 10 docs:
       for(int j=0; j<10; j++) {
         Document d = new Document();
-        int n = RANDOM.nextInt();
+        int n = random.nextInt();
         d.add(new Field("id", Integer.toString(nextID++), Field.Store.YES, Field.Index.NOT_ANALYZED));
         d.add(new Field("contents", English.intToEnglish(n), Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(d);
@@ -118,7 +115,7 @@ public class TestStressIndexing extends MultiCodecTestCase {
     stress test.
   */
   public void runStressTest(Directory directory, MergeScheduler mergeScheduler) throws Exception {
-    IndexWriter modifier = new IndexWriter(directory, newIndexWriterConfig(RANDOM,
+    IndexWriter modifier = new IndexWriter(directory, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10).setMergeScheduler(
             mergeScheduler));
@@ -166,10 +163,8 @@ public class TestStressIndexing extends MultiCodecTestCase {
     FSDirectory.
   */
   public void testStressIndexAndSearching() throws Exception {
-    RANDOM = newRandom();
-
     // With ConcurrentMergeScheduler, in RAMDir
-    Directory directory = newDirectory(RANDOM);
+    Directory directory = newDirectory();
     runStressTest(directory, new ConcurrentMergeScheduler());
     directory.close();
 

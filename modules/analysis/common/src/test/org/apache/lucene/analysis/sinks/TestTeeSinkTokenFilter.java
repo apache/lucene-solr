@@ -92,10 +92,9 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
   // TODO: instead of testing it this way, we can test 
   // with BaseTokenStreamTestCase now...
   public void testEndOffsetPositionWithTeeSinkTokenFilter() throws Exception {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     Analyzer analyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, analyzer));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
     TeeSinkTokenFilter tee = new TeeSinkTokenFilter(analyzer.tokenStream("field", new StringReader("abcd   ")));
     TokenStream sink = tee.newSinkTokenStream();

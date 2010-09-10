@@ -22,14 +22,12 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.util.*;
-import org.apache.lucene.analysis.*;
 import org.apache.lucene.store.*;
 
 import static org.junit.Assert.*;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.Random;
 
 public class TestIsCurrent extends LuceneTestCaseJ4 {
 
@@ -37,17 +35,13 @@ public class TestIsCurrent extends LuceneTestCaseJ4 {
 
   private Directory directory;
 
-  private Random rand;
-
   @Override
   public void setUp() throws Exception {
     super.setUp();
 
-    rand = newRandom();
-
     // initialize directory
-    directory = newDirectory(rand);
-    writer = new RandomIndexWriter(rand, directory);
+    directory = newDirectory();
+    writer = new RandomIndexWriter(random, directory);
 
     // write document
     Document doc = new Document();

@@ -27,7 +27,6 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.apache.lucene.util._TestUtil;
-import java.util.Random;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
@@ -95,14 +94,13 @@ public class FunctionTestSetup extends LuceneTestCaseJ4 {
   public void setUp() throws Exception {
     super.setUp();
     // prepare a small index with just a few documents.  
-    Random r = newRandom();
-    dir = newDirectory(r);
+    dir = newDirectory();
     anlzr = new MockAnalyzer();
-    IndexWriterConfig iwc = newIndexWriterConfig(r, TEST_VERSION_CURRENT, anlzr);
+    IndexWriterConfig iwc = newIndexWriterConfig( TEST_VERSION_CURRENT, anlzr);
     if (doMultiSegment) {
-      iwc.setMaxBufferedDocs(_TestUtil.nextInt(r, 2, 7));
+      iwc.setMaxBufferedDocs(_TestUtil.nextInt(random, 2, 7));
     }
-    RandomIndexWriter iw = new RandomIndexWriter(r, dir, iwc);
+    RandomIndexWriter iw = new RandomIndexWriter(random, dir, iwc);
     // add docs not exactly in natural ID order, to verify we do check the order of docs by scores
     int remaining = N_DOCS;
     boolean done[] = new boolean[N_DOCS];

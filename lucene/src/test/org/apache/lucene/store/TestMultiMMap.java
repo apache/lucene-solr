@@ -45,7 +45,6 @@ public class TestMultiMMap extends LuceneTestCase {
   }
   
   public void testRandomChunkSizes() throws Exception {
-    Random random = newRandom();
     for (int i = 0; i < 10*RANDOM_MULTIPLIER; i++)
       assertChunking(random, _TestUtil.nextInt(random, 20, 100));
   }

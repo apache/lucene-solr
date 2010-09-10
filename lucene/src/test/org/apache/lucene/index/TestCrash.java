@@ -30,13 +30,13 @@ import org.apache.lucene.document.Field;
 public class TestCrash extends LuceneTestCase {
 
   private IndexWriter initIndex(Random random, boolean initialCommit) throws IOException {
-    return initIndex(random, newDirectory(random), initialCommit);
+    return initIndex(random, newDirectory(), initialCommit);
   }
 
   private IndexWriter initIndex(Random random, MockDirectoryWrapper dir, boolean initialCommit) throws IOException {
     dir.setLockFactory(NoLockFactory.getNoLockFactory());
 
-    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMaxBufferedDocs(10).setMergeScheduler(new ConcurrentMergeScheduler()));
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
     if (initialCommit) {
@@ -65,7 +65,7 @@ public class TestCrash extends LuceneTestCase {
     // This test relies on being able to open a reader before any commit
     // happened, so we must create an initial commit just to allow that, but
     // before any documents were added.
-    IndexWriter writer = initIndex(newRandom(), true);
+    IndexWriter writer = initIndex(random, true);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
     crash(writer);
     IndexReader reader = IndexReader.open(dir, false);
@@ -78,7 +78,6 @@ public class TestCrash extends LuceneTestCase {
     // This test relies on being able to open a reader before any commit
     // happened, so we must create an initial commit just to allow that, but
     // before any documents were added.
-    Random random = newRandom();
     IndexWriter writer = initIndex(random, true);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
     dir.setPreventDoubleWrite(false);
@@ -93,7 +92,6 @@ public class TestCrash extends LuceneTestCase {
   }
 
   public void testCrashAfterReopen() throws IOException {
-    Random random = newRandom();
     IndexWriter writer = initIndex(random, false);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
     writer.close();
@@ -118,7 +116,7 @@ public class TestCrash extends LuceneTestCase {
 
   public void testCrashAfterClose() throws IOException {
     
-    IndexWriter writer = initIndex(newRandom(), false);
+    IndexWriter writer = initIndex(random, false);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 
     writer.close();
@@ -139,7 +137,7 @@ public class TestCrash extends LuceneTestCase {
 
   public void testCrashAfterCloseNoWait() throws IOException {
     
-    IndexWriter writer = initIndex(newRandom(), false);
+    IndexWriter writer = initIndex(random, false);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 
     writer.close(false);
@@ -160,7 +158,7 @@ public class TestCrash extends LuceneTestCase {
 
   public void testCrashReaderDeletes() throws IOException {
     
-    IndexWriter writer = initIndex(newRandom(), false);
+    IndexWriter writer = initIndex(random, false);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 
     writer.close(false);
@@ -183,7 +181,7 @@ public class TestCrash extends LuceneTestCase {
 
   public void testCrashReaderDeletesAfterClose() throws IOException {
     
-    IndexWriter writer = initIndex(newRandom(), false);
+    IndexWriter writer = initIndex(random, false);
     MockDirectoryWrapper dir = (MockDirectoryWrapper) writer.getDirectory();
 
     writer.close(false);

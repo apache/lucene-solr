@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -40,8 +39,7 @@ public class TestBooleanScorer extends LuceneTestCase
   private static final String FIELD = "category";
   
   public void testMethod() throws Exception {
-    Random random = newRandom();
-    Directory directory = newDirectory(random);
+    Directory directory = newDirectory();
 
     String[] values = new String[] { "1", "2", "3", "4" };
 

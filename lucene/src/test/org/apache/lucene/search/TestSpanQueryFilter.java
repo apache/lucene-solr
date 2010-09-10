@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  */
 
 import java.util.List;
-import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -38,8 +37,7 @@ public class TestSpanQueryFilter extends LuceneTestCase {
   }
 
   public void testFilterWorks() throws Exception {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     for (int i = 0; i < 500; i++) {
       Document document = new Document();

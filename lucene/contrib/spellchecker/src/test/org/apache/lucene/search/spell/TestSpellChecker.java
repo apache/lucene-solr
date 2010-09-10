@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -46,7 +45,6 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestSpellChecker extends LuceneTestCase {
   private SpellCheckerMock spellChecker;
   private Directory userindex, spellindex;
-  private final Random random = newRandom();
   private List<IndexSearcher> searchers;
 
   @Override
@@ -54,7 +52,7 @@ public class TestSpellChecker extends LuceneTestCase {
     super.setUp();
     
     //create a user index
-    userindex = newDirectory(random);
+    userindex = newDirectory();
     IndexWriter writer = new IndexWriter(userindex, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
 
@@ -68,7 +66,7 @@ public class TestSpellChecker extends LuceneTestCase {
     writer.close();
     searchers = Collections.synchronizedList(new ArrayList<IndexSearcher>());
     // create the spellChecker
-    spellindex = newDirectory(random);
+    spellindex = newDirectory();
     spellChecker = new SpellCheckerMock(spellindex);
   }
   
@@ -124,7 +122,7 @@ public class TestSpellChecker extends LuceneTestCase {
 
   public void testComparator() throws Exception {
     IndexReader r = IndexReader.open(userindex, true);
-    Directory compIdx = newDirectory(random);
+    Directory compIdx = newDirectory();
     SpellChecker compareSP = new SpellCheckerMock(compIdx, new LevensteinDistance(), new SuggestWordFrequencyComparator());
     addwords(r, compareSP, "field3");
 

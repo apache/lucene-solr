@@ -26,9 +26,6 @@ import java.util.Random;
 import java.io.IOException;
 
 public class TestPackedInts extends LuceneTestCase {
-
-  private Random rnd;
-
   public void testBitsRequired() throws Exception {
     assertEquals(61, PackedInts.bitsRequired((long)Math.pow(2, 61)-1));
     assertEquals(61, PackedInts.bitsRequired(0x1FFFFFFFFFFFFFFFL));
@@ -50,13 +47,12 @@ public class TestPackedInts extends LuceneTestCase {
   }
 
   public void testPackedInts() throws IOException {
-    rnd = newRandom();
     int num = 5 * RANDOM_MULTIPLIER;
     for (int iter = 0; iter < num; iter++) {
       long ceil = 2;
       for(int nbits=1;nbits<63;nbits++) {
-        final int valueCount = 100+rnd.nextInt(500);
-        final Directory d = newDirectory(rnd);
+        final int valueCount = 100+random.nextInt(500);
+        final Directory d = newDirectory();
 
         IndexOutput out = d.createOutput("out.bin");
         PackedInts.Writer w = PackedInts.getWriter(
@@ -64,7 +60,7 @@ public class TestPackedInts extends LuceneTestCase {
 
         final long[] values = new long[valueCount];
         for(int i=0;i<valueCount;i++) {
-          long v = rnd.nextLong() % ceil;
+          long v = random.nextLong() % ceil;
           if (v < 0) {
             v = -v;
           }
@@ -119,13 +115,11 @@ public class TestPackedInts extends LuceneTestCase {
     final int MIN_BITS_PER_VALUE = 1;
     final int MAX_BITS_PER_VALUE = 64;
 
-    rnd = newRandom();
-
     for (int valueCount: VALUE_COUNTS) {
       for (int bitsPerValue = MIN_BITS_PER_VALUE ;
            bitsPerValue <= MAX_BITS_PER_VALUE ;
            bitsPerValue++) {
-        assertRandomEquality(valueCount, bitsPerValue, rnd.nextLong());
+        assertRandomEquality(valueCount, bitsPerValue, random.nextLong());
       }
     }
   }
@@ -209,7 +203,7 @@ public class TestPackedInts extends LuceneTestCase {
   }
 
   public void testSingleValue() throws Exception {
-    Directory dir = newDirectory(newRandom());
+    Directory dir = newDirectory();
     IndexOutput out = dir.createOutput("out");
     PackedInts.Writer w = PackedInts.getWriter(out, 1, 8);
     w.add(17);

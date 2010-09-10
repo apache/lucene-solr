@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -57,13 +56,6 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestFuzzyQuery2 extends LuceneTestCase {
   /** epsilon for score comparisons */
   static final float epsilon = 0.00001f;
-  private Random random;
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    random = newRandom();
-  }
 
   public void testFromTestData() throws Exception {
     // TODO: randomize!
@@ -86,7 +78,7 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     int bits = Integer.parseInt(reader.readLine());
     int terms = (int) Math.pow(2, bits);
     
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(MockTokenizer.KEYWORD, false));
     
     Document doc = new Document();

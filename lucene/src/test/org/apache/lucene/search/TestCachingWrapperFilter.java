@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.util.Random;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexReader;
@@ -34,17 +33,10 @@ import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.OpenBitSetDISI;
 
 public class TestCachingWrapperFilter extends LuceneTestCase {
-  Random rand;
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    rand = newRandom();
-  }
 
   public void testCachingWorks() throws Exception {
-    Directory dir = newDirectory(rand);
-    RandomIndexWriter writer = new RandomIndexWriter(rand, dir);
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.close();
 
     IndexReader reader = IndexReader.open(dir, true);
@@ -69,8 +61,8 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   }
   
   public void testNullDocIdSet() throws Exception {
-    Directory dir = newDirectory(rand);
-    RandomIndexWriter writer = new RandomIndexWriter(rand, dir);
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.close();
 
     IndexReader reader = IndexReader.open(dir, true);
@@ -91,8 +83,8 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   }
   
   public void testNullDocIdSetIterator() throws Exception {
-    Directory dir = newDirectory(rand);
-    RandomIndexWriter writer = new RandomIndexWriter(rand, dir);
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.close();
 
     IndexReader reader = IndexReader.open(dir, true);
@@ -132,8 +124,8 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   }
   
   public void testIsCacheAble() throws Exception {
-    Directory dir = newDirectory(rand);
-    RandomIndexWriter writer = new RandomIndexWriter(rand, dir);
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     writer.addDocument(new Document());
     writer.close();
 
@@ -159,9 +151,9 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
   }
 
   public void testEnforceDeletions() throws Exception {
-    Directory dir = newDirectory(rand);
-    RandomIndexWriter writer = new RandomIndexWriter(rand, dir,
-                                                     newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new MockAnalyzer()).setMergeScheduler(new SerialMergeScheduler()));
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir,
+                                                     newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMergeScheduler(new SerialMergeScheduler()));
 
     // NOTE: cannot use writer.getReader because RIW (on
     // flipping a coin) may give us a newly opened reader,

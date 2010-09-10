@@ -18,7 +18,6 @@ package org.apache.lucene.queryParser.complexPhrase;
  */
 
 import java.util.HashSet;
-import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -112,9 +111,8 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    Random random = newRandom();
-    rd = newDirectory(random);
-    IndexWriter w = new IndexWriter(rd, newIndexWriterConfig(random, TEST_VERSION_CURRENT, analyzer));
+    rd = newDirectory();
+    IndexWriter w = new IndexWriter(rd, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     for (int i = 0; i < docsContent.length; i++) {
       Document doc = new Document();
       doc.add(new Field("name", docsContent[i].name, Field.Store.YES,

@@ -67,10 +67,9 @@ public class TestLazyBug extends LuceneTestCase {
     };
   
   private Directory makeIndex() throws Exception { 
-    Random r = newRandom();
-    Directory dir = newDirectory(r);
+    Directory dir = newDirectory();
     try {
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(r,
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer()));
       LogMergePolicy lmp = (LogMergePolicy) writer.getConfig().getMergePolicy();
       lmp.setUseCompoundFile(false);
@@ -81,7 +80,7 @@ public class TestLazyBug extends LuceneTestCase {
         for (int f = 1; f <= NUM_FIELDS; f++ ) {
           doc.add(new Field("f"+f, 
                             data[f % data.length] 
-                            + '#' + data[r.nextInt(data.length)], 
+                            + '#' + data[random.nextInt(data.length)], 
                             Field.Store.YES, 
                             Field.Index.ANALYZED));
         }

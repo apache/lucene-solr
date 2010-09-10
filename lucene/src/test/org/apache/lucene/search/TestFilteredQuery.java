@@ -27,7 +27,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.DocIdBitSet;
 import java.util.BitSet;
-import java.util.Random;
 
 /**
  * FilteredQuery JUnit tests.
@@ -48,8 +47,7 @@ public class TestFilteredQuery extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    Random random = newRandom();
-    directory = newDirectory(random);
+    directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter (random, directory);
 
     Document doc = new Document();

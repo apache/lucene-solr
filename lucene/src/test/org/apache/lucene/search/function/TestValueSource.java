@@ -20,7 +20,6 @@ package org.apache.lucene.search.function;
 import org.apache.lucene.util.*;
 import org.apache.lucene.store.*;
 import org.apache.lucene.search.*;
-import org.apache.lucene.search.function.*;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.document.*;
@@ -28,7 +27,7 @@ import org.apache.lucene.document.*;
 public class TestValueSource extends LuceneTestCase {
 
   public void testMultiValueSource() throws Exception {
-    Directory dir = newDirectory(newRandom());
+    Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, new MockAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
     Field f = new Field("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);

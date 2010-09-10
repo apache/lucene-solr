@@ -21,7 +21,6 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.Locale;
-import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -39,14 +38,12 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestWildcardRandom extends LuceneTestCase {
   private Searcher searcher;
   private IndexReader reader;
-  private Random random;
   private Directory dir;
   
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
-    dir = newDirectory(random);
+    dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     
     Document doc = new Document();

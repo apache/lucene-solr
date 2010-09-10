@@ -22,7 +22,6 @@ import java.io.Reader;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.Random;
 import java.util.SortedSet;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -94,9 +93,8 @@ public class TestTermVectorsReader extends LuceneTestCase {
     }
     Arrays.sort(tokens);
 
-    Random random = newRandom();
-    dir = newDirectory(random);
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MyAnalyzer()).setMaxBufferedDocs(-1));
+    dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MyAnalyzer()).setMaxBufferedDocs(-1));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false);
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(10);

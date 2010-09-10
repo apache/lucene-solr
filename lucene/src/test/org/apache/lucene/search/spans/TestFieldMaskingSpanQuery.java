@@ -18,7 +18,6 @@ package org.apache.lucene.search.spans;
  */
 
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.document.Document;
@@ -55,8 +54,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    Random random = newRandom();
-    directory = newDirectory(random);
+    directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random, directory);
     
     writer.addDocument(doc(new Field[] { field("id", "0")

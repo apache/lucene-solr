@@ -51,7 +51,6 @@ public class TestSearch extends LuceneTestCase {
      *        single-file formats, even if the results are wrong.
      */
     public void testSearch() throws Exception {
-      Random random = newRandom();
       StringWriter sw = new StringWriter();
       PrintWriter pw = new PrintWriter(sw, true);
       doTestSearch(random, pw, false);
@@ -73,9 +72,9 @@ public class TestSearch extends LuceneTestCase {
 
     private void doTestSearch(Random random, PrintWriter out, boolean useCompoundFile)
     throws Exception {
-      Directory directory = newDirectory(random);
+      Directory directory = newDirectory();
       Analyzer analyzer = new MockAnalyzer();
-      IndexWriterConfig conf = newIndexWriterConfig(random, TEST_VERSION_CURRENT, analyzer);
+      IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer);
       LogMergePolicy lmp = (LogMergePolicy) conf.getMergePolicy();
       lmp.setUseCompoundFile(useCompoundFile);
       lmp.setUseCompoundDocStore(useCompoundFile);

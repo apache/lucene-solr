@@ -17,7 +17,6 @@ package org.apache.lucene;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.store.MockDirectoryWrapper;
@@ -83,15 +82,14 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
   }
 
   public void testSubclassConcurrentMergeScheduler() throws IOException {
-    Random random = newRandom();
-    MockDirectoryWrapper dir = newDirectory(random);
+    MockDirectoryWrapper dir = newDirectory();
     dir.failOn(new FailOnlyOnMerge());
 
     Document doc = new Document();
     Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
     
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()).setMergeScheduler(new MyMergeScheduler())
         .setMaxBufferedDocs(2).setRAMBufferSizeMB(
             IndexWriterConfig.DISABLE_AUTO_FLUSH));

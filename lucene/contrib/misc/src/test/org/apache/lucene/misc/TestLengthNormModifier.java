@@ -18,7 +18,6 @@ package org.apache.lucene.misc;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -26,7 +25,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.FieldNormModifier;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DefaultSimilarity;
@@ -61,9 +59,8 @@ public class TestLengthNormModifier extends LuceneTestCase {
     @Override
     protected void setUp() throws Exception {
       super.setUp();
-      Random random = newRandom();
-      store = newDirectory(random);
-	IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(random,
+      store = newDirectory();
+	IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
 	
 	for (int i = 0; i < NUM_DOCS; i++) {

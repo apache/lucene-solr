@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -39,8 +38,7 @@ public class BooleanFilterTest extends LuceneTestCase {
 	@Override
 	protected void setUp() throws Exception {
 	  super.setUp();
-	  Random random = newRandom();
-		directory = newDirectory(random);
+		directory = newDirectory();
 		RandomIndexWriter writer = new RandomIndexWriter(random, directory, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
 		
 		//Add series of docs with filterable fields : acces rights, prices, dates and "in-stock" flags

@@ -90,8 +90,7 @@ public class TestPositionIncrement extends LuceneTestCase {
         };
       }
     };
-    Random random = newRandom();
-    Directory store = newDirectory(random);
+    Directory store = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, store, analyzer);
     Document d = new Document();
     d.add(new Field("field", "bogus", Field.Store.YES, Field.Index.ANALYZED));
@@ -241,8 +240,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     new CharacterRunAutomaton(new RegExp("[sS][tT][oO][pP]").toAutomaton());
   
   public void testPayloadsPos0() throws Exception {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, new TestPayloadAnalyzer());
     Document doc = new Document();
     doc.add(new Field("content", new StringReader(

@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -57,9 +56,8 @@ public class TestFieldNormModifier extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    Random random = newRandom();
-    store = newDirectory(random);
-    IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(random,
+    store = newDirectory();
+    IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     
     for (int i = 0; i < NUM_DOCS; i++) {

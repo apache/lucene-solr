@@ -73,9 +73,8 @@ public class TestNoDeletionPolicy extends LuceneTestCaseJ4 {
 
   @Test
   public void testAllCommitsRemain() throws Exception {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
     for (int i = 0; i < 10; i++) {

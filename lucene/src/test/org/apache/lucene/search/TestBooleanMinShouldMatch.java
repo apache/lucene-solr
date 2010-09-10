@@ -32,7 +32,6 @@ import java.util.Random;
  */
 public class TestBooleanMinShouldMatch extends LuceneTestCase {
 
-    private Random rnd;
     private Directory index;
     private IndexReader r;
     private IndexSearcher s;
@@ -41,8 +40,6 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     protected void setUp() throws Exception {
         super.setUp();
 
-        rnd = newRandom();
-        
         String[] data = new String [] {
             "A 1 2 3 4 5 6",
             "Z       4 5 6",
@@ -54,8 +51,8 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
             "X       4 5 6"
         };
 
-        index = newDirectory(rnd);
-        RandomIndexWriter w = new RandomIndexWriter(rnd, index);
+        index = newDirectory();
+        RandomIndexWriter w = new RandomIndexWriter(random, index);
 
         for (int i = 0; i < data.length; i++) {
             Document doc = new Document();
@@ -308,7 +305,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
           for (int i=0; i<c.length;i++) {
             if (c[i].getOccur() == BooleanClause.Occur.SHOULD) opt++;
           }
-          q.setMinimumNumberShouldMatch(rnd.nextInt(opt+2));
+          q.setMinimumNumberShouldMatch(random.nextInt(opt+2));
         }
       };
 
@@ -317,8 +314,8 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
       // increase number of iterations for more complete testing      
       int num = 50 * RANDOM_MULTIPLIER;
       for (int i=0; i<num; i++) {
-        int lev = rnd.nextInt(maxLev);
-        final long seed = rnd.nextLong();
+        int lev = random.nextInt(maxLev);
+        final long seed = random.nextLong();
         BooleanQuery q1 = TestBoolean2.randBoolQuery(new Random(seed), true, lev, field, vals, null);
         // BooleanQuery q2 = TestBoolean2.randBoolQuery(new Random(seed), lev, field, vals, minNrCB);
         BooleanQuery q2 = TestBoolean2.randBoolQuery(new Random(seed), true, lev, field, vals, null);

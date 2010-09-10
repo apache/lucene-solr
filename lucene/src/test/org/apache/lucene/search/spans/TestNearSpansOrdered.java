@@ -17,8 +17,6 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
-import java.util.Random;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -55,8 +53,7 @@ public class TestNearSpansOrdered extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    Random random = newRandom();
-    directory = newDirectory(random);
+    directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random, directory);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();

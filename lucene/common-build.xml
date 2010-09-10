@@ -68,6 +68,7 @@
   <property name="tests.timezone" value="random" />
   <property name="tests.directory" value="random" />
   <property name="tests.iter" value="1" />
+  <property name="tests.seed" value="random" />
     
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
@@ -450,6 +451,8 @@
               <sysproperty key="tests.directory" value="${tests.directory}"/>
               <!-- set the number of times tests should run -->
               <sysproperty key="tests.iter" value="${tests.iter}"/>
+              <!-- set the test seed -->
+              <sysproperty key="tests.seed" value="${tests.seed}"/>
 	
 	      <!-- TODO: create propertyset for test properties, so each project can have its own set -->
               <sysproperty key="tests.multiplier" value="${tests.multiplier}"/>

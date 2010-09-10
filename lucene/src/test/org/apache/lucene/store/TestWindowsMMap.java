@@ -17,7 +17,6 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.util.Random;
 import java.io.File;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -33,12 +32,10 @@ import org.apache.lucene.search.IndexSearcher;
 public class TestWindowsMMap extends LuceneTestCase {
   
   private final static String alphabet = "abcdefghijklmnopqrstuvwzyz";
-  private Random random;
   
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
   }
   
   private String randomToken() {

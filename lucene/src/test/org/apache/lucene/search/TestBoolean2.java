@@ -40,7 +40,6 @@ public class TestBoolean2 extends LuceneTestCase {
   private IndexSearcher searcher;
   private IndexSearcher bigSearcher;
   private IndexReader reader;
-  private Random rnd;
   private static int NUM_EXTRA_DOCS = 6000;
 
   public static final String field = "field";
@@ -51,9 +50,8 @@ public class TestBoolean2 extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    rnd = newRandom();
-    directory = newDirectory(rnd);
-    RandomIndexWriter writer= new RandomIndexWriter(rnd, directory);
+    directory = newDirectory();
+    RandomIndexWriter writer= new RandomIndexWriter(random, directory);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(new Field(field, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
@@ -70,14 +68,14 @@ public class TestBoolean2 extends LuceneTestCase {
     int docCount = 0;
     do {
       final Directory copy = new MockDirectoryWrapper(new RAMDirectory(dir2));
-      RandomIndexWriter w = new RandomIndexWriter(rnd, dir2);
+      RandomIndexWriter w = new RandomIndexWriter(random, dir2);
       w.addIndexes(new Directory[] {copy});
       docCount = w.maxDoc();
       w.close();
       mulFactor *= 2;
     } while(docCount < 3000);
 
-    RandomIndexWriter w = new RandomIndexWriter(rnd, dir2);
+    RandomIndexWriter w = new RandomIndexWriter(random, dir2);
     Document doc = new Document();
     doc.add(new Field("field2", "xxx", Field.Store.NO, Field.Index.ANALYZED));
     for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {
@@ -211,8 +209,8 @@ public class TestBoolean2 extends LuceneTestCase {
       // increase number of iterations for more complete testing
       int num = 50 * RANDOM_MULTIPLIER;
       for (int i=0; i<num; i++) {
-        int level = rnd.nextInt(3);
-        q1 = randBoolQuery(new Random(rnd.nextLong()), rnd.nextBoolean(), level, field, vals, null);
+        int level = random.nextInt(3);
+        q1 = randBoolQuery(new Random(random.nextLong()), random.nextBoolean(), level, field, vals, null);
         
         // Can't sort by relevance since floating point numbers may not quite
         // match up.

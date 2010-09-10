@@ -17,13 +17,11 @@
 
 package org.apache.lucene.util;
 
-import java.util.Random;
 import java.util.BitSet;
 
 import org.apache.lucene.search.DocIdSetIterator;
 
 public class TestOpenBitSet extends LuceneTestCase {
-  Random rand;
 
   void doGet(BitSet a, OpenBitSet b) {
     int max = a.size();
@@ -54,7 +52,7 @@ public class TestOpenBitSet extends LuceneTestCase {
     OpenBitSetIterator iterator = new OpenBitSetIterator(b);
     do {
       aa = a.nextSetBit(aa+1);
-      bb = rand.nextBoolean() ? iterator.nextDoc() : iterator.advance(bb + 1);
+      bb = random.nextBoolean() ? iterator.nextDoc() : iterator.advance(bb + 1);
       assertEquals(aa == -1 ? DocIdSetIterator.NO_MORE_DOCS : aa, bb);
     } while (aa>=0);
   }
@@ -64,7 +62,7 @@ public class TestOpenBitSet extends LuceneTestCase {
     OpenBitSetIterator iterator = new OpenBitSetIterator(b);
     do {
       aa = a.nextSetBit(aa+1);
-      bb = rand.nextBoolean() ? iterator.nextDoc() : iterator.advance(bb + 1);
+      bb = random.nextBoolean() ? iterator.nextDoc() : iterator.advance(bb + 1);
       assertEquals(aa == -1 ? DocIdSetIterator.NO_MORE_DOCS : aa, bb);
     } while (aa>=0);
   }
@@ -74,23 +72,23 @@ public class TestOpenBitSet extends LuceneTestCase {
     OpenBitSet b0=null;
 
     for (int i=0; i<iter; i++) {
-      int sz = rand.nextInt(maxSize);
+      int sz = random.nextInt(maxSize);
       BitSet a = new BitSet(sz);
       OpenBitSet b = new OpenBitSet(sz);
 
       // test the various ways of setting bits
       if (sz>0) {
-        int nOper = rand.nextInt(sz);
+        int nOper = random.nextInt(sz);
         for (int j=0; j<nOper; j++) {
           int idx;         
 
-          idx = rand.nextInt(sz);
+          idx = random.nextInt(sz);
           a.set(idx);
           b.fastSet(idx);
-          idx = rand.nextInt(sz);
+          idx = random.nextInt(sz);
           a.clear(idx);
           b.fastClear(idx);
-          idx = rand.nextInt(sz);
+          idx = random.nextInt(sz);
           a.flip(idx);
           b.fastFlip(idx);
 
@@ -112,22 +110,22 @@ public class TestOpenBitSet extends LuceneTestCase {
 
       // test ranges, including possible extension
       int fromIndex, toIndex;
-      fromIndex = rand.nextInt(sz+80);
-      toIndex = fromIndex + rand.nextInt((sz>>1)+1);
+      fromIndex = random.nextInt(sz+80);
+      toIndex = fromIndex + random.nextInt((sz>>1)+1);
       BitSet aa = (BitSet)a.clone(); aa.flip(fromIndex,toIndex);
       OpenBitSet bb = (OpenBitSet)b.clone(); bb.flip(fromIndex,toIndex);
 
       doIterate(aa,bb, mode);   // a problem here is from flip or doIterate
 
-      fromIndex = rand.nextInt(sz+80);
-      toIndex = fromIndex + rand.nextInt((sz>>1)+1);
+      fromIndex = random.nextInt(sz+80);
+      toIndex = fromIndex + random.nextInt((sz>>1)+1);
       aa = (BitSet)a.clone(); aa.clear(fromIndex,toIndex);
       bb = (OpenBitSet)b.clone(); bb.clear(fromIndex,toIndex);
 
       doNextSetBit(aa,bb);  // a problem here is from clear() or nextSetBit
 
-      fromIndex = rand.nextInt(sz+80);
-      toIndex = fromIndex + rand.nextInt((sz>>1)+1);
+      fromIndex = random.nextInt(sz+80);
+      toIndex = fromIndex + random.nextInt((sz>>1)+1);
       aa = (BitSet)a.clone(); aa.set(fromIndex,toIndex);
       bb = (OpenBitSet)b.clone(); bb.set(fromIndex,toIndex);
 
@@ -174,7 +172,6 @@ public class TestOpenBitSet extends LuceneTestCase {
   // large enough to flush obvious bugs, small enough to run in <.5 sec as part of a
   // larger testsuite.
   public void testSmall() {
-    rand = newRandom();
     doRandomSets(1200 * RANDOM_MULTIPLIER, 1000 * RANDOM_MULTIPLIER, 1);
     doRandomSets(1200 * RANDOM_MULTIPLIER, 1000 * RANDOM_MULTIPLIER, 2);
   }
@@ -187,7 +184,6 @@ public class TestOpenBitSet extends LuceneTestCase {
   }
 
   public void testEquals() {
-    rand = newRandom();
     OpenBitSet b1 = new OpenBitSet(1111);
     OpenBitSet b2 = new OpenBitSet(2222);
     assertTrue(b1.equals(b2));
@@ -211,7 +207,6 @@ public class TestOpenBitSet extends LuceneTestCase {
   
   public void testBitUtils()
   {
-    rand = newRandom();
     long num = 100000;
     assertEquals( 5, BitUtil.ntz(num) );
     assertEquals( 5, BitUtil.ntz2(num) );

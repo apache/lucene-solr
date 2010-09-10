@@ -27,7 +27,6 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 
 import java.io.IOException;
-import java.util.Random;
 
 /**
  * DateFilter JUnit tests.
@@ -45,8 +44,7 @@ public class TestDateFilter extends LuceneTestCase {
    */
   public void testBefore() throws IOException {
     // create an index
-    Random random = newRandom();
-    Directory indexStore = newDirectory(random);
+    Directory indexStore = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     
     long now = System.currentTimeMillis();
@@ -112,8 +110,7 @@ public class TestDateFilter extends LuceneTestCase {
    */
   public void testAfter() throws IOException {
     // create an index
-    Random random = newRandom();
-    Directory indexStore = newDirectory(random);
+    Directory indexStore = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     
     long now = System.currentTimeMillis();

@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.util.List;
 import java.util.Arrays;
-import java.util.Random;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -39,8 +38,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestFuzzyQuery extends LuceneTestCase {
 
   public void testFuzziness() throws Exception {
-    Random random = newRandom();
-    Directory directory = newDirectory(random);
+    Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     addDoc("aaaaa", writer);
     addDoc("aaaab", writer);
@@ -193,8 +191,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   }
 
   public void testFuzzinessLong() throws Exception {
-    Random random = newRandom();
-    Directory directory = newDirectory(random);
+    Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     addDoc("aaaaaaa", writer);
     addDoc("segment", writer);
@@ -284,8 +281,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   }
   
   public void testTokenLengthOpt() throws IOException {
-    Random random = newRandom();
-    Directory directory = newDirectory(random);
+    Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     addDoc("12345678911", writer);
     addDoc("segment", writer);
@@ -322,8 +318,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   
   /** Test the TopTermsBoostOnlyBooleanQueryRewrite rewrite method. */
   public void testBoostOnlyRewrite() throws Exception {
-    Random random = newRandom();
-    Directory directory = newDirectory(random);
+    Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     addDoc("Lucene", writer);
     addDoc("Lucene", writer);
@@ -349,8 +344,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
   public void testGiga() throws Exception {
 
     MockAnalyzer analyzer = new MockAnalyzer();
-    Random random = newRandom();
-    Directory index = newDirectory(random);
+    Directory index = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random, index);
 
     addDoc("Lucene in Action", w);

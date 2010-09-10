@@ -35,8 +35,6 @@ public class TestDirectoryReader extends LuceneTestCase {
   private Document doc2;
   protected SegmentReader [] readers = new SegmentReader[2];
   protected SegmentInfos sis;
-  private Random random;
-  
   
   public TestDirectoryReader(String s) {
     super(s);
@@ -45,8 +43,7 @@ public class TestDirectoryReader extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
-    dir = newDirectory(random);
+    dir = newDirectory();
     doc1 = new Document();
     doc2 = new Document();
     DocHelper.setupDoc(doc1);
@@ -136,9 +133,9 @@ public class TestDirectoryReader extends LuceneTestCase {
   }
         
   public void testIsCurrent() throws IOException {
-    Directory ramDir1=newDirectory(random);
+    Directory ramDir1=newDirectory();
     addDoc(random, ramDir1, "test foo", true);
-    Directory ramDir2=newDirectory(random);
+    Directory ramDir2=newDirectory();
     addDoc(random, ramDir2, "test blah", true);
     IndexReader[] readers = new IndexReader[]{IndexReader.open(ramDir1, false), IndexReader.open(ramDir2, false)};
     MultiReader mr = new MultiReader(readers);
@@ -159,11 +156,11 @@ public class TestDirectoryReader extends LuceneTestCase {
   }
 
   public void testMultiTermDocs() throws IOException {
-    Directory ramDir1=newDirectory(random);
+    Directory ramDir1=newDirectory();
     addDoc(random, ramDir1, "test foo", true);
-    Directory ramDir2=newDirectory(random);
+    Directory ramDir2=newDirectory();
     addDoc(random, ramDir2, "test blah", true);
-    Directory ramDir3=newDirectory(random);
+    Directory ramDir3=newDirectory();
     addDoc(random, ramDir3, "test wow", true);
 
     IndexReader[] readers1 = new IndexReader[]{IndexReader.open(ramDir1, false), IndexReader.open(ramDir3, false)};
@@ -204,7 +201,7 @@ public class TestDirectoryReader extends LuceneTestCase {
   }
 
   private void addDoc(Random random, Directory ramDir1, String s, boolean create) throws IOException {
-    IndexWriter iw = new IndexWriter(ramDir1, newIndexWriterConfig(random, 
+    IndexWriter iw = new IndexWriter(ramDir1, newIndexWriterConfig( 
         TEST_VERSION_CURRENT, 
         new MockAnalyzer()).setOpenMode(
         create ? OpenMode.CREATE : OpenMode.APPEND));

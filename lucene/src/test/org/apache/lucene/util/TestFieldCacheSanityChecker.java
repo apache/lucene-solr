@@ -21,7 +21,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.store.Directory;
@@ -29,7 +28,6 @@ import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.apache.lucene.util.FieldCacheSanityChecker.InsanityType;
 
 import java.io.IOException;
-import java.util.Random;
 
 public class TestFieldCacheSanityChecker extends LuceneTestCase {
 
@@ -42,12 +40,11 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    Random random = newRandom();
-    dirA = newDirectory(random);
-    dirB = newDirectory(random);
+    dirA = newDirectory();
+    dirB = newDirectory();
 
-    IndexWriter wA = new IndexWriter(dirA, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
-    IndexWriter wB = new IndexWriter(dirB, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter wA = new IndexWriter(dirA, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter wB = new IndexWriter(dirB, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;

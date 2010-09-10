@@ -110,10 +110,9 @@ public class TestDoc extends LuceneTestCase {
     public void testIndexAndMerge() throws Exception {
       StringWriter sw = new StringWriter();
       PrintWriter out = new PrintWriter(sw, true);
-      Random random = newRandom();
       
       Directory directory = FSDirectory.open(indexDir);
-      IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random,
+      IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
                                            .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(-1));
       ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
@@ -144,7 +143,7 @@ public class TestDoc extends LuceneTestCase {
       out = new PrintWriter(sw, true);
 
       directory = FSDirectory.open(indexDir);
-      writer = new IndexWriter(directory, newIndexWriterConfig(random,
+      writer = new IndexWriter(directory, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
                                .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(-1));
       ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);

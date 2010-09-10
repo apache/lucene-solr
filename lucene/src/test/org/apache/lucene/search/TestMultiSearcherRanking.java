@@ -26,7 +26,6 @@ import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import java.io.IOException;
-import java.util.Random;
 
 /**
  * Tests {@link MultiSearcher} ranking, i.e. makes sure this bug is fixed:
@@ -110,14 +109,13 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    Random random = newRandom();
     // create MultiSearcher from two seperate searchers
-    d1 = newDirectory(random);
-    IndexWriter iw1 = new IndexWriter(d1, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    d1 = newDirectory();
+    IndexWriter iw1 = new IndexWriter(d1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     addCollection1(iw1);
     iw1.close();
-    d2 = newDirectory(random);
-    IndexWriter iw2 = new IndexWriter(d2, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    d2 = newDirectory();
+    IndexWriter iw2 = new IndexWriter(d2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     addCollection2(iw2);
     iw2.close();
 
@@ -127,8 +125,8 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
     multiSearcher = new MultiSearcher(s);
 
     // create IndexSearcher which contains all documents
-    d = newDirectory(random);
-    IndexWriter iw = new IndexWriter(d, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    d = newDirectory();
+    IndexWriter iw = new IndexWriter(d, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     addCollection1(iw);
     addCollection2(iw);
     iw.close();

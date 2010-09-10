@@ -25,7 +25,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 
 import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
-import java.util.Random;
 
 public class TestConcurrentMergeScheduler extends LuceneTestCase {
   
@@ -60,12 +59,11 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   // Make sure running BG merges still work fine even when
   // we are hitting exceptions during flushing.
   public void testFlushExceptions() throws IOException {
-    Random random = newRandom();
-    MockDirectoryWrapper directory = newDirectory(random);
+    MockDirectoryWrapper directory = newDirectory();
     FailOnlyOnFlush failure = new FailOnlyOnFlush();
     directory.failOn(failure);
 
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
     Document doc = new Document();
     Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
@@ -106,15 +104,14 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   // Test that deletes committed after a merge started and
   // before it finishes, are correctly merged back:
   public void testDeleteMerging() throws IOException {
-    Random random = newRandom();
-    MockDirectoryWrapper directory = newDirectory(random);
+    MockDirectoryWrapper directory = newDirectory();
 
     LogDocMergePolicy mp = new LogDocMergePolicy();
     // Force degenerate merging so we can get a mix of
     // merging of segments with and without deletes at the
     // start:
     mp.setMinMergeDocs(1000);
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random,
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMergePolicy(mp));
 
@@ -145,9 +142,8 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   }
 
   public void testNoExtraFiles() throws IOException {
-    Random random = newRandom();
-    MockDirectoryWrapper directory = newDirectory(random);
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random,
+    MockDirectoryWrapper directory = newDirectory();
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMaxBufferedDocs(2));
 
@@ -163,7 +159,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       TestIndexWriter.assertNoUnreferencedFiles(directory, "testNoExtraFiles");
 
       // Reopen
-      writer = new IndexWriter(directory, newIndexWriterConfig(random,
+      writer = new IndexWriter(directory, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer())
           .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(2));
     }
@@ -174,13 +170,12 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   }
 
   public void testNoWaitClose() throws IOException {
-    Random random = newRandom();
-    MockDirectoryWrapper directory = newDirectory(random);
+    MockDirectoryWrapper directory = newDirectory();
     Document doc = new Document();
     Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
 
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);
 
     for(int iter=0;iter<10;iter++) {
@@ -209,7 +204,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       reader.close();
 
       // Reopen
-      writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+      writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);
     }
     writer.close();

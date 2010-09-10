@@ -25,7 +25,7 @@ import org.apache.lucene.index.codecs.mockintblock.*;
 public class TestIntBlockCodec extends LuceneTestCase {
 
   public void testSimpleIntBlocks() throws Exception {
-    Directory dir = newDirectory(newRandom());
+    Directory dir = newDirectory();
 
     IntStreamFactory f = new MockFixedIntBlockCodec(128).getIntFactory();
 
@@ -47,7 +47,7 @@ public class TestIntBlockCodec extends LuceneTestCase {
   }
 
   public void testEmptySimpleIntBlocks() throws Exception {
-    Directory dir = newDirectory(newRandom());
+    Directory dir = newDirectory();
 
     IntStreamFactory f = new MockFixedIntBlockCodec(128).getIntFactory();
     IntIndexOutput out = f.createOutput(dir, "test");

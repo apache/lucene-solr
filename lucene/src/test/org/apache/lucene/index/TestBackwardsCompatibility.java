@@ -148,7 +148,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   
   /** This test checks that *only* IndexFormatTooOldExceptions are throws when you open and operate on too old indexes! */
   public void testUnsupportedOldIndexes() throws Exception {
-    final Random rnd = newRandom();
     for(int i=0;i<unsupportedNames.length;i++) {
       unzip(getDataFile("unsupported." + unsupportedNames[i] + ".zip"), unsupportedNames[i]);
 
@@ -168,12 +167,12 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
       }
 
       try {
-        writer = new IndexWriter(dir, newIndexWriterConfig(rnd,
+        writer = new IndexWriter(dir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer())
           .setMergeScheduler(new SerialMergeScheduler()) // no threads!
         );
         // TODO: Make IndexWriter fail on open!
-        if (rnd.nextBoolean()) {
+        if (random.nextBoolean()) {
           writer.optimize();
         } else {
           reader = writer.getReader();
@@ -220,14 +219,13 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void testAddOldIndexes() throws IOException {
-    Random random = newRandom();
     for (String name : oldNames) {
       unzip(getDataFile("index." + name + ".zip"), name);
       String fullPath = fullDir(name);
       Directory dir = FSDirectory.open(new File(fullPath));
 
-      Directory targetDir = newDirectory(random);
-      IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(random,
+      Directory targetDir = newDirectory();
+      IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer()));
       w.addIndexes(new Directory[] { dir });
       w.close();
@@ -241,15 +239,14 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void testAddOldIndexesReader() throws IOException {
-    Random random = newRandom();
     for (String name : oldNames) {
       unzip(getDataFile("index." + name + ".zip"), name);
       String fullPath = fullDir(name);
       Directory dir = FSDirectory.open(new File(fullPath));
       IndexReader reader = IndexReader.open(dir);
       
-      Directory targetDir = newDirectory(random);
-      IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(random,
+      Directory targetDir = newDirectory();
+      IndexWriter w = new IndexWriter(targetDir, newIndexWriterConfig(
           TEST_VERSION_CURRENT, new MockAnalyzer()));
       w.addIndexes(new IndexReader[] { reader });
       w.close();
@@ -272,7 +269,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void testIndexOldIndexNoAdds() throws IOException {
-    Random random = newRandom();
     for(int i=0;i<oldNames.length;i++) {
       unzip(getDataFile("index." + oldNames[i] + ".zip"), oldNames[i]);
       changeIndexNoAdds(random, oldNames[i]);
@@ -281,7 +277,6 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
   }
 
   public void testIndexOldIndex() throws IOException {
-    Random random = newRandom();
     for(int i=0;i<oldNames.length;i++) {
       unzip(getDataFile("index." + oldNames[i] + ".zip"), oldNames[i]);
       changeIndexWithAdds(random, oldNames[i]);
@@ -371,7 +366,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
 
     Directory dir = FSDirectory.open(new File(dirName));
     // open writer
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
     // add 10 docs
     for(int i=0;i<10;i++) {
       addDoc(writer, 35+i);
@@ -415,7 +410,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     searcher.close();
 
     // optimize
-    writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
     writer.optimize();
     writer.close();
 
@@ -462,7 +457,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     searcher.close();
 
     // optimize
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
     writer.optimize();
     writer.close();
 
@@ -484,7 +479,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     dirName = fullDir(dirName);
 
     Directory dir = FSDirectory.open(new File(dirName));
-    IndexWriterConfig conf = newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10);
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10);
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(doCFS);
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundDocStore(doCFS);
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -496,7 +491,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     writer.close();
 
     // open fresh writer so we get no prx file in the added segment
-    conf = newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10);
+    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10);
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundFile(doCFS);
     ((LogMergePolicy) conf.getMergePolicy()).setUseCompoundDocStore(doCFS);
     writer = new IndexWriter(dir, conf);
@@ -524,7 +519,7 @@ public class TestBackwardsCompatibility extends LuceneTestCase {
     try {
       Directory dir = FSDirectory.open(new File(fullDir(outputDir)));
 
-      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(-1).setRAMBufferSizeMB(16.0));
+      IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(-1).setRAMBufferSizeMB(16.0));
       ((LogMergePolicy) writer.getMergePolicy()).setUseCompoundFile(true);
       ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
       for(int i=0;i<35;i++) {

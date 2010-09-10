@@ -68,7 +68,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         int numDocs = 500;
         
         Directory directory = new SeekCountingDirectory(new RAMDirectory());
-        IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10));
+        IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10));
         ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(false);
         ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundDocStore(false);
         for (int i = 0; i < numDocs; i++) {
@@ -120,15 +120,13 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     
     public void testLazySkipping() throws IOException {
         // test whether only the minimum amount of seeks() are performed
-        Random random = newRandom();
         performTest(random, 5);
         performTest(random, 10);
     }
     
     public void testSeek() throws IOException {
-        Random random = newRandom();
-        Directory directory = newDirectory(random);
-        IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+        Directory directory = newDirectory();
+        IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
         for (int i = 0; i < 10; i++) {
             Document doc = new Document();
             doc.add(new Field(this.field, "a b", Field.Store.YES, Field.Index.ANALYZED));

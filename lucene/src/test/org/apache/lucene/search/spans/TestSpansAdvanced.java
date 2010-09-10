@@ -18,7 +18,6 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -44,7 +43,6 @@ public class TestSpansAdvanced extends LuceneTestCase {
   protected Directory mDirectory;
   protected IndexReader reader;
   protected IndexSearcher searcher;
-  protected Random random;
   
   // field names in the index
   private final static String FIELD_ID = "ID";
@@ -56,9 +54,8 @@ public class TestSpansAdvanced extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
     // create test index
-    mDirectory = newDirectory(random);
+    mDirectory = newDirectory();
     final RandomIndexWriter writer = new RandomIndexWriter(random,
         mDirectory, new MockAnalyzer(MockTokenizer.SIMPLE, true,
                 MockTokenFilter.ENGLISH_STOPSET, true));

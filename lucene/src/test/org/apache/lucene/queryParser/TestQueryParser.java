@@ -27,7 +27,6 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashSet;
 import java.util.Locale;
-import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -569,9 +568,8 @@ public class TestQueryParser extends LocalizedTestCase {
   }
     
   public void testFarsiRangeCollating() throws Exception {
-    Random random = newRandom();
-    Directory ramDir = newDirectory(random);
-    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
+    Directory ramDir = newDirectory();
+    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     Document doc = new Document();
     doc.add(new Field("content","\u0633\u0627\u0628", 
                       Field.Store.YES, Field.Index.NOT_ANALYZED));
@@ -979,9 +977,8 @@ public class TestQueryParser extends LocalizedTestCase {
   }
 
   public void testLocalDateFormat() throws IOException, ParseException {
-    Random random = newRandom();
-    Directory ramDir = newDirectory(random);
-    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
+    Directory ramDir = newDirectory();
+    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
     addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
     iw.close();
@@ -1154,10 +1151,9 @@ public class TestQueryParser extends LocalizedTestCase {
   // enableStopPositionIncr & QueryParser's enablePosIncr
   // "match"
   public void testPositionIncrements() throws Exception {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     Analyzer a = new MockAnalyzer(MockTokenizer.SIMPLE, true, MockTokenFilter.ENGLISH_STOPSET, true);
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, a));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, a));
     Document doc = new Document();
     doc.add(new Field("f", "the wizard of ozzy", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);

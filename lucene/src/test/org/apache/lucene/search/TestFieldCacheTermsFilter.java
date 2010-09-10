@@ -27,7 +27,6 @@ import org.apache.lucene.store.Directory;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 /**
  * A basic unit test for FieldCacheTermsFilter
@@ -37,8 +36,7 @@ import java.util.Random;
 public class TestFieldCacheTermsFilter extends LuceneTestCase {
   public void testMissingTerms() throws Exception {
     String fieldName = "field1";
-    Random random = newRandom();
-    Directory rd = newDirectory(random);
+    Directory rd = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random, rd);
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();

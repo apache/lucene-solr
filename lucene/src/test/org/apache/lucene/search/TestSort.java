@@ -24,7 +24,6 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
-import java.util.Random;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
@@ -70,8 +69,6 @@ public class TestSort extends LuceneTestCase implements Serializable {
   private Query queryG;
   private Sort sort;
 
-  private Random random = newRandom();
-
   public TestSort (String name) {
     super (name);
   }
@@ -109,7 +106,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   // create an index of all the documents, or just the x, or just the y documents
   private IndexSearcher getIndex (boolean even, boolean odd)
   throws IOException {
-    Directory indexStore = newDirectory(random);
+    Directory indexStore = newDirectory();
     dirs.add(indexStore);
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
 
@@ -145,7 +142,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   }
   
   private IndexSearcher getFullStrings() throws CorruptIndexException, LockObtainFailedException, IOException {
-    Directory indexStore = newDirectory (random);
+    Directory indexStore = newDirectory();
     dirs.add(indexStore);
     IndexWriter writer = new IndexWriter(indexStore, new IndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(4));
@@ -189,11 +186,9 @@ public class TestSort extends LuceneTestCase implements Serializable {
     return sb.toString();
   }
   
-  Random r;
-  
   public int getRandomNumber(final int low, final int high) {
   
-    int randInt = (Math.abs(r.nextInt()) % (high - low)) + low;
+    int randInt = (Math.abs(random.nextInt()) % (high - low)) + low;
 
     return randInt;
   }
@@ -289,7 +284,6 @@ public class TestSort extends LuceneTestCase implements Serializable {
    * Test String sorting: small queue to many matches, multi field sort, reverse sort
    */
   public void testStringSort() throws IOException, ParseException {
-    r = newRandom();
     ScoreDoc[] result = null;
     IndexSearcher searcher = getFullStrings();
     sort.setSort(
@@ -1101,8 +1095,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
   }
 
   public void testEmptyStringVsNullStringSort() throws Exception {
-    Directory dir = newDirectory(random);
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random,
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
                         TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     doc.add(new Field("f", "", Field.Store.NO, Field.Index.NOT_ANALYZED));
@@ -1126,8 +1120,8 @@ public class TestSort extends LuceneTestCase implements Serializable {
   }
 
   public void testLUCENE2142() throws IOException {
-    Directory indexStore = newDirectory (random);
-    IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(random,
+    Directory indexStore = newDirectory();
+    IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i=0; i<5; i++) {
         Document doc = new Document();

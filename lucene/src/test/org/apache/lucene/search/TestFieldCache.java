@@ -28,7 +28,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.BytesRef;
 import java.io.IOException;
-import java.util.Random;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 
@@ -36,7 +35,6 @@ public class TestFieldCache extends LuceneTestCase {
   protected IndexReader reader;
   private static final int NUM_DOCS = 1000 * RANDOM_MULTIPLIER;
   private String[] unicodeStrings;
-  private Random random;
   private Directory directory;
   
   public TestFieldCache(String s) {
@@ -46,8 +44,7 @@ public class TestFieldCache extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
-    directory = newDirectory(random);
+    directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random, directory);
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;
@@ -208,8 +205,8 @@ public class TestFieldCache extends LuceneTestCase {
   }
 
   public void testEmptyIndex() throws Exception {
-    Directory dir = newDirectory(random);
-    IndexWriter writer= new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(500));
+    Directory dir = newDirectory();
+    IndexWriter writer= new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(500));
     IndexReader r = writer.getReader();
     FieldCache.DocTerms terms = FieldCache.DEFAULT.getTerms(r, "foobar");
     FieldCache.DocTermsIndex termsIndex = FieldCache.DEFAULT.getTermsIndex(r, "foobar");

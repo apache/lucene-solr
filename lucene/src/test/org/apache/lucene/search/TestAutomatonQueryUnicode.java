@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -44,8 +43,7 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
 
   public void setUp() throws Exception {
     super.setUp();
-    Random random = newRandom();
-    directory = newDirectory(random);
+    directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     Document doc = new Document();
     Field titleField = new Field("title", "some title", Field.Store.NO,

@@ -25,7 +25,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericField;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
@@ -299,8 +298,8 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
   
   @Test
   public void testInfiniteValues() throws Exception {
-    Directory dir = newDirectory(random);
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
     doc.add(new NumericField("double").setDoubleValue(Double.NEGATIVE_INFINITY));
@@ -349,13 +348,12 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
   }
   
   private void testRandomTrieAndClassicRangeQuery(int precisionStep) throws Exception {
-    final Random rnd=newRandom();
     String field="field"+precisionStep;
     int termCountT=0,termCountC=0;
     int num = 10 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      long lower=(long)(rnd.nextDouble()*noDocs*distance)+startOffset;
-      long upper=(long)(rnd.nextDouble()*noDocs*distance)+startOffset;
+      long lower=(long)(random.nextDouble()*noDocs*distance)+startOffset;
+      long upper=(long)(random.nextDouble()*noDocs*distance)+startOffset;
       if (lower>upper) {
         long a=lower; lower=upper; upper=a;
       }
@@ -433,13 +431,12 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
   }
   
   private void testRangeSplit(int precisionStep) throws Exception {
-    final Random rnd=newRandom();
     String field="ascfield"+precisionStep;
     // 10 random tests
     int num = 10 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      long lower=(long)(rnd.nextDouble()*noDocs - noDocs/2);
-      long upper=(long)(rnd.nextDouble()*noDocs - noDocs/2);
+      long lower=(long)(random.nextDouble()*noDocs - noDocs/2);
+      long upper=(long)(random.nextDouble()*noDocs - noDocs/2);
       if (lower>upper) {
         long a=lower; lower=upper; upper=a;
       }
@@ -519,14 +516,13 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
   }
   
   private void testSorting(int precisionStep) throws Exception {
-    final Random rnd=newRandom();
     String field="field"+precisionStep;
     // 10 random tests, the index order is ascending,
     // so using a reverse sort field should retun descending documents
     int num = 10 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      long lower=(long)(rnd.nextDouble()*noDocs*distance)+startOffset;
-      long upper=(long)(rnd.nextDouble()*noDocs*distance)+startOffset;
+      long lower=(long)(random.nextDouble()*noDocs*distance)+startOffset;
+      long upper=(long)(random.nextDouble()*noDocs*distance)+startOffset;
       if (lower>upper) {
         long a=lower; lower=upper; upper=a;
       }

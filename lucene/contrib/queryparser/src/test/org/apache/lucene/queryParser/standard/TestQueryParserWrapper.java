@@ -654,7 +654,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
 
   public void testFarsiRangeCollating() throws Exception {
 
-    Directory ramDir = newDirectory(newRandom());
+    Directory ramDir = newDirectory();
     IndexWriter iw = new IndexWriter(ramDir, new MockAnalyzer(MockTokenizer.WHITESPACE, false), true,
         IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
@@ -1063,7 +1063,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
 
   public void testLocalDateFormat() throws IOException, ParseException {
 
-    Directory ramDir = newDirectory(newRandom());
+    Directory ramDir = newDirectory();
     IndexWriter iw = new IndexWriter(ramDir, new MockAnalyzer(MockTokenizer.WHITESPACE, false), true,
         IndexWriter.MaxFieldLength.LIMITED);
     addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);

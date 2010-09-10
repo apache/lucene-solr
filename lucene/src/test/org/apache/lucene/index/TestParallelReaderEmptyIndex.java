@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -46,16 +45,15 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
    * @throws IOException
    */
   public void testEmptyIndex() throws IOException {
-    Random random = newRandom();
-    Directory rd1 = newDirectory(random);
-    IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Directory rd1 = newDirectory();
+    IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     iw.close();
 
-    Directory rd2 = newDirectory(random, rd1);
+    Directory rd2 = newDirectory(rd1);
 
-    Directory rdOut = newDirectory(random);
+    Directory rdOut = newDirectory();
 
-    IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     ParallelReader pr = new ParallelReader();
     pr.add(IndexReader.open(rd1,true));
     pr.add(IndexReader.open(rd2,true));
@@ -77,10 +75,9 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
    * any exception.
    */
   public void testEmptyIndexWithVectors() throws IOException {
-    Random random = newRandom();
-    Directory rd1 = newDirectory(random);
+    Directory rd1 = newDirectory();
     {
-      IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+      IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
       Document doc = new Document();
       doc.add(new Field("test", "", Store.NO, Index.ANALYZED,
                         TermVector.YES));
@@ -94,22 +91,22 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
       ir.deleteDocument(0);
       ir.close();
 
-      iw = new IndexWriter(rd1, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+      iw = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
       iw.optimize();
       iw.close();
     }
 
-    Directory rd2 = newDirectory(random);
+    Directory rd2 = newDirectory();
     {
-      IndexWriter iw = new IndexWriter(rd2, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+      IndexWriter iw = new IndexWriter(rd2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
       Document doc = new Document();
       iw.addDocument(doc);
       iw.close();
     }
 
-    Directory rdOut = newDirectory(random);
+    Directory rdOut = newDirectory();
 
-    IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter iwOut = new IndexWriter(rdOut, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     ParallelReader pr = new ParallelReader();
     pr.add(IndexReader.open(rd1,true));
     pr.add(IndexReader.open(rd2,true));

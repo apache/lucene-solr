@@ -43,7 +43,7 @@ public class TestSegmentReader extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    dir = newDirectory(newRandom());
+    dir = newDirectory();
     DocHelper.setupDoc(testDoc);
     SegmentInfo info = DocHelper.writeDoc(dir, testDoc);
     reader = SegmentReader.get(true, info, IndexReader.DEFAULT_TERMS_INDEX_DIVISOR);

@@ -2,7 +2,6 @@ package org.apache.lucene.xmlparser;
 
 import java.io.IOException;
 import java.util.Properties;
-import java.util.Random;
 import java.util.StringTokenizer;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -142,9 +141,8 @@ public class TestQueryTemplateManager extends LuceneTestCase {
 		
 		
 		//Create an index
-		Random random = newRandom();
-		dir=newDirectory(random);
-		IndexWriter w=new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, analyzer));
+		dir=newDirectory();
+		IndexWriter w=new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
 		for (int i = 0; i < docFieldValues.length; i++)
 		{
 			w.addDocument(getDocumentFromString(docFieldValues[i]));

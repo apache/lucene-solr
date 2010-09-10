@@ -115,7 +115,7 @@ public class JEStoreTest extends LuceneTestCase {
         final int count = 250;
         final int LENGTH_MASK = 0xffff;
 
-        Random r = newRandom();
+        Random r = random;
         final long seed = r.nextLong();
         Random gen = new Random(seed);
         int totalLength = 0;
@@ -261,7 +261,7 @@ public class JEStoreTest extends LuceneTestCase {
         final int count = 250;
         final int LENGTH_MASK = 0xffff;
 
-        Random r = newRandom();
+        Random r = random;
         final long seed = r.nextLong();
         Random gen = new Random(seed);
         int totalLength = 0;
@@ -493,7 +493,7 @@ public class JEStoreTest extends LuceneTestCase {
         final int count = 250;
         final int LENGTH_MASK = 0xffff;
 
-        Random r = newRandom();
+        Random r = random;
         final long seed = r.nextLong();
         Random gen = new Random(seed);
         int totalLength = 0;

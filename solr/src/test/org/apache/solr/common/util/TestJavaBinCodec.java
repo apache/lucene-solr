@@ -19,7 +19,6 @@ package org.apache.solr.common.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
@@ -27,10 +26,9 @@ import org.apache.lucene.util._TestUtil;
 public class TestJavaBinCodec extends LuceneTestCase {
   
  public void testStrings() throws Exception {
-    Random r = newRandom();
     JavaBinCodec javabin = new JavaBinCodec();
     for (int i = 0; i < 10000*RANDOM_MULTIPLIER; i++) {
-      String s = _TestUtil.randomUnicodeString(r);
+      String s = _TestUtil.randomUnicodeString(random);
       ByteArrayOutputStream os = new ByteArrayOutputStream();
       javabin.marshal(s, os);
       ByteArrayInputStream is = new ByteArrayInputStream(os.toByteArray());

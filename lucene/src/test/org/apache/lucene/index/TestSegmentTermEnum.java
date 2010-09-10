@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
@@ -33,13 +32,11 @@ import org.apache.lucene.store.Directory;
 public class TestSegmentTermEnum extends LuceneTestCase {
   
   Directory dir;
-  Random random;
   
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
-    dir = newDirectory(random);
+    dir = newDirectory();
   }
   
   @Override
@@ -51,7 +48,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
   public void testTermEnum() throws IOException {
     IndexWriter writer = null;
 
-    writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     // ADD 100 documents with term : aaa
     // add 100 documents with terms: aaa bbb
@@ -67,7 +64,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
     verifyDocFreq();
 
     // merge segments by optimizing the index
-    writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+    writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
     writer.optimize();
     writer.close();
 
@@ -77,7 +74,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
 
   public void testPrevTermAtEnd() throws IOException
   {
-    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
+    IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setCodecProvider(_TestUtil.alwaysCodec("Standard")));
     addDoc(writer, "aaa bbb");
     writer.close();
     SegmentReader reader = SegmentReader.getOnlySegmentReader(dir);

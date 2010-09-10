@@ -19,10 +19,8 @@ package org.apache.solr.util;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Arrays;
-import java.util.Random;
 
 public class PrimUtilsTest extends LuceneTestCase {
-  Random r = newRandom();
 
   public void testSort() {
     int maxSize = 100;
@@ -38,10 +36,10 @@ public class PrimUtilsTest extends LuceneTestCase {
     };
 
     for (int iter=0; iter<100; iter++) {
-      int start = r.nextInt(maxSize+1);
-      int end = start==maxSize ? maxSize : start + r.nextInt(maxSize-start);
+      int start = random.nextInt(maxSize+1);
+      int end = start==maxSize ? maxSize : start + random.nextInt(maxSize-start);
       for (int i=start; i<end; i++) {
-        a[i] = b[i] = r.nextInt(maxVal);
+        a[i] = b[i] = random.nextInt(maxVal);
       }
       PrimUtils.sort(start, end, a, comparator);
       Arrays.sort(b, start, end);
@@ -58,14 +56,14 @@ public class PrimUtilsTest extends LuceneTestCase {
 
     for (int iter=0; iter<100; iter++) {
       int discardCount = 0;
-      int startSize = r.nextInt(maxSize) + 1;
-      int endSize = startSize==maxSize ? maxSize : startSize + r.nextInt(maxSize-startSize);
-      int adds = r.nextInt(maxSize+1);
+      int startSize = random.nextInt(maxSize) + 1;
+      int endSize = startSize==maxSize ? maxSize : startSize + random.nextInt(maxSize-startSize);
+      int adds = random.nextInt(maxSize+1);
       // System.out.println("startSize=" + startSize + " endSize=" + endSize + " adds="+adds);
       LongPriorityQueue pq = new LongPriorityQueue(startSize, endSize, Long.MIN_VALUE);
 
       for (int i=0; i<adds; i++) {
-        long v = r.nextLong();
+        long v = random.nextLong();
         a[i] = v;
         long out = pq.insertWithOverflow(v);
         if (i < endSize) {

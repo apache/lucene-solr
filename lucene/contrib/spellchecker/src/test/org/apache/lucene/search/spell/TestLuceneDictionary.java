@@ -19,7 +19,6 @@ package org.apache.lucene.search.spell;
 
 import java.io.IOException;
 import java.util.Iterator;
-import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -40,16 +39,14 @@ public class TestLuceneDictionary extends LuceneTestCase {
   private Directory store;
 
   private IndexReader indexReader = null;
-  private Random random;
   private LuceneDictionary ld;
   private Iterator<String> it;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
-    store = newDirectory(random);
-    IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
+    store = newDirectory();
+    IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
 
     Document doc;
 
@@ -195,7 +192,7 @@ public class TestLuceneDictionary extends LuceneTestCase {
   }
   
   public void testSpellchecker() throws IOException {
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     SpellChecker sc = new SpellChecker(dir);
     indexReader = IndexReader.open(store, true);
     sc.indexDictionary(new LuceneDictionary(indexReader, "contents"));

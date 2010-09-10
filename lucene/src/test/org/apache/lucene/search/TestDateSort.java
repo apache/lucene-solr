@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.util.Arrays;
-import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -51,8 +50,7 @@ public class TestDateSort extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     // Create an index writer.
-    Random random = newRandom();
-    directory = newDirectory(random);
+    directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
 
     // oldest doc:

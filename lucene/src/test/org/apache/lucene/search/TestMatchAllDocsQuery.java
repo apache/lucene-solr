@@ -17,7 +17,6 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -39,9 +38,8 @@ public class TestMatchAllDocsQuery extends LuceneTestCase {
   private Analyzer analyzer = new MockAnalyzer();
   
   public void testQuery() throws Exception {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(random,
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer).setMaxBufferedDocs(2));
     addDoc("one", iw, 1f);
     addDoc("two", iw, 20f);

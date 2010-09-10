@@ -20,8 +20,6 @@ package org.apache.lucene.util.automaton;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 
-import java.util.Random;
-
 public class TestBasicOperations extends LuceneTestCase { 
   /** Test optimization to concatenate() */
   public void testSingletonConcatenate() {
@@ -85,12 +83,11 @@ public class TestBasicOperations extends LuceneTestCase {
   }
 
   public void testGetRandomAcceptedString() throws Throwable {
-    final Random r = newRandom();
     final int ITER1 = 100 * RANDOM_MULTIPLIER;
     final int ITER2 = 100 * RANDOM_MULTIPLIER;
     for(int i=0;i<ITER1;i++) {
 
-      final RegExp re = AutomatonTestUtil.randomRegexp(r);
+      final RegExp re = AutomatonTestUtil.randomRegexp(random);
       final Automaton a = re.toAutomaton();
       assertFalse(BasicOperations.isEmpty(a));
 
@@ -98,7 +95,7 @@ public class TestBasicOperations extends LuceneTestCase {
       for(int j=0;j<ITER2;j++) {
         int[] acc = null;
         try {
-          acc = rx.getRandomAcceptedString(r);
+          acc = rx.getRandomAcceptedString(random);
           final String s = UnicodeUtil.newString(acc, 0, acc.length);
           assertTrue(BasicOperations.run(a, s));
         } catch (Throwable t) {

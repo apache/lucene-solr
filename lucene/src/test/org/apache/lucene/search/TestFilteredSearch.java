@@ -18,7 +18,6 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -47,18 +46,17 @@ public class TestFilteredSearch extends LuceneTestCase {
   
   public void testFilteredSearch() throws CorruptIndexException, LockObtainFailedException, IOException {
     boolean enforceSingleSegment = true;
-    Random random = newRandom();
-    Directory directory = newDirectory(random);
+    Directory directory = newDirectory();
     int[] filterBits = {1, 36};
     SimpleDocIdSetFilter filter = new SimpleDocIdSetFilter(filterBits);
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     searchFiltered(writer, directory, filter, enforceSingleSegment);
     // run the test on more than one segment
     enforceSingleSegment = false;
     // reset - it is stateful
     filter.reset();
     writer.close();
-    writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10));
+    writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(10));
     // we index 60 docs - this will create 6 segments
     searchFiltered(writer, directory, filter, enforceSingleSegment);
     writer.close();

@@ -74,8 +74,7 @@ public class TestNorms extends LuceneTestCase {
    * Including optimize. 
    */
   public void testNorms() throws IOException {
-    Random random = newRandom();
-    Directory dir1 = newDirectory(random);
+    Directory dir1 = newDirectory();
 
     norms = new ArrayList<Float>();
     modifiedNorms = new ArrayList<Float>();
@@ -92,16 +91,16 @@ public class TestNorms extends LuceneTestCase {
     modifiedNorms = new ArrayList<Float>();
     numDocNorms = 0;
     
-    Directory dir2 = newDirectory(random);
+    Directory dir2 = newDirectory();
 
     createIndex(random, dir2);
     doTestNorms(random, dir2);
 
     // add index1 and index2 to a third index: index3
-    Directory dir3 = newDirectory(random);
+    Directory dir3 = newDirectory();
 
     createIndex(random, dir3);
-    IndexWriter iw = new IndexWriter(dir3, newIndexWriterConfig(random,
+    IndexWriter iw = new IndexWriter(dir3, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
         .setMaxBufferedDocs(5));
     ((LogMergePolicy) iw.getConfig().getMergePolicy()).setMergeFactor(3);
@@ -120,7 +119,7 @@ public class TestNorms extends LuceneTestCase {
     doTestNorms(random, dir3);
     
     // now with optimize
-    iw = new IndexWriter(dir3, newIndexWriterConfig(random, TEST_VERSION_CURRENT,
+    iw = new IndexWriter(dir3, newIndexWriterConfig( TEST_VERSION_CURRENT,
         anlzr).setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(5));
     ((LogMergePolicy) iw.getConfig().getMergePolicy()).setMergeFactor(3);
     iw.optimize();
@@ -146,7 +145,7 @@ public class TestNorms extends LuceneTestCase {
   }
 
   private void createIndex(Random random, Directory dir) throws IOException {
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(random,
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.CREATE)
         .setMaxBufferedDocs(5).setSimilarity(similarityOne));
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();
@@ -191,7 +190,7 @@ public class TestNorms extends LuceneTestCase {
   }
 
   private void addDocs(Random random, Directory dir, int ndocs, boolean compound) throws IOException {
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(random,
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, anlzr).setOpenMode(OpenMode.APPEND)
         .setMaxBufferedDocs(5).setSimilarity(similarityOne));
     LogMergePolicy lmp = (LogMergePolicy) iw.getConfig().getMergePolicy();

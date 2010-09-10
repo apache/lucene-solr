@@ -38,6 +38,8 @@
     <format property="dateversion" pattern="yyyy.MM.dd.HH.mm.ss" />
   </tstamp>
 
+  <property name="junit.details" value="1"/>
+
   <!-- default arguments to pass to jvm executing tests -->
   <property name="args" value="" />
 
@@ -55,6 +57,7 @@
   <property name="tests.locale" value="random" />
   <property name="tests.timezone" value="random" />
   <property name="tests.iter" value="1" />
+  <property name="tests.seed" value="random" />
 
   <condition property="dir.prop" value="-Dsolr.directoryFactory=solr.StandardDirectoryFactory">
     <isset property="use.fsdir"/>

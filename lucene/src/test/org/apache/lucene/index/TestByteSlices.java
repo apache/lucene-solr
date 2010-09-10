@@ -14,7 +14,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.Random;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.lucene.util.LuceneTestCase;
@@ -62,8 +61,6 @@ public class TestByteSlices extends LuceneTestCase {
     int[] uptos = new int[NUM_STREAM];
     int[] counters = new int[NUM_STREAM];
 
-    Random r = newRandom();
-
     ByteSliceReader reader = new ByteSliceReader();
 
     for(int ti=0;ti<100;ti++) {
@@ -75,7 +72,7 @@ public class TestByteSlices extends LuceneTestCase {
       
       int num = 10000 * RANDOM_MULTIPLIER;
       for (int iter = 0; iter < num; iter++) {
-        int stream = r.nextInt(NUM_STREAM);
+        int stream = random.nextInt(NUM_STREAM);
         if (VERBOSE)
           System.out.println("write stream=" + stream);
 
@@ -87,12 +84,12 @@ public class TestByteSlices extends LuceneTestCase {
         }
 
         writer.init(uptos[stream]);
-        int numValue = r.nextInt(20);
+        int numValue = random.nextInt(20);
         for(int j=0;j<numValue;j++) {
           if (VERBOSE)
             System.out.println("    write " + (counters[stream]+j));
           // write some large (incl. negative) ints:
-          writer.writeVInt(r.nextInt());
+          writer.writeVInt(random.nextInt());
           writer.writeVInt(counters[stream]+j);
         }
         counters[stream] += numValue;

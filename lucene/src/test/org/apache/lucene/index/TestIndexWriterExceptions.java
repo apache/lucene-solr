@@ -129,10 +129,9 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   }
 
   public void testRandomExceptions() throws Throwable {
-    Random random = newRandom();
-    MockDirectoryWrapper dir = newDirectory(random);
+    MockDirectoryWrapper dir = newDirectory();
 
-    MockIndexWriter writer  = new MockIndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
+    MockIndexWriter writer  = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
         .setRAMBufferSizeMB(0.1).setMergeScheduler(new ConcurrentMergeScheduler()));
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
     //writer.setMaxBufferedDocs(10);
@@ -170,9 +169,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
   }
 
   public void testRandomExceptionsThreads() throws Throwable {
-    Random random = newRandom();
-    MockDirectoryWrapper dir = newDirectory(random);
-    MockIndexWriter writer  = new MockIndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
+    MockDirectoryWrapper dir = newDirectory();
+    MockIndexWriter writer  = new MockIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
         .setRAMBufferSizeMB(0.2).setMergeScheduler(new ConcurrentMergeScheduler()));
     ((ConcurrentMergeScheduler) writer.getConfig().getMergeScheduler()).setSuppressExceptions();
     //writer.setMaxBufferedDocs(10);

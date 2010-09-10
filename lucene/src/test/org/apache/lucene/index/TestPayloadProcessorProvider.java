@@ -119,13 +119,13 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
   private static final int NUM_DOCS = 10;
 
   private IndexWriterConfig getConfig(Random random) {
-    return newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
+    return newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
   }
 
   private void populateDirs(Random random, Directory[] dirs, boolean multipleCommits)
       throws IOException {
     for (int i = 0; i < dirs.length; i++) {
-      dirs[i] = newDirectory(random);
+      dirs[i] = newDirectory();
       populateDocs(random, dirs[i], multipleCommits);
       verifyPayloadExists(dirs[i], "p", new BytesRef("p1"), NUM_DOCS);
       verifyPayloadExists(dirs[i], "p", new BytesRef("p2"), NUM_DOCS);
@@ -178,7 +178,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
     Directory[] dirs = new Directory[2];
     populateDirs(random, dirs, multipleCommits);
 
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     if (!addToEmptyIndex) {
       populateDocs(random, dir, multipleCommits);
       verifyPayloadExists(dir, "p", new BytesRef("p1"), NUM_DOCS);
@@ -218,7 +218,6 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
 
   @Test
   public void testAddIndexes() throws Exception {
-    Random random = newRandom();
     // addIndexes - single commit in each
     doTest(random, true, 0, false);
 
@@ -228,7 +227,6 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
 
   @Test
   public void testAddIndexesIntoExisting() throws Exception {
-    Random random = newRandom();
     // addIndexes - single commit in each
     doTest(random, false, NUM_DOCS, false);
 
@@ -238,8 +236,7 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
 
   @Test
   public void testRegularMerges() throws Exception {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     populateDocs(random, dir, true);
     verifyPayloadExists(dir, "p", new BytesRef("p1"), NUM_DOCS);
     verifyPayloadExists(dir, "p", new BytesRef("p2"), NUM_DOCS);

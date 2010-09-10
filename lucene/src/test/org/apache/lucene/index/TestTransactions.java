@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
@@ -28,17 +27,15 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util._TestUtil;
 
 public class TestTransactions extends LuceneTestCase {
   
-  private Random RANDOM;
   private static volatile boolean doFail;
 
   private class RandomFailure extends MockDirectoryWrapper.Failure {
     @Override
     public void eval(MockDirectoryWrapper dir) throws IOException {
-      if (TestTransactions.doFail && RANDOM.nextInt() % 10 <= 3)
+      if (TestTransactions.doFail && random.nextInt() % 10 <= 3)
         throw new IOException("now failing randomly but on purpose");
     }
   }
@@ -94,14 +91,14 @@ public class TestTransactions extends LuceneTestCase {
     @Override
     public void doWork() throws Throwable {
 
-      IndexWriter writer1 = new IndexWriter(dir1, newIndexWriterConfig(RANDOM, TEST_VERSION_CURRENT, new MockAnalyzer())
+      IndexWriter writer1 = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
           .setMaxBufferedDocs(3).setMergeScheduler(new ConcurrentMergeScheduler()));
       ((LogMergePolicy) writer1.getConfig().getMergePolicy()).setMergeFactor(2);
       ((ConcurrentMergeScheduler) writer1.getConfig().getMergeScheduler()).setSuppressExceptions();
 
       // Intentionally use different params so flush/merge
       // happen @ different times
-      IndexWriter writer2 = new IndexWriter(dir2, newIndexWriterConfig(RANDOM, TEST_VERSION_CURRENT, new MockAnalyzer())
+      IndexWriter writer2 = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
           .setMaxBufferedDocs(2).setMergeScheduler(new ConcurrentMergeScheduler()));
       ((LogMergePolicy) writer2.getConfig().getMergePolicy()).setMergeFactor(3);
       ((ConcurrentMergeScheduler) writer2.getConfig().getMergeScheduler()).setSuppressExceptions();
@@ -142,7 +139,7 @@ public class TestTransactions extends LuceneTestCase {
       // Add 10 docs:
       for(int j=0; j<10; j++) {
         Document d = new Document();
-        int n = RANDOM.nextInt();
+        int n = random.nextInt();
         d.add(new Field("id", Integer.toString(nextID++), Field.Store.YES, Field.Index.NOT_ANALYZED));
         d.add(new Field("contents", English.intToEnglish(n), Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(d);
@@ -184,10 +181,10 @@ public class TestTransactions extends LuceneTestCase {
   }
 
   public void initIndex(Directory dir) throws Throwable {
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(RANDOM, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     for(int j=0; j<7; j++) {
       Document d = new Document();
-      int n = RANDOM.nextInt();
+      int n = random.nextInt();
       d.add(new Field("contents", English.intToEnglish(n), Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(d);
     }
@@ -195,7 +192,6 @@ public class TestTransactions extends LuceneTestCase {
   }
 
   public void testTransactions() throws Throwable {
-    RANDOM = newRandom();
     // we cant use non-ramdir on windows, because this test needs to double-write.
     MockDirectoryWrapper dir1 = new MockDirectoryWrapper(new RAMDirectory());
     MockDirectoryWrapper dir2 = new MockDirectoryWrapper(new RAMDirectory());

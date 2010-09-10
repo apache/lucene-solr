@@ -17,19 +17,14 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.Random;
-
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
-import org.apache.lucene.index.IndexWriter.MaxFieldLength;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestNewestSegment extends LuceneTestCase {
   public void testNewestSegment() throws Exception {
-    Random random = newRandom();
-    Directory directory = newDirectory(random);
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Directory directory = newDirectory();
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     assertNull(writer.newestSegment());
     writer.close();
     directory.close();

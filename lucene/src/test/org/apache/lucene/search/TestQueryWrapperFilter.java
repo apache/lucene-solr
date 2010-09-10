@@ -17,8 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.util.Random;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -33,8 +31,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestQueryWrapperFilter extends LuceneTestCase {
 
   public void testBasic() throws Exception {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     Document doc = new Document();
     doc.add(new Field("field", "value", Store.NO, Index.ANALYZED));

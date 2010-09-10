@@ -48,8 +48,7 @@ public class TestSort extends AbstractSolrTestCase {
   }
 
   public void testSort() throws Exception {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     Document smallDoc = new Document();
     // Field id = new Field("id","0", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);
     Field f = new Field("f","0", Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS);

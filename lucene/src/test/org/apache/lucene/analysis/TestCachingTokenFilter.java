@@ -19,7 +19,6 @@ package org.apache.lucene.analysis;
 
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -37,8 +36,7 @@ public class TestCachingTokenFilter extends BaseTokenStreamTestCase {
   private String[] tokens = new String[] {"term1", "term2", "term3", "term2"};
   
   public void testCaching() throws IOException {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     Document doc = new Document();
     TokenStream stream = new TokenStream() {

@@ -34,8 +34,6 @@ public class BaseTestRangeFilter extends LuceneTestCase {
   public static final boolean F = false;
   public static final boolean T = true;
   
-  protected Random rand = newRandom();
-  
   /**
    * Collation interacts badly with hyphens -- collation produces different
    * ordering than Unicode code-point ordering -- so two indexes are created:
@@ -48,12 +46,12 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     boolean allowNegativeRandomInts;
     Directory index;
     
-    TestIndex(int minR, int maxR, boolean allowNegativeRandomInts) {
+    TestIndex(Random random, int minR, int maxR, boolean allowNegativeRandomInts) {
       this.minR = minR;
       this.maxR = maxR;
       this.allowNegativeRandomInts = allowNegativeRandomInts;
       try {
-        index = newDirectory(rand);
+        index = newDirectory();
       } catch (IOException e) { throw new RuntimeException(e); }
     }
   }
@@ -91,10 +89,10 @@ public class BaseTestRangeFilter extends LuceneTestCase {
    
   protected void setUp() throws Exception {
     super.setUp();
-    signedIndexDir = new TestIndex(Integer.MAX_VALUE, Integer.MIN_VALUE, true);
-    unsignedIndexDir = new TestIndex(Integer.MAX_VALUE, 0, false);
-    signedIndexReader = build(rand, signedIndexDir);
-    unsignedIndexReader = build(rand, unsignedIndexDir);
+    signedIndexDir = new TestIndex(random, Integer.MAX_VALUE, Integer.MIN_VALUE, true);
+    unsignedIndexDir = new TestIndex(random, Integer.MAX_VALUE, 0, false);
+    signedIndexReader = build(random, signedIndexDir);
+    unsignedIndexReader = build(random, unsignedIndexDir);
   }
   
   protected void tearDown() throws Exception {
@@ -108,14 +106,14 @@ public class BaseTestRangeFilter extends LuceneTestCase {
   private IndexReader build(Random random, TestIndex index) throws IOException {
     /* build an index */
     RandomIndexWriter writer = new RandomIndexWriter(random, index.index, 
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
+        newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
     .setOpenMode(OpenMode.CREATE));
     
     for (int d = minId; d <= maxId; d++) {
       Document doc = new Document();
       doc.add(new Field("id", pad(d), Field.Store.YES,
           Field.Index.NOT_ANALYZED));
-      int r = index.allowNegativeRandomInts ? rand.nextInt() : rand
+      int r = index.allowNegativeRandomInts ? random.nextInt() : random
           .nextInt(Integer.MAX_VALUE);
       if (index.maxR < r) {
         index.maxR = r;

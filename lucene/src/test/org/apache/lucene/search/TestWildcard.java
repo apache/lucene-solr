@@ -29,19 +29,16 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
 
 import java.io.IOException;
-import java.util.Random;
 
 /**
  * TestWildcard tests the '*' and '?' wildcard characters.
  */
 public class TestWildcard
     extends LuceneTestCase {
-  private Random random;
   
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
   }
 
   public void testEquals() {
@@ -210,7 +207,7 @@ public class TestWildcard
 
   private Directory getIndexStore(String field, String[] contents)
       throws IOException {
-    Directory indexStore = newDirectory(random);
+    Directory indexStore = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     for (int i = 0; i < contents.length; ++i) {
       Document doc = new Document();
@@ -266,7 +263,7 @@ public class TestWildcard
     };
 
     // prepare the index
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random, dir);
     for (int i = 0; i < docs.length; i++) {
       Document doc = new Document();

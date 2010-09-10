@@ -39,13 +39,11 @@ public class TestParallelReader extends LuceneTestCase {
 
   private IndexSearcher parallel;
   private IndexSearcher single;
-  private Random random;
   private Directory dir, dir1, dir2;
   
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
     single = single(random);
     parallel = parallel(random);
   }
@@ -122,8 +120,8 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir1 = getDir1(random);
 
     // one document only:
-    Directory dir2 = newDirectory(random);
-    IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Directory dir2 = newDirectory();
+    IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document d3 = new Document();
     d3.add(new Field("f3", "v1", Field.Store.YES, Field.Index.ANALYZED));
     w2.addDocument(d3);
@@ -176,14 +174,14 @@ public class TestParallelReader extends LuceneTestCase {
     Directory dir2 = getDir2(random);
     
     // add another document to ensure that the indexes are not optimized
-    IndexWriter modifier = new IndexWriter(dir1, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter modifier = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     ((LogMergePolicy) modifier.getMergePolicy()).setMergeFactor(10);
     Document d = new Document();
     d.add(new Field("f1", "v1", Field.Store.YES, Field.Index.ANALYZED));
     modifier.addDocument(d);
     modifier.close();
     
-    modifier = new IndexWriter(dir2, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    modifier = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     ((LogMergePolicy) modifier.getMergePolicy()).setMergeFactor(10);
     d = new Document();
     d.add(new Field("f2", "v2", Field.Store.YES, Field.Index.ANALYZED));
@@ -197,7 +195,7 @@ public class TestParallelReader extends LuceneTestCase {
     assertFalse(pr.isOptimized());
     pr.close();
     
-    modifier = new IndexWriter(dir1, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    modifier = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     modifier.optimize();
     modifier.close();
     
@@ -209,7 +207,7 @@ public class TestParallelReader extends LuceneTestCase {
     pr.close();
 
     
-    modifier = new IndexWriter(dir2, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    modifier = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     modifier.optimize();
     modifier.close();
     
@@ -240,8 +238,8 @@ public class TestParallelReader extends LuceneTestCase {
 
   // Fields 1-4 indexed together:
   private IndexSearcher single(Random random) throws IOException {
-    dir = newDirectory(random);
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document d1 = new Document();
     d1.add(new Field("f1", "v1", Field.Store.YES, Field.Index.ANALYZED));
     d1.add(new Field("f2", "v1", Field.Store.YES, Field.Index.ANALYZED));
@@ -270,8 +268,8 @@ public class TestParallelReader extends LuceneTestCase {
   }
 
   private Directory getDir1(Random random) throws IOException {
-    Directory dir1 = newDirectory(random);
-    IndexWriter w1 = new IndexWriter(dir1, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Directory dir1 = newDirectory();
+    IndexWriter w1 = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document d1 = new Document();
     d1.add(new Field("f1", "v1", Field.Store.YES, Field.Index.ANALYZED));
     d1.add(new Field("f2", "v1", Field.Store.YES, Field.Index.ANALYZED));
@@ -285,8 +283,8 @@ public class TestParallelReader extends LuceneTestCase {
   }
 
   private Directory getDir2(Random random) throws IOException {
-    Directory dir2 = newDirectory(random);
-    IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    Directory dir2 = newDirectory();
+    IndexWriter w2 = new IndexWriter(dir2, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document d3 = new Document();
     d3.add(new Field("f3", "v1", Field.Store.YES, Field.Index.ANALYZED));
     d3.add(new Field("f4", "v1", Field.Store.YES, Field.Index.ANALYZED));

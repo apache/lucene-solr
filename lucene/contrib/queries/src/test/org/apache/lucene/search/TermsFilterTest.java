@@ -52,8 +52,7 @@ public class TermsFilterTest extends LuceneTestCase {
 	
 	public void testMissingTerms() throws Exception {
 		String fieldName="field1";
-		Random random = newRandom();
-		Directory rd=newDirectory(random);
+		Directory rd=newDirectory();
 		RandomIndexWriter w = new RandomIndexWriter(random, rd);
 		for (int i = 0; i < 100; i++) {
 			Document doc=new Document();

@@ -38,10 +38,9 @@ import java.util.*;
 public class TestIndexFileDeleter extends LuceneTestCase {
   
   public void testDeleteLeftoverFiles() throws IOException {
-    Random random = newRandom();
-    MockDirectoryWrapper dir = newDirectory(random);
+    MockDirectoryWrapper dir = newDirectory();
     dir.setPreventDoubleWrite(false);
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMaxBufferedDocs(10));
     ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
@@ -147,7 +146,7 @@ public class TestIndexFileDeleter extends LuceneTestCase {
 
     // Open & close a writer: it should delete the above 4
     // files and nothing more:
-    writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
+    writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.APPEND));
     writer.close();
 
     String[] files2 = dir.listAll();

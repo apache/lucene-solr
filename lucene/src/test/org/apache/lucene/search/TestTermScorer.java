@@ -20,7 +20,6 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.document.Document;
@@ -47,8 +46,7 @@ public class TestTermScorer extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    Random random = newRandom();
-    directory = newDirectory(random);
+    directory = newDirectory();
     
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     for (int i = 0; i < values.length; i++) {

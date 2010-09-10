@@ -4,7 +4,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -57,10 +56,9 @@ public class TestParser extends LuceneTestCase {
 		//initialize the parser
 		builder=new CorePlusExtensionsParser("contents",analyzer);
 		
-		  Random random = newRandom();
 			BufferedReader d = new BufferedReader(new InputStreamReader(TestParser.class.getResourceAsStream("reuters21578.txt"))); 
-			dir=newDirectory(random);
-			IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, Version.LUCENE_24, analyzer));
+			dir=newDirectory();
+			IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(Version.LUCENE_24, analyzer));
 			String line = d.readLine();		
 			while(line!=null)
 			{

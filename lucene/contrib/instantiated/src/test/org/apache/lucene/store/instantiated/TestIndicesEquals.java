@@ -21,7 +21,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Random;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
@@ -61,11 +60,10 @@ public class TestIndicesEquals extends LuceneTestCase {
 
 
   public void testLoadIndexReader() throws Exception {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
 
     // create dir data
-    IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(random,
+    IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < 20; i++) {
       Document document = new Document();
@@ -86,12 +84,11 @@ public class TestIndicesEquals extends LuceneTestCase {
 
   public void testInstantiatedIndexWriter() throws Exception {
 
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     InstantiatedIndex ii = new InstantiatedIndex();
 
     // create dir data
-    IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(random,
+    IndexWriter indexWriter = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     for (int i = 0; i < 500; i++) {
       Document document = new Document();

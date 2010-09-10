@@ -100,7 +100,7 @@
       </not>
     </condition>    
     
-  	<junit printsummary="on"
+  	<junit printsummary="no"
            haltonfailure="no"
            maxmemory="512M"
            errorProperty="tests.failed"
@@ -116,17 +116,18 @@
       <sysproperty key="tests.timezone" value="${tests.timezone}"/>
       <sysproperty key="tests.multiplier" value="${tests.multiplier}"/>
       <sysproperty key="tests.iter" value="${tests.iter}"/>
+      <sysproperty key="tests.seed" value="${tests.seed}"/>
       <sysproperty key="jetty.insecurerandom" value="1"/>
       <sysproperty key="tempDir" file="${tempDir}"/>
       <sysproperty key="testmethod" value="${testmethod}"/>
       <jvmarg line="${args}"/>
-      <formatter type="brief" usefile="false" if="junit.details"/>
+      <formatter classname="${junit.details.formatter}" usefile="false" if="junit.details"/>
       <classpath refid="test.classpath"/>
       <assertions>
         <enable package="org.apache.lucene"/>
         <enable package="org.apache.solr"/>
       </assertions>
-      <formatter type="xml"/>
+      <formatter type="${junit.formatter}"/>
       <batchtest fork="yes" todir="${junit.output.dir}" if="runall">
         <fileset dir="src/test/java" includes="${junit.includes}"/>
       </batchtest>

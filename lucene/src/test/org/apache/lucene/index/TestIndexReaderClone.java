@@ -17,8 +17,6 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.Random;
-
 import org.apache.lucene.index.SegmentReader.Norm;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -35,16 +33,9 @@ import org.apache.lucene.util.Bits;
  * implemented properly
  */
 public class TestIndexReaderClone extends LuceneTestCase {
-  Random random;
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    random = newRandom();
-  }
   
   public void testCloneReadOnlySegmentReader() throws Exception {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
 
     TestIndexReaderReopen.createIndex(random, dir1, false);
     IndexReader reader = IndexReader.open(dir1, false);
@@ -63,7 +54,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
   // open non-readOnly reader1, clone to non-readOnly
   // reader2, make sure we can change reader2
   public void testCloneNoChangesStillReadOnly() throws Exception {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
 
     TestIndexReaderReopen.createIndex(random, dir1, true);
     IndexReader r1 = IndexReader.open(dir1, false);
@@ -79,7 +70,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
   // open non-readOnly reader1, clone to non-readOnly
   // reader2, make sure we can change reader1
   public void testCloneWriteToOrig() throws Exception {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
 
     TestIndexReaderReopen.createIndex(random, dir1, true);
     IndexReader r1 = IndexReader.open(dir1, false);
@@ -95,7 +86,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
   // open non-readOnly reader1, clone to non-readOnly
   // reader2, make sure we can change reader2
   public void testCloneWriteToClone() throws Exception {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
 
     TestIndexReaderReopen.createIndex(random, dir1, true);
     IndexReader r1 = IndexReader.open(dir1, false);
@@ -118,7 +109,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
   // SegmentReader, add docs, reopen to multireader, then do
   // delete
   public void testReopenSegmentReaderToMultiReader() throws Exception {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
 
     TestIndexReaderReopen.createIndex(random, dir1, false);
     IndexReader reader1 = IndexReader.open(dir1, false);
@@ -136,7 +127,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
 
   // open non-readOnly reader1, clone to readOnly reader2
   public void testCloneWriteableToReadOnly() throws Exception {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
 
     TestIndexReaderReopen.createIndex(random, dir1, true);
     IndexReader reader = IndexReader.open(dir1, false);
@@ -158,7 +149,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
 
   // open non-readOnly reader1, reopen to readOnly reader2
   public void testReopenWriteableToReadOnly() throws Exception {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
 
     TestIndexReaderReopen.createIndex(random, dir1, true);
     IndexReader reader = IndexReader.open(dir1, false);
@@ -179,7 +170,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
 
   // open readOnly reader1, clone to non-readOnly reader2
   public void testCloneReadOnlyToWriteable() throws Exception {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
 
     TestIndexReaderReopen.createIndex(random, dir1, true);
     IndexReader reader1 = IndexReader.open(dir1, true);
@@ -202,11 +193,11 @@ public class TestIndexReaderClone extends LuceneTestCase {
   // open non-readOnly reader1 on multi-segment index, then
   // optimize the index, then clone to readOnly reader2
   public void testReadOnlyCloneAfterOptimize() throws Exception {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
 
     TestIndexReaderReopen.createIndex(random, dir1, true);
     IndexReader reader1 = IndexReader.open(dir1, false);
-    IndexWriter w = new IndexWriter(dir1, newIndexWriterConfig(random,
+    IndexWriter w = new IndexWriter(dir1, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     w.optimize();
     w.close();
@@ -229,7 +220,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
   }
   
   public void testCloneReadOnlyDirectoryReader() throws Exception {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
 
     TestIndexReaderReopen.createIndex(random, dir1, true);
     IndexReader reader = IndexReader.open(dir1, false);
@@ -253,9 +244,9 @@ public class TestIndexReaderClone extends LuceneTestCase {
   }
 
   public void testParallelReader() throws Exception {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
     TestIndexReaderReopen.createIndex(random, dir1, true);
-    final Directory dir2 = newDirectory(random);
+    final Directory dir2 = newDirectory();
     TestIndexReaderReopen.createIndex(random, dir2, true);
     IndexReader r1 = IndexReader.open(dir1, false);
     IndexReader r2 = IndexReader.open(dir2, false);
@@ -304,9 +295,9 @@ public class TestIndexReaderClone extends LuceneTestCase {
   }
 
   public void testMixedReaders() throws Exception {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
     TestIndexReaderReopen.createIndex(random, dir1, true);
-    final Directory dir2 = newDirectory(random);
+    final Directory dir2 = newDirectory();
     TestIndexReaderReopen.createIndex(random, dir2, true);
     IndexReader r1 = IndexReader.open(dir1, false);
     IndexReader r2 = IndexReader.open(dir2, false);
@@ -319,7 +310,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
   }
 
   public void testSegmentReaderUndeleteall() throws Exception {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
     TestIndexReaderReopen.createIndex(random, dir1, false);
     SegmentReader origSegmentReader = SegmentReader.getOnlySegmentReader(dir1);
     origSegmentReader.deleteDocument(10);
@@ -332,7 +323,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
   }
   
   public void testSegmentReaderCloseReferencing() throws Exception {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
     TestIndexReaderReopen.createIndex(random, dir1, false);
     SegmentReader origSegmentReader = SegmentReader.getOnlySegmentReader(dir1);
     origSegmentReader.deleteDocument(1);
@@ -351,7 +342,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
   }
   
   public void testSegmentReaderDelDocsReferenceCounting() throws Exception {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
     TestIndexReaderReopen.createIndex(random, dir1, false);
 
     IndexReader origReader = IndexReader.open(dir1, false);
@@ -415,7 +406,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
 
   // LUCENE-1648
   public void testCloneWithDeletes() throws Throwable {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
     TestIndexReaderReopen.createIndex(random, dir1, false);
     IndexReader origReader = IndexReader.open(dir1, false);
     origReader.deleteDocument(1);
@@ -432,7 +423,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
 
   // LUCENE-1648
   public void testCloneWithSetNorm() throws Throwable {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
     TestIndexReaderReopen.createIndex(random, dir1, false);
     IndexReader orig = IndexReader.open(dir1, false);
     orig.setNorm(1, "field1", 17.0f);
@@ -461,7 +452,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
   }
   
   public void testCloneSubreaders() throws Exception {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
  
     TestIndexReaderReopen.createIndex(random, dir1, true);
     IndexReader reader = IndexReader.open(dir1, false);
@@ -481,7 +472,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
   }
 
   public void testLucene1516Bug() throws Exception {
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
     TestIndexReaderReopen.createIndex(random, dir1, false);
     IndexReader r1 = IndexReader.open(dir1, false);
     r1.incRef();
@@ -498,8 +489,8 @@ public class TestIndexReaderClone extends LuceneTestCase {
   }
 
   public void testCloseStoredFields() throws Exception {
-    final Directory dir = newDirectory(random);
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random,
+    final Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     ((LogMergePolicy) w.getConfig().getMergePolicy()).setUseCompoundFile(false);
     ((LogMergePolicy) w.getConfig().getMergePolicy()).setUseCompoundDocStore(false);
