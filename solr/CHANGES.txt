@@ -475,7 +475,9 @@ Bug Fixes
   substitution/dereferencing.  Properly encode local params in
   distributed faceting.  (yonik)
 
-* SOLR-2114: Fixed parsing error in hsin function.  The function signature has changed slightly. (gsingers)  
+* SOLR-2114: Fixed parsing error in hsin function.  The function signature has changed slightly. (gsingers)
+
+* SOLR-2083: SpellCheckComponent misreports suggestions when distributed (James Dyer via gsingers)  
 
 
 Other Changes

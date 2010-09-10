@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -41,6 +42,8 @@ import org.apache.lucene.search.spell.SpellChecker;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
@@ -153,6 +156,12 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
   
   @Override
   public SpellingResult getSuggestions(SpellingOptions options) throws IOException {
+  	boolean shardRequest = false;
+  	SolrParams params = options.customParams;
+  	if(params!=null)
+  	{
+  		shardRequest = "true".equals(params.get(ShardParams.IS_SHARD));
+  	}
     SpellingResult result = new SpellingResult(options.tokens);
     IndexReader reader = determineReader(options.reader);
     Term term = field != null ? new Term(field, "") : null;
@@ -167,7 +176,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
             field,
             options.onlyMorePopular, theAccuracy);
       if (suggestions.length == 1 && suggestions[0].equals(tokenText)) {
-        //These are spelled the same, continue on
+      	//These are spelled the same, continue on
         continue;
       }
 
@@ -175,9 +184,15 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
         term = term.createTerm(tokenText);
         result.add(token, reader.docFreq(term));
         int countLimit = Math.min(options.count, suggestions.length);
-        for (int i = 0; i < countLimit; i++) {
-          term = term.createTerm(suggestions[i]);
-          result.add(token, suggestions[i], reader.docFreq(term));
+        if(countLimit>0)
+        {
+	        for (int i = 0; i < countLimit; i++) {
+	          term = term.createTerm(suggestions[i]);
+	          result.add(token, suggestions[i], reader.docFreq(term));
+	        }
+        } else if(shardRequest) {
+        	List<String> suggList = Collections.emptyList();
+        	result.add(token, suggList);
         }
       } else {
         if (suggestions.length > 0) {
@@ -186,6 +201,9 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
             suggList = suggList.subList(0, options.count);
           }
           result.add(token, suggList);
+        } else if(shardRequest) {
+        	List<String> suggList = Collections.emptyList();
+        	result.add(token, suggList);
         }
       }
     }

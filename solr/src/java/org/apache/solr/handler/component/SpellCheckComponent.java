@@ -46,6 +46,7 @@ import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
@@ -123,6 +124,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     if (!params.getBool(COMPONENT_NAME, false) || spellCheckers.isEmpty()) {
       return;
     }
+    boolean shardRequest = "true".equals(params.get(ShardParams.IS_SHARD));
     String q = params.get(SPELLCHECK_Q);
     SolrSpellChecker spellChecker = getSpellChecker(params);
     Collection<Token> tokens = null;
@@ -147,13 +149,12 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         IndexReader reader = rb.req.getSearcher().getReader();
         boolean collate = params.getBool(SPELLCHECK_COLLATE, false);
         float accuracy = params.getFloat(SPELLCHECK_ACCURACY, Float.MIN_VALUE);
-        SolrParams customParams = getCustomParams(getDictionaryName(params), params);
+        SolrParams customParams = getCustomParams(getDictionaryName(params), params, shardRequest);
         SpellingOptions options = new SpellingOptions(tokens, reader, count, onlyMorePopular, extendedResults,
                 accuracy, customParams);
-
         SpellingResult spellingResult = spellChecker.getSuggestions(options);
         if (spellingResult != null) {
-          response.add("suggestions", toNamedList(spellingResult, q,
+          response.add("suggestions", toNamedList(shardRequest, spellingResult, q,
               extendedResults, collate));
           rb.rsp.add("spellcheck", response);
         }
@@ -171,7 +172,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
    * @param params The original SolrParams
    * @return The new Params
    */
-  protected SolrParams getCustomParams(String dictionary, SolrParams params) {
+  protected SolrParams getCustomParams(String dictionary, SolrParams params, boolean shardRequest) {
     ModifiableSolrParams result = new ModifiableSolrParams();
     Iterator<String> iter = params.getParameterNamesIterator();
     String prefix = SpellingParams.SPELLCHECK_PREFIX + "." + dictionary + ".";
@@ -180,6 +181,10 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       if (nxt.startsWith(prefix)){
         result.add(nxt.substring(prefix.length()), params.getParams(nxt));
       }
+    }
+    if(shardRequest)
+    {
+    	result.add(ShardParams.IS_SHARD, "true");
     }
     return result;
   }
@@ -243,17 +248,21 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     Map<String, SpellCheckResponse.Suggestion> origVsSuggestion = new HashMap<String, SpellCheckResponse.Suggestion>();
     // original token string -> summed up frequency
     Map<String, Integer> origVsFreq = new HashMap<String, Integer>();
+    // original token string -> # of shards reporting it as misspelled
+    Map<String, Integer> origVsShards = new HashMap<String, Integer>();
     // original token string -> set of alternatives
     // must preserve order because collation algorithm can only work in-order
     Map<String, HashSet<String>> origVsSuggested = new LinkedHashMap<String, HashSet<String>>();
     // alternative string -> corresponding SuggestWord object
     Map<String, SuggestWord> suggestedVsWord = new HashMap<String, SuggestWord>();
-
+    
+    int totalNumberShardResponses = 0;
     for (ShardRequest sreq : rb.finished) {
       for (ShardResponse srsp : sreq.responses) {
         NamedList nl = (NamedList) srsp.getSolrResponse().getResponse().get("spellcheck");
         LOG.info(srsp.getShard() + " " + nl);
         if (nl != null) {
+        	totalNumberShardResponses++;
           SpellCheckResponse spellCheckResp = new SpellCheckResponse(nl);
           for (SpellCheckResponse.Suggestion suggestion : spellCheckResp.getSuggestions()) {
             origVsSuggestion.put(suggestion.getToken(), suggestion);
@@ -269,6 +278,14 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
             if (o != null)  origFreq += o;
             origFreq += suggestion.getOriginalFrequency();
             origVsFreq.put(suggestion.getToken(), origFreq);
+            
+            //# shards reporting
+            Integer origShards = origVsShards.get(suggestion.getToken());
+            if(origShards==null) {
+            	origVsShards.put(suggestion.getToken(), 1);
+            } else {
+            	origVsShards.put(suggestion.getToken(), ++origShards);
+            }            
 
             // find best suggestions
             for (int i = 0; i < suggestion.getNumFound(); i++) {
@@ -296,6 +313,13 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     SpellingResult result = new SpellingResult(tokens); //todo: investigate, why does it need tokens beforehand?
     for (Map.Entry<String, HashSet<String>> entry : origVsSuggested.entrySet()) {
       String original = entry.getKey();
+      
+      //Only use this suggestion if all shards reported it as misspelled.
+      Integer numShards = origVsShards.get(original);
+      if(numShards<totalNumberShardResponses) {
+      	continue;
+      }
+      
       HashSet<String> suggested = entry.getValue();
       SuggestWordQueue sugQueue = new SuggestWordQueue(numSug);
       for (String suggestion : suggested) {
@@ -335,7 +359,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     }
     
     NamedList response = new SimpleOrderedMap();
-    response.add("suggestions", toNamedList(result, origQuery, extendedResults, collate));
+    response.add("suggestions", toNamedList(false, result, origQuery, extendedResults, collate));
     rb.rsp.add("spellcheck", response);
   }
 
@@ -383,7 +407,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
     return spellCheckers.get(name);
   }
 
-  protected NamedList toNamedList(SpellingResult spellingResult, String origQuery, boolean extendedResults, boolean collate) {
+  protected NamedList toNamedList(boolean shardRequest, SpellingResult spellingResult, String origQuery, boolean extendedResults, boolean collate) {
     NamedList result = new NamedList();
     Map<Token, LinkedHashMap<String, Integer>> suggestions = spellingResult.getSuggestions();
     boolean hasFreqInfo = spellingResult.hasTokenFrequencyInfo();
@@ -393,15 +417,23 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       best = new LinkedHashMap<Token, String>(suggestions.size());
     }
     
+    int numSuggestions = 0;
+    for(LinkedHashMap<String, Integer> theSuggestion : suggestions.values())
+    {
+    	if(theSuggestion.size()>0)
+    	{
+    		numSuggestions++;
+    	}
+    }    
     // will be flipped to false if any of the suggestions are not in the index and hasFreqInfo is true
-    if(suggestions.size() > 0) {
+    if(numSuggestions > 0) {
       isCorrectlySpelled = true;
     }
     
     for (Map.Entry<Token, LinkedHashMap<String, Integer>> entry : suggestions.entrySet()) {
       Token inputToken = entry.getKey();
       Map<String, Integer> theSuggestions = entry.getValue();
-      if (theSuggestions != null && theSuggestions.size() > 0) {
+      if (theSuggestions != null && (theSuggestions.size()>0 || shardRequest)) {
         SimpleOrderedMap suggestionList = new SimpleOrderedMap();
         suggestionList.add("numFound", theSuggestions.size());
         suggestionList.add("startOffset", inputToken.startOffset());
@@ -430,7 +462,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
           suggestionList.add("suggestion", theSuggestions.keySet());
         }
 
-        if (collate == true ){//set aside the best suggestion for this token
+        if (collate == true && theSuggestions.size()>0){//set aside the best suggestion for this token
           best.put(inputToken, theSuggestions.keySet().iterator().next());
         }
         if (hasFreqInfo) {

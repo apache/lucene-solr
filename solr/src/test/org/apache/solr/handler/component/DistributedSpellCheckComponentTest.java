@@ -1,8 +1,11 @@
 package org.apache.solr.handler.component;
 
+import java.io.File;
+
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.util.AbstractSolrTestCase;
 
 /**
  * Test for SpellCheckComponent's distributed querying
@@ -13,6 +16,12 @@ import org.apache.solr.common.params.ModifiableSolrParams;
  */
 public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTestCase {
   
+	public DistributedSpellCheckComponentTest()
+	{
+		//fixShardCount=true;
+		//shardCount=2;
+	}
+	
   private String saveProp;
   @Override
   public void setUp() throws Exception {
@@ -49,6 +58,7 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
   
   @Override
   public void doTest() throws Exception {
+  	del("*:*");
     index(id, "1", "lowerfilt", "toyota");
     index(id, "2", "lowerfilt", "chevrolet");
     index(id, "3", "lowerfilt", "suzuki");
@@ -60,6 +70,18 @@ public class DistributedSpellCheckComponentTest extends BaseDistributedSearchTes
     index(id, "9", "lowerfilt", "The quick red fox jumped over the lazy brown dogs.");
     index(id, "10", "lowerfilt", "blue");
     index(id, "12", "lowerfilt", "glue");
+    index(id, "13", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "14", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "15", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "16", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "17", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "18", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "19", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "20", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "21", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "22", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "23", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
+    index(id, "24", "lowerfilt", "The quote red fox jumped over the lazy brown dogs.");
     commit();
 
     handle.clear();
