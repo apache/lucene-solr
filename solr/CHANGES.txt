@@ -388,7 +388,9 @@ Bug Fixes
   to be removed before it was finished being copied.  This did not affect
   normal master/slave replication.  (Peter Sturge via yonik)
 
-* SOLR-2114: Fixed parsing error in hsin function.  The function signature has changed slightly. (gsingers)  
+* SOLR-2114: Fixed parsing error in hsin function.  The function signature has changed slightly. (gsingers)
+
+* SOLR-2083: SpellCheckComponent misreports suggestions when distributed (James Dyer via gsingers)  
 
 
 Other Changes
