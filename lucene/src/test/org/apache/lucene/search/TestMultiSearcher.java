@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.KeywordAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.SetBasedFieldSelector;
@@ -42,13 +43,6 @@ import java.util.Set;
  */
 public class TestMultiSearcher extends LuceneTestCase
 {
-  private Random random;
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    random = newRandom();
-  }
   
     public TestMultiSearcher(String name)
     {
@@ -65,8 +59,8 @@ public class TestMultiSearcher extends LuceneTestCase
 
     public void testEmptyIndex() throws Exception {
         // creating two directories for indices
-        Directory indexStoreA = newDirectory(random);
-        Directory indexStoreB = newDirectory(random);
+        Directory indexStoreA = newDirectory();
+        Directory indexStoreB = newDirectory();
 
         // creating a document to store
         Document lDoc = new Document();
@@ -89,9 +83,9 @@ public class TestMultiSearcher extends LuceneTestCase
         lDoc3.add(new Field("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
 
         // creating an index writer for the first index
-        IndexWriter writerA = new IndexWriter(indexStoreA, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
+        IndexWriter writerA = new IndexWriter(indexStoreA, newIndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
         // creating an index writer for the second index, but writing nothing
-        IndexWriter writerB = new IndexWriter(indexStoreB, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
+        IndexWriter writerB = new IndexWriter(indexStoreB, newIndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
 
         //--------------------------------------------------------------------
         // scenario 1
@@ -135,7 +129,7 @@ public class TestMultiSearcher extends LuceneTestCase
         //--------------------------------------------------------------------
 
         // adding one document to the empty index
-        writerB = new IndexWriter(indexStoreB, newIndexWriterConfig(random,
+        writerB = new IndexWriter(indexStoreB, newIndexWriterConfig(
             TEST_VERSION_CURRENT, 
                 new StandardAnalyzer(TEST_VERSION_CURRENT))
                 .setOpenMode(OpenMode.APPEND));
@@ -228,7 +222,7 @@ public class TestMultiSearcher extends LuceneTestCase
         IndexWriter indexWriter=null;
         
         try {
-          indexWriter = new IndexWriter(directory, newIndexWriterConfig(random,
+          indexWriter = new IndexWriter(directory, LuceneTestCaseJ4.newIndexWriterConfig(random,
               TEST_VERSION_CURRENT, new KeywordAnalyzer()).setOpenMode(
                   create ? OpenMode.CREATE : OpenMode.APPEND));
             
@@ -246,8 +240,8 @@ public class TestMultiSearcher extends LuceneTestCase
     Directory ramDirectory1, ramDirectory2;
     IndexSearcher indexSearcher1, indexSearcher2;
 
-    ramDirectory1 = newDirectory(random);
-    ramDirectory2 = newDirectory(random);
+    ramDirectory1 = newDirectory();
+    ramDirectory2 = newDirectory();
     Query query = new TermQuery(new Term("contents", "doc0"));
 
     // Now put the documents in a different index
@@ -308,7 +302,7 @@ public class TestMultiSearcher extends LuceneTestCase
         IndexSearcher indexSearcher1;
         ScoreDoc[] hits;
         
-        ramDirectory1=newDirectory(random);
+        ramDirectory1=newDirectory();
         
         // First put the documents in the same index
         initIndex(random, ramDirectory1, nDocs, true, null); // documents with a single token "doc0", "doc1", etc...
@@ -335,8 +329,8 @@ public class TestMultiSearcher extends LuceneTestCase
         Directory ramDirectory2;
         IndexSearcher indexSearcher2;
         
-        ramDirectory1=newDirectory(random);
-        ramDirectory2=newDirectory(random);
+        ramDirectory1=newDirectory();
+        ramDirectory2=newDirectory();
         
         // Now put the documents in a different index
         initIndex(random, ramDirectory1, nDocs, true, null); // documents with a single token "doc0", "doc1", etc...
@@ -378,7 +372,7 @@ public class TestMultiSearcher extends LuceneTestCase
      * @throws IOException 
      */
     public void testCustomSimilarity () throws IOException {
-        Directory dir = newDirectory(random);
+        Directory dir = newDirectory();
         initIndex(random, dir, 10, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
         IndexSearcher srchr = new IndexSearcher(dir, true);
         MultiSearcher msrchr = getMultiSearcherInstance(new Searcher[]{srchr});
@@ -421,8 +415,8 @@ public class TestMultiSearcher extends LuceneTestCase
     }
     
     public void testDocFreq() throws IOException{
-      Directory dir1 = newDirectory(random);
-      Directory dir2 = newDirectory(random);
+      Directory dir1 = newDirectory();
+      Directory dir2 = newDirectory();
 
       initIndex(random, dir1, 10, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
       initIndex(random, dir2, 5, true, "x"); // documents with two tokens "doc0" and "x", "doc1" and x, etc...
@@ -439,8 +433,8 @@ public class TestMultiSearcher extends LuceneTestCase
     }
     
     public void testCreateDocFrequencyMap() throws IOException{
-      Directory dir1 = newDirectory(random);
-      Directory dir2 = newDirectory(random);
+      Directory dir1 = newDirectory();
+      Directory dir2 = newDirectory();
       Term template = new Term("contents") ;
       String[] contents  = {"a", "b", "c"};
       HashSet<Term> termsSet = new HashSet<Term>();

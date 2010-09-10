@@ -27,7 +27,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 
 import java.text.DecimalFormat;
-import java.util.Random;
 import java.io.IOException;
 
 /**
@@ -78,10 +77,9 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     
-    Random random = newRandom();
-    index = newDirectory(random);
+    index = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, index,
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
             .setSimilarity(sim));
     
     // hed is the most important field, dek is secondary

@@ -45,7 +45,6 @@ import org.apache.lucene.document.Field;
 
 import java.io.Reader;
 import java.io.IOException;
-import java.util.Random;
 
 
 /**
@@ -112,10 +111,9 @@ public class TestPayloadTermQuery extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    Random random = newRandom();
-    directory = newDirectory(random);
+    directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new PayloadAnalyzer())
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer())
         .setSimilarity(similarity));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {

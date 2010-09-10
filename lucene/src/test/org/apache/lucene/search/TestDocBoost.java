@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.document.*;
@@ -38,8 +37,7 @@ public class TestDocBoost extends LuceneTestCase {
   }
 
   public void testDocBoost() throws Exception {
-    Random random = newRandom();
-    Directory store = newDirectory(random);
+    Directory store = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, store);
 
     Fieldable f1 = new Field("field", "word", Field.Store.YES, Field.Index.ANALYZED);

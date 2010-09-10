@@ -17,8 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.util.Random;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.index.IndexReader;
@@ -33,8 +31,7 @@ import org.apache.lucene.document.Field;
  */
 public class TestPrefixQuery extends LuceneTestCase {
   public void testPrefixQuery() throws Exception {
-    Random random = newRandom();
-    Directory directory = newDirectory(random);
+    Directory directory = newDirectory();
 
     String[] categories = new String[] {"/Computers",
                                         "/Computers/Mac",

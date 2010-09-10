@@ -17,8 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.util.Random;
-
 import org.apache.lucene.util.LuceneTestCase;
 import junit.framework.Test;
 import junit.framework.TestSuite;
@@ -67,8 +65,7 @@ public class TestBooleanPrefixQuery extends LuceneTestCase {
   }
 
   public void testMethod() throws Exception {
-    Random random = newRandom();
-    Directory directory = newDirectory(random);
+    Directory directory = newDirectory();
 
     String[] categories = new String[]{"food",
                                        "foodanddrink",

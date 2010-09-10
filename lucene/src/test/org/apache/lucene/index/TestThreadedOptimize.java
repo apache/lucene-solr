@@ -53,7 +53,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
 
   public void runTest(Random random, Directory directory, MergeScheduler merger) throws Exception {
 
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random,
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
         TEST_VERSION_CURRENT, ANALYZER)
         .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(2).setMergeScheduler(
             merger));
@@ -118,7 +118,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
       assertEquals(expectedDocCount, writer.maxDoc());
 
       writer.close();
-      writer = new IndexWriter(directory, newIndexWriterConfig(random,
+      writer = new IndexWriter(directory, newIndexWriterConfig(
           TEST_VERSION_CURRENT, ANALYZER).setOpenMode(
           OpenMode.APPEND).setMaxBufferedDocs(2));
 
@@ -135,8 +135,7 @@ public class TestThreadedOptimize extends LuceneTestCase {
     FSDirectory.
   */
   public void testThreadedOptimize() throws Exception {
-    Random random = newRandom();
-    Directory directory = newDirectory(random);
+    Directory directory = newDirectory();
     runTest(random, directory, new SerialMergeScheduler());
     runTest(random, directory, new ConcurrentMergeScheduler());
     directory.close();

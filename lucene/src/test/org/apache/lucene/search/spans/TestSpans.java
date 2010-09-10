@@ -37,21 +37,18 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
 import java.util.Collections;
-import java.util.Random;
 
 public class TestSpans extends LuceneTestCase {
   private IndexSearcher searcher;
   private IndexReader reader;
   private Directory directory;
-  private Random random;
   
   public static final String field = "field";
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
-    directory = newDirectory(random);
+    directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random, directory);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
@@ -462,8 +459,8 @@ public class TestSpans extends LuceneTestCase {
 
   // LUCENE-1404
   public void testNPESpanQuery() throws Throwable {
-    final Directory dir = newDirectory(random);
-    final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
+    final Directory dir = newDirectory();
+    final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new StandardAnalyzer(
         TEST_VERSION_CURRENT, Collections.emptySet())));
 

@@ -185,7 +185,7 @@ public class TestAtomicUpdate extends LuceneTestCase {
     FSDirectory.
   */
   public void testAtomicUpdates() throws Exception {
-    MockIndexWriter.RANDOM = newRandom();
+    MockIndexWriter.RANDOM = random;
     Directory directory;
 
     // First in a RAM directory:

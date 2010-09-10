@@ -32,7 +32,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Locale;
-import java.util.Random;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Arrays;
@@ -43,13 +42,11 @@ public class TestTermRangeQuery extends LuceneTestCase {
 
   private int docCount = 0;
   private Directory dir;
-  private Random random;
   
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
-    dir = newDirectory(random);
+    dir = newDirectory();
   }
   
   @Override
@@ -321,7 +318,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
   }
 
   private void initializeIndex(String[] values, Analyzer analyzer) throws IOException {
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer).setOpenMode(OpenMode.CREATE));
     for (int i = 0; i < values.length; i++) {
       insertDoc(writer, values[i]);
@@ -330,7 +327,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
   }
 
   private void addDoc(String content) throws IOException {
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.APPEND));
     insertDoc(writer, content);
     writer.close();
   }

@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -32,8 +31,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestCachingSpanFilter extends LuceneTestCase {
 
   public void testEnforceDeletions() throws Exception {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     // NOTE: cannot use writer.getReader because RIW (on
     // flipping a coin) may give us a newly opened reader,

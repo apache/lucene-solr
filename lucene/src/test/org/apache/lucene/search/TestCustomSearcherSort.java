@@ -48,10 +48,9 @@ public class TestCustomSearcherSort extends LuceneTestCase implements Serializab
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    Random rand = newRandom();
-    index = newDirectory(rand);
-    RandomIndexWriter writer = new RandomIndexWriter(rand, index);
-    RandomGen random = new RandomGen(rand);
+    index = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, index);
+    RandomGen random = new RandomGen(this.random);
     for (int i = 0; i < INDEX_SIZE; ++i) { // don't decrease; if to low the
                                            // problem doesn't show up
       Document doc = new Document();

@@ -92,7 +92,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
     analyzerK = new KeywordAnalyzer();
     paW = new QueryParser(TEST_VERSION_CURRENT,  F, analyzerW );
     paB = new QueryParser(TEST_VERSION_CURRENT,  F, analyzerB );
-    dir = newDirectory(newRandom());
+    dir = newDirectory();
   }
   
   @Override

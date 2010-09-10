@@ -31,7 +31,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Collections;
-import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.KeywordAnalyzer;
@@ -626,9 +625,8 @@ public class TestQPHelper extends LocalizedTestCase {
   }
 
   public void testFarsiRangeCollating() throws Exception {
-    Random random = newRandom();
-    Directory ramDir = newDirectory(random);
-    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    Directory ramDir = newDirectory();
+    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
     doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
         Field.Index.NOT_ANALYZED));
@@ -1049,9 +1047,8 @@ public class TestQPHelper extends LocalizedTestCase {
   }
 
   public void testLocalDateFormat() throws IOException, QueryNodeException {
-    Random random = newRandom();
-    Directory ramDir = newDirectory(random);
-    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    Directory ramDir = newDirectory();
+    IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     addDateDoc("a", 2005, 12, 2, 10, 15, 33, iw);
     addDateDoc("b", 2005, 12, 4, 22, 15, 00, iw);
     iw.close();
@@ -1249,9 +1246,8 @@ public class TestQPHelper extends LocalizedTestCase {
   }
 
   public void testMultiPhraseQuery() throws Exception {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new CannedAnalyzer()));
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new CannedAnalyzer()));
     Document doc = new Document();
     doc.add(new Field("field", "", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);

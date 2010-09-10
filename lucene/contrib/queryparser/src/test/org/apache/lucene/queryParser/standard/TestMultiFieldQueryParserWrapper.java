@@ -320,7 +320,7 @@ public class TestMultiFieldQueryParserWrapper extends LuceneTestCase {
 
   public void testStopWordSearching() throws Exception {
     Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
-    Directory ramDir = newDirectory(newRandom());
+    Directory ramDir = newDirectory();
     IndexWriter iw = new IndexWriter(ramDir, analyzer, true,
         IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();

@@ -18,7 +18,6 @@ package org.apache.lucene.search.highlight;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.analysis.Token;
 import org.apache.lucene.analysis.TokenStream;
@@ -52,13 +51,12 @@ import org.apache.lucene.util.OpenBitSet;
 
 public class HighlighterPhraseTest extends LuceneTestCase {
   private static final String FIELD = "text";
-  private Random random = newRandom();
   public void testConcurrentPhrase() throws CorruptIndexException,
       LockObtainFailedException, IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox jumped";
-    final Directory directory = newDirectory(random);
+    final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     try {
       final Document document = new Document();
       document.add(new Field(FIELD, new TokenStreamConcurrent(),
@@ -100,9 +98,9 @@ public class HighlighterPhraseTest extends LuceneTestCase {
   public void testConcurrentSpan() throws CorruptIndexException,
       LockObtainFailedException, IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox jumped";
-    final Directory directory = newDirectory(random);
+    final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     try {
       final Document document = new Document();
       document.add(new Field(FIELD, new TokenStreamConcurrent(),
@@ -170,9 +168,9 @@ public class HighlighterPhraseTest extends LuceneTestCase {
   public void testSparsePhrase() throws CorruptIndexException,
       LockObtainFailedException, IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
-    final Directory directory = newDirectory(random);
+    final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     try {
       final Document document = new Document();
       document.add(new Field(FIELD, new TokenStreamSparse(),
@@ -213,9 +211,9 @@ public class HighlighterPhraseTest extends LuceneTestCase {
   public void testSparsePhraseWithNoPositions() throws CorruptIndexException,
       LockObtainFailedException, IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
-    final Directory directory = newDirectory(random);
+    final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     try {
       final Document document = new Document();
       document.add(new Field(FIELD, TEXT, Store.YES, Index.ANALYZED,
@@ -254,9 +252,9 @@ public class HighlighterPhraseTest extends LuceneTestCase {
   public void testSparseSpan() throws CorruptIndexException,
       LockObtainFailedException, IOException, InvalidTokenOffsetsException {
     final String TEXT = "the fox did not jump";
-    final Directory directory = newDirectory(random);
+    final Directory directory = newDirectory();
     final IndexWriter indexWriter = new IndexWriter(directory,
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     try {
       final Document document = new Document();
       document.add(new Field(FIELD, new TokenStreamSparse(),

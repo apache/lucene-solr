@@ -18,7 +18,6 @@ package org.apache.lucene.search;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
@@ -108,8 +107,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     
     // populate an index with 30 documents, this should be enough for the test.
     // The documents have no content - the test uses MatchAllDocsQuery().
-    Random random = newRandom();
-    dir = newDirectory(random);
+    dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     for (int i = 0; i < 30; i++) {
       writer.addDocument(new Document());

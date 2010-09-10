@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -53,13 +52,10 @@ public class ChainedFilterTest extends LuceneTestCase {
   private QueryWrapperFilter bobFilter;
   private QueryWrapperFilter sueFilter;
 
-  private Random random;
-
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
-    directory = newDirectory(random);
+    directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     Calendar cal = new GregorianCalendar();
     cal.clear();
@@ -194,7 +190,7 @@ public class ChainedFilterTest extends LuceneTestCase {
   */
   
   public void testWithCachingFilter() throws Exception {
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     IndexReader reader = writer.getReader();
     writer.close();

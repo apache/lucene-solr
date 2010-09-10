@@ -17,7 +17,6 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import java.util.Random;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -27,15 +26,14 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestMultiPassIndexSplitter extends LuceneTestCase {
   IndexReader input;
   int NUM_DOCS = 11;
-  private Random random;
   Directory dir;
   
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
-    dir = newDirectory(random);
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+
     Document doc;
     for (int i = 0; i < NUM_DOCS; i++) {
       doc = new Document();
@@ -65,9 +63,9 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
   public void testSplitRR() throws Exception {
     MultiPassIndexSplitter splitter = new MultiPassIndexSplitter();
     Directory[] dirs = new Directory[]{
-            newDirectory(random),
-            newDirectory(random),
-            newDirectory(random)
+            newDirectory(),
+            newDirectory(),
+            newDirectory()
     };
     splitter.split(input, dirs, false);
     IndexReader ir;
@@ -110,9 +108,9 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
   public void testSplitSeq() throws Exception {
     MultiPassIndexSplitter splitter = new MultiPassIndexSplitter();
     Directory[] dirs = new Directory[]{
-            newDirectory(random),
-            newDirectory(random),
-            newDirectory(random)
+            newDirectory(),
+            newDirectory(),
+            newDirectory()
     };
     splitter.split(input, dirs, true);
     IndexReader ir;

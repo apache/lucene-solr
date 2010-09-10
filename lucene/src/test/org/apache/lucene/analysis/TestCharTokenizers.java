@@ -20,10 +20,8 @@ package org.apache.lucene.analysis;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Random;
 
 import org.apache.lucene.util.Version;
-import org.apache.lucene.util._TestUtil;
 
 /**
  * Testcase for {@link CharTokenizer} subclasses
@@ -36,9 +34,8 @@ public class TestCharTokenizers extends BaseTokenStreamTestCase {
    */
   public void testReadSupplementaryChars() throws IOException {
     StringBuilder builder = new StringBuilder();
-    Random newRandom = newRandom();
     // create random input
-    int num = 1024 + newRandom.nextInt(1024);
+    int num = 1024 + random.nextInt(1024);
     num *= RANDOM_MULTIPLIER;
     for (int i = 1; i < num; i++) {
       builder.append("\ud801\udc1cabc");

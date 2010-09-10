@@ -17,8 +17,6 @@ package org.apache.lucene.search.regex;
  * limitations under the License.
  */
 
-import java.util.Random;
-
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -42,8 +40,7 @@ public class TestRegexQuery extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    Random random = newRandom();
-    directory = newDirectory(random);
+    directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     Document doc = new Document();
     doc.add(new Field(FN, "the quick brown fox jumps over the lazy dog", Field.Store.NO, Field.Index.ANALYZED));

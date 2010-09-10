@@ -37,7 +37,7 @@ public class TestPriorityQueue extends LuceneTestCase {
     }
 
     public void testPQ() throws Exception {
-        testPQ(10000 * RANDOM_MULTIPLIER, newRandom());
+        testPQ(10000 * RANDOM_MULTIPLIER, random);
     }
 
     public static void testPQ(int count, Random gen) {

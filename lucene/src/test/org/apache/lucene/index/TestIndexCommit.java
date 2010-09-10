@@ -32,7 +32,7 @@ public class TestIndexCommit extends LuceneTestCaseJ4 {
   @Test
   public void testEqualsHashCode() throws Exception {
     // LUCENE-2417: equals and hashCode() impl was inconsistent
-    final Directory dir = newDirectory(newRandom());
+    final Directory dir = newDirectory();
     
     IndexCommit ic1 = new IndexCommit() {
       @Override public String getSegmentsFileName() { return "a"; }

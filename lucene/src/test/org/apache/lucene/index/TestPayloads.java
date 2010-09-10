@@ -48,7 +48,6 @@ public class TestPayloads extends LuceneTestCase {
     
     // Simple tests to test the Payload class
     public void testPayload() throws Exception {
-        rnd = newRandom();
         byte[] testData = "This is a test!".getBytes();
         Payload payload = new Payload(testData);
         assertEquals("Wrong payload length.", testData.length, payload.length());
@@ -97,10 +96,9 @@ public class TestPayloads extends LuceneTestCase {
     // Tests whether the DocumentWriter and SegmentMerger correctly enable the
     // payload bit in the FieldInfo
     public void testPayloadFieldBit() throws Exception {
-        rnd = newRandom();
-        Directory ram = newDirectory(rnd);
+        Directory ram = newDirectory();
         PayloadAnalyzer analyzer = new PayloadAnalyzer();
-        IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig(rnd, TEST_VERSION_CURRENT, analyzer));
+        IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
         Document d = new Document();
         // this field won't have any payloads
         d.add(new Field("f1", "This field has no payloads", Field.Store.NO, Field.Index.ANALYZED));
@@ -127,7 +125,7 @@ public class TestPayloads extends LuceneTestCase {
         
         // now we add another document which has payloads for field f3 and verify if the SegmentMerger
         // enabled payloads for that field
-        writer = new IndexWriter(ram, newIndexWriterConfig(rnd, TEST_VERSION_CURRENT,
+        writer = new IndexWriter(ram, newIndexWriterConfig( TEST_VERSION_CURRENT,
             analyzer).setOpenMode(OpenMode.CREATE));
         d = new Document();
         d.add(new Field("f1", "This field has no payloads", Field.Store.NO, Field.Index.ANALYZED));
@@ -154,15 +152,14 @@ public class TestPayloads extends LuceneTestCase {
 
     // Tests if payloads are correctly stored and loaded using both RamDirectory and FSDirectory
     public void testPayloadsEncoding() throws Exception {
-        rnd = newRandom();
         // first perform the test using a RAMDirectory
-        Directory dir = newDirectory(rnd);
-        performTest(rnd, dir);
+        Directory dir = newDirectory();
+        performTest(random, dir);
         dir.close();
         // now use a FSDirectory and repeat same test
         File dirName = _TestUtil.getTempDir("test_payloads");
         dir = FSDirectory.open(dirName);
-        performTest(rnd, dir);
+        performTest(random, dir);
        _TestUtil.rmDir(dirName);
         dir.close();
     }
@@ -171,7 +168,7 @@ public class TestPayloads extends LuceneTestCase {
     // different tests to verify the payload encoding
     private void performTest(Random random, Directory dir) throws Exception {
         PayloadAnalyzer analyzer = new PayloadAnalyzer();
-        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
+        IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
             TEST_VERSION_CURRENT, analyzer)
             .setOpenMode(OpenMode.CREATE));
         
@@ -310,7 +307,7 @@ public class TestPayloads extends LuceneTestCase {
         
         // test long payload
         analyzer = new PayloadAnalyzer();
-        writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT,
+        writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT,
             analyzer).setOpenMode(OpenMode.CREATE));
         String singleTerm = "lucene";
         
@@ -341,10 +338,8 @@ public class TestPayloads extends LuceneTestCase {
         
     }
     
-    private Random rnd;
-    
     private void generateRandomData(byte[] data) {
-        rnd.nextBytes(data);
+        random.nextBytes(data);
     }
 
     private byte[] generateRandomData(int n) {
@@ -465,13 +460,12 @@ public class TestPayloads extends LuceneTestCase {
     }
     
     public void testThreadSafety() throws Exception {
-        rnd = newRandom();
         final int numThreads = 5;
         final int numDocs = 50 * RANDOM_MULTIPLIER;
         final ByteArrayPool pool = new ByteArrayPool(numThreads, 5);
         
-        Directory dir = newDirectory(rnd);
-        final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(rnd, 
+        Directory dir = newDirectory();
+        final IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig( 
             TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
         final String field = "test";
         

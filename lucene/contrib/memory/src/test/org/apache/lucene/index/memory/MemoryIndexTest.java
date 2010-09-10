@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.HashSet;
-import java.util.Random;
 import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -45,7 +44,6 @@ import org.apache.lucene.store.Directory;
  */
 public class MemoryIndexTest extends BaseTokenStreamTestCase {
   private Set<String> queries = new HashSet<String>();
-  private Random random;
   
   public static final int ITERATIONS = 100 * RANDOM_MULTIPLIER;
 
@@ -54,7 +52,6 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     super.setUp();
     queries.addAll(readQueries("testqueries.txt"));
     queries.addAll(readQueries("testqueries2.txt"));
-    random = newRandom();
   }
   
   /**
@@ -105,7 +102,7 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
       termField.append(randomTerm());
     }
     
-    Directory ramdir = newDirectory(random);
+    Directory ramdir = newDirectory();
     Analyzer analyzer = randomAnalyzer();
     IndexWriter writer = new IndexWriter(ramdir,
                                          new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));

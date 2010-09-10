@@ -44,7 +44,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
     
     // create test index
     final RandomIndexWriter writer = new RandomIndexWriter(random, mDirectory,
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT))
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT))
             .setOpenMode(OpenMode.APPEND));
     addDocument(writer, "A", "Should we, could we, would we?");
     addDocument(writer, "B", "It should.  Should it?");

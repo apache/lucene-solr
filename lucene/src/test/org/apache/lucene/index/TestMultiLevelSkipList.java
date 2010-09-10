@@ -31,7 +31,6 @@ import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
@@ -46,7 +45,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
 
   public void testSimpleSkip() throws IOException {
     RAMDirectory dir = new RAMDirectory();
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(newRandom(), TEST_VERSION_CURRENT, new PayloadAnalyzer()));
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()));
     Term term = new Term("test", "a");
     for (int i = 0; i < 5000; i++) {
       Document d1 = new Document();

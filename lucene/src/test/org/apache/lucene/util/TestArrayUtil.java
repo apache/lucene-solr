@@ -17,8 +17,6 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
-import java.util.Random;
-
 public class TestArrayUtil extends LuceneTestCase {
 
   // Ensure ArrayUtil.getNextSize gives linear amortized cost of realloc/copy
@@ -48,11 +46,10 @@ public class TestArrayUtil extends LuceneTestCase {
   }
 
   public void testInvalidElementSizes() {
-    final Random r = newRandom();
     int num = 10000 * RANDOM_MULTIPLIER;
     for (int iter = 0; iter < num; iter++) {
-      final int minTargetSize = r.nextInt(Integer.MAX_VALUE);
-      final int elemSize = r.nextInt(11);
+      final int minTargetSize = random.nextInt(Integer.MAX_VALUE);
+      final int elemSize = random.nextInt(11);
       final int v = ArrayUtil.oversize(minTargetSize, elemSize);
       assertTrue(v >= minTargetSize);
     }

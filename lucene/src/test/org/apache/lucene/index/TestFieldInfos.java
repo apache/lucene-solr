@@ -47,7 +47,7 @@ public class TestFieldInfos extends LuceneTestCase {
     fieldInfos.add(testDoc);
     //Since the complement is stored as well in the fields map
     assertTrue(fieldInfos.size() == DocHelper.all.size()); //this is all b/c we are using the no-arg constructor
-    Directory dir = newDirectory(newRandom());
+    Directory dir = newDirectory();
     String name = "testFile";
     IndexOutput output = dir.createOutput(name);
     assertTrue(output != null);

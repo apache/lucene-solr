@@ -16,7 +16,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -136,8 +135,7 @@ public class TestBooleanOr extends LuceneTestCase {
     super.setUp();
 
     //
-    Random random = newRandom();
-    dir = newDirectory(random);
+    dir = newDirectory();
 
 
     //

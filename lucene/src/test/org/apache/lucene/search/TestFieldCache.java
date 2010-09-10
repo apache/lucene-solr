@@ -25,12 +25,10 @@ import org.apache.lucene.util.LuceneTestCase;
 import java.io.IOException;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.Random;
 
 public class TestFieldCache extends LuceneTestCase {
   protected IndexReader reader;
   private static final int NUM_DOCS = 1000;
-  private Random random;
   private Directory directory;
   
   public TestFieldCache(String s) {
@@ -40,8 +38,7 @@ public class TestFieldCache extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
-    directory = newDirectory(random);
+    directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random, directory);
     long theLong = Long.MAX_VALUE;
     double theDouble = Double.MAX_VALUE;

@@ -7,7 +7,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
 import java.util.Collections;
-import java.util.Random;
+
 /*
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -26,9 +26,8 @@ import java.util.Random;
 public class TestTermVectorAccessor extends LuceneTestCase {
 
   public void test() throws Exception {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
-    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT, Collections.emptySet())));
+    Directory dir = newDirectory();
+    IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT, Collections.emptySet())));
 
     Document doc;
 

@@ -28,7 +28,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
 import java.io.IOException;
-import java.util.Random;
 
 public class TestFilterIndexReader extends LuceneTestCase {
 
@@ -96,9 +95,8 @@ public class TestFilterIndexReader extends LuceneTestCase {
    * @throws Exception on error
    */
   public void testFilterIndexReader() throws Exception {
-    Random random = newRandom();
-    Directory directory = newDirectory(random);
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    Directory directory = newDirectory();
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
 
     Document d1 = new Document();
     d1.add(new Field("default","one two", Field.Store.YES, Field.Index.ANALYZED));

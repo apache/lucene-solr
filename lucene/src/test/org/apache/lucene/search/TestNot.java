@@ -17,8 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.util.Random;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.apache.lucene.index.IndexReader;
@@ -40,8 +38,7 @@ public class TestNot extends LuceneTestCase {
   }
 
   public void testNot() throws Exception {
-    Random random = newRandom();
-    Directory store = newDirectory(random);
+    Directory store = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, store);
 
     Document d1 = new Document();

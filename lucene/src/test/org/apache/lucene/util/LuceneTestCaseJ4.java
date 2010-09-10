@@ -143,6 +143,8 @@ public abstract class LuceneTestCaseJ4 {
   static final String TEST_DIRECTORY = System.getProperty("tests.directory", "random");
   /** Get the number of times to run tests */
   static final int TEST_ITER = Integer.parseInt(System.getProperty("tests.iter", "1"));
+  /** Get the random seed for tests */
+  static final String TEST_SEED = System.getProperty("tests.seed", "random");
   
   /**
    * A random multiplier which you should use when writing random tests:
@@ -243,6 +245,8 @@ public abstract class LuceneTestCaseJ4 {
   public void setUp() throws Exception {
     Assert.assertFalse("ensure your tearDown() calls super.tearDown()!!!", setup);
     setup = true;
+    seed = Long.valueOf(TEST_SEED.equals("random") ? seedRnd.nextLong() : Long.parseLong(TEST_SEED));
+    random = new Random(seed);
     savedUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
       public void uncaughtException(Thread t, Throwable e) {
@@ -386,34 +390,6 @@ public abstract class LuceneTestCaseJ4 {
     dumpIterator(label, iter, stream);
   }
 
-  /**
-   * Returns a {@link Random} instance for generating random numbers during the test.
-   * The random seed is logged during test execution and printed to System.out on any failure
-   * for reproducing the test using {@link #newRandom(long)} with the recorded seed
-   * .
-   */
-  public Random newRandom() {
-    if (seed != null) {
-      throw new IllegalStateException("please call LuceneTestCaseJ4.newRandom only once per test");
-    }
-    this.seed = Long.valueOf(seedRnd.nextLong());
-    return new Random(seed);
-  }
-
-  /**
-   * Returns a {@link Random} instance for generating random numbers during the test.
-   * If an error occurs in the test that is not reproducible, you can use this method to
-   * initialize the number generator with the seed that was printed out during the failing test.
-   */
-  public Random newRandom(long seed) {
-    if (this.seed != null) {
-      throw new IllegalStateException("please call LuceneTestCaseJ4.newRandom only once per test");
-    }
-    System.out.println("WARNING: random seed of testcase '" + getName() + "' is fixed to: " + seed);
-    this.seed = Long.valueOf(seed);
-    return new Random(seed);
-  }
-
   private static Hashtable<Class<?>,Long> staticSeeds = new Hashtable<Class<?>,Long>();
 
   /**
@@ -442,6 +418,10 @@ public abstract class LuceneTestCaseJ4 {
   }
 
   /** create a new index writer config with random defaults */
+  public IndexWriterConfig newIndexWriterConfig(Version v, Analyzer a) {
+    return newIndexWriterConfig(random, v, a);
+  }
+  
   public static IndexWriterConfig newIndexWriterConfig(Random r, Version v, Analyzer a) {
     IndexWriterConfig c = new IndexWriterConfig(v, a);
     if (r.nextBoolean()) {
@@ -483,6 +463,10 @@ public abstract class LuceneTestCaseJ4 {
    * some features of Windows, such as not allowing open files to be
    * overwritten.
    */
+  public MockDirectoryWrapper newDirectory() throws IOException {
+    return newDirectory(random);
+  }
+  
   public static MockDirectoryWrapper newDirectory(Random r) throws IOException {
     StackTraceElement[] stack = new Exception().getStackTrace();
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
@@ -493,10 +477,14 @@ public abstract class LuceneTestCaseJ4 {
   
   /**
    * Returns a new Dictionary instance, with contents copied from the
-   * provided directory. See {@link #newDirectory(Random)} for more
+   * provided directory. See {@link #newDirectory()} for more
    * information.
    */
-  public static MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
+  public MockDirectoryWrapper newDirectory(Directory d) throws IOException {
+    return newDirectory(random, d);
+  }
+  
+  private static MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     StackTraceElement[] stack = new Exception().getStackTrace();
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     for (String file : d.listAll()) {
@@ -610,7 +598,8 @@ public abstract class LuceneTestCaseJ4 {
 
   // recorded seed
   protected Long seed = null;
-
+  protected Random random = null;
+  
   // static members
   private static final Random seedRnd = new Random();
 

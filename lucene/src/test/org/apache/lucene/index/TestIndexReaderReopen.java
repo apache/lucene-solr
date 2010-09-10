@@ -46,14 +46,14 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BitVector;
+import org.apache.lucene.util.LuceneTestCaseJ4;
 
 public class TestIndexReaderReopen extends LuceneTestCase {
     
   private File indexDir;
   
   public void testReopen() throws Exception {
-    Random random = newRandom();
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
     
     createIndex(random, dir1, false);
     performDefaultTests(new TestReopen() {
@@ -71,7 +71,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     });
     dir1.close();
     
-    final Directory dir2 = newDirectory(random);
+    final Directory dir2 = newDirectory();
     
     createIndex(random, dir2, true);
     performDefaultTests(new TestReopen() {
@@ -91,10 +91,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
   
   public void testParallelReaderReopen() throws Exception {
-    Random random = newRandom();
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
     createIndex(random, dir1, true);
-    final Directory dir2 = newDirectory(random);
+    final Directory dir2 = newDirectory();
     createIndex(random, dir2, true);
     
     performDefaultTests(new TestReopen() {
@@ -117,9 +116,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     dir1.close();
     dir2.close();
     
-    final Directory dir3 = newDirectory(random);
+    final Directory dir3 = newDirectory();
     createIndex(random, dir3, true);
-    final Directory dir4 = newDirectory(random);
+    final Directory dir4 = newDirectory();
     createIndex(random, dir4, true);
 
     performTestsWithExceptionInReopen(new TestReopen() {
@@ -153,29 +152,27 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   // try this once with reopen once recreate, on both RAMDir and FSDir.
   public void testCommitReopenFS () throws IOException {
     Directory dir = FSDirectory.open(indexDir);
-    doTestReopenWithCommit(newRandom(), dir, true);
+    doTestReopenWithCommit(random, dir, true);
     dir.close();
   }
   public void testCommitRecreateFS () throws IOException {
     Directory dir = FSDirectory.open(indexDir);
-    doTestReopenWithCommit(newRandom(), dir, false);
+    doTestReopenWithCommit(random, dir, false);
     dir.close();
   }
   public void testCommitReopenRAM () throws IOException {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     doTestReopenWithCommit(random, dir, true);
     dir.close();
   }
   public void testCommitRecreateRAM () throws IOException {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     doTestReopenWithCommit(random, dir, false);
     dir.close();
   }
 
   private void doTestReopenWithCommit (Random random, Directory dir, boolean withReopen) throws IOException {
-    IndexWriter iwriter = new IndexWriter(dir, newIndexWriterConfig(random,
+    IndexWriter iwriter = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new KeywordAnalyzer()).setOpenMode(
         OpenMode.CREATE).setMergeScheduler(new SerialMergeScheduler()));
     iwriter.commit();
@@ -219,11 +216,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
   
   public void testMultiReaderReopen() throws Exception {
-    Random random = newRandom();
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
     createIndex(random, dir1, true);
 
-    final Directory dir2 = newDirectory(random);
+    final Directory dir2 = newDirectory();
     createIndex(random, dir2, true);
 
     performDefaultTests(new TestReopen() {
@@ -246,10 +242,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     dir1.close();
     dir2.close();
     
-    final Directory dir3 = newDirectory(random);
+    final Directory dir3 = newDirectory();
     createIndex(random, dir3, true);
 
-    final Directory dir4 = newDirectory(random);
+    final Directory dir4 = newDirectory();
     createIndex(random, dir4, true);
 
     performTestsWithExceptionInReopen(new TestReopen() {
@@ -276,16 +272,15 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
 
   public void testMixedReaders() throws Exception {
-    Random random = newRandom();
-    final Directory dir1 = newDirectory(random);
+    final Directory dir1 = newDirectory();
     createIndex(random, dir1, true);
-    final Directory dir2 = newDirectory(random);
+    final Directory dir2 = newDirectory();
     createIndex(random, dir2, true);
-    final Directory dir3 = newDirectory(random);
+    final Directory dir3 = newDirectory();
     createIndex(random, dir3, false);
-    final Directory dir4 = newDirectory(random);
+    final Directory dir4 = newDirectory();
     createIndex(random, dir4, true);
-    final Directory dir5 = newDirectory(random);
+    final Directory dir5 = newDirectory();
     createIndex(random, dir5, false);
     
     performDefaultTests(new TestReopen() {
@@ -364,9 +359,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
   
   public void testReferenceCounting() throws IOException {
-    Random random = newRandom();
     for (int mode = 0; mode < 4; mode++) {
-      Directory dir1 = newDirectory(random);
+      Directory dir1 = newDirectory();
       createIndex(random, dir1, true);
      
       IndexReader reader0 = IndexReader.open(dir1, false);
@@ -470,11 +464,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
 
   public void testReferenceCountingMultiReader() throws IOException {
-    Random random = newRandom();
     for (int mode = 0; mode <=1; mode++) {
-      Directory dir1 = newDirectory(random);
+      Directory dir1 = newDirectory();
       createIndex(random, dir1, false);
-      Directory dir2 = newDirectory(random);
+      Directory dir2 = newDirectory();
       createIndex(random, dir2, true);
       
       IndexReader reader1 = IndexReader.open(dir1, false);
@@ -542,11 +535,10 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
 
   public void testReferenceCountingParallelReader() throws IOException {
-    Random random = newRandom();
     for (int mode = 0; mode <=1; mode++) {
-      Directory dir1 = newDirectory(random);
+      Directory dir1 = newDirectory();
       createIndex(random, dir1, false);
-      Directory dir2 = newDirectory(random);
+      Directory dir2 = newDirectory();
       createIndex(random, dir2, true);
       
       IndexReader reader1 = IndexReader.open(dir1, false);
@@ -618,8 +610,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
   
   public void testNormsRefCounting() throws IOException {
-    Random random = newRandom();
-    Directory dir1 = newDirectory(random);
+    Directory dir1 = newDirectory();
     createIndex(random, dir1, false);
     
     IndexReader reader1 = IndexReader.open(dir1, false);
@@ -709,10 +700,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
   
   public void testThreadSafety() throws Exception {
-    Random random = newRandom();
-    final Directory dir = newDirectory(random);
+    final Directory dir = newDirectory();
     final int n = 30 * RANDOM_MULTIPLIER;
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
     for (int i = 0; i < n; i++) {
       writer.addDocument(createDocument(i, 3));
@@ -958,7 +948,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   
   public static void createIndex(Random random, Directory dir, boolean multiSegment) throws IOException {
     IndexWriter.unlock(dir);
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random,
+    IndexWriter w = new IndexWriter(dir, LuceneTestCaseJ4.newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT))
         .setMergePolicy(new LogDocMergePolicy()));
     
@@ -1110,8 +1100,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
   
   public void testCloseOrig() throws Throwable {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     createIndex(random, dir, false);
     IndexReader r1 = IndexReader.open(dir, false);
     IndexReader r2 = IndexReader.open(dir, false);
@@ -1132,8 +1121,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
 
   public void testDeletes() throws Throwable {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     createIndex(random, dir, false); // Create an index with a bunch of docs (1 segment)
 
     modifyIndex(0, dir); // Get delete bitVector on 1st segment
@@ -1166,8 +1154,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
 
   public void testDeletes2() throws Throwable {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     createIndex(random, dir, false);
     // Get delete bitVector
     modifyIndex(0, dir);
@@ -1203,9 +1190,8 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   }
 
   public void testReopenOnCommit() throws Throwable {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random,
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setIndexDeletionPolicy(new KeepAllCommits()).setMaxBufferedDocs(-1));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(10);
     for(int i=0;i<4;i++) {

@@ -28,7 +28,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Random;
 import java.util.StringTokenizer;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -99,7 +98,6 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   int numHighlights = 0;
   final Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
   TopDocs hits;
-  private Random random;
 
   String[] texts = {
       "Hello this is a piece of text that is very long and contains too much preamble and the meat is really here which says kennedy has been shot",
@@ -1326,8 +1324,8 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
 
   public void testMultiSearcher() throws Exception {
     // setup index 1
-    Directory ramDir1 = newDirectory(random);
-    IndexWriter writer1 = new IndexWriter(ramDir1, newIndexWriterConfig(random,
+    Directory ramDir1 = newDirectory();
+    IndexWriter writer1 = new IndexWriter(ramDir1, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
     Document d = new Document();
     Field f = new Field(FIELD_NAME, "multiOne", Field.Store.YES, Field.Index.ANALYZED);
@@ -1338,8 +1336,8 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
     IndexReader reader1 = IndexReader.open(ramDir1, true);
 
     // setup index 2
-    Directory ramDir2 = newDirectory(random);
-    IndexWriter writer2 = new IndexWriter(ramDir2, newIndexWriterConfig(random,
+    Directory ramDir2 = newDirectory();
+    IndexWriter writer2 = new IndexWriter(ramDir2, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
     d = new Document();
     f = new Field(FIELD_NAME, "multiTwo", Field.Store.YES, Field.Index.ANALYZED);
@@ -1727,10 +1725,9 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
-    dir = newDirectory(random);
-    ramDir = newDirectory(random);
-    IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(random,
+    dir = newDirectory();
+    ramDir = newDirectory();
+    IndexWriter writer = new IndexWriter(ramDir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
     for (int i = 0; i < texts.length; i++) {
       addDoc(writer, texts[i]);

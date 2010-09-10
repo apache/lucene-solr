@@ -17,7 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.util.Random;
 import java.util.Locale;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
@@ -38,18 +37,16 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
    * do not interfere with multiple numeric values.
    */
   public void testMultiValuedNRQ() throws Exception {
-    final Random rnd = newRandom();
-
-    Directory directory = newDirectory(rnd);
-    RandomIndexWriter writer = new RandomIndexWriter(rnd, directory);
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     
     DecimalFormat format = new DecimalFormat("00000000000", new DecimalFormatSymbols(Locale.US));
     
     int num = 5000 * RANDOM_MULTIPLIER;
     for (int l = 0; l < num; l++) {
       Document doc = new Document();
-      for (int m=0, c=rnd.nextInt(10); m<=c; m++) {
-        int value = rnd.nextInt(Integer.MAX_VALUE);
+      for (int m=0, c=random.nextInt(10); m<=c; m++) {
+        int value = random.nextInt(Integer.MAX_VALUE);
         doc.add(new Field("asc", format.format(value), Field.Store.NO, Field.Index.NOT_ANALYZED));
         doc.add(new NumericField("trie", Field.Store.NO, true).setIntValue(value));
       }
@@ -61,8 +58,8 @@ public class TestMultiValuedNumericRangeQuery extends LuceneTestCase {
     Searcher searcher=new IndexSearcher(reader);
     num = 50 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      int lower=rnd.nextInt(Integer.MAX_VALUE);
-      int upper=rnd.nextInt(Integer.MAX_VALUE);
+      int lower=random.nextInt(Integer.MAX_VALUE);
+      int upper=random.nextInt(Integer.MAX_VALUE);
       if (lower>upper) {
         int a=lower; lower=upper; upper=a;
       }

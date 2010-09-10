@@ -18,7 +18,7 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
-import java.util.Random;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
@@ -30,8 +30,7 @@ public class TestRollback extends LuceneTestCase {
 
   // LUCENE-2536
   public void testRollbackIntegrityWithBufferFlush() throws Exception {
-    Random random = newRandom();
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     RandomIndexWriter rw = new RandomIndexWriter(random, dir);
 
     for (int i = 0; i < 5; i++) {
@@ -42,7 +41,7 @@ public class TestRollback extends LuceneTestCase {
     rw.close();
 
     // If buffer size is small enough to cause a flush, errors ensue...
-    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer()).setMaxBufferedDocs(2).setOpenMode(IndexWriterConfig.OpenMode.APPEND));
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer()).setMaxBufferedDocs(2).setOpenMode(IndexWriterConfig.OpenMode.APPEND));
 
     Term pkTerm = new Term("pk", "");
     for (int i = 0; i < 3; i++) {

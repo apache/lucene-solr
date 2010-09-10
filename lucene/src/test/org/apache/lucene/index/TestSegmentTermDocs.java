@@ -24,13 +24,11 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 
 import java.io.IOException;
-import java.util.Random;
 
 public class TestSegmentTermDocs extends LuceneTestCase {
   private Document testDoc = new Document();
   private Directory dir;
   private SegmentInfo info;
-  private Random random;
 
   public TestSegmentTermDocs(String s) {
     super(s);
@@ -39,8 +37,7 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
-    dir = newDirectory(random);
+    dir = newDirectory();
     DocHelper.setupDoc(testDoc);
     info = DocHelper.writeDoc(dir, testDoc);
   }
@@ -106,8 +103,8 @@ public class TestSegmentTermDocs extends LuceneTestCase {
   }
 
   public void testSkipTo(int indexDivisor) throws IOException {
-    Directory dir = newDirectory(random);
-    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     
     Term ta = new Term("content","aaa");
     for(int i = 0; i < 10; i++)

@@ -18,7 +18,6 @@ package org.apache.lucene.search.regex;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
@@ -26,7 +25,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
@@ -42,14 +40,12 @@ public class TestSpanRegexQuery extends LuceneTestCase {
   
   Directory indexStoreA;
   Directory indexStoreB;
-  Random random;
   
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
-    indexStoreA = newDirectory(random);
-    indexStoreB = newDirectory(random);
+    indexStoreA = newDirectory();
+    indexStoreB = newDirectory();
   }
   
   @Override
@@ -60,8 +56,8 @@ public class TestSpanRegexQuery extends LuceneTestCase {
   }
   
   public void testSpanRegex() throws Exception {
-    Directory directory = newDirectory(random);
-    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(random,
+    Directory directory = newDirectory();
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
     // doc.add(new Field("field", "the quick brown fox jumps over the lazy dog",
@@ -129,14 +125,14 @@ public class TestSpanRegexQuery extends LuceneTestCase {
         Field.Index.ANALYZED_NO_NORMS));
 
     // creating first index writer
-    IndexWriter writerA = new IndexWriter(indexStoreA, newIndexWriterConfig(random,
+    IndexWriter writerA = new IndexWriter(indexStoreA, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE));
     writerA.addDocument(lDoc);
     writerA.optimize();
     writerA.close();
 
     // creating second index writer
-    IndexWriter writerB = new IndexWriter(indexStoreB, newIndexWriterConfig(random,
+    IndexWriter writerB = new IndexWriter(indexStoreB, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE));
     writerB.addDocument(lDoc2);
     writerB.optimize();

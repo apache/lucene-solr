@@ -22,12 +22,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Random;
 
 import org.apache.lucene.util.LuceneTestCase;
 
 public class TestCharArrayMap extends LuceneTestCase {
-  Random r = newRandom();
 
   public void doRandom(int iter, boolean ignoreCase) {
     CharArrayMap<Integer> map = new CharArrayMap<Integer>(TEST_VERSION_CURRENT, 1, ignoreCase);
@@ -35,15 +33,15 @@ public class TestCharArrayMap extends LuceneTestCase {
 
     char[] key;
     for (int i=0; i<iter; i++) {
-      int len = r.nextInt(5);
+      int len = random.nextInt(5);
       key = new char[len];
       for (int j=0; j<key.length; j++) {
-        key[j] = (char)r.nextInt(127);
+        key[j] = (char)random.nextInt(127);
       }
       String keyStr = new String(key);
       String hmapKey = ignoreCase ? keyStr.toLowerCase(Locale.ENGLISH) : keyStr; 
 
-      int val = r.nextInt();
+      int val = random.nextInt();
 
       Object o1 = map.put(key, val);
       Object o2 = hmap.put(hmapKey,val);

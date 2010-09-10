@@ -49,13 +49,11 @@ public class TestPhraseQuery extends LuceneTestCase {
   private IndexReader reader;
   private PhraseQuery query;
   private Directory directory;
-  private Random random;
 
   @Override
   public void setUp() throws Exception {
     super.setUp();
-    random = newRandom();
-    directory = newDirectory(random);
+    directory = newDirectory();
     Analyzer analyzer = new Analyzer() {
       @Override
       public TokenStream tokenStream(String fieldName, Reader reader) {
@@ -213,10 +211,10 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testPhraseQueryWithStopAnalyzer() throws Exception {
-    Directory directory = newDirectory(random);
+    Directory directory = newDirectory();
     StopAnalyzer stopAnalyzer = new StopAnalyzer(Version.LUCENE_24);
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        newIndexWriterConfig(random, Version.LUCENE_24, stopAnalyzer));
+        newIndexWriterConfig( Version.LUCENE_24, stopAnalyzer));
     Document doc = new Document();
     doc.add(new Field("field", "the stop words are here", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
@@ -249,7 +247,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testPhraseQueryInConjunctionScorer() throws Exception {
-    Directory directory = newDirectory(random);
+    Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     
     Document doc = new Document();
@@ -287,7 +285,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     reader.close();
     
     writer = new RandomIndexWriter(random, directory, 
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE));
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setOpenMode(OpenMode.CREATE));
     doc = new Document();
     doc.add(new Field("contents", "map entry woo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
@@ -336,7 +334,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
   
   public void testSlopScoring() throws IOException {
-    Directory directory = newDirectory(random);
+    Directory directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
 
     Document doc = new Document();
@@ -597,7 +595,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
 
   public void testRandomPhrases() throws Exception {
-    Directory dir = newDirectory(random);
+    Directory dir = newDirectory();
     Analyzer analyzer = new WhitespaceAnalyzer();
 
     RandomIndexWriter w  = new RandomIndexWriter(random, dir, analyzer);

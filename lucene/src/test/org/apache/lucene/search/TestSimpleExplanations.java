@@ -306,8 +306,8 @@ public class TestSimpleExplanations extends TestExplanations {
   
   public void testTermQueryMultiSearcherExplain() throws Exception {
     // creating two directories for indices
-    Directory indexStoreA = newDirectory(random);
-    Directory indexStoreB = newDirectory(random);
+    Directory indexStoreA = newDirectory();
+    Directory indexStoreB = newDirectory();
 
     Document lDoc = new Document();
     lDoc.add(new Field("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
@@ -316,10 +316,10 @@ public class TestSimpleExplanations extends TestExplanations {
     Document lDoc3 = new Document();
     lDoc3.add(new Field("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
 
-    IndexWriter writerA = new IndexWriter(indexStoreA, newIndexWriterConfig(random,
+    IndexWriter writerA = new IndexWriter(indexStoreA, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new StandardAnalyzer(
         TEST_VERSION_CURRENT)));
-    IndexWriter writerB = new IndexWriter(indexStoreB, newIndexWriterConfig(random,
+    IndexWriter writerB = new IndexWriter(indexStoreB, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new StandardAnalyzer(
         TEST_VERSION_CURRENT)));
 
