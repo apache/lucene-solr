@@ -310,7 +310,7 @@ public class QueryComponent extends SearchComponent
 
           if (comparator == null) {
             comparator = sortField.getComparator(1,0);
-            comparator.setNextReader(subReader, offset);
+            comparator = comparator.setNextReader(subReader, offset);
             if (comparators != null)
               comparators[idx] = comparator;
           }

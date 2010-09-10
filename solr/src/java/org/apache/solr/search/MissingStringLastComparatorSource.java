@@ -166,7 +166,7 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
     }
 
     @Override
-    public void setNextReader(IndexReader reader, int docBase) throws IOException {
+    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
       termsIndex = FieldCache.DEFAULT.getTermsIndex(reader, field);
       currentReaderGen++;
       assert termsIndex.numOrd() > 0;
@@ -174,6 +174,7 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
         convert(bottomSlot);
         bottomOrd = ords[bottomSlot];
       }
+      return this;
     }
 
     @Override

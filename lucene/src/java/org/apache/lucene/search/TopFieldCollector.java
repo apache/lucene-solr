@@ -46,7 +46,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   private static class OneComparatorNonScoringCollector extends 
       TopFieldCollector {
 
-    final FieldComparator comparator;
+    FieldComparator comparator;
     final int reverseMul;
     
     public OneComparatorNonScoringCollector(FieldValueHitQueue queue,
@@ -92,7 +92,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       this.docBase = docBase;
-      comparator.setNextReader(reader, docBase);
+      comparator = comparator.setNextReader(reader, docBase);
     }
     
     @Override
@@ -446,7 +446,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       this.docBase = docBase;
       for (int i = 0; i < comparators.length; i++) {
-        comparators[i].setNextReader(reader, docBase);
+        comparators[i] = comparators[i].setNextReader(reader, docBase);
       }
     }
 

@@ -324,7 +324,7 @@ class TopGroupSortCollector extends TopGroupCollector {
       reversed[i] = sortField.getReverse() ? -1 : 1;
       comparators[i] = sortField.getComparator(size, i);
       if (scorer != null) comparators[i].setScorer(scorer);
-      if (reader != null) comparators[i].setNextReader(reader, docBase);
+      if (reader != null) comparators[i] = comparators[i].setNextReader(reader, docBase);
     }
   }
 

@@ -173,8 +173,9 @@ class ElevationComparatorSource extends FieldComparatorSource {
      }
 
      @Override
-     public void setNextReader(IndexReader reader, int docBase) throws IOException {
+     public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
        idIndex = FieldCache.DEFAULT.getTermsIndex(reader, fieldname);
+       return this;
      }
 
      @Override

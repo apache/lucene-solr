@@ -192,12 +192,13 @@ public class TestRemoteSort extends RemoteTestCaseJ4 {
     }
 
     @Override
-    public void setNextReader(IndexReader reader, int docBase) throws IOException {
+    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
       docValues = FieldCache.DEFAULT.getInts(reader, "parser", new FieldCache.IntParser() {
           public final int parseInt(BytesRef termRef) {
             return (termRef.utf8ToString().charAt(0)-'A') * 123456;
           }
         });
+      return this;
     }
 
     @Override

@@ -130,8 +130,9 @@ public class RandomSortField extends FieldType {
           values[slot] = hash(doc+seed);
         }
 
-        public void setNextReader(IndexReader reader, int docBase) throws IOException {
+        public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
           seed = getSeed(fieldname, reader);
+          return this;
         }
 
         public Comparable value(int slot) {
