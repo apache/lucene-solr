@@ -27,7 +27,7 @@ import org.apache.lucene.search.Scorer;
 import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.junit.Test;
 
-public class ChainingCollectorTest extends LuceneTestCaseJ4 {
+public class MultiCollectorTest extends LuceneTestCaseJ4 {
 
   private static class DummyCollector extends Collector {
 
@@ -63,15 +63,16 @@ public class ChainingCollectorTest extends LuceneTestCaseJ4 {
   public void testNullCollectors() throws Exception {
     // Tests that the collector rejects all null collectors.
     try {
-      new ChainingCollector(null, null);
-      fail("all collectors null should not be supported");
+      MultiCollector.wrap(null, null);
+      fail("only null collectors should not be supported");
     } catch (IllegalArgumentException e) {
       // expected
     }
 
     // Tests that the collector handles some null collectors well. If it
     // doesn't, an NPE would be thrown.
-    Collector c = new ChainingCollector(new DummyCollector(), null, new DummyCollector());
+    Collector c = MultiCollector.wrap(new DummyCollector(), null, new DummyCollector());
+    assertTrue(c instanceof MultiCollector);
     assertTrue(c.acceptsDocsOutOfOrder());
     c.collect(1);
     c.setNextReader(null, 0);
@@ -79,13 +80,21 @@ public class ChainingCollectorTest extends LuceneTestCaseJ4 {
   }
 
   @Test
+  public void testSingleCollector() throws Exception {
+    // Tests that if a single Collector is input, it is returned (and not MultiCollector).
+    DummyCollector dc = new DummyCollector();
+    assertSame(dc, MultiCollector.wrap(dc));
+    assertSame(dc, MultiCollector.wrap(dc, null));
+  }
+  
+  @Test
   public void testCollector() throws Exception {
     // Tests that the collector delegates calls to input collectors properly.
 
     // Tests that the collector handles some null collectors well. If it
     // doesn't, an NPE would be thrown.
     DummyCollector[] dcs = new DummyCollector[] { new DummyCollector(), new DummyCollector() };
-    Collector c = new ChainingCollector(dcs);
+    Collector c = MultiCollector.wrap(dcs);
     assertTrue(c.acceptsDocsOutOfOrder());
     c.collect(1);
     c.setNextReader(null, 0);
