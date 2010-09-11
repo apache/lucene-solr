@@ -24,22 +24,30 @@ import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
 
 /**
- * A {@link Collector} which allows chaining several {@link Collector}s in order
- * to process the matching documents emitted to {@link #collect(int)}. This
- * collector accepts a list of {@link Collector}s in its constructor, allowing
- * for some of them to be <code>null</code>. It optimizes away those
- * <code>null</code> collectors, so that they are not acessed during collection
- * time.
- * <p>
- * <b>NOTE:</b> if all the collectors passed to the constructor are null, then
- * {@link IllegalArgumentException} is thrown - it is useless to run the search
- * with 0 collectors.
+ * A {@link Collector} which allows running a search with several
+ * {@link Collector}s. It offers a static {@link #wrap} method which accepts a
+ * list of collectots and wraps them with {@link MultiCollector}, while
+ * filtering out the <code>null</code> null ones.
  */
-public class ChainingCollector extends Collector {
+public class MultiCollector extends Collector {
 
-  private final Collector[] collectors;
-
-  public ChainingCollector(Collector... collectors) {
+  /**
+   * Wraps a list of {@link Collector}s with a {@link MultiCollector}. This
+   * method works as follows:
+   * <ul>
+   * <li>Filters out the <code>null</code> collectors, so they are not used
+   * during search time.
+   * <li>If the input contains 1 real collector (i.e. non-<code>null</code> ),
+   * it is returned.
+   * <li>Otherwise the method returns a {@link MultiCollector} which wraps the
+   * non-<code>null</code> ones.
+   * </ul>
+   * 
+   * @throws IllegalArgumentException
+   *           if either 0 collectors were input, or all collectors are
+   *           <code>null</code>.
+   */
+  public static Collector wrap(Collector... collectors) {
     // For the user's convenience, we allow null collectors to be passed.
     // However, to improve performance, these null collectors are found
     // and dropped from the array we save for actual collection time.
@@ -52,18 +60,34 @@ public class ChainingCollector extends Collector {
 
     if (n == 0) {
       throw new IllegalArgumentException("At least 1 collector must not be null");
+    } else if (n == 1) {
+      // only 1 Collector - return it.
+      Collector col = null;
+      for (Collector c : collectors) {
+        if (c != null) {
+          col = c;
+          break;
+        }
+      }
+      return col;
     } else if (n == collectors.length) {
-      // No null collectors, can use the given list as is.
-      this.collectors = collectors;
+      return new MultiCollector(collectors);
     } else {
-      this.collectors = new Collector[n];
+      Collector[] colls = new Collector[n];
       n = 0;
       for (Collector c : collectors) {
         if (c != null) {
-          this.collectors[n++] = c;
+          colls[n++] = c;
         }
       }
+      return new MultiCollector(colls);
     }
+  }
+  
+  private final Collector[] collectors;
+
+  private MultiCollector(Collector... collectors) {
+    this.collectors = collectors;
   }
 
   @Override
