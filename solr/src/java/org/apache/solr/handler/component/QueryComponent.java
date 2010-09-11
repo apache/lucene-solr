@@ -20,10 +20,7 @@ package org.apache.solr.handler.component;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
-import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
-import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
@@ -77,13 +74,23 @@ public class QueryComponent extends SearchComponent
 
     String defType = params.get(QueryParsing.DEFTYPE,QParserPlugin.DEFAULT_QTYPE);
 
-    if (rb.getQueryString() == null) {
-      rb.setQueryString( params.get( CommonParams.Q ) );
+    // get it from the response builder to give a different component a chance
+    // to set it.
+    String queryString = rb.getQueryString();
+    if (queryString == null) {
+      // this is the normal way it's set.
+      queryString = params.get( CommonParams.Q );
+      rb.setQueryString(queryString);
     }
 
     try {
       QParser parser = QParser.getParser(rb.getQueryString(), defType, req);
-      rb.setQuery( parser.getQuery() );
+      Query q = parser.getQuery();
+      if (q == null) {
+        // normalize a null query to a query that matches nothing
+        q = new BooleanQuery();        
+      }
+      rb.setQuery( q );
       rb.setSortSpec( parser.getSort(true) );
       rb.setQparser(parser);
 

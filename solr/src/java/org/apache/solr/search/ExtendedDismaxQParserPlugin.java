@@ -146,7 +146,8 @@ class ExtendedDismaxQParser extends QParser {
         altUserQuery = altQParser.getQuery();
         query.add( altUserQuery , BooleanClause.Occur.MUST );
       } else {
-        throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "missing query string" );
+        return null;
+        // throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "missing query string" );
       }
     }
     else {     
