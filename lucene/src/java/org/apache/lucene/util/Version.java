@@ -50,7 +50,7 @@ public enum Version {
   /** Match settings and bugs in Lucene's 3.0 release. */
   LUCENE_30,
 
-  /** Match settings and bugs in Lucene's 3.0 release. */
+  /** Match settings and bugs in Lucene's 3.1 release. */
   LUCENE_31,
 
   /** Match settings and bugs in Lucene's 4.0 release. 
