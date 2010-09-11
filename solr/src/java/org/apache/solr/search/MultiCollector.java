@@ -288,8 +288,8 @@ class TopGroupCollector extends Collector {
     docValues = vs.getValues(context, reader);
     filler = docValues.getValueFiller();
     mval = filler.getValue();
-    for (FieldComparator fc : comparators)
-      fc.setNextReader(reader, docBase);
+    for (int i=0; i<comparators.length; i++)
+      comparators[i] = comparators[i].setNextReader(reader, docBase);
   }
 
   @Override
@@ -464,9 +464,8 @@ class TopGroupSortCollector extends TopGroupCollector {
     super.setNextReader(reader, docBase);
     this.reader = reader;
     for (SearchGroup searchGroup : groupMap.values()) {
-      for (FieldComparator fc : searchGroup.sortGroupComparators) {
-        fc.setNextReader(reader, docBase);
-      }
+      for (int i=0; i<searchGroup.sortGroupComparators.length; i++)
+        searchGroup.sortGroupComparators[i] = searchGroup.sortGroupComparators[i].setNextReader(reader, docBase);
     }
   }
 
