@@ -127,8 +127,8 @@ public class TestDocumentWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
 
     Document doc = new Document();
-    doc.add(new Field("repeated", "repeated one", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("repeated", "repeated two", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("repeated", "repeated one", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("repeated", "repeated two", Field.Store.YES, Field.Index.ANALYZED));
 
     writer.addDocument(doc);
     writer.commit();
@@ -192,7 +192,7 @@ public class TestDocumentWriter extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
 
     Document doc = new Document();
-    doc.add(new Field("f1", "a 5 a a", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("f1", "a 5 a a", Field.Store.YES, Field.Index.ANALYZED));
 
     writer.addDocument(doc);
     writer.commit();
@@ -269,11 +269,11 @@ public class TestDocumentWriter extends LuceneTestCase {
   public void testMixedTermVectorSettingsSameField() throws Exception {
     Document doc = new Document();
     // f1 first without tv then with tv
-    doc.add(new Field("f1", "v1", Store.YES, Index.NOT_ANALYZED, TermVector.NO));
-    doc.add(new Field("f1", "v2", Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(newField("f1", "v1", Store.YES, Index.NOT_ANALYZED, TermVector.NO));
+    doc.add(newField("f1", "v2", Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
     // f2 first with tv then without tv
-    doc.add(new Field("f2", "v1", Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
-    doc.add(new Field("f2", "v2", Store.YES, Index.NOT_ANALYZED, TermVector.NO));
+    doc.add(newField("f2", "v1", Store.YES, Index.NOT_ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(newField("f2", "v2", Store.YES, Index.NOT_ANALYZED, TermVector.NO));
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
@@ -302,13 +302,13 @@ public class TestDocumentWriter extends LuceneTestCase {
   public void testLUCENE_1590() throws Exception {
     Document doc = new Document();
     // f1 has no norms
-    doc.add(new Field("f1", "v1", Store.NO, Index.ANALYZED_NO_NORMS));
-    doc.add(new Field("f1", "v2", Store.YES, Index.NO));
+    doc.add(newField("f1", "v1", Store.NO, Index.ANALYZED_NO_NORMS));
+    doc.add(newField("f1", "v2", Store.YES, Index.NO));
     // f2 has no TF
-    Field f = new Field("f2", "v1", Store.NO, Index.ANALYZED);
+    Field f = newField("f2", "v1", Store.NO, Index.ANALYZED);
     f.setOmitTermFreqAndPositions(true);
     doc.add(f);
-    doc.add(new Field("f2", "v2", Store.YES, Index.NO));
+    doc.add(newField("f2", "v2", Store.YES, Index.NO));
 
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));

@@ -43,11 +43,11 @@ public class TestAutomatonQuery extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     Document doc = new Document();
-    Field titleField = new Field("title", "some title", Field.Store.NO,
+    Field titleField = newField("title", "some title", Field.Store.NO,
         Field.Index.ANALYZED);
-    Field field = new Field(FN, "this is document one 2345", Field.Store.NO,
+    Field field = newField(FN, "this is document one 2345", Field.Store.NO,
         Field.Index.ANALYZED);
-    Field footerField = new Field("footer", "a footer", Field.Store.NO,
+    Field footerField = newField("footer", "a footer", Field.Store.NO,
         Field.Index.ANALYZED);
     doc.add(titleField);
     doc.add(field);

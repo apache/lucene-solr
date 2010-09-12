@@ -495,7 +495,7 @@ public class TestIndexReaderClone extends LuceneTestCase {
     ((LogMergePolicy) w.getConfig().getMergePolicy()).setUseCompoundFile(false);
     ((LogMergePolicy) w.getConfig().getMergePolicy()).setUseCompoundDocStore(false);
     Document doc = new Document();
-    doc.add(new Field("field", "yes it's stored", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("field", "yes it's stored", Field.Store.YES, Field.Index.ANALYZED));
     w.addDocument(doc);
     w.close();
     IndexReader r1 = IndexReader.open(dir, false);

@@ -81,7 +81,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
     
     Document newDoc = r1.document(10);
     newDoc.removeField("id");
-    newDoc.add(new Field("id", Integer.toString(8000), Store.YES, Index.NOT_ANALYZED));
+    newDoc.add(newField("id", Integer.toString(8000), Store.YES, Index.NOT_ANALYZED));
     writer.updateDocument(new Term("id", id10), newDoc);
     assertFalse(r1.isCurrent());
 
@@ -102,7 +102,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
 
     writer = new IndexWriter(dir1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
-    doc.add(new Field("field", "a b c", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("field", "a b c", Field.Store.NO, Field.Index.ANALYZED));
     writer.addDocument(doc);
     assertTrue(r2.isCurrent());
     assertTrue(r3.isCurrent());
@@ -776,8 +776,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Directory dir = newDirectory();
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
-    doc.add(new Field("field", "a b c", Field.Store.NO, Field.Index.ANALYZED));
-    Field id = new Field("id", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+    doc.add(newField("field", "a b c", Field.Store.NO, Field.Index.ANALYZED));
+    Field id = newField("id", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
     doc.add(id);
     id.setValue("0");
     w.addDocument(doc);
@@ -800,8 +800,8 @@ public class TestIndexWriterReader extends LuceneTestCase {
     Directory dir = newDirectory();
     final IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
-    doc.add(new Field("field", "a b c", Field.Store.NO, Field.Index.ANALYZED));
-    Field id = new Field("id", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+    doc.add(newField("field", "a b c", Field.Store.NO, Field.Index.ANALYZED));
+    Field id = newField("id", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
     doc.add(id);
     id.setValue("0");
     w.addDocument(doc);
@@ -850,7 +850,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
       });
     
     Document doc = new Document();
-    doc.add(new Field("foo", "bar", Field.Store.YES, Field.Index.NOT_ANALYZED));
+    doc.add(newField("foo", "bar", Field.Store.YES, Field.Index.NOT_ANALYZED));
     for(int i=0;i<20;i++) {
       w.addDocument(doc);
     }

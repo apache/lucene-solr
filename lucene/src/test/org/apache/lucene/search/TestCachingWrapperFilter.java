@@ -164,7 +164,7 @@ public class TestCachingWrapperFilter extends LuceneTestCase {
 
     // add a doc, refresh the reader, and check that its there
     Document doc = new Document();
-    doc.add(new Field("id", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+    doc.add(newField("id", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
     writer.addDocument(doc);
 
     reader = refreshReader(reader);

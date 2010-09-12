@@ -59,13 +59,13 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
 
     for (int i = 0; i < data.length; i++) {
       Document doc = new Document();
-      doc.add(new Field("id", String.valueOf(i), Field.Store.YES,
+      doc.add(newField("id", String.valueOf(i), Field.Store.YES,
           Field.Index.NOT_ANALYZED));// Field.Keyword("id",String.valueOf(i)));
       doc
-          .add(new Field("all", "all", Field.Store.YES,
+          .add(newField("all", "all", Field.Store.YES,
               Field.Index.NOT_ANALYZED));// Field.Keyword("all","all"));
       if (null != data[i]) {
-        doc.add(new Field("data", data[i], Field.Store.YES,
+        doc.add(newField("data", data[i], Field.Store.YES,
             Field.Index.ANALYZED));// Field.Text("data",data[i]));
       }
       writer.addDocument(doc);
@@ -611,10 +611,10 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     Directory farsiIndex = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, farsiIndex, new MockAnalyzer(MockTokenizer.SIMPLE, true));
     Document doc = new Document();
-    doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
+    doc.add(newField("content", "\u0633\u0627\u0628", Field.Store.YES,
         Field.Index.NOT_ANALYZED));
     doc
-        .add(new Field("body", "body", Field.Store.YES,
+        .add(newField("body", "body", Field.Store.YES,
             Field.Index.NOT_ANALYZED));
     writer.addDocument(doc);
 
@@ -656,9 +656,9 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     String[] words = { "H\u00D8T", "H\u00C5T", "MAND" };
     for (int docnum = 0 ; docnum < words.length ; ++docnum) {   
       Document doc = new Document();
-      doc.add(new Field("content", words[docnum], 
+      doc.add(newField("content", words[docnum], 
                         Field.Store.YES, Field.Index.NOT_ANALYZED));
-      doc.add(new Field("body", "body",
+      doc.add(newField("body", "body",
                         Field.Store.YES, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }

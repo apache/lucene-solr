@@ -115,9 +115,9 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
     IndexWriter w = new IndexWriter(rd, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     for (int i = 0; i < docsContent.length; i++) {
       Document doc = new Document();
-      doc.add(new Field("name", docsContent[i].name, Field.Store.YES,
+      doc.add(newField("name", docsContent[i].name, Field.Store.YES,
           Field.Index.ANALYZED));
-      doc.add(new Field("id", docsContent[i].id, Field.Store.YES,
+      doc.add(newField("id", docsContent[i].id, Field.Store.YES,
           Field.Index.ANALYZED));
       w.addDocument(doc);
     }

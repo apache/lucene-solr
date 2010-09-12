@@ -51,23 +51,23 @@ public class TestFilteredQuery extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter (random, directory);
 
     Document doc = new Document();
-    doc.add (new Field("field", "one two three four five", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add (new Field("sorter", "b", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add (newField("field", "one two three four five", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add (newField("sorter", "b", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument (doc);
 
     doc = new Document();
-    doc.add (new Field("field", "one two three four", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add (new Field("sorter", "d", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add (newField("field", "one two three four", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add (newField("sorter", "d", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument (doc);
 
     doc = new Document();
-    doc.add (new Field("field", "one two three y", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add (new Field("sorter", "a", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add (newField("field", "one two three y", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add (newField("sorter", "a", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument (doc);
 
     doc = new Document();
-    doc.add (new Field("field", "one two x", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add (new Field("sorter", "c", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add (newField("field", "one two x", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add (newField("sorter", "c", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument (doc);
 
     // tests here require single segment (eg try seed

@@ -103,15 +103,15 @@ public class TestPayloads extends LuceneTestCase {
         IndexWriter writer = new IndexWriter(ram, newIndexWriterConfig( TEST_VERSION_CURRENT, analyzer));
         Document d = new Document();
         // this field won't have any payloads
-        d.add(new Field("f1", "This field has no payloads", Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("f1", "This field has no payloads", Field.Store.NO, Field.Index.ANALYZED));
         // this field will have payloads in all docs, however not for all term positions,
         // so this field is used to check if the DocumentWriter correctly enables the payloads bit
         // even if only some term positions have payloads
-        d.add(new Field("f2", "This field has payloads in all docs", Field.Store.NO, Field.Index.ANALYZED));
-        d.add(new Field("f2", "This field has payloads in all docs", Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("f2", "This field has payloads in all docs", Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("f2", "This field has payloads in all docs", Field.Store.NO, Field.Index.ANALYZED));
         // this field is used to verify if the SegmentMerger enables payloads for a field if it has payloads 
         // enabled in only some documents
-        d.add(new Field("f3", "This field has payloads in some docs", Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("f3", "This field has payloads in some docs", Field.Store.NO, Field.Index.ANALYZED));
         // only add payload data for field f2
         analyzer.setPayloadData("f2", 1, "somedata".getBytes(), 0, 1);
         writer.addDocument(d);
@@ -130,10 +130,10 @@ public class TestPayloads extends LuceneTestCase {
         writer = new IndexWriter(ram, newIndexWriterConfig( TEST_VERSION_CURRENT,
             analyzer).setOpenMode(OpenMode.CREATE));
         d = new Document();
-        d.add(new Field("f1", "This field has no payloads", Field.Store.NO, Field.Index.ANALYZED));
-        d.add(new Field("f2", "This field has payloads in all docs", Field.Store.NO, Field.Index.ANALYZED));
-        d.add(new Field("f2", "This field has payloads in all docs", Field.Store.NO, Field.Index.ANALYZED));
-        d.add(new Field("f3", "This field has payloads in some docs", Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("f1", "This field has no payloads", Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("f2", "This field has payloads in all docs", Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("f2", "This field has payloads in all docs", Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("f3", "This field has payloads in some docs", Field.Store.NO, Field.Index.ANALYZED));
         // add payload data for field f2 and f3
         analyzer.setPayloadData("f2", "somedata".getBytes(), 0, 1);
         analyzer.setPayloadData("f3", "somedata".getBytes(), 0, 3);
@@ -196,7 +196,7 @@ public class TestPayloads extends LuceneTestCase {
         byte[] payloadData = generateRandomData(payloadDataLength);
         
         Document d = new Document();
-        d.add(new Field(fieldName, content, Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField(fieldName, content, Field.Store.NO, Field.Index.ANALYZED));
         // add the same document multiple times to have the same payload lengths for all
         // occurrences within two consecutive skip intervals
         int offset = 0;
@@ -317,7 +317,7 @@ public class TestPayloads extends LuceneTestCase {
         String singleTerm = "lucene";
         
         d = new Document();
-        d.add(new Field(fieldName, singleTerm, Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField(fieldName, singleTerm, Field.Store.NO, Field.Index.ANALYZED));
         // add a payload whose length is greater than the buffer size of BufferedIndexOutput
         payloadData = generateRandomData(2000);
         analyzer.setPayloadData(fieldName, payloadData, 100, 1500);

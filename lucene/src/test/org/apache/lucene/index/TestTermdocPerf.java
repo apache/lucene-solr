@@ -69,7 +69,7 @@ public class TestTermdocPerf extends LuceneTestCase {
     };
 
     Document doc = new Document();
-    doc.add(new Field(field,val, Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS));
+    doc.add(newField(field,val, Field.Store.NO, Field.Index.NOT_ANALYZED_NO_NORMS));
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
         TEST_VERSION_CURRENT, analyzer)
         .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(100));

@@ -66,8 +66,8 @@ public class TestThreadedOptimize extends LuceneTestCase {
 
       for(int i=0;i<200;i++) {
         Document d = new Document();
-        d.add(new Field("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
-        d.add(new Field("contents", English.intToEnglish(i), Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
+        d.add(newField("contents", English.intToEnglish(i), Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(d);
       }
 
@@ -87,8 +87,8 @@ public class TestThreadedOptimize extends LuceneTestCase {
                 writerFinal.optimize(false);
                 for(int k=0;k<17*(1+iFinal);k++) {
                   Document d = new Document();
-                  d.add(new Field("id", iterFinal + "_" + iFinal + "_" + j + "_" + k, Field.Store.YES, Field.Index.NOT_ANALYZED));
-                  d.add(new Field("contents", English.intToEnglish(iFinal+k), Field.Store.NO, Field.Index.ANALYZED));
+                  d.add(newField("id", iterFinal + "_" + iFinal + "_" + j + "_" + k, Field.Store.YES, Field.Index.NOT_ANALYZED));
+                  d.add(newField("contents", English.intToEnglish(iFinal+k), Field.Store.NO, Field.Index.ANALYZED));
                   writerFinal.addDocument(d);
                 }
                 for(int k=0;k<9*(1+iFinal);k++)

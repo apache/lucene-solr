@@ -125,19 +125,19 @@ public class FunctionTestSetup extends LuceneTestCaseJ4 {
     Fieldable f;
     int scoreAndID = i + 1;
 
-    f = new Field(ID_FIELD, id2String(scoreAndID), Field.Store.YES, Field.Index.NOT_ANALYZED); // for debug purposes
+    f = newField(ID_FIELD, id2String(scoreAndID), Field.Store.YES, Field.Index.NOT_ANALYZED); // for debug purposes
     f.setOmitNorms(true);
     d.add(f);
 
-    f = new Field(TEXT_FIELD, "text of doc" + scoreAndID + textLine(i), Field.Store.NO, Field.Index.ANALYZED); // for regular search
+    f = newField(TEXT_FIELD, "text of doc" + scoreAndID + textLine(i), Field.Store.NO, Field.Index.ANALYZED); // for regular search
     f.setOmitNorms(true);
     d.add(f);
 
-    f = new Field(INT_FIELD, "" + scoreAndID, Field.Store.NO, Field.Index.NOT_ANALYZED); // for function scoring
+    f = newField(INT_FIELD, "" + scoreAndID, Field.Store.NO, Field.Index.NOT_ANALYZED); // for function scoring
     f.setOmitNorms(true);
     d.add(f);
 
-    f = new Field(FLOAT_FIELD, scoreAndID + ".000", Field.Store.NO, Field.Index.NOT_ANALYZED); // for function scoring
+    f = newField(FLOAT_FIELD, scoreAndID + ".000", Field.Store.NO, Field.Index.NOT_ANALYZED); // for function scoring
     f.setOmitNorms(true);
     d.add(f);
 

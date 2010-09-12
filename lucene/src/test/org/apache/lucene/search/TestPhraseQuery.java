@@ -68,19 +68,19 @@ public class TestPhraseQuery extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, analyzer);
     
     Document doc = new Document();
-    doc.add(new Field("field", "one two three four five", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("repeated", "this is a repeated field - first part", Field.Store.YES, Field.Index.ANALYZED));
-    Fieldable repeatedField = new Field("repeated", "second part of a repeated field", Field.Store.YES, Field.Index.ANALYZED);
+    doc.add(newField("field", "one two three four five", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("repeated", "this is a repeated field - first part", Field.Store.YES, Field.Index.ANALYZED));
+    Fieldable repeatedField = newField("repeated", "second part of a repeated field", Field.Store.YES, Field.Index.ANALYZED);
     doc.add(repeatedField);
-    doc.add(new Field("palindrome", "one two three two one", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("palindrome", "one two three two one", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new Field("nonexist", "phrase exist notexist exist found", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("nonexist", "phrase exist notexist exist found", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new Field("nonexist", "phrase exist notexist exist found", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("nonexist", "phrase exist notexist exist found", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     reader = writer.getReader();
@@ -216,7 +216,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig( Version.LUCENE_24, stopAnalyzer));
     Document doc = new Document();
-    doc.add(new Field("field", "the stop words are here", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("field", "the stop words are here", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();
@@ -251,12 +251,12 @@ public class TestPhraseQuery extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     
     Document doc = new Document();
-    doc.add(new Field("source", "marketing info", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("source", "marketing info", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     
     doc = new Document();
-    doc.add(new Field("contents", "foobar", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("source", "marketing info", Field.Store.YES, Field.Index.ANALYZED)); 
+    doc.add(newField("contents", "foobar", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("source", "marketing info", Field.Store.YES, Field.Index.ANALYZED)); 
     writer.addDocument(doc);
     
     IndexReader reader = writer.getReader();
@@ -287,15 +287,15 @@ public class TestPhraseQuery extends LuceneTestCase {
     writer = new RandomIndexWriter(random, directory, 
         newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(OpenMode.CREATE));
     doc = new Document();
-    doc.add(new Field("contents", "map entry woo", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("contents", "map entry woo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("contents", "woo map entry", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("contents", "woo map entry", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("contents", "map foobarword entry woo", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("contents", "map foobarword entry woo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     reader = writer.getReader();
@@ -338,15 +338,15 @@ public class TestPhraseQuery extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
 
     Document doc = new Document();
-    doc.add(new Field("field", "foo firstname lastname foo", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("field", "foo firstname lastname foo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     
     Document doc2 = new Document();
-    doc2.add(new Field("field", "foo firstname zzz lastname foo", Field.Store.YES, Field.Index.ANALYZED));
+    doc2.add(newField("field", "foo firstname zzz lastname foo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc2);
     
     Document doc3 = new Document();
-    doc3.add(new Field("field", "foo firstname zzz yyy lastname foo", Field.Store.YES, Field.Index.ANALYZED));
+    doc3.add(newField("field", "foo firstname zzz yyy lastname foo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc3);
     
     IndexReader reader = writer.getReader();
@@ -601,7 +601,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     RandomIndexWriter w  = new RandomIndexWriter(random, dir, analyzer);
     List<List<String>> docs = new ArrayList<List<String>>();
     Document d = new Document();
-    Field f = new Field("f", "", Field.Store.NO, Field.Index.ANALYZED);
+    Field f = newField("f", "", Field.Store.NO, Field.Index.ANALYZED);
     d.add(f);
 
     Random r = random;

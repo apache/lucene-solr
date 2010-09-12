@@ -181,9 +181,9 @@ public class TestIndexReaderReopen extends LuceneTestCase {
       for (int i=0; i<4; i++) {
         for (int j=0; j<M; j++) {
           Document doc = new Document();
-          doc.add(new Field("id", i+"_"+j, Store.YES, Index.NOT_ANALYZED));
-          doc.add(new Field("id2", i+"_"+j, Store.YES, Index.NOT_ANALYZED_NO_NORMS));
-          doc.add(new Field("id3", i+"_"+j, Store.YES, Index.NO));
+          doc.add(newField("id", i+"_"+j, Store.YES, Index.NOT_ANALYZED));
+          doc.add(newField("id2", i+"_"+j, Store.YES, Index.NOT_ANALYZED_NO_NORMS));
+          doc.add(newField("id3", i+"_"+j, Store.YES, Index.NO));
           iwriter.addDocument(doc);
           if (i>0) {
             int k = i-1;
@@ -1196,7 +1196,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(10);
     for(int i=0;i<4;i++) {
       Document doc = new Document();
-      doc.add(new Field("id", ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("id", ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
       Map<String,String> data = new HashMap<String,String>();
       data.put("index", i+"");

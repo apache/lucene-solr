@@ -59,15 +59,15 @@ public class TestSpanRegexQuery extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
-    // doc.add(new Field("field", "the quick brown fox jumps over the lazy dog",
+    // doc.add(newField("field", "the quick brown fox jumps over the lazy dog",
     // Field.Store.NO, Field.Index.ANALYZED));
     // writer.addDocument(doc);
     // doc = new Document();
-    doc.add(new Field("field", "auto update", Field.Store.NO,
+    doc.add(newField("field", "auto update", Field.Store.NO,
         Field.Index.ANALYZED));
     writer.addDocument(doc);
     doc = new Document();
-    doc.add(new Field("field", "first auto update", Field.Store.NO,
+    doc.add(newField("field", "first auto update", Field.Store.NO,
         Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.optimize();
@@ -115,12 +115,12 @@ public class TestSpanRegexQuery extends LuceneTestCase {
       LockObtainFailedException, IOException {
     // creating a document to store
     Document lDoc = new Document();
-    lDoc.add(new Field("field", "a1 b1", Field.Store.NO,
+    lDoc.add(newField("field", "a1 b1", Field.Store.NO,
         Field.Index.ANALYZED_NO_NORMS));
 
     // creating a document to store
     Document lDoc2 = new Document();
-    lDoc2.add(new Field("field", "a2 b2", Field.Store.NO,
+    lDoc2.add(newField("field", "a2 b2", Field.Store.NO,
         Field.Index.ANALYZED_NO_NORMS));
 
     // creating first index writer

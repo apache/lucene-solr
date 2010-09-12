@@ -79,7 +79,7 @@ public class TestNoDeletionPolicy extends LuceneTestCaseJ4 {
         .setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE));
     for (int i = 0; i < 10; i++) {
       Document doc = new Document();
-      doc.add(new Field("c", "a" + i, Store.YES, Index.ANALYZED));
+      doc.add(newField("c", "a" + i, Store.YES, Index.ANALYZED));
       writer.addDocument(doc);
       writer.commit();
       assertEquals("wrong number of commits !", i + 1, IndexReader.listCommits(dir).size());

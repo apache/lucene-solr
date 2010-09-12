@@ -35,6 +35,10 @@ import junit.framework.TestCase;
 import junit.framework.TestResult;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.codecs.Codec;
@@ -337,6 +341,18 @@ public abstract class LuceneTestCase extends TestCase {
     MockDirectoryWrapper dir = new MockDirectoryWrapper(impl);
     stores.put(dir, stack);
     return dir;
+  }
+  
+  public Field newField(String name, String value, Index index) {
+    return LuceneTestCaseJ4.newField(random, name, value, index);
+  }
+  
+  public Field newField(String name, String value, Store store, Index index) {
+    return LuceneTestCaseJ4.newField(random, name, value, store, index);
+  }
+  
+  public Field newField(String name, String value, Store store, Index index, TermVector tv) {
+    return LuceneTestCaseJ4.newField(random, name, value, store, index, tv);
   }
   
   /** Gets a resource from the classpath as {@link File}. This method should only be used,

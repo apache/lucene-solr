@@ -401,10 +401,10 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
     Directory farsiIndex = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, farsiIndex);
     Document doc = new Document();
-    doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
+    doc.add(newField("content", "\u0633\u0627\u0628", Field.Store.YES,
         Field.Index.NOT_ANALYZED));
     doc
-        .add(new Field("body", "body", Field.Store.YES,
+        .add(newField("body", "body", Field.Store.YES,
             Field.Index.NOT_ANALYZED));
     writer.addDocument(doc);
     
@@ -445,9 +445,9 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
     String[] words = {"H\u00D8T", "H\u00C5T", "MAND"};
     for (int docnum = 0; docnum < words.length; ++docnum) {
       Document doc = new Document();
-      doc.add(new Field("content", words[docnum], Field.Store.YES,
+      doc.add(newField("content", words[docnum], Field.Store.YES,
           Field.Index.NOT_ANALYZED));
-      doc.add(new Field("body", "body", Field.Store.YES,
+      doc.add(newField("body", "body", Field.Store.YES,
           Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }

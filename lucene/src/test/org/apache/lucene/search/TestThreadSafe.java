@@ -114,7 +114,7 @@ public class TestThreadSafe extends LuceneTestCase {
         sb.append(" $");
         Field.Store store = Field.Store.YES;  // make random later
         Field.Index index = Field.Index.ANALYZED;  // make random later
-        d.add(new Field("f"+i, sb.toString(), store, index));
+        d.add(newField("f"+i, sb.toString(), store, index));
       }
       iw.addDocument(d);
     }

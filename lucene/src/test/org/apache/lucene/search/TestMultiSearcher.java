@@ -63,23 +63,23 @@ public class TestMultiSearcher extends LuceneTestCase
 
         // creating a document to store
         Document lDoc = new Document();
-        lDoc.add(new Field("fulltext", "Once upon a time.....", Field.Store.YES, Field.Index.ANALYZED));
-        lDoc.add(new Field("id", "doc1", Field.Store.YES, Field.Index.NOT_ANALYZED));
-        lDoc.add(new Field("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        lDoc.add(newField("fulltext", "Once upon a time.....", Field.Store.YES, Field.Index.ANALYZED));
+        lDoc.add(newField("id", "doc1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        lDoc.add(newField("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
 
         // creating a document to store
         Document lDoc2 = new Document();
-        lDoc2.add(new Field("fulltext", "in a galaxy far far away.....",
+        lDoc2.add(newField("fulltext", "in a galaxy far far away.....",
             Field.Store.YES, Field.Index.ANALYZED));
-        lDoc2.add(new Field("id", "doc2", Field.Store.YES, Field.Index.NOT_ANALYZED));
-        lDoc2.add(new Field("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        lDoc2.add(newField("id", "doc2", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        lDoc2.add(newField("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
 
         // creating a document to store
         Document lDoc3 = new Document();
-        lDoc3.add(new Field("fulltext", "a bizarre bug manifested itself....",
+        lDoc3.add(newField("fulltext", "a bizarre bug manifested itself....",
             Field.Store.YES, Field.Index.ANALYZED));
-        lDoc3.add(new Field("id", "doc3", Field.Store.YES, Field.Index.NOT_ANALYZED));
-        lDoc3.add(new Field("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        lDoc3.add(newField("id", "doc3", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        lDoc3.add(newField("handle", "1", Field.Store.YES, Field.Index.NOT_ANALYZED));
 
         // creating an index writer for the first index
         IndexWriter writerA = new IndexWriter(indexStoreA, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
@@ -205,19 +205,19 @@ public class TestMultiSearcher extends LuceneTestCase
         indexStoreB.close();
     }
     
-    private static Document createDocument(String contents1, String contents2) {
+    private Document createDocument(String contents1, String contents2) {
         Document document=new Document();
         
-        document.add(new Field("contents", contents1, Field.Store.YES, Field.Index.NOT_ANALYZED));
-      document.add(new Field("other", "other contents", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        document.add(newField("contents", contents1, Field.Store.YES, Field.Index.NOT_ANALYZED));
+      document.add(newField("other", "other contents", Field.Store.YES, Field.Index.NOT_ANALYZED));
         if (contents2!=null) {
-            document.add(new Field("contents", contents2, Field.Store.YES, Field.Index.NOT_ANALYZED));
+            document.add(newField("contents", contents2, Field.Store.YES, Field.Index.NOT_ANALYZED));
         }
         
         return document;
     }
     
-    private static void initIndex(Random random, Directory directory, int nDocs, boolean create, String contents2) throws IOException {
+    private void initIndex(Random random, Directory directory, int nDocs, boolean create, String contents2) throws IOException {
         IndexWriter indexWriter=null;
         
         try {

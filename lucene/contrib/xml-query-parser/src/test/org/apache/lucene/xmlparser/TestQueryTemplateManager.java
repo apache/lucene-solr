@@ -126,7 +126,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
 			if(st.hasMoreTokens())
 			{
 				String value=st.nextToken().trim();
-				result.add(new Field(name,value,Field.Store.YES,Field.Index.ANALYZED));
+				result.add(newField(name,value,Field.Store.YES,Field.Index.ANALYZED));
 			}
 		}
 		return result;

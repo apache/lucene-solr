@@ -45,7 +45,7 @@ public class TestIsCurrent extends LuceneTestCaseJ4 {
 
     // write document
     Document doc = new Document();
-    doc.add(new Field("UUID", "1", Store.YES, Index.ANALYZED));
+    doc.add(newField("UUID", "1", Store.YES, Index.ANALYZED));
     writer.addDocument(doc);
     writer.commit();
   }

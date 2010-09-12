@@ -93,7 +93,7 @@ public class TestPositionIncrement extends LuceneTestCase {
     Directory store = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, store, analyzer);
     Document d = new Document();
-    d.add(new Field("field", "bogus", Field.Store.YES, Field.Index.ANALYZED));
+    d.add(newField("field", "bogus", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(d);
     IndexReader reader = writer.getReader();
     writer.close();

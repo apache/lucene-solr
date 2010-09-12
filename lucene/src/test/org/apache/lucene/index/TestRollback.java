@@ -33,7 +33,7 @@ public class TestRollback extends LuceneTestCase {
     RandomIndexWriter rw = new RandomIndexWriter(random, dir);
     for (int i = 0; i < 5; i++) {
       Document doc = new Document();
-      doc.add(new Field("pk", Integer.toString(i), Store.YES, Index.ANALYZED_NO_NORMS));
+      doc.add(newField("pk", Integer.toString(i), Store.YES, Index.ANALYZED_NO_NORMS));
       rw.addDocument(doc);
     }
     rw.close();
@@ -45,8 +45,8 @@ public class TestRollback extends LuceneTestCase {
     for (int i = 0; i < 3; i++) {
       Document doc = new Document();
       String value = Integer.toString(i);
-      doc.add(new Field("pk", value, Store.YES, Index.ANALYZED_NO_NORMS));
-      doc.add(new Field("text", "foo", Store.YES, Index.ANALYZED_NO_NORMS));
+      doc.add(newField("pk", value, Store.YES, Index.ANALYZED_NO_NORMS));
+      doc.add(newField("text", "foo", Store.YES, Index.ANALYZED_NO_NORMS));
       w.updateDocument(pkTerm.createTerm(value), doc);
     }
     w.rollback();

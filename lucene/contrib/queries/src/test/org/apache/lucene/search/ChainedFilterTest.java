@@ -63,9 +63,9 @@ public class ChainedFilterTest extends LuceneTestCase {
 
     for (int i = 0; i < MAX; i++) {
       Document doc = new Document();
-      doc.add(new Field("key", "" + (i + 1), Field.Store.YES, Field.Index.NOT_ANALYZED));
-      doc.add(new Field("owner", (i < MAX / 2) ? "bob" : "sue", Field.Store.YES, Field.Index.NOT_ANALYZED));
-      doc.add(new Field("date", cal.getTime().toString(), Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField("key", "" + (i + 1), Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField("owner", (i < MAX / 2) ? "bob" : "sue", Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField("date", cal.getTime().toString(), Field.Store.YES, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
 
       cal.add(Calendar.DATE, 1);

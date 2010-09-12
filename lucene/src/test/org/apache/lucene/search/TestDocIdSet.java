@@ -103,7 +103,7 @@ public class TestDocIdSet extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     Document doc = new Document();
-    doc.add(new Field("c", "val", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+    doc.add(newField("c", "val", Store.NO, Index.NOT_ANALYZED_NO_NORMS));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();

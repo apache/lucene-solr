@@ -140,8 +140,8 @@ public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
     TokenStream payloadTS2 = new PayloadTokenStream("p2");
     for (int i = 0; i < NUM_DOCS; i++) {
       Document doc = new Document();
-      doc.add(new Field("id", "doc" + i, Store.NO, Index.NOT_ANALYZED_NO_NORMS));
-      doc.add(new Field("content", "doc content " + i, Store.NO, Index.ANALYZED));
+      doc.add(newField("id", "doc" + i, Store.NO, Index.NOT_ANALYZED_NO_NORMS));
+      doc.add(newField("content", "doc content " + i, Store.NO, Index.ANALYZED));
       doc.add(new Field("p", payloadTS1));
       doc.add(new Field("p", payloadTS2));
       writer.addDocument(doc);

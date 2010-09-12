@@ -309,11 +309,11 @@ public class TestSimpleExplanations extends TestExplanations {
     Directory indexStoreB = newDirectory();
 
     Document lDoc = new Document();
-    lDoc.add(new Field("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
+    lDoc.add(newField("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
     Document lDoc2 = new Document();
-    lDoc2.add(new Field("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
+    lDoc2.add(newField("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
     Document lDoc3 = new Document();
-    lDoc3.add(new Field("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
+    lDoc3.add(newField("handle", "1 2", Field.Store.YES, Field.Index.ANALYZED));
 
     IndexWriter writerA = new IndexWriter(indexStoreA, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));

@@ -50,26 +50,26 @@ public class TestPrefixInBooleanQuery extends LuceneTestCase {
 
     for (int i = 0; i < 5137; ++i) {
       Document doc = new Document();
-      doc.add(new Field(FIELD, "meaninglessnames", Field.Store.YES,
+      doc.add(newField(FIELD, "meaninglessnames", Field.Store.YES,
                         Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
     { 
       Document doc = new Document();
-      doc.add(new Field(FIELD, "tangfulin", Field.Store.YES,
+      doc.add(newField(FIELD, "tangfulin", Field.Store.YES,
                         Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
 
     for (int i = 5138; i < 11377; ++i) {
       Document doc = new Document();
-      doc.add(new Field(FIELD, "meaninglessnames", Field.Store.YES,
+      doc.add(newField(FIELD, "meaninglessnames", Field.Store.YES,
                         Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
     {
       Document doc = new Document();
-      doc.add(new Field(FIELD, "tangfulin", Field.Store.YES,
+      doc.add(newField(FIELD, "tangfulin", Field.Store.YES,
                         Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }

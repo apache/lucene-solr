@@ -75,9 +75,9 @@ public class DuplicateFilterTest extends LuceneTestCase {
 	private void addDoc(RandomIndexWriter writer, String url, String text, String date) throws IOException
 	{
 		Document doc=new Document();
-		doc.add(new Field(KEY_FIELD,url,Field.Store.YES,Field.Index.NOT_ANALYZED));
-		doc.add(new Field("text",text,Field.Store.YES,Field.Index.ANALYZED));
-		doc.add(new Field("date",date,Field.Store.YES,Field.Index.ANALYZED));
+		doc.add(newField(KEY_FIELD,url,Field.Store.YES,Field.Index.NOT_ANALYZED));
+		doc.add(newField("text",text,Field.Store.YES,Field.Index.ANALYZED));
+		doc.add(newField("date",date,Field.Store.YES,Field.Index.ANALYZED));
 		writer.addDocument(doc);
 	}
 		

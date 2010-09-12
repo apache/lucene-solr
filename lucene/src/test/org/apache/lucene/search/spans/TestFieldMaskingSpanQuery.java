@@ -43,8 +43,8 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
     return doc;
   }
   
-  protected static Field field(String name, String value) {
-    return new Field(name, value, Field.Store.NO, Field.Index.ANALYZED);
+  protected Field field(String name, String value) {
+    return newField(name, value, Field.Store.NO, Field.Index.ANALYZED);
   }
 
   protected IndexSearcher searcher;

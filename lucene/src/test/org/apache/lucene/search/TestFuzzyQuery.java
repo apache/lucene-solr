@@ -381,7 +381,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
 
   private void addDoc(String text, RandomIndexWriter writer) throws IOException {
     Document doc = new Document();
-    doc.add(new Field("field", text, Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("field", text, Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
   }
 }

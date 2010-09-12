@@ -66,7 +66,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
   
   private void addDoc(RandomIndexWriter writer, String text) throws IOException {
     Document doc = new Document();
-    doc.add(new Field("text", text, Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("text", text, Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
   }
   

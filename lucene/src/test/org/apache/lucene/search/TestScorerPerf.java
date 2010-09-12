@@ -64,7 +64,7 @@ public class TestScorerPerf extends LuceneTestCase {
       Document d = new Document();
       for (int j=0; j<nTerms; j++) {
         if (random.nextInt(freq[j]) == 0) {
-          d.add(new Field("f", terms[j].text(), Field.Store.NO, Field.Index.NOT_ANALYZED));
+          d.add(newField("f", terms[j].text(), Field.Store.NO, Field.Index.NOT_ANALYZED));
           //System.out.println(d);
         }
       }

@@ -520,8 +520,8 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
     for (int d = -20; d <= 20; d++) {
       Document doc = new Document();
-      doc.add(new Field("id",Integer.toString(d), Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(new Field("body","body", Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("id",Integer.toString(d), Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("body","body", Field.Store.NO, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
     

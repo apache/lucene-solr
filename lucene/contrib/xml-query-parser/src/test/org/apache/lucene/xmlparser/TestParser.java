@@ -66,8 +66,8 @@ public class TestParser extends LuceneTestCase {
 				String date=line.substring(0,endOfDate).trim();
 				String content=line.substring(endOfDate).trim();
 				org.apache.lucene.document.Document doc =new org.apache.lucene.document.Document();
-				doc.add(new Field("date",date,Field.Store.YES,Field.Index.ANALYZED));
-				doc.add(new Field("contents",content,Field.Store.YES,Field.Index.ANALYZED));
+				doc.add(newField("date",date,Field.Store.YES,Field.Index.ANALYZED));
+				doc.add(newField("contents",content,Field.Store.YES,Field.Index.ANALYZED));
 				NumericField numericField = new NumericField("date2");
 				numericField.setIntValue(Integer.valueOf(date));
 				doc.add(numericField);

@@ -48,14 +48,14 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     for (int i = 0; i < keywords.length; i++) {
       Document doc = new Document();
-      doc.add(new Field("id", keywords[i], Field.Store.YES,
+      doc.add(newField("id", keywords[i], Field.Store.YES,
                         Field.Index.NOT_ANALYZED));
-      doc.add(new Field("country", unindexed[i], Field.Store.YES,
+      doc.add(newField("country", unindexed[i], Field.Store.YES,
                         Field.Index.NO));
-      doc.add(new Field("contents", unstored[i], Field.Store.NO,
+      doc.add(newField("contents", unstored[i], Field.Store.NO,
                         Field.Index.ANALYZED));
       doc
-        .add(new Field("city", text[i], Field.Store.YES,
+        .add(newField("city", text[i], Field.Store.YES,
                        Field.Index.ANALYZED));
       modifier.addDocument(doc);
     }
@@ -370,10 +370,10 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   private void updateDoc(IndexWriter modifier, int id, int value)
       throws IOException {
     Document doc = new Document();
-    doc.add(new Field("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
-    doc.add(new Field("id", String.valueOf(id), Field.Store.YES,
+    doc.add(newField("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("id", String.valueOf(id), Field.Store.YES,
         Field.Index.NOT_ANALYZED));
-    doc.add(new Field("value", String.valueOf(value), Field.Store.NO,
+    doc.add(newField("value", String.valueOf(value), Field.Store.NO,
         Field.Index.NOT_ANALYZED));
     modifier.updateDocument(new Term("id", String.valueOf(id)), doc);
   }
@@ -382,10 +382,10 @@ public class TestIndexWriterDelete extends LuceneTestCase {
   private void addDoc(IndexWriter modifier, int id, int value)
       throws IOException {
     Document doc = new Document();
-    doc.add(new Field("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
-    doc.add(new Field("id", String.valueOf(id), Field.Store.YES,
+    doc.add(newField("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("id", String.valueOf(id), Field.Store.YES,
         Field.Index.NOT_ANALYZED));
-    doc.add(new Field("value", String.valueOf(value), Field.Store.NO,
+    doc.add(newField("value", String.valueOf(value), Field.Store.NO,
         Field.Index.NOT_ANALYZED));
     modifier.addDocument(doc);
   }
@@ -422,9 +422,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     for (int i = 0; i < 157; i++) {
       Document d = new Document();
-      d.add(new Field("id", Integer.toString(i), Field.Store.YES,
+      d.add(newField("id", Integer.toString(i), Field.Store.YES,
                       Field.Index.NOT_ANALYZED));
-      d.add(new Field("content", "aaa " + i, Field.Store.NO,
+      d.add(newField("content", "aaa " + i, Field.Store.NO,
                       Field.Index.ANALYZED));
       writer.addDocument(d);
     }
@@ -496,9 +496,9 @@ public class TestIndexWriterDelete extends LuceneTestCase {
             for (int i = 0; i < 13; i++) {
               if (updates) {
                 Document d = new Document();
-                d.add(new Field("id", Integer.toString(i), Field.Store.YES,
+                d.add(newField("id", Integer.toString(i), Field.Store.YES,
                                 Field.Index.NOT_ANALYZED));
-                d.add(new Field("content", "bbb " + i, Field.Store.NO,
+                d.add(newField("content", "bbb " + i, Field.Store.NO,
                                 Field.Index.ANALYZED));
                 modifier.updateDocument(new Term("id", Integer.toString(docId)), d);
               } else { // deletes
@@ -666,13 +666,13 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     for (int i = 0; i < keywords.length; i++) {
       Document doc = new Document();
-      doc.add(new Field("id", keywords[i], Field.Store.YES,
+      doc.add(newField("id", keywords[i], Field.Store.YES,
                         Field.Index.NOT_ANALYZED));
-      doc.add(new Field("country", unindexed[i], Field.Store.YES,
+      doc.add(newField("country", unindexed[i], Field.Store.YES,
                         Field.Index.NO));
-      doc.add(new Field("contents", unstored[i], Field.Store.NO,
+      doc.add(newField("contents", unstored[i], Field.Store.NO,
                         Field.Index.ANALYZED));
-      doc.add(new Field("city", text[i], Field.Store.YES,
+      doc.add(newField("city", text[i], Field.Store.YES,
                         Field.Index.ANALYZED));
       modifier.addDocument(doc);
     }
@@ -772,13 +772,13 @@ public class TestIndexWriterDelete extends LuceneTestCase {
 
     for (int i = 0; i < keywords.length; i++) {
       Document doc = new Document();
-      doc.add(new Field("id", keywords[i], Field.Store.YES,
+      doc.add(newField("id", keywords[i], Field.Store.YES,
                         Field.Index.NOT_ANALYZED));
-      doc.add(new Field("country", unindexed[i], Field.Store.YES,
+      doc.add(newField("country", unindexed[i], Field.Store.YES,
                         Field.Index.NO));
-      doc.add(new Field("contents", unstored[i], Field.Store.NO,
+      doc.add(newField("contents", unstored[i], Field.Store.NO,
                         Field.Index.ANALYZED));
-      doc.add(new Field("city", text[i], Field.Store.YES,
+      doc.add(newField("city", text[i], Field.Store.YES,
                         Field.Index.ANALYZED));
       try {
         modifier.addDocument(doc);

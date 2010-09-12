@@ -133,15 +133,15 @@ public class TestFilterIndexReader extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     Document d1 = new Document();
-    d1.add(new Field("default","one two", Field.Store.YES, Field.Index.ANALYZED));
+    d1.add(newField("default","one two", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(d1);
 
     Document d2 = new Document();
-    d2.add(new Field("default","one three", Field.Store.YES, Field.Index.ANALYZED));
+    d2.add(newField("default","one three", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(d2);
 
     Document d3 = new Document();
-    d3.add(new Field("default","two four", Field.Store.YES, Field.Index.ANALYZED));
+    d3.add(newField("default","two four", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(d3);
 
     writer.close();

@@ -143,7 +143,7 @@ public class TestAppendingCodec extends LuceneTestCase {
     ((LogMergePolicy)cfg.getMergePolicy()).setUseCompoundDocStore(false);
     IndexWriter writer = new IndexWriter(dir, cfg);
     Document doc = new Document();
-    doc.add(new Field("f", text, Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(newField("f", text, Store.YES, Index.ANALYZED, TermVector.WITH_POSITIONS_OFFSETS));
     writer.addDocument(doc);
     writer.commit();
     writer.addDocument(doc);

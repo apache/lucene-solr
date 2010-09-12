@@ -62,10 +62,10 @@ public class BooleanFilterTest extends LuceneTestCase {
 	private void addDoc(RandomIndexWriter writer, String accessRights, String price, String date, String inStock) throws IOException
 	{
 		Document doc=new Document();
-		doc.add(new Field("accessRights",accessRights,Field.Store.YES,Field.Index.ANALYZED));
-		doc.add(new Field("price",price,Field.Store.YES,Field.Index.ANALYZED));
-		doc.add(new Field("date",date,Field.Store.YES,Field.Index.ANALYZED));
-		doc.add(new Field("inStock",inStock,Field.Store.YES,Field.Index.ANALYZED));
+		doc.add(newField("accessRights",accessRights,Field.Store.YES,Field.Index.ANALYZED));
+		doc.add(newField("price",price,Field.Store.YES,Field.Index.ANALYZED));
+		doc.add(newField("date",date,Field.Store.YES,Field.Index.ANALYZED));
+		doc.add(newField("inStock",inStock,Field.Store.YES,Field.Index.ANALYZED));
 		writer.addDocument(doc);
 	}
 	

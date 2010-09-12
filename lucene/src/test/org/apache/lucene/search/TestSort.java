@@ -1100,12 +1100,12 @@ public class TestSort extends LuceneTestCase implements Serializable {
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(
                         TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
-    doc.add(new Field("f", "", Field.Store.NO, Field.Index.NOT_ANALYZED));
-    doc.add(new Field("t", "1", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    doc.add(newField("f", "", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    doc.add(newField("t", "1", Field.Store.NO, Field.Index.NOT_ANALYZED));
     w.addDocument(doc);
     w.commit();
     doc = new Document();
-    doc.add(new Field("t", "1", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    doc.add(newField("t", "1", Field.Store.NO, Field.Index.NOT_ANALYZED));
     w.addDocument(doc);
 
     IndexReader r = w.getReader();

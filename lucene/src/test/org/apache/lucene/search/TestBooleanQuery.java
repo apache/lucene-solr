@@ -61,7 +61,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random, dir);
     Document doc = new Document();
-    doc.add(new Field("field", "a b c d", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("field", "a b c d", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);
 
     IndexReader r = w.getReader();

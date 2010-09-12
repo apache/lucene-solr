@@ -79,10 +79,10 @@ public class TestParallelReaderEmptyIndex extends LuceneTestCase {
     {
       IndexWriter iw = new IndexWriter(rd1, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
       Document doc = new Document();
-      doc.add(new Field("test", "", Store.NO, Index.ANALYZED,
+      doc.add(newField("test", "", Store.NO, Index.ANALYZED,
                         TermVector.YES));
       iw.addDocument(doc);
-      doc.add(new Field("test", "", Store.NO, Index.ANALYZED,
+      doc.add(newField("test", "", Store.NO, Index.ANALYZED,
                         TermVector.NO));
       iw.addDocument(doc);
       iw.close();

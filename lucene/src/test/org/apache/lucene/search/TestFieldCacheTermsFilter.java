@@ -41,7 +41,7 @@ public class TestFieldCacheTermsFilter extends LuceneTestCase {
     for (int i = 0; i < 100; i++) {
       Document doc = new Document();
       int term = i * 10; //terms are units of 10;
-      doc.add(new Field(fieldName, "" + term, Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField(fieldName, "" + term, Field.Store.YES, Field.Index.NOT_ANALYZED));
       w.addDocument(doc);
     }
     IndexReader reader = w.getReader();

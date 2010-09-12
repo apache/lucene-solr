@@ -355,7 +355,7 @@ public class TestCodecs extends MultiCodecTestCase {
       pq.add(new Term("content", "ccc"));
 
       final Document doc = new Document();
-      doc.add(new Field("content", "aaa bbb ccc ddd", Store.NO, Field.Index.ANALYZED_NO_NORMS));
+      doc.add(newField("content", "aaa bbb ccc ddd", Store.NO, Field.Index.ANALYZED_NO_NORMS));
 
       // add document and force commit for creating a first segment
       writer.addDocument(doc);

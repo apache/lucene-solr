@@ -71,8 +71,8 @@ public class TestExplanations extends LuceneTestCase {
     RandomIndexWriter writer= new RandomIndexWriter(random, directory);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
-      doc.add(new Field(KEY, ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(new Field(FIELD, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField(KEY, ""+i, Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField(FIELD, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

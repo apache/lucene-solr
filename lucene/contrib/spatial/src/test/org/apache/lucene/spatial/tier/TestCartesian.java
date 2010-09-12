@@ -98,14 +98,14 @@ public class TestCartesian extends LuceneTestCase {
     
     Document doc = new Document();
     
-    doc.add(new Field("name", name,Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("name", name,Field.Store.YES, Field.Index.ANALYZED));
     
     // convert the lat / long to lucene fields
     doc.add(new NumericField(latField, Integer.MAX_VALUE, Field.Store.YES, true).setDoubleValue(lat));
     doc.add(new NumericField(lngField, Integer.MAX_VALUE, Field.Store.YES, true).setDoubleValue(lng));
     
     // add a default meta field to make searching all documents easy 
-    doc.add(new Field("metafile", "doc",Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("metafile", "doc",Field.Store.YES, Field.Index.ANALYZED));
     
     int ctpsize = ctps.size();
     for (int i =0; i < ctpsize; i++){
@@ -114,7 +114,7 @@ public class TestCartesian extends LuceneTestCase {
           Field.Store.YES, 
           true).setDoubleValue(ctp.getTierBoxId(lat,lng)));
       
-      doc.add(new Field(geoHashPrefix, GeoHashUtils.encode(lat,lng), 
+      doc.add(newField(geoHashPrefix, GeoHashUtils.encode(lat,lng), 
     		  Field.Store.YES, 
     		  Field.Index.NOT_ANALYZED_NO_NORMS));
     }

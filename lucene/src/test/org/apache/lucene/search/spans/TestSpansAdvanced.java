@@ -89,9 +89,9 @@ public class TestSpansAdvanced extends LuceneTestCase {
       final String text) throws IOException {
     
     final Document document = new Document();
-    document.add(new Field(FIELD_ID, id, Field.Store.YES,
+    document.add(newField(FIELD_ID, id, Field.Store.YES,
         Field.Index.NOT_ANALYZED));
-    document.add(new Field(FIELD_TEXT, text, Field.Store.YES,
+    document.add(newField(FIELD_TEXT, text, Field.Store.YES,
         Field.Index.ANALYZED));
     writer.addDocument(document);
   }

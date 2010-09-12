@@ -30,7 +30,7 @@ public class TestValueSource extends LuceneTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, new MockAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
     Document doc = new Document();
-    Field f = new Field("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+    Field f = newField("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
     doc.add(f);
 
     for(int i=0;i<17;i++) {

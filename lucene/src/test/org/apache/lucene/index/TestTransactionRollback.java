@@ -130,7 +130,7 @@ public class TestTransactionRollback extends LuceneTestCase {
     IndexWriter w=new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setIndexDeletionPolicy(sdp));
     for(int currentRecordId=1;currentRecordId<=100;currentRecordId++) {
       Document doc=new Document();
-      doc.add(new Field(FIELD_RECORD_ID,""+currentRecordId,Field.Store.YES,Field.Index.ANALYZED));
+      doc.add(newField(FIELD_RECORD_ID,""+currentRecordId,Field.Store.YES,Field.Index.ANALYZED));
       w.addDocument(doc);
 			
       if (currentRecordId%10 == 0) {

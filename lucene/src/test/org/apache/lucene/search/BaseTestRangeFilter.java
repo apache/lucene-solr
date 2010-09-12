@@ -111,7 +111,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     
     for (int d = minId; d <= maxId; d++) {
       Document doc = new Document();
-      doc.add(new Field("id", pad(d), Field.Store.YES,
+      doc.add(newField("id", pad(d), Field.Store.YES,
           Field.Index.NOT_ANALYZED));
       int r = index.allowNegativeRandomInts ? random.nextInt() : random
           .nextInt(Integer.MAX_VALUE);
@@ -121,9 +121,9 @@ public class BaseTestRangeFilter extends LuceneTestCase {
       if (r < index.minR) {
         index.minR = r;
       }
-      doc.add(new Field("rand", pad(r), Field.Store.YES,
+      doc.add(newField("rand", pad(r), Field.Store.YES,
           Field.Index.NOT_ANALYZED));
-      doc.add(new Field("body", "body", Field.Store.YES,
+      doc.add(newField("body", "body", Field.Store.YES,
           Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }

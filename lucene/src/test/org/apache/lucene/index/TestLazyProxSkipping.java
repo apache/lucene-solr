@@ -85,7 +85,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
                 content = this.term3 + " " + this.term2;
             }
 
-            doc.add(new Field(this.field, content, Field.Store.YES, Field.Index.ANALYZED));
+            doc.add(newField(this.field, content, Field.Store.YES, Field.Index.ANALYZED));
             writer.addDocument(doc);
         }
         
@@ -129,7 +129,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
         for (int i = 0; i < 10; i++) {
             Document doc = new Document();
-            doc.add(new Field(this.field, "a b", Field.Store.YES, Field.Index.ANALYZED));
+            doc.add(newField(this.field, "a b", Field.Store.YES, Field.Index.ANALYZED));
             writer.addDocument(doc);
         }
         

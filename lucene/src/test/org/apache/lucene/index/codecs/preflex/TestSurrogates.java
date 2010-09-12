@@ -297,7 +297,7 @@ public class TestSurrogates extends LuceneTestCaseJ4 {
         uniqueTerms.add(term);
         fieldTerms.add(new Term(field, term));
         Document doc = new Document();
-        doc.add(new Field(field, term, Field.Store.NO, Field.Index.NOT_ANALYZED));
+        doc.add(newField(field, term, Field.Store.NO, Field.Index.NOT_ANALYZED));
         w.addDocument(doc);
       }
       uniqueTermCount += uniqueTerms.size();

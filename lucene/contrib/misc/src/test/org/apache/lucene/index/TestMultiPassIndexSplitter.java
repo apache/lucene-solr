@@ -36,8 +36,8 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
     Document doc;
     for (int i = 0; i < NUM_DOCS; i++) {
       doc = new Document();
-      doc.add(new Field("id", i + "", Field.Store.YES, Field.Index.NOT_ANALYZED));
-      doc.add(new Field("f", i + " " + i, Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField("id", i + "", Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField("f", i + " " + i, Field.Store.YES, Field.Index.ANALYZED));
       w.addDocument(doc);
     }
     w.close();

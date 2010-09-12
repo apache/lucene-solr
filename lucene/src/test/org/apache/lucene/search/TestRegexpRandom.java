@@ -47,7 +47,7 @@ public class TestRegexpRandom extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     
     Document doc = new Document();
-    Field field = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);
+    Field field = newField("field", "", Field.Store.NO, Field.Index.ANALYZED);
     doc.add(field);
     
     NumberFormat df = new DecimalFormat("0000", new DecimalFormatSymbols(Locale.ENGLISH));

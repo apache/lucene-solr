@@ -65,7 +65,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));
     Document doc = new Document();
-    Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
+    Field idField = newField("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
     int extraCount = 0;
 
@@ -116,7 +116,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
         .setMergePolicy(mp));
 
     Document doc = new Document();
-    Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
+    Field idField = newField("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
     for(int i=0;i<10;i++) {
       for(int j=0;j<100;j++) {
@@ -151,7 +151,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
 
       for(int j=0;j<21;j++) {
         Document doc = new Document();
-        doc.add(new Field("content", "a b c", Field.Store.NO, Field.Index.ANALYZED));
+        doc.add(newField("content", "a b c", Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(doc);
       }
         
@@ -172,7 +172,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
   public void testNoWaitClose() throws IOException {
     MockDirectoryWrapper directory = newDirectory();
     Document doc = new Document();
-    Field idField = new Field("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
+    Field idField = newField("id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(idField);
 
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(2));

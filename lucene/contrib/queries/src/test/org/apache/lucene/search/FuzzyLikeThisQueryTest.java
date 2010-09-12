@@ -65,8 +65,8 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 	private void addDoc(RandomIndexWriter writer, String name, String id) throws IOException
 	{
 		Document doc=new Document();
-		doc.add(new Field("name",name,Field.Store.YES,Field.Index.ANALYZED));
-		doc.add(new Field("id",id,Field.Store.YES,Field.Index.ANALYZED));
+		doc.add(newField("name",name,Field.Store.YES,Field.Index.ANALYZED));
+		doc.add(newField("id",id,Field.Store.YES,Field.Index.ANALYZED));
 		writer.addDocument(doc);
 	}
 	

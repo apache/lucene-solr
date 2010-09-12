@@ -82,7 +82,7 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(MockTokenizer.KEYWORD, false));
     
     Document doc = new Document();
-    Field field = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);
+    Field field = newField("field", "", Field.Store.NO, Field.Index.ANALYZED);
     doc.add(field);
     
     for (int i = 0; i < terms; i++) {
@@ -136,7 +136,7 @@ public class TestFuzzyQuery2 extends LuceneTestCase {
         IndexWriter.MaxFieldLength.UNLIMITED);
     
     Document doc = new Document();
-    Field field = new Field("field", "", Field.Store.NO, Field.Index.ANALYZED);
+    Field field = newField("field", "", Field.Store.NO, Field.Index.ANALYZED);
     doc.add(field);
 
     for (int i = 0; i < terms; i++) {

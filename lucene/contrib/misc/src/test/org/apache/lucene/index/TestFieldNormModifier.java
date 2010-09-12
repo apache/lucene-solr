@@ -62,13 +62,13 @@ public class TestFieldNormModifier extends LuceneTestCase {
     
     for (int i = 0; i < NUM_DOCS; i++) {
       Document d = new Document();
-      d.add(new Field("field", "word", Field.Store.YES, Field.Index.ANALYZED));
-      d.add(new Field("nonorm", "word", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
-      d.add(new Field("untokfield", "20061212 20071212", Field.Store.YES, Field.Index.ANALYZED));
+      d.add(newField("field", "word", Field.Store.YES, Field.Index.ANALYZED));
+      d.add(newField("nonorm", "word", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+      d.add(newField("untokfield", "20061212 20071212", Field.Store.YES, Field.Index.ANALYZED));
       
       for (int j = 1; j <= i; j++) {
-        d.add(new Field("field", "crap", Field.Store.YES, Field.Index.ANALYZED));
-        d.add(new Field("nonorm", "more words", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+        d.add(newField("field", "crap", Field.Store.YES, Field.Index.ANALYZED));
+        d.add(newField("nonorm", "more words", Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
       }
       writer.addDocument(d);
     }

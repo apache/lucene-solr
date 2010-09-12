@@ -113,9 +113,9 @@ public class TestPayloadNearQuery extends LuceneTestCase {
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      doc.add(new Field("field", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField("field", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
       String txt = English.intToEnglish(i) +' '+English.intToEnglish(i+1);
-      doc.add(new Field("field2",  txt, Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField("field2",  txt, Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

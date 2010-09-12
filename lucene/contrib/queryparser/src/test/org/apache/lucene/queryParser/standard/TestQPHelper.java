@@ -656,7 +656,7 @@ public class TestQPHelper extends LocalizedTestCase {
     Directory ramDir = newDirectory();
     IndexWriter iw = new IndexWriter(ramDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, false)));
     Document doc = new Document();
-    doc.add(new Field("content", "\u0633\u0627\u0628", Field.Store.YES,
+    doc.add(newField("content", "\u0633\u0627\u0628", Field.Store.YES,
         Field.Index.NOT_ANALYZED));
     iw.addDocument(doc);
     iw.close();
@@ -1250,13 +1250,13 @@ public class TestQPHelper extends LocalizedTestCase {
     assertEquals(expected, hits.length);
   }
 
-  private static void addDateDoc(String content, int year, int month, int day,
+  private void addDateDoc(String content, int year, int month, int day,
       int hour, int minute, int second, IndexWriter iw) throws IOException {
     Document d = new Document();
-    d.add(new Field("f", content, Field.Store.YES, Field.Index.ANALYZED));
+    d.add(newField("f", content, Field.Store.YES, Field.Index.ANALYZED));
     Calendar cal = Calendar.getInstance(Locale.ENGLISH);
     cal.set(year, month - 1, day, hour, minute, second);
-    d.add(new Field("date", DateField.dateToString(cal.getTime()),
+    d.add(newField("date", DateField.dateToString(cal.getTime()),
         Field.Store.YES, Field.Index.NOT_ANALYZED));
     iw.addDocument(d);
   }
@@ -1306,7 +1306,7 @@ public class TestQPHelper extends LocalizedTestCase {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new CannedAnalyzer()));
     Document doc = new Document();
-    doc.add(new Field("field", "", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("field", "", Field.Store.NO, Field.Index.ANALYZED));
     w.addDocument(doc);
     IndexReader r = w.getReader();
     IndexSearcher s = new IndexSearcher(r);

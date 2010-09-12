@@ -119,7 +119,7 @@ public class TestElevationComparator extends LuceneTestCase {
  private Document adoc(String[] vals) {
    Document doc = new Document();
    for (int i = 0; i < vals.length - 2; i += 2) {
-     doc.add(new Field(vals[i], vals[i + 1], Field.Store.YES, Field.Index.ANALYZED));
+     doc.add(newField(vals[i], vals[i + 1], Field.Store.YES, Field.Index.ANALYZED));
    }
    return doc;
  }

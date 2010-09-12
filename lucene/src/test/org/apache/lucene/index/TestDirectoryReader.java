@@ -206,7 +206,7 @@ public class TestDirectoryReader extends LuceneTestCase {
         new MockAnalyzer()).setOpenMode(
         create ? OpenMode.CREATE : OpenMode.APPEND));
     Document doc = new Document();
-    doc.add(new Field("body", s, Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("body", s, Field.Store.YES, Field.Index.ANALYZED));
     iw.addDocument(doc);
     iw.close();
   }

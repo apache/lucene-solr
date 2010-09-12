@@ -18,6 +18,10 @@ package org.apache.lucene.util;
  */
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.Field.TermVector;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogDocMergePolicy;
@@ -608,6 +612,55 @@ public abstract class LuceneTestCaseJ4 {
     MockDirectoryWrapper dir = new MockDirectoryWrapper(impl);
     stores.put(dir, stack);
     return dir;
+  }
+  
+  public Field newField(String name, String value, Index index) {
+    return newField(random, name, value, index);
+  }
+  
+  public Field newField(String name, String value, Store store, Index index) {
+    return newField(random, name, value, store, index);
+  }
+  
+  public Field newField(String name, String value, Store store, Index index, TermVector tv) {
+    return newField(random, name, value, store, index, tv);
+  }
+  
+  public static Field newField(Random random, String name, String value, Index index) {
+    return newField(random, name, value, Store.NO, index);
+  }
+  
+  public static Field newField(Random random, String name, String value, Store store, Index index) {
+    return newField(random, name, value, store, index, TermVector.NO);
+  }
+  
+  public static Field newField(Random random, String name, String value, Store store, Index index, TermVector tv) {
+    if (!index.isIndexed())
+      return new Field(name, value, store, index);
+    
+    if (!store.isStored() && random.nextBoolean())
+      store = Store.YES; // randomly store it
+    
+    tv = randomTVSetting(random, tv);
+    
+    return new Field(name, value, store, index, tv);
+  }
+  
+  static final TermVector tvSettings[] = { 
+    TermVector.NO, TermVector.YES, TermVector.WITH_OFFSETS, 
+    TermVector.WITH_POSITIONS, TermVector.WITH_POSITIONS_OFFSETS 
+  };
+  
+  private static TermVector randomTVSetting(Random random, TermVector minimum) {
+    switch(minimum) {
+      case NO: return tvSettings[_TestUtil.nextInt(random, 0, tvSettings.length-1)];
+      case YES: return tvSettings[_TestUtil.nextInt(random, 1, tvSettings.length-1)];
+      case WITH_OFFSETS: return random.nextBoolean() ? TermVector.WITH_OFFSETS 
+          : TermVector.WITH_POSITIONS_OFFSETS;
+      case WITH_POSITIONS: return random.nextBoolean() ? TermVector.WITH_POSITIONS 
+          : TermVector.WITH_POSITIONS_OFFSETS;
+      default: return TermVector.WITH_POSITIONS_OFFSETS;
+    }
   }
   
   /** return a random Locale from the available locales on the system */

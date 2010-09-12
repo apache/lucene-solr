@@ -47,7 +47,7 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
     //writer.infoStream = System.out;
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      Fieldable fld = new Field("field", English.intToEnglish(i), Field.Store.YES, Field.Index.NOT_ANALYZED, Field.TermVector.YES);
+      Fieldable fld = newField("field", English.intToEnglish(i), Field.Store.YES, Field.Index.NOT_ANALYZED, Field.TermVector.YES);
       doc.add(fld);
       writer.addDocument(doc);
     }

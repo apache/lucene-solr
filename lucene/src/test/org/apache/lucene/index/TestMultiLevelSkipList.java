@@ -66,7 +66,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     Term term = new Term("test", "a");
     for (int i = 0; i < 5000; i++) {
       Document d1 = new Document();
-      d1.add(new Field(term.field(), term.text(), Store.NO, Index.ANALYZED));
+      d1.add(newField(term.field(), term.text(), Store.NO, Index.ANALYZED));
       writer.addDocument(d1);
     }
     writer.commit();

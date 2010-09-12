@@ -46,15 +46,15 @@ public class TestRemoteCachingWrapperFilter extends RemoteTestCaseJ4 {
     IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
-    doc.add(new Field("test", "test text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("type", "A", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("other", "other test text", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField(random, "test", "test text", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField(random, "type", "A", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField(random, "other", "other test text", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     //Need a second document to search for
     doc = new Document();
-    doc.add(new Field("test", "test text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("type", "B", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(new Field("other", "other test text", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField(random, "test", "test text", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField(random, "type", "B", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField(random, "other", "other test text", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.optimize();
     writer.close();

@@ -607,11 +607,11 @@ public class TestExternalCodecs extends LuceneTestCase {
     w.setMergeFactor(3);
     Document doc = new Document();
     // uses default codec:
-    doc.add(new Field("field1", "this field uses the standard codec as the test", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("field1", "this field uses the standard codec as the test", Field.Store.NO, Field.Index.ANALYZED));
     // uses pulsing codec:
-    doc.add(new Field("field2", "this field uses the pulsing codec as the test", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("field2", "this field uses the pulsing codec as the test", Field.Store.NO, Field.Index.ANALYZED));
     
-    Field idField = new Field("id", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
+    Field idField = newField("id", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
     doc.add(idField);
     for(int i=0;i<NUM_DOCS;i++) {
       idField.setValue(""+i);

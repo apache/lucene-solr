@@ -118,7 +118,7 @@ public class TestPayloadSpans extends LuceneTestCase {
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
 
     Document doc = new Document();
-    doc.add(new Field(PayloadHelper.FIELD, "one two three one four three",
+    doc.add(newField(PayloadHelper.FIELD, "one two three one four three",
         Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
@@ -377,7 +377,7 @@ public class TestPayloadSpans extends LuceneTestCase {
                                                      newIndexWriterConfig(TEST_VERSION_CURRENT, new PayloadAnalyzer()).setSimilarity(similarity));
 
     Document doc = new Document();
-    doc.add(new Field(PayloadHelper.FIELD,"xx rr yy mm  pp", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField(PayloadHelper.FIELD,"xx rr yy mm  pp", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
   
     IndexReader reader = writer.getReader();
@@ -440,7 +440,7 @@ public class TestPayloadSpans extends LuceneTestCase {
     for(int i = 0; i < docs.length; i++) {
       doc = new Document();
       String docText = docs[i];
-      doc.add(new Field(PayloadHelper.FIELD,docText, Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField(PayloadHelper.FIELD,docText, Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
 

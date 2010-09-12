@@ -211,7 +211,7 @@ public class TestWildcard
     RandomIndexWriter writer = new RandomIndexWriter(random, indexStore);
     for (int i = 0; i < contents.length; ++i) {
       Document doc = new Document();
-      doc.add(new Field(field, contents[i], Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField(field, contents[i], Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     writer.close();
@@ -267,7 +267,7 @@ public class TestWildcard
     RandomIndexWriter iw = new RandomIndexWriter(random, dir);
     for (int i = 0; i < docs.length; i++) {
       Document doc = new Document();
-      doc.add(new Field(field,docs[i],Store.NO,Index.ANALYZED));
+      doc.add(newField(field,docs[i],Store.NO,Index.ANALYZED));
       iw.addDocument(doc);
     }
     iw.close();

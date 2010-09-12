@@ -111,7 +111,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
         @Override
         public void run() {
           Document doc = new Document();
-          doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+          doc.add(newField("content", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
           do {
             for(int i=0;i<27;i++) {
               try {
@@ -152,7 +152,7 @@ public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
     // final segment, so deletion policy has a chance to
     // delete again:
     Document doc = new Document();
-    doc.add(new Field("content", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+    doc.add(newField("content", "aaa", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     writer.addDocument(doc);
 
     // Make sure we don't have any leftover files in the

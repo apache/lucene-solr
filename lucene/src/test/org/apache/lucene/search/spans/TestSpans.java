@@ -53,7 +53,7 @@ public class TestSpans extends LuceneTestCase {
     RandomIndexWriter writer= new RandomIndexWriter(random, directory);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
-      doc.add(new Field(field, docFields[i], Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField(field, docFields[i], Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -433,8 +433,8 @@ public class TestSpans extends LuceneTestCase {
   // LUCENE-1404
   private void addDoc(IndexWriter writer, String id, String text) throws IOException {
     final Document doc = new Document();
-    doc.add( new Field("id", id, Field.Store.YES, Field.Index.NOT_ANALYZED) );
-    doc.add( new Field("text", text, Field.Store.YES, Field.Index.ANALYZED) );
+    doc.add( newField("id", id, Field.Store.YES, Field.Index.NOT_ANALYZED) );
+    doc.add( newField("text", text, Field.Store.YES, Field.Index.ANALYZED) );
     writer.addDocument(doc);
   }
 

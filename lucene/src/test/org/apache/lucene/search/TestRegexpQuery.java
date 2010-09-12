@@ -47,7 +47,7 @@ public class TestRegexpQuery extends LuceneTestCase {
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     Document doc = new Document();
-    doc.add(new Field(FN,
+    doc.add(newField(FN,
         "the quick brown fox jumps over the lazy ??? dog 493432 49344",
         Field.Store.NO, Field.Index.ANALYZED));
     writer.addDocument(doc);
