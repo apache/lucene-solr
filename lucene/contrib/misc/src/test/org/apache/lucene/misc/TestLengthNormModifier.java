@@ -65,15 +65,15 @@ public class TestLengthNormModifier extends LuceneTestCase {
 	
 	for (int i = 0; i < NUM_DOCS; i++) {
 	    Document d = new Document();
-	    d.add(new Field("field", "word",
+	    d.add(newField("field", "word",
 			    Field.Store.YES, Field.Index.ANALYZED));
-	    d.add(new Field("nonorm", "word",
+	    d.add(newField("nonorm", "word",
 			    Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
 		
 	    for (int j = 1; j <= i; j++) {
-		d.add(new Field("field", "crap",
+		d.add(newField("field", "crap",
 				Field.Store.YES, Field.Index.ANALYZED));
-		d.add(new Field("nonorm", "more words",
+		d.add(newField("nonorm", "more words",
 				Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
 	    }
 	    writer.addDocument(d);

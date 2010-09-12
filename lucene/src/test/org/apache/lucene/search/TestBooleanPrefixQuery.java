@@ -78,7 +78,7 @@ public class TestBooleanPrefixQuery extends LuceneTestCase {
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     for (int i = 0; i < categories.length; i++) {
       Document doc = new Document();
-      doc.add(new Field("category", categories[i], Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField("category", categories[i], Field.Store.YES, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
     reader = writer.getReader();

@@ -54,7 +54,7 @@ public class TestBoolean2 extends LuceneTestCase {
     RandomIndexWriter writer= new RandomIndexWriter(random, directory);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
-      doc.add(new Field(field, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField(field, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     writer.close();
@@ -77,12 +77,12 @@ public class TestBoolean2 extends LuceneTestCase {
 
     RandomIndexWriter w = new RandomIndexWriter(random, dir2);
     Document doc = new Document();
-    doc.add(new Field("field2", "xxx", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("field2", "xxx", Field.Store.NO, Field.Index.ANALYZED));
     for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {
       w.addDocument(doc);
     }
     doc = new Document();
-    doc.add(new Field("field2", "big bad bug", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("field2", "big bad bug", Field.Store.NO, Field.Index.ANALYZED));
     for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {
       w.addDocument(doc);
     }

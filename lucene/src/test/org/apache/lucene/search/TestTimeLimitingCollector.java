@@ -108,7 +108,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
 
   private void add(String value, RandomIndexWriter iw) throws IOException {
     Document d = new Document();
-    d.add(new Field(FIELD_NAME, value, Field.Store.NO, Field.Index.ANALYZED));
+    d.add(newField(FIELD_NAME, value, Field.Store.NO, Field.Index.ANALYZED));
     iw.addDocument(d);
   }
 

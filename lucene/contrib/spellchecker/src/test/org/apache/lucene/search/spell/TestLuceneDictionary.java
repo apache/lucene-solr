@@ -50,11 +50,11 @@ public class TestLuceneDictionary extends LuceneTestCase {
     Document doc;
 
     doc = new  Document();
-    doc.add(new Field("aaa", "foo", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("aaa", "foo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     doc = new  Document();
-    doc.add(new Field("aaa", "foo", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("aaa", "foo", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     doc = new  Document();
@@ -66,7 +66,7 @@ public class TestLuceneDictionary extends LuceneTestCase {
     writer.addDocument(doc);
 
     doc = new Document();
-    doc.add(new Field("zzz", "bar", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("zzz", "bar", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
 
     writer.optimize();

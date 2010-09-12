@@ -106,16 +106,16 @@ public class TestDateSort extends LuceneTestCase {
     assertEquals(Arrays.asList(expectedOrder), Arrays.asList(actualOrder));
   }
 
-  private static Document createDocument(String text, long time) {
+  private Document createDocument(String text, long time) {
     Document document = new Document();
 
     // Add the text field.
-    Field textField = new Field(TEXT_FIELD, text, Field.Store.YES, Field.Index.ANALYZED);
+    Field textField = newField(TEXT_FIELD, text, Field.Store.YES, Field.Index.ANALYZED);
     document.add(textField);
 
     // Add the date/time field.
     String dateTimeString = DateTools.timeToString(time, DateTools.Resolution.SECOND);
-    Field dateTimeField = new Field(DATE_TIME_FIELD, dateTimeString, Field.Store.YES,
+    Field dateTimeField = newField(DATE_TIME_FIELD, dateTimeString, Field.Store.YES,
         Field.Index.NOT_ANALYZED);
     document.add(dateTimeField);
 

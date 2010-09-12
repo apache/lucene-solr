@@ -67,7 +67,7 @@ public class TestFilteredSearch extends LuceneTestCase {
     try {
       for (int i = 0; i < 60; i++) {//Simple docs
         Document doc = new Document();
-        doc.add(new Field(FIELD, Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
+        doc.add(newField(FIELD, Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
         writer.addDocument(doc);
       }
       if(optimize)

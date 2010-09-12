@@ -107,8 +107,8 @@ public class MemoryIndexTest extends BaseTokenStreamTestCase {
     IndexWriter writer = new IndexWriter(ramdir,
                                          new IndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
     Document doc = new Document();
-    Field field1 = new Field("foo", fooField.toString(), Field.Store.NO, Field.Index.ANALYZED);
-    Field field2 = new Field("term", termField.toString(), Field.Store.NO, Field.Index.ANALYZED);
+    Field field1 = newField("foo", fooField.toString(), Field.Store.NO, Field.Index.ANALYZED);
+    Field field2 = newField("term", termField.toString(), Field.Store.NO, Field.Index.ANALYZED);
     doc.add(field1);
     doc.add(field2);
     writer.addDocument(doc);

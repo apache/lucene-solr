@@ -40,8 +40,8 @@ public class TestDocBoost extends LuceneTestCase {
     Directory store = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, store);
 
-    Fieldable f1 = new Field("field", "word", Field.Store.YES, Field.Index.ANALYZED);
-    Fieldable f2 = new Field("field", "word", Field.Store.YES, Field.Index.ANALYZED);
+    Fieldable f1 = newField("field", "word", Field.Store.YES, Field.Index.ANALYZED);
+    Fieldable f2 = newField("field", "word", Field.Store.YES, Field.Index.ANALYZED);
     f2.setBoost(2.0f);
 
     Document d1 = new Document();

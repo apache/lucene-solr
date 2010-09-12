@@ -146,8 +146,8 @@ public class TestAddIndexes extends LuceneTestCase {
     // docs, so 10 pending deletes:
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(new Field("id", "" + (i % 10), Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(new Field("content", "bbb " + i, Field.Store.NO,
+      doc.add(newField("id", "" + (i % 10), Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("content", "bbb " + i, Field.Store.NO,
                         Field.Index.ANALYZED));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
@@ -182,8 +182,8 @@ public class TestAddIndexes extends LuceneTestCase {
     // docs, so 10 pending deletes:
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(new Field("id", "" + (i % 10), Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(new Field("content", "bbb " + i, Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField("id", "" + (i % 10), Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("content", "bbb " + i, Field.Store.NO, Field.Index.ANALYZED));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
     
@@ -220,8 +220,8 @@ public class TestAddIndexes extends LuceneTestCase {
     // docs, so 10 pending deletes:
     for (int i = 0; i < 20; i++) {
       Document doc = new Document();
-      doc.add(new Field("id", "" + (i % 10), Field.Store.NO, Field.Index.NOT_ANALYZED));
-      doc.add(new Field("content", "bbb " + i, Field.Store.NO,
+      doc.add(newField("id", "" + (i % 10), Field.Store.NO, Field.Index.NOT_ANALYZED));
+      doc.add(newField("content", "bbb " + i, Field.Store.NO,
                         Field.Index.ANALYZED));
       writer.updateDocument(new Term("id", "" + (i%10)), doc);
     }
@@ -451,7 +451,7 @@ public class TestAddIndexes extends LuceneTestCase {
   private void addDocs(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      doc.add(new Field("content", "aaa", Field.Store.NO,
+      doc.add(newField("content", "aaa", Field.Store.NO,
                         Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
@@ -460,7 +460,7 @@ public class TestAddIndexes extends LuceneTestCase {
   private void addDocs2(IndexWriter writer, int numDocs) throws IOException {
     for (int i = 0; i < numDocs; i++) {
       Document doc = new Document();
-      doc.add(new Field("content", "bbb", Field.Store.NO,
+      doc.add(newField("content", "bbb", Field.Store.NO,
                         Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
@@ -525,19 +525,19 @@ public class TestAddIndexes extends LuceneTestCase {
         .setMaxBufferedDocs(5).setMergePolicy(lmp));
 
     Document doc = new Document();
-    doc.add(new Field("content", "aaa bbb ccc ddd eee fff ggg hhh iii", Field.Store.YES,
+    doc.add(newField("content", "aaa bbb ccc ddd eee fff ggg hhh iii", Field.Store.YES,
                       Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
     for(int i=0;i<60;i++)
       writer.addDocument(doc);
 
     Document doc2 = new Document();
-    doc2.add(new Field("content", "aaa bbb ccc ddd eee fff ggg hhh iii", Field.Store.YES,
+    doc2.add(newField("content", "aaa bbb ccc ddd eee fff ggg hhh iii", Field.Store.YES,
                       Field.Index.NO));
-    doc2.add(new Field("content", "aaa bbb ccc ddd eee fff ggg hhh iii", Field.Store.YES,
+    doc2.add(newField("content", "aaa bbb ccc ddd eee fff ggg hhh iii", Field.Store.YES,
                       Field.Index.NO));
-    doc2.add(new Field("content", "aaa bbb ccc ddd eee fff ggg hhh iii", Field.Store.YES,
+    doc2.add(newField("content", "aaa bbb ccc ddd eee fff ggg hhh iii", Field.Store.YES,
                       Field.Index.NO));
-    doc2.add(new Field("content", "aaa bbb ccc ddd eee fff ggg hhh iii", Field.Store.YES,
+    doc2.add(newField("content", "aaa bbb ccc ddd eee fff ggg hhh iii", Field.Store.YES,
                       Field.Index.NO));
     for(int i=0;i<10;i++)
       writer.addDocument(doc2);

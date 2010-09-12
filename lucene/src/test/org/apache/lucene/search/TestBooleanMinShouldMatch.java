@@ -56,10 +56,10 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
 
         for (int i = 0; i < data.length; i++) {
             Document doc = new Document();
-            doc.add(new Field("id", String.valueOf(i), Field.Store.YES, Field.Index.NOT_ANALYZED));//Field.Keyword("id",String.valueOf(i)));
-            doc.add(new Field("all", "all", Field.Store.YES, Field.Index.NOT_ANALYZED));//Field.Keyword("all","all"));
+            doc.add(newField("id", String.valueOf(i), Field.Store.YES, Field.Index.NOT_ANALYZED));//Field.Keyword("id",String.valueOf(i)));
+            doc.add(newField("all", "all", Field.Store.YES, Field.Index.NOT_ANALYZED));//Field.Keyword("all","all"));
             if (null != data[i]) {
-                doc.add(new Field("data", data[i], Field.Store.YES, Field.Index.ANALYZED));//Field.Text("data",data[i]));
+                doc.add(newField("data", data[i], Field.Store.YES, Field.Index.ANALYZED));//Field.Text("data",data[i]));
             }
             w.addDocument(doc);
         }

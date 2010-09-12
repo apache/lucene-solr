@@ -305,7 +305,7 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
     Document d = new Document();
     float boost = nextNorm();
     for (int i = 0; i < 10; i++) {
-      Field f = new Field("f" + i, "v" + i, Store.NO, Index.NOT_ANALYZED);
+      Field f = newField("f" + i, "v" + i, Store.NO, Index.NOT_ANALYZED);
       f.setBoost(boost);
       d.add(f);
     }

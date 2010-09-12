@@ -41,17 +41,18 @@ public class TestSubScorerFreqs extends LuceneTestCaseJ4 {
   @BeforeClass
   public static void makeIndex() throws Exception {
     dir = new RAMDirectory();
+    Random random = newStaticRandom(TestSubScorerFreqs.class);
     RandomIndexWriter w = new RandomIndexWriter(
-        newStaticRandom(TestSubScorerFreqs.class), dir);
+        random, dir);
     // make sure we have more than one segment occationally
     for (int i = 0; i < 31 * RANDOM_MULTIPLIER; i++) {
       Document doc = new Document();
-      doc.add(new Field("f", "a b c d b c d c d d", Field.Store.NO,
+      doc.add(newField(random, "f", "a b c d b c d c d d", Field.Store.NO,
           Field.Index.ANALYZED));
       w.addDocument(doc);
 
       doc = new Document();
-      doc.add(new Field("f", "a b c d", Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField(random, "f", "a b c d", Field.Store.NO, Field.Index.ANALYZED));
       w.addDocument(doc);
     }
 

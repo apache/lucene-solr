@@ -78,7 +78,7 @@ public class TestLazyBug extends LuceneTestCase {
       for (int d = 1; d <= NUM_DOCS; d++) {
         Document doc = new Document();
         for (int f = 1; f <= NUM_FIELDS; f++ ) {
-          doc.add(new Field("f"+f, 
+          doc.add(newField("f"+f, 
                             data[f % data.length] 
                             + '#' + data[random.nextInt(data.length)], 
                             Field.Store.YES, 

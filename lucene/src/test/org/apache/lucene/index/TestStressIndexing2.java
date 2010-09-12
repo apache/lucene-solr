@@ -460,20 +460,26 @@ public class TestStressIndexing2 extends LuceneTestCase {
         for(int j=0;j<numTerms;j++) {
           int[] pos1 = tpv1.getTermPositions(j);
           int[] pos2 = tpv2.getTermPositions(j);
-          assertEquals(pos1.length, pos2.length);
-          TermVectorOffsetInfo[] offsets1 = tpv1.getOffsets(j);
-          TermVectorOffsetInfo[] offsets2 = tpv2.getOffsets(j);
-          if (offsets1 == null)
-            assertTrue(offsets2 == null);
-          else
-            assertTrue(offsets2 != null);
-          for(int k=0;k<pos1.length;k++) {
-            assertEquals(pos1[k], pos2[k]);
-            if (offsets1 != null) {
-              assertEquals(offsets1[k].getStartOffset(),
-                           offsets2[k].getStartOffset());
-              assertEquals(offsets1[k].getEndOffset(),
-                           offsets2[k].getEndOffset());
+          if (pos1 == null) {
+            assertNull(pos2);
+          } else {
+            assertNotNull(pos1);
+            assertNotNull(pos2);
+            assertEquals(pos1.length, pos2.length);
+            TermVectorOffsetInfo[] offsets1 = tpv1.getOffsets(j);
+            TermVectorOffsetInfo[] offsets2 = tpv2.getOffsets(j);
+            if (offsets1 == null)
+              assertTrue(offsets2 == null);
+            else
+              assertTrue(offsets2 != null);
+            for(int k=0;k<pos1.length;k++) {
+              assertEquals(pos1[k], pos2[k]);
+              if (offsets1 != null) {
+                assertEquals(offsets1[k].getStartOffset(),
+                             offsets2[k].getStartOffset());
+                assertEquals(offsets1[k].getEndOffset(),
+                             offsets2[k].getEndOffset());
+              }
             }
           }
         }
@@ -481,7 +487,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
     }
   }
 
-  private static class IndexingThread extends Thread {
+  private class IndexingThread extends Thread {
     IndexWriter w;
     int base;
     int range;
@@ -569,7 +575,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
       ArrayList<Field> fields = new ArrayList<Field>();      
       String idString = getIdString();
-      Field idField =  new Field(idTerm.field(), idString, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
+      Field idField =  newField(idTerm.field(), idString, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS);
       fields.add(idField);
 
       int nFields = nextInt(maxFields);
@@ -593,16 +599,16 @@ public class TestStressIndexing2 extends LuceneTestCase {
         
         switch (nextInt(4)) {
           case 0:
-            fields.add(new Field("f" + nextInt(100), getString(1), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, tvVal));
+            fields.add(newField("f" + nextInt(100), getString(1), Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS, tvVal));
             break;
           case 1:
-            fields.add(new Field("f" + nextInt(100), getString(0), Field.Store.NO, Field.Index.ANALYZED, tvVal));
+            fields.add(newField("f" + nextInt(100), getString(0), Field.Store.NO, Field.Index.ANALYZED, tvVal));
             break;
           case 2:
-            fields.add(new Field("f" + nextInt(100), getString(0), Field.Store.YES, Field.Index.NO, Field.TermVector.NO));
+            fields.add(newField("f" + nextInt(100), getString(0), Field.Store.YES, Field.Index.NO, Field.TermVector.NO));
             break;
           case 3:
-            fields.add(new Field("f" + nextInt(100), getString(bigFieldSize), Field.Store.YES, Field.Index.ANALYZED, tvVal));
+            fields.add(newField("f" + nextInt(100), getString(bigFieldSize), Field.Store.YES, Field.Index.ANALYZED, tvVal));
             break;          
         }
       }

@@ -60,8 +60,8 @@ public class TestMultiMMap extends LuceneTestCase {
       dir.setUseUnmap(true);
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     Document doc = new Document();
-    Field docid = new Field("docid", "0", Field.Store.YES, Field.Index.NOT_ANALYZED);
-    Field junk = new Field("junk", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
+    Field docid = newField("docid", "0", Field.Store.YES, Field.Index.NOT_ANALYZED);
+    Field junk = newField("junk", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
     doc.add(docid);
     doc.add(junk);
     

@@ -405,7 +405,7 @@ public class TestLockFactory extends LuceneTestCase {
 
     private void addDoc(IndexWriter writer) throws IOException {
         Document doc = new Document();
-        doc.add(new Field("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
+        doc.add(newField("content", "aaa", Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(doc);
     }
 }

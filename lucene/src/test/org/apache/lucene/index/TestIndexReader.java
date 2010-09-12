@@ -162,7 +162,14 @@ public class TestIndexReader extends LuceneTestCase
         // set up writer
         IndexWriter writer = new IndexWriter(d, newIndexWriterConfig(
             TEST_VERSION_CURRENT, new StandardAnalyzer(TEST_VERSION_CURRENT)));
-        addDocumentWithFields(writer);
+
+        Document doc = new Document();
+        doc.add(new Field("keyword","test1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        doc.add(new Field("text","test1", Field.Store.YES, Field.Index.ANALYZED));
+        doc.add(new Field("unindexed","test1", Field.Store.YES, Field.Index.NO));
+        doc.add(new Field("unstored","test1", Field.Store.NO, Field.Index.ANALYZED));
+        writer.addDocument(doc);
+
         writer.close();
         // set up reader
         IndexReader reader = IndexReader.open(d, false);
@@ -178,15 +185,31 @@ public class TestIndexReader extends LuceneTestCase
         // want to get some more segments here
         int mergeFactor = ((LogMergePolicy) writer.getConfig().getMergePolicy()).getMergeFactor();
         for (int i = 0; i < 5*mergeFactor; i++) {
-            addDocumentWithFields(writer);
+          doc = new Document();
+          doc.add(new Field("keyword","test1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+          doc.add(new Field("text","test1", Field.Store.YES, Field.Index.ANALYZED));
+          doc.add(new Field("unindexed","test1", Field.Store.YES, Field.Index.NO));
+          doc.add(new Field("unstored","test1", Field.Store.NO, Field.Index.ANALYZED));
+          writer.addDocument(doc);
         }
         // new fields are in some different segments (we hope)
         for (int i = 0; i < 5*mergeFactor; i++) {
-            addDocumentWithDifferentFields(writer);
+          doc = new Document();
+          doc.add(new Field("keyword2","test1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+          doc.add(new Field("text2","test1", Field.Store.YES, Field.Index.ANALYZED));
+          doc.add(new Field("unindexed2","test1", Field.Store.YES, Field.Index.NO));
+          doc.add(new Field("unstored2","test1", Field.Store.NO, Field.Index.ANALYZED));
+          writer.addDocument(doc);
         }
         // new termvector fields
         for (int i = 0; i < 5*mergeFactor; i++) {
-          addDocumentWithTermVectorFields(writer);
+          doc = new Document();
+          doc.add(new Field("tvnot","tvnot", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));
+          doc.add(new Field("termvector","termvector", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.YES));
+          doc.add(new Field("tvoffset","tvoffset", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_OFFSETS));
+          doc.add(new Field("tvposition","tvposition", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
+          doc.add(newField("tvpositionoffset","tvpositionoffset", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+          writer.addDocument(doc);
         }
         
         writer.close();
@@ -873,8 +896,8 @@ public class TestIndexReader extends LuceneTestCase
       IndexWriter writer = new IndexWriter(startDir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
       for(int i=0;i<157;i++) {
         Document d = new Document();
-        d.add(new Field("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
-        d.add(new Field("content", "aaa " + i, Field.Store.NO, Field.Index.ANALYZED));
+        d.add(newField("id", Integer.toString(i), Field.Store.YES, Field.Index.NOT_ANALYZED));
+        d.add(newField("content", "aaa " + i, Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(d);
       }
       writer.close();
@@ -1269,31 +1292,31 @@ public class TestIndexReader extends LuceneTestCase
     private void addDocumentWithFields(IndexWriter writer) throws IOException
     {
         Document doc = new Document();
-        doc.add(new Field("keyword","test1", Field.Store.YES, Field.Index.NOT_ANALYZED));
-        doc.add(new Field("text","test1", Field.Store.YES, Field.Index.ANALYZED));
-        doc.add(new Field("unindexed","test1", Field.Store.YES, Field.Index.NO));
-        doc.add(new Field("unstored","test1", Field.Store.NO, Field.Index.ANALYZED));
+        doc.add(newField("keyword","test1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        doc.add(newField("text","test1", Field.Store.YES, Field.Index.ANALYZED));
+        doc.add(newField("unindexed","test1", Field.Store.YES, Field.Index.NO));
+        doc.add(newField("unstored","test1", Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(doc);
     }
 
     private void addDocumentWithDifferentFields(IndexWriter writer) throws IOException
     {
         Document doc = new Document();
-        doc.add(new Field("keyword2","test1", Field.Store.YES, Field.Index.NOT_ANALYZED));
-        doc.add(new Field("text2","test1", Field.Store.YES, Field.Index.ANALYZED));
-        doc.add(new Field("unindexed2","test1", Field.Store.YES, Field.Index.NO));
-        doc.add(new Field("unstored2","test1", Field.Store.NO, Field.Index.ANALYZED));
+        doc.add(newField("keyword2","test1", Field.Store.YES, Field.Index.NOT_ANALYZED));
+        doc.add(newField("text2","test1", Field.Store.YES, Field.Index.ANALYZED));
+        doc.add(newField("unindexed2","test1", Field.Store.YES, Field.Index.NO));
+        doc.add(newField("unstored2","test1", Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(doc);
     }
 
     private void addDocumentWithTermVectorFields(IndexWriter writer) throws IOException
     {
         Document doc = new Document();
-        doc.add(new Field("tvnot","tvnot", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));
-        doc.add(new Field("termvector","termvector", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.YES));
-        doc.add(new Field("tvoffset","tvoffset", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_OFFSETS));
-        doc.add(new Field("tvposition","tvposition", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
-        doc.add(new Field("tvpositionoffset","tvpositionoffset", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
+        doc.add(newField("tvnot","tvnot", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.NO));
+        doc.add(newField("termvector","termvector", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.YES));
+        doc.add(newField("tvoffset","tvoffset", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_OFFSETS));
+        doc.add(newField("tvposition","tvposition", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS));
+        doc.add(newField("tvpositionoffset","tvpositionoffset", Field.Store.YES, Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS_OFFSETS));
         
         writer.addDocument(doc);
     }
@@ -1301,7 +1324,7 @@ public class TestIndexReader extends LuceneTestCase
     private void addDoc(IndexWriter writer, String value) throws IOException
     {
         Document doc = new Document();
-        doc.add(new Field("content", value, Field.Store.NO, Field.Index.ANALYZED));
+        doc.add(newField("content", value, Field.Store.NO, Field.Index.ANALYZED));
         writer.addDocument(doc);
     }
     private void rmDir(File dir) {
@@ -1551,7 +1574,7 @@ public class TestIndexReader extends LuceneTestCase
 
   private Document createDocument(String id) {
     Document doc = new Document();
-    doc.add(new Field("id", id, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
+    doc.add(newField("id", id, Field.Store.YES, Field.Index.NOT_ANALYZED_NO_NORMS));
     return doc;
   }
 
@@ -1601,7 +1624,7 @@ public class TestIndexReader extends LuceneTestCase
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
-    doc.add(new Field("number", "17", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    doc.add(newField("number", "17", Field.Store.NO, Field.Index.NOT_ANALYZED));
     writer.addDocument(doc);
     writer.close();
 
@@ -1632,7 +1655,7 @@ public class TestIndexReader extends LuceneTestCase
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
-    doc.add(new Field("number", "17", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    doc.add(newField("number", "17", Field.Store.NO, Field.Index.NOT_ANALYZED));
     ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
     writer.addDocument(doc);
     writer.commit();
@@ -1666,7 +1689,7 @@ public class TestIndexReader extends LuceneTestCase
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMaxBufferedDocs(-1));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(10);
     Document doc = new Document();
-    doc.add(new Field("number", "17", Field.Store.NO, Field.Index.NOT_ANALYZED));
+    doc.add(newField("number", "17", Field.Store.NO, Field.Index.NOT_ANALYZED));
     writer.addDocument(doc);
     writer.commit();
 
@@ -1707,8 +1730,8 @@ public class TestIndexReader extends LuceneTestCase
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
-    doc.add(new Field("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", Field.Store.NO, Field.Index.ANALYZED));
-    doc.add(new Field("number", "0 1 2 3 4 5 6 7 8 9", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("number", "0 1 2 3 4 5 6 7 8 9", Field.Store.NO, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.addDocument(doc);
     writer.commit();
@@ -1740,8 +1763,8 @@ public class TestIndexReader extends LuceneTestCase
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
     Document doc = new Document();
-    doc.add(new Field("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", Field.Store.NO, Field.Index.ANALYZED));
-    doc.add(new Field("number", "0 1 2 3 4 5 6 7 8 9", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("field", "a b c d e f g h i j k l m n o p q r s t u v w x y z", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("number", "0 1 2 3 4 5 6 7 8 9", Field.Store.NO, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.addDocument(doc);
     writer.close();

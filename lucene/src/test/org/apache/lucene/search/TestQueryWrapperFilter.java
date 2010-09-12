@@ -34,7 +34,7 @@ public class TestQueryWrapperFilter extends LuceneTestCase {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);
     Document doc = new Document();
-    doc.add(new Field("field", "value", Store.NO, Index.ANALYZED));
+    doc.add(newField("field", "value", Store.NO, Index.ANALYZED));
     writer.addDocument(doc);
     IndexReader reader = writer.getReader();
     writer.close();

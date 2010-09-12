@@ -324,7 +324,7 @@ public class TestMultiFieldQueryParserWrapper extends LuceneTestCase {
     IndexWriter iw = new IndexWriter(ramDir, analyzer, true,
         IndexWriter.MaxFieldLength.LIMITED);
     Document doc = new Document();
-    doc.add(new Field("body", "blah the footest blah", Field.Store.NO,
+    doc.add(newField("body", "blah the footest blah", Field.Store.NO,
         Field.Index.ANALYZED));
     iw.addDocument(doc);
     iw.close();

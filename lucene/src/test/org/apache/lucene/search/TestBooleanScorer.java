@@ -46,7 +46,7 @@ public class TestBooleanScorer extends LuceneTestCase
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
     for (int i = 0; i < values.length; i++) {
       Document doc = new Document();
-      doc.add(new Field(FIELD, values[i], Field.Store.YES, Field.Index.NOT_ANALYZED));
+      doc.add(newField(FIELD, values[i], Field.Store.YES, Field.Index.NOT_ANALYZED));
       writer.addDocument(doc);
     }
     IndexReader ir = writer.getReader();
