@@ -22,6 +22,7 @@ import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.util.Locale;
 
+import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
@@ -29,6 +30,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util._TestUtil;
 
 /**
  * Create an index with terms from 0000-9999.
@@ -44,7 +46,9 @@ public class TestRegexpRandom extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir);
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir,
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
+        .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     
     Document doc = new Document();
     Field field = newField("field", "", Field.Store.NO, Field.Index.ANALYZED);

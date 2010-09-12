@@ -30,6 +30,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -53,7 +54,9 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(MockTokenizer.KEYWORD, false));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.KEYWORD, false))
+        .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     
     Document doc = new Document();
     Field field = newField("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
@@ -129,8 +132,10 @@ public class TestRegexpRandom2 extends LuceneTestCase {
   
   /** test a bunch of random regular expressions */
   public void testRegexps() throws Exception {
-
-    int num = 1000 * RANDOM_MULTIPLIER;
+    // we generate aweful regexps: good for testing.
+    // but for preflex codec, the test can be very slow, so use less iterations.
+    String codec = CodecProvider.getDefaultCodec();
+    int num = codec.equals("PreFlex") ? 100 * RANDOM_MULTIPLIER : 1000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
       String reg = AutomatonTestUtil.randomRegexp(random).toString();
       assertSame(reg);

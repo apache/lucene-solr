@@ -31,30 +31,36 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util._TestUtil;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /** Test BooleanQuery2 against BooleanQuery by overriding the standard query parser.
  * This also tests the scoring order of BooleanQuery.
  */
-public class TestBoolean2 extends LuceneTestCase {
-  private IndexSearcher searcher;
-  private IndexSearcher bigSearcher;
-  private IndexReader reader;
+public class TestBoolean2 extends LuceneTestCaseJ4 {
+  private static IndexSearcher searcher;
+  private static IndexSearcher bigSearcher;
+  private static IndexReader reader;
   private static int NUM_EXTRA_DOCS = 6000;
 
   public static final String field = "field";
-  private Directory directory;
-  private Directory dir2;
-  private int mulFactor;
+  private static Directory directory;
+  private static Directory dir2;
+  private static int mulFactor;
 
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-    directory = newDirectory();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    Random random = newStaticRandom(TestBoolean2.class);
+    directory = newDirectory(random);
     RandomIndexWriter writer= new RandomIndexWriter(random, directory);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
-      doc.add(newField(field, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField(random, field, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     writer.close();
@@ -75,14 +81,16 @@ public class TestBoolean2 extends LuceneTestCase {
       mulFactor *= 2;
     } while(docCount < 3000);
 
-    RandomIndexWriter w = new RandomIndexWriter(random, dir2);
+    RandomIndexWriter w = new RandomIndexWriter(random, dir2, 
+        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
+        .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     Document doc = new Document();
-    doc.add(newField("field2", "xxx", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField(random, "field2", "xxx", Field.Store.NO, Field.Index.ANALYZED));
     for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {
       w.addDocument(doc);
     }
     doc = new Document();
-    doc.add(newField("field2", "big bad bug", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField(random, "field2", "big bad bug", Field.Store.NO, Field.Index.ANALYZED));
     for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {
       w.addDocument(doc);
     }
@@ -91,16 +99,21 @@ public class TestBoolean2 extends LuceneTestCase {
     w.close();
   }
 
-  @Override
-  protected void tearDown() throws Exception {
+  @AfterClass
+  public static void afterClass() throws Exception {
     searcher.close();
     reader.close();
     dir2.close();
     directory.close();
-    super.tearDown();
+    bigSearcher.close();
+    searcher = null;
+    reader = null;
+    dir2 = null;
+    directory = null;
+    bigSearcher = null;
   }
 
-  private String[] docFields = {
+  private static String[] docFields = {
     "w1 w2 w3 w4 w5",
     "w1 w3 w2 w3",
     "w1 xx w2 yy w3",
@@ -132,72 +145,88 @@ public class TestBoolean2 extends LuceneTestCase {
     CheckHits.checkHitsQuery(query2, hits1, hits2, expDocNrs);
   }
 
+  @Test
   public void testQueries01() throws Exception {
     String queryText = "+w3 +xx";
     int[] expDocNrs = {2,3};
     queriesTest(queryText, expDocNrs);
   }
 
+  @Test
   public void testQueries02() throws Exception {
     String queryText = "+w3 xx";
     int[] expDocNrs = {2,3,1,0};
     queriesTest(queryText, expDocNrs);
   }
 
+  @Test
   public void testQueries03() throws Exception {
     String queryText = "w3 xx";
     int[] expDocNrs = {2,3,1,0};
     queriesTest(queryText, expDocNrs);
   }
 
+  @Test
   public void testQueries04() throws Exception {
     String queryText = "w3 -xx";
     int[] expDocNrs = {1,0};
     queriesTest(queryText, expDocNrs);
   }
 
+  @Test
   public void testQueries05() throws Exception {
     String queryText = "+w3 -xx";
     int[] expDocNrs = {1,0};
     queriesTest(queryText, expDocNrs);
   }
 
+  @Test
   public void testQueries06() throws Exception {
     String queryText = "+w3 -xx -w5";
     int[] expDocNrs = {1};
     queriesTest(queryText, expDocNrs);
   }
 
+  @Test
   public void testQueries07() throws Exception {
     String queryText = "-w3 -xx -w5";
     int[] expDocNrs = {};
     queriesTest(queryText, expDocNrs);
   }
 
+  @Test
   public void testQueries08() throws Exception {
     String queryText = "+w3 xx -w5";
     int[] expDocNrs = {2,3,1};
     queriesTest(queryText, expDocNrs);
   }
 
+  @Test
   public void testQueries09() throws Exception {
     String queryText = "+w3 +xx +w2 zz";
     int[] expDocNrs = {2, 3};
     queriesTest(queryText, expDocNrs);
   }
 
-    public void testQueries10() throws Exception {
+  @Test
+  public void testQueries10() throws Exception {
     String queryText = "+w3 +xx +w2 zz";
     int[] expDocNrs = {2, 3};
-    searcher.setSimilarity(new DefaultSimilarity(){
-      @Override
-      public float coord(int overlap, int maxOverlap) {
-        return overlap / ((float)maxOverlap - 1);
-      }
-    });
-    queriesTest(queryText, expDocNrs);
+    Similarity oldSimilarity = searcher.getSimilarity();
+    try {
+      searcher.setSimilarity(new DefaultSimilarity(){
+        @Override
+        public float coord(int overlap, int maxOverlap) {
+          return overlap / ((float)maxOverlap - 1);
+        }
+      });
+      queriesTest(queryText, expDocNrs);
+    } finally {
+      searcher.setSimilarity(oldSimilarity);
+    }
   }
 
+  @Test
   public void testRandomQueries() throws Exception {
     String[] vals = {"w1","w2","w3","w4","w5","xx","yy","zzz"};
 

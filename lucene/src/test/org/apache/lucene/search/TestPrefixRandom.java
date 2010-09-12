@@ -27,6 +27,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
@@ -45,13 +46,18 @@ public class TestPrefixRandom extends LuceneTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random, dir, new MockAnalyzer(MockTokenizer.KEYWORD, false));
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir, 
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.KEYWORD, false))
+        .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     
     Document doc = new Document();
     Field field = newField("field", "", Field.Store.NO, Field.Index.NOT_ANALYZED);
     doc.add(field);
 
-    int num = 2000 * RANDOM_MULTIPLIER;
+    // we generate aweful prefixes: good for testing.
+    // but for preflex codec, the test can be very slow, so use less iterations.
+    String codec = CodecProvider.getDefaultCodec();
+    int num = codec.equals("PreFlex") ? 200 * RANDOM_MULTIPLIER : 2000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
       field.setValue(_TestUtil.randomUnicodeString(random, 10));
       writer.addDocument(doc);

@@ -62,13 +62,14 @@ public final class TermInfosReader {
   }
 
   private static class CloneableTerm extends DoubleBarrelLRUCache.CloneableKey {
-    private Term term;
+    Term term;
     public CloneableTerm(Term t) {
       this.term = t;
     }
 
     public boolean equals(Object other) {
-      return this.term.equals(other);
+      CloneableTerm t = (CloneableTerm) other;
+      return this.term.equals(t.term);
     }
 
     public int hashCode() {

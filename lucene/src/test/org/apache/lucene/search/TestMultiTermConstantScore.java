@@ -25,9 +25,16 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
+
 import java.io.IOException;
 import java.text.Collator;
 import java.util.Locale;
+import java.util.Random;
 
 import junit.framework.Assert;
 
@@ -36,36 +43,37 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   /** threshold for comparing floats */
   public static final float SCORE_COMP_THRESH = 1e-6f;
 
-  Directory small;
-  IndexReader reader;
+  static Directory small;
+  static IndexReader reader;
 
   void assertEquals(String m, float e, float a) {
-    assertEquals(m, e, a, SCORE_COMP_THRESH);
+    Assert.assertEquals(m, e, a, SCORE_COMP_THRESH);
   }
 
   static public void assertEquals(String m, int e, int a) {
     Assert.assertEquals(m, e, a);
   }
 
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
     String[] data = new String[] { "A 1 2 3 4 5 6", "Z       4 5 6", null,
         "B   2   4 5 6", "Y     3   5 6", null, "C     3     6",
         "X       4 5 6" };
 
-    small = newDirectory();
+    Random random = newStaticRandom(TestMultiTermConstantScore.class);
+    
+    small = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, small, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
 
     for (int i = 0; i < data.length; i++) {
       Document doc = new Document();
-      doc.add(newField("id", String.valueOf(i), Field.Store.YES,
+      doc.add(newField(random, "id", String.valueOf(i), Field.Store.YES,
           Field.Index.NOT_ANALYZED));// Field.Keyword("id",String.valueOf(i)));
       doc
-          .add(newField("all", "all", Field.Store.YES,
+          .add(newField(random, "all", "all", Field.Store.YES,
               Field.Index.NOT_ANALYZED));// Field.Keyword("all","all"));
       if (null != data[i]) {
-        doc.add(newField("data", data[i], Field.Store.YES,
+        doc.add(newField(random, "data", data[i], Field.Store.YES,
             Field.Index.ANALYZED));// Field.Text("data",data[i]));
       }
       writer.addDocument(doc);
@@ -75,11 +83,12 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     writer.close();
   }
 
-  @Override
-  protected void tearDown() throws Exception {
+  @AfterClass
+  public static void afterClass() throws Exception {
     reader.close();
     small.close();
-    super.tearDown();
+    reader = null;
+    small = null;
   }
 
   /** macro for readability */
@@ -117,6 +126,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     return query;
   }
 
+  @Test
   public void testBasics() throws IOException {
     QueryUtils.check(csrq("data", "1", "6", T, T));
     QueryUtils.check(csrq("data", "A", "Z", T, T));
@@ -132,6 +142,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
         "data", "pr*t?j")));
   }
 
+  @Test
   public void testBasicsRngCollating() throws IOException {
     Collator c = Collator.getInstance(Locale.ENGLISH);
     QueryUtils.check(csrq("data", "1", "6", T, T, c));
@@ -140,6 +151,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
         "Z", T, T, c));
   }
 
+  @Test
   public void testEqualScores() throws IOException {
     // NOTE: uses index build in *this* setUp
 
@@ -168,6 +180,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
 
   }
 
+  @Test
   public void testBoost() throws IOException {
     // NOTE: uses index build in *this* setUp
 
@@ -210,8 +223,8 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     bq.add(q2, BooleanClause.Occur.SHOULD);
 
     ScoreDoc[] hits = search.search(bq, null, 1000).scoreDocs;
-    assertEquals(1, hits[0].doc);
-    assertEquals(0, hits[1].doc);
+    Assert.assertEquals(1, hits[0].doc);
+    Assert.assertEquals(0, hits[1].doc);
     assertTrue(hits[0].score > hits[1].score);
 
     q1 = csrq("data", "A", "A", T, T, MultiTermQuery.CONSTANT_SCORE_BOOLEAN_QUERY_REWRITE); // matches document #0
@@ -222,8 +235,8 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     bq.add(q2, BooleanClause.Occur.SHOULD);
 
     hits = search.search(bq, null, 1000).scoreDocs;
-    assertEquals(1, hits[0].doc);
-    assertEquals(0, hits[1].doc);
+    Assert.assertEquals(1, hits[0].doc);
+    Assert.assertEquals(0, hits[1].doc);
     assertTrue(hits[0].score > hits[1].score);
 
     q1 = csrq("data", "A", "A", T, T); // matches document #0
@@ -234,11 +247,12 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     bq.add(q2, BooleanClause.Occur.SHOULD);
 
     hits = search.search(bq, null, 1000).scoreDocs;
-    assertEquals(0, hits[0].doc);
-    assertEquals(1, hits[1].doc);
+    Assert.assertEquals(0, hits[0].doc);
+    Assert.assertEquals(1, hits[1].doc);
     assertTrue(hits[0].score > hits[1].score);
   }
 
+  @Test
   public void testBooleanOrderUnAffected() throws IOException {
     // NOTE: uses index build in *this* setUp
 
@@ -269,6 +283,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
 
   }
 
+  @Test
   public void testRangeQueryId() throws IOException {
     // NOTE: uses index build in *super* setUp
 
@@ -396,6 +411,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     assertEquals("med,med,T,T", 1, result.length);
   }
 
+  @Test
   public void testRangeQueryIdCollating() throws IOException {
     // NOTE: uses index build in *super* setUp
 
@@ -479,6 +495,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     assertEquals("med,med,T,T,c", 1, result.length);
   }
 
+  @Test
   public void testRangeQueryRand() throws IOException {
     // NOTE: uses index build in *super* setUp
 
@@ -541,6 +558,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
 
   }
 
+  @Test
   public void testRangeQueryRandCollating() throws IOException {
     // NOTE: uses index build in *super* setUp
 
@@ -605,6 +623,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     assertEquals("max,nul,T,T,c", 1, result.length);
   }
 
+  @Test
   public void testFarsi() throws Exception {
 
     /* build an index */
@@ -645,6 +664,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
     farsiIndex.close();
   }
 
+  @Test
   public void testDanish() throws Exception {
 
     /* build an index */

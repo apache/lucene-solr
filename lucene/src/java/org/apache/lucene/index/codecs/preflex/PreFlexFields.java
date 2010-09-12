@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.TreeMap;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Comparator;
 
 import org.apache.lucene.index.DocsEnum;
@@ -55,6 +57,7 @@ public class PreFlexFields extends FieldsProducer {
   final private FieldInfos fieldInfos;
   private final SegmentInfo si;
   final TreeMap<String,FieldInfo> fields = new TreeMap<String,FieldInfo>();
+  final Map<String,Terms> preTerms = new HashMap<String,Terms>();
   private final Directory dir;
   private final int readBufferSize;
   private Directory cfsReader;
@@ -91,6 +94,7 @@ public class PreFlexFields extends FieldsProducer {
       final FieldInfo fieldInfo = fieldInfos.fieldInfo(i);
       if (fieldInfo.isIndexed) {
         fields.put(fieldInfo.name, fieldInfo);
+        preTerms.put(fieldInfo.name, new PreTerms(fieldInfo));
         if (!fieldInfo.omitTermFreqAndPositions) {
           anyProx = true;
         }
@@ -139,12 +143,7 @@ public class PreFlexFields extends FieldsProducer {
 
   @Override
   public Terms terms(String field) {
-    FieldInfo fi = fieldInfos.fieldInfo(field);
-    if (fi != null) {
-      return new PreTerms(fi);
-    } else {
-      return null;
-    }
+    return preTerms.get(field);
   }
 
   synchronized private TermInfosReader getTermsDict() {

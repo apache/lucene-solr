@@ -20,7 +20,8 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Random;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -28,8 +29,12 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.store.Directory;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import static org.junit.Assert.*;
 
-public class BaseTestRangeFilter extends LuceneTestCase {
+public class BaseTestRangeFilter extends LuceneTestCaseJ4 {
   
   public static final boolean F = false;
   public static final boolean T = true;
@@ -40,7 +45,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
    * one which can't have negative random integers, for testing collated ranges,
    * and the other which can have negative random integers, for all other tests.
    */
-  class TestIndex {
+  static class TestIndex {
     int maxR;
     int minR;
     boolean allowNegativeRandomInts;
@@ -51,19 +56,19 @@ public class BaseTestRangeFilter extends LuceneTestCase {
       this.maxR = maxR;
       this.allowNegativeRandomInts = allowNegativeRandomInts;
       try {
-        index = newDirectory();
+        index = newDirectory(random);
       } catch (IOException e) { throw new RuntimeException(e); }
     }
   }
   
-  IndexReader signedIndexReader;
-  IndexReader unsignedIndexReader;
+  static IndexReader signedIndexReader;
+  static IndexReader unsignedIndexReader;
   
-  TestIndex signedIndexDir;
-  TestIndex unsignedIndexDir;
+  static TestIndex signedIndexDir;
+  static TestIndex unsignedIndexDir;
   
-  int minId = 0;
-  int maxId = 10000;
+  static int minId = 0;
+  static int maxId = 10000;
   
   static final int intLength = Integer.toString(Integer.MAX_VALUE).length();
   
@@ -86,33 +91,44 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     
     return b.toString();
   }
-   
-  protected void setUp() throws Exception {
-    super.setUp();
+  
+  @BeforeClass
+  public static void beforeClassBaseTestRangeFilter() throws Exception {
+    Random random = newStaticRandom(BaseTestRangeFilter.class);
     signedIndexDir = new TestIndex(random, Integer.MAX_VALUE, Integer.MIN_VALUE, true);
     unsignedIndexDir = new TestIndex(random, Integer.MAX_VALUE, 0, false);
     signedIndexReader = build(random, signedIndexDir);
     unsignedIndexReader = build(random, unsignedIndexDir);
   }
   
-  protected void tearDown() throws Exception {
+  @AfterClass
+  public static void afterClassBaseTestRangeFilter() throws Exception {
     signedIndexReader.close();
     unsignedIndexReader.close();
     signedIndexDir.index.close();
     unsignedIndexDir.index.close();
-    super.tearDown();
+    signedIndexReader = null;
+    unsignedIndexReader = null;
+    signedIndexDir = null;
+    unsignedIndexDir = null;
   }
   
-  private IndexReader build(Random random, TestIndex index) throws IOException {
+  private static IndexReader build(Random random, TestIndex index) throws IOException {
     /* build an index */
     RandomIndexWriter writer = new RandomIndexWriter(random, index.index, 
-        newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
-    .setOpenMode(OpenMode.CREATE));
+        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
+    .setOpenMode(OpenMode.CREATE).setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
+    
+    Document doc = new Document();
+    Field idField = newField(random, "id", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
+    Field randField = newField(random, "rand", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
+    Field bodyField = newField(random, "body", "", Field.Store.YES, Field.Index.NOT_ANALYZED);
+    doc.add(idField);
+    doc.add(randField);
+    doc.add(bodyField);
     
     for (int d = minId; d <= maxId; d++) {
-      Document doc = new Document();
-      doc.add(newField("id", pad(d), Field.Store.YES,
-          Field.Index.NOT_ANALYZED));
+      idField.setValue(pad(d));
       int r = index.allowNegativeRandomInts ? random.nextInt() : random
           .nextInt(Integer.MAX_VALUE);
       if (index.maxR < r) {
@@ -121,10 +137,8 @@ public class BaseTestRangeFilter extends LuceneTestCase {
       if (r < index.minR) {
         index.minR = r;
       }
-      doc.add(newField("rand", pad(r), Field.Store.YES,
-          Field.Index.NOT_ANALYZED));
-      doc.add(newField("body", "body", Field.Store.YES,
-          Field.Index.NOT_ANALYZED));
+      randField.setValue(pad(r));
+      bodyField.setValue("body");
       writer.addDocument(doc);
     }
     
@@ -133,6 +147,7 @@ public class BaseTestRangeFilter extends LuceneTestCase {
     return ir;
   }
   
+  @Test
   public void testPad() {
     
     int[] tests = new int[] {-9999999, -99560, -100, -3, -1, 0, 3, 9, 10, 1000,

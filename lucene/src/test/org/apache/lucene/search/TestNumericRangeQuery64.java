@@ -30,6 +30,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util._TestUtil;
 
 import org.junit.Test;
 import org.junit.AfterClass;
@@ -53,7 +54,9 @@ public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
   public static void beforeClass() throws Exception {
     random = newStaticRandom(TestNumericRangeQuery64.class);
     directory = newDirectory(random);
-    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory,
+        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
+        .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     
     NumericField
       field8 = new NumericField("field8", 8, Field.Store.YES, true),
