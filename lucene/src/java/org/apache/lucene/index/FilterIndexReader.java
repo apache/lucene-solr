@@ -155,7 +155,7 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
-      public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
+    public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
       return in.docs(skipDocs, reuse);
     }
 
