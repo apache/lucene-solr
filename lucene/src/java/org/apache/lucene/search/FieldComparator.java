@@ -847,10 +847,10 @@ public abstract class FieldComparator {
       @Override
       public void copy(int slot, int doc) {
         final int ord = readerOrds[doc]&0xFF;
+        ords[slot] = ord;
         if (ord == 0) {
           values[slot] = null;
         } else {
-          ords[slot] = ord;
           assert ord > 0;
           if (values[slot] == null) {
             values[slot] = new BytesRef();
@@ -908,10 +908,10 @@ public abstract class FieldComparator {
       @Override
       public void copy(int slot, int doc) {
         final int ord = readerOrds[doc]&0xFFFF;
+        ords[slot] = ord;
         if (ord == 0) {
           values[slot] = null;
         } else {
-          ords[slot] = ord;
           assert ord > 0;
           if (values[slot] == null) {
             values[slot] = new BytesRef();
@@ -969,10 +969,10 @@ public abstract class FieldComparator {
       @Override
       public void copy(int slot, int doc) {
         final int ord = readerOrds[doc];
+        ords[slot] = ord;
         if (ord == 0) {
           values[slot] = null;
         } else {
-          ords[slot] = ord;
           assert ord > 0;
           if (values[slot] == null) {
             values[slot] = new BytesRef();
@@ -1031,10 +1031,10 @@ public abstract class FieldComparator {
       @Override
       public void copy(int slot, int doc) {
         final int ord = (int) readerOrds.get(doc);
+        ords[slot] = ord;
         if (ord == 0) {
           values[slot] = null;
         } else {
-          ords[slot] = ord;
           assert ord > 0;
           if (values[slot] == null) {
             values[slot] = new BytesRef();
