@@ -18,6 +18,7 @@ package org.apache.lucene.search.spans;
  */
 
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
@@ -35,7 +36,13 @@ import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util._TestUtil;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * Tests basic search capabilities.
@@ -49,21 +56,22 @@ import org.apache.lucene.util.LuceneTestCase;
  * testing of the indexing and search code.
  *
  */
-public class TestBasics extends LuceneTestCase {
-  private IndexSearcher searcher;
-  private IndexReader reader;
-  private Directory directory;
+public class TestBasics extends LuceneTestCaseJ4 {
+  private static IndexSearcher searcher;
+  private static IndexReader reader;
+  private static Directory directory;
 
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-    directory = newDirectory();
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    Random random = newStaticRandom(TestBasics.class);
+    directory = newDirectory(random);
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, 
-        new SimpleAnalyzer(TEST_VERSION_CURRENT));
+        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT))
+        .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     //writer.infoStream = System.out;
     for (int i = 0; i < 1000; i++) {
       Document doc = new Document();
-      doc.add(newField("field", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
+      doc.add(newField(random, "field", English.intToEnglish(i), Field.Store.YES, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -71,15 +79,17 @@ public class TestBasics extends LuceneTestCase {
     writer.close();
   }
 
-  @Override
-  protected void tearDown() throws Exception {
+  @AfterClass
+  public static void afterClass() throws Exception {
     searcher.close();
     reader.close();
     directory.close();
-    super.tearDown();
+    searcher = null;
+    reader = null;
+    directory = null;
   }
 
-
+  @Test
   public void testTerm() throws Exception {
     Query query = new TermQuery(new Term("field", "seventy"));
     checkHits(query, new int[]
@@ -92,11 +102,13 @@ public class TestBasics extends LuceneTestCase {
        876, 877, 878, 879, 970, 971, 972, 973, 974, 975, 976, 977, 978, 979});
     }
 
+  @Test
   public void testTerm2() throws Exception {
     Query query = new TermQuery(new Term("field", "seventish"));
     checkHits(query, new int[] {});
   }
 
+  @Test
   public void testPhrase() throws Exception {
     PhraseQuery query = new PhraseQuery();
     query.add(new Term("field", "seventy"));
@@ -105,6 +117,7 @@ public class TestBasics extends LuceneTestCase {
       {77, 177, 277, 377, 477, 577, 677, 777, 877, 977});
   }
 
+  @Test
   public void testPhrase2() throws Exception {
     PhraseQuery query = new PhraseQuery();
     query.add(new Term("field", "seventish"));
@@ -112,6 +125,7 @@ public class TestBasics extends LuceneTestCase {
     checkHits(query, new int[] {});
   }
 
+  @Test
   public void testBoolean() throws Exception {
     BooleanQuery query = new BooleanQuery();
     query.add(new TermQuery(new Term("field", "seventy")), BooleanClause.Occur.MUST);
@@ -121,6 +135,7 @@ public class TestBasics extends LuceneTestCase {
        776, 778, 779, 877, 977});
   }
 
+  @Test
   public void testBoolean2() throws Exception {
     BooleanQuery query = new BooleanQuery();
     query.add(new TermQuery(new Term("field", "sevento")), BooleanClause.Occur.MUST);
@@ -128,6 +143,7 @@ public class TestBasics extends LuceneTestCase {
     checkHits(query, new int[] {});
   }
 
+  @Test
   public void testSpanNearExact() throws Exception {
     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "seventy"));
     SpanTermQuery term2 = new SpanTermQuery(new Term("field", "seven"));
@@ -144,6 +160,7 @@ public class TestBasics extends LuceneTestCase {
     QueryUtils.checkUnequal(term1,term2);
   }
 
+  @Test
   public void testSpanNearUnordered() throws Exception {
     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "nine"));
     SpanTermQuery term2 = new SpanTermQuery(new Term("field", "six"));
@@ -155,6 +172,7 @@ public class TestBasics extends LuceneTestCase {
        906, 926, 936, 946, 956, 966, 976, 986, 996});
   }
 
+  @Test
   public void testSpanNearOrdered() throws Exception {
     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "nine"));
     SpanTermQuery term2 = new SpanTermQuery(new Term("field", "six"));
@@ -164,6 +182,7 @@ public class TestBasics extends LuceneTestCase {
       {906, 926, 936, 946, 956, 966, 976, 986, 996});
   }
 
+  @Test
   public void testSpanNot() throws Exception {
     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "eight"));
     SpanTermQuery term2 = new SpanTermQuery(new Term("field", "one"));
@@ -179,6 +198,7 @@ public class TestBasics extends LuceneTestCase {
     assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
   }
   
+  @Test
   public void testSpanWithMultipleNotSingle() throws Exception {
     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "eight"));
     SpanTermQuery term2 = new SpanTermQuery(new Term("field", "one"));
@@ -197,6 +217,7 @@ public class TestBasics extends LuceneTestCase {
     assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
   }
 
+  @Test
   public void testSpanWithMultipleNotMany() throws Exception {
     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "eight"));
     SpanTermQuery term2 = new SpanTermQuery(new Term("field", "one"));
@@ -216,7 +237,8 @@ public class TestBasics extends LuceneTestCase {
     assertTrue(searcher.explain(query, 801).getValue() > 0.0f);
     assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
   }
-    
+
+  @Test
   public void testNpeInSpanNearWithSpanNot() throws Exception {
     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "eight"));
     SpanTermQuery term2 = new SpanTermQuery(new Term("field", "one"));
@@ -236,7 +258,7 @@ public class TestBasics extends LuceneTestCase {
     assertTrue(searcher.explain(query, 891).getValue() > 0.0f);
   }
 
-  
+  @Test
   public void testNpeInSpanNearInSpanFirstInSpanNot() throws Exception {
     int n = 5;
     SpanTermQuery hun = new SpanTermQuery(new Term("field", "hundred"));
@@ -253,6 +275,7 @@ public class TestBasics extends LuceneTestCase {
     
   }
   
+  @Test
   public void testSpanFirst() throws Exception {
     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "five"));
     SpanFirstQuery query = new SpanFirstQuery(term1, 1);
@@ -272,6 +295,7 @@ public class TestBasics extends LuceneTestCase {
 
   }
 
+  @Test
   public void testSpanOr() throws Exception {
     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "thirty"));
     SpanTermQuery term2 = new SpanTermQuery(new Term("field", "three"));
@@ -292,6 +316,7 @@ public class TestBasics extends LuceneTestCase {
     assertTrue(searcher.explain(query, 947).getValue() > 0.0f);
   }
 
+  @Test
   public void testSpanExactNested() throws Exception {
     SpanTermQuery term1 = new SpanTermQuery(new Term("field", "three"));
     SpanTermQuery term2 = new SpanTermQuery(new Term("field", "hundred"));
@@ -310,6 +335,7 @@ public class TestBasics extends LuceneTestCase {
     assertTrue(searcher.explain(query, 333).getValue() > 0.0f);
   }
 
+  @Test
   public void testSpanNearOr() throws Exception {
 
     SpanTermQuery t1 = new SpanTermQuery(new Term("field","six"));
@@ -331,6 +357,7 @@ public class TestBasics extends LuceneTestCase {
        756, 757, 766, 767, 776, 777, 786, 787, 796, 797});
   }
 
+  @Test
   public void testSpanComplex1() throws Exception {
       
     SpanTermQuery t1 = new SpanTermQuery(new Term("field","six"));
@@ -357,6 +384,7 @@ public class TestBasics extends LuceneTestCase {
        756, 757, 766, 767, 776, 777, 786, 787, 796, 797});
   }
   
+  @Test
   public void testSpansSkipTo() throws Exception {
 	  SpanTermQuery t1 = new SpanTermQuery(new Term("field", "seventy"));
 	  SpanTermQuery t2 = new SpanTermQuery(new Term("field", "seventy"));

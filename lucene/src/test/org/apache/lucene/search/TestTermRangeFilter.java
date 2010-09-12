@@ -27,6 +27,9 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * A basic 'positive' Unit test class for the TermRangeFilter class.
@@ -39,6 +42,7 @@ import org.apache.lucene.store.Directory;
  */
 public class TestTermRangeFilter extends BaseTestRangeFilter {
   
+  @Test
   public void testRangeFilterId() throws IOException {
     
     IndexReader reader = signedIndexReader;
@@ -141,6 +145,7 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
     
   }
   
+  @Test
   public void testRangeFilterIdCollating() throws IOException {
     
     IndexReader reader = signedIndexReader;
@@ -242,6 +247,7 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
     assertEquals("med,med,T,T", 1, numHits);
   }
   
+  @Test
   public void testRangeFilterRand() throws IOException {
     
     IndexReader reader = signedIndexReader;
@@ -318,6 +324,7 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
     
   }
   
+  @Test
   public void testRangeFilterRandCollating() throws IOException {
     
     // using the unsigned index because collation seems to ignore hyphens
@@ -395,6 +402,7 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
     assertEquals("max,nul,T,T", 1, numHits);
   }
   
+  @Test
   public void testFarsi() throws Exception {
     
     /* build an index */
@@ -435,6 +443,7 @@ public class TestTermRangeFilter extends BaseTestRangeFilter {
     farsiIndex.close();
   }
   
+  @Test
   public void testDanish() throws Exception {
     
     /* build an index */

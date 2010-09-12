@@ -27,6 +27,9 @@ import org.apache.lucene.analysis.SimpleAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 /**
  * A basic 'positive' Unit test class for the FieldCacheRangeFilter class.
@@ -39,6 +42,7 @@ import org.apache.lucene.store.Directory;
  */
 public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
 
+  @Test
   public void testRangeFilterId() throws IOException {
 
     IndexReader reader = signedIndexReader;
@@ -125,6 +129,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
         
   }
 
+  @Test
   public void testFieldCacheRangeFilterRand() throws IOException {
 
     IndexReader reader = signedIndexReader;
@@ -188,6 +193,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
   
   // byte-ranges cannot be tested, because all ranges are too big for bytes, need an extra range for that
 
+  @Test
   public void testFieldCacheRangeFilterShorts() throws IOException {
 
     IndexReader reader = signedIndexReader;
@@ -279,6 +285,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     assertEquals("inverse range", 0, result.length);
   }
   
+  @Test
   public void testFieldCacheRangeFilterInts() throws IOException {
 
     IndexReader reader = signedIndexReader;
@@ -371,6 +378,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     assertEquals("inverse range", 0, result.length);
   }
   
+  @Test
   public void testFieldCacheRangeFilterLongs() throws IOException {
 
     IndexReader reader = signedIndexReader;
@@ -465,6 +473,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
   
   // float and double tests are a bit minimalistic, but its complicated, because missing precision
   
+  @Test
   public void testFieldCacheRangeFilterFloats() throws IOException {
 
     IndexReader reader = signedIndexReader;
@@ -493,6 +502,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
     assertEquals("infinity special case", 0, result.length);
   }
   
+  @Test
   public void testFieldCacheRangeFilterDoubles() throws IOException {
 
     IndexReader reader = signedIndexReader;
@@ -522,6 +532,7 @@ public class TestFieldCacheRangeFilter extends BaseTestRangeFilter {
   }
   
   // test using a sparse index (with deleted docs). The DocIdSet should be not cacheable, as it uses TermDocs if the range contains 0
+  @Test
   public void testSparseIndex() throws IOException {
     Directory dir = newDirectory();
     IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new SimpleAnalyzer(TEST_VERSION_CURRENT)));
