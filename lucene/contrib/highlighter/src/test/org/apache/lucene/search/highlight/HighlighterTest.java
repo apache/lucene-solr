@@ -106,15 +106,6 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       "This text has a typo in referring to Keneddy",
       "wordx wordy wordz wordx wordy wordx worda wordb wordy wordc", "y z x y z a b", "lets is a the lets is a the lets is a the lets" };
 
-  /**
-   * Constructor for HighlightExtractorTest.
-   * 
-   * @param arg0
-   */
-  public HighlighterTest(String arg0) {
-    super(arg0);
-  }
-
   public void testQueryScorerHits() throws Exception {
     Analyzer analyzer = new SimpleAnalyzer(TEST_VERSION_CURRENT);
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, FIELD_NAME, analyzer);
@@ -1723,7 +1714,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
     ramDir = newDirectory();
@@ -1759,7 +1750,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     if (searcher != null) searcher.close();
     reader.close();
     dir.close();

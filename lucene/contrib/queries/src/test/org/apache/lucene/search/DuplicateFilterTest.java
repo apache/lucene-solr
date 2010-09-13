@@ -38,7 +38,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
 	private IndexSearcher searcher;
 
 	@Override
-	protected void setUp() throws Exception {
+	public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
 		RandomIndexWriter writer = new RandomIndexWriter(random, directory, new StandardAnalyzer(TEST_VERSION_CURRENT));
@@ -64,7 +64,7 @@ public class DuplicateFilterTest extends LuceneTestCase {
 	}
 	
 	@Override
-	protected void tearDown() throws Exception {
+	public void tearDown() throws Exception {
 		reader.close();
 		searcher.close();
 		directory.close();

@@ -31,10 +31,10 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-public class TestNoDeletionPolicy extends LuceneTestCaseJ4 {
+public class TestNoDeletionPolicy extends LuceneTestCase {
 
   @Test
   public void testNoDeletionPolicy() throws Exception {

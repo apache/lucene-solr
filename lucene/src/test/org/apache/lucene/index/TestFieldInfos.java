@@ -30,12 +30,8 @@ public class TestFieldInfos extends LuceneTestCase {
 
   private Document testDoc = new Document();
 
-  public TestFieldInfos(String s) {
-    super(s);
-  }
-
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     DocHelper.setupDoc(testDoc);
   }

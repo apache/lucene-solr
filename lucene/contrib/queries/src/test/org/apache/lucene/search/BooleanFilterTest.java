@@ -33,7 +33,7 @@ public class BooleanFilterTest extends LuceneTestCase {
 	private IndexReader reader;
 
 	@Override
-	protected void setUp() throws Exception {
+	public void setUp() throws Exception {
 	  super.setUp();
     directory = newDirectory();
 		RandomIndexWriter writer = new RandomIndexWriter(random, directory, new WhitespaceAnalyzer(TEST_VERSION_CURRENT));
@@ -49,7 +49,7 @@ public class BooleanFilterTest extends LuceneTestCase {
 	}
 	
 	@Override
-	protected void tearDown() throws Exception {
+	public void tearDown() throws Exception {
 	  reader.close();
 	  directory.close();
 	  super.tearDown();

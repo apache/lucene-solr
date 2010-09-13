@@ -46,7 +46,7 @@ import org.apache.lucene.store.FSDirectory;
 public class TestQualityRun extends BenchmarkTestCase {
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     copyToWorkDir("reuters.578.lines.txt.bz2");
   }

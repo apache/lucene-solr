@@ -77,10 +77,6 @@ import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
 
 public class TestIndexWriter extends LuceneTestCase {
-    
-    public TestIndexWriter(String name) {
-      super(name);
-    }
 
     public void testDocCount() throws IOException {
         Directory dir = newDirectory();

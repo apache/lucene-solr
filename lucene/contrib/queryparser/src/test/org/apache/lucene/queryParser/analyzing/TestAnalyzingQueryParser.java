@@ -45,7 +45,7 @@ public class TestAnalyzingQueryParser extends LuceneTestCase {
   private String[] fuzzyExpected;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     wildcardInput = new String[] { "übersetzung über*ung",
         "Mötley Cr\u00fce Mötl?* Crü?", "Renée Zellweger Ren?? Zellw?ger" };

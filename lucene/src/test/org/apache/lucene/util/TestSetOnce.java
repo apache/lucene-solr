@@ -24,7 +24,7 @@ import java.util.Random;
 import org.apache.lucene.util.SetOnce.AlreadySetException;
 import org.junit.Test;
 
-public class TestSetOnce extends LuceneTestCaseJ4 {
+public class TestSetOnce extends LuceneTestCase {
 
   private static final class SetOnceThread extends Thread {
     SetOnce<Integer> set;

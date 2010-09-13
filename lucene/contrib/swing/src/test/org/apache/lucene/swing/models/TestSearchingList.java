@@ -27,7 +27,7 @@ public class TestSearchingList extends LuceneTestCase {
     private ListSearcher listSearcher;
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
         baseListModel = new BaseListModel(DataStore.getRestaurants());
         listSearcher = new ListSearcher(baseListModel);

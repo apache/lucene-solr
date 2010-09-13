@@ -46,7 +46,7 @@ public class TestCustomSearcherSort extends LuceneTestCase implements Serializab
    * Create index and query for test cases.
    */
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     index = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, index);
@@ -74,7 +74,7 @@ public class TestCustomSearcherSort extends LuceneTestCase implements Serializab
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     reader.close();
     index.close();
     super.tearDown();

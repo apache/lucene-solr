@@ -22,11 +22,6 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 
 public class TestQueryTermVector extends LuceneTestCase {
 
-
-  public TestQueryTermVector(String s) {
-    super(s);
-  }
-
   public void testConstructor() {
     String [] queryTerm = {"foo", "bar", "foo", "again", "foo", "bar", "go", "go", "go"};
     //Items are sorted lexicographically

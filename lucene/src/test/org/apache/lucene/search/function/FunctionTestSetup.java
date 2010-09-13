@@ -25,7 +25,7 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.junit.After;
 import org.junit.Before;
@@ -35,7 +35,7 @@ import org.junit.Ignore;
  * Setup for function tests
  */
 @Ignore
-public class FunctionTestSetup extends LuceneTestCaseJ4 {
+public class FunctionTestSetup extends LuceneTestCase {
 
   /**
    * Actual score computation order is slightly different than assumptios

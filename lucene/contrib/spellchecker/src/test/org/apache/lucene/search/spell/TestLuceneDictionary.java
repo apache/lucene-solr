@@ -42,7 +42,7 @@ public class TestLuceneDictionary extends LuceneTestCase {
   private Iterator<String> it;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     store = newDirectory();
     IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
@@ -74,7 +74,7 @@ public class TestLuceneDictionary extends LuceneTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     if (indexReader != null)
       indexReader.close();
     store.close();

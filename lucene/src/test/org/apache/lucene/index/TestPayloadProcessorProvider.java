@@ -35,10 +35,10 @@ import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.PayloadProcessorProvider.DirPayloadProcessor;
 import org.apache.lucene.index.PayloadProcessorProvider.PayloadProcessor;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-public class TestPayloadProcessorProvider extends LuceneTestCaseJ4 {
+public class TestPayloadProcessorProvider extends LuceneTestCase {
 
   private static final class PerDirPayloadProcessor extends PayloadProcessorProvider {
 

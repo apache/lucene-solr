@@ -21,10 +21,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestTermAttributeImpl extends LuceneTestCase {
 
-  public TestTermAttributeImpl(String name) {
-    super(name);
-  }
-
   public void testResize() {
     TermAttributeImpl t = new TermAttributeImpl();
     char[] content = "hello".toCharArray();

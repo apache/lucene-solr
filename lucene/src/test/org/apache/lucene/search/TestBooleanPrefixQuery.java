@@ -18,9 +18,6 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import junit.framework.Test;
-import junit.framework.TestSuite;
-import junit.textui.TestRunner;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
@@ -36,18 +33,6 @@ import org.apache.lucene.store.Directory;
  **/
 
 public class TestBooleanPrefixQuery extends LuceneTestCase {
-
-  public static void main(String[] args) {
-    TestRunner.run(suite());
-  }
-
-  public static Test suite() {
-    return new TestSuite(TestBooleanPrefixQuery.class);
-  }
-
-  public TestBooleanPrefixQuery(String name) {
-    super(name);
-  }
 
   private int getCount(IndexReader r, Query q) throws Exception {
     if (q instanceof BooleanQuery) {

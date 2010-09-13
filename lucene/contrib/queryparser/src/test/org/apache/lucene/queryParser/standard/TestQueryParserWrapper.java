@@ -72,7 +72,8 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LocalizedTestCase;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.runner.RunWith;
 
 /**
  * This test case is a copy of the core Lucene query parser test, it was adapted
@@ -83,15 +84,8 @@ import org.apache.lucene.util.LocalizedTestCase;
  * @deprecated this entire test case tests QueryParserWrapper which is
  *             deprecated. When QPW is gone, so will the test.
  */
-public class TestQueryParserWrapper extends LocalizedTestCase {
-
-  public TestQueryParserWrapper(String name) {
-    super(name, new HashSet<String>(Arrays.asList(new String[]{
-      "testLegacyDateRange", "testDateRange",
-      "testCJK", "testNumber", "testFarsiRangeCollating",
-      "testLocalDateFormat"
-    })));
-  }
+@RunWith(LuceneTestCase.LocalizedTestCaseRunner.class)
+public class TestQueryParserWrapper extends LuceneTestCase {
   
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 
@@ -210,7 +204,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
   private int originalMaxClauses;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     originalMaxClauses = BooleanQuery.getMaxClauseCount();
   }
@@ -1185,7 +1179,7 @@ public class TestQueryParserWrapper extends LocalizedTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     BooleanQuery.setMaxClauseCount(originalMaxClauses);
     super.tearDown();
   }

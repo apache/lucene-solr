@@ -36,12 +36,8 @@ public class TestTermVectors extends LuceneTestCase {
   private IndexReader reader;
   private Directory directory;
 
-  public TestTermVectors(String s) {
-    super(s);
-  }
-
   @Override
-  protected void setUp() throws Exception {                  
+  public void setUp() throws Exception {                  
     super.setUp();
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory, new SimpleAnalyzer(TEST_VERSION_CURRENT));
@@ -74,7 +70,7 @@ public class TestTermVectors extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher.close();
     reader.close();
     directory.close();

@@ -37,25 +37,18 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
-import org.apache.lucene.util.LocalizedTestCase;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.text.DateFormat;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-import java.util.HashSet;
 import java.util.Collections;
 
-public class TestPrecedenceQueryParser extends LocalizedTestCase {
-  
-  public TestPrecedenceQueryParser(String name) {
-    super(name, new HashSet<String>(Arrays.asList(new String[]{
-      "testDateRange", "testNumber"
-    })));
-  }
-
+@RunWith(LuceneTestCase.LocalizedTestCaseRunner.class)
+public class TestPrecedenceQueryParser extends LuceneTestCase {
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 
   public static final class QPTestFilter extends TokenFilter {
@@ -124,7 +117,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   private int originalMaxClauses;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     originalMaxClauses = BooleanQuery.getMaxClauseCount();
   }
@@ -665,7 +658,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
 
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     BooleanQuery.setMaxClauseCount(originalMaxClauses);
     super.tearDown();
   }

@@ -20,18 +20,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class ArraysUtilsTest extends LuceneTestCase {
 
-
-  public ArraysUtilsTest(String s) {
-    super(s);
-  }
-
-  protected void setUp() {
-  }
-
-  protected void tearDown() {
-
-  }
-
   public void test() {
     String left = "this is equal";
     String right = left;

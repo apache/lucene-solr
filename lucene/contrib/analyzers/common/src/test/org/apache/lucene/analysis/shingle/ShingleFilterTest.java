@@ -788,7 +788,7 @@ public class ShingleFilterTest extends BaseTokenStreamTestCase {
   };
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     testTokenWithHoles = new Token[] {
       createToken("please", 0, 6),

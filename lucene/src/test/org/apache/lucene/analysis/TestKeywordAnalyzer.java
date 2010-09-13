@@ -39,7 +39,7 @@ public class TestKeywordAnalyzer extends BaseTokenStreamTestCase {
   private IndexSearcher searcher;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     directory = new RAMDirectory();
     IndexWriter writer = new IndexWriter(directory, new IndexWriterConfig(

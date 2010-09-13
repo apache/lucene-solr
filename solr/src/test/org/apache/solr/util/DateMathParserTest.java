@@ -17,8 +17,9 @@
 
 package org.apache.solr.util;
 
-import org.apache.lucene.util.LocalizedTestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.util.DateMathParser;
+import org.junit.runner.RunWith;
 
 import java.text.SimpleDateFormat;
 import java.text.DateFormat;
@@ -34,7 +35,8 @@ import java.text.ParseException;
 /**
  * Tests that the functions in DateMathParser
  */
-public class DateMathParserTest extends LocalizedTestCase {
+@RunWith(LuceneTestCase.LocalizedTestCaseRunner.class)
+public class DateMathParserTest extends LuceneTestCase {
 
   public static TimeZone UTC = TimeZone.getTimeZone("UTC");
   

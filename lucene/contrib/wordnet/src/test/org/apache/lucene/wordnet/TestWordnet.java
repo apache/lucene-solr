@@ -38,7 +38,7 @@ public class TestWordnet extends LuceneTestCase {
     new File(TEMP_DIR,"testLuceneWordnet").getAbsolutePath();
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     // create a temporary synonym index
     File testFile = getDataFile("testSynonyms.txt");
@@ -70,7 +70,7 @@ public class TestWordnet extends LuceneTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher.close();
     rmDir(storePathName); // delete our temporary synonym index
     super.tearDown();

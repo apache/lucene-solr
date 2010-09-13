@@ -35,7 +35,7 @@ public class TestWindowsMMap extends LuceneTestCase {
   private final static String alphabet = "abcdefghijklmnopqrstuvwzyz";
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
   }
   

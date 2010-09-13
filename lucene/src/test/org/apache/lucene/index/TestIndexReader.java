@@ -31,9 +31,6 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.SortedSet;
 
-import junit.framework.TestSuite;
-import junit.textui.TestRunner;
-
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
@@ -60,18 +57,6 @@ import org.apache.lucene.util._TestUtil;
 
 public class TestIndexReader extends LuceneTestCase
 {
-    /** Main for running test case by itself. */
-    public static void main(String args[]) {
-        TestRunner.run (new TestSuite(TestIndexReader.class));
-//        TestRunner.run (new TestIndexReader("testBasicDelete"));
-//        TestRunner.run (new TestIndexReader("testDeleteReaderWriterConflict"));
-//        TestRunner.run (new TestIndexReader("testDeleteReaderReaderConflict"));
-//        TestRunner.run (new TestIndexReader("testFilesOpenClose"));
-    }
-    
-    public TestIndexReader(String name) {
-        super(name);
-    }
     
     public void testCommitUserData() throws Exception {
       Directory d = newDirectory();

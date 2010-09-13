@@ -31,7 +31,7 @@ import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -42,7 +42,7 @@ import static org.junit.Assert.*;
 /** Test BooleanQuery2 against BooleanQuery by overriding the standard query parser.
  * This also tests the scoring order of BooleanQuery.
  */
-public class TestBoolean2 extends LuceneTestCaseJ4 {
+public class TestBoolean2 extends LuceneTestCase {
   private static IndexSearcher searcher;
   private static IndexSearcher bigSearcher;
   private static IndexReader reader;

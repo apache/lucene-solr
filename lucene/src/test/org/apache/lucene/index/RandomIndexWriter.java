@@ -30,7 +30,7 @@ import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 
@@ -67,25 +67,25 @@ public class RandomIndexWriter implements Closeable {
 
   /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT and Whitespace+LowercasingAnalyzer */
   public RandomIndexWriter(Random r, Directory dir) throws IOException {
-    this(r, dir, LuceneTestCaseJ4.newIndexWriterConfig(r, LuceneTestCaseJ4.TEST_VERSION_CURRENT, 
+    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, LuceneTestCase.TEST_VERSION_CURRENT, 
         new ReusableAnalyzerBase() {
           @Override
           protected TokenStreamComponents createComponents(String fieldName,
               Reader reader) {
-            Tokenizer tokenizer = new WhitespaceTokenizer(LuceneTestCaseJ4.TEST_VERSION_CURRENT, reader);
+            Tokenizer tokenizer = new WhitespaceTokenizer(LuceneTestCase.TEST_VERSION_CURRENT, reader);
             return new TokenStreamComponents(tokenizer, 
-                new LowerCaseFilter(LuceneTestCaseJ4.TEST_VERSION_CURRENT, tokenizer));
+                new LowerCaseFilter(LuceneTestCase.TEST_VERSION_CURRENT, tokenizer));
           } }));
   }
   
   /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT */
   public RandomIndexWriter(Random r, Directory dir, Analyzer a) throws IOException {
-    this(r, dir, LuceneTestCaseJ4.newIndexWriterConfig(r, LuceneTestCaseJ4.TEST_VERSION_CURRENT, a));
+    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, LuceneTestCase.TEST_VERSION_CURRENT, a));
   }
   
   /** create a RandomIndexWriter with a random config */
   public RandomIndexWriter(Random r, Directory dir, Version v, Analyzer a) throws IOException {
-    this(r, dir, LuceneTestCaseJ4.newIndexWriterConfig(r, v, a));
+    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, v, a));
   }
   
   /** create a RandomIndexWriter with the provided config */
@@ -93,7 +93,7 @@ public class RandomIndexWriter implements Closeable {
     this.r = r;
     w = new MockIndexWriter(r, dir, c);
     flushAt = _TestUtil.nextInt(r, 10, 1000);
-    if (LuceneTestCaseJ4.VERBOSE) {
+    if (LuceneTestCase.VERBOSE) {
       System.out.println("RIW config=" + w.getConfig());
     }
   } 
@@ -132,12 +132,12 @@ public class RandomIndexWriter implements Closeable {
 
   public IndexReader getReader() throws IOException {
     if (r.nextBoolean()) {
-      if (LuceneTestCaseJ4.VERBOSE) {
+      if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.getReader: use NRT reader");
       }
       return w.getReader();
     } else {
-      if (LuceneTestCaseJ4.VERBOSE) {
+      if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.getReader: open new reader");
       }
       w.commit();

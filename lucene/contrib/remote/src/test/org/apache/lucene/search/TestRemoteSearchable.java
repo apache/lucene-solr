@@ -33,7 +33,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.HashSet;
 
-public class TestRemoteSearchable extends RemoteTestCaseJ4 {
+public class TestRemoteSearchable extends RemoteTestCase {
   private static Directory indexStore;
   private static Searchable local;
   

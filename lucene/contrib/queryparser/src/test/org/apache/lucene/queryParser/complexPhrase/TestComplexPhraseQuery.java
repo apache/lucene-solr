@@ -110,7 +110,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
   }
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     rd = newDirectory();
     IndexWriter w = new IndexWriter(rd, newIndexWriterConfig(TEST_VERSION_CURRENT, analyzer));
@@ -127,7 +127,7 @@ public class TestComplexPhraseQuery extends LuceneTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher.close();
     rd.close();
     super.tearDown();

@@ -48,7 +48,7 @@ public class DbStoreTest extends LuceneTestCase {
     protected Database index, blocks;
     
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
       super.setUp();
         if (!dbHome.exists())
             dbHome.mkdir();
@@ -100,7 +100,7 @@ public class DbStoreTest extends LuceneTestCase {
     }
 
     @Override
-    protected void tearDown() throws Exception {
+    public void tearDown() throws Exception {
         if (index != null)
             index.close();
         if (blocks != null)

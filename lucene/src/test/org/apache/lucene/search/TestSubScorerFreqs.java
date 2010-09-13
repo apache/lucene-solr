@@ -33,7 +33,7 @@ import org.junit.BeforeClass;
 
 import static org.junit.Assert.*;
 
-public class TestSubScorerFreqs extends LuceneTestCaseJ4 {
+public class TestSubScorerFreqs extends LuceneTestCase {
 
   private static Directory dir;
   private static IndexSearcher s;

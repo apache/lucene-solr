@@ -102,7 +102,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
   }
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     
     // populate an index with 30 documents, this should be enough for the test.
@@ -117,7 +117,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     reader.close();
     dir.close();
     dir = null;

@@ -29,11 +29,6 @@ import java.io.StringReader;
 
 public class TypeAsPayloadTokenFilterTest extends BaseTokenStreamTestCase {
 
-
-  public TypeAsPayloadTokenFilterTest(String s) {
-    super(s);
-  }
-
   public void test() throws IOException {
     String test = "The quick red fox jumped over the lazy brown dogs";
 

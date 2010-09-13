@@ -38,10 +38,6 @@ import org.apache.lucene.util.OpenBitSet;
  */
 public class TestFilteredSearch extends LuceneTestCase {
 
-  public TestFilteredSearch(String name) {
-    super(name);
-  }
-
   private static final String FIELD = "category";
   
   public void testFilteredSearch() throws CorruptIndexException, LockObtainFailedException, IOException {

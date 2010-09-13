@@ -24,10 +24,10 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-public class TestIndexCommit extends LuceneTestCaseJ4 {
+public class TestIndexCommit extends LuceneTestCase {
 
   @Test
   public void testEqualsHashCode() throws Exception {

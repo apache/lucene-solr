@@ -27,7 +27,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util._TestUtil;
 
@@ -36,7 +36,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import static org.junit.Assert.*;
 
-public class TestNumericRangeQuery64 extends LuceneTestCaseJ4 {
+public class TestNumericRangeQuery64 extends LuceneTestCase {
   // distance of entries
   private static final long distance = 66666L;
   // shift the starting of the values to the left, to also have negative values:

@@ -34,9 +34,6 @@ import java.util.LinkedList;
  * This class tests PhrasePrefixQuery class.
  */
 public class TestPhrasePrefixQuery extends LuceneTestCase {
-  public TestPhrasePrefixQuery(String name) {
-    super(name);
-  }
   
   /**
      *

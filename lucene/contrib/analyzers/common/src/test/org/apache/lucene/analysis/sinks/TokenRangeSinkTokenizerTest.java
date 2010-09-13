@@ -26,11 +26,6 @@ import org.apache.lucene.analysis.TeeSinkTokenFilter.SinkTokenStream;
 
 public class TokenRangeSinkTokenizerTest extends BaseTokenStreamTestCase {
 
-
-  public TokenRangeSinkTokenizerTest(String s) {
-    super(s);
-  }
-
   public void test() throws IOException {
     TokenRangeSinkFilter sinkFilter = new TokenRangeSinkFilter(2, 4);
     String test = "The quick red fox jumped over the lazy brown dogs";

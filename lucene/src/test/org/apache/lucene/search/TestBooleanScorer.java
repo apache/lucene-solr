@@ -31,11 +31,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestBooleanScorer extends LuceneTestCase
 {
-
-  public TestBooleanScorer(String name) {
-    super(name);
-  }
-
   private static final String FIELD = "category";
   
   public void testMethod() throws Exception {

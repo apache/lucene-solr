@@ -62,20 +62,14 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LocalizedTestCase;
+import org.apache.lucene.util.LuceneTestCase;
+import org.junit.runner.RunWith;
 
 /**
  * Tests QueryParser.
  */
-public class TestQueryParser extends LocalizedTestCase {
-
-  public TestQueryParser(String name) {
-    super(name, new HashSet<String>(Arrays.asList(
-      "testLegacyDateRange", "testDateRange",
-      "testCJK", "testNumber", "testFarsiRangeCollating",
-      "testLocalDateFormat"
-    )));
-  }
+@RunWith(LuceneTestCase.LocalizedTestCaseRunner.class)
+public class TestQueryParser extends LuceneTestCase {
   
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 
@@ -149,7 +143,7 @@ public class TestQueryParser extends LocalizedTestCase {
   private int originalMaxClauses;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     originalMaxClauses = BooleanQuery.getMaxClauseCount();
   }
@@ -1087,7 +1081,7 @@ public class TestQueryParser extends LocalizedTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     BooleanQuery.setMaxClauseCount(originalMaxClauses);
     super.tearDown();
   }

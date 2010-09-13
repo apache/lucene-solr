@@ -26,13 +26,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestTopScoreDocCollector extends LuceneTestCase {
 
-  public TestTopScoreDocCollector() {
-  }
-
-  public TestTopScoreDocCollector(String name) {
-    super(name);
-  }
-
   public void testOutOfOrderCollection() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);

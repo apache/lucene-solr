@@ -36,7 +36,7 @@ public class TestIndexWriterLockRelease extends LuceneTestCase {
     private java.io.File __test_dir;
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
         if (this.__test_dir == null) {
             this.__test_dir = new File(TEMP_DIR, "testIndexWriter");
@@ -53,7 +53,7 @@ public class TestIndexWriterLockRelease extends LuceneTestCase {
     }
 
     @Override
-    protected void tearDown() throws Exception {
+    public void tearDown() throws Exception {
         if (this.__test_dir != null) {
             File[] files = this.__test_dir.listFiles();
 

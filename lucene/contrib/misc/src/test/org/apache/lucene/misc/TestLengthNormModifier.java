@@ -39,11 +39,6 @@ import org.apache.lucene.util.LuceneTestCase;
  * Tests changing the norms after changing the simularity
  */
 public class TestLengthNormModifier extends LuceneTestCase {
-  
-    public TestLengthNormModifier(String name) {
-	super(name);
-    }
-    
     public static int NUM_DOCS = 5;
 
     public Directory store;
@@ -57,7 +52,7 @@ public class TestLengthNormModifier extends LuceneTestCase {
 	};
     
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
       super.setUp();
       store = newDirectory();
 	IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(
@@ -82,7 +77,7 @@ public class TestLengthNormModifier extends LuceneTestCase {
     }
     
     @Override
-    protected void tearDown() throws Exception {
+    public void tearDown() throws Exception {
       store.close();
       super.tearDown();
     }

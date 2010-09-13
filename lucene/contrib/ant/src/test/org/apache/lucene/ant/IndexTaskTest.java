@@ -50,7 +50,7 @@ public class IndexTaskTest extends LuceneTestCase {
      *@exception  IOException  Description of Exception
      */
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
       super.setUp();
       // slightly hackish way to get the src/test dir
       String docsDir = getDataFile("test.txt").getParent();
@@ -87,7 +87,7 @@ public class IndexTaskTest extends LuceneTestCase {
      * TODO: remove indexDir?
      */
     @Override
-    protected void tearDown() throws Exception {
+    public void tearDown() throws Exception {
         searcher.close();
         dir.close();
         super.tearDown();

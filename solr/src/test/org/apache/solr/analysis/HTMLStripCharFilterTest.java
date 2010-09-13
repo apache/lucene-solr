@@ -31,18 +31,13 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class HTMLStripCharFilterTest extends LuceneTestCase {
 
-
-  public HTMLStripCharFilterTest(String s) {
-    super(s);
-  }
-
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     super.tearDown();
   }
   //this is some text  here is a  link  and another  link . This is an entity: & plus a <.  Here is an &

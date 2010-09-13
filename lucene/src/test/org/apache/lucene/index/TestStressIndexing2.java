@@ -35,7 +35,6 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCaseJ4;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util._TestUtil;
 
@@ -235,7 +234,7 @@ public class TestStressIndexing2 extends LuceneTestCase {
 
   
   public static void indexSerial(Random random, Map<String,Document> docs, Directory dir) throws IOException {
-    IndexWriter w = new IndexWriter(dir, LuceneTestCaseJ4.newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
+    IndexWriter w = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(random, TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)));
 
     // index all docs in a single thread
     Iterator<Document> iter = docs.values().iterator();

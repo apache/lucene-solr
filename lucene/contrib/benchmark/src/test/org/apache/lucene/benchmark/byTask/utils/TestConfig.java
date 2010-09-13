@@ -17,14 +17,12 @@ package org.apache.lucene.benchmark.byTask.utils;
  * limitations under the License.
  */
 
-import static org.junit.Assert.*;
-
 import java.util.Properties;
 
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-public class TestConfig extends LuceneTestCaseJ4 {
+public class TestConfig extends LuceneTestCase {
 
   @Test
   public void testAbsolutePathNamesWindows() throws Exception {

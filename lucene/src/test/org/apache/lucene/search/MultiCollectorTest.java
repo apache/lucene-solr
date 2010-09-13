@@ -24,10 +24,10 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.Scorer;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-public class MultiCollectorTest extends LuceneTestCaseJ4 {
+public class MultiCollectorTest extends LuceneTestCase {
 
   private static class DummyCollector extends Collector {
 

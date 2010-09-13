@@ -24,10 +24,10 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-public class TestNoMergeScheduler extends LuceneTestCaseJ4 {
+public class TestNoMergeScheduler extends LuceneTestCase {
 
   @Test
   public void testNoMergeScheduler() throws Exception {

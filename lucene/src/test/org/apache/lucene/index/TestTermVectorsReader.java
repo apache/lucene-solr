@@ -47,10 +47,6 @@ public class TestTermVectorsReader extends LuceneTestCase {
   private FieldInfos fieldInfos = new FieldInfos();
   private static int TERM_FREQ = 3;
 
-  public TestTermVectorsReader(String s) {
-    super(s);
-  }
-  
   private class TestToken implements Comparable<TestToken> {
     String text;
     int pos;
@@ -64,7 +60,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   TestToken[] tokens = new TestToken[testTerms.length * TERM_FREQ];
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     /*
     for (int i = 0; i < testFields.length; i++) {
@@ -124,7 +120,7 @@ public class TestTermVectorsReader extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     dir.close();
     super.tearDown();
   }

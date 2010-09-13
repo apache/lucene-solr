@@ -24,10 +24,6 @@ import org.apache.lucene.util.AttributeSource.AttributeFactory;
 
 @Deprecated
 public class TestSimpleAttributeImpls extends LuceneTestCase {
-
-  public TestSimpleAttributeImpls(String name) {
-    super(name);
-  }
   
   public void testFlagsAttribute() throws Exception {
     FlagsAttributeImpl att = new FlagsAttributeImpl();

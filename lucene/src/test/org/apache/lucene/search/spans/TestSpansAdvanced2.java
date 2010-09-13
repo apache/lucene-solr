@@ -39,7 +39,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
    * Initializes the tests by adding documents to the index.
    */
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     
     // create test index
@@ -58,7 +58,7 @@ public class TestSpansAdvanced2 extends TestSpansAdvanced {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher2.close();
     reader2.close();
     super.tearDown();

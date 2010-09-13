@@ -18,7 +18,7 @@ package org.apache.lucene.util;
  */
 
 import static org.junit.Assert.*;
-import static org.apache.lucene.util.LuceneTestCaseJ4.TEST_VERSION_CURRENT;
+import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
 
 import java.io.IOException;
 import java.io.Reader;

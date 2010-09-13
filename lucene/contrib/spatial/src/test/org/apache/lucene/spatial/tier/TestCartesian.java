@@ -66,7 +66,7 @@ public class TestCartesian extends LuceneTestCase {
 
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
 
@@ -79,7 +79,7 @@ public class TestCartesian extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     directory.close();
     super.tearDown();
   }
