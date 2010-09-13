@@ -29,12 +29,16 @@ import java.io.IOException;
 
 
 public class MissingStringLastComparatorSource extends FieldComparatorSource {
-  public static final BytesRef bigString = new BytesRef("\uffff\uffff\uffff\uffff\uffff\uffff\uffff\uffffBIG_STRING");
+  /** A binary term consisting of a number of 0xff bytes, likely to be bigger than other terms
+   *  one would normally encounter, and definitely bigger than any UTF-8 terms */
+  public static final BytesRef bigTerm = new BytesRef(
+      new byte[] {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1}
+  );
 
   private final BytesRef missingValueProxy;
 
   public MissingStringLastComparatorSource() {
-    this(bigString);
+    this(bigTerm);
   }
 
   /** Creates a {@link FieldComparatorSource} that sorts null last in a normal ascending sort.
