@@ -141,6 +141,7 @@ public class ResponseBuilder {
   SolrDocumentList _responseDocs;
   StatsInfo _statsInfo;
   TermsComponent.TermsHelper _termsHelper;
+  SimpleOrderedMap<List<NamedList<Object>>> _pivots;
 
   /**
    * Utility function to add debugging info.  This will make sure a valid

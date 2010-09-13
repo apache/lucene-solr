@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.response.LukeResponse;
+import org.apache.solr.client.solrj.response.PivotField;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.UpdateResponse;
@@ -565,6 +566,105 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     // System.out.println( rsp.getResults().getNumFound() + " :::: 444: "+ff.getValues() );
   }
 
+  @Test
+  public void testPivotFacet() throws Exception
+  {    
+    SolrServer server = getSolrServer();
+    
+    // Empty the database...
+    server.deleteByQuery( "*:*" );// delete everything!
+    server.commit();
+    assertNumFound( "*:*", 0 ); // make sure it got in
+    
+    int id = 1;
+    ArrayList<SolrInputDocument> docs = new ArrayList<SolrInputDocument>();
+    docs.add( makeTestDoc( "id", id++, "features", "AAA",  "cat", "a", "inStock", true  ) );
+    docs.add( makeTestDoc( "id", id++, "features", "AAA",  "cat", "a", "inStock", false ) );
+    docs.add( makeTestDoc( "id", id++, "features", "AAA",  "cat", "a", "inStock", true ) );
+    docs.add( makeTestDoc( "id", id++, "features", "AAA",  "cat", "b", "inStock", false ) );
+    docs.add( makeTestDoc( "id", id++, "features", "AAA",  "cat", "b", "inStock", true ) );
+    docs.add( makeTestDoc( "id", id++, "features", "BBB",  "cat", "a", "inStock", false ) );
+    docs.add( makeTestDoc( "id", id++, "features", "BBB",  "cat", "a", "inStock", true ) );
+    docs.add( makeTestDoc( "id", id++, "features", "BBB",  "cat", "b", "inStock", false ) );
+    docs.add( makeTestDoc( "id", id++, "features", "BBB",  "cat", "b", "inStock", true ) );
+    docs.add( makeTestDoc( "id", id++, "features", "BBB",  "cat", "b", "inStock", false ) );
+    docs.add( makeTestDoc( "id", id++, "features", "BBB",  "cat", "b", "inStock", true ) );
+    docs.add( makeTestDoc( "id", id++ ) ); // something not matching
+    server.add( docs );
+    server.commit();
+    
+    SolrQuery query = new SolrQuery( "*:*" );
+    query.addFacetPivotField("features,cat", "cat,features", "features,cat,inStock" );
+    query.setFacetMinCount( 0 );
+    query.setRows( 0 );
+    
+    QueryResponse rsp = server.query( query );
+    assertEquals( docs.size(), rsp.getResults().getNumFound() );
+    
+    NamedList<List<PivotField>> pivots = rsp.getFacetPivot();
+    assertEquals( 3, pivots.size() );
+
+//    for(Map.Entry<String, List<PivotField>> entry : pivots ) {
+//      System.out.println( "PIVOT: "+entry.getKey() );
+//      for( PivotField p : entry.getValue() ) {
+//        p.write(System.out, 0 );
+//      }
+//      System.out.println();
+//    }
+    
+    // Now make sure they have reasonable stuff
+    List<PivotField> pivot = pivots.getVal( 0 );
+    assertEquals( "features,cat", pivots.getName( 0 ) );
+    assertEquals( 2, pivot.size() );
+    
+    PivotField ff = pivot.get( 0 );
+    assertEquals( "features", ff.getField() );
+    assertEquals( "bbb", ff.getValue() );
+    assertEquals( 6, ff.getCount() );
+    List<PivotField> counts = ff.getPivot();
+    assertEquals( 2, counts.size() );
+    assertEquals( "cat", counts.get(0).getField() );
+    assertEquals( "b", counts.get(0).getValue() );
+    assertEquals(   4, counts.get(0).getCount() );
+    assertEquals( "a", counts.get(1).getValue() );
+    assertEquals(   2, counts.get(1).getCount() );
+    
+    ff = pivot.get( 1 );
+    assertEquals( "features", ff.getField() );
+    assertEquals( "aaa", ff.getValue() );
+    assertEquals( 5, ff.getCount() );
+    counts = ff.getPivot();
+    assertEquals( 2, counts.size() );
+    assertEquals( "a", counts.get(0).getValue() );
+    assertEquals(   3, counts.get(0).getCount() );
+    assertEquals( "b", counts.get(1).getValue() );
+    assertEquals(   2, counts.get(1).getCount() );
+    
+    // 3 deep 
+    pivot = pivots.getVal( 2 );
+    assertEquals( "features,cat,inStock", pivots.getName( 2 ) );
+    assertEquals( 2, pivot.size() );
+    PivotField p = pivot.get( 1 ).getPivot().get(0);
+    assertEquals( "cat", p.getField() );
+    assertEquals( "a", p.getValue() );
+    counts = p.getPivot();
+  //  p.write(System.out, 5 );
+    assertEquals( 1, counts.size() );
+    assertEquals( "inStock", counts.get(0).getField() );
+    assertEquals( "true",    counts.get(0).getValue() );
+    assertEquals(  2,       counts.get(0).getCount() );
+  }
+  
+  public static SolrInputDocument makeTestDoc( Object ... kvp )
+  {
+    SolrInputDocument doc = new SolrInputDocument();
+    for( int i=0; i<kvp.length; ) {
+      String k = (String)kvp[i++];
+      Object v = kvp[i++];
+      doc.addField( k, v );
+    }
+    return doc;
+  }
 
   @Test
   public void testStreamingRequest() throws Exception {

@@ -265,6 +265,8 @@ New Features
 
 * SOLR-2112: Solrj API now supports streaming results. (ryan)
 
+* SOLR-792: Adding PivotFacetComponent for Hierarchical faceting
+  (erik, Jeremy Hinegardner, Thibaut Lassalle, ryan)
 
 Optimizations
 ----------------------

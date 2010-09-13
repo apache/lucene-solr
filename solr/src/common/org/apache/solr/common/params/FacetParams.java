@@ -93,6 +93,22 @@ public interface FacetParams {
    */
   public static final String FACET_MISSING = FACET + ".missing";
 
+
+  /**
+   * Comma separated list of fields to pivot
+   * 
+   * example: author,type  (for types by author / types within author)
+   */
+  public static final String FACET_PIVOT = FACET + ".pivot";
+
+  /**
+   * Minimum number of docs that need to match to be included in the sublist
+   * 
+   * default value is 1
+   */
+  public static final String FACET_PIVOT_MINCOUNT = FACET_PIVOT + ".mincount";
+
+  
   /**
    * String option: "count" causes facets to be sorted
    * by the count, "index" results in index order.
