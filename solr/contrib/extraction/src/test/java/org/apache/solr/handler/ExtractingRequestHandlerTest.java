@@ -146,6 +146,7 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
     try {
+      ignoreException("unknown field 'a'");
       loadLocal("simple.html",
       "literal.id","simple2",
       "lowernames", "true",
@@ -157,6 +158,8 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
     } catch (SolrException e) {
       //do nothing
+    } finally {
+      resetExceptionIgnores();
     }
     
 
