@@ -66,6 +66,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -785,8 +786,9 @@ public abstract class LuceneTestCase extends Assert {
       for (Method m : getTestClass().getJavaClass().getMethods())
         if (m.getName().startsWith("test") &&
             m.getAnnotation(Test.class) == null &&
+            (m.getModifiers() & (Modifier.STATIC|Modifier.ABSTRACT)) == 0 &&
             m.getParameterTypes().length == 0 &&
-            m.getGenericReturnType() == Void.TYPE)
+            m.getReturnType() == Void.TYPE)
           testMethods.add(new FrameworkMethod(m));
       return testMethods;
     }
