@@ -17,15 +17,24 @@
 
 package org.apache.solr.client.solrj.embedded;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Set;
 
+import org.apache.lucene.document.Document;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.StreamingResponseCallback;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
@@ -34,6 +43,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.search.DocIterator;
+import org.apache.solr.search.DocList;
 import org.apache.solr.servlet.SolrRequestParsers;
 
 /**
@@ -139,6 +150,75 @@ public class EmbeddedSolrServer extends SolrServer
       core.execute( handler, req, rsp );
       if( rsp.getException() != null ) {
         throw new SolrServerException( rsp.getException() );
+      }
+      
+      // Check if this should stream results
+      if( request.getStreamingResponseCallback() != null ) {
+        try {
+          final StreamingResponseCallback callback = request.getStreamingResponseCallback();
+          BinaryResponseWriter.Resolver resolver = 
+            new BinaryResponseWriter.Resolver( req, rsp.getReturnFields()) 
+          {
+            @Override
+            public void writeDocList(DocList ids, JavaBinCodec codec) throws IOException {
+              // write an empty list...
+              SolrDocumentList docs = new SolrDocumentList();
+              docs.setNumFound( ids.matches() );
+              docs.setStart( ids.offset() );
+              docs.setMaxScore( ids.maxScore() );
+              codec.writeSolrDocumentList( docs );
+              
+              int sz = ids.size();
+              
+              if(searcher == null) searcher = solrQueryRequest.getSearcher();
+              if(schema == null) schema = solrQueryRequest.getSchema(); 
+              DocIterator iterator = ids.iterator();
+              for (int i = 0; i < sz; i++) {
+                int id = iterator.nextDoc();
+                Document doc = searcher.doc(id, returnFields);
+                SolrDocument sdoc = getDoc(doc);
+                if (includeScore && ids.hasScores()) {
+                  sdoc.addField("score", iterator.score());
+                }
+                callback.streamSolrDocument( sdoc );
+              }
+            }
+          };
+          
+
+          ByteArrayOutputStream out = new ByteArrayOutputStream();
+          new JavaBinCodec(resolver) {
+
+            @Override
+            public void writeSolrDocument(SolrDocument doc, Set<String> fields) throws IOException {
+              callback.streamSolrDocument( doc );
+              //super.writeSolrDocument( doc, fields );
+            }
+
+            @Override
+            public void writeSolrDocumentList(SolrDocumentList docs) throws IOException {
+              if( docs.size() > 0 ) {
+                SolrDocumentList tmp = new SolrDocumentList();
+                tmp.setMaxScore( docs.getMaxScore() );
+                tmp.setNumFound( docs.getNumFound() );
+                tmp.setStart( docs.getStart() );
+                docs = tmp;
+              }
+              callback.streamDocListInfo( docs.getNumFound(), docs.getStart(), docs.getMaxScore() );
+              super.writeSolrDocumentList(docs);
+            }
+            
+          }.marshal(rsp.getValues(), out);
+
+          InputStream in = new ByteArrayInputStream(out.toByteArray());
+          return (NamedList<Object>) new JavaBinCodec(resolver).unmarshal(in);
+        }
+        catch (Exception ex) {
+          throw new RuntimeException(ex);
+        }
+        finally {
+          req.close();
+        }
       }
       
       // Now write it out

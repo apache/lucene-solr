@@ -24,21 +24,26 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.Assert;
 
+import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
 import org.apache.solr.client.solrj.request.DirectXmlRequest;
 import org.apache.solr.client.solrj.request.LukeRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.SolrPing;
 import org.apache.solr.client.solrj.response.FieldStatsInfo;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
+import org.apache.solr.client.solrj.request.AbstractUpdateRequest.ACTION;
 import org.apache.solr.client.solrj.response.LukeResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.FacetField;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.util.ClientUtils;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.common.util.NamedList;
@@ -562,4 +567,47 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     
     // System.out.println( rsp.getResults().getNumFound() + " :::: 444: "+ff.getValues() );
   }
+ 
+
+  @Test
+  public void testStreamingRequest() throws Exception {
+    // Empty the database...
+    server.deleteByQuery( "*:*" );// delete everything!
+    server.commit();
+    assertNumFound( "*:*", 0 ); // make sure it got in
+   
+   // Add some docs to the index
+   UpdateRequest req = new UpdateRequest();
+   for( int i=0; i<10; i++ ) {
+     SolrInputDocument doc = new SolrInputDocument();
+     doc.addField("id", "" + i );
+     doc.addField("cat", "foocat");
+     req.add( doc );
+   }
+   req.setAction(ACTION.COMMIT, true, true );
+   req.process( server );
+   
+   // Make sure it ran OK
+   SolrQuery query = new SolrQuery("*:*");
+   QueryResponse response = server.query(query);
+   assertEquals(0, response.getStatus());
+   assertEquals(10, response.getResults().getNumFound());
+   
+   // Now make sure each document gets output
+     final AtomicInteger cnt = new AtomicInteger( 0 );
+     server.queryAndStreamResponse(query, new StreamingResponseCallback() {
+  
+       @Override
+       public void streamDocListInfo(long numFound, long start, Float maxScore) {
+         assertEquals(10, numFound );
+       }
+  
+       @Override
+       public void streamSolrDocument(SolrDocument doc) {
+         cnt.incrementAndGet();
+       }
+       
+     });
+     assertEquals(10, cnt.get() );
+   }
 }

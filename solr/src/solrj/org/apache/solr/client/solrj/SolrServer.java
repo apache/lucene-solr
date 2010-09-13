@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.SolrRequest.METHOD;
 import org.apache.solr.client.solrj.beans.DocumentObjectBinder;
+import org.apache.solr.client.solrj.impl.StreamingBinaryResponseParser;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -121,7 +122,27 @@ public abstract class SolrServer implements Serializable
   public QueryResponse query(SolrParams params, METHOD method) throws SolrServerException {
     return new QueryRequest( params, method ).process( this );
   }
-  
+
+  /**
+   * Query solr, and stream the results.  Unlike the standard query, this will 
+   * send events for each Document rather then add them to the QueryResponse.
+   * 
+   * Although this function returns a 'QueryResponse' it should be used with care
+   * since it excludes anything that was passed to callback.  Also note that
+   * future version may pass even more info to the callback and may not return 
+   * the results in the QueryResponse.
+   *
+   * @since solr 4.0
+   */
+  public QueryResponse queryAndStreamResponse( SolrParams params, StreamingResponseCallback callback ) throws SolrServerException, IOException
+  {
+    ResponseParser parser = new StreamingBinaryResponseParser( callback );
+    QueryRequest req = new QueryRequest( params );
+    req.setStreamingResponseCallback( callback );
+    req.setResponseParser( parser );    
+    return req.process(this);
+  }
+
   /**
    * SolrServer implementations need to implement how a request is actually processed
    */ 

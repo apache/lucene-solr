@@ -151,7 +151,7 @@ public class JavaBinCodec {
 
   protected static final Object END_OBJ = new Object();
 
-  byte tagByte;
+  protected byte tagByte;
 
   public Object readVal(FastInputStream dis) throws IOException {
     tagByte = dis.readByte();

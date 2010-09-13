@@ -263,6 +263,8 @@ New Features
   no documents if the query parser returns null.  This also prevents an
   exception from being thrown by the default parser if "q" is missing. (yonik)
 
+* SOLR-2112: Solrj API now supports streaming results. (ryan)
+
 
 Optimizations
 ----------------------
