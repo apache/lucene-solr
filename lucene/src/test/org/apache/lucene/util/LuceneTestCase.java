@@ -783,13 +783,19 @@ public abstract class LuceneTestCase extends Assert {
       if (testMethods != null)
         return testMethods;
       testMethods = getTestClass().getAnnotatedMethods(Test.class);
-      for (Method m : getTestClass().getJavaClass().getMethods())
+      for (Method m : getTestClass().getJavaClass().getMethods()) {
+        final int mod = m.getModifiers();
         if (m.getName().startsWith("test") &&
             m.getAnnotation(Test.class) == null &&
-            (m.getModifiers() & (Modifier.STATIC|Modifier.ABSTRACT)) == 0 &&
+            !Modifier.isAbstract(mod) &&
             m.getParameterTypes().length == 0 &&
             m.getReturnType() == Void.TYPE)
+        {
+          if (Modifier.isStatic(mod))
+            throw new RuntimeException("Test methods must not be static.");
           testMethods.add(new FrameworkMethod(m));
+        }
+      }
       return testMethods;
     }
 
