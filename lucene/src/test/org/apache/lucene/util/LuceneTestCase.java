@@ -58,6 +58,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -676,12 +677,19 @@ public abstract class LuceneTestCase extends Assert {
       if (testMethods != null)
         return testMethods;
       testMethods = getTestClass().getAnnotatedMethods(Test.class);
-      for (Method m : getTestClass().getJavaClass().getMethods())
+      for (Method m : getTestClass().getJavaClass().getMethods()) {
+        final int mod = m.getModifiers();
         if (m.getName().startsWith("test") &&
             m.getAnnotation(Test.class) == null &&
+            !Modifier.isAbstract(mod) &&
             m.getParameterTypes().length == 0 &&
-            m.getGenericReturnType() == Void.TYPE)
+            m.getReturnType() == Void.TYPE)
+        {
+          if (Modifier.isStatic(mod))
+            throw new RuntimeException("Test methods must not be static.");
           testMethods.add(new FrameworkMethod(m));
+        }
+      }
       return testMethods;
     }
 
