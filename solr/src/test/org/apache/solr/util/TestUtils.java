@@ -31,7 +31,7 @@ import org.junit.Assert;
  * @version $Id$
  */
 public class TestUtils extends LuceneTestCase {
-  public static void testSplitEscaping() {
+  public void testSplitEscaping() {
     List<String> arr = StrUtils.splitSmart("\\r\\n:\\t\\f\\b", ":", true);
     assertEquals(2,arr.size());
     assertEquals("\r\n",arr.get(0));
