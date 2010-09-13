@@ -42,7 +42,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
   private IndexSearcher searcher;
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, directory);
@@ -57,7 +57,7 @@ public class TestMoreLikeThis extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     reader.close();
     searcher.close();
     directory.close();

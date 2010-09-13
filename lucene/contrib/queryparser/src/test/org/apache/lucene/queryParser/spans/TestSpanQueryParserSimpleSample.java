@@ -95,14 +95,6 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestSpanQueryParserSimpleSample extends LuceneTestCase {
 
-  public TestSpanQueryParserSimpleSample() {
-    // empty constructor
-  }
-
-  public TestSpanQueryParserSimpleSample(String testName) {
-    super(testName);
-  }
-
   public void testBasicDemo() throws Exception {
     SyntaxParser queryParser = new StandardSyntaxParser();
 

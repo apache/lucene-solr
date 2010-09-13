@@ -36,7 +36,7 @@ public class _TestUtil {
   /** Returns temp dir, containing String arg in its name;
    *  does not create the directory. */
   public static File getTempDir(String desc) {
-    return new File(LuceneTestCaseJ4.TEMP_DIR, desc + "." + new Random().nextLong());
+    return new File(LuceneTestCase.TEMP_DIR, desc + "." + new Random().nextLong());
   }
 
   public static void rmDir(File dir) throws IOException {

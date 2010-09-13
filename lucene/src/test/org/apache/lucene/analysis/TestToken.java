@@ -27,10 +27,6 @@ import java.io.StringReader;
 
 public class TestToken extends LuceneTestCase {
 
-  public TestToken(String name) {
-    super(name);
-  }
-
   public void testCtor() throws Exception {
     Token t = new Token();
     char[] content = "hello".toCharArray();

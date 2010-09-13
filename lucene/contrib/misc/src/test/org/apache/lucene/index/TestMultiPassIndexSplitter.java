@@ -29,7 +29,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
   Directory dir;
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
@@ -50,7 +50,7 @@ public class TestMultiPassIndexSplitter extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     input.close();
     dir.close();
     super.tearDown();

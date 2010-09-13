@@ -42,14 +42,14 @@ public class TestParallelReader extends LuceneTestCase {
   private Directory dir, dir1, dir2;
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     single = single(random);
     parallel = parallel(random);
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     single.getIndexReader().close();
     parallel.getIndexReader().close();
     dir.close();

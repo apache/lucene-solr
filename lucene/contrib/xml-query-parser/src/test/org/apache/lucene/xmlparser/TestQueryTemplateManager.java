@@ -136,7 +136,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
 	 * @see TestCase#setUp()
 	 */
 	@Override
-	protected void setUp() throws Exception {
+	public void setUp() throws Exception {
 		super.setUp();
 		
 		
@@ -158,7 +158,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
 	
 	
 	@Override
-	protected void tearDown() throws Exception {
+	public void tearDown() throws Exception {
 		searcher.close();
 		dir.close();
     super.tearDown();

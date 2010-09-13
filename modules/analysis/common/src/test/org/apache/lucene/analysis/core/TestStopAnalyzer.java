@@ -34,13 +34,9 @@ public class TestStopAnalyzer extends BaseTokenStreamTestCase {
   
   private StopAnalyzer stop = new StopAnalyzer(TEST_VERSION_CURRENT);
   private Set<Object> inValidTokens = new HashSet<Object>();
-  
-  public TestStopAnalyzer(String s) {
-    super(s);
-  }
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     
     Iterator<?> it = StopAnalyzer.ENGLISH_STOP_WORDS_SET.iterator();

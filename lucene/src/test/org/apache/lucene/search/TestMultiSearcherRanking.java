@@ -107,7 +107,7 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
    * initializes multiSearcher and singleSearcher with the same document set
    */
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     // create MultiSearcher from two seperate searchers
     d1 = newDirectory();
@@ -136,7 +136,7 @@ public class TestMultiSearcherRanking extends LuceneTestCase {
   Directory d1, d2, d;
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     multiSearcher.close();
     singleSearcher.close();
     d1.close();

@@ -45,7 +45,7 @@ import org.junit.Test;
  * methods and therefore unused members and methodes. 
  */
 
-public class TestRemoteSort extends RemoteTestCaseJ4 {
+public class TestRemoteSort extends RemoteTestCase {
 
   private static IndexSearcher full;
   private static Directory indexStore;

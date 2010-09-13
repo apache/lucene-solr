@@ -35,13 +35,9 @@ public class TestDirectoryReader extends LuceneTestCase {
   private Document doc2;
   protected SegmentReader [] readers = new SegmentReader[2];
   protected SegmentInfos sis;
-  
-  public TestDirectoryReader(String s) {
-    super(s);
-  }
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
     doc1 = new Document();
@@ -55,7 +51,7 @@ public class TestDirectoryReader extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     if (readers[0] != null) readers[0].close();
     if (readers[1] != null) readers[1].close();
     dir.close();

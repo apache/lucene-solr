@@ -19,7 +19,7 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.KeepOnlyLastCommitDeletionPolicy;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util._TestUtil;
 import org.junit.Test;
@@ -29,7 +29,7 @@ import org.junit.Test;
 // http://lucenebook.com
 //
 
-public class TestSnapshotDeletionPolicy extends LuceneTestCaseJ4 {
+public class TestSnapshotDeletionPolicy extends LuceneTestCase {
   public static final String INDEX_PATH = "test.snapshots";
   
   protected IndexWriterConfig getConfig(Random random, IndexDeletionPolicy dp) {

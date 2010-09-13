@@ -37,7 +37,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 	private Analyzer analyzer=new MockAnalyzer();
 
 	@Override
-	protected void setUp() throws Exception	{
+	public void setUp() throws Exception	{
 	  super.setUp();
 		directory = newDirectory();
 		RandomIndexWriter writer = new RandomIndexWriter(random, directory);
@@ -55,7 +55,7 @@ public class FuzzyLikeThisQueryTest extends LuceneTestCase {
 	}
 	
 	@Override
-	protected void tearDown() throws Exception {
+	public void tearDown() throws Exception {
 	  searcher.close();
 	  reader.close();
 	  directory.close();

@@ -43,7 +43,7 @@ public class TestRegexpRandom extends LuceneTestCase {
   private Directory dir;
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir,
@@ -90,7 +90,7 @@ public class TestRegexpRandom extends LuceneTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher.close();
     reader.close();
     dir.close();

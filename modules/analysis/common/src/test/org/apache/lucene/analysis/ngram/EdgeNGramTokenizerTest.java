@@ -29,7 +29,7 @@ public class EdgeNGramTokenizerTest extends BaseTokenStreamTestCase {
   private StringReader input;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     input = new StringReader("abcde");
   }

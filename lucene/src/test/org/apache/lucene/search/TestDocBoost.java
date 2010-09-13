@@ -32,9 +32,6 @@ import org.apache.lucene.store.Directory;
  * @version $Revision$
  */
 public class TestDocBoost extends LuceneTestCase {
-  public TestDocBoost(String name) {
-    super(name);
-  }
 
   public void testDocBoost() throws Exception {
     Directory store = newDirectory();

@@ -79,10 +79,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
 
 public class TestIndexWriter extends LuceneTestCase {
-    
-    public TestIndexWriter(String name) {
-      super(name);
-    }
 
     public void testDocCount() throws IOException {
         Directory dir = newDirectory();

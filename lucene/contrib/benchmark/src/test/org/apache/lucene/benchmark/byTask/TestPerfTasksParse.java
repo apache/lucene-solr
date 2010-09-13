@@ -37,10 +37,6 @@ public class TestPerfTasksParse extends LuceneTestCase {
     INDENT + "print.props=false" + NEW_LINE
   ;
 
-  public TestPerfTasksParse(String name) {
-    super(name);
-  }
-
   /** Test the repetiotion parsing for parallel tasks */
   public void testParseParallelTaskSequenceRepetition() throws Exception {
     String taskStr = "AddDoc";

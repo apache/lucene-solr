@@ -33,9 +33,6 @@ import org.apache.lucene.store.Directory;
  * @version $Revision$
  */
 public class TestSetNorm extends LuceneTestCase {
-  public TestSetNorm(String name) {
-    super(name);
-  }
 
   public void testSetNorm() throws Exception {
     Directory store = newDirectory();

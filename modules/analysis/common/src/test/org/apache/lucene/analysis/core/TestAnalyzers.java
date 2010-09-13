@@ -39,10 +39,6 @@ import org.apache.lucene.util.Version;
 
 public class TestAnalyzers extends BaseTokenStreamTestCase {
 
-   public TestAnalyzers(String name) {
-      super(name);
-   }
-
   public void testSimple() throws Exception {
     Analyzer a = new SimpleAnalyzer(TEST_VERSION_CURRENT);
     assertAnalyzesTo(a, "foo bar FOO BAR", 

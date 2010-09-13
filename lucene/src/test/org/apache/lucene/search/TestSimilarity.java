@@ -36,9 +36,6 @@ import org.apache.lucene.search.Explanation.IDFExplanation;
  * @version $Revision$
  */
 public class TestSimilarity extends LuceneTestCase {
-  public TestSimilarity(String name) {
-    super(name);
-  }
   
   public static class SimpleSimilarity extends Similarity {
     @Override public float lengthNorm(String field, int numTerms) { return 1.0f; }

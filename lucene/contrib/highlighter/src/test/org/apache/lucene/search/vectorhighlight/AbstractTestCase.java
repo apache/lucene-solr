@@ -85,7 +85,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   };
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     analyzerW = new MockAnalyzer(MockTokenizer.WHITESPACE, false);
     analyzerB = new BigramAnalyzer();
@@ -96,7 +96,7 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     if( reader != null ){
       reader.close();
       reader = null;

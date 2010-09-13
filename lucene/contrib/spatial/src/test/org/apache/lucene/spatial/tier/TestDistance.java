@@ -41,7 +41,7 @@ public class TestDistance extends LuceneTestCase {
   private IndexWriter writer;
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
     writer = new IndexWriter(directory, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()));
@@ -50,7 +50,7 @@ public class TestDistance extends LuceneTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     writer.close();
     directory.close();
     super.tearDown();

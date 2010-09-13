@@ -35,8 +35,10 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
+import org.junit.runner.RunWith;
 
-public class TestStressIndexing2 extends MultiCodecTestCase {
+@RunWith(LuceneTestCase.MultiCodecTestCaseRunner.class)
+public class TestStressIndexing2 extends LuceneTestCase {
   static int maxFields=4;
   static int bigFieldSize=10;
   static boolean sameFieldOrder=false;
@@ -236,7 +238,7 @@ public class TestStressIndexing2 extends MultiCodecTestCase {
 
   
   public static void indexSerial(Random random, Map<String,Document> docs, Directory dir) throws IOException {
-    IndexWriter w = new IndexWriter(dir, LuceneTestCaseJ4.newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
+    IndexWriter w = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer()));
 
     // index all docs in a single thread
     Iterator<Document> iter = docs.values().iterator();

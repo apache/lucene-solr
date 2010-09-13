@@ -31,11 +31,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public class TestSpanQueryFilter extends LuceneTestCase {
 
-
-  public TestSpanQueryFilter(String s) {
-    super(s);
-  }
-
   public void testFilterWorks() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, dir);

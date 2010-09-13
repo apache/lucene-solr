@@ -52,7 +52,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
   protected IndexReader reader;
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random, directory);
@@ -116,7 +116,7 @@ public class TestFieldMaskingSpanQuery extends LuceneTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher.close();
     reader.close();
     directory.close();

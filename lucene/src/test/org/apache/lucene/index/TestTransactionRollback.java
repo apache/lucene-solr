@@ -122,7 +122,7 @@ public class TestTransactionRollback extends LuceneTestCase {
   */
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
     //Build index, of records 1 to 100, committing after each batch of 10
@@ -144,7 +144,7 @@ public class TestTransactionRollback extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     dir.close();
     super.tearDown();
   }

@@ -34,12 +34,8 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
   public int numDocs = 100;
   public int numThreads = 3;
   
-  public TestMultiThreadTermVectors(String s) {
-    super(s);
-  }
-  
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
     IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()));
@@ -56,7 +52,7 @@ public class TestMultiThreadTermVectors extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     directory.close();
     super.tearDown();
   }

@@ -65,12 +65,8 @@ public class TestIndexReaderCloneNorms extends LuceneTestCase {
 
   private float normDelta = (float) 0.001;
 
-  public TestIndexReaderCloneNorms(String s) {
-    super(s);
-  }
-
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     similarityOne = new SimilarityOne();
     anlzr = new MockAnalyzer();

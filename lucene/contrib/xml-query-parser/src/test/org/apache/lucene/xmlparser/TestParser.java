@@ -50,7 +50,7 @@ public class TestParser extends LuceneTestCase {
 	 * @see TestCase#setUp()
 	 */
 	@Override
-	protected void setUp() throws Exception {
+	public void setUp() throws Exception {
 		super.setUp();
 		
 		//initialize the parser
@@ -85,7 +85,7 @@ public class TestParser extends LuceneTestCase {
 	
 	
 	@Override
-	protected void tearDown() throws Exception {
+	public void tearDown() throws Exception {
 		reader.close();
 		searcher.close();
 		dir.close();

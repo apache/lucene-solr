@@ -55,13 +55,9 @@ public class TestPayloadSpans extends LuceneTestCase {
   protected IndexReader indexReader;
   private IndexReader closeIndexReader;
   private Directory directory;
-  
-  public TestPayloadSpans(String s) {
-    super(s);
-  }
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     PayloadHelper helper = new PayloadHelper();
     searcher = helper.setUp(similarity, 1000);

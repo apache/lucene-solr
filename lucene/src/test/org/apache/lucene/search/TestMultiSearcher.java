@@ -18,7 +18,7 @@ package org.apache.lucene.search;
  */
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -42,11 +42,6 @@ import java.util.Set;
  */
 public class TestMultiSearcher extends LuceneTestCase
 {
-  
-    public TestMultiSearcher(String name)
-    {
-        super(name);
-    }
 
 	/**
 	 * ReturnS a new instance of the concrete MultiSearcher class
@@ -221,7 +216,7 @@ public class TestMultiSearcher extends LuceneTestCase
         IndexWriter indexWriter=null;
         
         try {
-          indexWriter = new IndexWriter(directory, LuceneTestCaseJ4.newIndexWriterConfig(random,
+          indexWriter = new IndexWriter(directory, LuceneTestCase.newIndexWriterConfig(random,
               TEST_VERSION_CURRENT, new MockAnalyzer()).setOpenMode(
                   create ? OpenMode.CREATE : OpenMode.APPEND));
             

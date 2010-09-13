@@ -35,10 +35,6 @@ public class TestExtendableQueryParser extends TestQueryParser {
   private static char[] DELIMITERS = new char[] {
       Extensions.DEFAULT_EXTENSION_FIELD_DELIMITER, '-', '|' };
 
-  public TestExtendableQueryParser(String name) {
-    super(name);
-  }
-
   @Override
   public QueryParser getParser(Analyzer a) throws Exception {
     return getParser(a, null);

@@ -26,11 +26,6 @@ import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 
 public class DateRecognizerSinkTokenizerTest extends BaseTokenStreamTestCase {
 
-
-  public DateRecognizerSinkTokenizerTest(String s) {
-    super(s);
-  }
-
   public void test() throws IOException {
     DateRecognizerSinkFilter sinkFilter = new DateRecognizerSinkFilter(new SimpleDateFormat("MM/dd/yyyy", Locale.US));
     String test = "The quick red fox jumped over the lazy brown dogs on 7/11/2006  The dogs finally reacted on 7/12/2006";

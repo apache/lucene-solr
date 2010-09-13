@@ -26,10 +26,6 @@ import java.util.Random;
 
 public class TestCharTermAttributeImpl extends LuceneTestCase {
 
-  public TestCharTermAttributeImpl(String name) {
-    super(name);
-  }
-
   public void testResize() {
     CharTermAttributeImpl t = new CharTermAttributeImpl();
     char[] content = "hello".toCharArray();

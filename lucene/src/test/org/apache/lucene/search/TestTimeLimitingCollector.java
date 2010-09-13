@@ -55,15 +55,11 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
   private final String FIELD_NAME = "body";
   private Query query;
 
-  public TestTimeLimitingCollector(String name) {
-    super(name);
-  }
-
   /**
    * initializes searcher with a document set
    */
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     final String docText[] = {
         "docThatNeverMatchesSoWeCanRequireLastDocCollectedToBeGreaterThanZero",
@@ -99,7 +95,7 @@ public class TestTimeLimitingCollector extends LuceneTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher.close();
     reader.close();
     directory.close();

@@ -18,13 +18,13 @@ package org.apache.lucene.store;
  */
 
 
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-public class TestCopyBytes extends LuceneTestCaseJ4 {
+public class TestCopyBytes extends LuceneTestCase {
 
   private byte value(int idx) {
     return (byte) ((idx%256) * (1+(idx/256)));

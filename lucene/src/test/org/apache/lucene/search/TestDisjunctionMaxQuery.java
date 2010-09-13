@@ -75,7 +75,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
   public IndexSearcher s;
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     
     index = newDirectory();
@@ -150,7 +150,7 @@ public class TestDisjunctionMaxQuery extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     s.close();
     r.close();
     index.close();

@@ -58,7 +58,7 @@ public class TestDoc extends LuceneTestCase {
      *  a few text files created in the current working directory.
      */
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
         workDir = new File(TEMP_DIR,"TestDoc");
         workDir.mkdirs();

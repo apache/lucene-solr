@@ -27,7 +27,7 @@ import java.util.Random;
 public class TestUTF32ToUTF8 extends LuceneTestCase {
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
   }
 

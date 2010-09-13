@@ -35,7 +35,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
     private Directory rd2;
     
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
         Document doc;
         rd1 = newDirectory();
@@ -68,7 +68,7 @@ public class TestParallelTermEnum extends LuceneTestCase {
     }
 
     @Override
-    protected void tearDown() throws Exception {
+    public void tearDown() throws Exception {
         ir1.close();
         ir2.close();
         rd1.close();

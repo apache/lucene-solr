@@ -25,7 +25,7 @@ import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexFields;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 
 /** Codec, only for testing, that can write and read the
  *  pre-flex index format.
@@ -63,7 +63,7 @@ public class PreFlexRWCodec extends PreFlexCodec {
           //System.out.println(trace[i].getClassName());
           if ("merge".equals(trace[i].getMethodName())) {
             unicodeSortOrder = false;
-            if (LuceneTestCaseJ4.VERBOSE) {
+            if (LuceneTestCase.VERBOSE) {
               System.out.println("NOTE: PreFlexRW codec: forcing legacy UTF16 term sort order");
             }
             break;

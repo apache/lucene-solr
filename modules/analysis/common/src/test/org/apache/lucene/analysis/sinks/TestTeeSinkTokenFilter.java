@@ -39,7 +39,6 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.English;
 import java.io.IOException;
 import java.io.StringReader;
-import java.util.Random;
 
 
 /**
@@ -51,13 +50,8 @@ public class TestTeeSinkTokenFilter extends BaseTokenStreamTestCase {
   protected String[] tokens1;
   protected String[] tokens2;
 
-
-  public TestTeeSinkTokenFilter(String s) {
-    super(s);
-  }
-
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     tokens1 = new String[]{"The", "quick", "Burgundy", "Fox", "jumped", "over", "the", "lazy", "Red", "Dogs"};
     tokens2 = new String[]{"The", "Lazy", "Dogs", "should", "stay", "on", "the", "porch"};

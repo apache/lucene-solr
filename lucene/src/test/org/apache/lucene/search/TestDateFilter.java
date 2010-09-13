@@ -35,10 +35,7 @@ import java.io.IOException;
  * @version $Revision$
  */
 public class TestDateFilter extends LuceneTestCase {
-  public TestDateFilter(String name) {
-    super(name);
-  }
-  
+ 
   /**
    *
    */

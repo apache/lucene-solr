@@ -28,10 +28,6 @@ import org.apache.lucene.util.Version;
 
 public class TestLimitTokenCountAnalyzer extends BaseTokenStreamTestCase {
 
-  public TestLimitTokenCountAnalyzer(String name) {
-    super(name);
-  }
-
   public void testLimitTokenCountAnalyzer() throws IOException {
     Analyzer a = new LimitTokenCountAnalyzer(new WhitespaceAnalyzer(TEST_VERSION_CURRENT), 2);
     // dont use assertAnalyzesTo here, as the end offset is not the end of the string!

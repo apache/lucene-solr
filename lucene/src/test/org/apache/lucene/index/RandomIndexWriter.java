@@ -26,7 +26,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 
@@ -63,17 +63,17 @@ public class RandomIndexWriter implements Closeable {
 
   /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT and MockAnalyzer */
   public RandomIndexWriter(Random r, Directory dir) throws IOException {
-    this(r, dir, LuceneTestCaseJ4.newIndexWriterConfig(r, LuceneTestCaseJ4.TEST_VERSION_CURRENT, new MockAnalyzer()));
+    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, LuceneTestCase.TEST_VERSION_CURRENT, new MockAnalyzer()));
   }
   
   /** create a RandomIndexWriter with a random config: Uses TEST_VERSION_CURRENT */
   public RandomIndexWriter(Random r, Directory dir, Analyzer a) throws IOException {
-    this(r, dir, LuceneTestCaseJ4.newIndexWriterConfig(r, LuceneTestCaseJ4.TEST_VERSION_CURRENT, a));
+    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, LuceneTestCase.TEST_VERSION_CURRENT, a));
   }
   
   /** create a RandomIndexWriter with a random config */
   public RandomIndexWriter(Random r, Directory dir, Version v, Analyzer a) throws IOException {
-    this(r, dir, LuceneTestCaseJ4.newIndexWriterConfig(r, v, a));
+    this(r, dir, LuceneTestCase.newIndexWriterConfig(r, v, a));
   }
   
   /** create a RandomIndexWriter with the provided config */
@@ -81,7 +81,7 @@ public class RandomIndexWriter implements Closeable {
     this.r = r;
     w = new MockIndexWriter(r, dir, c);
     flushAt = _TestUtil.nextInt(r, 10, 1000);
-    if (LuceneTestCaseJ4.VERBOSE) {
+    if (LuceneTestCase.VERBOSE) {
       System.out.println("RIW config=" + w.getConfig());
       System.out.println("codec default=" + CodecProvider.getDefaultCodec());
     }
@@ -90,7 +90,7 @@ public class RandomIndexWriter implements Closeable {
   public void addDocument(Document doc) throws IOException {
     w.addDocument(doc);
     if (docCount++ == flushAt) {
-      if (LuceneTestCaseJ4.VERBOSE) {
+      if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.addDocument: now doing a commit");
       }
       w.commit();
@@ -127,12 +127,12 @@ public class RandomIndexWriter implements Closeable {
     // IndexReader.open so terms are sorted in codepoint
     // order during searching:
     if (!w.codecs.getWriter(null).name.equals("PreFlex") && r.nextBoolean()) {
-      if (LuceneTestCaseJ4.VERBOSE) {
+      if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.getReader: use NRT reader");
       }
       return w.getReader();
     } else {
-      if (LuceneTestCaseJ4.VERBOSE) {
+      if (LuceneTestCase.VERBOSE) {
         System.out.println("RIW.getReader: open new reader");
       }
       w.commit();

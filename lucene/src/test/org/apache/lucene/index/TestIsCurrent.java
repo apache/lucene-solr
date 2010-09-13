@@ -29,7 +29,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-public class TestIsCurrent extends LuceneTestCaseJ4 {
+public class TestIsCurrent extends LuceneTestCase {
 
   private RandomIndexWriter writer;
 

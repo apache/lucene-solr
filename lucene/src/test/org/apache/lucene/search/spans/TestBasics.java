@@ -38,7 +38,7 @@ import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.English;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -58,7 +58,7 @@ import static org.junit.Assert.*;
  * testing of the indexing and search code.
  *
  */
-public class TestBasics extends LuceneTestCaseJ4 {
+public class TestBasics extends LuceneTestCase {
   private static IndexSearcher searcher;
   private static IndexReader reader;
   private static Directory directory;

@@ -34,7 +34,7 @@ import static org.junit.Assert.*;
 /**
  * Tests that the index is cached on the searcher side of things.
  */
-public class TestRemoteCachingWrapperFilter extends RemoteTestCaseJ4 {
+public class TestRemoteCachingWrapperFilter extends RemoteTestCase {
   private static Directory indexStore;
   private static Searchable local;
   

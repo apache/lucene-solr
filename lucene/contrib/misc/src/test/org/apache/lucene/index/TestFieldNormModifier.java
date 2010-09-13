@@ -36,11 +36,6 @@ import org.apache.lucene.util.LuceneTestCase;
  * Tests changing of field norms with a custom similarity and with fake norms.
  */
 public class TestFieldNormModifier extends LuceneTestCase {
-  
-  public TestFieldNormModifier(String name) {
-    super(name);
-  }
-   
   public static int NUM_DOCS = 5;
   
   public Directory store;
@@ -54,7 +49,7 @@ public class TestFieldNormModifier extends LuceneTestCase {
   };
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     store = newDirectory();
     IndexWriter writer = new IndexWriter(store, newIndexWriterConfig(
@@ -76,7 +71,7 @@ public class TestFieldNormModifier extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     store.close();
     super.tearDown();
   }

@@ -30,7 +30,7 @@ public class TestBasicTable extends LuceneTestCase {
     private List<RestaurantInfo> list;
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
         list = new ArrayList<RestaurantInfo>();
         list.add(DataStore.canolis);

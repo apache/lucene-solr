@@ -39,12 +39,8 @@ public class TestTermScorer extends LuceneTestCase {
   protected IndexSearcher indexSearcher;
   protected IndexReader indexReader;
   
-  public TestTermScorer(String s) {
-    super(s);
-  }
-  
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     directory = newDirectory();
     
@@ -62,7 +58,7 @@ public class TestTermScorer extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     indexSearcher.close();
     indexReader.close();
     directory.close();

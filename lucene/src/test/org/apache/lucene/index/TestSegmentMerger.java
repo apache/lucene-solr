@@ -39,14 +39,9 @@ public class TestSegmentMerger extends LuceneTestCase {
   private Directory merge2Dir;
   private Document doc2 = new Document();
   private SegmentReader reader2 = null;
-  
-
-  public TestSegmentMerger(String s) {
-    super(s);
-  }
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     mergedDir = newDirectory();
     merge1Dir = newDirectory();
@@ -60,7 +55,7 @@ public class TestSegmentMerger extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     reader1.close();
     reader2.close();
     mergedDir.close();

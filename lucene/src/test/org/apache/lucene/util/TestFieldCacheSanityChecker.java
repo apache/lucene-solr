@@ -38,7 +38,7 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
   private static final int NUM_DOCS = 1000;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     dirA = newDirectory();
     dirB = newDirectory();
@@ -74,7 +74,7 @@ public class TestFieldCacheSanityChecker extends LuceneTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     readerA.close();
     readerB.close();
     readerX.close();

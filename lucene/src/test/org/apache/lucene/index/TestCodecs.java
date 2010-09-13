@@ -39,8 +39,9 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.MultiCodecTestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
+import org.junit.runner.RunWith;
 
 // TODO: test multiple codecs here?
 
@@ -59,8 +60,8 @@ import org.apache.lucene.util.Version;
 //     goes to 1 before next one known to exist
 //   - skipTo(term)
 //   - skipTo(doc)
-
-public class TestCodecs extends MultiCodecTestCase {
+@RunWith(LuceneTestCase.MultiCodecTestCaseRunner.class)
+public class TestCodecs extends LuceneTestCase {
   private static String[] fieldNames = new String[] {"one", "two", "three", "four"};
 
   private final static int NUM_TEST_ITER = 20 * RANDOM_MULTIPLIER;

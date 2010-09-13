@@ -38,7 +38,7 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.ThreadInterruptedException;
@@ -484,7 +484,7 @@ public class TestIndexWriterReader extends LuceneTestCase {
   
   public static void createIndex(Random random, Directory dir1, String indexName,
       boolean multiSegment) throws IOException {
-    IndexWriter w = new IndexWriter(dir1, LuceneTestCaseJ4.newIndexWriterConfig(random,
+    IndexWriter w = new IndexWriter(dir1, LuceneTestCase.newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMergePolicy(new LogDocMergePolicy()));
     for (int i = 0; i < 100; i++) {

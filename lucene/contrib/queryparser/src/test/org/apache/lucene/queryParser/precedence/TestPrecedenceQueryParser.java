@@ -28,7 +28,6 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.DateTools;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FuzzyQuery;
@@ -41,26 +40,19 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
-import org.apache.lucene.util.LocalizedTestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.io.Reader;
 import java.text.DateFormat;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
-import java.util.HashSet;
 
-public class TestPrecedenceQueryParser extends LocalizedTestCase {
-  
-  public TestPrecedenceQueryParser(String name) {
-    super(name, new HashSet<String>(Arrays.asList(new String[]{
-      "testDateRange", "testNumber"
-    })));
-  }
-
+@RunWith(LuceneTestCase.LocalizedTestCaseRunner.class)
+public class TestPrecedenceQueryParser extends LuceneTestCase {
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 
   public static final class QPTestFilter extends TokenFilter {
@@ -129,7 +121,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
   private int originalMaxClauses;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     originalMaxClauses = BooleanQuery.getMaxClauseCount();
   }
@@ -726,7 +718,7 @@ public class TestPrecedenceQueryParser extends LocalizedTestCase {
 
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     BooleanQuery.setMaxClauseCount(originalMaxClauses);
     super.tearDown();
   }

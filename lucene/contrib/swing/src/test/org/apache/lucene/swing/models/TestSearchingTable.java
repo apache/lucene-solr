@@ -25,7 +25,7 @@ public class TestSearchingTable extends LuceneTestCase {
     private TableSearcher tableSearcher;
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
         baseTableModel = new BaseTableModel(DataStore.getRestaurants());
         tableSearcher = new TableSearcher(baseTableModel);

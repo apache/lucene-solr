@@ -19,7 +19,7 @@
 package org.apache.solr;
 
 
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
@@ -51,7 +51,7 @@ import static org.junit.Assert.fail;
  * Unlike AbstractSolrTestCase, a new core is not created for each test method.
  *
  */
-public abstract class SolrTestCaseJ4 extends LuceneTestCaseJ4 {
+public abstract class SolrTestCaseJ4 extends LuceneTestCase {
 
   @BeforeClass
   public static void beforeClassSolrTestCase() throws Exception {

@@ -60,7 +60,7 @@ import org.apache.lucene.search.FieldCache;
 public class TestPerfTasksLogic extends BenchmarkTestCase {
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     copyToWorkDir("reuters.first20.lines.txt");
   }

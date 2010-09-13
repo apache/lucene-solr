@@ -46,7 +46,7 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   static Directory small;
   static IndexReader reader;
 
-  void assertEquals(String m, float e, float a) {
+  static public void assertEquals(String m, float e, float a) {
     Assert.assertEquals(m, e, a, SCORE_COMP_THRESH);
   }
 

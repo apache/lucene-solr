@@ -28,9 +28,6 @@ import org.apache.lucene.store.RAMDirectory;
  */
 public class TestBitVector extends LuceneTestCase
 {
-    public TestBitVector(String s) {
-        super(s);
-    }
 
     /**
      * Test the default constructor on BitVectors of various sizes.

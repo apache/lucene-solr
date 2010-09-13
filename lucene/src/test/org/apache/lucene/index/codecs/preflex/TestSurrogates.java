@@ -30,7 +30,7 @@ import java.io.IOException;
 import static org.junit.Assert.*;
 import org.junit.Test;
 
-public class TestSurrogates extends LuceneTestCaseJ4 {
+public class TestSurrogates extends LuceneTestCase {
 
   private static String makeDifficultRandomUnicodeString(Random r) {
     final int end = r.nextInt(20);

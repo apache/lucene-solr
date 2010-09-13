@@ -26,7 +26,7 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestDeterminism extends LuceneTestCase {
   
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
   }
   

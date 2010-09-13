@@ -47,7 +47,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
   QueryAutoStopWordAnalyzer protectedAnalyzer;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     dir = new RAMDirectory();
     appAnalyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
@@ -67,7 +67,7 @@ public class QueryAutoStopWordAnalyzerTest extends BaseTokenStreamTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     reader.close();
     super.tearDown();
   }

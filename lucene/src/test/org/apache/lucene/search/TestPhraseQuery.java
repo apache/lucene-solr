@@ -91,7 +91,7 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher.close();
     reader.close();
     directory.close();

@@ -23,11 +23,6 @@ import org.apache.lucene.analysis.MockAnalyzer;
 
 public class TestQueryTermVector extends LuceneTestCase {
 
-
-  public TestQueryTermVector(String s) {
-    super(s);
-  }
-
   public void testConstructor() {
     BytesRef [] queryTerm = {new BytesRef("foo"), new BytesRef("bar"), new BytesRef("foo"), 
         new BytesRef("again"), new BytesRef("foo"), new BytesRef("bar"), new BytesRef("go"),

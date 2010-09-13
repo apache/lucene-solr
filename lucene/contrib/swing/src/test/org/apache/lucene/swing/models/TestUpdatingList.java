@@ -26,7 +26,7 @@ public class TestUpdatingList extends LuceneTestCase {
     RestaurantInfo infoToAdd1, infoToAdd2;
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
         baseListModel = new BaseListModel(DataStore.getRestaurants());
         listSearcher = new ListSearcher(baseListModel);

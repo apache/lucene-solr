@@ -45,7 +45,7 @@ import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.Bits;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 
 public class TestIndexReaderReopen extends LuceneTestCase {
     
@@ -947,7 +947,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
   
   public static void createIndex(Random random, Directory dir, boolean multiSegment) throws IOException {
     IndexWriter.unlock(dir);
-    IndexWriter w = new IndexWriter(dir, LuceneTestCaseJ4.newIndexWriterConfig(random,
+    IndexWriter w = new IndexWriter(dir, LuceneTestCase.newIndexWriterConfig(random,
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMergePolicy(new LogDocMergePolicy()));
     
@@ -1093,7 +1093,7 @@ public class TestIndexReaderReopen extends LuceneTestCase {
 
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     indexDir = new File(TEMP_DIR, "IndexReaderReopen");
   }

@@ -28,7 +28,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.server.RMIClientSocketFactory;
 import java.rmi.server.RMIServerSocketFactory;
 
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 
 /**
@@ -38,7 +38,7 @@ import org.junit.AfterClass;
  * to start the server.
  * Call {@link #lookupRemote} to get a RemoteSearchable.
  */
-public abstract class RemoteTestCaseJ4 extends LuceneTestCaseJ4 {
+public abstract class RemoteTestCase extends LuceneTestCase {
   private static int port;
 
   public static void startServer(Searchable searchable) throws Exception {

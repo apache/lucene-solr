@@ -25,10 +25,6 @@ import org.apache.lucene.util.LuceneTestCase;
 
 public abstract class DocumentTestCase extends LuceneTestCase
 {
-    public DocumentTestCase(String name) {
-        super(name);
-    }
-    
     protected File getFile(String filename) throws IOException {
         String fullname =
                      this.getClass().getResource(filename).getFile();

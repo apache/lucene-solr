@@ -69,15 +69,6 @@ public class TestSort extends LuceneTestCase implements Serializable {
   private Query queryG;
   private Sort sort;
 
-  public TestSort (String name) {
-    super (name);
-  }
-
-  public static Test suite() {
-    return new TestSuite (TestSort.class);
-  }
-
-
   // document data:
   // the tracer field is used to determine which document was hit
   // the contents field is used to search and sort by relevance
@@ -209,7 +200,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   }
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     full = getFullIndex();
     searchX = getXIndex();
@@ -226,7 +217,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   private ArrayList<Directory> dirs = new ArrayList<Directory>();
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     full.reader.close();
     searchX.reader.close();
     searchY.reader.close();

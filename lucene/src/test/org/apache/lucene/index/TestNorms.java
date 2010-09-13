@@ -56,12 +56,8 @@ public class TestNorms extends LuceneTestCase {
   private float lastNorm = 0;
   private float normDelta = (float) 0.001;
 
-  public TestNorms(String s) {
-    super(s);
-  }
-
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     similarityOne = new SimilarityOne();
     anlzr = new MockAnalyzer();

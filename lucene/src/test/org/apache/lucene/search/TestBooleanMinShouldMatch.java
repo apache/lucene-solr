@@ -37,7 +37,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     private IndexSearcher s;
 
     @Override
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
 
         String[] data = new String [] {
@@ -71,7 +71,7 @@ public class TestBooleanMinShouldMatch extends LuceneTestCase {
     }
     
     @Override
-    protected void tearDown() throws Exception {
+    public void tearDown() throws Exception {
       s.close();
       r.close();
       index.close();

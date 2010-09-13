@@ -18,7 +18,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 
-import static org.apache.lucene.util.LuceneTestCaseJ4.TEST_VERSION_CURRENT;
+import static org.apache.lucene.util.LuceneTestCase.TEST_VERSION_CURRENT;
 
 /**
  * Copyright 2005 Apache Software Foundation

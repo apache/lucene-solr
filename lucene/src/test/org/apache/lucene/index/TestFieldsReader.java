@@ -48,12 +48,8 @@ public class TestFieldsReader extends LuceneTestCase {
   private FieldInfos fieldInfos = null;
   private final static String TEST_SEGMENT_NAME = "_0";
 
-  public TestFieldsReader(String s) {
-    super(s);
-  }
-
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     fieldInfos = new FieldInfos();
     DocHelper.setupDoc(testDoc);
@@ -68,7 +64,7 @@ public class TestFieldsReader extends LuceneTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     dir.close();
     super.tearDown();
   }

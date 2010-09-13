@@ -34,14 +34,10 @@ public class TestSegmentReader extends LuceneTestCase {
   private Directory dir;
   private Document testDoc = new Document();
   private SegmentReader reader = null;
-
-  public TestSegmentReader(String s) {
-    super(s);
-  }
   
   //TODO: Setup the reader w/ multiple documents
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     dir = newDirectory();
     DocHelper.setupDoc(testDoc);
@@ -50,7 +46,7 @@ public class TestSegmentReader extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     reader.close();
     dir.close();
     super.tearDown();

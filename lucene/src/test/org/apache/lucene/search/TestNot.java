@@ -33,9 +33,6 @@ import org.apache.lucene.document.Field;
  * @version $Revision$
  */
 public class TestNot extends LuceneTestCase {
-  public TestNot(String name) {
-    super(name);
-  }
 
   public void testNot() throws Exception {
     Directory store = newDirectory();

@@ -52,7 +52,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
    * Initializes the tests by adding 4 identical documents to the index.
    */
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     // create test index
     mDirectory = newDirectory();
@@ -69,7 +69,7 @@ public class TestSpansAdvanced extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     searcher.close();
     reader.close();
     mDirectory.close();

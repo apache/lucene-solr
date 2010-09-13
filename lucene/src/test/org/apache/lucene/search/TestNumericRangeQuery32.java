@@ -29,7 +29,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.lucene.util._TestUtil;
 
@@ -38,7 +38,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import static org.junit.Assert.*;
 
-public class TestNumericRangeQuery32 extends LuceneTestCaseJ4 {
+public class TestNumericRangeQuery32 extends LuceneTestCase {
   // distance of entries
   private static final int distance = 6666;
   // shift the starting of the values to the left, to also have negative values:

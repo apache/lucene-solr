@@ -30,7 +30,7 @@ public class EdgeNGramTokenFilterTest extends BaseTokenStreamTestCase {
   private TokenStream input;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     input = new WhitespaceTokenizer(TEST_VERSION_CURRENT, new StringReader("abcde"));
   }

@@ -48,7 +48,7 @@ public class TestSpellChecker extends LuceneTestCase {
   private List<IndexSearcher> searchers;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     
     //create a user index
@@ -71,7 +71,7 @@ public class TestSpellChecker extends LuceneTestCase {
   }
   
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     userindex.close();
     if (!spellChecker.isClosed())
       spellChecker.close();

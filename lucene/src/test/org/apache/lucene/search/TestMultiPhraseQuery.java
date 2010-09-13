@@ -38,9 +38,6 @@ import java.util.LinkedList;
  * 
  */
 public class TestMultiPhraseQuery extends LuceneTestCase {
-  public TestMultiPhraseQuery(String name) {
-    super(name);
-  }
   
   public void testPhrasePrefix() throws IOException {
     Directory indexStore = newDirectory();

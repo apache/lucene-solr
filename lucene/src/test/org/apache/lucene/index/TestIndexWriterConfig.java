@@ -34,10 +34,10 @@ import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.search.DefaultSimilarity;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCaseJ4;
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
-public class TestIndexWriterConfig extends LuceneTestCaseJ4 {
+public class TestIndexWriterConfig extends LuceneTestCase {
 
   private static final class MySimilarity extends DefaultSimilarity {
     // Does not implement anything - used only for type checking on IndexWriterConfig.

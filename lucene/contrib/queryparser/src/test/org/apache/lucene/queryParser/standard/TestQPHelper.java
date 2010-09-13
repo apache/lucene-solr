@@ -25,8 +25,6 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -74,10 +72,11 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LocalizedTestCase;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
+import org.junit.runner.RunWith;
 
 /**
  * This test case is a copy of the core Lucene query parser test, it was adapted
@@ -85,15 +84,8 @@ import org.apache.lucene.util.automaton.RegExp;
  * 
  * Tests QueryParser.
  */
-public class TestQPHelper extends LocalizedTestCase {
-
-  public TestQPHelper(String name) {
-    super(name, new HashSet<String>(Arrays.asList(new String[]{
-      "testLegacyDateRange", "testDateRange",
-      "testCJK", "testNumber", "testFarsiRangeCollating",
-      "testLocalDateFormat"
-    })));
-  }
+@RunWith(LuceneTestCase.LocalizedTestCaseRunner.class)
+public class TestQPHelper extends LuceneTestCase {
 
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 
@@ -194,7 +186,7 @@ public class TestQPHelper extends LocalizedTestCase {
   private int originalMaxClauses;
 
   @Override
-  protected void setUp() throws Exception {
+  public void setUp() throws Exception {
     super.setUp();
     originalMaxClauses = BooleanQuery.getMaxClauseCount();
   }
@@ -1262,7 +1254,7 @@ public class TestQPHelper extends LocalizedTestCase {
   }
 
   @Override
-  protected void tearDown() throws Exception {
+  public void tearDown() throws Exception {
     BooleanQuery.setMaxClauseCount(originalMaxClauses);
     super.tearDown();
   }
