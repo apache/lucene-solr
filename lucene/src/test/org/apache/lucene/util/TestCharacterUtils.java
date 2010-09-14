@@ -43,7 +43,7 @@ public class TestCharacterUtils extends LuceneTestCase {
     try {
       java4.codePointAt(highSurrogateAt3, 4);
       fail("array index out of bounds");
-    } catch (ArrayIndexOutOfBoundsException e) {
+    } catch (IndexOutOfBoundsException e) {
     }
 
     CharacterUtils java5 = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
@@ -54,7 +54,7 @@ public class TestCharacterUtils extends LuceneTestCase {
     try {
       java5.codePointAt(highSurrogateAt3, 4);
       fail("array index out of bounds");
-    } catch (ArrayIndexOutOfBoundsException e) {
+    } catch (IndexOutOfBoundsException e) {
     }
   }
 
@@ -69,7 +69,7 @@ public class TestCharacterUtils extends LuceneTestCase {
     try {
       java4.codePointAt(highSurrogateAt3, 4);
       fail("string index out of bounds");
-    } catch (StringIndexOutOfBoundsException e) {
+    } catch (IndexOutOfBoundsException e) {
     }
 
     CharacterUtils java5 = CharacterUtils.getInstance(TEST_VERSION_CURRENT);
@@ -80,7 +80,7 @@ public class TestCharacterUtils extends LuceneTestCase {
     try {
       java5.codePointAt(highSurrogateAt3, 4);
       fail("string index out of bounds");
-    } catch (StringIndexOutOfBoundsException e) {
+    } catch (IndexOutOfBoundsException e) {
     }
 
   }
