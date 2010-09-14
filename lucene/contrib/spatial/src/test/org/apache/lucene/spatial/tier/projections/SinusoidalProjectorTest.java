@@ -1,9 +1,6 @@
 package org.apache.lucene.spatial.tier.projections;
 
-import org.apache.lucene.spatial.tier.DistanceUtils;
 import org.junit.Test;
-
-import static junit.framework.Assert.*;
 
 
 /**

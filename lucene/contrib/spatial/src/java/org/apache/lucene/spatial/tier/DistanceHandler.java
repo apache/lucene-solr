@@ -17,6 +17,8 @@
 
 package org.apache.lucene.spatial.tier;
 
+import org.apache.lucene.spatial.DistanceUtils;
+
 import java.util.HashMap;
 import java.util.Map;
 

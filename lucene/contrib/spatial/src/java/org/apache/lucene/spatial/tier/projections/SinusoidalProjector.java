@@ -17,8 +17,6 @@
 
 package org.apache.lucene.spatial.tier.projections;
 
-import org.apache.lucene.spatial.tier.DistanceUtils;
-
 /**
  * Based on Sinusoidal Projections
  * Project a latitude / longitude on a 2D cartesian map

@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.spatial.tier;
 
+import org.apache.lucene.spatial.DistanceUtils;
+
 import java.text.DecimalFormat;
 
 
