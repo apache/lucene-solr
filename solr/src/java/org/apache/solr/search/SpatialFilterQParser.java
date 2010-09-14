@@ -1,0 +1,114 @@
+package org.apache.solr.search;
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.spatial.geometry.DistanceUnits;
+import org.apache.lucene.spatial.tier.DistanceUtils;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.SpatialParams;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.FieldType;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.SpatialQueryable;
+
+
+
+/**
+ * Creates a spatial Filter based on the type of spatial point used.
+ * <p/>
+ * The field must implement XXXX
+ * <p/>
+ * <p/>
+ * <p/>
+ * Syntax:
+ * <pre>{!sfilt fl=location [units=[K|M]] [meas=[0-INF|hsin|sqe]] }&pt=49.32,-79.0&d=20</pre>
+ * <p/>
+ * Parameters:
+ * <ul>
+ * <li>fl - The fields to filter on.  Must implement XXXX. Required.  If more than one, XXXX</li>
+ * <li>pt - The point to use as a reference.  Must match the dimension of the field. Required.</li>
+ * <li>d - The distance in the units specified. Required.</li>
+ * <li>units - The units of the distance.  K - kilometers, M - Miles.  Optional.  Default is miles.</li>
+ * <li>meas - The distance measure to use.  Default is Euclidean (2-norm).  If a number between 0-INF is used, then the Vector Distance is used.  hsin = Haversine, sqe = Squared Euclidean</li>
+ * </ul>
+ */
+public class SpatialFilterQParser extends QParser {
+
+
+  public SpatialFilterQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+    super(qstr, localParams, params, req);
+  }
+
+  
+
+  @Override
+  public Query parse() throws ParseException {
+    //if more than one, we need to treat them as a point...
+    //TODO: Should we accept multiple fields
+    String[] fields = localParams.getParams(CommonParams.FL);
+    if (fields == null || fields.length == 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, CommonParams.FL + " is not properly specified");
+    }
+    String pointStr = params.get(SpatialParams.POINT);
+    if (pointStr == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, SpatialParams.POINT + " is not properly specified");
+    }
+
+    double dist = params.getDouble(SpatialParams.DISTANCE, -1);
+    if (dist < 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, SpatialParams.DISTANCE + " must be >= 0");
+    }
+    IndexSchema schema = req.getSchema();
+
+    String measStr = localParams.get(SpatialParams.MEASURE);
+    //TODO: Need to do something with Measures
+    Query result = null;
+    //fields is valid at this point
+    if (fields.length == 1) {
+      SchemaField sf = schema.getField(fields[0]);
+      FieldType type = sf.getType();
+
+      if (type instanceof SpatialQueryable) {
+        double radius = localParams.getDouble(SpatialParams.SPHERE_RADIUS, DistanceUtils.EARTH_MEAN_RADIUS_KM);
+        SpatialOptions opts = new SpatialOptions(pointStr, dist, sf, measStr, radius, DistanceUnits.KILOMETERS);
+        result = ((SpatialQueryable)type).createSpatialQuery(this, opts);
+      } else {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The field " + fields[0]
+                + " does not support spatial filtering");
+      }
+    } else {// fields.length > 1
+      //TODO: Not sure about this just yet, is there a way to delegate, or do we just have a helper class?
+      //Seems like we could just use FunctionQuery, but then what about scoring
+      /*List<ValueSource> sources = new ArrayList<ValueSource>(fields.length);
+      for (String field : fields) {
+        SchemaField sf = schema.getField(field);
+        sources.add(sf.getType().getValueSource(sf, this));
+      }
+      MultiValueSource vs = new VectorValueSource(sources);
+      ValueSourceRangeFilter rf = new ValueSourceRangeFilter(vs, "0", String.valueOf(dist), true, true);
+      result = new SolrConstantScoreQuery(rf);*/
+    }
+
+    return result;
+  }
+}

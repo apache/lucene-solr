@@ -17,6 +17,7 @@ package org.apache.solr.search.function.distance;
  */
 
 
+import org.apache.lucene.spatial.tier.DistanceUtils;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.DocValues;
 import org.apache.lucene.index.IndexReader;
@@ -94,6 +95,8 @@ public class GeohashHaversineFunction extends ValueSource {
     String h1 = gh1DV.strVal(doc);
     String h2 = gh2DV.strVal(doc);
     if (h1 != null && h2 != null && h1.equals(h2) == false){
+      //TODO: If one of the hashes is a literal value source, seems like we could cache it
+      //and avoid decoding every time
       double[] h1Pair = GeoHashUtils.decode(h1);
       double[] h2Pair = GeoHashUtils.decode(h2);
       result = DistanceUtils.haversine(Math.toRadians(h1Pair[0]), Math.toRadians(h1Pair[1]),

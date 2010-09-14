@@ -18,13 +18,22 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.spatial.geohash.GeoHashUtils;
+import org.apache.lucene.spatial.tier.DistanceUtils;
+import org.apache.lucene.spatial.tier.InvalidGeoException;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.response.XMLWriter;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.SolrConstantScoreQuery;
+import org.apache.solr.search.SpatialOptions;
+import org.apache.solr.search.function.LiteralValueSource;
 import org.apache.solr.search.function.ValueSource;
-import org.apache.solr.search.function.distance.DistanceUtils;
+import org.apache.solr.search.function.ValueSourceRangeFilter;
+import org.apache.solr.search.function.distance.GeohashHaversineFunction;
+
 
 import java.io.IOException;
 
@@ -33,14 +42,30 @@ import java.io.IOException;
  * href="http://en.wikipedia.org/wiki/Geohash">Geohash</a> field. The field is
  * provided as a lat/lon pair and is internally represented as a string.
  *
- * @see org.apache.solr.search.function.distance.DistanceUtils#parseLatitudeLongitude(double[], String)
+ * @see org.apache.lucene.spatial.tier.DistanceUtils#parseLatitudeLongitude(double[], String)
  */
-public class GeoHashField extends FieldType {
+public class GeoHashField extends FieldType implements SpatialQueryable {
 
 
   @Override
   public SortField getSortField(SchemaField field, boolean top) {
     return getStringSort(field, top);
+  }
+
+    //QUESTION: Should we do a fast and crude one?  Or actually check distances
+  //Fast and crude could use EdgeNGrams, but that would require a different
+  //encoding.  Plus there are issues around the Equator/Prime Meridian
+  public Query createSpatialQuery(QParser parser, SpatialOptions options) {
+    double [] point = new double[0];
+    try {
+      point = DistanceUtils.parsePointDouble(null, options.pointStr, 2);
+    } catch (InvalidGeoException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+    String geohash = GeoHashUtils.encode(point[0], point[1]);
+    //TODO: optimize this
+    return new SolrConstantScoreQuery(new ValueSourceRangeFilter(new GeohashHaversineFunction(getValueSource(options.field, parser),
+            new LiteralValueSource(geohash), options.radius), "0", String.valueOf(options.distance), true, true));
   }
 
   @Override
@@ -67,7 +92,12 @@ public class GeoHashField extends FieldType {
   public String toInternal(String val) {
     // validate that the string is of the form
     // latitude, longitude
-    double[] latLon = DistanceUtils.parseLatitudeLongitude(null, val);
+    double[] latLon = new double[0];
+    try {
+      latLon = DistanceUtils.parseLatitudeLongitude(null, val);
+    } catch (InvalidGeoException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
     return GeoHashUtils.encode(latLon[0], latLon[1]);
   }
 
