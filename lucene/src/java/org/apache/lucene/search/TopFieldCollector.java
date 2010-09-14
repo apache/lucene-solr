@@ -48,10 +48,12 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
     FieldComparator comparator;
     final int reverseMul;
+    final FieldValueHitQueue queue;
     
     public OneComparatorNonScoringCollector(FieldValueHitQueue queue,
         int numHits, boolean fillFields) throws IOException {
       super(queue, numHits, fillFields);
+      this.queue = queue;
       comparator = queue.getComparators()[0];
       reverseMul = queue.getReverseMul()[0];
     }
@@ -92,7 +94,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     @Override
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       this.docBase = docBase;
-      comparator = comparator.setNextReader(reader, docBase);
+      queue.setComparator(0, comparator.setNextReader(reader, docBase));
+      comparator = queue.firstComparator;
     }
     
     @Override
@@ -381,10 +384,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     
     final FieldComparator[] comparators;
     final int[] reverseMul;
-    
+    final FieldValueHitQueue queue;
     public MultiComparatorNonScoringCollector(FieldValueHitQueue queue,
         int numHits, boolean fillFields) throws IOException {
       super(queue, numHits, fillFields);
+      this.queue = queue;
       comparators = queue.getComparators();
       reverseMul = queue.getReverseMul();
     }
@@ -446,7 +450,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     public void setNextReader(IndexReader reader, int docBase) throws IOException {
       this.docBase = docBase;
       for (int i = 0; i < comparators.length; i++) {
-        comparators[i] = comparators[i].setNextReader(reader, docBase);
+        queue.setComparator(i, comparators[i].setNextReader(reader, docBase));
       }
     }
 
