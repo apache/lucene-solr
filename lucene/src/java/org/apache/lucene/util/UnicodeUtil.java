@@ -105,6 +105,10 @@ final public class UnicodeUtil {
 
   private static final long HALF_SHIFT = 10;
   private static final long HALF_MASK = 0x3FFL;
+  
+  private static final int SURROGATE_OFFSET = 
+    Character.MIN_SUPPLEMENTARY_CODE_POINT - 
+    (UNI_SUR_HIGH_START << HALF_SHIFT) - UNI_SUR_LOW_START;
 
   /**
    * @lucene.internal
@@ -167,7 +171,7 @@ final public class UnicodeUtil {
           int utf32 = (int) source[i];
           // confirm valid low surrogate and write pair
           if (utf32 >= 0xDC00 && utf32 <= 0xDFFF) { 
-            utf32 = ((code - 0xD7C0) << 10) + (utf32 & 0x3FF);
+            utf32 = (code << 10) + utf32 + SURROGATE_OFFSET;
             i++;
             hash = 31*hash + (out[upto++] = (byte)(0xF0 | (utf32 >> 18)));
             hash = 31*hash + (out[upto++] = (byte)(0x80 | ((utf32 >> 12) & 0x3F)));
@@ -223,7 +227,7 @@ final public class UnicodeUtil {
           int utf32 = (int) source[i];
           // confirm valid low surrogate and write pair
           if (utf32 >= 0xDC00 && utf32 <= 0xDFFF) { 
-            utf32 = ((code - 0xD7C0) << 10) + (utf32 & 0x3FF);
+            utf32 = (code << 10) + utf32 + SURROGATE_OFFSET;
             i++;
             out[upto++] = (byte)(0xF0 | (utf32 >> 18));
             out[upto++] = (byte)(0x80 | ((utf32 >> 12) & 0x3F));
@@ -276,7 +280,7 @@ final public class UnicodeUtil {
           int utf32 = (int) s.charAt(i+1);
           // confirm valid low surrogate and write pair
           if (utf32 >= 0xDC00 && utf32 <= 0xDFFF) { 
-            utf32 = ((code - 0xD7C0) << 10) + (utf32 & 0x3FF);
+            utf32 = (code << 10) + utf32 + SURROGATE_OFFSET;
             i++;
             out[upto++] = (byte)(0xF0 | (utf32 >> 18));
             out[upto++] = (byte)(0x80 | ((utf32 >> 12) & 0x3F));
