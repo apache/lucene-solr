@@ -37,6 +37,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.*;
+import org.apache.solr.util.ByteUtils;
 import org.apache.solr.util.LongPriorityQueue;
 import org.apache.solr.util.PrimUtils;
 import org.apache.solr.util.BoundedTreeSet;
@@ -483,9 +484,11 @@ public class UnInvertedField {
 
       NumberedTermsEnum te = ti.getEnumerator(searcher.getReader());
       if (prefix != null && prefix.length() > 0) {
-        te.skipTo(new BytesRef(prefix));
+        BytesRef prefixBr = new BytesRef(prefix);
+        te.skipTo(prefixBr);
         startTerm = te.getTermNumber();
-        te.skipTo(new BytesRef(prefix + "\uffff\uffff\uffff\uffff"));
+        prefixBr.append(ByteUtils.bigTerm);
+        te.skipTo(prefixBr);
         endTerm = te.getTermNumber();
       }
 

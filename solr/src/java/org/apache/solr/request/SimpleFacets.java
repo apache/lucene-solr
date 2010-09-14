@@ -432,9 +432,8 @@ public class SimpleFacets {
     if (prefix!=null) {
       startTermIndex = si.binarySearchLookup(prefixRef, br);
       if (startTermIndex<0) startTermIndex=-startTermIndex-1;
-      // find the end term.  \uffff isn't a legal unicode char, but only compareTo
-      // is used, so it should be fine, and is guaranteed to be bigger than legal chars.
-      endTermIndex = si.binarySearchLookup(new BytesRef(prefix+"\uffff\uffff\uffff\uffff"), br);
+      prefixRef.append(ByteUtils.bigTerm);
+      endTermIndex = si.binarySearchLookup(prefixRef, br);
       assert endTermIndex < 0;
       endTermIndex = -endTermIndex-1;
     } else {

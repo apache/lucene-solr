@@ -232,6 +232,18 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
     offset = 0;
   }
 
+  public void append(BytesRef other) {
+    int newLen = length + other.length;
+    if (bytes.length < newLen) {
+      byte[] newBytes = new byte[newLen];
+      System.arraycopy(bytes, offset, newBytes, 0, length);
+      offset = 0;
+      bytes = newBytes;
+    }
+    System.arraycopy(other.bytes, other.offset, bytes, length+offset, other.length);
+    length = newLen;
+  }
+
   public void grow(int newLength) {
     bytes = ArrayUtil.grow(bytes, newLength);
   }

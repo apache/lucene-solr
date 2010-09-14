@@ -22,7 +22,12 @@ import org.apache.noggit.CharArr;
 
 
 public class ByteUtils {
-
+ /** A binary term consisting of a number of 0xff bytes, likely to be bigger than other terms
+   *  one would normally encounter, and definitely bigger than any UTF-8 terms */
+  public static final BytesRef bigTerm = new BytesRef(
+      new byte[] {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1}
+  );
+  
   /** Converts utf8 to utf16 and returns the number of 16 bit Java chars written.
    * Full characters are read, even if this reads past the length passed (and can result in
    * an ArrayOutOfBoundsException if invalid UTF8 is passed).  Explicit checks for valid UTF8 are not performed.

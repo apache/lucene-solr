@@ -24,21 +24,18 @@ import org.apache.lucene.util.packed.Direct16;
 import org.apache.lucene.util.packed.Direct32;
 import org.apache.lucene.util.packed.Direct8;
 import org.apache.lucene.util.packed.PackedInts;
+import org.apache.solr.util.ByteUtils;
 
 import java.io.IOException;
 
 
 public class MissingStringLastComparatorSource extends FieldComparatorSource {
-  /** A binary term consisting of a number of 0xff bytes, likely to be bigger than other terms
-   *  one would normally encounter, and definitely bigger than any UTF-8 terms */
-  public static final BytesRef bigTerm = new BytesRef(
-      new byte[] {-1,-1,-1,-1,-1,-1,-1,-1,-1,-1}
-  );
+
 
   private final BytesRef missingValueProxy;
 
   public MissingStringLastComparatorSource() {
-    this(bigTerm);
+    this(ByteUtils.bigTerm);
   }
 
   /** Creates a {@link FieldComparatorSource} that sorts null last in a normal ascending sort.

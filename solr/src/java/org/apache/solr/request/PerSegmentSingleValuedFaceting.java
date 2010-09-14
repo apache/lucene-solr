@@ -19,6 +19,7 @@ import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrIndexReader;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.BoundedTreeSet;
+import org.apache.solr.util.ByteUtils;
 
 import java.io.IOException;
 import java.util.*;
@@ -231,12 +232,12 @@ class PerSegmentSingleValuedFaceting {
       // SolrCore.log.info("reader= " + reader + "  FC=" + System.identityHashCode(si));
 
       if (prefix!=null) {
-        startTermIndex = si.binarySearchLookup(new BytesRef(prefix), tempBR);
+        BytesRef prefixRef = new BytesRef(prefix);
+        startTermIndex = si.binarySearchLookup(prefixRef, tempBR);
         if (startTermIndex<0) startTermIndex=-startTermIndex-1;
-        // find the end term.  \uffff isn't a legal unicode char, but only compareTo
-        // is used, so it should be fine, and is guaranteed to be bigger than legal chars.
-        // TODO: switch to binarySearch version that takes start/end in Java6
-        endTermIndex = si.binarySearchLookup(new BytesRef(prefix+"\uffff\uffff\uffff\uffff"), tempBR);
+        prefixRef.append(ByteUtils.bigTerm);
+        // TODO: we could constrain the lower endpoint if we had a binarySearch method that allowed passing start/end
+        endTermIndex = si.binarySearchLookup(prefixRef, tempBR);
         assert endTermIndex < 0;
         endTermIndex = -endTermIndex-1;
       } else {
