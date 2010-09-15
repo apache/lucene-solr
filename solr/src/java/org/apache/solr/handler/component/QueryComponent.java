@@ -245,7 +245,9 @@ public class QueryComponent extends SearchComponent
 
         if (cmd.groupCommands != null) {
           searcher.search(result,cmd);
+          rb.setResult( result );
           rsp.add("grouped", result.groupedResults);
+          // TODO: get "hits" a different way
           return;
         }
       } catch (ParseException e) {

@@ -912,7 +912,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     if (last < 0 || last > maxDoc()) last=maxDoc();
 
     boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
-
+    boolean getDocSet = (cmd.getFlags() & GET_DOCSET) != 0;
     Query query = QueryUtils.makeQueryable(cmd.getQuery());
 
     final Filter luceneFilter = filter==null ? null : filter.getTopFilter();
@@ -943,7 +943,19 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       }
     }
 
-    search(query, luceneFilter, MultiCollector.wrap(collectors));
+    Collector allCollectors = MultiCollector.wrap(collectors);
+    DocSetCollector setCollector = null;
+    if (getDocSet) {
+      // TODO: can callCollectors be zero length?
+      setCollector = new DocSetDelegateCollector(maxDoc()>>6, maxDoc(), allCollectors);
+      allCollectors = setCollector;
+    }
+
+    search(query, luceneFilter, allCollectors);
+
+    if (getDocSet) {
+      qr.docListAndSet.docSet = setCollector.getDocSet();
+    }
 
     // TODO: make this a generic collector list
     List<Phase2GroupCollector> phase2Collectors = new ArrayList<Phase2GroupCollector>(cmd.groupCommands.size());

@@ -17,6 +17,7 @@
 
 package org.apache.solr;
 
+import org.apache.lucene.search.FieldCache;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -214,7 +215,15 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             "]}}"
     );
 
-  };  
+    // test that faceting works with grouping
+    assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id"
+                 ,"facet","true", "facet.field",f)
+      ,"/grouped/foo_i/matches:10:"
+      ,"/facet_counts/facet_fields/"+f+":['1',3, '2',3, '3',2, '4',1, '5',1]"
+    );
+    purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity
+
+  };
 
 
 }
