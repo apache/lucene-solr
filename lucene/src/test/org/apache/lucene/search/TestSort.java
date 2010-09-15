@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.text.Collator;
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
@@ -93,6 +94,11 @@ public class TestSort extends LuceneTestCase implements Serializable {
   {   "Y",   "g",             "1",           "0.2",          null,    null,    null,              null,           null, null, null, null},
   {   "Z",   "f g",           null,          null,           null,    null,    null,              null,           null, null, null, null}
   };
+  
+  // the sort order of Ø versus U depends on the version of the rules being used
+  // for the inherited root locale: Ø's order isnt specified in Locale.US since 
+  // its not used in english.
+  private boolean oStrokeFirst = Collator.getInstance(new Locale("")).compare("Ø", "U") < 0;
   
   // create an index of all the documents, or just the x, or just the y documents
   private IndexSearcher getIndex (boolean even, boolean odd)
@@ -595,7 +601,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
   // (which sort differently depending on locale)
   public void testInternationalSort() throws Exception {
     sort.setSort (new SortField ("i18n", Locale.US));
-    assertMatches (full, queryY, sort, "BFJDH");
+    assertMatches (full, queryY, sort, oStrokeFirst ? "BFJHD" : "BFJDH");
 
     sort.setSort (new SortField ("i18n", new Locale("sv", "se")));
     assertMatches (full, queryY, sort, "BJDFH");
@@ -619,7 +625,7 @@ public class TestSort extends LuceneTestCase implements Serializable {
     assertMatches (multiSearcher, queryY, sort, "BJDFH");
     
     sort.setSort (new SortField ("i18n", Locale.US));
-    assertMatches (multiSearcher, queryY, sort, "BFJDH");
+    assertMatches (multiSearcher, queryY, sort, oStrokeFirst ? "BFJHD" : "BFJDH");
     
     sort.setSort (new SortField ("i18n", new Locale("da", "dk")));
     assertMatches (multiSearcher, queryY, sort, "BJDHF");
