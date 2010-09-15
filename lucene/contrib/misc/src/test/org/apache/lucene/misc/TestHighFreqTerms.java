@@ -171,7 +171,6 @@ public class TestHighFreqTerms extends LuceneTestCase {
                      termsWithTF[i].totalTermFreq);
       }
     }
-    reader.close();
   }
     
   /********************Tests for getTotalTermFreq**********************************/
@@ -181,7 +180,6 @@ public class TestHighFreqTerms extends LuceneTestCase {
     BytesRef termtext = new BytesRef (term);
     String field = "FIELD_1";
     long totalTermFreq = HighFreqTerms.getTotalTermFreq(reader, field, termtext);
-    reader.close();
     assertEquals("highTf tf should be 200",200,totalTermFreq);
     
   }
@@ -191,7 +189,6 @@ public class TestHighFreqTerms extends LuceneTestCase {
     BytesRef termtext = new BytesRef (term);
     String field = "FIELD_1";
     long totalTermFreq = HighFreqTerms.getTotalTermFreq(reader, field, termtext);
-    reader.close();
     assertEquals("totalTermFreq should be 0 for term not in index",0,totalTermFreq);
     
   }
