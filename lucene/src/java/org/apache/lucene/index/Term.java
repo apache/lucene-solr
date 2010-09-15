@@ -86,7 +86,7 @@ public final class Term implements Comparable<Term>, java.io.Serializable {
     if (field == null) {
       if (other.field != null)
         return false;
-    } else if (!field.equals(other.field))
+    } else if (field != other.field)
       return false;
     if (text == null) {
       if (other.text != null)
