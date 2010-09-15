@@ -30,8 +30,6 @@ import java.io.IOException;
 
 
 public class MissingStringLastComparatorSource extends FieldComparatorSource {
-
-
   private final BytesRef missingValueProxy;
 
   public MissingStringLastComparatorSource() {
@@ -56,30 +54,96 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
 
 // Copied from Lucene's TermOrdValComparator and modified since the Lucene version couldn't
 // be extended.
-  class TermOrdValComparator_SML extends FieldComparator {
-    private static final int NULL_ORD = Integer.MAX_VALUE;
- 
-    private final int[] ords;
-    private final BytesRef[] values;
-    private final int[] readerGen;
+class TermOrdValComparator_SML extends FieldComparator {
+  private static final int NULL_ORD = Integer.MAX_VALUE;
 
-    private int currentReaderGen = -1;
-    private FieldCache.DocTermsIndex termsIndex;
-    private final String field;
+  private final int[] ords;
+  private final BytesRef[] values;
+  private final int[] readerGen;
 
-    private int bottomSlot = -1;
-    private int bottomOrd;
-    private boolean bottomSameReader;
-    private BytesRef bottomValue;
-    private final BytesRef tempBR = new BytesRef();
-    private final BytesRef NULL_VAL;
+  private FieldCache.DocTermsIndex termsIndex;
+  private final String field;
 
-    public TermOrdValComparator_SML(int numHits, String field, int sortPos, boolean reversed, BytesRef nullVal) {
-      ords = new int[numHits];
-      values = new BytesRef[numHits];
-      readerGen = new int[numHits];
-      this.field = field;
-      this.NULL_VAL = nullVal;
+  private final BytesRef NULL_VAL;
+  private PerSegmentComparator current;
+
+  public TermOrdValComparator_SML(int numHits, String field, int sortPos, boolean reversed, BytesRef nullVal) {
+    ords = new int[numHits];
+    values = new BytesRef[numHits];
+    readerGen = new int[numHits];
+    this.field = field;
+    this.NULL_VAL = nullVal;
+  }
+
+  @Override
+  public int compare(int slot1, int slot2) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void setBottom(int slot) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public int compareBottom(int doc) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public void copy(int slot, int doc) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public Comparable<?> value(int slot) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
+    return TermOrdValComparator_SML.createComparator(reader, this);
+  }
+
+  // Base class for specialized (per bit width of the
+  // ords) per-segment comparator.  NOTE: this is messy;
+  // we do this only because hotspot can't reliably inline
+  // the underlying array access when looking up doc->ord
+  private static abstract class PerSegmentComparator extends FieldComparator {
+    protected TermOrdValComparator_SML parent;
+    protected final int[] ords;
+    protected final BytesRef[] values;
+    protected final int[] readerGen;
+
+    protected int currentReaderGen = -1;
+    protected FieldCache.DocTermsIndex termsIndex;
+
+    protected int bottomSlot = -1;
+    protected int bottomOrd;
+    protected boolean bottomSameReader = false;
+    protected BytesRef bottomValue;
+    protected final BytesRef tempBR = new BytesRef();
+
+
+    public PerSegmentComparator(TermOrdValComparator_SML parent) {
+      this.parent = parent;
+      PerSegmentComparator previous = parent.current;
+      if (previous != null) {
+        currentReaderGen = previous.currentReaderGen;
+        bottomSlot = previous.bottomSlot;
+        bottomOrd = previous.bottomOrd;
+        bottomValue = previous.bottomValue;
+      }
+      ords = parent.ords;
+      values = parent.values;
+      readerGen = parent.readerGen;
+      termsIndex = parent.termsIndex;
+      currentReaderGen++;
+    }
+
+    @Override
+    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
+      return TermOrdValComparator_SML.createComparator(reader, parent);
     }
 
     @Override
@@ -99,294 +163,6 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
         return -1;
       }
       return val1.compareTo(val2);
-    }
-
-    @Override
-    public int compareBottom(int doc) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void copy(int slot, int doc) {
-      throw new UnsupportedOperationException();
-    }
-
-    // Base class for specialized (per bit width of the
-    // ords) per-segment comparator.  NOTE: this is messy;
-    // we do this only because hotspot can't reliably inline
-    // the underlying array access when looking up doc->ord
-    private abstract class PerSegmentComparator extends FieldComparator {
-
-      @Override
-      public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-        return TermOrdValComparator_SML.this.setNextReader(reader, docBase);
-      }
-
-      @Override
-      public int compare(int slot1, int slot2) {
-        return TermOrdValComparator_SML.this.compare(slot1, slot2);
-      }
-
-      @Override
-      public void setBottom(final int bottom) {
-        TermOrdValComparator_SML.this.setBottom(bottom);
-      }
-
-      @Override
-      public Comparable<?> value(int slot) {
-        return TermOrdValComparator_SML.this.value(slot);
-      }
-    }
-
-    // Used per-segment when bit width of doc->ord is 8:
-    private final class ByteOrdComparator extends PerSegmentComparator {
-      private final byte[] readerOrds;
-      private final FieldCache.DocTermsIndex termsIndex;
-      private final int docBase;
-
-      public ByteOrdComparator(byte[] readerOrds, FieldCache.DocTermsIndex termsIndex, int docBase) {
-        this.readerOrds = readerOrds;
-        this.termsIndex = termsIndex;
-        this.docBase = docBase;
-      }
-
-      @Override
-      public int compareBottom(int doc) {
-        assert bottomSlot != -1;
-        int order = readerOrds[doc]&0xFF;
-        if (order == 0) order = NULL_ORD;
-        if (bottomSameReader) {
-          // ord is precisely comparable, even in the equal case
-          return bottomOrd - order;
-        } else {
-          // ord is only approx comparable: if they are not
-          // equal, we can use that; if they are equal, we
-          // must fallback to compare by value
-          final int cmp = bottomOrd - order;
-          if (cmp != 0) {
-            return cmp;
-          }
-
-          // take care of the case where both vals are null
-          if (order == NULL_ORD) return 0;
-
-          // and at this point we know that neither value is null, so safe to compare
-          termsIndex.lookup(order, tempBR);
-          return bottomValue.compareTo(tempBR);
-        }
-      }
-
-      @Override
-      public void copy(int slot, int doc) {
-        int ord = readerOrds[doc]&0xFF;
-        if (ord == 0) {
-          ords[slot] = NULL_ORD;
-          values[slot] = null;
-        } else {
-          ords[slot] = ord;
-          assert ord > 0;
-          if (values[slot] == null) {
-            values[slot] = new BytesRef();
-          }
-          termsIndex.lookup(ord, values[slot]);
-        }
-        readerGen[slot] = currentReaderGen;
-      }
-    }
-
-    // Used per-segment when bit width of doc->ord is 16:
-    private final class ShortOrdComparator extends PerSegmentComparator {
-      private final short[] readerOrds;
-      private final FieldCache.DocTermsIndex termsIndex;
-      private final int docBase;
-
-      public ShortOrdComparator(short[] readerOrds, FieldCache.DocTermsIndex termsIndex, int docBase) {
-        this.readerOrds = readerOrds;
-        this.termsIndex = termsIndex;
-        this.docBase = docBase;
-      }
-
-      @Override
-      public int compareBottom(int doc) {
-        assert bottomSlot != -1;
-        int order = readerOrds[doc]&0xFFFF;
-        if (order == 0) order = NULL_ORD;
-        if (bottomSameReader) {
-          // ord is precisely comparable, even in the equal case
-          return bottomOrd - order;
-        } else {
-          // ord is only approx comparable: if they are not
-          // equal, we can use that; if they are equal, we
-          // must fallback to compare by value
-          final int cmp = bottomOrd - order;
-          if (cmp != 0) {
-            return cmp;
-          }
-
-          // take care of the case where both vals are null
-          if (order == NULL_ORD) return 0;
-
-          // and at this point we know that neither value is null, so safe to compare
-          termsIndex.lookup(order, tempBR);
-          return bottomValue.compareTo(tempBR);
-        }
-      }
-
-      @Override
-      public void copy(int slot, int doc) {
-        int ord = readerOrds[doc]&0xFFFF;
-        if (ord == 0) {
-          ords[slot] = NULL_ORD;
-          values[slot] = null;
-        } else {
-          ords[slot] = ord;
-          assert ord > 0;
-          if (values[slot] == null) {
-            values[slot] = new BytesRef();
-          }
-          termsIndex.lookup(ord, values[slot]);
-        }
-        readerGen[slot] = currentReaderGen;
-      }
-    }
-
-    // Used per-segment when bit width of doc->ord is 32:
-    private final class IntOrdComparator extends PerSegmentComparator {
-      private final int[] readerOrds;
-      private final FieldCache.DocTermsIndex termsIndex;
-      private final int docBase;
-
-      public IntOrdComparator(int[] readerOrds, FieldCache.DocTermsIndex termsIndex, int docBase) {
-        this.readerOrds = readerOrds;
-        this.termsIndex = termsIndex;
-        this.docBase = docBase;
-      }
-
-      @Override
-      public int compareBottom(int doc) {
-        assert bottomSlot != -1;
-        int order = readerOrds[doc];
-        if (order == 0) order = NULL_ORD;
-        if (bottomSameReader) {
-          // ord is precisely comparable, even in the equal case
-          return bottomOrd - order;
-        } else {
-          // ord is only approx comparable: if they are not
-          // equal, we can use that; if they are equal, we
-          // must fallback to compare by value
-          final int cmp = bottomOrd - order;
-          if (cmp != 0) {
-            return cmp;
-          }
-
-          // take care of the case where both vals are null
-          if (order == NULL_ORD) return 0;
-
-          // and at this point we know that neither value is null, so safe to compare
-          termsIndex.lookup(order, tempBR);
-          return bottomValue.compareTo(tempBR);
-        }
-      }
-
-      @Override
-      public void copy(int slot, int doc) {
-        int ord = readerOrds[doc];
-        if (ord == 0) {
-          ords[slot] = NULL_ORD;
-          values[slot] = null;
-        } else {
-          ords[slot] = ord;
-          assert ord > 0;
-          if (values[slot] == null) {
-            values[slot] = new BytesRef();
-          }
-          termsIndex.lookup(ord, values[slot]);
-        }
-        readerGen[slot] = currentReaderGen;
-      }
-    }
-
-    // Used per-segment when bit width is not a native array
-    // size (8, 16, 32):
-    private final class AnyOrdComparator extends PerSegmentComparator {
-      private final PackedInts.Reader readerOrds;
-      private final FieldCache.DocTermsIndex termsIndex;
-      private final int docBase;
-
-      public AnyOrdComparator(PackedInts.Reader readerOrds, FieldCache.DocTermsIndex termsIndex, int docBase) {
-        this.readerOrds = readerOrds;
-        this.termsIndex = termsIndex;
-        this.docBase = docBase;
-      }
-
-      @Override
-      public int compareBottom(int doc) {
-        assert bottomSlot != -1;
-        int order = (int) readerOrds.get(doc);
-        if (order == 0) order = NULL_ORD;
-        if (bottomSameReader) {
-          // ord is precisely comparable, even in the equal case
-          return bottomOrd - order;
-        } else {
-          // ord is only approx comparable: if they are not
-          // equal, we can use that; if they are equal, we
-          // must fallback to compare by value
-          final int cmp = bottomOrd - order;
-          if (cmp != 0) {
-            return cmp;
-          }
-
-          // take care of the case where both vals are null
-          if (order == NULL_ORD) return 0;
-
-          // and at this point we know that neither value is null, so safe to compare
-          termsIndex.lookup(order, tempBR);
-          return bottomValue.compareTo(tempBR);
-        }
-
-      }
-
-      @Override
-      public void copy(int slot, int doc) {
-        int ord = (int) readerOrds.get(doc);
-        if (ord == 0) {
-          ords[slot] = NULL_ORD;
-          values[slot] = null;
-        } else {
-          ords[slot] = ord;
-          assert ord > 0;
-          if (values[slot] == null) {
-            values[slot] = new BytesRef();
-          }
-          termsIndex.lookup(ord, values[slot]);
-        }
-        readerGen[slot] = currentReaderGen;
-      }
-    }
-
-
-    
-    @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      termsIndex = FieldCache.DEFAULT.getTermsIndex(reader, field);
-      final PackedInts.Reader docToOrd = termsIndex.getDocToOrd();
-      FieldComparator perSegComp;
-      if (docToOrd instanceof Direct8) {
-        perSegComp = new ByteOrdComparator(((Direct8) docToOrd).getArray(), termsIndex, docBase);
-      } else if (docToOrd instanceof Direct16) {
-        perSegComp = new ShortOrdComparator(((Direct16) docToOrd).getArray(), termsIndex, docBase);
-      } else if (docToOrd instanceof Direct32) {
-        perSegComp = new IntOrdComparator(((Direct32) docToOrd).getArray(), termsIndex, docBase);
-      } else {
-        perSegComp = new AnyOrdComparator(docToOrd, termsIndex, docBase);
-      }
-
-      currentReaderGen++;
-      if (bottomSlot != -1) {
-        perSegComp.setBottom(bottomSlot);
-      }
-
-      return perSegComp;
     }
 
     @Override
@@ -423,6 +199,244 @@ public class MissingStringLastComparatorSource extends FieldComparatorSource {
 
     @Override
     public Comparable<?> value(int slot) {
-      return values==null ? NULL_VAL : values[slot];
+      return values==null ? parent.NULL_VAL : values[slot];
     }
   }
+
+  // Used per-segment when bit width of doc->ord is 8:
+  private static final class ByteOrdComparator extends PerSegmentComparator {
+    private final byte[] readerOrds;
+
+    public ByteOrdComparator(byte[] readerOrds, TermOrdValComparator_SML parent) {
+      super(parent);
+      this.readerOrds = readerOrds;
+    }
+
+    @Override
+    public int compareBottom(int doc) {
+      assert bottomSlot != -1;
+      int order = readerOrds[doc]&0xFF;
+      if (order == 0) order = NULL_ORD;
+      if (bottomSameReader) {
+        // ord is precisely comparable, even in the equal case
+        return bottomOrd - order;
+      } else {
+        // ord is only approx comparable: if they are not
+        // equal, we can use that; if they are equal, we
+        // must fallback to compare by value
+        final int cmp = bottomOrd - order;
+        if (cmp != 0) {
+          return cmp;
+        }
+
+        // take care of the case where both vals are null
+        if (order == NULL_ORD) return 0;
+
+        // and at this point we know that neither value is null, so safe to compare
+        termsIndex.lookup(order, tempBR);
+        return bottomValue.compareTo(tempBR);
+      }
+    }
+
+    @Override
+    public void copy(int slot, int doc) {
+      int ord = readerOrds[doc]&0xFF;
+      if (ord == 0) {
+        ords[slot] = NULL_ORD;
+        values[slot] = null;
+      } else {
+        ords[slot] = ord;
+        assert ord > 0;
+        if (values[slot] == null) {
+          values[slot] = new BytesRef();
+        }
+        termsIndex.lookup(ord, values[slot]);
+      }
+      readerGen[slot] = currentReaderGen;
+    }
+  }
+
+  // Used per-segment when bit width of doc->ord is 16:
+  private static final class ShortOrdComparator extends PerSegmentComparator {
+    private final short[] readerOrds;
+
+    public ShortOrdComparator(short[] readerOrds, TermOrdValComparator_SML parent) {
+      super(parent);
+      this.readerOrds = readerOrds;
+    }
+
+    @Override
+    public int compareBottom(int doc) {
+      assert bottomSlot != -1;
+      int order = readerOrds[doc]&0xFFFF;
+      if (order == 0) order = NULL_ORD;
+      if (bottomSameReader) {
+        // ord is precisely comparable, even in the equal case
+        return bottomOrd - order;
+      } else {
+        // ord is only approx comparable: if they are not
+        // equal, we can use that; if they are equal, we
+        // must fallback to compare by value
+        final int cmp = bottomOrd - order;
+        if (cmp != 0) {
+          return cmp;
+        }
+
+        // take care of the case where both vals are null
+        if (order == NULL_ORD) return 0;
+
+        // and at this point we know that neither value is null, so safe to compare
+        termsIndex.lookup(order, tempBR);
+        return bottomValue.compareTo(tempBR);
+      }
+    }
+
+    @Override
+    public void copy(int slot, int doc) {
+      int ord = readerOrds[doc]&0xFFFF;
+      if (ord == 0) {
+        ords[slot] = NULL_ORD;
+        values[slot] = null;
+      } else {
+        ords[slot] = ord;
+        assert ord > 0;
+        if (values[slot] == null) {
+          values[slot] = new BytesRef();
+        }
+        termsIndex.lookup(ord, values[slot]);
+      }
+      readerGen[slot] = currentReaderGen;
+    }
+  }
+
+  // Used per-segment when bit width of doc->ord is 32:
+  private static final class IntOrdComparator extends PerSegmentComparator {
+    private final int[] readerOrds;
+
+    public IntOrdComparator(int[] readerOrds, TermOrdValComparator_SML parent) {
+      super(parent);
+      this.readerOrds = readerOrds;
+    }
+
+    @Override
+    public int compareBottom(int doc) {
+      assert bottomSlot != -1;
+      int order = readerOrds[doc];
+      if (order == 0) order = NULL_ORD;
+      if (bottomSameReader) {
+        // ord is precisely comparable, even in the equal case
+        return bottomOrd - order;
+      } else {
+        // ord is only approx comparable: if they are not
+        // equal, we can use that; if they are equal, we
+        // must fallback to compare by value
+        final int cmp = bottomOrd - order;
+        if (cmp != 0) {
+          return cmp;
+        }
+
+        // take care of the case where both vals are null
+        if (order == NULL_ORD) return 0;
+
+        // and at this point we know that neither value is null, so safe to compare
+        termsIndex.lookup(order, tempBR);
+        return bottomValue.compareTo(tempBR);
+      }
+    }
+
+    @Override
+    public void copy(int slot, int doc) {
+      int ord = readerOrds[doc];
+      if (ord == 0) {
+        ords[slot] = NULL_ORD;
+        values[slot] = null;
+      } else {
+        ords[slot] = ord;
+        assert ord > 0;
+        if (values[slot] == null) {
+          values[slot] = new BytesRef();
+        }
+        termsIndex.lookup(ord, values[slot]);
+      }
+      readerGen[slot] = currentReaderGen;
+    }
+  }
+
+  // Used per-segment when bit width is not a native array
+  // size (8, 16, 32):
+  private static final class AnyOrdComparator extends PerSegmentComparator {
+    private final PackedInts.Reader readerOrds;
+
+    public AnyOrdComparator(PackedInts.Reader readerOrds, TermOrdValComparator_SML parent) {
+      super(parent);
+      this.readerOrds = readerOrds;
+    }
+
+    @Override
+    public int compareBottom(int doc) {
+      assert bottomSlot != -1;
+      int order = (int) readerOrds.get(doc);
+      if (order == 0) order = NULL_ORD;
+      if (bottomSameReader) {
+        // ord is precisely comparable, even in the equal case
+        return bottomOrd - order;
+      } else {
+        // ord is only approx comparable: if they are not
+        // equal, we can use that; if they are equal, we
+        // must fallback to compare by value
+        final int cmp = bottomOrd - order;
+        if (cmp != 0) {
+          return cmp;
+        }
+
+        // take care of the case where both vals are null
+        if (order == NULL_ORD) return 0;
+
+        // and at this point we know that neither value is null, so safe to compare
+        termsIndex.lookup(order, tempBR);
+        return bottomValue.compareTo(tempBR);
+      }
+
+    }
+
+    @Override
+    public void copy(int slot, int doc) {
+      int ord = (int) readerOrds.get(doc);
+      if (ord == 0) {
+        ords[slot] = NULL_ORD;
+        values[slot] = null;
+      } else {
+        ords[slot] = ord;
+        assert ord > 0;
+        if (values[slot] == null) {
+          values[slot] = new BytesRef();
+        }
+        termsIndex.lookup(ord, values[slot]);
+      }
+      readerGen[slot] = currentReaderGen;
+    }
+  }
+
+  public static FieldComparator createComparator(IndexReader reader, TermOrdValComparator_SML parent) throws IOException {
+    parent.termsIndex = FieldCache.DEFAULT.getTermsIndex(reader, parent.field);
+    final PackedInts.Reader docToOrd = parent.termsIndex.getDocToOrd();
+    PerSegmentComparator perSegComp;
+
+    if (docToOrd instanceof Direct8) {
+      perSegComp = new ByteOrdComparator(((Direct8) docToOrd).getArray(), parent);
+    } else if (docToOrd instanceof Direct16) {
+      perSegComp = new ShortOrdComparator(((Direct16) docToOrd).getArray(), parent);
+    } else if (docToOrd instanceof Direct32) {
+      perSegComp = new IntOrdComparator(((Direct32) docToOrd).getArray(), parent);
+    } else {
+      perSegComp = new AnyOrdComparator(docToOrd, parent);
+    }
+
+    if (perSegComp.bottomSlot != -1) {
+      perSegComp.setBottom(perSegComp.bottomSlot);
+    }
+
+    parent.current = perSegComp;
+    return perSegComp;
+  }
+}
