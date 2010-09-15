@@ -82,7 +82,6 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     return f;
   }
 
-  @Override
   public Query createSpatialQuery(QParser parser, SpatialOptions options) {
     BooleanQuery result = new BooleanQuery();
     double[] point = new double[0];
