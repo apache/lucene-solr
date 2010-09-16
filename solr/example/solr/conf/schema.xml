@@ -458,7 +458,7 @@
    <field name="name" type="textgen" indexed="true" stored="true"/>
    <field name="alphaNameSort" type="alphaOnlySort" indexed="true" stored="false"/>
    <field name="manu" type="textgen" indexed="true" stored="true" omitNorms="true"/>
-   <field name="cat" type="text_ws" indexed="true" stored="true" multiValued="true" omitNorms="true" />
+   <field name="cat" type="string" indexed="true" stored="true" multiValued="true"/>
    <field name="features" type="text" indexed="true" stored="true" multiValued="true"/>
    <field name="includes" type="text" indexed="true" stored="true" termVectors="true" termPositions="true" termOffsets="true" />
 
