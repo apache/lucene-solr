@@ -244,10 +244,15 @@ public class QueryComponent extends SearchComponent
           cmd.groupCommands = null;
 
         if (cmd.groupCommands != null) {
+          if (rb.doHighlights || rb.isDebug()) {
+            // we need a single list of the returned docs
+            cmd.setFlags(cmd.getFlags() | SolrIndexSearcher.GET_DOCLIST);
+          }
+
           searcher.search(result,cmd);
           rb.setResult( result );
           rsp.add("grouped", result.groupedResults);
-          // TODO: get "hits" a different way
+          // TODO: get "hits" a different way to log
           return;
         }
       } catch (ParseException e) {

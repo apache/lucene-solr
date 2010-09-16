@@ -223,6 +223,20 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     );
     purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity
 
+    // test that grouping works with highlighting
+    assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id"
+                 ,"hl","true", "hl.fl",f)
+      ,"/grouped/foo_i/matches:10:"
+      ,"/highlighting:{'_ORDERED_':'', '8':{},'3':{},'4':{},'1':{},'2':{}}"
+    );
+
+    // test that grouping works with debugging
+    assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id"
+                 ,"debugQuery","true")
+      ,"/grouped/foo_i/matches:10:"
+      ,"/debug/explain/8:"
+      ,"/debug/explain/2:"
+    );
   };
 
 

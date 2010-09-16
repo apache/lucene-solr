@@ -230,7 +230,7 @@ class CollectionTester {
           break;
         }
 
-        if (entry.getKey().equals(expectedKey)) {
+        if (!entry.getKey().equals(expectedKey)) {
           popPath();          
           setErr("expected key '" + expectedKey + "' instead of '"+entry.getKey()+"' in ordered map");
           return false;

@@ -38,7 +38,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.*;
 
-import org.apache.solr.search.function.DocValues;
 import org.apache.solr.search.function.ValueSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -898,7 +897,8 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   private static final int NO_CHECK_QCACHE       = 0x80000000;
   private static final int GET_DOCSET            = 0x40000000;
   private static final int NO_CHECK_FILTERCACHE  = 0x20000000;
-
+  
+  public static final int GET_DOCLIST           =        0x02; // get the documents actually returned in a response
   public static final int GET_SCORES             =       0x01;
 
 
@@ -913,6 +913,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     boolean needScores = (cmd.getFlags() & GET_SCORES) != 0;
     boolean getDocSet = (cmd.getFlags() & GET_DOCSET) != 0;
+    boolean getDocList = (cmd.getFlags() & GET_DOCLIST) != 0; // doclist needed for debugging or highlighting
     Query query = QueryUtils.makeQueryable(cmd.getQuery());
 
     final Filter luceneFilter = filter==null ? null : filter.getTopFilter();
@@ -977,6 +978,9 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     // TODO: optionally cache docs and feed them back through rather than re-searching
     search(query, luceneFilter, MultiCollector.wrap(phase2Collectors));
 
+    Set<Integer> idSet = new LinkedHashSet<Integer>();  // used for tracking unique docs when we need a doclist
+    int maxMatches = 0;
+    float maxScore = Float.NEGATIVE_INFINITY;
 
     NamedList grouped = new SimpleOrderedMap();
     for (int cmdnum=0; cmdnum<cmd.groupCommands.size(); cmdnum++) {
@@ -990,7 +994,9 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       NamedList groupResult = new SimpleOrderedMap();
       grouped.add(groupCommand.key, groupResult);  // grouped={ key={
 
-      groupResult.add("matches", collector.getMatches());
+      int this_matches = collector.getMatches();
+      groupResult.add("matches", this_matches);
+      maxMatches = Math.max(maxMatches, this_matches);
 
       List groupList = new ArrayList();
       groupResult.add("groups", groupList);        // grouped={ key={ groups=[
@@ -1014,9 +1020,15 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
             scores[i] = topDocs.scoreDocs[i].score;
         }
 
-        DocSlice docs = new DocSlice(0, ids.length, ids, scores, topDocs.totalHits, topDocs.getMaxScore());
+        float score = topDocs.getMaxScore();
+        maxScore = Math.max(maxScore, score);
+        DocSlice docs = new DocSlice(0, ids.length, ids, scores, topDocs.totalHits, score);
         nl.add("doclist", docs);
 
+        if (getDocList) {
+          for (int id : ids)
+            idSet.add(id);
+        }
 
         /*** values from stage 1
          DocSlice docs = new DocSlice(0, 1, new int[] {group.topDoc}, null, 1, 0);
@@ -1030,9 +1042,20 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
          groupResult.add(nl);
          ***/
       }
-      qr.groupedResults = grouped;
-
     }
+
+    qr.groupedResults = grouped;    
+
+    if (getDocList) {
+      int sz = idSet.size();
+      int[] ids = new int[sz];
+      int idx = 0;
+      for (int val : idSet) {
+        ids[idx++] = val;
+      }
+      qr.docListAndSet.docList = new DocSlice(0, sz, ids, null, maxMatches, maxScore);
+    }
+
   }
 
   /**
