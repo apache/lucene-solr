@@ -240,7 +240,7 @@ public class QueryComponent extends SearchComponent
         if (cmd.groupCommands != null) {
           if (rb.doHighlights || rb.isDebug()) {
             // we need a single list of the returned docs
-            cmd.setFlags(cmd.getFlags() | SolrIndexSearcher.GET_DOCLIST);
+            cmd.setFlags(SolrIndexSearcher.GET_DOCLIST);
           }
 
           searcher.search(result,cmd);
