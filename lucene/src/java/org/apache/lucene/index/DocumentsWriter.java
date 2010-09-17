@@ -636,6 +636,8 @@ final class DocumentsWriter {
       Collection<DocConsumerPerThread> threads = new HashSet<DocConsumerPerThread>();
       for(int i=0;i<threadStates.length;i++)
         threads.add(threadStates[i].consumer);
+
+      final long startNumBytesUsed = numBytesUsed;
       consumer.flush(threads, flushState);
 
       if (infoStream != null) {
@@ -643,10 +645,10 @@ final class DocumentsWriter {
             flushState.numDocs, directory, false, -1, flushState.segmentName,
             false, hasProx(), flushState.codec);
         final long newSegmentSize = si.sizeInBytes();
-        String message = "  ramUsed=" + nf.format(numBytesUsed/1024./1024.) + " MB" +
+        String message = "  ramUsed=" + nf.format(startNumBytesUsed/1024./1024.) + " MB" +
           " newFlushedSize=" + newSegmentSize +
           " docs/MB=" + nf.format(numDocsInRAM/(newSegmentSize/1024./1024.)) +
-          " new/old=" + nf.format(100.0*newSegmentSize/numBytesUsed) + "%";
+          " new/old=" + nf.format(100.0*newSegmentSize/startNumBytesUsed) + "%";
         message(message);
       }
 
