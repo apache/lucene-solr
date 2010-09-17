@@ -25,64 +25,28 @@ import org.apache.solr.search.function.ValueSource;
 import java.io.IOException;
 import java.util.*;
 
-public class MultiCollector extends Collector {
-  final Collector[] collectors;
-  final boolean acceptsDocsOutOfOrder;
+public class Grouping {
 
-  public static Collector wrap(List<? extends Collector> collectors) {
-    return collectors.size() == 1 ? collectors.get(0) : new MultiCollector(collectors);  
+  public static class Command {
+    public String key;  // the name to use for this group in the response
+    public Sort groupSort;  // the sort of the documents *within* a single group.
+    public int groupLimit;   // how many groups - defaults to the "rows" parameter
+    public int docsPerGroup; // how many docs in each group - from "group.limit" param, default=1
   }
 
-  public static Collector[] subCollectors(Collector collector) {
-    if (collector instanceof MultiCollector)
-      return ((MultiCollector)collector).collectors;
-    return new Collector[]{collector};
+  public static class CommandQuery extends Command {
+    public Query query;
   }
 
-  public MultiCollector(List<? extends Collector> collectors) {
-    this(collectors.toArray(new Collector[collectors.size()]));
-  }
+  public static class CommandFunc extends Command {
+    public ValueSource groupBy;
 
-  public MultiCollector(Collector[] collectors) {
-    this.collectors = collectors;
 
-    boolean acceptsDocsOutOfOrder = true;
-    for (Collector collector : collectors) {
-      if (collector.acceptsDocsOutOfOrder() == false) {
-        acceptsDocsOutOfOrder = false;
-        break;
-      }
-    }
-    this.acceptsDocsOutOfOrder = acceptsDocsOutOfOrder;
-  }
-
-  @Override
-  public void setScorer(Scorer scorer) throws IOException {
-    for (Collector collector : collectors)
-      collector.setScorer(scorer);
-  }
-
-  @Override
-  public void collect(int doc) throws IOException {
-    for (Collector collector : collectors)
-      collector.collect(doc);
-  }
-
-  @Override
-  public void setNextReader(IndexReader reader, int docBase) throws IOException {
-    for (Collector collector : collectors)
-      collector.setNextReader(reader, docBase);
-  }
-
-  @Override
-  public boolean acceptsDocsOutOfOrder() {
-    return acceptsDocsOutOfOrder;
+    // todo - find a better place to store these
+    transient Map context;
+    transient Collector collector;
   }
 }
-
-
-
-
 
 
 class SearchGroup {

@@ -33,10 +33,8 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.*;
-import org.apache.solr.search.function.BoostedQuery;
 import org.apache.solr.search.function.FunctionQuery;
 import org.apache.solr.search.function.QueryValueSource;
-import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.util.SolrPluginUtils;
 
 import java.io.IOException;
@@ -190,7 +188,7 @@ public class QueryComponent extends SearchComponent
     boolean doGroup = params.getBool(GroupParams.GROUP, false);
     if (doGroup) {
       try {
-        cmd.groupCommands = new ArrayList<SolrIndexSearcher.GroupCommand>();
+        cmd.groupCommands = new ArrayList<Grouping.Command>();
         
         String[] fields = params.getParams(GroupParams.GROUP_FIELD);
         String[] funcs = params.getParams(GroupParams.GROUP_FUNC);
@@ -217,7 +215,7 @@ public class QueryComponent extends SearchComponent
           for (String groupByStr : funcs) {
             QParser parser = QParser.getParser(groupByStr, "func", rb.req);
             Query q = parser.getQuery();
-            SolrIndexSearcher.GroupCommandFunc gc = new SolrIndexSearcher.GroupCommandFunc();
+            Grouping.CommandFunc gc = new Grouping.CommandFunc();
             gc.groupSort = groupSort;
 
             if (q instanceof FunctionQuery) {

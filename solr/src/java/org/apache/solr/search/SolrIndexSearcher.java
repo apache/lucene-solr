@@ -923,10 +923,10 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     // TODO: make this a generic collector list
     List<TopGroupCollector> collectors = new ArrayList<TopGroupCollector>(cmd.groupCommands.size());
-    for (GroupCommand groupCommand : cmd.groupCommands) {
+    for (Grouping.Command groupCommand : cmd.groupCommands) {
       // TODO: perhaps use some methods rather than instanceof
-      if (groupCommand instanceof GroupCommandFunc) {
-        GroupCommandFunc gc = (GroupCommandFunc)groupCommand;
+      if (groupCommand instanceof Grouping.CommandFunc) {
+        Grouping.CommandFunc gc = (Grouping.CommandFunc)groupCommand;
         Map context = ValueSource.newContext();
         gc.groupBy.createWeight(context, this);
         TopGroupCollector collector;
@@ -943,7 +943,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
       }
     }
 
-    Collector allCollectors = MultiCollector.wrap(collectors);
+    Collector allCollectors = MultiCollector.wrap(collectors.toArray(new Collector[collectors.size()]));
     DocSetCollector setCollector = null;
     if (getDocSet) {
       // TODO: can callCollectors be zero length?
@@ -959,9 +959,9 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     // TODO: make this a generic collector list
     List<Phase2GroupCollector> phase2Collectors = new ArrayList<Phase2GroupCollector>(cmd.groupCommands.size());
-    for (GroupCommand groupCommand : cmd.groupCommands) {
-      if (groupCommand instanceof GroupCommandFunc) {
-        GroupCommandFunc gc = (GroupCommandFunc)groupCommand;
+    for (Grouping.Command groupCommand : cmd.groupCommands) {
+      if (groupCommand instanceof Grouping.CommandFunc) {
+        Grouping.CommandFunc gc = (Grouping.CommandFunc)groupCommand;
         Sort collectorSort = gc.groupSort == null ? sort : gc.groupSort;
         Phase2GroupCollector collector = new Phase2GroupCollector((TopGroupCollector)gc.collector, gc.groupBy, gc.context, collectorSort, gc.docsPerGroup, needScores);
         phase2Collectors.add(collector);
@@ -969,7 +969,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     }
 
     // TODO: optionally cache docs and feed them back through rather than re-searching
-    search(query, luceneFilter, MultiCollector.wrap(phase2Collectors));
+    search(query, luceneFilter, MultiCollector.wrap(phase2Collectors.toArray(new Collector[phase2Collectors.size()])));
 
     Set<Integer> idSet = new LinkedHashSet<Integer>();  // used for tracking unique docs when we need a doclist
     int maxMatches = 0;
@@ -977,8 +977,8 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     NamedList grouped = new SimpleOrderedMap();
     for (int cmdnum=0; cmdnum<cmd.groupCommands.size(); cmdnum++) {
-      GroupCommand groupCommand = cmd.groupCommands.get(cmdnum);
-      GroupCommandFunc groupCommandFunc = (GroupCommandFunc)groupCommand;
+      Grouping.Command groupCommand = cmd.groupCommands.get(cmdnum);
+      Grouping.CommandFunc groupCommandFunc = (Grouping.CommandFunc)groupCommand;
       TopGroupCollector collector = collectors.get(cmdnum);
       Phase2GroupCollector collector2 = phase2Collectors.get(cmdnum);
 
@@ -1871,7 +1871,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     private int flags;
     private long timeAllowed = -1;
 
-    public List<GroupCommand> groupCommands;
+    public List<Grouping.Command> groupCommands;
 
     public Query getQuery() { return query; }
     public QueryCommand setQuery(Query query) {
@@ -1973,21 +1973,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     }
   }
 
-  public static class GroupCommand {
-    public String key;  // the name to use for this group in the response
-    public Sort groupSort;  // the sort of the documents *within* a single group.
-    public int groupLimit;   // how many groups - defaults to the "rows" parameter
-    public int docsPerGroup; // how many docs in each group - from "group.limit" param, default=1
-  }
-
-  public static class GroupCommandFunc extends GroupCommand {
-    public ValueSource groupBy;
-
-
-    // todo - find a better place to store these
-    transient Map context;
-    transient Collector collector;
-  }
 
   /**
    * The result of a search.
