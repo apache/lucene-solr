@@ -930,9 +930,8 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         Map context = ValueSource.newContext();
         gc.groupBy.createWeight(context, this);
         TopGroupCollector collector;
-        if (gc instanceof GroupSortCommand) {
-          GroupSortCommand sortGc = (GroupSortCommand) gc;
-          collector = new TopGroupSortCollector(gc.groupBy, context, sort, sortGc.sort, last);  
+        if (gc.groupSort != null && gc.groupSort != sort) {
+          collector = new TopGroupSortCollector(gc.groupBy, context, sort, gc.groupSort, last);
         } else {
           collector = new TopGroupCollector(gc.groupBy, context, sort, last);
         }
@@ -963,13 +962,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     for (GroupCommand groupCommand : cmd.groupCommands) {
       if (groupCommand instanceof GroupCommandFunc) {
         GroupCommandFunc gc = (GroupCommandFunc)groupCommand;
-        Sort collectorSort;
-        if (gc instanceof GroupSortCommand) {
-          collectorSort = ((GroupSortCommand) gc).sort;
-        } else {
-          collectorSort = sort;
-        }
-
+        Sort collectorSort = gc.groupSort == null ? sort : gc.groupSort;
         Phase2GroupCollector collector = new Phase2GroupCollector((TopGroupCollector)gc.collector, gc.groupBy, gc.context, collectorSort, gc.docsPerGroup, needScores);
         phase2Collectors.add(collector);
       }
@@ -1985,9 +1978,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     public Sort groupSort;  // the sort of the documents *within* a single group.
     public int groupLimit;   // how many groups - defaults to the "rows" parameter
     public int docsPerGroup; // how many docs in each group - from "group.limit" param, default=1
-
-
-    
   }
 
   public static class GroupCommandFunc extends GroupCommand {
@@ -1997,10 +1987,6 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     // todo - find a better place to store these
     transient Map context;
     transient Collector collector;
-  }
-
-  public static class GroupSortCommand extends GroupCommandFunc {
-    public Sort sort;
   }
 
   /**

@@ -217,14 +217,8 @@ public class QueryComponent extends SearchComponent
           for (String groupByStr : funcs) {
             QParser parser = QParser.getParser(groupByStr, "func", rb.req);
             Query q = parser.getQuery();
-            SolrIndexSearcher.GroupCommandFunc gc;
-            if (groupSort != null) {
-              SolrIndexSearcher.GroupSortCommand gcSort = new SolrIndexSearcher.GroupSortCommand();
-              gcSort.sort = groupSort;
-              gc = gcSort;
-            } else {
-              gc =  new SolrIndexSearcher.GroupCommandFunc();
-            }
+            SolrIndexSearcher.GroupCommandFunc gc = new SolrIndexSearcher.GroupCommandFunc();
+            gc.groupSort = groupSort;
 
             if (q instanceof FunctionQuery) {
               gc.groupBy = ((FunctionQuery)q).getValueSource();
