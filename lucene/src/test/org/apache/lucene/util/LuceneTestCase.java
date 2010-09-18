@@ -863,21 +863,21 @@ public abstract class LuceneTestCase extends Assert {
     public LocalizedTestCaseRunner(Class<?> clazz) throws InitializationError {
       super(clazz);
     }
-    
-    @Override
-    protected void runChild(FrameworkMethod arg0, RunNotifier arg1) {
-      arg1.addListener(listener);
-      locale = defaultLocale;
-      super.runChild(arg0, arg1);
-      
-      for (Locale other : Locale.getAvailableLocales()) {
-        locale = other;
-        Locale.setDefault(locale);
-        super.runChild(arg0, arg1);
-      }
-      
-      Locale.setDefault(defaultLocale);
-    }
+// FIXME see LUCENE-2652
+//    @Override
+//    protected void runChild(FrameworkMethod arg0, RunNotifier arg1) {
+//      arg1.addListener(listener);
+//      locale = defaultLocale;
+//      super.runChild(arg0, arg1);
+//      
+//      for (Locale other : Locale.getAvailableLocales()) {
+//        locale = other;
+//        Locale.setDefault(locale);
+//        super.runChild(arg0, arg1);
+//      }
+//      
+//      Locale.setDefault(defaultLocale);
+//    }
   }
   
   /**
