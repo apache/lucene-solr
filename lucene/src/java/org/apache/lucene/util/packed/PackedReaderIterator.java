@@ -21,12 +21,13 @@ import org.apache.lucene.store.IndexInput;
 
 import java.io.IOException;
 
-class PackedReaderIterator implements PackedInts.ReaderIterator {
+final class PackedReaderIterator implements PackedInts.ReaderIterator {
   private long pending;
   private int pendingBitsLeft;
   private final IndexInput in;
   private final int bitsPerValue;
   private final int valueCount;
+  private int position = -1;
 
   // masks[n-1] masks for bottom n bits
   private final long[] masks;
@@ -38,7 +39,6 @@ class PackedReaderIterator implements PackedInts.ReaderIterator {
     this.bitsPerValue = bitsPerValue;
     
     this.in = in;
-
     masks = new long[bitsPerValue];
 
     long v = 1;
@@ -61,24 +61,51 @@ class PackedReaderIterator implements PackedInts.ReaderIterator {
       pending = in.readLong();
       pendingBitsLeft = 64;
     }
-
-    if (pendingBitsLeft >= bitsPerValue) {
-      // not split
-      final long result = (pending >> (pendingBitsLeft - bitsPerValue)) & masks[bitsPerValue-1];
+    
+    final long result;
+    if (pendingBitsLeft >= bitsPerValue) { // not split
+      result = (pending >> (pendingBitsLeft - bitsPerValue)) & masks[bitsPerValue-1];
       pendingBitsLeft -= bitsPerValue;
-      return result;
-    } else {
-      // split
+    } else { // split
       final int bits1 = bitsPerValue - pendingBitsLeft;
       final long result1 = (pending & masks[pendingBitsLeft-1]) << bits1;
       pending = in.readLong();
       final long result2 = (pending >> (64 - bits1)) & masks[bits1-1];
       pendingBitsLeft = 64 + pendingBitsLeft - bitsPerValue;
-      return result1 | result2;
+      result = result1 | result2;
     }
+    
+    ++position;
+    return result;
   }
 
   public void close() throws IOException {
     in.close();
+  }
+
+  public int ord() {
+    return position;
+  }
+
+  public long advance(final int ord) throws IOException{
+    assert ord < valueCount : "ord must be less than valueCount";
+    assert ord > position : "ord must be greater than the current position";
+    final long bits = (long) bitsPerValue;
+    final int posToSkip = ord - 1 - position;
+    final long bitsToSkip = (bits * (long)posToSkip);
+    if(bitsToSkip < pendingBitsLeft ){ // enough bits left - no seek required
+      pendingBitsLeft -= bitsToSkip;
+    }else {
+      final long skip = bitsToSkip-pendingBitsLeft;
+      final long closestByte = (skip >> 6) << 3;
+      if(closestByte != 0) { // need to seek 
+        final long filePointer = in.getFilePointer();
+        in.seek(filePointer + closestByte);
+      }
+      pending = in.readLong();
+      pendingBitsLeft = 64 - (int)(skip % 64);
+    }
+    position = ord-1;
+    return next();
   }
 }

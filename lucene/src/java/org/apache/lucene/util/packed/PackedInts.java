@@ -76,8 +76,14 @@ public class PackedInts {
     int getBitsPerValue();
     /** Returns number of values */
     int size();
+    /** Returns the current position */
+    int ord();
+    /** Skips to the given ordinal and returns its value.
+     * @return the value at the given position
+     * @throws IOException if reading the value throws an IOException*/
+    long advance(int ord) throws IOException;
   }
-
+  
   /**
    * A packed integer array that can be modified.
    * @lucene.internal
@@ -192,10 +198,9 @@ public class PackedInts {
     final int bitsPerValue = in.readVInt();
     assert bitsPerValue > 0 && bitsPerValue <= 64: "bitsPerValue=" + bitsPerValue;
     final int valueCount = in.readVInt();
-
     return new PackedReaderIterator(bitsPerValue, valueCount, in);
   }
-
+  
   /**
    * Create a packed integer array with the given amount of values initialized
    * to 0. the valueCount and the bitsPerValue cannot be changed after creation.

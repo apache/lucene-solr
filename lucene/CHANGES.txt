@@ -220,6 +220,9 @@ New features
   FieldComparator instance.  You can "return this", to just reuse the
   same instance, or you can return a comparator optimized to the new
   segment.  (yonik, Mike McCandless)
+  
+* LUCENE-2648: PackedInts.Iterator now supports to advance by more than a
+  single ordinal. (Simon Willnauer) 
 
 Optimizations
 

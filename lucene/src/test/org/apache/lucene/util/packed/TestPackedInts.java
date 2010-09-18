@@ -70,26 +70,51 @@ public class TestPackedInts extends LuceneTestCase {
         w.finish();
         final long fp = out.getFilePointer();
         out.close();
-
-        IndexInput in = d.openInput("out.bin");
-        PackedInts.Reader r = PackedInts.getReader(in);
-        assertEquals(fp, in.getFilePointer());
-        for(int i=0;i<valueCount;i++) {
-          assertEquals("index=" + i + " ceil=" + ceil + " valueCount="
-                  + valueCount + " nbits=" + nbits + " for "
-                  + r.getClass().getSimpleName(), values[i], r.get(i));
+        {// test reader
+          IndexInput in = d.openInput("out.bin");
+          PackedInts.Reader r = PackedInts.getReader(in);
+          assertEquals(fp, in.getFilePointer());
+          for(int i=0;i<valueCount;i++) {
+            assertEquals("index=" + i + " ceil=" + ceil + " valueCount="
+                    + valueCount + " nbits=" + nbits + " for "
+                    + r.getClass().getSimpleName(), values[i], r.get(i));
+          }
+          in.close();
         }
-        in.close();
-
-        in = d.openInput("out.bin");
-        PackedInts.ReaderIterator r2 = PackedInts.getReaderIterator(in);
-        for(int i=0;i<valueCount;i++) {
-          assertEquals("index=" + i + " ceil=" + ceil + " valueCount="
-                  + valueCount + " nbits=" + nbits + " for "
-                  + r.getClass().getSimpleName(), values[i], r2.next());
+        { // test reader iterator next
+          IndexInput in = d.openInput("out.bin");
+          PackedInts.ReaderIterator r = PackedInts.getReaderIterator(in);
+          for(int i=0;i<valueCount;i++) {
+            assertEquals("index=" + i + " ceil=" + ceil + " valueCount="
+                    + valueCount + " nbits=" + nbits + " for "
+                    + r.getClass().getSimpleName(), values[i], r.next());
+          }
+          assertEquals(fp, in.getFilePointer());
+          in.close();
         }
-        assertEquals(fp, in.getFilePointer());
-        in.close();
+        { // test reader iterator next vs. advance
+          IndexInput in = d.openInput("out.bin");
+          PackedInts.ReaderIterator intsEnum = PackedInts.getReaderIterator(in);
+          for (int i = 0; i < valueCount; i += 
+            1 + ((valueCount - i) <= 20 ? random.nextInt(valueCount - i)
+              : random.nextInt(20))) {
+            final String msg = "index=" + i + " ceil=" + ceil + " valueCount="
+                + valueCount + " nbits=" + nbits + " for "
+                + intsEnum.getClass().getSimpleName();
+            if (i - intsEnum.ord() == 1 && random.nextBoolean()) {
+              assertEquals(msg, values[i], intsEnum.next());
+            } else {
+              assertEquals(msg, values[i], intsEnum.advance(i));
+            }
+            assertEquals(msg, i, intsEnum.ord());
+          }
+          if (intsEnum.ord() < valueCount - 1)
+            assertEquals(values[valueCount - 1], intsEnum
+                .advance(valueCount - 1));
+          assertEquals(valueCount - 1, intsEnum.ord());
+          assertEquals(fp, in.getFilePointer());
+          in.close();
+        }
         ceil *= 2;
         d.close();
       }
