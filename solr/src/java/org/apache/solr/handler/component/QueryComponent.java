@@ -224,7 +224,22 @@ public class QueryComponent extends SearchComponent
               gc.groupBy = new QueryValueSource(q, 0.0f);
             }
             gc.key = groupByStr;
-            gc.groupLimit = limitDefault;
+            gc.numGroups = limitDefault;
+            gc.docsPerGroup = docsPerGroupDefault;
+
+            cmd.groupCommands.add(gc);
+          }
+        }
+
+        if (queries != null) {
+          for (String groupByStr : queries) {
+            QParser parser = QParser.getParser(groupByStr, null, rb.req);
+            Query gq = parser.getQuery();
+            Grouping.CommandQuery gc = new Grouping.CommandQuery();
+            gc.query = gq;
+            gc.groupSort = groupSort;
+            gc.key = groupByStr;
+            gc.numGroups = limitDefault;
             gc.docsPerGroup = docsPerGroupDefault;
 
             cmd.groupCommands.add(gc);

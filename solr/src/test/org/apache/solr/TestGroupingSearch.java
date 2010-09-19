@@ -168,10 +168,10 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     );
 
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id")
-      ,"/responseHeader/status:0"                         // exact match
-      ,"/responseHeader:{'_SKIP_':'QTime', 'status':0}"   // partial match by skipping some elements
-      ,"/responseHeader:{'_MATCH_':'status', 'status':0}" // partial match by only including some elements
-      ,"/grouped:{'foo_i':{'matches':10,'groups':[\n" +
+      ,"/responseHeader/status==0"                         // exact match
+      ,"/responseHeader=={'_SKIP_':'QTime', 'status':0}"   // partial match by skipping some elements
+      ,"/responseHeader=={'_MATCH_':'status', 'status':0}" // partial match by only including some elements
+      ,"/grouped=={'"+f+"':{'matches':10,'groups':[\n" +
               "{'groupValue':1,'doclist':{'numFound':3,'start':0,'docs':[{'id':'8'}]}}," +
               "{'groupValue':3,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}," +
               "{'groupValue':2,'doclist':{'numFound':3,'start':0,'docs':[{'id':'4'}]}}," +
@@ -182,7 +182,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
     // test limiting the number of groups returned
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "rows","2")
-      ,"/grouped:{'foo_i':{'matches':10,'groups':[" +
+      ,"/grouped=={'"+f+"':{'matches':10,'groups':[" +
               "{'groupValue':1,'doclist':{'numFound':3,'start':0,'docs':[{'id':'8'}]}}," +
               "{'groupValue':3,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}" +
             "]}}"
@@ -190,7 +190,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
     // test increasing the docs per group returned
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id", "rows","2", "group.limit","3")
-      ,"/grouped:{'foo_i':{'matches':10,'groups':[" +
+      ,"/grouped=={'"+f+"':{'matches':10,'groups':[" +
             "{'groupValue':1,'doclist':{'numFound':3,'start':0,'docs':[{'id':'8'},{'id':'10'},{'id':'5'}]}}," +
             "{'groupValue':3,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'},{'id':'6'}]}}" +
           "]}}"
@@ -198,7 +198,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
     // test adding in scores
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id,score", "rows","2", "group.limit","2", "indent","off")
-      ,"/grouped/foo_i/groups:" +
+      ,"/grouped/"+f+"/groups==" +
             "[" +
               "{'groupValue':1,'doclist':{'numFound':3,'start':0,'maxScore':10.0,'docs':[{'id':'8','score':10.0},{'id':'10','score':3.0}]}}," +
               "{'groupValue':3,'doclist':{'numFound':2,'start':0,'maxScore':7.0,'docs':[{'id':'3','score':7.0},{'id':'6','score':2.0}]}}" +
@@ -209,7 +209,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     // test function (functions are currently all float - this may change)
     String func = "add("+f+","+f+")";
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.func", func  , "fl","id", "rows","2")
-      ,"/grouped:{'"+func+"':{'matches':10,'groups':[" +
+      ,"/grouped=={'"+func+"':{'matches':10,'groups':[" +
               "{'groupValue':2.0,'doclist':{'numFound':3,'start':0,'docs':[{'id':'8'}]}}," +
               "{'groupValue':6.0,'doclist':{'numFound':2,'start':0,'docs':[{'id':'3'}]}}" +
             "]}}"
@@ -218,26 +218,47 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     // test that faceting works with grouping
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id"
                  ,"facet","true", "facet.field",f)
-      ,"/grouped/foo_i/matches:10:"
-      ,"/facet_counts/facet_fields/"+f+":['1',3, '2',3, '3',2, '4',1, '5',1]"
+      ,"/grouped/"+f+"/matches==10"
+      ,"/facet_counts/facet_fields/"+f+"==['1',3, '2',3, '3',2, '4',1, '5',1]"
     );
     purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity
 
     // test that grouping works with highlighting
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id"
                  ,"hl","true", "hl.fl",f)
-      ,"/grouped/foo_i/matches:10:"
-      ,"/highlighting:{'_ORDERED_':'', '8':{},'3':{},'4':{},'1':{},'2':{}}"
+      ,"/grouped/"+f+"/matches==10"
+      ,"/highlighting=={'_ORDERED_':'', '8':{},'3':{},'4':{},'1':{},'2':{}}"
     );
 
     // test that grouping works with debugging
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.field",f, "fl","id"
                  ,"debugQuery","true")
-      ,"/grouped/foo_i/matches:10:"
-      ,"/debug/explain/8:"
-      ,"/debug/explain/2:"
+      ,"/grouped/"+f+"/matches==10"
+      ,"/debug/explain/8=="
+      ,"/debug/explain/2=="
     );
+
+     ///////////////////////// group.query
+    assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query","id:[2 TO 5]", "fl","id", "group.limit","3")
+       ,"/grouped=={'id:[2 TO 5]':{'matches':10," +
+           "'doclist':{'numFound':4,'start':0,'docs':[{'id':'3'},{'id':'4'},{'id':'2'}]}}}"
+    );
+
+    // multiple at once
+    assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true",
+        "group.query","id:[2 TO 5]",
+        "group.query","id:[5 TO 5]",
+        "group.field",f,
+        "rows","1",
+        "fl","id", "group.limit","2")
+       ,"/grouped/id:[2 TO 5]=={'matches':10,'doclist':{'numFound':4,'start':0,'docs':[{'id':'3'},{'id':'4'}]}}"
+       ,"/grouped/id:[5 TO 5]=={'matches':10,'doclist':{'numFound':1,'start':0,'docs':[{'id':'5'}]}}"        
+       ,"/grouped/"+f+"=={'matches':10,'groups':[{'groupValue':1,'doclist':{'numFound':3,'start':0,'docs':[{'id':'8'},{'id':'10'}]}}]}"
+    );
+
+
   };
+
 
 
 }

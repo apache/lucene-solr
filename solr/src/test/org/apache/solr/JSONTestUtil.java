@@ -23,14 +23,16 @@ import org.apache.solr.common.util.StrUtils;
 
 import java.io.StringReader;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class JSONTestUtil {
 
   public static String match(String input, String pathAndExpected) throws Exception {
-    int pos = pathAndExpected.indexOf(':');
+    int pos = pathAndExpected.indexOf("==");
     String path = pos>=0 ? pathAndExpected.substring(0,pos) : null;
-    String expected = pos>=0 ? pathAndExpected.substring(pos+1) : pathAndExpected;
+    String expected = pos>=0 ? pathAndExpected.substring(pos+2) : pathAndExpected;
     return match(path, input, expected);
   }
 

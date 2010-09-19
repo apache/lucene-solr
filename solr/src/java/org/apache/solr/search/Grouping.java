@@ -30,8 +30,8 @@ public class Grouping {
   public static class Command {
     public String key;  // the name to use for this group in the response
     public Sort groupSort;  // the sort of the documents *within* a single group.
-    public int groupLimit;   // how many groups - defaults to the "rows" parameter
     public int docsPerGroup; // how many docs in each group - from "group.limit" param, default=1
+    public int numGroups;   // how many groups - defaults to the "rows" parameter
   }
 
   public static class CommandQuery extends Command {
@@ -73,10 +73,60 @@ class SearchGroup {
   ***/
 }
 
+abstract class GroupCollector extends Collector {
+  /** get the number of matches before grouping or limiting have been applied */
+  public abstract int getMatches();
+}
+
+class FilterCollector extends GroupCollector {
+  private final DocSet filter;
+  private final TopFieldCollector collector;
+  private int docBase;
+  private int matches;
+
+  public FilterCollector(DocSet filter, TopFieldCollector collector) throws IOException {
+    this.filter = filter;
+    this.collector = collector;
+  }
+
+  @Override
+  public void setScorer(Scorer scorer) throws IOException {
+    collector.setScorer(scorer);
+  }
+
+  @Override
+  public void collect(int doc) throws IOException {
+    matches++;
+    if (filter.exists(doc + docBase))
+      collector.collect(doc);
+  }
+
+  @Override
+  public void setNextReader(IndexReader reader, int docBase) throws IOException {
+    this.docBase = docBase;
+    collector.setNextReader(reader, docBase);
+  }
+
+  @Override
+  public boolean acceptsDocsOutOfOrder() {
+    return collector.acceptsDocsOutOfOrder();
+  }
+
+  @Override
+  public int getMatches() {
+    return matches;
+  }
+
+  TopFieldCollector getTopFieldCollector() {
+    return collector;
+  }
+}
+
+
 
 
 /** Finds the top set of groups, grouped by groupByVS when sort == group.sort */
-class TopGroupCollector extends Collector {
+class TopGroupCollector extends GroupCollector {
   final int nGroups;
   final HashMap<MutableValue, SearchGroup> groupMap;
   TreeSet<SearchGroup> orderedGroups;
@@ -261,6 +311,7 @@ class TopGroupCollector extends Collector {
     return false;
   }
 
+  @Override
   public int getMatches() {
     return matches;
   }
