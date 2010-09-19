@@ -25,8 +25,8 @@ import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
-import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
-import org.apache.lucene.index.codecs.standard.TermState;
+import org.apache.lucene.index.codecs.PostingsReaderBase;
+import org.apache.lucene.index.codecs.TermState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
@@ -43,7 +43,7 @@ import org.apache.lucene.util.CodecUtil;
 // create two separate docs readers, one that also reads
 // prox and one that doesn't?
 
-public class SepPostingsReaderImpl extends StandardPostingsReader {
+public class SepPostingsReaderImpl extends PostingsReaderBase {
 
   final IntIndexInput freqIn;
   final IntIndexInput docIn;

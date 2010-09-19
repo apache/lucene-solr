@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.standard;
+package org.apache.lucene.index.codecs;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -59,7 +59,7 @@ import java.io.IOException;
 import org.apache.lucene.index.IndexFileNames;
 
 /** @lucene.experimental */
-public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
+public class FixedGapTermsIndexReader extends TermsIndexReaderBase {
 
   // NOTE: long is overkill here, since this number is 128
   // by default and only indexDivisor * 128 if you change
@@ -90,12 +90,12 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
   // start of the field info data
   protected long dirOffset;
 
-  public SimpleStandardTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, Comparator<BytesRef> termComp)
+  public FixedGapTermsIndexReader(Directory dir, FieldInfos fieldInfos, String segment, int indexDivisor, Comparator<BytesRef> termComp)
     throws IOException {
 
     this.termComp = termComp;
 
-    IndexInput in = dir.openInput(IndexFileNames.segmentFileName(segment, "", StandardCodec.TERMS_INDEX_EXTENSION));
+    IndexInput in = dir.openInput(IndexFileNames.segmentFileName(segment, "", FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
     
     boolean success = false;
 
@@ -147,8 +147,8 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
   }
   
   protected void readHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(input, SimpleStandardTermsIndexWriter.CODEC_NAME,
-      SimpleStandardTermsIndexWriter.VERSION_START, SimpleStandardTermsIndexWriter.VERSION_START);
+    CodecUtil.checkHeader(input, FixedGapTermsIndexWriter.CODEC_NAME,
+      FixedGapTermsIndexWriter.VERSION_START, FixedGapTermsIndexWriter.VERSION_START);
     dirOffset = input.readLong();
   }
 
@@ -179,7 +179,7 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
       this.numIndexTerms = numIndexTerms;
 
       // We still create the indexReader when indexDivisor
-      // is -1, so that StandardTermsDictReader can call
+      // is -1, so that PrefixCodedTermsReader can call
       // isIndexTerm for each field:
       if (indexDivisor > 0) {
         coreIndex = new CoreFieldIndex(indexStart,
@@ -437,11 +437,11 @@ public class SimpleStandardTermsIndexReader extends StandardTermsIndexReader {
   }
 
   public static void files(Directory dir, SegmentInfo info, Collection<String> files) {
-    files.add(IndexFileNames.segmentFileName(info.name, "", StandardCodec.TERMS_INDEX_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(info.name, "", FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION));
   }
 
   public static void getIndexExtensions(Collection<String> extensions) {
-    extensions.add(StandardCodec.TERMS_INDEX_EXTENSION);
+    extensions.add(FixedGapTermsIndexWriter.TERMS_INDEX_EXTENSION);
   }
 
   @Override

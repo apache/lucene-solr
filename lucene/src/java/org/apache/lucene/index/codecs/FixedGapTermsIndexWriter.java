@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.standard;
+package org.apache.lucene.index.codecs;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -32,8 +32,11 @@ import java.util.ArrayList;
 import java.io.IOException;
 
 /** @lucene.experimental */
-public class SimpleStandardTermsIndexWriter extends StandardTermsIndexWriter {
+public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
   protected final IndexOutput out;
+
+  /** Extension of terms index file */
+  static final String TERMS_INDEX_EXTENSION = "tii";
 
   final static String CODEC_NAME = "SIMPLE_STANDARD_TERMS_INDEX";
   final static int VERSION_START = 0;
@@ -45,8 +48,8 @@ public class SimpleStandardTermsIndexWriter extends StandardTermsIndexWriter {
   private final FieldInfos fieldInfos; // unread
   private IndexOutput termsOut;
 
-  public SimpleStandardTermsIndexWriter(SegmentWriteState state) throws IOException {
-    final String indexFileName = IndexFileNames.segmentFileName(state.segmentName, "", StandardCodec.TERMS_INDEX_EXTENSION);
+  public FixedGapTermsIndexWriter(SegmentWriteState state) throws IOException {
+    final String indexFileName = IndexFileNames.segmentFileName(state.segmentName, "", TERMS_INDEX_EXTENSION);
     state.flushedFiles.add(indexFileName);
     termIndexInterval = state.termIndexInterval;
     out = state.directory.createOutput(indexFileName);

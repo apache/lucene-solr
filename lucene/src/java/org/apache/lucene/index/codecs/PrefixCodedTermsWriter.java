@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.standard;
+package org.apache.lucene.index.codecs;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,9 +27,6 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.index.codecs.FieldsConsumer;
-import org.apache.lucene.index.codecs.PostingsConsumer;
-import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.CodecUtil;
 
@@ -44,7 +41,7 @@ import org.apache.lucene.util.CodecUtil;
  * @lucene.experimental
  */
 
-public class StandardTermsDictWriter extends FieldsConsumer {
+public class PrefixCodedTermsWriter extends FieldsConsumer {
 
   final static String CODEC_NAME = "STANDARD_TERMS_DICT";
 
@@ -53,23 +50,26 @@ public class StandardTermsDictWriter extends FieldsConsumer {
 
   public static final int VERSION_CURRENT = VERSION_START;
 
+  /** Extension of terms file */
+  static final String TERMS_EXTENSION = "tis";
+
   private final DeltaBytesWriter termWriter;
 
   protected final IndexOutput out;
-  final StandardPostingsWriter postingsWriter;
+  final PostingsWriterBase postingsWriter;
   final FieldInfos fieldInfos;
   FieldInfo currentField;
-  private final StandardTermsIndexWriter termsIndexWriter;
+  private final TermsIndexWriterBase termsIndexWriter;
   private final List<TermsConsumer> fields = new ArrayList<TermsConsumer>();
   private final Comparator<BytesRef> termComp;
 
-  public StandardTermsDictWriter(
-      StandardTermsIndexWriter termsIndexWriter,
+  public PrefixCodedTermsWriter(
+      TermsIndexWriterBase termsIndexWriter,
       SegmentWriteState state,
-      StandardPostingsWriter postingsWriter,
+      PostingsWriterBase postingsWriter,
       Comparator<BytesRef> termComp) throws IOException
   {
-    final String termsFileName = IndexFileNames.segmentFileName(state.segmentName, "", StandardCodec.TERMS_EXTENSION);
+    final String termsFileName = IndexFileNames.segmentFileName(state.segmentName, "", TERMS_EXTENSION);
     this.termsIndexWriter = termsIndexWriter;
     this.termComp = termComp;
     out = state.directory.createOutput(termsFileName);
@@ -96,7 +96,7 @@ public class StandardTermsDictWriter extends FieldsConsumer {
   public TermsConsumer addField(FieldInfo field) {
     assert currentField == null || currentField.name.compareTo(field.name) < 0;
     currentField = field;
-    StandardTermsIndexWriter.FieldWriter fieldIndexWriter = termsIndexWriter.addField(field);
+    TermsIndexWriterBase.FieldWriter fieldIndexWriter = termsIndexWriter.addField(field);
     TermsConsumer terms = new TermsWriter(fieldIndexWriter, field, postingsWriter);
     fields.add(terms);
     return terms;
@@ -139,15 +139,15 @@ public class StandardTermsDictWriter extends FieldsConsumer {
   
   class TermsWriter extends TermsConsumer {
     private final FieldInfo fieldInfo;
-    private final StandardPostingsWriter postingsWriter;
+    private final PostingsWriterBase postingsWriter;
     private final long termsStartPointer;
     private long numTerms;
-    private final StandardTermsIndexWriter.FieldWriter fieldIndexWriter;
+    private final TermsIndexWriterBase.FieldWriter fieldIndexWriter;
 
     TermsWriter(
-        StandardTermsIndexWriter.FieldWriter fieldIndexWriter,
+        TermsIndexWriterBase.FieldWriter fieldIndexWriter,
         FieldInfo fieldInfo,
-        StandardPostingsWriter postingsWriter) 
+        PostingsWriterBase postingsWriter) 
     {
       this.fieldInfo = fieldInfo;
       this.fieldIndexWriter = fieldIndexWriter;

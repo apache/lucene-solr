@@ -20,11 +20,11 @@ package org.apache.lucene.index.codecs.appending;
 import java.io.IOException;
 
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.codecs.standard.SimpleStandardTermsIndexWriter;
+import org.apache.lucene.index.codecs.FixedGapTermsIndexWriter;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.CodecUtil;
 
-public class AppendingTermsIndexWriter extends SimpleStandardTermsIndexWriter {
+public class AppendingTermsIndexWriter extends FixedGapTermsIndexWriter {
   final static String CODEC_NAME = "APPENDING_TERMS_INDEX";
   final static int VERSION_START = 0;
   final static int VERSION_CURRENT = VERSION_START;

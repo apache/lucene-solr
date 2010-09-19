@@ -497,18 +497,18 @@ public class TestExternalCodecs extends LuceneTestCase {
 
     @Override
     public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-      StandardPostingsWriter docsWriter = new StandardPostingsWriterImpl(state);
+      PostingsWriterBase docsWriter = new StandardPostingsWriter(state);
 
       // Terms that have <= freqCutoff number of docs are
       // "pulsed" (inlined):
       final int freqCutoff = 1;
-      StandardPostingsWriter pulsingWriter = new PulsingPostingsWriterImpl(freqCutoff, docsWriter);
+      PostingsWriterBase pulsingWriter = new PulsingPostingsWriterImpl(freqCutoff, docsWriter);
 
       // Terms dict index
-      StandardTermsIndexWriter indexWriter;
+      TermsIndexWriterBase indexWriter;
       boolean success = false;
       try {
-        indexWriter = new SimpleStandardTermsIndexWriter(state);
+        indexWriter = new FixedGapTermsIndexWriter(state);
         success = true;
       } finally {
         if (!success) {
@@ -519,7 +519,7 @@ public class TestExternalCodecs extends LuceneTestCase {
       // Terms dict
       success = false;
       try {
-        FieldsConsumer ret = new StandardTermsDictWriter(indexWriter, state, pulsingWriter, reverseUnicodeComparator);
+        FieldsConsumer ret = new PrefixCodedTermsWriter(indexWriter, state, pulsingWriter, reverseUnicodeComparator);
         success = true;
         return ret;
       } finally {
@@ -536,15 +536,15 @@ public class TestExternalCodecs extends LuceneTestCase {
     @Override
     public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
 
-      StandardPostingsReader docsReader = new StandardPostingsReaderImpl(state.dir, state.segmentInfo, state.readBufferSize);
-      StandardPostingsReader pulsingReader = new PulsingPostingsReaderImpl(docsReader);
+      PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.readBufferSize);
+      PostingsReaderBase pulsingReader = new PulsingPostingsReaderImpl(docsReader);
 
       // Terms dict index reader
-      StandardTermsIndexReader indexReader;
+      TermsIndexReaderBase indexReader;
 
       boolean success = false;
       try {
-        indexReader = new SimpleStandardTermsIndexReader(state.dir,
+        indexReader = new FixedGapTermsIndexReader(state.dir,
                                                          state.fieldInfos,
                                                          state.segmentInfo.name,
                                                          state.termsIndexDivisor,
@@ -559,7 +559,7 @@ public class TestExternalCodecs extends LuceneTestCase {
       // Terms dict reader
       success = false;
       try {
-        FieldsProducer ret = new StandardTermsDictReader(indexReader,
+        FieldsProducer ret = new PrefixCodedTermsReader(indexReader,
                                                          state.dir,
                                                          state.fieldInfos,
                                                          state.segmentInfo.name,
@@ -582,9 +582,9 @@ public class TestExternalCodecs extends LuceneTestCase {
 
     @Override
     public void files(Directory dir, SegmentInfo segmentInfo, Set<String> files) throws IOException {
-      StandardPostingsReaderImpl.files(dir, segmentInfo, files);
-      StandardTermsDictReader.files(dir, segmentInfo, files);
-      SimpleStandardTermsIndexReader.files(dir, segmentInfo, files);
+      StandardPostingsReader.files(dir, segmentInfo, files);
+      PrefixCodedTermsReader.files(dir, segmentInfo, files);
+      FixedGapTermsIndexReader.files(dir, segmentInfo, files);
     }
 
     @Override

@@ -24,7 +24,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
-import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
+import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
@@ -33,7 +33,7 @@ import org.apache.lucene.util.CodecUtil;
  *  to .pyl, skip data to .skp
  *
  * @lucene.experimental */
-public final class SepPostingsWriterImpl extends StandardPostingsWriter {
+public final class SepPostingsWriterImpl extends PostingsWriterBase {
   final static String CODEC = "SepDocFreqSkip";
 
   final static String DOC_EXTENSION = "doc";

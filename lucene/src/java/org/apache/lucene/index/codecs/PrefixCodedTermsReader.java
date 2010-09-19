@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.standard;
+package org.apache.lucene.index.codecs;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -33,7 +33,6 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.codecs.FieldsProducer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
@@ -49,17 +48,17 @@ import org.apache.lucene.util.CodecUtil;
  *  make their own terms dict impl).
  *
  * <p>This class also interacts with an instance of {@link
- * StandardTermsIndexReader}, to abstract away the specific
+ * TermsIndexReaderBase}, to abstract away the specific
  * implementation of the terms dict index. 
  * @lucene.experimental */
 
-public class StandardTermsDictReader extends FieldsProducer {
+public class PrefixCodedTermsReader extends FieldsProducer {
   // Open input to the main terms dict file (_X.tis)
   private final IndexInput in;
 
   // Reads the terms dict entries, to gather state to
   // produce DocsEnum on demand
-  private final StandardPostingsReader postingsReader;
+  private final PostingsReaderBase postingsReader;
 
   private final TreeMap<String,FieldReader> fields = new TreeMap<String,FieldReader>();
 
@@ -70,7 +69,7 @@ public class StandardTermsDictReader extends FieldsProducer {
   private final DoubleBarrelLRUCache<FieldAndTerm,TermState> termsCache;
 
   // Reads the terms index
-  private StandardTermsIndexReader indexReader;
+  private TermsIndexReaderBase indexReader;
   
   // keeps the dirStart offset
   protected long dirOffset;
@@ -105,7 +104,7 @@ public class StandardTermsDictReader extends FieldsProducer {
     }
   }
   
-  public StandardTermsDictReader(StandardTermsIndexReader indexReader, Directory dir, FieldInfos fieldInfos, String segment, StandardPostingsReader postingsReader, int readBufferSize,
+  public PrefixCodedTermsReader(TermsIndexReaderBase indexReader, Directory dir, FieldInfos fieldInfos, String segment, PostingsReaderBase postingsReader, int readBufferSize,
                                  Comparator<BytesRef> termComp, int termsCacheSize)
     throws IOException {
     
@@ -114,7 +113,7 @@ public class StandardTermsDictReader extends FieldsProducer {
 
     this.termComp = termComp;
     
-    in = dir.openInput(IndexFileNames.segmentFileName(segment, "", StandardCodec.TERMS_EXTENSION),
+    in = dir.openInput(IndexFileNames.segmentFileName(segment, "", PrefixCodedTermsWriter.TERMS_EXTENSION),
                        readBufferSize);
 
     boolean success = false;
@@ -134,7 +133,7 @@ public class StandardTermsDictReader extends FieldsProducer {
         final long numTerms = in.readLong();
         assert numTerms >= 0;
         final long termsStartPointer = in.readLong();
-        final StandardTermsIndexReader.FieldReader fieldIndexReader;
+        final TermsIndexReaderBase.FieldReader fieldIndexReader;
         final FieldInfo fieldInfo = fieldInfos.fieldInfo(field);
         fieldIndexReader = indexReader.getField(fieldInfo);
         if (numTerms > 0) {
@@ -153,8 +152,8 @@ public class StandardTermsDictReader extends FieldsProducer {
   }
 
   protected void readHeader(IndexInput input) throws IOException {
-    CodecUtil.checkHeader(in, StandardTermsDictWriter.CODEC_NAME,
-      StandardTermsDictWriter.VERSION_START, StandardTermsDictWriter.VERSION_CURRENT);
+    CodecUtil.checkHeader(in, PrefixCodedTermsWriter.CODEC_NAME,
+      PrefixCodedTermsWriter.VERSION_START, PrefixCodedTermsWriter.VERSION_CURRENT);
     dirOffset = in.readLong();    
   }
   
@@ -198,11 +197,11 @@ public class StandardTermsDictReader extends FieldsProducer {
   }
 
   public static void files(Directory dir, SegmentInfo segmentInfo, Collection<String> files) {
-    files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", StandardCodec.TERMS_EXTENSION));
+    files.add(IndexFileNames.segmentFileName(segmentInfo.name, "", PrefixCodedTermsWriter.TERMS_EXTENSION));
   }
 
   public static void getExtensions(Collection<String> extensions) {
-    extensions.add(StandardCodec.TERMS_EXTENSION);
+    extensions.add(PrefixCodedTermsWriter.TERMS_EXTENSION);
   }
 
   @Override
@@ -245,9 +244,9 @@ public class StandardTermsDictReader extends FieldsProducer {
     final long numTerms;
     final FieldInfo fieldInfo;
     final long termsStartPointer;
-    final StandardTermsIndexReader.FieldReader fieldIndexReader;
+    final TermsIndexReaderBase.FieldReader fieldIndexReader;
 
-    FieldReader(StandardTermsIndexReader.FieldReader fieldIndexReader, FieldInfo fieldInfo, long numTerms, long termsStartPointer) {
+    FieldReader(TermsIndexReaderBase.FieldReader fieldIndexReader, FieldInfo fieldInfo, long numTerms, long termsStartPointer) {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
       this.numTerms = numTerms;
@@ -281,11 +280,11 @@ public class StandardTermsDictReader extends FieldsProducer {
       private final DeltaBytesReader bytesReader;
       private final TermState state;
       private boolean seekPending;
-      private final StandardTermsIndexReader.TermsIndexResult indexResult = new StandardTermsIndexReader.TermsIndexResult();
+      private final TermsIndexReaderBase.TermsIndexResult indexResult = new TermsIndexReaderBase.TermsIndexResult();
       private final FieldAndTerm fieldTerm = new FieldAndTerm();
 
       SegmentTermsEnum() throws IOException {
-        in = (IndexInput) StandardTermsDictReader.this.in.clone();
+        in = (IndexInput) PrefixCodedTermsReader.this.in.clone();
         in.seek(termsStartPointer);
         bytesReader = new DeltaBytesReader(in);
         fieldTerm.field = fieldInfo.name;

@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.standard;
+package org.apache.lucene.index.codecs;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -17,22 +17,26 @@ package org.apache.lucene.index.codecs.standard;
  * limitations under the License.
  */
 
+import java.io.IOException;
+import java.io.Closeable;
+
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.util.BytesRef;
-import java.io.IOException;
 
-/** @lucene.experimental */
-public abstract class StandardTermsIndexWriter {
+/**
+ * @lucene.experimental
+ */
 
-  public abstract void setTermsOutput(IndexOutput out);
+public abstract class PostingsWriterBase extends PostingsConsumer implements Closeable {
 
-  public abstract class FieldWriter {
-    public abstract boolean checkIndexTerm(BytesRef text, int docFreq) throws IOException;
-    public abstract void finish() throws IOException;
-  }
+  public abstract void start(IndexOutput termsOut) throws IOException;
 
-  public abstract FieldWriter addField(FieldInfo fieldInfo);
+  public abstract void startTerm() throws IOException;
+
+  /** Finishes the current term */
+  public abstract void finishTerm(int numDocs, boolean isIndexTerm) throws IOException;
+
+  public abstract void setField(FieldInfo fieldInfo);
 
   public abstract void close() throws IOException;
 }

@@ -1,4 +1,4 @@
-package org.apache.lucene.index.codecs.standard;
+package org.apache.lucene.index.codecs;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -38,7 +38,7 @@ import java.util.Collection;
  * text. 
  * @lucene.experimental */
 
-public abstract class StandardTermsIndexReader {
+public abstract class TermsIndexReaderBase {
 
   static class TermsIndexResult {
     long position;

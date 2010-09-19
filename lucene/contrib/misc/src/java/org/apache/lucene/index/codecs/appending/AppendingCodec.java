@@ -26,14 +26,14 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.FieldsProducer;
-import org.apache.lucene.index.codecs.standard.SimpleStandardTermsIndexReader;
+import org.apache.lucene.index.codecs.FixedGapTermsIndexReader;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
+import org.apache.lucene.index.codecs.PostingsReaderBase;
 import org.apache.lucene.index.codecs.standard.StandardPostingsReader;
-import org.apache.lucene.index.codecs.standard.StandardPostingsReaderImpl;
+import org.apache.lucene.index.codecs.PostingsWriterBase;
 import org.apache.lucene.index.codecs.standard.StandardPostingsWriter;
-import org.apache.lucene.index.codecs.standard.StandardPostingsWriterImpl;
-import org.apache.lucene.index.codecs.standard.StandardTermsDictReader;
-import org.apache.lucene.index.codecs.standard.StandardTermsIndexReader;
+import org.apache.lucene.index.codecs.PrefixCodedTermsReader;
+import org.apache.lucene.index.codecs.TermsIndexReaderBase;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 
@@ -58,7 +58,7 @@ public class AppendingCodec extends Codec {
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state)
           throws IOException {
-    StandardPostingsWriter docsWriter = new StandardPostingsWriterImpl(state);
+    PostingsWriterBase docsWriter = new StandardPostingsWriter(state);
     boolean success = false;
     AppendingTermsIndexWriter indexWriter = null;
     try {
@@ -88,8 +88,8 @@ public class AppendingCodec extends Codec {
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state)
           throws IOException {
-    StandardPostingsReader docsReader = new StandardPostingsReaderImpl(state.dir, state.segmentInfo, state.readBufferSize);
-    StandardTermsIndexReader indexReader;
+    PostingsReaderBase docsReader = new StandardPostingsReader(state.dir, state.segmentInfo, state.readBufferSize);
+    TermsIndexReaderBase indexReader;
 
     boolean success = false;
     try {
@@ -128,9 +128,9 @@ public class AppendingCodec extends Codec {
   @Override
   public void files(Directory dir, SegmentInfo segmentInfo, Set<String> files)
           throws IOException {
-    StandardPostingsReaderImpl.files(dir, segmentInfo, files);
-    StandardTermsDictReader.files(dir, segmentInfo, files);
-    SimpleStandardTermsIndexReader.files(dir, segmentInfo, files);
+    StandardPostingsReader.files(dir, segmentInfo, files);
+    PrefixCodedTermsReader.files(dir, segmentInfo, files);
+    FixedGapTermsIndexReader.files(dir, segmentInfo, files);
   }
 
   @Override
