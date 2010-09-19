@@ -508,7 +508,15 @@ public class TestExternalCodecs extends LuceneTestCase {
       TermsIndexWriterBase indexWriter;
       boolean success = false;
       try {
-        indexWriter = new FixedGapTermsIndexWriter(state);
+        indexWriter = new FixedGapTermsIndexWriter(state) {
+            // We sort in reverse unicode order, so, we must
+            // disable the suffix-stripping opto that
+            // FixedGapTermsIndexWriter does by default!
+            @Override
+            protected int indexedTermPrefixLength(BytesRef priorTerm, BytesRef indexedTerm) {
+              return indexedTerm.length;
+            }
+          };
         success = true;
       } finally {
         if (!success) {

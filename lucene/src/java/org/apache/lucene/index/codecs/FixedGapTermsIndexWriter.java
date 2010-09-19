@@ -76,6 +76,24 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
     return writer;
   }
 
+  /** NOTE: if your codec does not sort in unicode code
+   *  point order, you must override this method, to simply
+   *  return indexedTerm.length. */
+  protected int indexedTermPrefixLength(final BytesRef priorTerm, final BytesRef indexedTerm) {
+    // As long as codec sorts terms in unicode codepoint
+    // order, we can safely strip off the non-distinguishing
+    // suffix to save RAM in the loaded terms index.
+    final int idxTermOffset = indexedTerm.offset;
+    final int priorTermOffset = priorTerm.offset;
+    final int limit = Math.min(priorTerm.length, indexedTerm.length);
+    for(int byteIdx=0;byteIdx<limit;byteIdx++) {
+      if (priorTerm.bytes[priorTermOffset+byteIdx] != indexedTerm.bytes[idxTermOffset+byteIdx]) {
+        return byteIdx+1;
+      }
+    }
+    return Math.min(1+priorTerm.length, indexedTerm.length);
+  }
+
   private class SimpleFieldWriter extends FieldWriter {
     final FieldInfo fieldInfo;
     int numIndexTerms;
@@ -108,20 +126,11 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
       // First term is first indexed term:
       if (0 == (numTerms++ % termIndexInterval)) {
 
-        // we can safely strip off the non-distinguishing
-        // suffix to save RAM in the loaded terms index.
-        final int limit = Math.min(lastTerm.length, text.length);
-        int minPrefixDiff = Math.min(1+lastTerm.length, text.length);
-        for(int byteIdx=0;byteIdx<limit;byteIdx++) {
-          if (lastTerm.bytes[lastTerm.offset+byteIdx] != text.bytes[text.offset+byteIdx]) {
-            minPrefixDiff = byteIdx+1;
-            break;
-          }
-        }
+        final int indexedTermLength = indexedTermPrefixLength(lastTerm, text);
 
         // write only the min prefix that shows the diff
         // against prior term
-        out.writeBytes(text.bytes, text.offset, minPrefixDiff);
+        out.writeBytes(text.bytes, text.offset, indexedTermLength);
 
         if (termLengths.length == numIndexTerms) {
           termLengths = ArrayUtil.grow(termLengths);
@@ -136,9 +145,9 @@ public class FixedGapTermsIndexWriter extends TermsIndexWriterBase {
         lastTermsPointer = fp;
 
         // save term length (in bytes)
-        assert minPrefixDiff <= Short.MAX_VALUE;
-        termLengths[numIndexTerms] = (short) minPrefixDiff;
-        totTermLength += minPrefixDiff;
+        assert indexedTermLength <= Short.MAX_VALUE;
+        termLengths[numIndexTerms] = (short) indexedTermLength;
+        totTermLength += indexedTermLength;
 
         lastTerm.copy(text);
         numIndexTerms++;
