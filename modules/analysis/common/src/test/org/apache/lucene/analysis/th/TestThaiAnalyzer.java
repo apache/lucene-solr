@@ -18,6 +18,7 @@ package org.apache.lucene.analysis.th;
  */
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.junit.Assume;
 
 /**
  * Test case for ThaiAnalyzer, modified from TestFrenchAnalyzer
@@ -31,6 +32,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	 * testcase for offsets
 	 */
 	public void testOffsets() throws Exception {
+	  Assume.assumeTrue(ThaiWordFilter.DBBI_AVAILABLE);
 		assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT), "การที่ได้ต้องแสดงว่างานดี", 
 		    new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี" },
 				new int[] { 0, 3, 6, 9, 13, 17, 20, 23 },
@@ -49,6 +51,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	 * Instead, allow the definition of alphanum to include relevant categories like nonspacing marks!
 	 */
 	public void testBuggyTokenType() throws Exception {
+	  Assume.assumeTrue(ThaiWordFilter.DBBI_AVAILABLE);
 		assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT), "การที่ได้ต้องแสดงว่างานดี ๑๒๓", 
 		    new String[] { "การ", "ที่", "ได้", "ต้อง", "แสดง", "ว่า", "งาน", "ดี", "๑๒๓" },
 				new String[] { "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", "<ALPHANUM>", 
@@ -65,6 +68,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	*/
 
 	public void testAnalyzer() throws Exception {
+	  Assume.assumeTrue(ThaiWordFilter.DBBI_AVAILABLE);
 		ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT);
 	
 		assertAnalyzesTo(analyzer, "", new String[] {});
@@ -90,6 +94,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	 * Test that position increments are adjusted correctly for stopwords.
 	 */
 	public void testPositionIncrements() throws Exception {
+	  Assume.assumeTrue(ThaiWordFilter.DBBI_AVAILABLE);
 	  ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT);
 
     assertAnalyzesTo(new ThaiAnalyzer(TEST_VERSION_CURRENT), "การที่ได้ต้อง the แสดงว่างานดี", 
@@ -107,6 +112,7 @@ public class TestThaiAnalyzer extends BaseTokenStreamTestCase {
 	}
 	
 	public void testReusableTokenStream() throws Exception {
+	  Assume.assumeTrue(ThaiWordFilter.DBBI_AVAILABLE);
 	  ThaiAnalyzer analyzer = new ThaiAnalyzer(TEST_VERSION_CURRENT);
 	  assertAnalyzesToReuse(analyzer, "", new String[] {});
 

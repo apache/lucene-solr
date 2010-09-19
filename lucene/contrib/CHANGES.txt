@@ -122,6 +122,10 @@ Bug fixes
   you to customize its normalization/folding, by editing the source data files in src/data
   and regenerating a new .nrm with 'ant gennorm2'.  (David Bowen via Robert Muir)
 
+* LUCENE-2653: ThaiWordFilter depends on the JRE having a Thai dictionary, which is not
+  always the case. If the dictionary is unavailable, the filter will now throw 
+  UnsupportedOperationException in the constructor.  (Robert Muir)
+
    
 API Changes
 

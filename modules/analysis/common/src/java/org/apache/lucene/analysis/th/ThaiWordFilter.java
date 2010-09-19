@@ -38,10 +38,24 @@ import org.apache.lucene.util.Version;
  * {@link ThaiAnalyzer} will insert a {@link LowerCaseFilter} before this filter
  * so the behaviour of the Analyzer does not change. With version 3.1, the filter handles
  * position increments correctly.
+ * <p>WARNING: this filter may not be supported by all JREs.
+ *    It is known to work with Sun/Oracle and Harmony JREs.
+ *    If your application needs to be fully portable, consider using ICUTokenizer instead,
+ *    which uses an ICU Thai BreakIterator that will always be available.
  */
 public final class ThaiWordFilter extends TokenFilter {
-  
-  private final BreakIterator breaker = BreakIterator.getWordInstance(new Locale("th"));
+  /** 
+   * True if the JRE supports a working dictionary-based breakiterator for Thai.
+   * If this is false, this filter will not work at all!
+   */
+  public static final boolean DBBI_AVAILABLE;
+  private static final BreakIterator proto = BreakIterator.getWordInstance(new Locale("th"));
+  static {
+    // check that we have a working dictionary-based break iterator for thai
+    proto.setText("ภาษาไทย");
+    DBBI_AVAILABLE = proto.isBoundary(4);
+  }
+  private final BreakIterator breaker = (BreakIterator) proto.clone();
   private final Segment charIterator = new Segment();
   
   private final boolean handlePosIncr;
@@ -67,6 +81,8 @@ public final class ThaiWordFilter extends TokenFilter {
   public ThaiWordFilter(Version matchVersion, TokenStream input) {
     super(matchVersion.onOrAfter(Version.LUCENE_31) ?
       input : new LowerCaseFilter(matchVersion, input));
+    if (!DBBI_AVAILABLE)
+      throw new UnsupportedOperationException("This JRE does not have support for Thai segmentation");
     handlePosIncr = matchVersion.onOrAfter(Version.LUCENE_31);
   }
   
