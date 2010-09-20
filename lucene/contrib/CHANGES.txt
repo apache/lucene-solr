@@ -14,6 +14,9 @@ New Features
   * LUCENE-2608: Added the ability to specify the accuracy at method time in the SpellChecker.  The per class
     approach is also still available.  (Grant Ingersoll)
 
+  * LUCENE-2482: Added IndexSorter tool for sorting postings data in a way that maximizes
+    quality of "early terminated" search results (Andrzej Bialecki)
+
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy
