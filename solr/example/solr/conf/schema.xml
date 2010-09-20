@@ -411,21 +411,17 @@
       The subFields are an implementation detail of the fieldType, and end
       users normally should not need to know about them.
      -->
-    <fieldType name="location" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
+    <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
+
+    <!-- A specialized field for spatial search. -->
+    <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_latlon"/>
 
    <!--
     A Geohash is a compact representation of a latitude longitude pair in a single field.
-
     See http://wiki.apache.org/solr/SpatialSearch
    -->
     <fieldtype name="geohash" class="solr.GeoHashField"/>
 
-
-    <!--
-
-     -->
-    <fieldType name="latLon" class="solr.LatLonType" subFieldSuffix="_latLon"/>
-    
  </types>
 
 
@@ -472,9 +468,6 @@
     implement spatial.  It is highly unlikely that you would ever have ALL of these fields defined.
     -->
    <field name="store" type="location" indexed="true" stored="true"/>
-   <field name="store_lat_lon" type="latLon" indexed="true" stored="true"/>
-   <field name="store_hash" type="geohash" indexed="true" stored="false"/>
-
 
    <!-- Common metadata fields, named specifically to match up with
      SolrCell metadata when parsing rich documents such as Word, PDF.
@@ -530,7 +523,7 @@
    <dynamicField name="*_f"  type="float"  indexed="true"  stored="true"/>
    <dynamicField name="*_d"  type="double" indexed="true"  stored="true"/>
 
-   <dynamicField name="*_latLon"  type="double" indexed="true"  stored="false"/>
+   <dynamicField name="*_latlon"  type="double" indexed="true"  stored="false"/>
 
    <dynamicField name="*_dt" type="date"    indexed="true"  stored="true"/>
    <dynamicField name="*_p"  type="location" indexed="true" stored="true"/>
@@ -573,8 +566,6 @@
         or to add multiple fields to the same field for easier/faster searching.  -->
 
    <copyField source="cat" dest="text"/>
-   <copyField source="store" dest="store_hash"/>
-  <copyField source="store" dest="store_lat_lon"/>
    <copyField source="name" dest="text"/>
    <copyField source="manu" dest="text"/>
    <copyField source="features" dest="text"/>
