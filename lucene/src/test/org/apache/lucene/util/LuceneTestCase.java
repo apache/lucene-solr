@@ -287,6 +287,7 @@ public abstract class LuceneTestCase extends Assert {
     savedTimeZone = TimeZone.getDefault();
     timeZone = TEST_TIMEZONE.equals("random") ? randomTimeZone(seedRnd) : TimeZone.getTimeZone(TEST_TIMEZONE);
     TimeZone.setDefault(timeZone);
+    testsFailed = false;
   }
   
   @AfterClass
@@ -297,16 +298,19 @@ public abstract class LuceneTestCase extends Assert {
     System.clearProperty("solr.solr.home");
     System.clearProperty("solr.data.dir");
     // now look for unclosed resources
-    for (MockDirectoryWrapper d : stores.keySet()) {
-      if (d.isOpen()) {
-        StackTraceElement elements[] = stores.get(d);
-        StackTraceElement element = (elements.length > 1) ? elements[1] : null;
-        fail("directory of test was not closed, opened from: " + element);
+    if (!testsFailed)
+      for (MockDirectoryWrapper d : stores.keySet()) {
+        if (d.isOpen()) {
+          StackTraceElement elements[] = stores.get(d);
+          StackTraceElement element = (elements.length > 1) ? elements[1] : null;
+          fail("directory of test was not closed, opened from: " + element);
+        }
       }
-    }
     stores = null;
   }
 
+  private static boolean testsFailed; /* true if any tests failed */
+  
   // This is how we get control when errors occur.
   // Think of this as start/end/success/failed
   // events.
@@ -315,6 +319,7 @@ public abstract class LuceneTestCase extends Assert {
 
     @Override
     public void failed(Throwable e, FrameworkMethod method) {
+      testsFailed = true;
       reportAdditionalFailureInfo();
       super.failed(e, method);
     }
