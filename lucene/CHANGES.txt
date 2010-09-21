@@ -526,6 +526,9 @@ Bug fixes
 * LUCENE-2634: isCurrent on an NRT reader was failing to return false
   if the writer had just committed (Nikolay Zamosenchuk via Mike McCandless)
 
+* LUCENE-2650: Added extra safety to MMapIndexInput clones to prevent accessing
+  an unmapped buffer if the input is closed (Mike McCandless, Uwe Schindler, Robert Muir) 
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
