@@ -64,7 +64,7 @@ import org.apache.lucene.util.Constants;
  * an important limitation to be aware of.
  *
  * <p>This class supplies the workaround mentioned in the bug report
- * (disabled by default, see {@link #setUseUnmap}), which may fail on
+ * (see {@link #setUseUnmap}), which may fail on
  * non-Sun JVMs. It forcefully unmaps the buffer on close by using
  * an undocumented internal cleanup functionality.
  * {@link #UNMAP_SUPPORTED} is <code>true</code>, if the workaround
@@ -78,7 +78,7 @@ import org.apache.lucene.util.Constants;
  * </p>
  */
 public class MMapDirectory extends FSDirectory {
-  private boolean useUnmapHack = false;
+  private boolean useUnmapHack = UNMAP_SUPPORTED;
   private int maxBBuf = Constants.JRE_IS_64BIT ? Integer.MAX_VALUE : (256 * 1024 * 1024);
 
   /** Create a new MMapDirectory for the named location.

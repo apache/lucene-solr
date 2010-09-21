@@ -108,6 +108,14 @@ Changes in backwards compatibility policy
 * LUCENE-2600: Remove IndexReader.isDeleted in favor of
   IndexReader.getDeletedDocs().  (Mike McCandless)
 
+Changes in Runtime Behavior
+
+* LUCENE-2650: The behavior of FSDirectory.open has changed. On 64-bit
+  Windows systems that support unmapping, FSDirectory.open returns
+  MMapDirectory. Additionally the behavior of MMapDirectory has been
+  changed to enable unmapping by default if supported by the JRE.
+  (Mike McCandless, Uwe Schindler, Robert Muir)
+
 API Changes
 
 * LUCENE-2302, LUCENE-1458, LUCENE-2111, LUCENE-2514: Terms are no longer
