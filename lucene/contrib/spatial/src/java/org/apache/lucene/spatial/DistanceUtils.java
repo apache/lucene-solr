@@ -29,7 +29,7 @@ import org.apache.lucene.spatial.tier.InvalidGeoException;
  * flux and might change in incompatible ways in the next
  * release.</font>
  */
-//TODO: Move this up one package level
+
 public class DistanceUtils {
 
   public static final double DEGREES_TO_RADIANS = Math.PI / 180.0;
