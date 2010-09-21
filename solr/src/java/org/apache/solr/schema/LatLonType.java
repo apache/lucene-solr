@@ -107,7 +107,8 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     Query range;
 
     double angDistDegs = DistanceUtils.angularDistance(options.distance,
-            DistanceUtils.EARTH_MEAN_RADIUS_MI) * DistanceUtils.RADIANS_TO_DEGREES;
+            options.radius) * DistanceUtils.RADIANS_TO_DEGREES;
+    
     //for the poles, do something slightly different
     if (point[LAT] + angDistDegs > 90.0) { //we cross the north pole
       //we don't need a longitude boundary at all
