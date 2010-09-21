@@ -54,8 +54,9 @@ public class WildcardQuery extends AutomatonQuery {
   
   /**
    * Convert Lucene wildcard syntax into an automaton.
+   * @lucene.internal
    */
-  static Automaton toAutomaton(Term wildcardquery) {
+  public static Automaton toAutomaton(Term wildcardquery) {
     List<Automaton> automata = new ArrayList<Automaton>();
     
     String wildcardText = wildcardquery.text();

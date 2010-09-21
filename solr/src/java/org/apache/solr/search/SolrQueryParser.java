@@ -25,7 +25,11 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.search.*;
+import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.Version;
+import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.BasicAutomata;
+import org.apache.lucene.util.automaton.BasicOperations;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.solr.analysis.*;
 import org.apache.solr.common.SolrException;
@@ -196,13 +200,38 @@ public class SolrQueryParser extends QueryParser {
     // can we use reversed wildcards in this field?
     String type = schema.getFieldType(field).getTypeName();
     ReversedWildcardFilterFactory factory = leadingWildcards.get(type);
-    if (factory != null && factory.shouldReverse(termStr)) {
-      int len = termStr.length();
-      char[] chars = new char[len+1];
-      chars[0] = factory.getMarkerChar();      
-      termStr.getChars(0, len, chars, 1);
-      ReversedWildcardFilter.reverse(chars, 1, len);
-      termStr = new String(chars);
+    if (factory != null) {
+      if (factory.shouldReverse(termStr)) {
+        int len = termStr.length();
+        char[] chars = new char[len+1];
+        chars[0] = factory.getMarkerChar();      
+        termStr.getChars(0, len, chars, 1);
+        ReversedWildcardFilter.reverse(chars, 1, len);
+        termStr = new String(chars);
+      } else { 
+        // reverse wildcardfilter is active: remove false positives
+        Term term = new Term(field, termStr);
+        // fsa representing the query
+        Automaton a = WildcardQuery.toAutomaton(term);
+        // fsa representing false positives (markerChar*)
+        Automaton falsePositives = BasicOperations.concatenate(
+            BasicAutomata.makeChar(factory.getMarkerChar()), 
+            BasicAutomata.makeAnyString());
+        return new AutomatonQuery(term, BasicOperations.minus(a, falsePositives)) {
+          // override toString so its completely transparent
+          @Override
+          public String toString(String field) {
+            StringBuilder buffer = new StringBuilder();
+            if (!getField().equals(field)) {
+              buffer.append(getField());
+              buffer.append(":");
+            }
+            buffer.append(term.text());
+            buffer.append(ToStringUtils.boost(getBoost()));
+            return buffer.toString();
+          }
+        };
+      }
     }
     Query q = super.getWildcardQuery(field, termStr);
     if (q instanceof WildcardQuery) {

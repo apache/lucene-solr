@@ -139,4 +139,24 @@ public class TestReversedWildcardFilterFactory extends SolrTestCaseJ4 {
     assertEquals(expected, q.toString());
   }
 
+  @Test
+  public void testFalsePositives() throws Exception {
+    // add a doc
+    assertU(adoc("id", "1", "one", "gomez", "two", "gomez", "three", "gomez"));
+    assertU(commit());
+    
+    assertQ("false positive",
+        req("+id:1 +one:*zemog*"),
+        "//result[@numFound=0]");
+    assertQ("false positive",
+        req("+id:1 +two:*zemog*"),
+        "//result[@numFound=0]");
+    assertQ("false positive",
+        req("+id:1 +three:*zemog*"),
+        "//result[@numFound=0]");
+    
+    assertQ("should have matched",
+        req("+id:1 +one:*omez*"),
+        "//result[@numFound=1]");
+  }
 }

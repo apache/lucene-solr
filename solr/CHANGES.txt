@@ -487,6 +487,9 @@ Bug Fixes
 
 * SOLR-2083: SpellCheckComponent misreports suggestions when distributed (James Dyer via gsingers)  
 
+* SOLR-2108: Fixed false positives when using wildcard queries on fields with reversed
+  wildcard support. For example, a query of *zemog* would match documents that contain
+  'gomez'.  (Landon Kuhn via Robert Muir)
 
 Other Changes
 ----------------------
