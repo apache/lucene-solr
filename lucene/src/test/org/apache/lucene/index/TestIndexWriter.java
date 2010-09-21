@@ -2114,6 +2114,11 @@ public class TestIndexWriter extends LuceneTestCase {
       }
       IndexWriter writer = new IndexWriter(directory, conf);
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);
+
+      // have to use compound file to prevent running out of
+      // descripters when newDirectory returns a file-system
+      // backed directory:
+      ((LogMergePolicy) writer.getConfig().getMergePolicy()).setUseCompoundFile(true);
       
       //System.out.println("TEST: pass=" + pass + " cms=" + (pass >= 2));
       for(int iter=0;iter<10;iter++) {
