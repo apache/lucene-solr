@@ -71,7 +71,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           writer.updateDocument(idTerm, doc);
         } catch (RuntimeException re) {
           if (VERBOSE) {
-            System.out.println("EXC: ");
+            System.out.println(Thread.currentThread().getName() + ": EXC: ");
             re.printStackTrace(System.out);
           }
           try {
