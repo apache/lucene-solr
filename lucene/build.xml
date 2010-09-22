@@ -235,7 +235,7 @@
           <group title="contrib: Demo" packages="org.apache.lucene.demo*"/>
           <group title="contrib: ICU" packages="org.apache.lucene.collation*"/>
           <group title="contrib: DB" packages="org.apache.lucene.store.db*:org.apache.lucene.store.je*:com.sleepycat*"/>
-          <group title="contrib: Highlighter" packages="org.apache.lucene.search.highlight:*org.apache.lucene.search.vectorhighlight*"/>
+          <group title="contrib: Highlighter" packages="org.apache.lucene.search.highlight*:org.apache.lucene.search.vectorhighlight*"/>
           <group title="contrib: Instantiated" packages="org.apache.lucene.store.instantiated*"/>
           <group title="contrib: Lucli" packages="lucli*"/>
           <group title="contrib: Memory" packages="org.apache.lucene.index.memory*"/>
