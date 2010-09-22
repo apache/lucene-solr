@@ -339,6 +339,10 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     assertQ(req("fl","*,score","q", q, "qq","text:superman", "fq",fq), "//float[@name='score']>'1.0'");
 
 
+    // test full param dereferencing
+    assertQ(req("fl","*,score","q", "{!func}add($v1,$v2)", "v1","add($v3,$v4)", "v2","1", "v3","2", "v4","5"
+        , "fq","id:1"), "//float[@name='score']='8.0'");
+
     purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity
   }
 

@@ -694,6 +694,27 @@ public class QueryParsing {
       return Float.parseFloat(new String(arr, 0, i));
     }
 
+    Number getNumber() throws ParseException {
+      eatws();
+      int start = pos;
+      boolean flt = false;
+
+      while (pos < end) {
+        char ch = val.charAt(pos);
+        if ((ch >= '0' && ch <= '9') || ch == '+' || ch == '-') {
+          pos++;
+        } else if (ch == '.' || ch =='e' || ch=='E') {
+          flt = true;
+          pos++;
+        } else {
+          break;
+        }
+      }
+
+      String v = val.substring(start,pos);
+      return flt ? Double.parseDouble(v) : Long.parseLong(v);
+    }
+
     double getDouble() throws ParseException {
       eatws();
       char[] arr = new char[end - pos];
