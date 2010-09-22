@@ -73,18 +73,14 @@ public class FileBasedQueryMaker extends AbstractQueryMaker implements QueryMake
           BufferedReader buffered = new BufferedReader(reader);
           String line = null;
           int lineNum = 0;
-          while ((line = buffered.readLine()) != null)
-          {
+          while ((line = buffered.readLine()) != null) {
             line = line.trim();
-            if (!line.equals("") && !line.startsWith("#"))
-            {
-              Query query = null;
+            if (line.length() != 0 && !line.startsWith("#")) {
               try {
-                query = qp.parse(line);
+                qq.add(qp.parse(line));
               } catch (ParseException e) {
                 System.err.println("Exception: " + e.getMessage() + " occurred while parsing line: " + lineNum + " Text: " + line);
               }
-              qq.add(query);
             }
             lineNum++;
           }
