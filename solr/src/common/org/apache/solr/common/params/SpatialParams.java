@@ -24,6 +24,7 @@ package org.apache.solr.common.params;
 public interface SpatialParams {
   public static final String POINT = "pt";
   public static final String DISTANCE = "d";
+  public static final String FIELD = "sfield";  // the field that contains the points we are measuring from "pt"
   /**
    * km - kilometers
    * mi - miles
