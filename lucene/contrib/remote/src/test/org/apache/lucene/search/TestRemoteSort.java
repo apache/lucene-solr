@@ -83,9 +83,8 @@ public class TestRemoteSort extends RemoteTestCase {
   // create an index of all the documents, or just the x, or just the y documents
   @BeforeClass
   public static void beforeClass() throws Exception {
-    Random random = newStaticRandom(TestRemoteSort.class);
-    indexStore = newDirectory(random);
-    IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(random,
+    indexStore = newDirectory();
+    IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMaxBufferedDocs(2));
     ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(1000);

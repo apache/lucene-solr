@@ -77,6 +77,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.TimeZone;
+import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -217,7 +218,7 @@ public abstract class LuceneTestCase extends Assert {
     final boolean codecHasParam;
     int codecParam = 0;
     if (codec.equals("random")) {
-      codec = pickRandomCodec(seedRnd);
+      codec = pickRandomCodec(random);
       codecHasParam = false;
     } else {
       Matcher m = codecWithParam.matcher(codec);
@@ -241,10 +242,10 @@ public abstract class LuceneTestCase extends Assert {
     }
 
     swapCodec(new MockSepCodec());
-    swapCodec(new PulsingCodec(codecHasParam && "Pulsing".equals(codec) ? codecParam : _TestUtil.nextInt(seedRnd, 1, 20)));
-    swapCodec(new MockFixedIntBlockCodec(codecHasParam && "MockFixedIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(seedRnd, 1, 2000)));
+    swapCodec(new PulsingCodec(codecHasParam && "Pulsing".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 20)));
+    swapCodec(new MockFixedIntBlockCodec(codecHasParam && "MockFixedIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 2000)));
     // baseBlockSize cannot be over 127:
-    swapCodec(new MockVariableIntBlockCodec(codecHasParam && "MockVariableIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(seedRnd, 1, 127)));
+    swapCodec(new MockVariableIntBlockCodec(codecHasParam && "MockVariableIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 127)));
 
     return cp.lookup(codec);
   }
@@ -279,13 +280,15 @@ public abstract class LuceneTestCase extends Assert {
 
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
+    staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : UUID.fromString(TEST_SEED).getMostSignificantBits();
+    random.setSeed(staticSeed);
     stores = Collections.synchronizedMap(new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>());
     codec = installTestCodecs();
     savedLocale = Locale.getDefault();
-    locale = TEST_LOCALE.equals("random") ? randomLocale(seedRnd) : localeForName(TEST_LOCALE);
+    locale = TEST_LOCALE.equals("random") ? randomLocale(random) : localeForName(TEST_LOCALE);
     Locale.setDefault(locale);
     savedTimeZone = TimeZone.getDefault();
-    timeZone = TEST_TIMEZONE.equals("random") ? randomTimeZone(seedRnd) : TimeZone.getTimeZone(TEST_TIMEZONE);
+    timeZone = TEST_TIMEZONE.equals("random") ? randomTimeZone(random) : TimeZone.getTimeZone(TEST_TIMEZONE);
     TimeZone.setDefault(timeZone);
     testsFailed = false;
   }
@@ -307,6 +310,11 @@ public abstract class LuceneTestCase extends Assert {
         }
       }
     stores = null;
+    // if tests failed, report some information back
+    if (testsFailed)
+      System.out.println("NOTE: test params are: codec=" + codec + 
+        ", locale=" + locale + 
+        ", timezone=" + (timeZone == null ? "(null)" : timeZone.getID()));
   }
 
   private static boolean testsFailed; /* true if any tests failed */
@@ -335,10 +343,10 @@ public abstract class LuceneTestCase extends Assert {
 
   @Before
   public void setUp() throws Exception {
+    seed = "random".equals(TEST_SEED) ? seedRand.nextLong() : UUID.fromString(TEST_SEED).getLeastSignificantBits();
+    random.setSeed(seed);
     Assert.assertFalse("ensure your tearDown() calls super.tearDown()!!!", setup);
     setup = true;
-    seed = Long.valueOf(TEST_SEED.equals("random") ? seedRnd.nextLong() : Long.parseLong(TEST_SEED));
-    random = new Random(seed);
     savedUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
       public void uncaughtException(Thread t, Throwable e) {
@@ -350,7 +358,6 @@ public abstract class LuceneTestCase extends Assert {
     
     ConcurrentMergeScheduler.setTestMode();
     savedBoolMaxClauseCount = BooleanQuery.getMaxClauseCount();
-    seed = null;
   }
 
 
@@ -512,36 +519,8 @@ public abstract class LuceneTestCase extends Assert {
     dumpIterator(label, iter, stream);
   }
 
-  private static final Map<Class<? extends LuceneTestCase>,Long> staticSeeds =
-    Collections.synchronizedMap(new WeakHashMap<Class<? extends LuceneTestCase>,Long>());
-
-  /**
-   * Returns a {@link Random} instance for generating random numbers from a beforeclass
-   * annotated method.
-   * The random seed is logged during test execution and printed to System.out on any failure
-   * for reproducing the test using {@link #newStaticRandom(Class, long)} with the recorded seed
-   * .
-   */
-  public static Random newStaticRandom(Class<? extends LuceneTestCase> clazz) {
-    Long seed = seedRnd.nextLong();
-    staticSeeds.put(clazz, seed);
-    return new Random(seed);
-  }
-  
-  /**
-   * Returns a {@link Random} instance for generating random numbers from a beforeclass
-   * annotated method.
-   * If an error occurs in the test that is not reproducible, you can use this method to
-   * initialize the number generator with the seed that was printed out during the failing test.
-   */
-  public static Random newStaticRandom(Class<? extends LuceneTestCase> clazz, long seed) {
-    staticSeeds.put(clazz, Long.valueOf(seed));
-    System.out.println("WARNING: random static seed of testclass '" + clazz + "' is fixed to: " + seed);
-    return new Random(seed);
-  }
-
   /** create a new index writer config with random defaults */
-  public IndexWriterConfig newIndexWriterConfig(Version v, Analyzer a) {
+  public static IndexWriterConfig newIndexWriterConfig(Version v, Analyzer a) {
     return newIndexWriterConfig(random, v, a);
   }
   
@@ -586,7 +565,7 @@ public abstract class LuceneTestCase extends Assert {
    * some features of Windows, such as not allowing open files to be
    * overwritten.
    */
-  public MockDirectoryWrapper newDirectory() throws IOException {
+  public static MockDirectoryWrapper newDirectory() throws IOException {
     return newDirectory(random);
   }
   
@@ -603,11 +582,11 @@ public abstract class LuceneTestCase extends Assert {
    * provided directory. See {@link #newDirectory()} for more
    * information.
    */
-  public MockDirectoryWrapper newDirectory(Directory d) throws IOException {
+  public static MockDirectoryWrapper newDirectory(Directory d) throws IOException {
     return newDirectory(random, d);
   }
   
-  private static MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
+  public static MockDirectoryWrapper newDirectory(Random r, Directory d) throws IOException {
     StackTraceElement[] stack = new Exception().getStackTrace();
     Directory impl = newDirectoryImpl(r, TEST_DIRECTORY);
     for (String file : d.listAll()) {
@@ -618,15 +597,15 @@ public abstract class LuceneTestCase extends Assert {
     return dir;
   }
   
-  public Field newField(String name, String value, Index index) {
+  public static Field newField(String name, String value, Index index) {
     return newField(random, name, value, index);
   }
   
-  public Field newField(String name, String value, Store store, Index index) {
+  public static Field newField(String name, String value, Store store, Index index) {
     return newField(random, name, value, store, index);
   }
   
-  public Field newField(String name, String value, Store store, Index index, TermVector tv) {
+  public static Field newField(String name, String value, Store store, Index index, TermVector tv) {
     return newField(random, name, value, store, index, tv);
   }
   
@@ -751,27 +730,17 @@ public abstract class LuceneTestCase extends Assert {
 
   // We get here from InterceptTestCaseEvents on the 'failed' event....
   public void reportAdditionalFailureInfo() {
-    Long staticSeed = staticSeeds.get(getClass());
-    if (staticSeed != null) {
-      System.out.println("NOTE: random static seed of testclass '" + getName() + "' was: " + staticSeed);
-    }
-    
-    System.out.println("NOTE: random codec of testcase '" + getName() + "' was: " + codec);
-    if (TEST_LOCALE.equals("random"))
-      System.out.println("NOTE: random locale of testcase '" + getName() + "' was: " + locale);
-    if (TEST_TIMEZONE.equals("random")) // careful to not deliver NPE here in case they forgot super.setUp
-      System.out.println("NOTE: random timezone of testcase '" + getName() + "' was: " + (timeZone == null ? "(null)" : timeZone.getID()));
-    if (seed != null) {
-      System.out.println("NOTE: random seed of testcase '" + getName() + "' was: " + seed);
-    }
+    System.out.println("NOTE: reproduce with: ant test -Dtestcase=" + getClass().getSimpleName() 
+        + " -Dtestmethod=" + getName() + " -Dtests.seed=" + new UUID(staticSeed, seed));
   }
 
-  // recorded seed
-  protected Long seed = null;
-  protected Random random = null;
+  // recorded seed: for beforeClass
+  private static long staticSeed;
+  // seed for individual test methods, changed in @before
+  private long seed;
   
-  // static members
-  private static final Random seedRnd = new Random();
+  private static final Random seedRand = new Random();
+  protected static final Random random = new Random();
 
   private String name = "<unknown>";
   

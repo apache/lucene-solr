@@ -34,7 +34,6 @@ import static org.junit.Assert.*;
 import java.io.IOException;
 import java.text.Collator;
 import java.util.Locale;
-import java.util.Random;
 
 import junit.framework.Assert;
 
@@ -60,20 +59,18 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
         "B   2   4 5 6", "Y     3   5 6", null, "C     3     6",
         "X       4 5 6" };
 
-    Random random = newStaticRandom(TestMultiTermConstantScore.class);
-    
-    small = newDirectory(random);
+    small = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random, small, new MockAnalyzer(MockTokenizer.WHITESPACE, false));
 
     for (int i = 0; i < data.length; i++) {
       Document doc = new Document();
-      doc.add(newField(random, "id", String.valueOf(i), Field.Store.YES,
+      doc.add(newField("id", String.valueOf(i), Field.Store.YES,
           Field.Index.NOT_ANALYZED));// Field.Keyword("id",String.valueOf(i)));
       doc
-          .add(newField(random, "all", "all", Field.Store.YES,
+          .add(newField("all", "all", Field.Store.YES,
               Field.Index.NOT_ANALYZED));// Field.Keyword("all","all"));
       if (null != data[i]) {
-        doc.add(newField(random, "data", data[i], Field.Store.YES,
+        doc.add(newField("data", data[i], Field.Store.YES,
             Field.Index.ANALYZED));// Field.Text("data",data[i]));
       }
       writer.addDocument(doc);

@@ -17,8 +17,6 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
-import java.util.Random;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
@@ -41,20 +39,19 @@ public class TestRemoteCachingWrapperFilter extends RemoteTestCase {
   @BeforeClass
   public static void beforeClass() throws Exception {
     // construct an index
-    Random random = newStaticRandom(TestRemoteCachingWrapperFilter.class);
-    indexStore = newDirectory(random);
-    IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(random,
+    indexStore = newDirectory();
+    IndexWriter writer = new IndexWriter(indexStore, newIndexWriterConfig(
         TEST_VERSION_CURRENT, new MockAnalyzer()));
     Document doc = new Document();
-    doc.add(newField(random, "test", "test text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(newField(random, "type", "A", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(newField(random, "other", "other test text", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("test", "test text", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("type", "A", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("other", "other test text", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     //Need a second document to search for
     doc = new Document();
-    doc.add(newField(random, "test", "test text", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(newField(random, "type", "B", Field.Store.YES, Field.Index.ANALYZED));
-    doc.add(newField(random, "other", "other test text", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("test", "test text", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("type", "B", Field.Store.YES, Field.Index.ANALYZED));
+    doc.add(newField("other", "other test text", Field.Store.YES, Field.Index.ANALYZED));
     writer.addDocument(doc);
     writer.optimize();
     writer.close();

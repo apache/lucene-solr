@@ -55,12 +55,11 @@ public class TestBoolean2 extends LuceneTestCase {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    Random random = newStaticRandom(TestBoolean2.class);
-    directory = newDirectory(random);
+    directory = newDirectory();
     RandomIndexWriter writer= new RandomIndexWriter(random, directory);
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
-      doc.add(newField(random, field, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
+      doc.add(newField(field, docFields[i], Field.Store.NO, Field.Index.ANALYZED));
       writer.addDocument(doc);
     }
     writer.close();
@@ -82,15 +81,15 @@ public class TestBoolean2 extends LuceneTestCase {
     } while(docCount < 3000);
 
     RandomIndexWriter w = new RandomIndexWriter(random, dir2, 
-        newIndexWriterConfig(random, TEST_VERSION_CURRENT, new MockAnalyzer())
+        newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
         .setMaxBufferedDocs(_TestUtil.nextInt(random, 50, 1000)));
     Document doc = new Document();
-    doc.add(newField(random, "field2", "xxx", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("field2", "xxx", Field.Store.NO, Field.Index.ANALYZED));
     for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {
       w.addDocument(doc);
     }
     doc = new Document();
-    doc.add(newField(random, "field2", "big bad bug", Field.Store.NO, Field.Index.ANALYZED));
+    doc.add(newField("field2", "big bad bug", Field.Store.NO, Field.Index.ANALYZED));
     for(int i=0;i<NUM_EXTRA_DOCS/2;i++) {
       w.addDocument(doc);
     }
