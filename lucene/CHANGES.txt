@@ -537,6 +537,10 @@ Bug fixes
 * LUCENE-2650: Added extra safety to MMapIndexInput clones to prevent accessing
   an unmapped buffer if the input is closed (Mike McCandless, Uwe Schindler, Robert Muir) 
 
+* LUCENE-2658: Exceptions while processing term vectors enabled for multiple
+  fields could lead to invalid ArrayIndexOutOfBoundsExceptions.
+  (Robert Muir, Mike McCandless)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
