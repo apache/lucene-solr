@@ -64,7 +64,7 @@ public class DistanceUtilsTest extends LuceneTestCase {
 
   public void testLatLonCorner() throws Exception {
     double[] zero = new double[]{0, 0};
-    double[] zero45 = new double[]{0, DistanceUtils.DEG_45};
+    double[] zero45 = new double[]{0, DistanceUtils.DEG_45_AS_RADS};
     double[] result;
     // 	00°38′09″N, 000°38′09″E
     //Verify at http://www.movable-type.co.uk/scripts/latlong.html
@@ -94,8 +94,59 @@ public class DistanceUtilsTest extends LuceneTestCase {
 
   }
 
+  public void testPointBearing() throws Exception {
+    double[] zero = new double[]{0, 0};
+    double[] zero45 = new double[]{40 * DistanceUtils.DEGREES_TO_RADIANS, DistanceUtils.DEG_45_AS_RADS};
+    double[] result;
+    // 	00°38′09″N, 000°38′09″E
+    //Verify at http://www.movable-type.co.uk/scripts/latlong.html
+    result = DistanceUtils.pointOnBearing(zero[0], zero[1], 100, DistanceUtils.DEG_45_AS_RADS, null, DistanceUtils.EARTH_MEAN_RADIUS_KM);
+    assertEquals(0.63583 * DistanceUtils.DEGREES_TO_RADIANS, result[0], 0.001);
+    assertEquals(0.63583 * DistanceUtils.DEGREES_TO_RADIANS, result[1], 0.001);
+
+    //should be above the current point at 0.8994°,0.0000°
+    result = DistanceUtils.pointOnBearing(zero[0], zero[1], 100, 0, null, DistanceUtils.EARTH_MEAN_RADIUS_KM);
+    assertEquals(0.8994 * DistanceUtils.DEGREES_TO_RADIANS, result[0], 0.001);
+    assertEquals(0, result[1], 0.001);
+    //directly below
+    result = DistanceUtils.pointOnBearing(zero[0], zero[1], 100, DistanceUtils.DEG_180_AS_RADS, null, DistanceUtils.EARTH_MEAN_RADIUS_KM);
+    assertEquals(-0.8994 * DistanceUtils.DEGREES_TO_RADIANS, result[0], 0.001);
+    assertEquals(0, result[1], 0.001);
+    //0.7183°,0.5414° -- 37 deg bearing
+    result = DistanceUtils.pointOnBearing(zero[0], zero[1], 100, 37 * DistanceUtils.DEGREES_TO_RADIANS, null, DistanceUtils.EARTH_MEAN_RADIUS_KM);
+    assertEquals(0.7183 * DistanceUtils.DEGREES_TO_RADIANS, result[0], 0.001);
+    assertEquals(0.5414 * DistanceUtils.DEGREES_TO_RADIANS, result[1], 0.001);
+
+    result = DistanceUtils.pointOnBearing(zero45[0], zero45[1], 100, DistanceUtils.DEG_45_AS_RADS, null, DistanceUtils.EARTH_MEAN_RADIUS_KM);
+    //40.6328°,45.8381°
+    assertEquals(40.6328 * DistanceUtils.DEGREES_TO_RADIANS, result[0], 0.001);
+    assertEquals(45.8381 * DistanceUtils.DEGREES_TO_RADIANS, result[1], 0.001);
+
+    result = DistanceUtils.pointOnBearing(1 * DistanceUtils.DEGREES_TO_RADIANS, 1 * DistanceUtils.DEGREES_TO_RADIANS, 100, DistanceUtils.DEG_90_AS_RADS, null, DistanceUtils.EARTH_MEAN_RADIUS_KM);
+    //0.9997°,1.8994°
+    assertEquals(0.9997 * DistanceUtils.DEGREES_TO_RADIANS, result[0], 0.001);
+    assertEquals(1.8994 * DistanceUtils.DEGREES_TO_RADIANS, result[1], 0.001);
+
+    result = DistanceUtils.pointOnBearing(-10 * DistanceUtils.DEGREES_TO_RADIANS, -150 * DistanceUtils.DEGREES_TO_RADIANS, 15, 205*DistanceUtils.DEGREES_TO_RADIANS, null, DistanceUtils.EARTH_MEAN_RADIUS_KM);
+    //-10.1222°,-150.0578°
+    assertEquals(-10.1222 * DistanceUtils.DEGREES_TO_RADIANS, result[0], 0.001);
+    assertEquals(-150.0578 * DistanceUtils.DEGREES_TO_RADIANS, result[1], 0.001);
+
+    result = DistanceUtils.pointOnBearing(-10 * DistanceUtils.DEGREES_TO_RADIANS, -150 * DistanceUtils.DEGREES_TO_RADIANS, 200, 63*DistanceUtils.DEGREES_TO_RADIANS, null, DistanceUtils.EARTH_MEAN_RADIUS_KM);
+    //-9.1797°,-148.3767°
+    assertEquals(-9.1797 * DistanceUtils.DEGREES_TO_RADIANS, result[0], 0.001);
+    assertEquals(-148.3767 * DistanceUtils.DEGREES_TO_RADIANS, result[1], 0.001);
+
+    result = DistanceUtils.pointOnBearing(-10 * DistanceUtils.DEGREES_TO_RADIANS, -150 * DistanceUtils.DEGREES_TO_RADIANS, 3000, 63*DistanceUtils.DEGREES_TO_RADIANS, null, DistanceUtils.EARTH_MEAN_RADIUS_KM);
+    //2.7561°,-126.1281°
+    assertEquals(2.7561 * DistanceUtils.DEGREES_TO_RADIANS, result[0], 0.001);
+    assertEquals(-126.1281 * DistanceUtils.DEGREES_TO_RADIANS, result[1], 0.001);
+
+  }
+
   public void testVectorDistance() throws Exception {
     double[] zero = new double[]{0, 0};
+
     double[] zeroOne = new double[]{0, 1};
     double[] oneZero = new double[]{1, 0};
     double[] oneOne = new double[]{1, 1};

@@ -93,9 +93,23 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
     checkHits(fieldName, "33.0,-80.0", 300, 2);
     //large distance
     checkHits(fieldName, "1,1", 5000, 3, 5, 6, 7);
-    //Try alternate distance
-    checkHits(fieldName, "0.1,0.1", 15, 1, 6);
+    //Because we are generating a box based on the west/east longitudes and the south/north latitudes, which then
+    //translates to a range query, which is slightly more inclusive.  Thus, even though 0.0 is 15.725 kms away,
+    //it will be included, b/c of the box calculation.
+    checkHits(fieldName, "0.1,0.1", 15, 2, 5, 6);
+   //try some more
+    clearIndex();
+    assertU(adoc("id", "14", fieldName, "0,5"));
+    assertU(adoc("id", "15", fieldName, "0,15"));
+    //3000KM from 0,0, see http://www.movable-type.co.uk/scripts/latlong.html
+    assertU(adoc("id", "16", fieldName, "18.71111,19.79750"));
+    assertU(commit());
 
+    checkHits(fieldName, "0,0", 1000, 1, 14);
+    checkHits(fieldName, "0,0", 2000, 2, 14, 15);
+    checkHits(fieldName, "0,0", 3000, 3, 14, 15, 16);
+    checkHits(fieldName, "0,0", 3001, 3, 14, 15, 16);
+    checkHits(fieldName, "0,0", 3000.1, 3, 14, 15, 16);
   }
 
   private void checkHits(String fieldName, String pt, double distance, int count, int ... docIds) {

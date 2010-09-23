@@ -91,26 +91,34 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
     } catch (InvalidGeoException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
-
+    point[0] = point[0] * DistanceUtils.DEGREES_TO_RADIANS;
+    point[1] = point[1] * DistanceUtils.DEGREES_TO_RADIANS;
     //Get the distance
-    double[] ur;
-    double[] ll;
-    if (options.measStr == null || options.measStr.equals("hsin")) {
-      ur = DistanceUtils.latLonCornerDegs(point[LAT], point[LONG], options.distance, null, true, options.radius);
-      ll = DistanceUtils.latLonCornerDegs(point[LAT], point[LONG], options.distance, null, false, options.radius);
-    } else {
-      ur = DistanceUtils.vectorBoxCorner(point, null, options.distance, true);
-      ll = DistanceUtils.vectorBoxCorner(point, null, options.distance, false);
-    }
+    double[] ur = new double[2];
+    double[] ll = new double[2];
+    double[] tmp = new double[2];
+    //these calculations aren't totally accurate, but it should be good enough
+    //TODO: Optimize to do in single calculations.  Would need to deal with poles, prime meridian, etc.
+    double [] north = DistanceUtils.pointOnBearing(point[LAT], point[LONG], options.distance, 0, tmp, options.radius);
+    //This returns the point as radians, but we need degrees b/c that is what the field is stored as
+    ur[LAT] = north[LAT] * DistanceUtils.RADIANS_TO_DEGREES;//get it now, as we are going to reuse tmp
+    double [] east = DistanceUtils.pointOnBearing(point[LAT], point[LONG], options.distance, DistanceUtils.DEG_90_AS_RADS, tmp, options.radius);
+    ur[LONG] = east[LONG] * DistanceUtils.RADIANS_TO_DEGREES;
+    double [] south = DistanceUtils.pointOnBearing(point[LAT], point[LONG], options.distance, DistanceUtils.DEG_180_AS_RADS, tmp, options.radius);
+    ll[LAT] = south[LAT] * DistanceUtils.RADIANS_TO_DEGREES;
+    double [] west = DistanceUtils.pointOnBearing(point[LAT], point[LONG], options.distance, DistanceUtils.DEG_270_AS_RADS, tmp, options.radius);
+    ll[LONG] = west[LONG] * DistanceUtils.RADIANS_TO_DEGREES;
+    
 
     SchemaField subSF;
     Query range;
+    //TODO: can we reuse our bearing calculations?
+    double angDist = DistanceUtils.angularDistance(options.distance,
+            options.radius);//in radians
 
-    double angDistDegs = DistanceUtils.angularDistance(options.distance,
-            options.radius) * DistanceUtils.RADIANS_TO_DEGREES;
-    
     //for the poles, do something slightly different
-    if (point[LAT] + angDistDegs > 90.0) { //we cross the north pole
+    //Also, note point[LAT] is in radians, but ur and ll are in degrees
+    if (point[LAT] + angDist > DistanceUtils.DEG_90_AS_RADS) { //we cross the north pole
       //we don't need a longitude boundary at all
 
       double minLat = Math.min(ll[LAT], ur[LAT]);
@@ -119,7 +127,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
               String.valueOf(minLat),
               "90", true, true);
       result.add(range, BooleanClause.Occur.MUST);
-    } else if (point[LAT] - angDistDegs < -90.0) {//we cross the south pole
+    } else if (point[LAT] - angDist < -DistanceUtils.DEG_90_AS_RADS) {//we cross the south pole
       subSF = subField(options.field, LAT);
       double maxLat = Math.max(ll[LAT], ur[LAT]);
       range = subSF.getType().getRangeQuery(parser, subSF,
