@@ -94,7 +94,7 @@ public class TestCheckIndex extends LuceneTestCase {
     // common-build.xml sets lucene.version
     final String version = System.getProperty("lucene.version");
     assertNotNull(version);
-    assertTrue(version.equals(Constants.LUCENE_MAIN_VERSION+"-dev") ||
+    assertTrue(version.equals(Constants.LUCENE_MAIN_VERSION+"-SNAPSHOT") ||
                version.equals(Constants.LUCENE_MAIN_VERSION));
     assertTrue(Constants.LUCENE_VERSION.startsWith(version));
   }
