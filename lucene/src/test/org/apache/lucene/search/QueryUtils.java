@@ -64,6 +64,9 @@ public class QueryUtils {
     };
     whacky.setBoost(q.getBoost());
     checkUnequal(q, whacky);
+    
+    // null test
+    Assert.assertFalse(q.equals(null));
   }
 
   public static void checkEqual(Query q1, Query q2) {
