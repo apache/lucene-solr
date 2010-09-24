@@ -94,7 +94,7 @@
        By default, this should be set to "X.Y.M.${dateversion}"
        where X.Y.M is the last version released (on this branch).
     -->
-  <property name="specversion" value="3.0.0.${dateversion}" />
+  <property name="specversion" value="4.0.0.${dateversion}" />
 
   
     <!-- Type of checksum to compute for distribution files -->
