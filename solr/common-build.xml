@@ -81,10 +81,10 @@
        This can be any string value that does not include spaces
        This will be used when creating build artifact file names.
 
-       By default, this should be set to "X.Y.N-dev" where X.Y.N is
+       By default, this should be set to "X.Y.N-SNAPSHOT" where X.Y.N is
        "1 greater" then the last version released (on this branch).
     -->
-  <property name="version" value="4.0-dev" />
+  <property name="version" value="4.0-SNAPSHOT" />
   
   <!-- Solr Specification Version -->
   <!--
