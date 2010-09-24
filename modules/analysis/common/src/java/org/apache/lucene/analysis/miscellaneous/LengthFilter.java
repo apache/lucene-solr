@@ -25,6 +25,9 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 /**
  * Removes words that are too long or too short from the stream.
+ * <p>
+ * Note: Length is calculated as the number of UTF-16 code units.
+ * </p>
  */
 public final class LengthFilter extends TokenFilter {
 
