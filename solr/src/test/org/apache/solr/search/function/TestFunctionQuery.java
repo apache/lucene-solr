@@ -23,6 +23,7 @@ import org.apache.lucene.search.Similarity;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.internal.runners.statements.Fail;
 
 import java.io.FileOutputStream;
 import java.io.OutputStreamWriter;
@@ -342,6 +343,18 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     // test full param dereferencing
     assertQ(req("fl","*,score","q", "{!func}add($v1,$v2)", "v1","add($v3,$v4)", "v2","1", "v3","2", "v4","5"
         , "fq","id:1"), "//float[@name='score']='8.0'");
+
+    // test ability to parse multiple values
+    assertQ(req("fl","*,score","q", "{!func}dist(2,vector(1,1),$pt)", "pt","3,1"
+        , "fq","id:1"), "//float[@name='score']='2.0'");
+
+    // test that extra stuff after a function causes an error
+    try {
+      assertQ(req("fl","*,score","q", "{!func}10 wow dude ignore_exception"));
+      fail();
+    } catch (Exception e) {
+      // OK
+    }
 
     purgeFieldCache(FieldCache.DEFAULT);   // avoid FC insanity
   }

@@ -133,13 +133,7 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.FLOAT);
     assertEquals(flds[0].getField(), "weight");
-
-    try {
-      //bad number of parens, but the function parser can handle an extra close
-      sort = QueryParsing.parseSort("pow(weight,2)) desc, bday asc", schema);
-    } catch (SolrException e) {
-      assertTrue(false);
-    }
+gvim
     //Test literals in functions
     sort = QueryParsing.parseSort("strdist(foo_s, \"junk\", jw) desc", schema);
     flds = sort.getSort();

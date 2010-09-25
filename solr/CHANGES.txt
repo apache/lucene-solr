@@ -272,6 +272,13 @@ New Features
   Example: q=add($v1,$v2)&v1=mul(popularity,5)&v2=20.0
   (yonik)
 
+* SOLR-2133: Function query parser can now parse multiple coma separated
+  value sources.  It also now fails if there is extra unexpected text
+  after parsing the functions, instead of silently ignoring it.
+  This allows expressions like q=dist(2,vector(1,2),$pt)&pt=3,4   (yonik)
+
+
+
 Optimizations
 ----------------------
 

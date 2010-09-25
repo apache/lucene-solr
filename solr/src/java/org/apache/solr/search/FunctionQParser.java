@@ -29,25 +29,71 @@ import java.util.List;
 
 public class FunctionQParser extends QParser {
 
-  protected QueryParsing.StrParser sp;
+  /** @lucene.internal */
+  public QueryParsing.StrParser sp;
+  boolean parseMultipleSources = true;
+  boolean parseToEnd = true;
 
   public FunctionQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     super(qstr, localParams, params, req);
   }
 
+  public void setParseMultipleSources(boolean parseMultipleSources) {
+    this.parseMultipleSources = parseMultipleSources;  
+  }
+
+  /** parse multiple comma separated value sources */
+  public boolean getParseMultipleSources() {
+    return parseMultipleSources;
+  }
+
+  public void setParseToEnd(boolean parseToEnd) {
+    this.parseMultipleSources = parseMultipleSources;
+  }
+
+  /** throw exception if there is extra stuff at the end of the parsed valuesource(s). */
+  public boolean getParseToEnd() {
+    return parseMultipleSources;
+  }
+
   public Query parse() throws ParseException {
     sp = new QueryParsing.StrParser(getString());
-    ValueSource vs = parseValueSource();
 
-    /***  boost promoted to top-level query type to avoid this hack 
+    ValueSource vs = null;
+    List<ValueSource> lst = null;
 
-    // HACK - if this is a boosted query wrapped in a value-source, return
-    // that boosted query instead of a FunctionQuery
-    if (vs instanceof QueryValueSource) {
-      Query q = ((QueryValueSource)vs).getQuery();
-      if (q instanceof BoostedQuery) return q;
+    for(;;) {
+      ValueSource valsource = parseValueSource(false);
+      sp.eatws();
+      if (!parseMultipleSources) {
+        vs = valsource; 
+        break;
+      } else {
+        if (lst != null) {
+          lst.add(valsource);
+        } else {
+          vs = valsource;
+        }
+      }
+
+      // check if there is a "," separator
+      if (sp.peek() != ',') break;
+
+      consumeArgumentDelimiter();
+
+      if (lst == null) {
+        lst = new ArrayList<ValueSource>(2);
+        lst.add(valsource);
+      }
     }
-    ***/
+
+    if (parseToEnd && sp.pos < sp.end) {
+      throw new ParseException("Unexpected text after function: " + sp.val.substring(sp.pos, sp.end));
+    }
+
+    if (lst != null) {
+      vs = new VectorValueSource(lst);
+    }
 
     return new FunctionQuery(vs);
   }
@@ -264,6 +310,9 @@ public class FunctionQParser extends QParser {
       }
 
       QParser subParser = subQuery(val, "func");
+      if (subParser instanceof FunctionQParser) {
+        ((FunctionQParser)subParser).setParseMultipleSources(true);
+      }
       Query subQuery = subParser.getQuery();
       if (subQuery instanceof FunctionQuery) {
         valueSource = ((FunctionQuery) subQuery).getValueSource();
