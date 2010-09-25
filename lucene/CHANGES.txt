@@ -231,6 +231,9 @@ New features
   
 * LUCENE-2648: PackedInts.Iterator now supports to advance by more than a
   single ordinal. (Simon Willnauer) 
+  
+* LUCENE-2649: Objects in the FieldCache can optionally store Bits
+  that mark which docs have real values in the native[] (ryan)
 
 Optimizations
 
