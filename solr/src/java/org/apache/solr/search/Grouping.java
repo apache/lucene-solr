@@ -526,7 +526,6 @@ class Phase2GroupCollector extends Collector {
     filler.fillValue(doc);
     SearchGroupDocs group = groupMap.get(mval);
     if (group == null) return;
-    group.matches++;
     group.collector.collect(doc);
   }
 
@@ -551,7 +550,6 @@ class Phase2GroupCollector extends Collector {
 // disad: blows up the size of SearchGroup if we need many of them, and couples implementations
 class SearchGroupDocs {
   public MutableValue groupValue;
-  int matches;
   TopFieldCollector collector;
 }
 
