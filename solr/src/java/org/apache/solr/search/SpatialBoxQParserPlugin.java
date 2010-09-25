@@ -1,4 +1,3 @@
-package org.apache.solr.search;
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,22 +15,20 @@ package org.apache.solr.search;
  * limitations under the License.
  */
 
+package org.apache.solr.search;
+
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 
-/**
- * Creates a {@link org.apache.solr.search.QParser} that can create Spatial {@link org.apache.lucene.search.Filter}s.
- * The filters are tied to implementations of {@link org.apache.solr.schema.SpatialQueryable}
- */
-public class SpatialFilterQParserPlugin extends QParserPlugin {
-  public static String NAME = "sfilt";
+public class SpatialBoxQParserPlugin extends SpatialFilterQParserPlugin {
+  public static String NAME = "bbox";
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams,
                               SolrParams params, SolrQueryRequest req) {
 
-    return new SpatialFilterQParser(qstr, localParams, params, req, false);
+    return new SpatialFilterQParser(qstr, localParams, params, req, true);
   }
 
   public void init(NamedList args) {
@@ -39,4 +36,3 @@ public class SpatialFilterQParserPlugin extends QParserPlugin {
   }
 
 }
-

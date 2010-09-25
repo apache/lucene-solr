@@ -32,6 +32,11 @@ public class SpatialOptions {
   public double radius;
   public DistanceUnits units;
 
+  /** Just do a "bounding box" - or any other quicker method / shape that
+   * still encompasses all of the points of interest, but may also encompass
+   * points outside.
+   */ 
+  public boolean bbox;
 
   public SpatialOptions() {
   }

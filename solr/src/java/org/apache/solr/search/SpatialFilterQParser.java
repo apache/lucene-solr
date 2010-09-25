@@ -27,7 +27,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.SpatialParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.SpatialQueryable;
 
@@ -54,10 +53,11 @@ import org.apache.solr.schema.SpatialQueryable;
  *
  */
 public class SpatialFilterQParser extends QParser {
+  boolean bbox;  // do bounding box only
 
-
-  public SpatialFilterQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+  public SpatialFilterQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req, boolean bbox) {
     super(qstr, localParams, params, req);
+    this.bbox = bbox;
   }
 
   
@@ -98,6 +98,7 @@ public class SpatialFilterQParser extends QParser {
       if (type instanceof SpatialQueryable) {
         double radius = localParams.getDouble(SpatialParams.SPHERE_RADIUS, DistanceUtils.EARTH_MEAN_RADIUS_KM);
         SpatialOptions opts = new SpatialOptions(pointStr, dist, sf, measStr, radius, DistanceUnits.KILOMETERS);
+        opts.bbox = bbox;
         result = ((SpatialQueryable)type).createSpatialQuery(this, opts);
       } else {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "The field " + fields[0]
