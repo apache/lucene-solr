@@ -287,12 +287,10 @@ public class TestPositionIncrement extends LuceneTestCase {
       }
       Collection<byte[]> payloads = pspans.getPayload();
       sawZero |= pspans.start() == 0;
-      for (@SuppressWarnings("unused") byte[] bytes : payloads) {
+      for (byte[] bytes : payloads) {
         count++;
-        if (!VERBOSE) {
-          // do nothing
-        } else {
-          System.out.println("  payload: " + new String((byte[]) bytes));
+        if (VERBOSE) {
+          System.out.println("  payload: " + new String(bytes));
         }
       }
     }
