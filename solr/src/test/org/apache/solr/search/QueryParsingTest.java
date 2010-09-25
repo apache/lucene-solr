@@ -133,7 +133,7 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     flds = sort.getSort();
     assertEquals(flds[0].getType(), SortField.FLOAT);
     assertEquals(flds[0].getField(), "weight");
-gvim
+
     //Test literals in functions
     sort = QueryParsing.parseSort("strdist(foo_s, \"junk\", jw) desc", schema);
     flds = sort.getSort();
