@@ -792,6 +792,8 @@ public class SegmentReader extends IndexReader implements Cloneable {
     if (deletedDocsDirty) {               // re-write deleted
       si.advanceDelGen();
 
+      assert deletedDocs.size() == si.docCount;
+
       // We can write directly to the actual name (vs to a
       // .tmp & renaming it) because the file is not live
       // until segments file is written:
