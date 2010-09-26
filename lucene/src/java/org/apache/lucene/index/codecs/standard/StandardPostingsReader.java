@@ -581,13 +581,6 @@ public class StandardPostingsReader extends PostingsReaderBase {
       return position;
     }
 
-    /** Returns length of payload at current position */
-    public int getPayloadLength() {
-      assert lazyProxPointer == -1;
-      assert posPendingCount < freq;
-      return payloadLength;
-    }
-
     /** Returns the payload at this position, or null if no
      *  payload was indexed. */
     public BytesRef getPayload() throws IOException {
