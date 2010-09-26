@@ -26,7 +26,9 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.FieldCache.ByteParser;
+import org.apache.lucene.search.FieldCache.Parser;
 import org.apache.lucene.search.cache.CachedArray.ByteValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -51,6 +53,16 @@ public class ByteValuesCreator extends CachedArrayCreator<ByteValues>
   @Override
   public Class getArrayType() {
     return Byte.class;
+  }
+
+  @Override
+  public Parser getParser() {
+    return parser;
+  }
+  
+  @Override
+  public int getSortTypeID() {
+    return SortField.BYTE;
   }
 
   //--------------------------------------------------------------------------------

@@ -26,7 +26,9 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.FieldCache.IntParser;
+import org.apache.lucene.search.FieldCache.Parser;
 import org.apache.lucene.search.cache.CachedArray.IntValues;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -51,6 +53,16 @@ public class IntValuesCreator extends CachedArrayCreator<IntValues>
   @Override
   public Class getArrayType() {
     return Integer.class;
+  }
+
+  @Override
+  public Parser getParser() {
+    return parser;
+  }
+  
+  @Override
+  public int getSortTypeID() {
+    return SortField.INT;
   }
 
 

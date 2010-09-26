@@ -23,7 +23,7 @@ public abstract class EntryCreatorWithOptions<T> extends EntryCreator<T>
 {
   public static final int OPTION_VALIDATE = 1;
 
-  public int flags;
+  private int flags;
 
   public EntryCreatorWithOptions( int flag ) {
     this.flags = flag;
@@ -37,5 +37,9 @@ public abstract class EntryCreatorWithOptions<T> extends EntryCreator<T>
   public boolean hasOption( int key )
   {
     return (flags & key) == key;
+  }
+
+  public void setFlag(int flag) {
+    this.flags |= flag;
   }
 }

@@ -26,6 +26,8 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.FieldCache.Parser;
 import org.apache.lucene.search.FieldCache.ShortParser;
 import org.apache.lucene.search.cache.CachedArray.ShortValues;
 import org.apache.lucene.util.Bits;
@@ -51,6 +53,16 @@ public class ShortValuesCreator extends CachedArrayCreator<ShortValues>
   @Override
   public Class getArrayType() {
     return Short.class;
+  }
+
+  @Override
+  public Parser getParser() {
+    return parser;
+  }
+  
+  @Override
+  public int getSortTypeID() {
+    return SortField.SHORT;
   }
 
 

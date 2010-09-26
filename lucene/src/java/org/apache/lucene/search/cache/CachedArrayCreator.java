@@ -40,7 +40,7 @@ public abstract class CachedArrayCreator<T extends CachedArray> extends EntryCre
   public static final int CACHE_VALUES_AND_BITS = OPTION_CACHE_VALUES ^ OPTION_CACHE_BITS;
   public static final int CACHE_VALUES_AND_BITS_VALIDATE = OPTION_CACHE_VALUES ^ OPTION_CACHE_BITS ^ OPTION_VALIDATE;
 
-  public String field;
+  public final String field;
 
   public CachedArrayCreator( String field )
   {
@@ -69,9 +69,11 @@ public abstract class CachedArrayCreator<T extends CachedArray> extends EntryCre
     return new SimpleEntryKey( CachedArray.class, getArrayType(), field );
     //return new Integer( CachedArrayCreator.class.hashCode() ^ getArrayType().hashCode() ^ field.hashCode() );
   }
-
+  
   /** Return the type that the array will hold */
   public abstract Class getArrayType();
+  public abstract Parser getParser();
+  public abstract int getSortTypeID();
 
   protected void assertSameParserAndResetCounts(T value, Parser parser)
   {
