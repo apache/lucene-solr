@@ -35,11 +35,11 @@ import org.apache.lucene.index.codecs.mocksep.MockSepCodec;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.preflexrw.PreFlexRWCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
+import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
 import org.junit.After;
@@ -77,8 +77,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.TimeZone;
-import java.util.UUID;
-import java.util.WeakHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -193,6 +191,8 @@ public abstract class LuceneTestCase extends Assert {
   
   private static Map<MockDirectoryWrapper,StackTraceElement[]> stores;
   
+  // TODO 4.0: make sure we re-enable SimpleText in the rotation
+  //private static final String[] TEST_CODECS = new String[] {"MockSep", "MockFixedIntBlock", "MockVariableIntBlock", "SimpleText"};
   private static final String[] TEST_CODECS = new String[] {"MockSep", "MockFixedIntBlock", "MockVariableIntBlock"};
 
   private static void swapCodec(Codec c) {
@@ -246,6 +246,8 @@ public abstract class LuceneTestCase extends Assert {
     swapCodec(new MockFixedIntBlockCodec(codecHasParam && "MockFixedIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 2000)));
     // baseBlockSize cannot be over 127:
     swapCodec(new MockVariableIntBlockCodec(codecHasParam && "MockVariableIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 127)));
+    // TODO 4.0: add this into test rotation
+    //swapCodec(new SimpleTextCodec());
 
     return cp.lookup(codec);
   }
@@ -278,9 +280,30 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
+  private static class TwoLongs {
+    public final long l1, l2;
+
+    public TwoLongs(long l1, long l2) {
+      this.l1 = l1;
+      this.l2 = l2;
+    }
+
+    @Override
+    public String toString() {
+      return l1 + ":" + l2;
+    }
+
+    public static TwoLongs fromString(String s) {
+      final int i = s.indexOf(':');
+      assert i != -1;
+      return new TwoLongs(Long.parseLong(s.substring(0, i)),
+                          Long.parseLong(s.substring(1+i)));
+    }
+  }
+
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
-    staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : UUID.fromString(TEST_SEED).getMostSignificantBits();
+    staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l1;
     random.setSeed(staticSeed);
     stores = Collections.synchronizedMap(new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>());
     codec = installTestCodecs();
@@ -343,7 +366,7 @@ public abstract class LuceneTestCase extends Assert {
 
   @Before
   public void setUp() throws Exception {
-    seed = "random".equals(TEST_SEED) ? seedRand.nextLong() : UUID.fromString(TEST_SEED).getLeastSignificantBits();
+    seed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l2;
     random.setSeed(seed);
     Assert.assertFalse("ensure your tearDown() calls super.tearDown()!!!", setup);
     setup = true;
@@ -731,7 +754,7 @@ public abstract class LuceneTestCase extends Assert {
   // We get here from InterceptTestCaseEvents on the 'failed' event....
   public void reportAdditionalFailureInfo() {
     System.out.println("NOTE: reproduce with: ant test -Dtestcase=" + getClass().getSimpleName() 
-        + " -Dtestmethod=" + getName() + " -Dtests.seed=" + new UUID(staticSeed, seed));
+        + " -Dtestmethod=" + getName() + " -Dtests.seed=" + new TwoLongs(staticSeed, seed));
   }
 
   // recorded seed: for beforeClass

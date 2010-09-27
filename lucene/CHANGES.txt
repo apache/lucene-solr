@@ -235,6 +235,10 @@ New features
 * LUCENE-2649: Objects in the FieldCache can optionally store Bits
   that mark which docs have real values in the native[] (ryan)
 
+* LUCENE-2664: Add SimpleText codec, which stores all terms/postings
+  data in a single text file for transparency (at the expense of poor
+  performance).  (Sahin Buyrukbilen via Mike McCandless)
+
 Optimizations
 
 * LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.
