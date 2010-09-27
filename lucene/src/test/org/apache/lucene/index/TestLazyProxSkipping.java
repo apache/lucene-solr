@@ -18,7 +18,6 @@ package org.apache.lucene.index;
  */
 
 import java.io.IOException;
-import java.util.Random;
 
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
@@ -63,7 +62,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
       
     }
     
-    private void createIndex(Random random, int numHits) throws IOException {
+    private void createIndex(int numHits) throws IOException {
         int numDocs = 500;
         
         Directory directory = new SeekCountingDirectory(new RAMDirectory());
@@ -105,8 +104,8 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         return this.searcher.search(pq, null, 1000).scoreDocs;        
     }
     
-    private void performTest(Random random, int numHits) throws IOException {
-        createIndex(random, numHits);
+    private void performTest(int numHits) throws IOException {
+        createIndex(numHits);
         this.seeksCounter = 0;
         ScoreDoc[] hits = search();
         // verify that the right number of docs was found
@@ -118,9 +117,10 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     }
     
     public void testLazySkipping() throws IOException {
-        // test whether only the minimum amount of seeks() are performed
-        performTest(random, 5);
-        performTest(random, 10);
+        // test whether only the minimum amount of seeks()
+        // are performed
+        performTest(5);
+        performTest(10);
     }
     
     public void testSeek() throws IOException {

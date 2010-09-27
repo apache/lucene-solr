@@ -20,16 +20,15 @@ package org.apache.lucene;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.WhitespaceAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.queryParser.ParseException;
 import org.apache.lucene.queryParser.QueryParser;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -43,15 +42,13 @@ public class TestDemo extends LuceneTestCase {
 
   public void testDemo() throws IOException, ParseException {
 
-    Analyzer analyzer = new StandardAnalyzer(TEST_VERSION_CURRENT);
+    Analyzer analyzer = new WhitespaceAnalyzer(TEST_VERSION_CURRENT);
 
     // Store the index in memory:
     Directory directory = newDirectory();
     // To store an index on disk, use this instead:
     //Directory directory = FSDirectory.open("/tmp/testindex");
-    IndexWriter iwriter = new IndexWriter(directory, new IndexWriterConfig(
-        TEST_VERSION_CURRENT, analyzer).setMaxFieldLength(25000));
-    
+    RandomIndexWriter iwriter = new RandomIndexWriter(random, directory);
     Document doc = new Document();
     String text = "This is the text to be indexed.";
     doc.add(newField("fieldname", text, Field.Store.YES,
@@ -64,16 +61,19 @@ public class TestDemo extends LuceneTestCase {
     // Parse a simple query that searches for "text":
     QueryParser parser = new QueryParser(TEST_VERSION_CURRENT, "fieldname", analyzer);
     Query query = parser.parse("text");
-    ScoreDoc[] hits = isearcher.search(query, null, 1000).scoreDocs;
-    assertEquals(1, hits.length);
+    TopDocs hits = isearcher.search(query, null, 1);
+    assertEquals(1, hits.totalHits);
     // Iterate through the results:
-    for (int i = 0; i < hits.length; i++) {
-      Document hitDoc = isearcher.doc(hits[i].doc);
+    for (int i = 0; i < hits.scoreDocs.length; i++) {
+      Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
       assertEquals("This is the text to be indexed.", hitDoc.get("fieldname"));
     }
+
+    // Test simple phrase query
+    query = parser.parse("\"to be\"");
+    assertEquals(1, isearcher.search(query, null, 1).totalHits);
+
     isearcher.close();
     directory.close();
-    
   }
-
 }

@@ -69,8 +69,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.TimeZone;
-import java.util.UUID;
-import java.util.WeakHashMap;
 
 /**
  * Base class for all Lucene unit tests, Junit3 or Junit4 variant.
@@ -175,9 +173,30 @@ public abstract class LuceneTestCase extends Assert {
   
   private static Map<MockDirectoryWrapper,StackTraceElement[]> stores;
   
+  private static class TwoLongs {
+    public final long l1, l2;
+
+    public TwoLongs(long l1, long l2) {
+      this.l1 = l1;
+      this.l2 = l2;
+    }
+
+    @Override
+    public String toString() {
+      return l1 + ":" + l2;
+    }
+
+    public static TwoLongs fromString(String s) {
+      final int i = s.indexOf(':');
+      assert i != -1;
+      return new TwoLongs(Long.parseLong(s.substring(0, i)),
+                          Long.parseLong(s.substring(1+i)));
+    }
+  }
+
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
-    staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : UUID.fromString(TEST_SEED).getMostSignificantBits();
+    staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l1;
     random.setSeed(staticSeed);
     stores = Collections.synchronizedMap(new IdentityHashMap<MockDirectoryWrapper,StackTraceElement[]>());
     savedLocale = Locale.getDefault();
@@ -238,7 +257,7 @@ public abstract class LuceneTestCase extends Assert {
 
   @Before
   public void setUp() throws Exception {
-    seed = "random".equals(TEST_SEED) ? seedRand.nextLong() : UUID.fromString(TEST_SEED).getLeastSignificantBits();
+    seed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l2;
     random.setSeed(seed);
     Assert.assertFalse("ensure your tearDown() calls super.tearDown()!!!", setup);
     setup = true;
@@ -630,7 +649,7 @@ public abstract class LuceneTestCase extends Assert {
   // We get here from InterceptTestCaseEvents on the 'failed' event....
   public void reportAdditionalFailureInfo() {
     System.out.println("NOTE: reproduce with: ant test -Dtestcase=" + getClass().getSimpleName() 
-        + " -Dtestmethod=" + getName() + " -Dtests.seed=" + new UUID(staticSeed, seed));
+        + " -Dtestmethod=" + getName() + " -Dtests.seed=" + new TwoLongs(staticSeed, seed));
   }
 
   // recorded seed: for beforeClass

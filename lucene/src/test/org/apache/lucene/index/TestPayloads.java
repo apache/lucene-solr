@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenFilter;
@@ -154,19 +153,19 @@ public class TestPayloads extends LuceneTestCase {
     public void testPayloadsEncoding() throws Exception {
         // first perform the test using a RAMDirectory
         Directory dir = newDirectory();
-        performTest(random, dir);
+        performTest(dir);
         dir.close();
         // now use a FSDirectory and repeat same test
         File dirName = _TestUtil.getTempDir("test_payloads");
         dir = FSDirectory.open(dirName);
-        performTest(random, dir);
+        performTest(dir);
        _TestUtil.rmDir(dirName);
         dir.close();
     }
     
     // builds an index with payloads in the given Directory and performs
     // different tests to verify the payload encoding
-    private void performTest(Random random, Directory dir) throws Exception {
+    private void performTest(Directory dir) throws Exception {
         PayloadAnalyzer analyzer = new PayloadAnalyzer();
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
             TEST_VERSION_CURRENT, analyzer)
@@ -240,8 +239,10 @@ public class TestPayloads extends LuceneTestCase {
             for (int i = 0; i < freq; i++) {
                 for (int j = 0; j < numTerms; j++) {
                     tps[j].nextPosition();
-                    tps[j].getPayload(verifyPayloadData, offset);
-                    offset += tps[j].getPayloadLength();
+                    if (tps[j].isPayloadAvailable()) {
+                      tps[j].getPayload(verifyPayloadData, offset);
+                      offset += tps[j].getPayloadLength();
+                    }
                 }
             }
         }
