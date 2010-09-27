@@ -22,6 +22,7 @@ import java.util.Comparator;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.SpecialOperations;
@@ -110,7 +111,6 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     // used for path tracking, where each bit is a numbered state.
     visited = new long[runAutomaton.getSize()];
 
-    setUseTermsCache(finite);
     termComp = getComparator();
   }
   
@@ -201,6 +201,8 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     linearUpperBound.length = length;
   }
 
+  private final IntsRef savedStates = new IntsRef(10);
+  
   /**
    * Increments the byte buffer to the next String in binary order after s that will not put
    * the machine into a reject state. If such a string does not exist, returns
@@ -214,17 +216,20 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
   private boolean nextString() {
     int state;
     int pos = 0;
-
+    savedStates.grow(seekBytesRef.length+1);
+    final int[] states = savedStates.ints;
+    states[0] = runAutomaton.getInitialState();
+    
     while (true) {
       curGen++;
       linear = false;
-      state = runAutomaton.getInitialState();
       // walk the automaton until a character is rejected.
-      for (pos = 0; pos < seekBytesRef.length; pos++) {
+      for (state = states[pos]; pos < seekBytesRef.length; pos++) {
         visited[state] = curGen;
         int nextState = runAutomaton.step(state, seekBytesRef.bytes[pos] & 0xff);
         if (nextState == -1)
           break;
+        states[pos+1] = nextState;
         // we found a loop, record it for faster enumeration
         if (!finite && !linear && visited[nextState] == curGen) {
           linear = true;
@@ -238,12 +243,16 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
       if (nextString(state, pos)) {
         return true;
       } else { /* no more solutions exist from this useful portion, backtrack */
-        if (!backtrack(pos)) /* no more solutions at all */
+        if ((pos = backtrack(pos)) < 0) /* no more solutions at all */
           return false;
-        else if (runAutomaton.run(seekBytesRef.bytes, 0, seekBytesRef.length)) 
+        final int newState = runAutomaton.step(states[pos], seekBytesRef.bytes[pos] & 0xff);
+        if (newState >= 0 && runAutomaton.isAccept(newState))
           /* String is good to go as-is */
           return true;
         /* else advance further */
+        // TODO: paranoia? if we backtrack thru an infinite DFA, the loop detection is important!
+        // for now, restart from scratch for all infinite DFAs 
+        if (!finite) pos = 0;
       }
     }
   }
@@ -332,20 +341,19 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
    * can match.
    * 
    * @param position current position in the input String
-   * @return true if more possible solutions exist for the DFA
+   * @return position >=0 if more possible solutions exist for the DFA
    */
-  private boolean backtrack(int position) {
-    while (position > 0) {
-      int nextChar = seekBytesRef.bytes[position - 1] & 0xff;
+  private int backtrack(int position) {
+    while (position-- > 0) {
+      int nextChar = seekBytesRef.bytes[position] & 0xff;
       // if a character is 0xff its a dead-end too,
       // because there is no higher character in binary sort order.
       if (nextChar++ != 0xff) {
-        seekBytesRef.bytes[position - 1] = (byte) nextChar;
-        seekBytesRef.length = position;
-        return true;
+        seekBytesRef.bytes[position] = (byte) nextChar;
+        seekBytesRef.length = position+1;
+        return position;
       }
-      position--;
     }
-    return false; /* all solutions exhausted */
+    return -1; /* all solutions exhausted */
   }
 }
