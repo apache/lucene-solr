@@ -75,12 +75,12 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
    * Construct an enumerator based upon an automaton, enumerating the specified
    * field, working on a supplied reader.
    * <p>
-   * @lucene.internal Use the public ctor instead. 
+   * @lucene.experimental 
    * <p>
    * @param runAutomaton pre-compiled ByteRunAutomaton
    * @param finite true if the automaton accepts a finite language
    */
-  AutomatonTermsEnum(ByteRunAutomaton runAutomaton,
+  public AutomatonTermsEnum(ByteRunAutomaton runAutomaton,
                      String field, IndexReader reader,
                      boolean finite, BytesRef commonSuffixRef)
       throws IOException {
@@ -177,7 +177,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
    */
   private void setLinear(int position) {
     int state = runAutomaton.getInitialState();
-    int maxInterval = 0xef;
+    int maxInterval = 0xff;
     for (int i = 0; i < position; i++) {
       state = runAutomaton.step(state, seekBytesRef.bytes[i] & 0xff);
       assert state >= 0: "state=" + state;
@@ -192,7 +192,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     }
     // 0xff terms don't get the optimization... not worth the trouble.
     if (maxInterval != 0xff)
-      maxInterval = incrementUTF8(maxInterval);
+      maxInterval++;
     int length = position + 1; /* position + maxTransition */
     if (linearUpperBound.bytes.length < length)
       linearUpperBound.bytes = new byte[length];
@@ -202,7 +202,7 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
   }
 
   /**
-   * Increments the utf16 buffer to the next String in lexicographic order after s that will not put
+   * Increments the byte buffer to the next String in binary order after s that will not put
    * the machine into a reject state. If such a string does not exist, returns
    * false.
    * 
@@ -274,11 +274,10 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     int c = 0;
     if (position < seekBytesRef.length) {
       c = seekBytesRef.bytes[position] & 0xff;
-      // if the next character is U+FFFF and is not part of the useful portion,
+      // if the next byte is 0xff and is not part of the useful portion,
       // then by definition it puts us in a reject state, and therefore this
       // path is dead. there cannot be any higher transitions. backtrack.
-      c = incrementUTF8(c);
-      if (c == -1)
+      if (c++ == 0xff)
         return false;
     }
 
@@ -339,9 +338,8 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
     while (position > 0) {
       int nextChar = seekBytesRef.bytes[position - 1] & 0xff;
       // if a character is 0xff its a dead-end too,
-      // because there is no higher character in UTF-8 sort order.
-      nextChar = incrementUTF8(nextChar);
-      if (nextChar != -1) {
+      // because there is no higher character in binary sort order.
+      if (nextChar++ != 0xff) {
         seekBytesRef.bytes[position - 1] = (byte) nextChar;
         seekBytesRef.length = position;
         return true;
@@ -349,13 +347,5 @@ public class AutomatonTermsEnum extends FilteredTermsEnum {
       position--;
     }
     return false; /* all solutions exhausted */
-  }
-
-  /* return the next utf8 byte in utf8 order, or -1 if exhausted */
-  private final int incrementUTF8(int utf8) {
-    switch(utf8) {
-      case 0xff: return -1;
-      default: return utf8 + 1;
-    }
   }
 }
