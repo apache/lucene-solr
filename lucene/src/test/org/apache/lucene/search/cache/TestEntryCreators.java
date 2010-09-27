@@ -28,8 +28,6 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.search.FieldCache;
 import org.apache.lucene.search.FieldCache.*;
-import org.apache.lucene.search.FieldCache.Parser;
-import org.apache.lucene.search.FieldCache.ShortParser;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
@@ -147,6 +145,7 @@ public class TestEntryCreators extends LuceneTestCase {
     // Check the Different CachedArray Types
     CachedArray last = null;
     CachedArray justbits = null;
+    String field;
     
     for( NumberTypeTester tester : typeTests ) {
       justbits = getWithReflection( cache, tester, CachedArrayCreator.OPTION_CACHE_BITS );
@@ -160,6 +159,41 @@ public class TestEntryCreators extends LuceneTestCase {
       assertNotNull( "Validate=true should add the Array : "+tester, justbits.getRawArray() ); 
       checkCachedArrayValuesAndBits( tester, last );
     }
+    
+    // Now switch the the parser (for the same type) and expect an error
+    cache.purgeAllCaches();
+    int flags = CachedArrayCreator.CACHE_VALUES_AND_BITS_VALIDATE;
+    field = "theRandomInt";
+    last = cache.getInts(reader, field, new IntValuesCreator( field, FieldCache.DEFAULT_INT_PARSER, flags ) );
+    checkCachedArrayValuesAndBits( typeTests[2], last );
+    try {
+      cache.getInts(reader, field, new IntValuesCreator( field, FieldCache.NUMERIC_UTILS_INT_PARSER, flags ) );
+      fail( "Should fail if you ask for the same type with a different parser : " + field );
+    } catch( Exception ex ) {} // expected
+
+    field = "theRandomLong";
+    last = cache.getLongs(reader,   field, new LongValuesCreator( field, FieldCache.DEFAULT_LONG_PARSER, flags ) );
+    checkCachedArrayValuesAndBits( typeTests[3], last );
+    try {
+      cache.getLongs(reader, field, new LongValuesCreator( field, FieldCache.NUMERIC_UTILS_LONG_PARSER, flags ) );
+      fail( "Should fail if you ask for the same type with a different parser : " + field );
+    } catch( Exception ex ) {} // expected
+
+    field = "theRandomFloat";
+    last = cache.getFloats(reader,   field, new FloatValuesCreator( field, FieldCache.DEFAULT_FLOAT_PARSER, flags ) );
+    checkCachedArrayValuesAndBits( typeTests[4], last );
+    try {
+      cache.getFloats(reader, field, new FloatValuesCreator( field, FieldCache.NUMERIC_UTILS_FLOAT_PARSER, flags ) );
+      fail( "Should fail if you ask for the same type with a different parser : " + field );
+    } catch( Exception ex ) {} // expected
+
+    field = "theRandomDouble";
+    last = cache.getDoubles(reader,   field, new DoubleValuesCreator( field, FieldCache.DEFAULT_DOUBLE_PARSER, flags ) );
+    checkCachedArrayValuesAndBits( typeTests[5], last );
+    try {
+      cache.getDoubles(reader, field, new DoubleValuesCreator( field, FieldCache.NUMERIC_UTILS_DOUBLE_PARSER, flags ) );
+      fail( "Should fail if you ask for the same type with a different parser : " + field );
+    } catch( Exception ex ) {} // expected
   }
 
   private void checkCachedArrayValuesAndBits( NumberTypeTester tester, CachedArray cachedVals )

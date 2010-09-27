@@ -76,10 +76,14 @@ public class ByteValuesCreator extends CachedArrayCreator<ByteValues>
   @Override
   public ByteValues validate(ByteValues entry, IndexReader reader) throws IOException {
     boolean ok = false;
+    
     if( hasOption(OPTION_CACHE_VALUES) ) {
       ok = true;
       if( entry.values == null ) {
         fillByteValues(entry, reader, field);
+      }
+      else {
+        assertSameParser( entry, parser );
       }
     }
     if( hasOption(OPTION_CACHE_BITS) ) {
@@ -99,7 +103,7 @@ public class ByteValuesCreator extends CachedArrayCreator<ByteValues>
     if( parser == null ) {
       parser = FieldCache.DEFAULT_BYTE_PARSER;
     }
-    assertSameParserAndResetCounts(vals, parser);
+    setParserAndResetCounts(vals, parser);
 
     Terms terms = MultiFields.getTerms(reader, field);
     int maxDoc = reader.maxDoc();

@@ -76,10 +76,14 @@ public class DoubleValuesCreator extends CachedArrayCreator<DoubleValues>
   @Override
   public DoubleValues validate(DoubleValues entry, IndexReader reader) throws IOException {
     boolean ok = false;
+    
     if( hasOption(OPTION_CACHE_VALUES) ) {
       ok = true;
       if( entry.values == null ) {
         fillDoubleValues(entry, reader, field);
+      }
+      else {
+        assertSameParser( entry, parser );
       }
     }
     if( hasOption(OPTION_CACHE_BITS) ) {
@@ -109,7 +113,7 @@ public class DoubleValuesCreator extends CachedArrayCreator<DoubleValues>
         return;
       }
     }
-    assertSameParserAndResetCounts(vals, parser);
+    setParserAndResetCounts(vals, parser);
 
     Terms terms = MultiFields.getTerms(reader, field);
     int maxDoc = reader.maxDoc();

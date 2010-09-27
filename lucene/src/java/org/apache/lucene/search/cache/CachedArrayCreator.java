@@ -75,7 +75,7 @@ public abstract class CachedArrayCreator<T extends CachedArray> extends EntryCre
   public abstract Parser getParser();
   public abstract int getSortTypeID();
 
-  protected void assertSameParserAndResetCounts(T value, Parser parser)
+  protected void setParserAndResetCounts(T value, Parser parser)
   {
     int parserHashCode = parser.hashCode();
     if( value.parserHashCode != null && value.parserHashCode != parserHashCode ) {
@@ -84,6 +84,17 @@ public abstract class CachedArrayCreator<T extends CachedArray> extends EntryCre
     }
     value.parserHashCode = parserHashCode;
     value.numDocs = value.numTerms = 0;
+  }
+
+  protected void assertSameParser(T value, Parser parser)
+  {
+    if( parser != null && value.parserHashCode != null ) {
+      int parserHashCode = parser.hashCode();
+      if(  value.parserHashCode != parserHashCode ) {
+        throw new RuntimeException( "Parser changed in subsequet call.  "
+            +value.parserHashCode+" != "+parserHashCode + " :: " + parser );
+      }
+    }
   }
 
   /**
