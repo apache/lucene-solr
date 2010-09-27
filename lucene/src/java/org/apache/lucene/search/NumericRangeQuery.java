@@ -465,28 +465,47 @@ public final class NumericRangeQuery<T extends Number> extends MultiTermQuery {
       termComp = getComparator();
     }
     
+    private void nextRange() {
+      assert rangeBounds.size() % 2 == 0;
+
+      currentLowerBound = rangeBounds.removeFirst();
+      assert currentUpperBound == null || termComp.compare(currentUpperBound, currentLowerBound) <= 0 :
+        "The current upper bound must be <= the new lower bound";
+      
+      currentUpperBound = rangeBounds.removeFirst();
+    }
+    
     @Override
     protected final BytesRef nextSeekTerm(BytesRef term) throws IOException {
-      if (rangeBounds.size() >= 2) {
-        assert rangeBounds.size() % 2 == 0;
-
-        this.currentLowerBound = rangeBounds.removeFirst();
-        assert currentUpperBound == null || termComp.compare(currentUpperBound, currentLowerBound) <= 0 :
-          "The current upper bound must be <= the new lower bound";
+      while (rangeBounds.size() >= 2) {
+        nextRange();
         
-        this.currentUpperBound = rangeBounds.removeFirst();
-        return currentLowerBound;
+        // if the new upper bound is before the term parameter, the sub-range is never a hit
+        if (term != null && termComp.compare(term, currentUpperBound) > 0)
+          continue;
+        // never seek backwards, so use current term if lower bound is smaller
+        return (term != null && termComp.compare(term, currentLowerBound) > 0) ?
+          term : currentLowerBound;
       }
       
       // no more sub-range enums available
-      assert rangeBounds.size() == 0;
+      assert rangeBounds.isEmpty();
+      currentLowerBound = currentUpperBound = null;
       return null;
     }
     
     @Override
-    protected AcceptStatus accept(BytesRef term) {
-      return (currentUpperBound != null && termComp.compare(term, currentUpperBound) <= 0) ?
-        AcceptStatus.YES : AcceptStatus.NO_AND_SEEK;
+    protected final AcceptStatus accept(BytesRef term) {
+      while (currentUpperBound == null || termComp.compare(term, currentUpperBound) > 0) {
+        if (rangeBounds.isEmpty())
+          return AcceptStatus.END;
+        // peek next sub-range, only seek if the current term is smaller than next lower bound
+        if (termComp.compare(term, rangeBounds.getFirst()) < 0)
+          return AcceptStatus.NO_AND_SEEK;
+        // step forward to next range without seeking, as next lower range bound is less or equal current term
+        nextRange();
+      }
+      return AcceptStatus.YES;
     }
 
   }

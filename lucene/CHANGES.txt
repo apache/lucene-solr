@@ -253,6 +253,11 @@ Optimizations
   interval from 128 to 32, because the terms index now requires much
   less RAM.  (Robert Muir, Mike McCandless)
 
+* LUCENE-2669: Optimize NumericRangeQuery.NumericRangeTermsEnum to
+  not seek backwards when a sub-range has no terms. It now only seeks
+  when the current term is less than the next sub-range's lower end.
+  (Uwe Schindler, Mike McCandless)
+
 Documentation
 
 * LUCENE-2579: Fix oal.search's package.html description of abstract

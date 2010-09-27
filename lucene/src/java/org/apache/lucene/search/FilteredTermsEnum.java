@@ -198,6 +198,8 @@ public abstract class FilteredTermsEnum extends TermsEnum {
       if (doSeek) {
         doSeek = false;
         final BytesRef t = nextSeekTerm(actualTerm);
+        // Make sure we always seek forward:
+        assert actualTerm == null || t == null || getComparator().compare(t, actualTerm) > 0: "curTerm=" + actualTerm + " seekTerm=" + t;
         if (t == null || tenum.seek(t, useTermsCache) == SeekStatus.END) {
           // no more terms to seek to or enum exhausted
           return null;
