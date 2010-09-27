@@ -30,6 +30,7 @@ public final class MockAnalyzer extends Analyzer {
   private final boolean lowerCase;
   private final CharacterRunAutomaton filter;
   private final boolean enablePositionIncrements;
+  private int positionIncrementGap;
 
   /**
    * Creates a new MockAnalyzer.
@@ -88,5 +89,14 @@ public final class MockAnalyzer extends Analyzer {
       saved.tokenizer.reset(reader);
       return saved.filter;
     }
+  }
+  
+  public void setPositionIncrementGap(int positionIncrementGap){
+    this.positionIncrementGap = positionIncrementGap;
+  }
+  
+  @Override
+  public int getPositionIncrementGap(String fieldName){
+    return positionIncrementGap;
   }
 }

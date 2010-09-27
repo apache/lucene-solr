@@ -108,6 +108,11 @@ Changes in backwards compatibility policy
 * LUCENE-2600: Remove IndexReader.isDeleted in favor of
   IndexReader.getDeletedDocs().  (Mike McCandless)
 
+* LUCENE-2529, LUCENE-2668: Position increment gap and offset gap of empty
+  values in multi-valued field has been changed for some cases in index.
+  If you index empty fields and uses positions/offsets information on that
+  fields, reindex is recommended. (David Smiley, Koji Sekiguchi)
+
 Changes in Runtime Behavior
 
 * LUCENE-2650: The behavior of FSDirectory.open has changed. On 64-bit

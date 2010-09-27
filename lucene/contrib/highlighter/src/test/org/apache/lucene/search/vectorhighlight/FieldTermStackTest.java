@@ -132,7 +132,7 @@ public class FieldTermStackTest extends AbstractTestCase {
     FieldQuery fq = new FieldQuery( tq( "d" ), true, true );
     FieldTermStack stack = new FieldTermStack( reader, 0, F, fq );
     assertEquals( 1, stack.termList.size() );
-    assertEquals( "d(6,7,3)", stack.pop().toString() );
+    assertEquals( "d(9,10,3)", stack.pop().toString() );
   }
   
   public void test1PhraseLongMV() throws Exception {

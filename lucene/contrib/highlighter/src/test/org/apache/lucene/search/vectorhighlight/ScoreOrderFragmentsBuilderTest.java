@@ -27,7 +27,7 @@ public class ScoreOrderFragmentsBuilderTest extends AbstractTestCase {
     String[] f = sofb.createFragments( reader, 0, F, ffl, 3 );
     assertEquals( 3, f.length );
     // check score order
-    assertEquals( "<b>c</b> <b>a</b> <b>a</b> b b", f[0] );
+    assertEquals( "<b>c</b> <b>a</b> <b>a</b> b b ", f[0] );
     assertEquals( "b b <b>a</b> b <b>a</b> b b b b b ", f[1] );
     assertEquals( "<b>a</b> b b b b b b b b b ", f[2] );
   }

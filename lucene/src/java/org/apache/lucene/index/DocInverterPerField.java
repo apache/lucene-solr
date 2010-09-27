@@ -75,10 +75,8 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
       // consumer if it wants to see this particular field
       // tokenized.
       if (field.isIndexed() && doInvert) {
-
-        final boolean anyToken;
         
-        if (fieldState.length > 0)
+        if (i > 0)
           fieldState.position += docState.analyzer.getPositionIncrementGap(fieldInfo.name);
 
         if (!field.isTokenized()) {		  // un-tokenized field
@@ -99,7 +97,6 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
           fieldState.offset += valueLength;
           fieldState.length++;
           fieldState.position++;
-          anyToken = valueLength > 0;
         } else {                                  // tokenized field
           final TokenStream stream;
           final TokenStream streamValue = field.tokenStreamValue();
@@ -189,14 +186,12 @@ final class DocInverterPerField extends DocFieldConsumerPerField {
             stream.end();
             
             fieldState.offset += offsetAttribute.endOffset();
-            anyToken = fieldState.length > startLength;
           } finally {
             stream.close();
           }
         }
 
-        if (anyToken)
-          fieldState.offset += docState.analyzer.getOffsetGap(field);
+        fieldState.offset += docState.analyzer.getOffsetGap(field);
         fieldState.boost *= field.getBoost();
       }
 
