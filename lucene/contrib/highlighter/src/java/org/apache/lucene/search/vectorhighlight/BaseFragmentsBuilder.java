@@ -156,8 +156,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
       int startOffset, int endOffset ){
     while( buffer.length() < endOffset && index[0] < values.length ){
       buffer.append( values[index[0]] );
-      if( values[index[0]].length() > 0 && index[0] + 1 < values.length )
-        buffer.append( multiValuedSeparator );
+      buffer.append( multiValuedSeparator );
       index[0]++;
     }
     int eo = buffer.length() < endOffset ? buffer.length() : endOffset;
@@ -168,7 +167,7 @@ public abstract class BaseFragmentsBuilder implements FragmentsBuilder {
       int startOffset, int endOffset ){
     while( buffer.length() < endOffset && index[0] < values.length ){
       buffer.append( values[index[0]].stringValue() );
-      if( values[index[0]].isTokenized() && values[index[0]].stringValue().length() > 0 && index[0] + 1 < values.length )
+      if( values[index[0]].isTokenized() )
         buffer.append( multiValuedSeparator );
       index[0]++;
     }

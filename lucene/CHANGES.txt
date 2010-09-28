@@ -64,6 +64,11 @@ Changes in backwards compatibility policy
   calling setCalibrateSizeByDeletes(false) on the merge policy.  (Mike
   McCandless)
 
+* LUCENE-2529, LUCENE-2668: Position increment gap and offset gap of empty
+  values in multi-valued field has been changed for some cases in index.
+  If you index empty fields and uses positions/offsets information on that
+  fields, reindex is recommended. (David Smiley, Koji Sekiguchi)
+
 Changes in runtime behavior
 
 * LUCENE-1923: Made IndexReader.toString() produce something

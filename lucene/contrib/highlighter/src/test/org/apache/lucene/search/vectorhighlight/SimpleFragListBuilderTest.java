@@ -143,7 +143,7 @@ public class SimpleFragListBuilderTest extends AbstractTestCase {
     SimpleFragListBuilder sflb = new SimpleFragListBuilder();
     FieldFragList ffl = sflb.createFieldFragList( fpl, 100 );
     assertEquals( 1, ffl.fragInfos.size() );
-    assertEquals( "subInfos=(d((6,7)))/1.0(0,100)", ffl.fragInfos.get( 0 ).toString() );
+    assertEquals( "subInfos=(d((9,10)))/1.0(3,103)", ffl.fragInfos.get( 0 ).toString() );
   }
   
   public void test1PhraseLongMV() throws Exception {

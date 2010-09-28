@@ -355,16 +355,20 @@ public abstract class AbstractTestCase extends LuceneTestCase {
   
   protected void makeIndexShortMV() throws Exception {
     
+    //  0
     // ""
+    //  1
     // ""
 
-    //  012345
+    //  234567
     // "a b c"
     //  0 1 2
-    
+
+    //  8
     // ""
 
-    //  6789
+    //   111
+    //  9012
     // "d e"
     //  3 4
     make1dmfIndex( shortMVValues );

@@ -4281,11 +4281,11 @@ public class TestIndexWriter extends LuceneTestCase {
     TermPositionVector tpv = ((TermPositionVector) r.getTermFreqVector(0, "field"));
     TermVectorOffsetInfo[] termOffsets = tpv.getOffsets(0);
     assertEquals(1, termOffsets.length);
-    assertEquals(0, termOffsets[0].getStartOffset());
-    assertEquals(6, termOffsets[0].getEndOffset());
+    assertEquals(1, termOffsets[0].getStartOffset());
+    assertEquals(7, termOffsets[0].getEndOffset());
     termOffsets = tpv.getOffsets(1);
-    assertEquals(7, termOffsets[0].getStartOffset());
-    assertEquals(10, termOffsets[0].getEndOffset());
+    assertEquals(8, termOffsets[0].getStartOffset());
+    assertEquals(11, termOffsets[0].getEndOffset());
     r.close();
     dir.close();
   }
@@ -4315,8 +4315,8 @@ public class TestIndexWriter extends LuceneTestCase {
     assertEquals(0, termOffsets[0].getStartOffset());
     assertEquals(4, termOffsets[0].getEndOffset());
     termOffsets = tpv.getOffsets(1);
-    assertEquals(5, termOffsets[0].getStartOffset());
-    assertEquals(11, termOffsets[0].getEndOffset());
+    assertEquals(6, termOffsets[0].getStartOffset());
+    assertEquals(12, termOffsets[0].getEndOffset());
     r.close();
     dir.close();
   }

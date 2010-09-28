@@ -4338,11 +4338,11 @@ public class TestIndexWriter extends LuceneTestCase {
     TermPositionVector tpv = ((TermPositionVector) r.getTermFreqVector(0, "field"));
     TermVectorOffsetInfo[] termOffsets = tpv.getOffsets(0);
     assertEquals(1, termOffsets.length);
-    assertEquals(0, termOffsets[0].getStartOffset());
-    assertEquals(6, termOffsets[0].getEndOffset());
+    assertEquals(1, termOffsets[0].getStartOffset());
+    assertEquals(7, termOffsets[0].getEndOffset());
     termOffsets = tpv.getOffsets(1);
-    assertEquals(7, termOffsets[0].getStartOffset());
-    assertEquals(10, termOffsets[0].getEndOffset());
+    assertEquals(8, termOffsets[0].getStartOffset());
+    assertEquals(11, termOffsets[0].getEndOffset());
     r.close();
     dir.close();
   }
@@ -4374,8 +4374,46 @@ public class TestIndexWriter extends LuceneTestCase {
     assertEquals(0, termOffsets[0].getStartOffset());
     assertEquals(4, termOffsets[0].getEndOffset());
     termOffsets = tpv.getOffsets(1);
-    assertEquals(5, termOffsets[0].getStartOffset());
-    assertEquals(11, termOffsets[0].getEndOffset());
+    assertEquals(6, termOffsets[0].getStartOffset());
+    assertEquals(12, termOffsets[0].getEndOffset());
+    r.close();
+    dir.close();
+  }
+
+  // LUCENE-2529
+  public void testPositionIncrementGapEmptyField() throws Exception {
+    Directory dir = newDirectory();
+    Analyzer analyzer = new Analyzer(){
+      Analyzer a = new WhitespaceAnalyzer( TEST_VERSION_CURRENT );
+      @Override
+      public TokenStream tokenStream(String fieldName, Reader reader){
+        return a.tokenStream(fieldName, reader);
+      }
+      @Override
+      public int getPositionIncrementGap(String fieldName) {
+        return 100;
+      }
+    };
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig( 
+        TEST_VERSION_CURRENT, analyzer));
+    Document doc = new Document();
+    Field f = newField("field", "", Field.Store.NO,
+                        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS);
+    Field f2 = newField("field", "crunch man", Field.Store.NO,
+        Field.Index.ANALYZED, Field.TermVector.WITH_POSITIONS);
+    doc.add(f);
+    doc.add(f2);
+    w.addDocument(doc);
+    w.close();
+
+    IndexReader r = IndexReader.open(dir, true);
+    TermPositionVector tpv = ((TermPositionVector) r.getTermFreqVector(0, "field"));
+    int[] poss = tpv.getTermPositions(0);
+    assertEquals(1, poss.length);
+    assertEquals(100, poss[0]);
+    poss = tpv.getTermPositions(1);
+    assertEquals(1, poss.length);
+    assertEquals(101, poss[0]);
     r.close();
     dir.close();
   }
