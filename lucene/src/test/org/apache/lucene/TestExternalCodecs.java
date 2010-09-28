@@ -320,6 +320,10 @@ public class TestExternalCodecs extends LuceneTestCase {
       }
 
       @Override
+      public void cacheCurrentTerm() {
+      }
+
+      @Override
       public DocsEnum docs(Bits skipDocs, DocsEnum reuse) {
         return new RAMDocsEnum(ramField.termToDocs.get(current), skipDocs);
       }

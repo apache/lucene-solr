@@ -130,6 +130,11 @@ public class FilterIndexReader extends IndexReader {
     }
 
     @Override
+    public void cacheCurrentTerm() throws IOException {
+      in.cacheCurrentTerm();
+    }
+
+    @Override
     public SeekStatus seek(long ord) throws IOException {
       return in.seek(ord);
     }

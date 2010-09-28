@@ -741,7 +741,7 @@ public abstract class Similarity implements Serializable {
    * The default implementation uses:
    * 
    * <pre>
-   * idf(searcher.docFreq(term), searcher.maxDoc());
+   * idf(docFreq, searcher.maxDoc());
    * </pre>
    * 
    * Note that {@link Searcher#maxDoc()} is used instead of
@@ -752,12 +752,13 @@ public abstract class Similarity implements Serializable {
    *   
    * @param term the term in question
    * @param searcher the document collection being searched
+   * @param docFreq externally computed docFreq for this term
    * @return an IDFExplain object that includes both an idf score factor 
              and an explanation for the term.
    * @throws IOException
    */
-  public IDFExplanation idfExplain(final Term term, final Searcher searcher) throws IOException {
-    final int df = searcher.docFreq(term);
+  public IDFExplanation idfExplain(final Term term, final Searcher searcher, int docFreq) throws IOException {
+    final int df = docFreq;
     final int max = searcher.maxDoc();
     final float idf = idf(df, max);
     return new IDFExplanation() {
@@ -770,6 +771,15 @@ public abstract class Similarity implements Serializable {
         public float getIdf() {
           return idf;
         }};
+   }
+
+  /**
+   * This method forwards to {@link
+   * idfExplain(Term,Searcher,int)} by passing
+   * <code>searcher.docFreq(term)</code> as the docFreq.
+   */
+  public IDFExplanation idfExplain(final Term term, final Searcher searcher) throws IOException {
+    return idfExplain(term, searcher, searcher.docFreq(term));
    }
 
   /**

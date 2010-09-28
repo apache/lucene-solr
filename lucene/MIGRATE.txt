@@ -278,3 +278,8 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
       // document is deleted...
     }
     
+* LUCENE-2674: A new idfExplain method was added to Similarity, that
+  accepts an incoming docFreq.  If you subclass Similarity, make sure
+  you also override this method on upgrade, otherwise your
+  customizations won't run for certain MultiTermQuerys.
+

@@ -40,7 +40,6 @@ import org.apache.solr.search.*;
 import org.apache.solr.util.ByteUtils;
 import org.apache.solr.util.LongPriorityQueue;
 import org.apache.solr.util.PrimUtils;
-import org.apache.solr.util.BoundedTreeSet;
 import org.apache.solr.handler.component.StatsValues;
 import org.apache.solr.handler.component.FieldFacetStats;
 import org.apache.lucene.util.OpenBitSet;
@@ -1000,6 +999,11 @@ class NumberedTermsEnum extends TermsEnum {
   @Override
   public int docFreq() {
     return tenum.docFreq();
+  }
+
+  @Override
+  public void cacheCurrentTerm() {
+    throw new UnsupportedOperationException();
   }
 
   public BytesRef skipTo(BytesRef target) throws IOException {

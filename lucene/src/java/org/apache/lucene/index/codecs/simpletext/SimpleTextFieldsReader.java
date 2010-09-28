@@ -32,6 +32,8 @@ import org.apache.lucene.util.StringHelper;
 
 import java.io.IOException;
 import java.util.Comparator;
+import java.util.Map;
+import java.util.HashMap;
 
 class SimpleTextFieldsReader extends FieldsProducer {
 
@@ -151,6 +153,10 @@ class SimpleTextFieldsReader extends FieldsProducer {
       current = null;
       ended = true;
       return SeekStatus.END;
+    }
+
+    @Override
+    public void cacheCurrentTerm() {
     }
 
     @Override
@@ -468,16 +474,23 @@ class SimpleTextFieldsReader extends FieldsProducer {
     return new SimpleTextFieldsEnum();
   }
 
+  private final Map<String,Terms> termsCache = new HashMap<String,Terms>();
+
   @Override
-  public Terms terms(String field) throws IOException {
-    SimpleTextFieldsEnum fe = (SimpleTextFieldsEnum) iterator();
-    String fieldUpto;
-    while((fieldUpto = fe.next()) != null) {
-      if (fieldUpto.equals(field)) {
-        return new SimpleTextTerms(field, fe.in.getFilePointer());
+  synchronized public Terms terms(String field) throws IOException {
+    Terms terms = termsCache.get(field);
+    if (terms == null) {
+      SimpleTextFieldsEnum fe = (SimpleTextFieldsEnum) iterator();
+      String fieldUpto;
+      while((fieldUpto = fe.next()) != null) {
+        if (fieldUpto.equals(field)) {
+          terms = new SimpleTextTerms(field, fe.in.getFilePointer());
+          break;
+        }
       }
+      termsCache.put(field, terms);
     }
-    return null;
+    return terms;
   }
 
   @Override

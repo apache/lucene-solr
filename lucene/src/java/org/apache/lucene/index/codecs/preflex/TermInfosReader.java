@@ -54,8 +54,8 @@ public final class TermInfosReader {
   
   // Just adds term's ord to TermInfo
   private final static class TermInfoAndOrd extends TermInfo {
-    final int termOrd;
-    public TermInfoAndOrd(TermInfo ti, int termOrd) {
+    final long termOrd;
+    public TermInfoAndOrd(TermInfo ti, long termOrd) {
       super(ti);
       this.termOrd = termOrd;
     }
@@ -228,14 +228,24 @@ public final class TermInfosReader {
       return tiOrd;
     }
 
-    return seekEnum(resources.termEnum, term, tiOrd);
+    return seekEnum(resources.termEnum, term, tiOrd, true);
   }
 
-  TermInfo seekEnum(SegmentTermEnum enumerator, Term term) throws IOException {
-    return seekEnum(enumerator, term, termsCache.get(new CloneableTerm(term)));
+  public void cacheCurrentTerm(SegmentTermEnum enumerator) {
+    termsCache.put(new CloneableTerm(enumerator.term()),
+                   new TermInfoAndOrd(enumerator.termInfo,
+                                      enumerator.position));
   }
 
-  TermInfo seekEnum(SegmentTermEnum enumerator, Term term, TermInfoAndOrd tiOrd) throws IOException {
+  TermInfo seekEnum(SegmentTermEnum enumerator, Term term, boolean useCache) throws IOException {
+    if (useCache) {
+      return seekEnum(enumerator, term, termsCache.get(new CloneableTerm(term)), useCache);
+    } else {
+      return seekEnum(enumerator, term, null, useCache);
+    }
+  }
+
+  TermInfo seekEnum(SegmentTermEnum enumerator, Term term, TermInfoAndOrd tiOrd, boolean useCache) throws IOException {
     if (size == 0) {
       return null;
     }
@@ -252,7 +262,7 @@ public final class TermInfosReader {
         final TermInfo ti;
         int numScans = enumerator.scanTo(term);
         if (enumerator.term() != null && term.compareToUTF16(enumerator.term()) == 0) {
-          ti = enumerator.termInfo();
+          ti = enumerator.termInfo;
           if (numScans > 1) {
             // we only  want to put this TermInfo into the cache if
             // scanEnum skipped more than one dictionary entry.
@@ -260,7 +270,9 @@ public final class TermInfosReader {
             // wipe out the cache when they iterate over a large numbers
             // of terms in order
             if (tiOrd == null) {
-              termsCache.put(new CloneableTerm(term), new TermInfoAndOrd(ti, (int) enumerator.position));
+              if (useCache) {
+                termsCache.put(new CloneableTerm(term), new TermInfoAndOrd(ti, enumerator.position));
+              }
             } else {
               assert sameTermInfo(ti, tiOrd, enumerator);
               assert (int) enumerator.position == tiOrd.termOrd;
@@ -277,7 +289,7 @@ public final class TermInfosReader {
     // random-access: must seek
     final int indexPos;
     if (tiOrd != null) {
-      indexPos = tiOrd.termOrd / totalIndexInterval;
+      indexPos = (int) (tiOrd.termOrd / totalIndexInterval);
     } else {
       // Must do binary search:
       indexPos = getIndexOffset(term);
@@ -288,9 +300,11 @@ public final class TermInfosReader {
     final TermInfo ti;
 
     if (enumerator.term() != null && term.compareToUTF16(enumerator.term()) == 0) {
-      ti = enumerator.termInfo();
+      ti = enumerator.termInfo;
       if (tiOrd == null) {
-        termsCache.put(new CloneableTerm(term), new TermInfoAndOrd(ti, (int) enumerator.position));
+        if (useCache) {
+          termsCache.put(new CloneableTerm(term), new TermInfoAndOrd(ti, enumerator.position));
+        }
       } else {
         assert sameTermInfo(ti, tiOrd, enumerator);
         assert (int) enumerator.position == tiOrd.termOrd;

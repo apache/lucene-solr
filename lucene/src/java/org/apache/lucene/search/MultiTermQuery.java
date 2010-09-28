@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.PriorityQueue;
 
 import org.apache.lucene.index.IndexReader;
@@ -201,7 +200,8 @@ public abstract class MultiTermQuery extends Query {
       int count = 0;
       BytesRef bytes;
       while ((bytes = termsEnum.next()) != null) {
-        if (collector.collect(bytes, boostAtt.getBoost())) {
+        if (collector.collect(termsEnum, bytes, boostAtt.getBoost())) {
+          termsEnum.cacheCurrentTerm();
           count++;
         } else {
           break;
@@ -215,7 +215,7 @@ public abstract class MultiTermQuery extends Query {
       private BoostAttribute boostAtt = null;
     
       /** return false to stop collecting */
-      public abstract boolean collect(BytesRef bytes, float boost) throws IOException;
+      public abstract boolean collect(TermsEnum termsEnum, BytesRef bytes, float boost) throws IOException;
       
       /** set the minimum boost as a hint for the term producer */
       protected final void setMaxNonCompetitiveBoost(float maxNonCompetitiveBoost) {
@@ -231,9 +231,10 @@ public abstract class MultiTermQuery extends Query {
       final BooleanQuery result = new BooleanQuery(true);
       final Term placeholderTerm = new Term(query.field);
       query.incTotalNumberOfTerms(collectTerms(reader, query, new TermCollector() {
-        public boolean collect(BytesRef bytes, float boost) {
+        @Override
+        public boolean collect(TermsEnum termsEnum, BytesRef bytes, float boost) {
           // add new TQ, we must clone the term, else it may get overwritten!
-          TermQuery tq = new TermQuery(placeholderTerm.createTerm(new BytesRef(bytes)));
+          TermQuery tq = new TermQuery(placeholderTerm.createTerm(new BytesRef(bytes)), termsEnum.docFreq());
           tq.setBoost(query.getBoost() * boost); // set the boost
           result.add(tq, BooleanClause.Occur.SHOULD); // add to query
           return true;
@@ -291,20 +292,22 @@ public abstract class MultiTermQuery extends Query {
     }
     
     /** Return a suitable Query for a MultiTermQuery term. */
-    protected abstract Query getQuery(Term term);
+    protected abstract Query getQuery(Term term, int docCount);
 
     @Override
     public Query rewrite(final IndexReader reader, final MultiTermQuery query) throws IOException {
       final int maxSize = Math.min(size, BooleanQuery.getMaxClauseCount());
       final PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<ScoreTerm>();
       collectTerms(reader, query, new TermCollector() {
-        public boolean collect(BytesRef bytes, float boost) {
+        @Override
+        public boolean collect(TermsEnum termsEnum, BytesRef bytes, float boost) {
           // ignore uncompetetive hits
           if (stQueue.size() >= maxSize && boost <= stQueue.peek().boost)
             return true;
           // add new entry in PQ, we must clone the term, else it may get overwritten!
           st.bytes.copy(bytes);
           st.boost = boost;
+          st.docFreq = termsEnum.docFreq();
           stQueue.offer(st);
           // possibly drop entries from queue
           st = (stQueue.size() > maxSize) ? stQueue.poll() : new ScoreTerm();
@@ -320,7 +323,7 @@ public abstract class MultiTermQuery extends Query {
       final BooleanQuery bq = new BooleanQuery(true);
       for (final ScoreTerm st : stQueue) {
         // add new query, we must clone the term, else it may get overwritten!
-        Query tq = getQuery(placeholderTerm.createTerm(st.bytes));
+        Query tq = getQuery(placeholderTerm.createTerm(st.bytes), st.docFreq);
         tq.setBoost(query.getBoost() * st.boost); // set the boost
         bq.add(tq, BooleanClause.Occur.SHOULD);   // add to query
       }
@@ -349,6 +352,7 @@ public abstract class MultiTermQuery extends Query {
     private static class ScoreTerm implements Comparable<ScoreTerm> {
       public final BytesRef bytes = new BytesRef();
       public float boost;
+      public int docFreq;
       
       public int compareTo(ScoreTerm other) {
         if (this.boost == other.boost)
@@ -395,8 +399,8 @@ public abstract class MultiTermQuery extends Query {
     }
     
     @Override
-    protected Query getQuery(Term term) {
-      return new TermQuery(term);
+    protected Query getQuery(Term term, int docFreq) {
+      return new TermQuery(term, docFreq);
     }
   }
   
@@ -433,8 +437,8 @@ public abstract class MultiTermQuery extends Query {
     }
     
     @Override
-    protected Query getQuery(Term term) {
-      return new ConstantScoreQuery(new QueryWrapperFilter(new TermQuery(term)));
+    protected Query getQuery(Term term, int docFreq) {
+      return new ConstantScoreQuery(new QueryWrapperFilter(new TermQuery(term, docFreq)));
     }
   }
   
@@ -567,18 +571,14 @@ public abstract class MultiTermQuery extends Query {
         this.termCountLimit = termCountLimit;
       }
     
-      public boolean collect(BytesRef bytes, float boost) throws IOException {
+      public boolean collect(TermsEnum termsEnum, BytesRef bytes, float boost) throws IOException {
         termCount++;
         if (termCount >= termCountLimit || docVisitCount >= docCountCutoff) {
           hasCutOff = true;
           return false;
         }
         pendingTerms.copyUsingLengthPrefix(bytes);
-        // Loading the TermInfo from the terms dict here
-        // should not be costly, because 1) the
-        // query/filter will load the TermInfo when it
-        // runs, and 2) the terms dict has a cache:
-        docVisitCount += reader.docFreq(field, bytes);
+        docVisitCount += termsEnum.docFreq();
         return true;
       }
       

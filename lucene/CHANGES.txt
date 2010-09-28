@@ -121,6 +121,9 @@ Changes in backwards compatibility policy
   priority queue size, you can use FuzzyQuery(Term, float, int, int) to specify 
   those explicitly.
   
+* LUCENE-2674: MultiTermQuery.TermCollector.collect now accepts the
+  TermsEnum as well.  (Robert Muir, Mike McCandless)
+
 Changes in Runtime Behavior
 
 * LUCENE-2650: The behavior of FSDirectory.open has changed. On 64-bit
@@ -149,6 +152,11 @@ API Changes
   (such as SnapshotDeletionPolicy), you can call this method to remove those
   commit points when they are not needed anymore (instead of waiting for the 
   next commit). (Shai Erera)
+
+* LUCENE-2674: A new idfExplain method was added to Similarity, that
+  accepts an incoming docFreq.  If you subclass Similarity, make sure
+  you also override this method on upgrade.  (Robert Muir, Mike
+  McCandless)
 
 New features
 

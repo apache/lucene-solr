@@ -123,6 +123,10 @@ public abstract class TermsEnum {
    *  instance & reuse it. */
   public abstract Comparator<BytesRef> getComparator() throws IOException;
 
+  /** Optional optimization hint: informs the codec that the
+   *  current term is likely to be re-seek'd-to soon.  */
+  public abstract void cacheCurrentTerm() throws IOException;
+
   /** An empty TermsEnum for quickly returning an empty instance e.g.
    * in {@link org.apache.lucene.search.MultiTermQuery}
    * <p><em>Please note:</em> This enum should be unmodifiable,
@@ -136,6 +140,9 @@ public abstract class TermsEnum {
     
     @Override
     public SeekStatus seek(long ord) { return SeekStatus.END; }
+    
+    @Override
+    public void cacheCurrentTerm() {}
     
     @Override
     public BytesRef term() {

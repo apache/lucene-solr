@@ -30,7 +30,8 @@ import org.apache.lucene.util.ToStringUtils;
   This may be combined with other terms with a {@link BooleanQuery}.
   */
 public class TermQuery extends Query {
-  private Term term;
+  private final Term term;
+  private final int docFreq;
 
   private class TermWeight extends Weight {
     private final Similarity similarity;
@@ -43,7 +44,11 @@ public class TermQuery extends Query {
     public TermWeight(Searcher searcher)
       throws IOException {
       this.similarity = getSimilarity(searcher);
-      idfExp = similarity.idfExplain(term, searcher);
+      if (docFreq != -1) {
+        idfExp = similarity.idfExplain(term, searcher, docFreq);
+      } else {
+        idfExp = similarity.idfExplain(term, searcher);
+      }
       idf = idfExp.getIdf();
     }
 
@@ -160,7 +165,15 @@ public class TermQuery extends Query {
 
   /** Constructs a query for the term <code>t</code>. */
   public TermQuery(Term t) {
+    this(t, -1);
+  }
+
+  /** Expert: constructs a TermQuery that will use the
+   *  provided docFreq instead of looking up the docFreq
+   *  against the searcher. */
+  public TermQuery(Term t, int docFreq) {
     term = t;
+    this.docFreq = docFreq;
   }
 
   /** Returns the term of this query. */

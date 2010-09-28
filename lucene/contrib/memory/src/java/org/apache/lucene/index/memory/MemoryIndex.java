@@ -874,6 +874,10 @@ public class MemoryIndex implements Serializable {
       }
 
       @Override
+      public void cacheCurrentTerm() {
+      }
+
+      @Override
       public long ord() {
         return termUpto;
       }

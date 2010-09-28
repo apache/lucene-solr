@@ -82,6 +82,11 @@ public class PrefixCodedTermsReader extends FieldsProducer {
     public FieldAndTerm() {
     }
 
+    public FieldAndTerm(String field, BytesRef term) {
+      this.field = field;
+      this.term = new BytesRef(term);
+    }
+
     public FieldAndTerm(FieldAndTerm other) {
       field = other.field;
       term = new BytesRef(other.term);
@@ -295,6 +300,14 @@ public class PrefixCodedTermsReader extends FieldsProducer {
       @Override
       public Comparator<BytesRef> getComparator() {
         return termComp;
+      }
+
+      @Override
+      public void cacheCurrentTerm() {
+        TermState stateCopy = (TermState) state.clone();
+        stateCopy.filePointer = in.getFilePointer();
+        termsCache.put(new FieldAndTerm(fieldInfo.name, bytesReader.term),
+                       stateCopy);
       }
 
       /** Seeks until the first term that's >= the provided

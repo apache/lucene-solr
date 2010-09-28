@@ -316,7 +316,7 @@ public class PreFlexFields extends FieldsProducer {
       }
 
       // Seek "back":
-      getTermsDict().seekEnum(te, protoTerm.createTerm(term));
+      getTermsDict().seekEnum(te, protoTerm.createTerm(term), true);
 
       // Test if the term we seek'd to in fact found a
       // surrogate pair at the same position as the E:
@@ -387,7 +387,7 @@ public class PreFlexFields extends FieldsProducer {
 
           if (seekToNonBMP(seekTermEnum, prevTerm, downTo)) {
             // TODO: more efficient seek?
-            getTermsDict().seekEnum(termEnum, seekTermEnum.term());
+            getTermsDict().seekEnum(termEnum, seekTermEnum.term(), true);
             //newSuffixStart = downTo+4;
             newSuffixStart = downTo;
             scratchTerm.copy(termEnum.term().bytes());
@@ -443,7 +443,7 @@ public class PreFlexFields extends FieldsProducer {
           
         // TODO: more efficient seek?  can we simply swap
         // the enums?
-        getTermsDict().seekEnum(termEnum, protoTerm.createTerm(scratchTerm));
+        getTermsDict().seekEnum(termEnum, protoTerm.createTerm(scratchTerm), true);
 
         final Term t2 = termEnum.term();
 
@@ -619,7 +619,7 @@ public class PreFlexFields extends FieldsProducer {
 
           // Seek "forward":
           // TODO: more efficient seek?
-          getTermsDict().seekEnum(seekTermEnum, protoTerm.createTerm(scratchTerm));
+          getTermsDict().seekEnum(seekTermEnum, protoTerm.createTerm(scratchTerm), true);
 
           scratchTerm.bytes[upTo] = scratch[0];
           scratchTerm.bytes[upTo+1] = scratch[1];
@@ -668,7 +668,7 @@ public class PreFlexFields extends FieldsProducer {
 
             // OK seek "back"
             // TODO: more efficient seek?
-            getTermsDict().seekEnum(termEnum, seekTermEnum.term());
+            getTermsDict().seekEnum(termEnum, seekTermEnum.term(), true);
 
             scratchTerm.copy(seekTermEnum.term().bytes());
 
@@ -701,7 +701,7 @@ public class PreFlexFields extends FieldsProducer {
         seekTermEnum = getTermsDict().terms(protoTerm);
         //System.out.println("  term=" + termEnum.term());
       } else {
-        getTermsDict().seekEnum(termEnum, protoTerm);
+        getTermsDict().seekEnum(termEnum, protoTerm, true);
       }
       skipNext = true;
 
@@ -727,6 +727,11 @@ public class PreFlexFields extends FieldsProducer {
     }
 
     @Override
+    public void cacheCurrentTerm() throws IOException {
+      getTermsDict().cacheCurrentTerm(termEnum);
+    }
+
+    @Override
     public SeekStatus seek(long ord) throws IOException {
       throw new UnsupportedOperationException();
     }
@@ -747,7 +752,7 @@ public class PreFlexFields extends FieldsProducer {
 
       assert termEnum != null;
 
-      tis.seekEnum(termEnum, t0);
+      tis.seekEnum(termEnum, t0, useCache);
 
       final Term t = termEnum.term();
 
@@ -783,7 +788,7 @@ public class PreFlexFields extends FieldsProducer {
             if (seekToNonBMP(seekTermEnum, scratchTerm, i)) {
 
               scratchTerm.copy(seekTermEnum.term().bytes());
-              getTermsDict().seekEnum(termEnum, seekTermEnum.term());
+              getTermsDict().seekEnum(termEnum, seekTermEnum.term(), useCache);
 
               newSuffixStart = 1+i;
 

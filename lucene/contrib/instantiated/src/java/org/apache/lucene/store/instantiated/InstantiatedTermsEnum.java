@@ -91,6 +91,10 @@ public class InstantiatedTermsEnum extends TermsEnum {
   }
 
   @Override
+  public void cacheCurrentTerm() {
+  }
+
+  @Override
   public BytesRef term() {
     return br;
   }

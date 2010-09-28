@@ -33,6 +33,7 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
+import static org.junit.Assume.*;
 
 /**
  * Tests lazy skipping on the proximity file.
@@ -117,14 +118,13 @@ public class TestLazyProxSkipping extends LuceneTestCase {
         assertTrue(this.seeksCounter > 0);
         assertTrue("seeksCounter=" + this.seeksCounter + " numHits=" + numHits, this.seeksCounter <= numHits + 1);
     }
-    
+ 
     public void testLazySkipping() throws IOException {
+        assumeTrue(!CodecProvider.getDefaultCodec().equals("SimpleText"));
         // test whether only the minimum amount of seeks()
         // are performed
-        if (!CodecProvider.getDefaultCodec().equals("SimpleText")) {
-          performTest(5);
-          performTest(10);
-        }
+        performTest(5);
+        performTest(10);
     }
     
     public void testSeek() throws IOException {

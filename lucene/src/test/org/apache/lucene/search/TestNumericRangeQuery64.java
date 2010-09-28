@@ -87,7 +87,6 @@ public class TestNumericRangeQuery64 extends LuceneTestCase {
       ascfield2.setLongValue(val);
       writer.addDocument(doc);
     }
-  
     reader = writer.getReader();
     searcher=new IndexSearcher(reader);
     writer.close();

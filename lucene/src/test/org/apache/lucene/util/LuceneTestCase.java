@@ -191,9 +191,7 @@ public abstract class LuceneTestCase extends Assert {
   
   private static Map<MockDirectoryWrapper,StackTraceElement[]> stores;
   
-  // TODO 4.0: make sure we re-enable SimpleText in the rotation
-  //private static final String[] TEST_CODECS = new String[] {"MockSep", "MockFixedIntBlock", "MockVariableIntBlock", "SimpleText"};
-  private static final String[] TEST_CODECS = new String[] {"MockSep", "MockFixedIntBlock", "MockVariableIntBlock"};
+  private static final String[] TEST_CODECS = new String[] {"MockSep", "MockFixedIntBlock", "MockVariableIntBlock", "SimpleText"};
 
   private static void swapCodec(Codec c) {
     final CodecProvider cp = CodecProvider.getDefault();
@@ -246,8 +244,7 @@ public abstract class LuceneTestCase extends Assert {
     swapCodec(new MockFixedIntBlockCodec(codecHasParam && "MockFixedIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 2000)));
     // baseBlockSize cannot be over 127:
     swapCodec(new MockVariableIntBlockCodec(codecHasParam && "MockVariableIntBlock".equals(codec) ? codecParam : _TestUtil.nextInt(random, 1, 127)));
-    // TODO 4.0: add this into test rotation
-    //swapCodec(new SimpleTextCodec());
+    swapCodec(new SimpleTextCodec());
 
     return cp.lookup(codec);
   }

@@ -46,7 +46,6 @@ public abstract class FilteredTermsEnum extends TermsEnum {
   private BytesRef initialSeekTerm = null;
   private boolean doSeek = true;        
   private BytesRef actualTerm = null;
-  private boolean useTermsCache = false;
 
   private final TermsEnum tenum;
 
@@ -116,16 +115,6 @@ public abstract class FilteredTermsEnum extends TermsEnum {
     return t;
   }
 
-  /** Expert: enable or disable the terms cache when seeking. */
-  protected final void setUseTermsCache(boolean useTermsCache) {
-    this.useTermsCache = useTermsCache;
-  }
-
-  /** Expert: enable or disable the terms cache when seeking. */
-  protected final boolean getUseTermsCache() {
-    return useTermsCache;
-  }
-
   /**
    * Returns the related attributes, the returned {@link AttributeSource}
    * is shared with the delegate {@code TermsEnum}.
@@ -188,6 +177,11 @@ public abstract class FilteredTermsEnum extends TermsEnum {
     assert tenum != null;
     return tenum.docsAndPositions(bits, reuse);
   }
+
+  @Override
+  public void cacheCurrentTerm() throws IOException {
+    tenum.cacheCurrentTerm();
+  }
     
   @Override
   public BytesRef next() throws IOException {
@@ -200,7 +194,7 @@ public abstract class FilteredTermsEnum extends TermsEnum {
         final BytesRef t = nextSeekTerm(actualTerm);
         // Make sure we always seek forward:
         assert actualTerm == null || t == null || getComparator().compare(t, actualTerm) > 0: "curTerm=" + actualTerm + " seekTerm=" + t;
-        if (t == null || tenum.seek(t, useTermsCache) == SeekStatus.END) {
+        if (t == null || tenum.seek(t, false) == SeekStatus.END) {
           // no more terms to seek to or enum exhausted
           return null;
         }

@@ -220,6 +220,11 @@ public final class FuzzyTermsEnum extends TermsEnum {
   }
   
   @Override
+  public void cacheCurrentTerm() throws IOException {
+    actualEnum.cacheCurrentTerm();
+  }
+
+  @Override
   public DocsEnum docs(Bits skipDocs, DocsEnum reuse) throws IOException {
     return actualEnum.docs(skipDocs, reuse);
   }

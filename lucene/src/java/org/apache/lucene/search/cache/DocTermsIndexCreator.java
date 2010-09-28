@@ -285,6 +285,11 @@ public class DocTermsIndexCreator<T extends DocTermsIndex> extends EntryCreatorW
       }
 
       @Override
+      public void cacheCurrentTerm() throws IOException {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
       public BytesRef term() throws IOException {
         return term;
       }
