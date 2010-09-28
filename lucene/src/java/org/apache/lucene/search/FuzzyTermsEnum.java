@@ -59,6 +59,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
   private final int termLength;
   
   private int maxEdits;
+  private final boolean raw;
 
   private List<ByteRunAutomaton> runAutomata;
   
@@ -77,15 +78,15 @@ public final class FuzzyTermsEnum extends TermsEnum {
    * 
    * @param reader Delivers terms.
    * @param term Pattern term.
-   * @param minSimilarity Minimum required similarity for terms from the reader. Default value is 0.5f.
+   * @param minSimilarity Minimum required similarity for terms from the reader.
    * @param prefixLength Length of required common prefix. Default value is 0.
    * @throws IOException
    */
   public FuzzyTermsEnum(IndexReader reader, Term term, 
       final float minSimilarity, final int prefixLength) throws IOException {
-    if (minSimilarity >= 1.0f)
-      throw new IllegalArgumentException("minimumSimilarity cannot be greater than or equal to 1");
-    else if (minSimilarity < 0.0f)
+    if (minSimilarity >= 1.0f && minSimilarity != (int)minSimilarity)
+      throw new IllegalArgumentException("fractional edit distances are not allowed");
+    if (minSimilarity < 0.0f)
       throw new IllegalArgumentException("minimumSimilarity cannot be less than 0");
     if(prefixLength < 0)
       throw new IllegalArgumentException("prefixLength cannot be less than 0");
@@ -102,12 +103,19 @@ public final class FuzzyTermsEnum extends TermsEnum {
     //The prefix could be longer than the word.
     //It's kind of silly though.  It means we must match the entire word.
     this.realPrefixLength = prefixLength > termLength ? termLength : prefixLength;
-    this.minSimilarity = minSimilarity;
-    this.scale_factor = 1.0f / (1.0f - minSimilarity);
-    
-    // calculate the maximum k edits for this similarity
-    maxEdits = initialMaxDistance(minSimilarity, termLength);
-  
+    // if minSimilarity >= 1, we treat it as number of edits
+    if (minSimilarity >= 1f) {
+      this.minSimilarity = 1 - (minSimilarity+1) / this.termLength;
+      maxEdits = (int) minSimilarity;
+      raw = true;
+    } else {
+      this.minSimilarity = minSimilarity;
+      // calculate the maximum k edits for this similarity
+      maxEdits = initialMaxDistance(this.minSimilarity, termLength);
+      raw = false;
+    }
+    this.scale_factor = 1.0f / (1.0f - this.minSimilarity);
+
     TermsEnum subEnum = getAutomatonEnum(maxEdits, null);
     setEnum(subEnum != null ? subEnum : 
       new LinearFuzzyTermsEnum());
@@ -176,15 +184,11 @@ public final class FuzzyTermsEnum extends TermsEnum {
         setEnum(newEnum);
       }
     }
-    // TODO, besides changing linear -> automaton, and swapping in a smaller
-    // automaton, we can also use this information to optimize the linear case
-    // itself: re-init maxDistances so the fast-fail happens for more terms due
-    // to the now stricter constraints.
   }
 
   // for some raw min similarity and input term length, the maximum # of edits
   private int initialMaxDistance(float minimumSimilarity, int termLen) {
-    return (int) ((1-minimumSimilarity) * termLen);
+    return (int) ((1D-minimumSimilarity) * termLen);
   }
   
   // for some number of edits, the maximum possible scaled boost
@@ -442,7 +446,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
         //which is 8-3 or more precisely Math.abs(3-8).
         //if our maximum edit distance is 4, then we can discard this word
         //without looking at it.
-        return 0.0f;
+        return Float.NEGATIVE_INFINITY;
       }
       
       // init matrix d
@@ -473,7 +477,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
         if (j > maxDistance && bestPossibleEditDistance > maxDistance) {  //equal is okay, but not greater
           //the closest the target can be to the text is just too far away.
           //this target is leaving the party early.
-          return 0.0f;
+          return Float.NEGATIVE_INFINITY;
         }
 
         // copy current distance counts to 'previous row' distance counts: swap p and d
@@ -501,7 +505,8 @@ public final class FuzzyTermsEnum extends TermsEnum {
      * @return the maximum levenshtein distance that we care about
      */
     private int calculateMaxDistance(int m) {
-      return (int) ((1-minSimilarity) * (Math.min(text.length, m) + realPrefixLength));
+      return raw ? maxEdits : Math.min(maxEdits, 
+          (int)((1-minSimilarity) * (Math.min(text.length, m) + realPrefixLength)));
     }
   }
 }

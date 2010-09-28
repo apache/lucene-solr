@@ -113,6 +113,14 @@ Changes in backwards compatibility policy
   If you index empty fields and uses positions/offsets information on that
   fields, reindex is recommended. (David Smiley, Koji Sekiguchi)
 
+* LUCENE-2667: FuzzyQuery's defaults have changed for more performant 
+  behavior: the minimum similarity is 2 edit distances from the word,
+  and the priority queue size is 50. To support this, FuzzyQuery now allows
+  specifying unscaled edit distances (foobar~2). If your application depends
+  upon the old defaults of 0.5 (scaled) minimum similarity and Integer.MAX_VALUE
+  priority queue size, you can use FuzzyQuery(Term, float, int, int) to specify 
+  those explicitly.
+  
 Changes in Runtime Behavior
 
 * LUCENE-2650: The behavior of FSDirectory.open has changed. On 64-bit

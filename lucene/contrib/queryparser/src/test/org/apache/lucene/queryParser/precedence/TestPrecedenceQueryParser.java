@@ -543,10 +543,10 @@ public class TestPrecedenceQueryParser extends LuceneTestCase {
 
     assertQueryEquals("a:b\\\\?c", a, "a:b\\?c");
 
-    assertQueryEquals("a:b\\-c~", a, "a:b-c~0.5");
-    assertQueryEquals("a:b\\+c~", a, "a:b+c~0.5");
-    assertQueryEquals("a:b\\:c~", a, "a:b:c~0.5");
-    assertQueryEquals("a:b\\\\c~", a, "a:b\\c~0.5");
+    assertQueryEquals("a:b\\-c~", a, "a:b-c~2.0");
+    assertQueryEquals("a:b\\+c~", a, "a:b+c~2.0");
+    assertQueryEquals("a:b\\:c~", a, "a:b:c~2.0");
+    assertQueryEquals("a:b\\\\c~", a, "a:b\\c~2.0");
 
     assertQueryEquals("[ a\\- TO a\\+ ]", null, "[a- TO a+]");
     assertQueryEquals("[ a\\: TO a\\~ ]", null, "[a: TO a~]");

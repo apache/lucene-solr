@@ -164,7 +164,7 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
 
   /**
    * Set the minimum similarity for fuzzy queries.
-   * Default is 0.5f.
+   * Default is 2f.
    */
   public void setFuzzyMinSim(float fuzzyMinSim) {
       this.fuzzyMinSim = fuzzyMinSim;
@@ -927,8 +927,10 @@ public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
           try {
             fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();
           } catch (Exception ignored) { }
-         if(fms < 0.0f || fms > 1.0f){
+         if(fms < 0.0f){
            {if (true) throw new ParseException("Minimum similarity for a FuzzyQuery has to be between 0.0f and 1.0f !");}
+         } else if (fms >= 1.0f && fms != (int) fms) {
+           {if (true) throw new ParseException("Fractional edit distances are not allowed!");}
          }
          q = getFuzzyQuery(field, termImage, fms);
        } else {

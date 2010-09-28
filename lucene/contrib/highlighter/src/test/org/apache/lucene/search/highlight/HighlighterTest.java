@@ -614,7 +614,7 @@ public class HighlighterTest extends BaseTokenStreamTestCase implements Formatte
       @Override
       public void run() throws Exception {
         numHighlights = 0;
-        doSearching("Kinnedy~");
+        doSearching("Kinnedy~0.5");
         doStandardHighlights(analyzer, searcher, hits, query, HighlighterTest.this, true);
         assertTrue("Failed to find correct number of highlights " + numHighlights + " found",
             numHighlights == 5);

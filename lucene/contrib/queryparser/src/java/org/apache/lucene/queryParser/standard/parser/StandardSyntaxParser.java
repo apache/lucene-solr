@@ -433,8 +433,10 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
           try {
             fms = Float.valueOf(fuzzySlop.image.substring(1)).floatValue();
           } catch (Exception ignored) { }
-         if(fms < 0.0f || fms > 1.0f){
+         if(fms < 0.0f){
            {if (true) throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_LIMITS));}
+         } else if (fms >= 1.0f && fms != (int) fms) {
+           {if (true) throw new ParseException(new MessageImpl(QueryParserMessages.INVALID_SYNTAX_FUZZY_EDITS));}
          }
          q = new FuzzyQueryNode(field, EscapeQuerySyntaxImpl.discardEscapeChar(term.image), fms, term.beginColumn, term.endColumn);
        } else if (regexp) {
