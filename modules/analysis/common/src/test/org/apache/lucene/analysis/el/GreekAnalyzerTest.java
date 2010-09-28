@@ -98,12 +98,4 @@ public class GreekAnalyzerTest extends BaseTokenStreamTestCase {
 	  Analyzer a = new GreekAnalyzer(Version.LUCENE_30);
 	  assertAnalyzesTo(a, "Α.Π.Τ.", new String[] { "α.π.τ." });
 	}
-	
-  /**
-   * test that acronym normalization works
-   */
-  public void testAcronym() throws Exception {
-    Analyzer a = new GreekAnalyzer(Version.LUCENE_31);
-    assertAnalyzesTo(a, "Α.Π.Τ.", new String[] { "απτ" });
-  }
 }

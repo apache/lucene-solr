@@ -19,7 +19,7 @@ package org.apache.lucene.analysis.standard;
 
 /*
 
-WARNING: if you change StandardTokenizerImpl*.jflex and need to regenerate
+WARNING: if you change ClassicTokenizerImpl.jflex and need to regenerate
       the tokenizer, only use the trunk version of JFlex 1.5 at the moment!
 
 */
@@ -29,7 +29,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 
 %%
 
-%class StandardTokenizerImplOrig
+%class ClassicTokenizerImpl
 %implements StandardTokenizerInterface
 %unicode 3.0
 %integer

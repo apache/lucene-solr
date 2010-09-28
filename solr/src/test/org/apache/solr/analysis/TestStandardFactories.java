@@ -32,8 +32,20 @@ public class TestStandardFactories extends BaseTokenTestCase {
    * Test StandardTokenizerFactory
    */
   public void testStandardTokenizer() throws Exception {
-    Reader reader = new StringReader("What's this thing do?");
+    Reader reader = new StringReader("Wha\u0301t's this thing do?");
     StandardTokenizerFactory factory = new StandardTokenizerFactory();
+    factory.init(DEFAULT_VERSION_PARAM);
+    Tokenizer stream = factory.create(reader);
+    assertTokenStreamContents(stream, 
+        new String[] {"Wha\u0301t's", "this", "thing", "do" });
+  }
+  
+  /**
+   * Test ClassicTokenizerFactory
+   */
+  public void testClassicTokenizer() throws Exception {
+    Reader reader = new StringReader("What's this thing do?");
+    ClassicTokenizerFactory factory = new ClassicTokenizerFactory();
     factory.init(DEFAULT_VERSION_PARAM);
     Tokenizer stream = factory.create(reader);
     assertTokenStreamContents(stream, 
@@ -41,13 +53,13 @@ public class TestStandardFactories extends BaseTokenTestCase {
   }
   
   /**
-   * Test StandardFilterFactory
+   * Test ClassicFilterFactory
    */
   public void testStandardFilter() throws Exception {
     Reader reader = new StringReader("What's this thing do?");
-    StandardTokenizerFactory factory = new StandardTokenizerFactory();
+    ClassicTokenizerFactory factory = new ClassicTokenizerFactory();
     factory.init(DEFAULT_VERSION_PARAM);
-    StandardFilterFactory filterFactory = new StandardFilterFactory();
+    ClassicFilterFactory filterFactory = new ClassicFilterFactory();
     filterFactory.init(DEFAULT_VERSION_PARAM);
     Tokenizer tokenizer = factory.create(reader);
     TokenStream stream = filterFactory.create(tokenizer);

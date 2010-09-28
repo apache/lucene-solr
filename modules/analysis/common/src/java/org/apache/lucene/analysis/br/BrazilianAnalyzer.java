@@ -218,7 +218,7 @@ public final class BrazilianAnalyzer extends StopwordAnalyzerBase {
       Reader reader) {
     Tokenizer source = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new LowerCaseFilter(matchVersion, source);
-    result = new StandardFilter(result);
+    result = new StandardFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
     if(excltable != null && !excltable.isEmpty())
       result = new KeywordMarkerFilter(result, excltable);

@@ -20,6 +20,7 @@ package org.apache.lucene.analysis.snowball;
 import org.apache.lucene.analysis.*;
 import org.apache.lucene.analysis.core.LowerCaseFilter;
 import org.apache.lucene.analysis.core.StopFilter;
+import org.apache.lucene.analysis.en.EnglishPossessiveFilter;
 import org.apache.lucene.analysis.standard.*;
 import org.apache.lucene.analysis.tr.TurkishLowerCaseFilter;
 import org.apache.lucene.analysis.util.CharArraySet;
@@ -80,7 +81,11 @@ public final class SnowballAnalyzer extends Analyzer {
   @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
     TokenStream result = new StandardTokenizer(matchVersion, reader);
-    result = new StandardFilter(result);
+    result = new StandardFilter(matchVersion, result);
+    // remove the possessive 's for english stemmers
+    if (matchVersion.onOrAfter(Version.LUCENE_31) && 
+        (name.equals("English") || name.equals("Porter") || name.equals("Lovins")))
+      result = new EnglishPossessiveFilter(result);
     // Use a special lowercase filter for turkish, the stemmer expects it.
     if (matchVersion.onOrAfter(Version.LUCENE_31) && name.equals("Turkish"))
       result = new TurkishLowerCaseFilter(result);
@@ -108,7 +113,7 @@ public final class SnowballAnalyzer extends Analyzer {
     if (streams == null) {
       streams = new SavedStreams();
       streams.source = new StandardTokenizer(matchVersion, reader);
-      streams.result = new StandardFilter(streams.source);
+      streams.result = new StandardFilter(matchVersion, streams.source);
       // Use a special lowercase filter for turkish, the stemmer expects it.
       if (matchVersion.onOrAfter(Version.LUCENE_31) && name.equals("Turkish"))
         streams.result = new TurkishLowerCaseFilter(streams.result);

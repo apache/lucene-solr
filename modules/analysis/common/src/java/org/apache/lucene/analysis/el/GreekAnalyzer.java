@@ -135,7 +135,7 @@ public final class GreekAnalyzer extends StopwordAnalyzerBase {
     final Tokenizer source = new StandardTokenizer(matchVersion, reader);
     TokenStream result = new GreekLowerCaseFilter(matchVersion, source);
     if (matchVersion.onOrAfter(Version.LUCENE_31))
-      result = new StandardFilter(result);
+      result = new StandardFilter(matchVersion, result);
     result = new StopFilter(matchVersion, result, stopwords);
     if (matchVersion.onOrAfter(Version.LUCENE_31))
       result = new GreekStemFilter(result);

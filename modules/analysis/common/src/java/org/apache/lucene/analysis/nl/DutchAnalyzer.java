@@ -246,7 +246,7 @@ public final class DutchAnalyzer extends ReusableAnalyzerBase {
       Reader aReader) {
     if (matchVersion.onOrAfter(Version.LUCENE_31)) {
       final Tokenizer source = new StandardTokenizer(matchVersion, aReader);
-      TokenStream result = new StandardFilter(source);
+      TokenStream result = new StandardFilter(matchVersion, source);
       result = new LowerCaseFilter(matchVersion, result);
       result = new StopFilter(matchVersion, result, stoptable);
       if (!excltable.isEmpty())

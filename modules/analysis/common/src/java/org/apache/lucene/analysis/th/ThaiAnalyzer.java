@@ -58,7 +58,7 @@ public final class ThaiAnalyzer extends ReusableAnalyzerBase {
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
     final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-    TokenStream result = new StandardFilter(source);
+    TokenStream result = new StandardFilter(matchVersion, source);
     if (matchVersion.onOrAfter(Version.LUCENE_31))
       result = new LowerCaseFilter(matchVersion, result);
     result = new ThaiWordFilter(matchVersion, result);

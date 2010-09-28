@@ -111,7 +111,7 @@ public class TestFrenchAnalyzer extends BaseTokenStreamTestCase {
 		assertAnalyzesTo(
 			fa,
 			"33Bis 1940-1945 1940:1945 (---i+++)*",
-			new String[] { "33bis", "1940-1945", "1940", "1945", "i" });
+			new String[] { "33bis", "1940", "1945", "1940", "1945", "i" });
 
 	}
 	

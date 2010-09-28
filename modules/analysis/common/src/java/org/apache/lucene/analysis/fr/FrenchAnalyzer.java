@@ -240,7 +240,7 @@ public final class FrenchAnalyzer extends StopwordAnalyzerBase {
       Reader reader) {
     if (matchVersion.onOrAfter(Version.LUCENE_31)) {
       final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-      TokenStream result = new StandardFilter(source);
+      TokenStream result = new StandardFilter(matchVersion, source);
       result = new ElisionFilter(matchVersion, result);
       result = new LowerCaseFilter(matchVersion, result);
       result = new StopFilter(matchVersion, result, stopwords);

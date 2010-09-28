@@ -17,24 +17,19 @@ package org.apache.lucene.benchmark.quality;
  * limitations under the License.
  */
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-
 import org.apache.lucene.benchmark.BenchmarkTestCase;
-import org.apache.lucene.benchmark.byTask.TestPerfTasksLogic;
-import org.apache.lucene.benchmark.quality.Judge;
-import org.apache.lucene.benchmark.quality.QualityQuery;
-import org.apache.lucene.benchmark.quality.QualityQueryParser;
-import org.apache.lucene.benchmark.quality.QualityBenchmark;
 import org.apache.lucene.benchmark.quality.trec.TrecJudge;
 import org.apache.lucene.benchmark.quality.trec.TrecTopicsReader;
 import org.apache.lucene.benchmark.quality.utils.SimpleQQParser;
 import org.apache.lucene.benchmark.quality.utils.SubmissionReport;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.FSDirectory;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 
 /**
  * Test that quality run does its job.
@@ -177,6 +172,7 @@ public class TestQualityRun extends BenchmarkTestCase {
     String algLines[] = {
         "# ----- properties ",
         "content.source=org.apache.lucene.benchmark.byTask.feeds.LineDocSource",
+        "analyzer=org.apache.lucene.analysis.standard.ClassicAnalyzer",
         "docs.file=" + getWorkDirResourcePath("reuters.578.lines.txt.bz2"),
         "content.source.log.step=2500",
         "doc.term.vector=false",

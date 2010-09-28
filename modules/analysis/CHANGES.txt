@@ -9,6 +9,12 @@ API Changes
 
  * LUCENE-2413: Removed the AnalyzerUtil in common/miscellaneous.  (Robert Muir)
 
+ * LUCENE-2167: StandardTokenizer/Analyzer in common/standard/ now implement
+   the Word Break rules from the Unicode Text Segmentation algorithm (UAX#29),
+   as well as tokenizing URLs and email addresses according to the relevant
+   RFCs.  ClassicTokenizer/Analyzer retains the old StandardTokenizer/Analyzer
+   behavior.  (Steven Rowe, Robert Muir, Uwe Schindler)
+
 New Features
    
  * LUCENE-2413: Consolidated Solr analysis components into common. 
