@@ -663,6 +663,10 @@ New features
   use MultiFields static methods directly, instead) if you need to use
   the flex APIs directly on a composite reader.  (Mike McCandless)
   
+* LUCENE-2671: Add SortField.setMissingValue( v ) to enable sorting
+  behavior for documents that do not include the given field. (ryan)
+
+  
 Optimizations
 
 * LUCENE-2075: Terms dict cache is now shared across threads instead
