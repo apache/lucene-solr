@@ -38,12 +38,7 @@ import org.apache.solr.search.function.distance.*;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Collections;
+import java.util.*;
 
 /**
  * A factory that parses user queries to generate ValueSource instances.
@@ -236,7 +231,9 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         return new JoinDocFreqValueSource( f0, qf );
       }
     });
-    
+
+    addParser("geodist", HaversineConstFunction.parser);
+
     addParser("hsin", new ValueSourceParser() {
       public ValueSource parse(FunctionQParser fp) throws ParseException {
 
@@ -699,7 +696,7 @@ class DateValueSourceParser extends ValueSourceParser {
 
 
 // Private for now - we need to revisit how to handle typing in function queries
-class LongConstValueSource extends ValueSource {
+class LongConstValueSource extends ConstNumberSource {
   final long constant;
   final double dv;
   final float fv;
@@ -751,61 +748,30 @@ class LongConstValueSource extends ValueSource {
     LongConstValueSource other = (LongConstValueSource) o;
     return this.constant == other.constant;
   }
-}
 
-// Private for now - we need to revisit how to handle typing in function queries
-class DoubleConstValueSource extends ValueSource {
-  final double constant;
-  private final float fv;
-  private final long lv;
-
-  public DoubleConstValueSource(double constant) {
-    this.constant = constant;
-    this.fv = (float)constant;
-    this.lv = (long)constant;
+  @Override
+  public int getInt() {
+    return (int)constant;
   }
 
-  public String description() {
-    return "const(" + constant + ")";
+  @Override
+  public long getLong() {
+    return constant;
   }
 
-  public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    return new DocValues() {
-      public float floatVal(int doc) {
-        return fv;
-      }
-
-      public int intVal(int doc) {
-        return (int) lv;
-      }
-
-      public long longVal(int doc) {
-        return lv;
-      }
-
-      public double doubleVal(int doc) {
-        return constant;
-      }
-
-      public String strVal(int doc) {
-        return Double.toString(constant);
-      }
-
-      public String toString(int doc) {
-        return description();
-      }
-    };
+  @Override
+  public float getFloat() {
+    return fv;
   }
 
-  public int hashCode() {
-    long bits = Double.doubleToRawLongBits(constant);
-    return (int)(bits ^ (bits >>> 32));
+  @Override
+  public double getDouble() {
+    return dv;
   }
 
-  public boolean equals(Object o) {
-    if (DoubleConstValueSource.class != o.getClass()) return false;
-    DoubleConstValueSource other = (DoubleConstValueSource) o;
-    return this.constant == other.constant;
+  @Override
+  public Number getNumber() {
+    return constant;
   }
 }
 

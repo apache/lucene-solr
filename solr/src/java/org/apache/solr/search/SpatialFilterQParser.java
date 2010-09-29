@@ -33,24 +33,7 @@ import org.apache.solr.schema.SpatialQueryable;
 
 
 /**
- * Creates a spatial Filter based on the type of spatial point used.
- * <p/>
- * The field must implement {@link org.apache.solr.schema.SpatialQueryable}
- * <p/>
- * All units are in Kilometers
- * <p/>
- * <p/>
- * Syntax:
- * <pre>{!sfilt fl=location [units=[K|M]] [meas=[0-INF|hsin|sqe]] }&pt=49.32,-79.0&d=20</pre>
- * <p/>
- * Parameters:
- * <ul>
- * <li>fl - The fields to filter on.  Must implement XXXX. Required.  If more than one, XXXX</li>
- * <li>pt - The point to use as a reference.  Must match the dimension of the field. Required.</li>
- * <li>d - The distance in the units specified. Required.</li>
- * <li>meas - The distance measure to use.  Default is Euclidean (2-norm).  If a number between 0-INF is used, then the Vector Distance is used.  hsin = Haversine, sqe = Squared Euclidean</li>
- * </ul> *
- *
+ * @see {@link SpatialFilterQParserPlugin}
  */
 public class SpatialFilterQParser extends QParser {
   boolean bbox;  // do bounding box only
@@ -66,17 +49,17 @@ public class SpatialFilterQParser extends QParser {
   public Query parse() throws ParseException {
     //if more than one, we need to treat them as a point...
     //TODO: Should we accept multiple fields
-    String[] fields = localParams.getParams(CommonParams.FL);
+    String[] fields = localParams.getParams("f");
     if (fields == null || fields.length == 0) {
       String field = getParam(SpatialParams.FIELD);
       if (field == null)
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, " missing field for spatial request");
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, " missing sfield for spatial request");
       fields = new String[] {field};
     }
     
     String pointStr = getParam(SpatialParams.POINT);
     if (pointStr == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, SpatialParams.POINT + " is not properly specified");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, SpatialParams.POINT + " missing.");
     }
 
     double dist = -1;

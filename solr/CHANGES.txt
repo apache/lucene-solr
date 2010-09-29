@@ -95,10 +95,10 @@ New Features
 ----------------------
 
 * SOLR-1302: Added several new distance based functions, including
-  Great Circle (haversine), Manhattan, Euclidean and String (using the
-  StringDistance methods in the Lucene spellchecker).
+  Great Circle (haversine) for geo search, Manhattan, Euclidean
+  and String (using the StringDistance methods in the Lucene spellchecker).
   Also added geohash(), deg() and rad() convenience functions.
-  See http://wiki.apache.org/solr/FunctionQuery. (gsingers)
+  See http://wiki.apache.org/solr/FunctionQuery. (yonik, gsingers)
 
 * SOLR-1553: New dismax parser implementation (accessible as "edismax")
   that supports full lucene syntax, improved reserved char escaping,
@@ -130,8 +130,10 @@ New Features
 
 * SOLR-1653: Add PatternReplaceCharFilter (koji)
 
-* SOLR-1131: FieldTypes can now output multiple Fields per Type and still be searched.  This can be handy for hiding the details of a particular
-  implementation such as in the spatial case. (Chris Mattmann, shalin, noble, gsingers, yonik)
+* SOLR-1131: FieldTypes can now output multiple Fields per Type and still be
+  searched.  This can be handy for hiding the details of a particular
+  implementation such as in the spatial case.
+  (Chris Mattmann, shalin, noble, gsingers, yonik)
 
 * SOLR-1586: Add support for Geohash FieldType (Chris Mattmann, gsingers)
 
@@ -210,9 +212,10 @@ New Features
 
 * SOLR-1984: Add HyphenationCompoundWordTokenFilterFactory. (PB via rmuir)
 
-* SOLR-1568: Added "native" filtering support for PointType, GeohashField.  Added LatLonType with filtering support too.  See
-  	     http://wiki.apache.org/solr/SpatialSearch and the example.  Refactored some items in Lucene spatial. 
-	     Removed SpatialTileField as the underlying CartesianTier is broken beyond repair and is going to be moved. (gsingers) 
+* SOLR-1568: Added native filtering support via geofilt for spatial field
+  types LatLonType, PointType, GeohashField. 
+  See http://wiki.apache.org/solr/SpatialSearch for examples. 
+  (yonik, gsingers)
    
 * SOLR-2015: Add a boolean attribute autoGeneratePhraseQueries to TextField.
   autoGeneratePhraseQueries="true" (the default) causes the query parser to
@@ -494,8 +497,6 @@ Bug Fixes
   substitution/dereferencing.  Properly encode local params in
   distributed faceting.  (yonik)
 
-* SOLR-2114: Fixed parsing error in hsin function.  The function signature has changed slightly. (gsingers)
-
 * SOLR-2083: SpellCheckComponent misreports suggestions when distributed (James Dyer via gsingers)  
 
 * SOLR-2108: Fixed false positives when using wildcard queries on fields with reversed
@@ -515,8 +516,6 @@ Other Changes
 
 * SOLR-1592: Refactor XMLWriter startTag to allow arbitrary attributes to be written
   (Chris A. Mattmann via noble)
-
-* SOLR-1561: Added Lucene 2.9.1 spatial contrib jar to lib. (gsingers)
 
 * SOLR-1570: Log warnings if uniqueKey is multi-valued or not stored (hossman, shalin) 
 

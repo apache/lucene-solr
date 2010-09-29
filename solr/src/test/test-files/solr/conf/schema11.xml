@@ -257,8 +257,14 @@
     <!-- Poly field -->
     <fieldType name="xy" class="solr.PointType" dimension="2" subFieldType="double"/>
     <fieldType name="xyd" class="solr.PointType" dimension="2" subFieldSuffix="*_d"/>
-
     <fieldtype name="geohash" class="solr.GeoHashField"/>
+
+    <fieldType name="point" class="solr.PointType" dimension="2" subFieldSuffix="_d"/>
+
+    <!-- A specialized field for geospatial search. If indexed, this fieldType must not be multi
+valued. -->
+    <fieldType name="location" class="solr.LatLonType" subFieldSuffix="_coordinate"/>
+
 
  </types>
 

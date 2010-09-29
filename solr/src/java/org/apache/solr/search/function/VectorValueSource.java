@@ -33,7 +33,7 @@ import java.util.Map;
  */
 //Not crazy about the name, but...
 public class VectorValueSource extends MultiValueSource {
-  protected List<ValueSource> sources;
+  protected final List<ValueSource> sources;
 
 
   public VectorValueSource(List<ValueSource> sources) {

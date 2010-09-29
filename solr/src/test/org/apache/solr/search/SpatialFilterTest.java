@@ -134,9 +134,9 @@ public class SpatialFilterTest extends SolrTestCaseJ4 {
       }
     }
 
-    String method = exact ? "sfilt" : "bbox";
+    String method = exact ? "geofilt" : "bbox";
 
-    assertQ(req("fl", "id", "q","*:*", "rows", "1000", "fq", "{!"+method+" fl=" +fieldName +"}",
+    assertQ(req("fl", "id", "q","*:*", "rows", "1000", "fq", "{!"+method+" sfield=" +fieldName +"}",
               "pt", pt, "d", String.valueOf(distance)),
               tests);
   }

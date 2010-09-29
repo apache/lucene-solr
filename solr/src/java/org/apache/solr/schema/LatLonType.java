@@ -43,8 +43,6 @@ import java.util.Set;
 
 /**
  * Represents a Latitude/Longitude as a 2 dimensional point.  Latitude is <b>always</b> specified first.
- * Can also, optionally, integrate in Spatial Tile capabilities.  The default is for tile fields from 4 - 15,
- * just as in the SpatialTileField that we are extending.
  */
 public class LatLonType extends AbstractSubTypeFieldType implements SpatialQueryable {
   protected static final int LAT = 0;
@@ -511,7 +509,7 @@ class SpatialDistanceQuery extends Query {
   {
     float boost = getBoost();
     return (boost!=1.0?"(":"") +
-            "sfilt(latlonSource="+origField +"(" + latSource + "," + lonSource + ")"
+            "geofilt(latlonSource="+origField +"(" + latSource + "," + lonSource + ")"
             +",latCenter="+latCenter+",lonCenter="+lonCenter
             +",dist=" + dist
             +",latMin=" + latMin + ",latMax="+latMax
