@@ -625,19 +625,53 @@
   <!-- Build the JFlex files into the source tree                         -->
   <!-- ================================================================== -->
 
-  <target name="jflex" depends="jflex-check, clean-jflex,jflex-StandardAnalyzer" />
+  <target name="jflex" depends="jflex-check,clean-jflex,jflex-StandardAnalyzer,jflex-UAX29Tokenizer" />
 
-  <target name="jflex-StandardAnalyzer" depends="init,jflex-check" if="jflex.present">
+  <target name="jflex-StandardAnalyzer" depends="init,jflex-check,gen-tlds" if="jflex.present">
     <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
 			<classpath refid="jflex.classpath"/>
     </taskdef>
 
-    <jflex file="src/java/org/apache/lucene/analysis/standard/StandardTokenizerImplOrig.jflex"
+    <jflex file="src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl.jflex"
            outdir="src/java/org/apache/lucene/analysis/standard"
            nobak="on" />
-    <jflex file="src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl31.jflex"
+    <jflex file="src/java/org/apache/lucene/analysis/standard/ClassicTokenizerImpl.jflex"
            outdir="src/java/org/apache/lucene/analysis/standard"
            nobak="on" />
+  </target>
+
+  <target name="jflex-UAX29Tokenizer" depends="jflex-check" if="jflex.present">
+    <taskdef classname="jflex.anttask.JFlexTask" name="jflex">
+			<classpath refid="jflex.classpath"/>
+    </taskdef>
+    <jflex file="src/java/org/apache/lucene/analysis/standard/UAX29Tokenizer.jflex"
+           outdir="src/java/org/apache/lucene/analysis/standard"
+           nobak="on" />
+  </target>
+  
+  <property name="tld.zones" value="http://www.internic.net/zones/root.zone"/>
+  <property name="tld.output" location="src/java/org/apache/lucene/analysis/standard/ASCIITLD.jflex-macro"/>
+
+  <target name="gen-tlds" depends="compile-tools">
+    <java
+      classname="org.apache.lucene.analysis.standard.GenerateJflexTLDMacros"
+      dir="."
+      fork="true"
+      failonerror="true">
+      <classpath>
+      	<pathelement location="${build.dir}/classes/tools"/>
+      </classpath>
+      <arg value="${tld.zones}"/>
+      <arg value="${tld.output}"/>
+    </java>
+  </target>
+
+  <target name="compile-tools">
+    <compile
+      srcdir="src/tools/java"
+      destdir="${build.dir}/classes/tools">
+      <classpath refid="classpath"/>
+    </compile>
   </target>
 
   <target name="clean-jflex">

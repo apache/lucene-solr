@@ -182,6 +182,12 @@ API Changes
   opens internally when apply deletions or creating a near-real-time
   reader.  (Earwin Burrfoot via Mike McCandless)
 
+ * LUCENE-2167: StandardTokenizer/Analyzer now implement the Word Break
+   rules from the Unicode Text Segmentation algorithm (UAX#29), as well
+   as tokenizing URLs and email addresses according to the relevant
+   RFCs. ClassicTokenizer/Analyzer retains the old StandardTokenizer /
+   StandardAnalyzer behavior. (Steven Rowe, Robert Muir, Uwe Schindler)
+
 Bug fixes
 
 * LUCENE-2216: OpenBitSet.hashCode returned different hash codes for

@@ -247,7 +247,7 @@ public final class CzechAnalyzer extends ReusableAnalyzerBase {
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
     final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-    TokenStream result = new StandardFilter(source);
+    TokenStream result = new StandardFilter(matchVersion, source);
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter( matchVersion, result, stoptable);
     if (matchVersion.onOrAfter(Version.LUCENE_31)) {

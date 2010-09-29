@@ -237,7 +237,7 @@ public final class GermanAnalyzer extends StopwordAnalyzerBase {
   protected TokenStreamComponents createComponents(String fieldName,
       Reader reader) {
     final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-    TokenStream result = new StandardFilter(source);
+    TokenStream result = new StandardFilter(matchVersion, source);
     result = new LowerCaseFilter(matchVersion, result);
     result = new StopFilter( matchVersion, result, stopwords);
     result = new KeywordMarkerFilter(result, exclusionSet);

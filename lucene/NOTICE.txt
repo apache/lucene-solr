@@ -55,6 +55,7 @@ ICU4J, (under contrib/icu) is licensed under an MIT styles license
 (contrib/icu/lib/ICU-LICENSE.txt) and Copyright (c) 1995-2008 
 International Business Machines Corporation and others
 
-Some data files (under contrib/icu/src/data) are derived from Unicode data such
+Some files (contrib/analyzers/common/src/test/.../WordBreakTestUnicode_*.java
+and data files under contrib/icu/src/data/) are derived from Unicode data such
 as the Unicode Character Database. See http://unicode.org/copyright.html for more
 details.

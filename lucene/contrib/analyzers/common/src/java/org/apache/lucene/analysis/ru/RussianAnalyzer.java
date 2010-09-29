@@ -175,7 +175,7 @@ public final class RussianAnalyzer extends StopwordAnalyzerBase
         Reader reader) {
       if (matchVersion.onOrAfter(Version.LUCENE_31)) {
         final Tokenizer source = new StandardTokenizer(matchVersion, reader);
-        TokenStream result = new StandardFilter(source);
+        TokenStream result = new StandardFilter(matchVersion, source);
         result = new LowerCaseFilter(matchVersion, result);
         result = new StopFilter(matchVersion, result, stopwords);
         if (!stemExclusionSet.isEmpty()) result = new KeywordMarkerFilter(
