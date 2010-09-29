@@ -18,6 +18,10 @@
 package org.apache.solr.schema;
 
 import org.apache.lucene.search.SortField;
+import org.apache.lucene.search.cache.CachedArrayCreator;
+import org.apache.lucene.search.cache.FloatValuesCreator;
+import org.apache.lucene.search.cache.LongValuesCreator;
+import org.apache.solr.search.function.LongFieldSource;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.FloatFieldSource;
 import org.apache.lucene.document.Fieldable;
@@ -39,7 +43,7 @@ public class FloatField extends FieldType {
   }
 
   public ValueSource getValueSource(SchemaField field) {
-    return new FloatFieldSource(field.name);
+    return new FloatFieldSource( new FloatValuesCreator( field.name, null, CachedArrayCreator.CACHE_VALUES_AND_BITS ) );
   }
 
   public void write(XMLWriter xmlWriter, String name, Fieldable f) throws IOException {

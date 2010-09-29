@@ -18,6 +18,11 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.cache.ByteValuesCreator;
+import org.apache.lucene.search.cache.LongValuesCreator;
+import org.apache.lucene.search.cache.CachedArray.ByteValues;
+import org.apache.lucene.search.cache.CachedArray.DoubleValues;
+import org.apache.lucene.search.cache.CachedArray.LongValues;
 
 import java.io.IOException;
 import java.util.Map;
@@ -30,16 +35,10 @@ import java.util.Map;
  * @version $Id: IntFieldSource.java 555343 2007-07-11 17:46:25Z hossman $
  */
 
-public class ByteFieldSource extends FieldCacheSource {
-  FieldCache.ByteParser parser;
+public class ByteFieldSource extends NumericFieldCacheSource<ByteValues> {
 
-  public ByteFieldSource(String field) {
-    this(field, null);
-  }
-
-  public ByteFieldSource(String field, FieldCache.ByteParser parser) {
-    super(field);
-    this.parser = parser;
+  public ByteFieldSource(ByteValuesCreator creator) {
+    super(creator);
   }
 
   public String description() {
@@ -47,9 +46,9 @@ public class ByteFieldSource extends FieldCacheSource {
   }
 
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final byte[] arr = (parser == null) ?
-            cache.getBytes(reader, field) :
-            cache.getBytes(reader, field, parser);
+    final ByteValues vals = cache.getBytes(reader, field, creator);
+    final byte[] arr = vals.values;
+    
     return new DocValues() {
       @Override
       public byte byteVal(int doc) {
@@ -86,20 +85,5 @@ public class ByteFieldSource extends FieldCacheSource {
       }
 
     };
-  }
-
-  public boolean equals(Object o) {
-    if (o.getClass() != ByteFieldSource.class) return false;
-    ByteFieldSource
-            other = (ByteFieldSource) o;
-    return super.equals(other)
-            && this.parser == null ? other.parser == null :
-            this.parser.getClass() == other.parser.getClass();
-  }
-
-  public int hashCode() {
-    int h = parser == null ? Byte.class.hashCode() : parser.getClass().hashCode();
-    h += super.hashCode();
-    return h;
   }
 }

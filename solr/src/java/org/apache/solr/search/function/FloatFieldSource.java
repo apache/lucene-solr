@@ -17,14 +17,14 @@
 
 package org.apache.solr.search.function;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.solr.search.MutableValue;
-import org.apache.solr.search.MutableValueFloat;
-import org.apache.solr.search.function.DocValues;
-import org.apache.lucene.search.FieldCache;
-
 import java.io.IOException;
 import java.util.Map;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.cache.FloatValuesCreator;
+import org.apache.lucene.search.cache.CachedArray.FloatValues;
+import org.apache.solr.search.MutableValue;
+import org.apache.solr.search.MutableValueFloat;
 
 /**
  * Obtains float field values from the {@link org.apache.lucene.search.FieldCache}
@@ -34,16 +34,10 @@ import java.util.Map;
  * @version $Id$
  */
 
-public class FloatFieldSource extends FieldCacheSource {
-  protected FieldCache.FloatParser parser;
+public class FloatFieldSource extends NumericFieldCacheSource<FloatValues> {
 
-  public FloatFieldSource(String field) {
-    this(field, null);
-  }
-
-  public FloatFieldSource(String field, FieldCache.FloatParser parser) {
-    super(field);
-    this.parser = parser;
+  public FloatFieldSource(FloatValuesCreator creator) {
+    super(creator);
   }
 
   public String description() {
@@ -51,9 +45,9 @@ public class FloatFieldSource extends FieldCacheSource {
   }
 
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final float[] arr = (parser==null) ?
-            cache.getFloats(reader, field) :
-            cache.getFloats(reader, field, parser);
+    final FloatValues vals = cache.getFloats(reader, field, creator);
+    final float[] arr = vals.values;
+    
     return new DocValues() {
       public float floatVal(int doc) {
         return arr[doc];
@@ -99,19 +93,4 @@ public class FloatFieldSource extends FieldCacheSource {
 
     };
   }
-
-  public boolean equals(Object o) {
-    if (o.getClass() !=  FloatFieldSource.class) return false;
-    FloatFieldSource other = (FloatFieldSource)o;
-    return super.equals(other)
-           && this.parser==null ? other.parser==null :
-              this.parser.getClass() == other.parser.getClass();
-  }
-
-  public int hashCode() {
-    int h = parser==null ? Float.class.hashCode() : parser.getClass().hashCode();
-    h += super.hashCode();
-    return h;
-  };
-
 }

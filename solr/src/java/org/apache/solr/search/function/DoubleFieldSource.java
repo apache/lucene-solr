@@ -19,6 +19,10 @@ package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.cache.DoubleValuesCreator;
+import org.apache.lucene.search.cache.FloatValuesCreator;
+import org.apache.lucene.search.cache.CachedArray.DoubleValues;
+import org.apache.lucene.search.cache.CachedArray.FloatValues;
 import org.apache.solr.search.MutableValue;
 import org.apache.solr.search.MutableValueDouble;
 
@@ -33,16 +37,10 @@ import java.util.Map;
  * @version $Id:$
  */
 
-public class DoubleFieldSource extends FieldCacheSource {
-  protected FieldCache.DoubleParser parser;
+public class DoubleFieldSource extends NumericFieldCacheSource<DoubleValues> {
 
-  public DoubleFieldSource(String field) {
-    this(field, null);
-  }
-
-  public DoubleFieldSource(String field, FieldCache.DoubleParser parser) {
-    super(field);
-    this.parser = parser;
+  public DoubleFieldSource(DoubleValuesCreator creator) {
+    super(creator);
   }
 
   public String description() {
@@ -50,9 +48,9 @@ public class DoubleFieldSource extends FieldCacheSource {
   }
 
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final double[] arr = (parser == null) ?
-            ((FieldCache) cache).getDoubles(reader, field) :
-            ((FieldCache) cache).getDoubles(reader, field, parser);
+    final DoubleValues vals = cache.getDoubles(reader, field, creator);
+    final double[] arr = vals.values;
+    
     return new DocValues() {
       public float floatVal(int doc) {
         return (float) arr[doc];
@@ -158,19 +156,4 @@ public class DoubleFieldSource extends FieldCacheSource {
       };
 
   }
-
-  public boolean equals(Object o) {
-    if (o.getClass() != DoubleFieldSource.class) return false;
-    DoubleFieldSource other = (DoubleFieldSource) o;
-    return super.equals(other)
-            && this.parser == null ? other.parser == null :
-            this.parser.getClass() == other.parser.getClass();
-  }
-
-  public int hashCode() {
-    int h = parser == null ? Double.class.hashCode() : parser.getClass().hashCode();
-    h += super.hashCode();
-    return h;
-  }
-
 }

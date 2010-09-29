@@ -18,7 +18,8 @@
 package org.apache.solr.search.function;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.FieldCache;
+import org.apache.lucene.search.cache.LongValuesCreator;
+import org.apache.lucene.search.cache.CachedArray.LongValues;
 import org.apache.solr.search.MutableValue;
 import org.apache.solr.search.MutableValueLong;
 
@@ -34,31 +35,24 @@ import java.util.Map;
  * @version $Id: FloatFieldSource.java 555343 2007-07-11 17:46:25Z hossman $
  */
 
-public class LongFieldSource extends FieldCacheSource {
-  protected FieldCache.LongParser parser;
+public class LongFieldSource extends NumericFieldCacheSource<LongValues> {
 
-  public LongFieldSource(String field) {
-    this(field, null);
-  }
-
-  public LongFieldSource(String field, FieldCache.LongParser parser) {
-    super(field);
-    this.parser = parser;
+  public LongFieldSource(LongValuesCreator creator) {
+    super(creator);
   }
 
   public String description() {
     return "long(" + field + ')';
   }
 
-
   public long externalToLong(String extVal) {
     return Long.parseLong(extVal);
   }
 
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
-    final long[] arr = (parser == null) ?
-            ((FieldCache) cache).getLongs(reader, field) :
-            ((FieldCache) cache).getLongs(reader, field, parser);
+    final LongValues vals = cache.getLongs(reader, field, creator);
+    final long[] arr = vals.values;
+    
     return new DocValues() {
       public float floatVal(int doc) {
         return (float) arr[doc];
@@ -143,20 +137,6 @@ public class LongFieldSource extends FieldCacheSource {
 
   protected MutableValueLong newMutableValueLong() {
     return new MutableValueLong();  
-  }
-
-  public boolean equals(Object o) {
-    if (o.getClass() != this.getClass()) return false;
-    LongFieldSource other = (LongFieldSource) o;
-    return super.equals(other)
-            && this.parser == null ? other.parser == null :
-            this.parser.getClass() == other.parser.getClass();
-  }
-
-  public int hashCode() {
-    int h = parser == null ? this.getClass().hashCode() : parser.getClass().hashCode();
-    h += super.hashCode();
-    return h;
   }
 
 }
