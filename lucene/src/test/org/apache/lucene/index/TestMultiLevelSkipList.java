@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -26,16 +27,16 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util._TestUtil;
-import org.apache.lucene.util.BytesRef;
+import org.junit.Before;
 
 /**
  * This testcase tests whether multi-level skipping is being used
@@ -59,6 +60,12 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
       return in;
     }
   }
+  
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    counter = 0;
+  }
 
   public void testSimpleSkip() throws IOException {
     Directory dir = new CountingRAMDirectory(new RAMDirectory());
@@ -73,7 +80,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     writer.optimize();
     writer.close();
 
-    IndexReader reader = SegmentReader.getOnlySegmentReader(dir);
+    IndexReader reader = SegmentReader.getOnlySegmentReader(IndexReader.open(dir));
     
     for (int i = 0; i < 2; i++) {
       counter = 0;
@@ -106,20 +113,22 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
   }
 
   private static class PayloadAnalyzer extends Analyzer {
+    private final AtomicInteger payloadCount = new AtomicInteger(-1);
     @Override
     public TokenStream tokenStream(String fieldName, Reader reader) {
-      return new PayloadFilter(new MockTokenizer(reader, MockTokenizer.WHITESPACE, true));
+      return new PayloadFilter(payloadCount, new MockTokenizer(reader, MockTokenizer.WHITESPACE, true));
     }
 
   }
 
   private static class PayloadFilter extends TokenFilter {
-    static int count = 0;
     
     PayloadAttribute payloadAtt;
+    private AtomicInteger payloadCount;
     
-    protected PayloadFilter(TokenStream input) {
+    protected PayloadFilter(AtomicInteger payloadCount , TokenStream input) {
       super(input);
+      this.payloadCount = payloadCount;
       payloadAtt = addAttribute(PayloadAttribute.class);
     }
 
@@ -127,7 +136,7 @@ public class TestMultiLevelSkipList extends LuceneTestCase {
     public boolean incrementToken() throws IOException {
       boolean hasNext = input.incrementToken();
       if (hasNext) {
-        payloadAtt.setPayload(new Payload(new byte[] { (byte) count++ }));
+        payloadAtt.setPayload(new Payload(new byte[] { (byte) payloadCount.incrementAndGet() }));
       } 
       return hasNext;
     }
