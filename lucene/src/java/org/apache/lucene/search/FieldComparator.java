@@ -243,53 +243,6 @@ public abstract class FieldComparator {
     }
   }
 
-
-  /** Sorts by ascending docID */
-  public static final class DocComparator extends FieldComparator {
-    private final int[] docIDs;
-    private int docBase;
-    private int bottom;
-
-    DocComparator(int numHits) {
-      docIDs = new int[numHits];
-    }
-
-    @Override
-    public int compare(int slot1, int slot2) {
-      // No overflow risk because docIDs are non-negative
-      return docIDs[slot1] - docIDs[slot2];
-    }
-
-    @Override
-    public int compareBottom(int doc) {
-      // No overflow risk because docIDs are non-negative
-      return bottom - (docBase + doc);
-    }
-
-    @Override
-    public void copy(int slot, int doc) {
-      docIDs[slot] = docBase + doc;
-    }
-
-    @Override
-    public FieldComparator setNextReader(IndexReader reader, int docBase) {
-      // TODO: can we "map" our docIDs to the current
-      // reader? saves having to then subtract on every
-      // compare call
-      this.docBase = docBase;
-      return this;
-    }
-    
-    @Override
-    public void setBottom(final int bottom) {
-      this.bottom = docIDs[bottom];
-    }
-
-    @Override
-    public Comparable<?> value(int slot) {
-      return Integer.valueOf(docIDs[slot]);
-    }
-  }
   
   /** Parses field's values as double (using {@link
    *  FieldCache#getDoubles} and sorts by ascending value */
@@ -669,6 +622,55 @@ public abstract class FieldComparator {
     }
   }
 
+
+  /** Sorts by ascending docID */
+  public static final class DocComparator extends FieldComparator {
+    private final int[] docIDs;
+    private int docBase;
+    private int bottom;
+
+    DocComparator(int numHits) {
+      docIDs = new int[numHits];
+    }
+
+    @Override
+    public int compare(int slot1, int slot2) {
+      // No overflow risk because docIDs are non-negative
+      return docIDs[slot1] - docIDs[slot2];
+    }
+
+    @Override
+    public int compareBottom(int doc) {
+      // No overflow risk because docIDs are non-negative
+      return bottom - (docBase + doc);
+    }
+
+    @Override
+    public void copy(int slot, int doc) {
+      docIDs[slot] = docBase + doc;
+    }
+
+    @Override
+    public FieldComparator setNextReader(IndexReader reader, int docBase) {
+      // TODO: can we "map" our docIDs to the current
+      // reader? saves having to then subtract on every
+      // compare call
+      this.docBase = docBase;
+      return this;
+    }
+    
+    @Override
+    public void setBottom(final int bottom) {
+      this.bottom = docIDs[bottom];
+    }
+
+    @Override
+    public Comparable<?> value(int slot) {
+      return Integer.valueOf(docIDs[slot]);
+    }
+  }
+  
+  
   /** Sorts by a field's value using the Collator for a
    *  given Locale.
    *
