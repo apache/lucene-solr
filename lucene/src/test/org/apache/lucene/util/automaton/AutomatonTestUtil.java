@@ -55,7 +55,7 @@ public class AutomatonTestUtil {
     }
     final char[] buffer = new char[end];
     for (int i = 0; i < end; i++) {
-      int t = r.nextInt(11);
+      int t = r.nextInt(15);
       if (0 == t && i < end - 1) {
         // Make a surrogate pair
         // High surrogate
@@ -73,6 +73,10 @@ public class AutomatonTestUtil {
       else if (8 == t) buffer[i] = '+';
       else if (9 == t) buffer[i] = '(';
       else if (10 == t) buffer[i] = ')';
+      else if (11 == t) buffer[i] = '-';
+      else if (12 == t) buffer[i] = '[';
+      else if (13 == t) buffer[i] = ']';
+      else if (14 == t) buffer[i] = '|';
     }
     return new String(buffer, 0, end);
   }
