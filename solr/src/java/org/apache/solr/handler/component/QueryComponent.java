@@ -194,7 +194,9 @@ public class QueryComponent extends SearchComponent
         String[] funcs = params.getParams(GroupParams.GROUP_FUNC);
         String[] queries = params.getParams(GroupParams.GROUP_QUERY);
         String groupSortStr = params.get(GroupParams.GROUP_SORT);
-        Sort groupSort = groupSortStr != null ? QueryParsing.parseSort(groupSortStr, req.getSchema()) : null;
+
+        // TODO: don't use groupSort==null to test for the presense of a sort since "score desc" will normalize to null
+        Sort groupSort = groupSortStr != null ? QueryParsing.parseSort(groupSortStr, req) : null;
 
         int limitDefault = cmd.getLen(); // this is normally from "rows"
         int docsPerGroupDefault = params.getInt(GroupParams.GROUP_LIMIT, 1);

@@ -360,6 +360,52 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testSortByFunc() throws Exception {
+    assertU(adoc("id", "1", "x_i", "100"));
+    assertU(adoc("id", "2", "x_i", "300"));
+    assertU(adoc("id", "3", "x_i", "200"));
+    assertU(commit());
+
+    String desc = "/response/docs==[{'x_i':300},{'x_i':200},{'x_i':100}]";
+    String asc =  "/response/docs==[{'x_i':100},{'x_i':200},{'x_i':300}]";
+
+    String q = "id:[1 TO 3]";
+    assertJQ(req("q",q,  "fl","x_i", "sort","add(x_i,x_i) desc")
+      ,desc
+    );
+
+    // param sub of entire function
+    assertJQ(req("q",q,  "fl","x_i", "sort", "$x asc", "x","add(x_i,x_i)")
+      ,asc
+    );
+
+    // multiple functions
+    assertJQ(req("q",q,  "fl","x_i", "sort", "$x asc, $y desc", "x", "5", "y","add(x_i,x_i)")
+      ,desc
+    );
+
+    // multiple functions inline
+    assertJQ(req("q",q,  "fl","x_i", "sort", "add( 10 , 10 ) asc, add(x_i , $const) desc", "const","50")
+      ,desc
+    );
+
+    // test function w/ local params + func inline
+     assertJQ(req("q",q,  "fl","x_i", "sort", "{!key=foo}add(x_i,x_i) desc")
+      ,desc
+    );
+
+    // test multiple functions w/ local params + func inline
+    assertJQ(req("q",q,  "fl","x_i", "sort", "{!key=bar}add(10,20) asc, {!key=foo}add(x_i,x_i) desc")
+      ,desc
+    );
+
+    // test multiple functions w/ local param value not inlined
+    assertJQ(req("q",q,  "fl","x_i", "sort", "{!key=bar v=$s1} asc, {!key=foo v=$s2} desc", "s1","add(3,4)", "s2","add(x_i,5)")
+      ,desc
+    );
+  }
+
+  @Test
   public void testDegreeRads() throws Exception {    
     assertU(adoc("id", "1", "x_td", "0", "y_td", "0"));
     assertU(adoc("id", "2", "x_td", "90", "y_td", String.valueOf(Math.PI / 2)));
