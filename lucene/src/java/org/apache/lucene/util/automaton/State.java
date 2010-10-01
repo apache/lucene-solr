@@ -269,4 +269,9 @@ public class State implements Serializable, Comparable<State> {
   public int compareTo(State s) {
     return s.id - id;
   }
+
+  @Override
+  public int hashCode() {
+    return id;
+  }  
 }
