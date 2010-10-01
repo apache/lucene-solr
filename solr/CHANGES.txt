@@ -407,6 +407,10 @@ Bug Fixes
   substitution/dereferencing.  Properly encode local params in
   distributed faceting.  (yonik)
 
+* SOLR-2135: Fix behavior of ConcurrentLRUCache when asking for
+  getLatestAccessedItems(0) or getOldestAccessedItems(0).
+  (David Smiley via hossman)
+
 Other Changes
 ----------------------
 
