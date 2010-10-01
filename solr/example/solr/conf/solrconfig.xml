@@ -708,6 +708,18 @@
       <str name="spellcheckIndexDir">./spellchecker</str>
     </lst>
 
+    <!-- a spellchecker that uses no auxiliary index
+    <lst name="spellchecker">
+      <str name="name">default</str>
+      <str name="field">name</str>
+      <str name="classname">solr.DirectSolrSpellChecker</str>
+      &lt;!&ndash; Note: this value is just for the example,
+      to correct hell to dell. In practice a value of 1
+      is highly recommended.
+       &ndash;&gt;
+      <str name="minPrefix">0</str>
+    </lst>
+    -->
     <!-- a spellchecker that uses a different distance measure
     <lst name="spellchecker">
       <str name="name">jarowinkler</str>

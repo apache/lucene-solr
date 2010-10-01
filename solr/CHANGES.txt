@@ -280,7 +280,9 @@ New Features
   after parsing the functions, instead of silently ignoring it.
   This allows expressions like q=dist(2,vector(1,2),$pt)&pt=3,4   (yonik)
 
-
+* LUCENE-2507: Added DirectSolrSpellChecker, which uses Lucene's DirectSpellChecker
+  to retrieve correction candidates directly from the term dictionary using
+  levenshtein automata.  (rmuir)
 
 Optimizations
 ----------------------

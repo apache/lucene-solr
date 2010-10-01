@@ -514,4 +514,14 @@ public final class FuzzyTermsEnum extends TermsEnum {
           (int)((1-minSimilarity) * (Math.min(text.length, m) + realPrefixLength)));
     }
   }
+  
+  /** @lucene.internal */
+  public float getMinSimilarity() {
+    return minSimilarity;
+  }
+  
+  /** @lucene.internal */
+  public float getScaleFactor() {
+    return scale_factor;
+  }
 }

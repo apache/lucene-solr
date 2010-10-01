@@ -28,6 +28,9 @@ New Features
 
   * LUCENE-2608: Added the ability to specify the accuracy at method time in the SpellChecker.  The per class
     method is also still available.  (Grant Ingersoll)
+    
+  * LUCENE-2507: Added DirectSpellChecker, which retrieves correction candidates directly 
+    from the term dictionary using levenshtein automata.  (Robert Muir)
 
 API Changes
 
