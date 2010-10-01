@@ -106,10 +106,12 @@ public class  FacetComponent extends SearchComponent
           String facetCommand;
           // add terms into the original facet.field command
           // do it via parameter reference to avoid another layer of encoding.
+
+          String termsKeyEncoded = QueryParsing.encodeLocalParamVal(termsKey);
           if (dff.localParams != null) {
-            facetCommand = commandPrefix+termsKey + " " + dff.facetStr.substring(2);
+            facetCommand = commandPrefix+termsKeyEncoded + " " + dff.facetStr.substring(2);
           } else {
-            facetCommand = commandPrefix+termsKey+'}'+dff.field;
+            facetCommand = commandPrefix+termsKeyEncoded+'}'+dff.field;
           }
 
           if (refinements == null) {

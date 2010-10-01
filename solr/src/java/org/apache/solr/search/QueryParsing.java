@@ -162,15 +162,15 @@ public class QueryParsing {
         // saw equals, so read value
         p.pos++;
         ch = p.peek();
+        boolean deref = false;
+        if (ch == '$') {
+          p.pos++;
+          ch = p.peek();
+          deref = true;  // dereference whatever value is read by treating it as a variable name
+        }
+
         if (ch == '\"' || ch == '\'') {
           val = p.getQuotedString();
-        } else if (ch == '$') {
-          p.pos++;
-          // dereference parameter
-          String pname = p.getId();
-          if (params != null) {
-            val = params.get(pname);
-          }
         } else {
           // read unquoted literal ended by whitespace or '}'
           // there is no escaping.
@@ -187,10 +187,43 @@ public class QueryParsing {
             p.pos++;
           }
         }
+
+        if (deref) {  // dereference parameter
+          if (params != null) {
+            val = params.get(val);
+          }
+        }
       }
       if (target != null) target.put(id, val);
     }
   }
+
+  public static String encodeLocalParamVal(String val) {
+    int len = val.length();
+    int i = 0;
+    if (len > 0 && val.charAt(0) != '$') {
+      for (;i<len; i++) {
+        char ch = val.charAt(i);
+        if (Character.isWhitespace(ch) || ch=='}') break;
+      }
+    }
+
+    if (i>=len) return val;
+
+    // We need to enclose in quotes... but now we need to escape
+    StringBuilder sb = new StringBuilder(val.length() + 4);
+    sb.append('\'');
+    for (i=0; i<len; i++) {
+      char ch = val.charAt(i);
+      if (ch=='\'') {
+        sb.append('\\');
+      }
+      sb.append(ch);
+    }
+    sb.append('\'');
+    return sb.toString();
+  }
+  
 
   /**
    * "foo" returns null
