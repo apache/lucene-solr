@@ -243,6 +243,14 @@ public class TestFastLRUCache extends LuceneTestCase {
     assertNotNull(m.get(5));
     assertNotNull(m.get(4));
     assertNotNull(m.get(2));
+
+    m = cache.getOldestAccessedItems(0);
+    assertTrue(m.isEmpty());
+
+    //test this too
+    m = cache.getLatestAccessedItems(0);
+    assertTrue(m.isEmpty());
+
     cache.destroy();
   }
 

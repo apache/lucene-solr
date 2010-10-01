@@ -505,6 +505,10 @@ Bug Fixes
   wildcard support. For example, a query of *zemog* would match documents that contain
   'gomez'.  (Landon Kuhn via Robert Muir)
 
+* SOLR-2135: Fix behavior of ConcurrentLRUCache when asking for
+  getLatestAccessedItems(0) or getOldestAccessedItems(0).
+  (David Smiley via hossman)
+
 Other Changes
 ----------------------
 
