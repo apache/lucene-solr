@@ -1012,7 +1012,7 @@ public class TestIndexWriter extends LuceneTestCase {
      */
     public void testCommitOnCloseDiskUsage() throws IOException {
       MockDirectoryWrapper dir = newDirectory();      
-      IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10));
+      IndexWriter writer  = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setMaxBufferedDocs(10).setReaderPooling(false));
       ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
       for(int j=0;j<30;j++) {
         addDocWithIndex(writer, j);
@@ -1024,7 +1024,7 @@ public class TestIndexWriter extends LuceneTestCase {
       long startDiskUsage = dir.getMaxUsedSizeInBytes();
       writer = new IndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer())
         .setOpenMode(OpenMode.APPEND).setMaxBufferedDocs(10).setMergeScheduler(
-            new SerialMergeScheduler()));
+                               new SerialMergeScheduler()).setReaderPooling(false));
       ((LogMergePolicy) writer.getMergePolicy()).setMergeFactor(10);
       for(int j=0;j<1470;j++) {
         addDocWithIndex(writer, j);
