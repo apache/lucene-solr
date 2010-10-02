@@ -65,7 +65,7 @@ public class PulsingPostingsReaderImpl extends PostingsReaderBase {
     public Object clone() {
       PulsingTermState clone;
       clone = (PulsingTermState) super.clone();
-      clone.docs = (Document[]) docs.clone();
+      clone.docs = docs.clone();
       for(int i=0;i<clone.docs.length;i++) {
         final Document doc = clone.docs[i];
         if (doc != null) {

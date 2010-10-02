@@ -262,7 +262,7 @@ public class MultiPhraseQuery extends Query {
       fieldExpl.setDescription("fieldWeight("+getQuery()+" in "+doc+
                                "), product of:");
 
-      Scorer scorer = (Scorer) scorer(reader, true, false);
+      Scorer scorer = scorer(reader, true, false);
       if (scorer == null) {
         return new Explanation(0.0f, "no matching docs");
       }
@@ -430,7 +430,7 @@ class UnionDocsAndPositionsEnum extends DocsAndPositionsEnum {
 
       Iterator<DocsAndPositionsEnum> i = docsEnums.iterator();
       while (i.hasNext()) {
-        DocsAndPositionsEnum postings = (DocsAndPositionsEnum) i.next();
+        DocsAndPositionsEnum postings = i.next();
         if (postings.nextDoc() != DocsAndPositionsEnum.NO_MORE_DOCS) {
           add(postings);
         }

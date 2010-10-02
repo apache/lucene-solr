@@ -155,8 +155,8 @@ public class ParallelReader extends IndexReader {
     @Override
     public String next() throws IOException {
       if (keys.hasNext()) {
-        currentField = (String) keys.next();
-        currentReader = (IndexReader) fieldToReader.get(currentField);
+        currentField = keys.next();
+        currentReader = fieldToReader.get(currentField);
       } else {
         currentField = null;
         currentReader = null;
@@ -452,7 +452,7 @@ public class ParallelReader extends IndexReader {
   @Override
   public int docFreq(String field, BytesRef term) throws IOException {
     ensureOpen();
-    IndexReader reader = ((IndexReader)fieldToReader.get(field));
+    IndexReader reader = fieldToReader.get(field);
     return reader == null? 0 : reader.docFreq(field, term);
   }
 

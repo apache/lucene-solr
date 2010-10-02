@@ -256,7 +256,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
    * @deprecated should be removed once all the deprecated setters are removed
    *             from IndexWriter.
    */
-  @Test
+  @Test @Deprecated
   public void testIndexWriterSetters() throws Exception {
     // This test intentionally tests deprecated methods. The purpose is to pass
     // whatever the user set on IW to IWC, so that if the user calls

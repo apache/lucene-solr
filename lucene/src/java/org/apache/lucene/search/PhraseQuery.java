@@ -267,7 +267,7 @@ public class PhraseQuery extends Query {
       fieldExpl.setDescription("fieldWeight("+field+":"+query+" in "+doc+
                                "), product of:");
 
-      Scorer scorer = (Scorer) scorer(reader, true, false);
+      Scorer scorer = scorer(reader, true, false);
       if (scorer == null) {
         return new Explanation(0.0f, "no matching docs");
       }

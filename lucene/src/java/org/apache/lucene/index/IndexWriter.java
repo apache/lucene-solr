@@ -185,6 +185,7 @@ public class IndexWriter implements Closeable {
    * @see #setDefaultWriteLockTimeout
    * @deprecated use {@link IndexWriterConfig#WRITE_LOCK_TIMEOUT} instead
    */
+  @Deprecated
   public static long WRITE_LOCK_TIMEOUT = IndexWriterConfig.WRITE_LOCK_TIMEOUT;
 
   private long writeLockTimeout;
@@ -198,6 +199,7 @@ public class IndexWriter implements Closeable {
    * Value to denote a flush trigger is disabled
    * @deprecated use {@link IndexWriterConfig#DISABLE_AUTO_FLUSH} instead
    */
+  @Deprecated
   public final static int DISABLE_AUTO_FLUSH = IndexWriterConfig.DISABLE_AUTO_FLUSH;
 
   /**
@@ -205,6 +207,7 @@ public class IndexWriter implements Closeable {
    * by default). Change using {@link #setMaxBufferedDocs(int)}.
    * @deprecated use {@link IndexWriterConfig#DEFAULT_MAX_BUFFERED_DOCS} instead.
    */
+  @Deprecated
   public final static int DEFAULT_MAX_BUFFERED_DOCS = IndexWriterConfig.DEFAULT_MAX_BUFFERED_DOCS;
 
   /**
@@ -212,6 +215,7 @@ public class IndexWriter implements Closeable {
    * docs consume 16 MB RAM).  Change using {@link #setRAMBufferSizeMB}.
    * @deprecated use {@link IndexWriterConfig#DEFAULT_RAM_BUFFER_SIZE_MB} instead.
    */
+  @Deprecated
   public final static double DEFAULT_RAM_BUFFER_SIZE_MB = IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB;
 
   /**
@@ -219,6 +223,7 @@ public class IndexWriter implements Closeable {
    * by default). Change using {@link #setMaxBufferedDeleteTerms(int)}.
    * @deprecated use {@link IndexWriterConfig#DEFAULT_MAX_BUFFERED_DELETE_TERMS} instead
    */
+  @Deprecated
   public final static int DEFAULT_MAX_BUFFERED_DELETE_TERMS = IndexWriterConfig.DEFAULT_MAX_BUFFERED_DELETE_TERMS;
 
   /**
@@ -226,12 +231,14 @@ public class IndexWriter implements Closeable {
    * 
    * @deprecated see {@link IndexWriterConfig}
    */
+  @Deprecated
   public final static int DEFAULT_MAX_FIELD_LENGTH = 10000;
 
   /**
    * Default value is 128. Change using {@link #setTermIndexInterval(int)}.
    * @deprecated use {@link IndexWriterConfig#DEFAULT_TERM_INDEX_INTERVAL} instead.
    */
+  @Deprecated
   public final static int DEFAULT_TERM_INDEX_INTERVAL = IndexWriterConfig.DEFAULT_TERM_INDEX_INTERVAL;
 
   /**
@@ -753,6 +760,7 @@ public class IndexWriter implements Closeable {
    *  @deprecated use {@link LogMergePolicy#getUseCompoundDocStore()} and
    *  {@link LogMergePolicy#getUseCompoundFile()} directly.
    */
+  @Deprecated
   public boolean getUseCompoundFile() {
     return getLogMergePolicy().getUseCompoundFile();
   }
@@ -774,6 +782,7 @@ public class IndexWriter implements Closeable {
    *             Note that this method set the given value on both, therefore
    *             you should consider doing the same.
    */
+  @Deprecated
   public void setUseCompoundFile(boolean value) {
     getLogMergePolicy().setUseCompoundFile(value);
     getLogMergePolicy().setUseCompoundDocStore(value);
@@ -784,6 +793,7 @@ public class IndexWriter implements Closeable {
    * @see Similarity#setDefault(Similarity)
    * @deprecated use {@link IndexWriterConfig#setSimilarity(Similarity)} instead
    */
+  @Deprecated
   public void setSimilarity(Similarity similarity) {
     ensureOpen();
     this.similarity = similarity;
@@ -798,6 +808,7 @@ public class IndexWriter implements Closeable {
    * <p>This defaults to the current value of {@link Similarity#getDefault()}.
    * @deprecated use {@link IndexWriterConfig#getSimilarity()} instead
    */
+  @Deprecated
   public Similarity getSimilarity() {
     ensureOpen();
     return similarity;
@@ -825,6 +836,7 @@ public class IndexWriter implements Closeable {
    * @see #DEFAULT_TERM_INDEX_INTERVAL
    * @deprecated use {@link IndexWriterConfig#setTermIndexInterval(int)}
    */
+  @Deprecated
   public void setTermIndexInterval(int interval) {
     ensureOpen();
     this.termIndexInterval = interval;
@@ -838,6 +850,7 @@ public class IndexWriter implements Closeable {
    * @see #setTermIndexInterval(int)
    * @deprecated use {@link IndexWriterConfig#getTermIndexInterval()}
    */
+  @Deprecated
   public int getTermIndexInterval() {
     // We pass false because this method is called by SegmentMerger while we are in the process of closing
     ensureOpen(false);
@@ -867,6 +880,7 @@ public class IndexWriter implements Closeable {
    *  IO error
    *  @deprecated use {@link #IndexWriter(Directory, IndexWriterConfig)} instead
    */
+  @Deprecated
   public IndexWriter(Directory d, Analyzer a, boolean create, MaxFieldLength mfl)
        throws CorruptIndexException, LockObtainFailedException, IOException {
     this(d, new IndexWriterConfig(Version.LUCENE_31, a).setOpenMode(
@@ -893,6 +907,7 @@ public class IndexWriter implements Closeable {
    *  IO error
    *  @deprecated use {@link #IndexWriter(Directory, IndexWriterConfig)} instead
    */
+  @Deprecated
   public IndexWriter(Directory d, Analyzer a, MaxFieldLength mfl)
     throws CorruptIndexException, LockObtainFailedException, IOException {
     this(d, new IndexWriterConfig(Version.LUCENE_31, a)
@@ -918,6 +933,7 @@ public class IndexWriter implements Closeable {
    *  IO error
    *  @deprecated use {@link #IndexWriter(Directory, IndexWriterConfig)} instead
    */
+  @Deprecated
   public IndexWriter(Directory d, Analyzer a, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl)
     throws CorruptIndexException, LockObtainFailedException, IOException {
     this(d, new IndexWriterConfig(Version.LUCENE_31, a).setMaxFieldLength(
@@ -949,6 +965,7 @@ public class IndexWriter implements Closeable {
    *  IO error
    *  @deprecated use {@link #IndexWriter(Directory, IndexWriterConfig)} instead
    */
+  @Deprecated
   public IndexWriter(Directory d, Analyzer a, boolean create, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl)
        throws CorruptIndexException, LockObtainFailedException, IOException {
     this(d, new IndexWriterConfig(Version.LUCENE_31, a).setOpenMode(
@@ -989,6 +1006,7 @@ public class IndexWriter implements Closeable {
    *  IO error
    *  @deprecated use {@link #IndexWriter(Directory, IndexWriterConfig)} instead
    */
+  @Deprecated
   public IndexWriter(Directory d, Analyzer a, IndexDeletionPolicy deletionPolicy, MaxFieldLength mfl, IndexCommit commit)
        throws CorruptIndexException, LockObtainFailedException, IOException {
     this(d, new IndexWriterConfig(Version.LUCENE_31, a)
@@ -1176,6 +1194,7 @@ public class IndexWriter implements Closeable {
    * 
    * @deprecated use {@link IndexWriterConfig#setMergePolicy(MergePolicy)} instead.
    */
+  @Deprecated
   public void setMergePolicy(MergePolicy mp) {
     ensureOpen();
     if (mp == null)
@@ -1199,6 +1218,7 @@ public class IndexWriter implements Closeable {
    * 
    * @deprecated use {@link IndexWriterConfig#getMergePolicy()} instead
    */
+  @Deprecated
   public MergePolicy getMergePolicy() {
     ensureOpen();
     return mergePolicy;
@@ -1208,6 +1228,7 @@ public class IndexWriter implements Closeable {
    * Expert: set the merge scheduler used by this writer.
    * @deprecated use {@link IndexWriterConfig#setMergeScheduler(MergeScheduler)} instead
    */
+  @Deprecated
   synchronized public void setMergeScheduler(MergeScheduler mergeScheduler) throws CorruptIndexException, IOException {
     ensureOpen();
     if (mergeScheduler == null)
@@ -1231,6 +1252,7 @@ public class IndexWriter implements Closeable {
    * @see #setMergeScheduler(MergeScheduler)
    * @deprecated use {@link IndexWriterConfig#getMergeScheduler()} instead
    */
+  @Deprecated
   public MergeScheduler getMergeScheduler() {
     ensureOpen();
     return mergeScheduler;
@@ -1257,6 +1279,7 @@ public class IndexWriter implements Closeable {
    * LogByteSizeMergePolicy#setMaxMergeMB}.</p>
    * @deprecated use {@link LogMergePolicy#setMaxMergeDocs(int)} directly.
    */
+  @Deprecated
   public void setMaxMergeDocs(int maxMergeDocs) {
     getLogMergePolicy().setMaxMergeDocs(maxMergeDocs);
   }
@@ -1273,6 +1296,7 @@ public class IndexWriter implements Closeable {
    * @see #setMaxMergeDocs
    * @deprecated use {@link LogMergePolicy#getMaxMergeDocs()} directly.
    */
+  @Deprecated
   public int getMaxMergeDocs() {
     return getLogMergePolicy().getMaxMergeDocs();
   }
@@ -1292,6 +1316,7 @@ public class IndexWriter implements Closeable {
    * will be indexed for a field.
    * @deprecated use {@link IndexWriterConfig#setMaxFieldLength(int)} instead
    */
+  @Deprecated
   public void setMaxFieldLength(int maxFieldLength) {
     ensureOpen();
     this.maxFieldLength = maxFieldLength;
@@ -1309,6 +1334,7 @@ public class IndexWriter implements Closeable {
    * @see #setMaxFieldLength
    * @deprecated use {@link IndexWriterConfig#getMaxFieldLength()} instead
    */
+  @Deprecated
   public int getMaxFieldLength() {
     ensureOpen();
     return maxFieldLength;
@@ -1334,6 +1360,7 @@ public class IndexWriter implements Closeable {
    * @see #setRAMBufferSizeMB
    * @deprecated use {@link IndexWriterConfig#setMaxBufferedDocs(int)} instead.
    */
+  @Deprecated
   public void setMaxBufferedDocs(int maxBufferedDocs) {
     ensureOpen();
     if (maxBufferedDocs != DISABLE_AUTO_FLUSH && maxBufferedDocs < 2)
@@ -1378,6 +1405,7 @@ public class IndexWriter implements Closeable {
    * @see #setMaxBufferedDocs
    * @deprecated use {@link IndexWriterConfig#getMaxBufferedDocs()} instead.
    */
+  @Deprecated
   public int getMaxBufferedDocs() {
     ensureOpen();
     return docWriter.getMaxBufferedDocs();
@@ -1422,6 +1450,7 @@ public class IndexWriter implements Closeable {
    * when maxBufferedDocs is already disabled
    * @deprecated use {@link IndexWriterConfig#setRAMBufferSizeMB(double)} instead.
    */
+  @Deprecated
   public void setRAMBufferSizeMB(double mb) {
     if (mb > 2048.0) {
       throw new IllegalArgumentException("ramBufferSize " + mb + " is too large; should be comfortably less than 2048");
@@ -1444,6 +1473,7 @@ public class IndexWriter implements Closeable {
    * Returns the value set by {@link #setRAMBufferSizeMB} if enabled.
    * @deprecated use {@link IndexWriterConfig#getRAMBufferSizeMB()} instead.
    */
+  @Deprecated
   public double getRAMBufferSizeMB() {
     return docWriter.getRAMBufferSizeMB();
   }
@@ -1461,6 +1491,7 @@ public class IndexWriter implements Closeable {
    * @see #setRAMBufferSizeMB
    * @deprecated use {@link IndexWriterConfig#setMaxBufferedDeleteTerms(int)} instead.
    */
+  @Deprecated
   public void setMaxBufferedDeleteTerms(int maxBufferedDeleteTerms) {
     ensureOpen();
     if (maxBufferedDeleteTerms != DISABLE_AUTO_FLUSH
@@ -1481,6 +1512,7 @@ public class IndexWriter implements Closeable {
    * @see #setMaxBufferedDeleteTerms
    * @deprecated use {@link IndexWriterConfig#getMaxBufferedDeleteTerms()} instead
    */
+  @Deprecated
   public int getMaxBufferedDeleteTerms() {
     ensureOpen();
     return docWriter.getMaxBufferedDeleteTerms();
@@ -1502,6 +1534,7 @@ public class IndexWriter implements Closeable {
    * <p>This must never be less than 2.  The default value is 10.
    * @deprecated use {@link LogMergePolicy#setMergeFactor(int)} directly.
    */
+  @Deprecated
   public void setMergeFactor(int mergeFactor) {
     getLogMergePolicy().setMergeFactor(mergeFactor);
   }
@@ -1519,6 +1552,7 @@ public class IndexWriter implements Closeable {
    * @see #setMergeFactor
    * @deprecated use {@link LogMergePolicy#getMergeFactor()} directly.
    */
+  @Deprecated
   public int getMergeFactor() {
     return getLogMergePolicy().getMergeFactor();
   }
@@ -1579,6 +1613,7 @@ public class IndexWriter implements Closeable {
    * @see #setDefaultWriteLockTimeout to change the default value for all instances of IndexWriter.
    * @deprecated use {@link IndexWriterConfig#setWriteLockTimeout(long)} instead
    */
+  @Deprecated
   public void setWriteLockTimeout(long writeLockTimeout) {
     ensureOpen();
     this.writeLockTimeout = writeLockTimeout;
@@ -1592,6 +1627,7 @@ public class IndexWriter implements Closeable {
    * @see #setWriteLockTimeout
    * @deprecated use {@link IndexWriterConfig#getWriteLockTimeout()}
    */
+  @Deprecated
   public long getWriteLockTimeout() {
     ensureOpen();
     return writeLockTimeout;
@@ -1602,6 +1638,7 @@ public class IndexWriter implements Closeable {
    * milliseconds).
    * @deprecated use {@link IndexWriterConfig#setDefaultWriteLockTimeout(long)} instead
    */
+  @Deprecated
   public static void setDefaultWriteLockTimeout(long writeLockTimeout) {
     IndexWriterConfig.setDefaultWriteLockTimeout(writeLockTimeout);
   }
@@ -1612,6 +1649,7 @@ public class IndexWriter implements Closeable {
    * @see #setDefaultWriteLockTimeout
    * @deprecated use {@link IndexWriterConfig#getDefaultWriteLockTimeout()} instead
    */
+  @Deprecated
   public static long getDefaultWriteLockTimeout() {
     return IndexWriterConfig.getDefaultWriteLockTimeout();
   }
@@ -4425,6 +4463,7 @@ public class IndexWriter implements Closeable {
    *             {@link IndexWriterConfig#UNLIMITED_FIELD_LENGTH} or your own
    *             value.
    */
+  @Deprecated
   public static final class MaxFieldLength {
 
     private int limit;
@@ -4497,6 +4536,7 @@ public class IndexWriter implements Closeable {
    *             {@link IndexWriterConfig#setMergedSegmentWarmer}
    *             instead.
    */
+  @Deprecated
   public void setMergedSegmentWarmer(IndexReaderWarmer warmer) {
     mergedSegmentWarmer = warmer;
     // Required so config.getMergedSegmentWarmer returns the right value. But
@@ -4509,6 +4549,7 @@ public class IndexWriter implements Closeable {
    * 
    * @deprecated use {@link IndexWriterConfig#getMergedSegmentWarmer()} instead.
    */
+  @Deprecated
   public IndexReaderWarmer getMergedSegmentWarmer() {
     return mergedSegmentWarmer;
   }

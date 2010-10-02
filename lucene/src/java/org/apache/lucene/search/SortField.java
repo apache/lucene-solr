@@ -140,6 +140,7 @@ implements Serializable {
    *  
    *  @deprecated use EntryCreator version
    */
+  @Deprecated
   public SortField (String field, FieldCache.Parser parser) {
     this(field, parser, false);
   }
@@ -157,6 +158,7 @@ implements Serializable {
    *  
    *  @deprecated use EntryCreator version
    */
+  @Deprecated
   public SortField (String field, FieldCache.Parser parser, boolean reverse) {
     if (field == null) {
       throw new IllegalArgumentException("field can only be null when type is SCORE or DOC");
@@ -315,6 +317,7 @@ implements Serializable {
    * @return An instance of a {@link FieldCache} parser, or <code>null</code>.
    * @deprecated use getEntryCreator()
    */
+  @Deprecated
   public FieldCache.Parser getParser() {
     return (creator==null) ? null : creator.getParser();
   }
