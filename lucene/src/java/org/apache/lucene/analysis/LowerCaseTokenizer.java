@@ -104,6 +104,7 @@ public final class LowerCaseTokenizer extends LetterTokenizer {
    * @deprecated use {@link #LowerCaseTokenizer(AttributeSource, Reader)}
    *             instead. This will be removed in Lucene 4.0.
    */
+  @Deprecated
   public LowerCaseTokenizer(AttributeSource source, Reader in) {
     super(Version.LUCENE_30, source, in);
   }
@@ -115,6 +116,7 @@ public final class LowerCaseTokenizer extends LetterTokenizer {
    * @deprecated use {@link #LowerCaseTokenizer(AttributeSource.AttributeFactory, Reader)}
    *             instead. This will be removed in Lucene 4.0.
    */
+  @Deprecated
   public LowerCaseTokenizer(AttributeFactory factory, Reader in) {
     super(Version.LUCENE_30, factory, in);
   }

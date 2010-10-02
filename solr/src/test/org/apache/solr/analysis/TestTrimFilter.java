@@ -78,6 +78,7 @@ public class TestTrimFilter extends BaseTokenTestCase {
   /**
    * @deprecated does not support custom attributes
    */
+  @Deprecated
   private static class IterTokenStream extends TokenStream {
     final Token tokens[];
     int index = 0;

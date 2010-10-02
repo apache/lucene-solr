@@ -154,12 +154,15 @@ public class QueryParser implements QueryParserConstants {
   Collator rangeCollator = null;
 
   /** @deprecated remove when getFieldQuery is removed */
+  @Deprecated
   private static final VirtualMethod<QueryParser> getFieldQueryMethod =
     new VirtualMethod<QueryParser>(QueryParser.class, "getFieldQuery", String.class, String.class);
   /** @deprecated remove when getFieldQuery is removed */
+  @Deprecated
   private static final VirtualMethod<QueryParser> getFieldQueryWithQuotedMethod =
     new VirtualMethod<QueryParser>(QueryParser.class, "getFieldQuery", String.class, String.class, boolean.class);
   /** @deprecated remove when getFieldQuery is removed */
+  @Deprecated
   private final boolean hasNewAPI =
     VirtualMethod.compareImplementationDistance(getClass(),
         getFieldQueryWithQuotedMethod, getFieldQueryMethod) >= 0; // its ok for both to be overridden
@@ -1584,12 +1587,6 @@ public class QueryParser implements QueryParserConstants {
     finally { jj_save(0, xla); }
   }
 
-  private boolean jj_3R_2() {
-    if (jj_scan_token(TERM)) return true;
-    if (jj_scan_token(COLON)) return true;
-    return false;
-  }
-
   private boolean jj_3_1() {
     Token xsp;
     xsp = jj_scanpos;
@@ -1602,6 +1599,12 @@ public class QueryParser implements QueryParserConstants {
 
   private boolean jj_3R_3() {
     if (jj_scan_token(STAR)) return true;
+    if (jj_scan_token(COLON)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_2() {
+    if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
     return false;
   }

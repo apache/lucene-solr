@@ -91,6 +91,7 @@ public class LetterTokenizer extends CharTokenizer {
    * @deprecated use {@link #LetterTokenizer(Version, Reader)} instead. This
    *             will be removed in Lucene 4.0.
    */
+  @Deprecated
   public LetterTokenizer(Reader in) {
     super(Version.LUCENE_30, in);
   }
@@ -101,6 +102,7 @@ public class LetterTokenizer extends CharTokenizer {
    * use {@link #LetterTokenizer(Version, AttributeSource, Reader)} instead.
    * This will be removed in Lucene 4.0.
    */
+  @Deprecated
   public LetterTokenizer(AttributeSource source, Reader in) {
     super(Version.LUCENE_30, source, in);
   }
@@ -112,6 +114,7 @@ public class LetterTokenizer extends CharTokenizer {
    * @deprecated use {@link #LetterTokenizer(Version, AttributeSource.AttributeFactory, Reader)}
    *             instead. This will be removed in Lucene 4.0.
    */
+  @Deprecated
   public LetterTokenizer(AttributeFactory factory, Reader in) {
     super(Version.LUCENE_30, factory, in);
   }
