@@ -30,6 +30,7 @@ import java.io.IOException;
  *  @lucene.experimental */
 public final class BytesRef implements Comparable<BytesRef>, Externalizable {
 
+  static final int HASH_PRIME = 31;
   public static final byte[] EMPTY_BYTES = new byte[0]; 
 
   /** The contents of the BytesRef. Should never be {@code null}. */
@@ -182,11 +183,10 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
    */
   @Override
   public int hashCode() {
-    final int prime = 31;
     int result = 0;
     final int end = offset + length;
     for(int i=offset;i<end;i++) {
-      result = prime * result + bytes[i];
+      result = HASH_PRIME * result + bytes[i];
     }
     return result;
   }

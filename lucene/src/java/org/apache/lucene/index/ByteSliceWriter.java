@@ -1,6 +1,7 @@
 package org.apache.lucene.index;
 
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.ByteBlockPool;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -42,9 +43,9 @@ final class ByteSliceWriter extends DataOutput {
    * Set up the writer to write at address.
    */
   public void init(int address) {
-    slice = pool.buffers[address >> DocumentsWriter.BYTE_BLOCK_SHIFT];
+    slice = pool.buffers[address >> ByteBlockPool.BYTE_BLOCK_SHIFT];
     assert slice != null;
-    upto = address & DocumentsWriter.BYTE_BLOCK_MASK;
+    upto = address & ByteBlockPool.BYTE_BLOCK_MASK;
     offset0 = address;
     assert upto < slice.length;
   }

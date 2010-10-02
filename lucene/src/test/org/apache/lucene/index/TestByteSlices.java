@@ -14,44 +14,16 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
+
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.RecyclingByteBlockAllocator;
 
 public class TestByteSlices extends LuceneTestCase {
 
-  private static class ByteBlockAllocator extends ByteBlockPool.Allocator {
-    ArrayList<byte[]> freeByteBlocks = new ArrayList<byte[]>();
-    
-    /* Allocate another byte[] from the shared pool */
-    @Override
-    synchronized byte[] getByteBlock() {
-      final int size = freeByteBlocks.size();
-      final byte[] b;
-      if (0 == size)
-        b = new byte[DocumentsWriter.BYTE_BLOCK_SIZE];
-      else
-        b =  freeByteBlocks.remove(size-1);
-      return b;
-    }
-
-    /* Return a byte[] to the pool */
-    @Override
-    synchronized void recycleByteBlocks(byte[][] blocks, int start, int end) {
-      for(int i=start;i<end;i++)
-        freeByteBlocks.add(blocks[i]);
-    }
-
-    @Override
-    synchronized void recycleByteBlocks(List<byte[]> blocks) {
-      final int size = blocks.size();
-      for(int i=0;i<size;i++)
-        freeByteBlocks.add(blocks.get(i));
-    }
-  }
-
   public void testBasic() throws Throwable {
-    ByteBlockPool pool = new ByteBlockPool(new ByteBlockAllocator());
+    ByteBlockPool pool = new ByteBlockPool(new RecyclingByteBlockAllocator(ByteBlockPool.BYTE_BLOCK_SIZE, Integer.MAX_VALUE));
 
     final int NUM_STREAM = 100 * RANDOM_MULTIPLIER;
 

@@ -144,7 +144,7 @@ final class FreqProxTermsWriterPerField extends TermsHashConsumerPerField implem
       }
     } else {
       if (docState.docID != postings.lastDocIDs[termID]) {
-        assert docState.docID > postings.lastDocIDs[termID];
+        assert docState.docID > postings.lastDocIDs[termID]:"id: "+docState.docID + " postings ID: "+ postings.lastDocIDs[termID] + " termID: "+termID;
         // Term not yet seen in the current doc but previously
         // seen in other doc(s) since the last flush
 

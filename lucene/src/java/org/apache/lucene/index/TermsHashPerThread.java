@@ -17,8 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.UnicodeUtil;
 
 import java.io.IOException;
 
@@ -26,20 +26,17 @@ final class TermsHashPerThread extends InvertedDocConsumerPerThread {
 
   final TermsHash termsHash;
   final TermsHashConsumerPerThread consumer;
-  final TermsHashPerThread nextPerThread;
+  final TermsHashPerThread nextPerThread; // the secondary is currently consumed by TermVectorsWriter 
+  // see secondary entry point in TermsHashPerField#add(int)
 
   final IntBlockPool intPool;
   final ByteBlockPool bytePool;
   final ByteBlockPool termBytePool;
+  
   final boolean primary;
   final DocumentsWriter.DocState docState;
-
-  // Used when comparing postings via termRefComp, in TermsHashPerField
-  final BytesRef tr1 = new BytesRef();
-  final BytesRef tr2 = new BytesRef();
-
-  // Used by perField:
-  final BytesRef utf8 = new BytesRef(10);
+  // Used by perField to obtain terms from the analysis chain
+  final BytesRef termBytesRef = new BytesRef(10);
 
   public TermsHashPerThread(DocInverterPerThread docInverterPerThread, final TermsHash termsHash, final TermsHash nextTermsHash, final TermsHashPerThread primaryPerThread) {
     docState = docInverterPerThread.docState;
@@ -48,21 +45,18 @@ final class TermsHashPerThread extends InvertedDocConsumerPerThread {
     this.consumer = termsHash.consumer.addThread(this);
 
     intPool = new IntBlockPool(termsHash.docWriter);
-    bytePool = new ByteBlockPool(termsHash.docWriter.byteBlockAllocator);
-
-    if (nextTermsHash != null) {
+    bytePool = new ByteBlockPool(termsHash.docWriter.byteBlockAllocator); // use the allocator from the docWriter which tracks the used bytes 
+    primary = nextTermsHash != null;
+    if (primary) {
       // We are primary
-      primary = true;
       termBytePool = bytePool;
+      nextPerThread = nextTermsHash.addThread(docInverterPerThread, this); // this will be the primaryPerThread in the secondary
+      assert nextPerThread != null;
     } else {
-      primary = false;
-      termBytePool = primaryPerThread.bytePool;
-    }
-
-    if (nextTermsHash != null)
-      nextPerThread = nextTermsHash.addThread(docInverterPerThread, this);
-    else
+      assert primaryPerThread != null;
+      termBytePool = primaryPerThread.bytePool; // we are secondary and share the byte pool with the primary 
       nextPerThread = null;
+    }
   }
 
   @Override
@@ -74,30 +68,25 @@ final class TermsHashPerThread extends InvertedDocConsumerPerThread {
   synchronized public void abort() {
     reset(true);
     consumer.abort();
-    if (nextPerThread != null)
+    if (primary)
       nextPerThread.abort();
   }
 
   @Override
   public void startDocument() throws IOException {
     consumer.startDocument();
-    if (nextPerThread != null)
+    if (primary)
       nextPerThread.consumer.startDocument();
   }
 
   @Override
   public DocumentsWriter.DocWriter finishDocument() throws IOException {
     final DocumentsWriter.DocWriter doc = consumer.finishDocument();
-
-    final DocumentsWriter.DocWriter doc2;
-    if (nextPerThread != null)
-      doc2 = nextPerThread.consumer.finishDocument();
-    else
-      doc2 = null;
+    final DocumentsWriter.DocWriter docFromSecondary = primary? nextPerThread.consumer.finishDocument():null;
     if (doc == null)
-      return doc2;
+      return docFromSecondary;
     else {
-      doc.setNext(doc2);
+      doc.setNext(docFromSecondary);
       return doc;
     }
   }
@@ -106,9 +95,5 @@ final class TermsHashPerThread extends InvertedDocConsumerPerThread {
   void reset(boolean recyclePostings) {
     intPool.reset();
     bytePool.reset();
-
-    if (primary) {
-      bytePool.reset();
-    }
   }
 }

@@ -21,6 +21,7 @@ import java.io.IOException;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
+import org.apache.lucene.util.ByteBlockPool;
 
 /* IndexInput that knows how to read the byte slices written
  * by Posting and PostingVector.  We read the bytes in
@@ -48,16 +49,16 @@ final class ByteSliceReader extends DataInput {
     this.endIndex = endIndex;
 
     level = 0;
-    bufferUpto = startIndex / DocumentsWriter.BYTE_BLOCK_SIZE;
-    bufferOffset = bufferUpto * DocumentsWriter.BYTE_BLOCK_SIZE;
+    bufferUpto = startIndex / ByteBlockPool.BYTE_BLOCK_SIZE;
+    bufferOffset = bufferUpto * ByteBlockPool.BYTE_BLOCK_SIZE;
     buffer = pool.buffers[bufferUpto];
-    upto = startIndex & DocumentsWriter.BYTE_BLOCK_MASK;
+    upto = startIndex & ByteBlockPool.BYTE_BLOCK_MASK;
 
     final int firstSize = ByteBlockPool.levelSizeArray[0];
 
     if (startIndex+firstSize >= endIndex) {
       // There is only this one slice to read
-      limit = endIndex & DocumentsWriter.BYTE_BLOCK_MASK;
+      limit = endIndex & ByteBlockPool.BYTE_BLOCK_MASK;
     } else
       limit = upto+firstSize-4;
   }
@@ -102,11 +103,11 @@ final class ByteSliceReader extends DataInput {
     level = ByteBlockPool.nextLevelArray[level];
     final int newSize = ByteBlockPool.levelSizeArray[level];
 
-    bufferUpto = nextIndex / DocumentsWriter.BYTE_BLOCK_SIZE;
-    bufferOffset = bufferUpto * DocumentsWriter.BYTE_BLOCK_SIZE;
+    bufferUpto = nextIndex / ByteBlockPool.BYTE_BLOCK_SIZE;
+    bufferOffset = bufferUpto * ByteBlockPool.BYTE_BLOCK_SIZE;
 
     buffer = pool.buffers[bufferUpto];
-    upto = nextIndex & DocumentsWriter.BYTE_BLOCK_MASK;
+    upto = nextIndex & ByteBlockPool.BYTE_BLOCK_MASK;
 
     if (nextIndex + newSize >= endIndex) {
       // We are advancing to the final slice

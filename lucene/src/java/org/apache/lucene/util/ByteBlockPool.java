@@ -1,4 +1,4 @@
-package org.apache.lucene.index;
+package org.apache.lucene.util;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -34,26 +34,42 @@ package org.apache.lucene.index;
  * hit a non-zero byte. */
 
 import java.util.Arrays;
-import org.apache.lucene.util.BytesRef;
+
+
 import java.util.List;
 import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
-import org.apache.lucene.util.ArrayUtil;
 
-final class ByteBlockPool {
+public final class ByteBlockPool {
+  public final static int BYTE_BLOCK_SHIFT = 15;
+  public final static int BYTE_BLOCK_SIZE = 1 << BYTE_BLOCK_SHIFT;
+  public final static int BYTE_BLOCK_MASK = BYTE_BLOCK_SIZE - 1;
 
-  abstract static class Allocator {
-    abstract void recycleByteBlocks(byte[][] blocks, int start, int end);
-    abstract void recycleByteBlocks(List<byte[]> blocks);
-    abstract byte[] getByteBlock();
+  public abstract static class Allocator {
+    protected final int blockSize;
+
+    public Allocator(int blockSize) {
+      this.blockSize = blockSize;
+    }
+
+    public abstract void recycleByteBlocks(byte[][] blocks, int start, int end);
+
+    public void recycleByteBlocks(List<byte[]> blocks) {
+      final byte[][] b = blocks.toArray(new byte[blocks.size()][]);
+      recycleByteBlocks(b, 0, b.length);
+    }
+
+    public byte[] getByteBlock() {
+      return new byte[blockSize];
+    }
   }
 
   public byte[][] buffers = new byte[10][];
 
   int bufferUpto = -1;                        // Which buffer we are upto
-  public int byteUpto = DocumentsWriter.BYTE_BLOCK_SIZE;             // Where we are in head buffer
+  public int byteUpto = BYTE_BLOCK_SIZE;             // Where we are in head buffer
 
   public byte[] buffer;                              // Current head buffer
-  public int byteOffset = -DocumentsWriter.BYTE_BLOCK_SIZE;          // Current head offset
+  public int byteOffset = -BYTE_BLOCK_SIZE;          // Current head offset
 
   private final Allocator allocator;
 
@@ -95,11 +111,11 @@ final class ByteBlockPool {
     bufferUpto++;
 
     byteUpto = 0;
-    byteOffset += DocumentsWriter.BYTE_BLOCK_SIZE;
+    byteOffset += BYTE_BLOCK_SIZE;
   }
 
   public int newSlice(final int size) {
-    if (byteUpto > DocumentsWriter.BYTE_BLOCK_SIZE-size)
+    if (byteUpto > BYTE_BLOCK_SIZE-size)
       nextBuffer();
     final int upto = byteUpto;
     byteUpto += size;
@@ -112,9 +128,10 @@ final class ByteBlockPool {
   // is just a compact way to encode X+1 with a max.  Second
   // array is the length of each slice, ie first slice is 5
   // bytes, next slice is 14 bytes, etc.
-  final static int[] nextLevelArray = {1, 2, 3, 4, 5, 6, 7, 8, 9, 9};
-  final static int[] levelSizeArray = {5, 14, 20, 30, 40, 40, 80, 80, 120, 200};
-  final static int FIRST_LEVEL_SIZE = levelSizeArray[0];
+  
+  public final static int[] nextLevelArray = {1, 2, 3, 4, 5, 6, 7, 8, 9, 9};
+  public final static int[] levelSizeArray = {5, 14, 20, 30, 40, 40, 80, 80, 120, 200};
+  public final static int FIRST_LEVEL_SIZE = levelSizeArray[0];
 
   public int allocSlice(final byte[] slice, final int upto) {
 
@@ -123,7 +140,7 @@ final class ByteBlockPool {
     final int newSize = levelSizeArray[newLevel];
 
     // Maybe allocate another block
-    if (byteUpto > DocumentsWriter.BYTE_BLOCK_SIZE-newSize)
+    if (byteUpto > BYTE_BLOCK_SIZE-newSize)
       nextBuffer();
 
     final int newUpto = byteUpto;
@@ -150,9 +167,9 @@ final class ByteBlockPool {
 
   // Fill in a BytesRef from term's length & bytes encoded in
   // byte block
-  final BytesRef setBytesRef(BytesRef term, int textStart) {
-    final byte[] bytes = term.bytes = buffers[textStart >> DocumentsWriter.BYTE_BLOCK_SHIFT];
-    int pos = textStart & DocumentsWriter.BYTE_BLOCK_MASK;
+  public final BytesRef setBytesRef(BytesRef term, int textStart) {
+    final byte[] bytes = term.bytes = buffers[textStart >> BYTE_BLOCK_SHIFT];
+    int pos = textStart & BYTE_BLOCK_MASK;
     if ((bytes[pos] & 0x80) == 0) {
       // length is 1 byte
       term.length = bytes[pos];

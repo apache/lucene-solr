@@ -77,6 +77,7 @@ import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
+import org.junit.Assume;
 
 public class TestIndexWriter extends LuceneTestCase {
 

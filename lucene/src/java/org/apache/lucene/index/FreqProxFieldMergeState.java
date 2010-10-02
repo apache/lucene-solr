@@ -19,6 +19,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Comparator;
+
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 
 import org.apache.lucene.index.FreqProxTermsWriterPerField.FreqProxPostingsArray;
@@ -50,7 +52,7 @@ final class FreqProxFieldMergeState {
 
   public FreqProxFieldMergeState(FreqProxTermsWriterPerField field, Comparator<BytesRef> termComp) {
     this.field = field;
-    this.numPostings = field.termsHashPerField.numPostings;
+    this.numPostings = field.termsHashPerField.bytesHash.size();
     this.bytePool = field.perThread.termsHashPerThread.bytePool;
     this.termIDs = field.termsHashPerField.sortPostings(termComp);
     this.postings = (FreqProxPostingsArray) field.termsHashPerField.postingsArray;

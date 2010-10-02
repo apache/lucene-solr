@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.store.IndexOutput;
+import org.apache.lucene.util.ByteBlockPool;
 import org.apache.lucene.util.BytesRef;
 
 final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
@@ -80,7 +81,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
       assert perThread.doc.docID == docState.docID;
 
-      if (termsHashPerField.numPostings != 0) {
+      if (termsHashPerField.bytesHash.size() != 0) {
         // Only necessary if previous doc hit a
         // non-aborting exception while writing vectors in
         // this field:
@@ -106,7 +107,7 @@ final class TermVectorsTermsWriterPerField extends TermsHashConsumerPerField {
 
     assert docState.testPoint("TermVectorsTermsWriterPerField.finish start");
 
-    final int numPostings = termsHashPerField.numPostings;
+    final int numPostings = termsHashPerField.bytesHash.size();
 
     final BytesRef flushTerm = perThread.flushTerm;
 

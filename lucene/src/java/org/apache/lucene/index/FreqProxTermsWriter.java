@@ -67,7 +67,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
 
       for (final TermsHashConsumerPerField i : fields) {
         final FreqProxTermsWriterPerField perField = (FreqProxTermsWriterPerField) i;
-        if (perField.termsHashPerField.numPostings > 0)
+        if (perField.termsHashPerField.bytesHash.size() > 0)
           allFields.add(perField);
       }
     }
@@ -116,7 +116,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
 
       for(int i=0;i<fields.length;i++) {
         TermsHashPerField perField = fields[i].termsHashPerField;
-        int numPostings = perField.numPostings;
+        int numPostings = perField.bytesHash.size();
         perField.reset();
         perField.shrinkHash(numPostings);
         fields[i].reset();
