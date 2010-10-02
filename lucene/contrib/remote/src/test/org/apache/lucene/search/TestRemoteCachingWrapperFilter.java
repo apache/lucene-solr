@@ -17,13 +17,17 @@ package org.apache.lucene.search;
  * limitations under the License.
  */
 
+import java.util.Map;
+
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.FilterManager.FilterItem;
 import org.apache.lucene.store.Directory;
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -57,6 +61,17 @@ public class TestRemoteCachingWrapperFilter extends RemoteTestCase {
     writer.close();
     local = new IndexSearcher(indexStore, true);
     startServer(local);
+  }
+  
+  @Before
+  public void setUp () throws Exception {
+    super.setUp();
+    // to support test iteration > 1
+    Map<Integer, FilterItem> cache = FilterManager.getInstance().cache;
+    synchronized(cache){
+      cache.clear();
+
+    }
   }
 
   @AfterClass
