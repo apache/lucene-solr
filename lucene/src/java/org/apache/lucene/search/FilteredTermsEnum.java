@@ -183,6 +183,7 @@ public abstract class FilteredTermsEnum extends TermsEnum {
     tenum.cacheCurrentTerm();
   }
     
+  @SuppressWarnings("fallthrough")
   @Override
   public BytesRef next() throws IOException {
     if (tenum == null)

@@ -180,12 +180,15 @@ public class QueryParser {
   Collator rangeCollator = null;
 
   /** @deprecated remove when getFieldQuery is removed */
+  @Deprecated
   private static final VirtualMethod<QueryParser> getFieldQueryMethod =
     new VirtualMethod<QueryParser>(QueryParser.class, "getFieldQuery", String.class, String.class);
   /** @deprecated remove when getFieldQuery is removed */
+  @Deprecated
   private static final VirtualMethod<QueryParser> getFieldQueryWithQuotedMethod =
     new VirtualMethod<QueryParser>(QueryParser.class, "getFieldQuery", String.class, String.class, boolean.class);
   /** @deprecated remove when getFieldQuery is removed */
+  @Deprecated
   private final boolean hasNewAPI = 
     VirtualMethod.compareImplementationDistance(getClass(), 
         getFieldQueryWithQuotedMethod, getFieldQueryMethod) >= 0; // its ok for both to be overridden

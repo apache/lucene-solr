@@ -334,6 +334,7 @@ public class TestSynonymFilter extends BaseTokenStreamTestCase {
    * a,1,10,11  => "a" with positionIncrement=1, startOffset=10, endOffset=11
    * @deprecated does not support attributes api
    */
+  @Deprecated
   private List<Token> tokens(String str) {
     String[] arr = str.split(" ");
     List<Token> result = new ArrayList<Token>();
@@ -379,6 +380,7 @@ public class TestSynonymFilter extends BaseTokenStreamTestCase {
   /**
    * @deprecated does not support custom attributes
    */
+  @Deprecated
   private static class IterTokenStream extends TokenStream {
     final Token tokens[];
     int index = 0;

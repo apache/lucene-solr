@@ -98,6 +98,7 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
    * TODO: rewrite tests not to use string comparison.
    * @deprecated only tests TermAttribute!
    */
+  @Deprecated
   private static String tsToString(TokenStream in) throws IOException {
     StringBuilder out = new StringBuilder();
     CharTermAttribute termAtt = in.addAttribute(CharTermAttribute.class);

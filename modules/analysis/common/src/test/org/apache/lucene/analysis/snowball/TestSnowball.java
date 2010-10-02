@@ -73,6 +73,7 @@ public class TestSnowball extends BaseTokenStreamTestCase {
    * Test turkish lowercasing (old buggy behavior)
    * @deprecated Remove this when support for 3.0 indexes is no longer required
    */
+  @Deprecated
   public void testTurkishBWComp() throws Exception {
     Analyzer a = new SnowballAnalyzer(Version.LUCENE_30, "Turkish");
     // AĞACI in turkish lowercases to ağacı, but with lowercase filter ağaci.

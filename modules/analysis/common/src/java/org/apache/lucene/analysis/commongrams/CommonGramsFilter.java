@@ -62,11 +62,13 @@ public final class CommonGramsFilter extends TokenFilter {
   private State savedState;
 
   /** @deprecated Use {@link #CommonGramsFilter(Version, TokenStream, Set)} instead */
+  @Deprecated
   public CommonGramsFilter(TokenStream input, Set<?> commonWords) {
     this(Version.LUCENE_29, input, commonWords);
   }
   
   /** @deprecated Use {@link #CommonGramsFilter(Version, TokenStream, Set, boolean)} instead */
+  @Deprecated
   public CommonGramsFilter(TokenStream input, Set<?> commonWords, boolean ignoreCase) {
     this(Version.LUCENE_29, input, commonWords, ignoreCase);
   }
