@@ -256,6 +256,7 @@ public abstract class Directory implements Closeable {
    * }
    * </pre>
    */
+  @Deprecated
   public static void copy(Directory src, Directory dest, boolean closeDirSrc) throws IOException {
     IndexFileNameFilter filter = IndexFileNameFilter.getFilter();
     for (String file : src.listAll()) {

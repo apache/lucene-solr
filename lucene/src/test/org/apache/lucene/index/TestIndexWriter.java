@@ -1240,6 +1240,7 @@ public class TestIndexWriter extends LuceneTestCase {
      *             removed because changing ram buffer settings during a write
      *             session won't be possible.
      */
+    @Deprecated
     public void testChangingRAMBuffer() throws IOException {
       MockDirectoryWrapper dir = newDirectory();      
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
@@ -1298,6 +1299,7 @@ public class TestIndexWriter extends LuceneTestCase {
      * @deprecated after setters on IW go away, this test can be deleted because
      *             changing those settings on IW won't be possible.
      */
+    @Deprecated
     public void testChangingRAMBuffer2() throws IOException {
       MockDirectoryWrapper dir = newDirectory();      
       IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(
