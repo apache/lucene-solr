@@ -304,7 +304,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
           final float similarity = 1.0f - ((float) i / (float) 
               (Math.min(codePointCount, termLength)));
           if (similarity > minSimilarity) {
-            boostAtt.setBoost((float) ((similarity - minSimilarity) * scale_factor));
+            boostAtt.setBoost((similarity - minSimilarity) * scale_factor);
             return AcceptStatus.YES_AND_SEEK;
           } else {
             return AcceptStatus.NO_AND_SEEK;
@@ -380,7 +380,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
         UnicodeUtil.UTF8toUTF32(term, utf32);
         final float similarity = similarity(utf32.ints, realPrefixLength, utf32.length - realPrefixLength);
         if (similarity > minSimilarity) {
-          boostAtt.setBoost((float)((similarity - minSimilarity) * scale_factor));
+          boostAtt.setBoost((similarity - minSimilarity) * scale_factor);
           return AcceptStatus.YES;
         } else return AcceptStatus.NO;
       } else {

@@ -101,7 +101,7 @@ public final class PagedBytes {
         b.length = block[offset];
         b.offset = offset+1;
       } else {
-        b.length = (((int) (block[offset] & 0x7f)) << 8) | (block[1+offset] & 0xff);
+        b.length = ((block[offset] & 0x7f) << 8) | (block[1+offset] & 0xff);
         b.offset = offset+2;
         assert b.length > 0;
       }
@@ -118,7 +118,7 @@ public final class PagedBytes {
         b.length = block[offset];
         b.offset = offset+1;
       } else {
-        b.length = (((int) (block[offset] & 0x7f)) << 8) | (block[1+offset] & 0xff);
+        b.length = ((block[offset] & 0x7f) << 8) | (block[1+offset] & 0xff);
         b.offset = offset+2;
         assert b.length > 0;
       }
@@ -138,7 +138,7 @@ public final class PagedBytes {
         b.offset = offset+1;
         start += 1L + b.length;
       } else {
-        b.length = (((int) (block[offset] & 0x7f)) << 8) | (block[1+offset] & 0xff);
+        b.length = ((block[offset] & 0x7f) << 8) | (block[1+offset] & 0xff);
         b.offset = offset+2;
         start += 2L + b.length;
         assert b.length > 0;
@@ -216,7 +216,7 @@ public final class PagedBytes {
         byteCount -= left;
         bytesUpto += left;
       } else {
-        System.arraycopy(bytes.bytes, bytesUpto, currentBlock, upto, (int) byteCount);
+        System.arraycopy(bytes.bytes, bytesUpto, currentBlock, upto, byteCount);
         upto += byteCount;
         break;
       }
