@@ -257,6 +257,7 @@
              sourcepath=""
              classpathref="@{classpathref}">
          <nested />
+      	<compilerarg line="-Xlint -Xlint:-deprecation -Xlint:-serial"/>
       </javac>
     </sequential>
   </macrodef>
