@@ -334,7 +334,7 @@ public class SolrPluginUtils {
       String otherQueryS = req.getParam("explainOther");
       if (otherQueryS != null && otherQueryS.length() > 0) {
         DocList otherResults = doSimpleQuery
-          (otherQueryS,req.getSearcher(), req.getSchema(),0,10);
+          (otherQueryS,req,0,10);
         dbg.add("otherQuery",otherQueryS);
         dbg.add("explainOther", getExplainList
                 (query, otherResults,
@@ -411,7 +411,7 @@ public class SolrPluginUtils {
       String otherQueryS = req.getParams().get(org.apache.solr.common.params.CommonParams.EXPLAIN_OTHER);
       if (otherQueryS != null && otherQueryS.length() > 0) {
         DocList otherResults = doSimpleQuery
-          (otherQueryS,req.getSearcher(), req.getSchema(),0,10);
+          (otherQueryS,req,0,10);
         dbg.add("otherQuery",otherQueryS);
         dbg.add("explainOther", getExplainList
                 (query, otherResults,
@@ -456,26 +456,30 @@ public class SolrPluginUtils {
   }
 
   /**
-   * Executes a basic query in lucene syntax
+   * Executes a basic query
    */
   public static DocList doSimpleQuery(String sreq,
-                                      SolrIndexSearcher searcher,
-                                      IndexSchema schema,
+                                      SolrQueryRequest req,
                                       int start, int limit) throws IOException {
     List<String> commands = StrUtils.splitSmart(sreq,';');
 
     String qs = commands.size() >= 1 ? commands.get(0) : "";
-    Query query = QueryParsing.parseQuery(qs, schema);
+    try {
+    Query query = QParser.getParser(qs, null, req).getQuery();
 
     // If the first non-query, non-filter command is a simple sort on an indexed field, then
     // we can use the Lucene sort ability.
     Sort sort = null;
     if (commands.size() >= 2) {
-      sort = QueryParsing.parseSort(commands.get(1), schema);
+      sort = QueryParsing.parseSort(commands.get(1), req);
     }
 
-    DocList results = searcher.getDocList(query,(DocSet)null, sort, start, limit);
+    DocList results = req.getSearcher().getDocList(query,(DocSet)null, sort, start, limit);
     return results;
+    } catch (ParseException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Error parsing query: " + qs);
+    }
+
   }
     
   /**
@@ -828,7 +832,7 @@ public class SolrPluginUtils {
     SolrException sortE = null;
     Sort ss = null;
     try {
-      ss = QueryParsing.parseSort(sort, req.getSchema());
+      ss = QueryParsing.parseSort(sort, req);
     } catch (SolrException e) {
       sortE = e;
     }

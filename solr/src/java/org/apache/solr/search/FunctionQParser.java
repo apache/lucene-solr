@@ -48,7 +48,7 @@ public class FunctionQParser extends QParser {
   }
 
   public void setParseToEnd(boolean parseToEnd) {
-    this.parseMultipleSources = parseMultipleSources;
+    this.parseToEnd = parseToEnd;
   }
 
   /** throw exception if there is extra stuff at the end of the parsed valuesource(s). */
