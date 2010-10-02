@@ -42,14 +42,6 @@ public class FunctionQParserTest extends AbstractSolrTestCase {
     assertTrue("query is not a FunctionQuery", query instanceof FunctionQuery);
     fq = (FunctionQuery) query;
     assertTrue("ValueSource is not a LiteralValueSource", fq.getValueSource() instanceof LiteralValueSource);
-
-    parser = new FunctionQParser("1.5", local, params, req);
-    query = parser.parse();
-    assertTrue("query is not a FunctionQuery", query instanceof FunctionQuery);
-    fq = (FunctionQuery) query;
-    assertTrue("ValueSource is not a LiteralValueSource", fq.getValueSource() instanceof ConstValueSource);
-
-    //TODO: Add more tests here to test the parser
   }
 
 }

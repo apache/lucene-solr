@@ -70,8 +70,8 @@ public class FunctionQParser extends QParser {
    * @throws ParseException
    */
   public String parseId() throws ParseException {
-    String value = sp.getId();
-    consumeArgumentDelimiter();
+    String value = parseArg();
+    if (argWasQuoted) throw new ParseException("Expected identifier instead of quoted string:" + value);
     return value;
   }
   
@@ -82,8 +82,9 @@ public class FunctionQParser extends QParser {
    * @throws ParseException
    */
   public Float parseFloat() throws ParseException {
-    float value = sp.getFloat();
-    consumeArgumentDelimiter();
+    String str = parseArg();
+    if (argWasQuoted()) throw new ParseException("Expected float instead of quoted string:" + str);
+    float value = Float.parseFloat(str);
     return value;
   }
 
@@ -93,8 +94,9 @@ public class FunctionQParser extends QParser {
    * @throws ParseException
    */
   public double parseDouble() throws ParseException {
-    double value = sp.getDouble();
-    consumeArgumentDelimiter();
+    String str = parseArg();
+    if (argWasQuoted()) throw new ParseException("Expected double instead of quoted string:" + str);
+    double value = Double.parseDouble(str);
     return value;
   }
 
@@ -104,12 +106,21 @@ public class FunctionQParser extends QParser {
    * @throws ParseException
    */
   public int parseInt() throws ParseException {
-    int value = sp.getInt();
-    consumeArgumentDelimiter();
+    String str = parseArg();
+    if (argWasQuoted()) throw new ParseException("Expected double instead of quoted string:" + str);
+    int value = Integer.parseInt(str);
     return value;
   }
 
+
+  private boolean argWasQuoted;
+  public boolean argWasQuoted() {
+    return argWasQuoted;
+  }
+
   public String parseArg() throws ParseException {
+    argWasQuoted = false;
+
     sp.eatws();
     char ch = sp.peek();
     String val = null;
@@ -123,6 +134,7 @@ public class FunctionQParser extends QParser {
       case '\'':
       case '"':
         val = sp.getQuotedString();
+        argWasQuoted = true;
         break;
       default:
         // read unquoted literal ended by whitespace ',' or ')'
@@ -232,11 +244,65 @@ public class FunctionQParser extends QParser {
     
     int ch = sp.peek();
     if (ch>='0' && ch<='9'  || ch=='.' || ch=='+' || ch=='-') {
-      valueSource = new ConstValueSource(sp.getFloat());
+      Number num = sp.getNumber();
+      if (num instanceof Long) {
+        valueSource = new LongConstValueSource(num.longValue());
+      } else if (num instanceof Double) {
+        valueSource = new DoubleConstValueSource(num.doubleValue());
+      } else {
+        // shouldn't happen
+        valueSource = new ConstValueSource(num.floatValue());
+      }
     } else if (ch == '"' || ch == '\''){
       valueSource = new LiteralValueSource(sp.getQuotedString());
-    }
-    else {
+    } else if (ch == '$') {
+      sp.pos++;
+      String param = sp.getId();
+      String val = getParam(param);
+      if (val == null) {
+        throw new ParseException("Missing param " + param + " while parsing function '" + sp.val + "'");
+      }
+
+      QParser subParser = subQuery(val, "func");
+      Query subQuery = subParser.getQuery();
+      if (subQuery instanceof FunctionQuery) {
+        valueSource = ((FunctionQuery) subQuery).getValueSource();
+      } else {
+        valueSource = new QueryValueSource(subQuery, 0.0f);
+      }
+
+      /***
+       // dereference *simple* argument (i.e., can't currently be a function)
+       // In the future we could support full function dereferencing via a stack of ValueSource (or StringParser) objects
+      ch = val.length()==0 ? '\0' : val.charAt(0);
+
+      if (ch>='0' && ch<='9'  || ch=='.' || ch=='+' || ch=='-') {
+        QueryParsing.StrParser sp = new QueryParsing.StrParser(val);
+        Number num = sp.getNumber();
+        if (num instanceof Long) {
+          valueSource = new LongConstValueSource(num.longValue());
+        } else if (num instanceof Double) {
+          valueSource = new DoubleConstValueSource(num.doubleValue());
+        } else {
+          // shouldn't happen
+          valueSource = new ConstValueSource(num.floatValue());
+        }
+      } else if (ch == '"' || ch == '\'') {
+        QueryParsing.StrParser sp = new QueryParsing.StrParser(val);
+        val = sp.getQuotedString();
+        valueSource = new LiteralValueSource(val);
+      } else {
+        if (val.length()==0) {
+          valueSource = new LiteralValueSource(val);
+        } else {
+          String id = val;
+          SchemaField f = req.getSchema().getField(id);
+          valueSource = f.getType().getValueSource(f, this);
+        }
+      }
+       ***/
+
+    } else {
 
       String id = sp.getId();
       if (sp.opt("(")) {
@@ -252,6 +318,7 @@ public class FunctionQParser extends QParser {
         SchemaField f = req.getSchema().getField(id);
         valueSource = f.getType().getValueSource(f, this);
       }
+
     }
     
     if (doConsumeDelimiter)
