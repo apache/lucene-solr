@@ -258,7 +258,7 @@ public class TernaryTree implements Cloneable, Serializable {
       }
     }
     if (a[start + i] != 0) {
-      return (int) -a[start + i];
+      return -a[start + i];
     }
     return 0;
 

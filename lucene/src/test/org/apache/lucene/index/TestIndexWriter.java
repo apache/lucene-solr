@@ -3860,6 +3860,7 @@ public class TestIndexWriter extends LuceneTestCase {
         break;
       case 3:
         writer2.optimize();
+        break;
       case 4:
         writer2.commit();
       }
