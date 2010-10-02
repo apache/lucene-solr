@@ -66,7 +66,6 @@ public class DirectSpellChecker {
    *  </ul>
    */
   public static final StringDistance INTERNAL_LEVENSHTEIN = new StringDistance() {
-    @Override
     public float getDistance(String s1, String s2) {
       throw new UnsupportedOperationException("Not for external use.");
     }};
