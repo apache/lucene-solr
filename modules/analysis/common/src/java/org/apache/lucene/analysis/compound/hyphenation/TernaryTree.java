@@ -453,11 +453,11 @@ public class TernaryTree implements Cloneable, Serializable {
     }
   }
 
-  public Enumeration keys() {
+  public Enumeration<String> keys() {
     return new Iterator();
   }
 
-  public class Iterator implements Enumeration {
+  public class Iterator implements Enumeration<String> {
 
     /**
      * current node index
@@ -494,7 +494,7 @@ public class TernaryTree implements Cloneable, Serializable {
     /**
      * Node stack
      */
-    Stack ns;
+    Stack<Item> ns;
 
     /**
      * key stack implemented with a StringBuilder
@@ -503,7 +503,7 @@ public class TernaryTree implements Cloneable, Serializable {
 
     public Iterator() {
       cur = -1;
-      ns = new Stack();
+      ns = new Stack<Item>();
       ks = new StringBuilder();
       rewind();
     }
@@ -515,7 +515,7 @@ public class TernaryTree implements Cloneable, Serializable {
       run();
     }
 
-    public Object nextElement() {
+    public String nextElement() {
       String res = new String(curkey);
       cur = up();
       run();
@@ -557,11 +557,11 @@ public class TernaryTree implements Cloneable, Serializable {
           case 1:
             if (sc[i.parent] != 0) {
               res = eq[i.parent];
-              ns.push(i.clone());
+              ns.push((Item) i.clone());
               ks.append(sc[i.parent]);
             } else {
               i.child++;
-              ns.push(i.clone());
+              ns.push((Item) i.clone());
               res = hi[i.parent];
             }
             climb = false;
@@ -569,7 +569,7 @@ public class TernaryTree implements Cloneable, Serializable {
 
           case 2:
             res = hi[i.parent];
-            ns.push(i.clone());
+            ns.push((Item) i.clone());
             if (ks.length() > 0) {
               ks.setLength(ks.length() - 1); // pop
             }

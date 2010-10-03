@@ -113,7 +113,7 @@ public class TrecJudge implements Judge {
 
   // inherit javadocs
   public boolean validateData(QualityQuery[] qq, PrintWriter logger) {
-    HashMap<String,QRelJudgement> missingQueries = (HashMap<String, QRelJudgement>) judgements.clone();
+    HashMap<String,QRelJudgement> missingQueries = new HashMap<String, QRelJudgement>(judgements);
     ArrayList<String> missingJudgements = new ArrayList<String>();
     for (int i=0; i<qq.length; i++) {
       String id = qq[i].getQueryID();

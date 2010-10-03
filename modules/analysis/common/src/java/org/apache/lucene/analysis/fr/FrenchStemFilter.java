@@ -107,7 +107,7 @@ public final class FrenchStemFilter extends TokenFilter {
 	 */
 	@Deprecated // TODO remove in 3.2
 	public void setExclusionTable( Map<?,?> exclusiontable ) {
-		exclusions = new HashSet(exclusiontable.keySet());
+		exclusions = exclusiontable.keySet();
 	}
 }
 

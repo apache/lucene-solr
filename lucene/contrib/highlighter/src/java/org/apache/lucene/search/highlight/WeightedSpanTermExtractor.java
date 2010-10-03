@@ -176,6 +176,7 @@ public class WeightedSpanTermExtractor {
           }
         }
 
+        @SuppressWarnings("unchecked")
         final List<SpanQuery>[] disjunctLists = new List[maxPosition + 1];
         int distinctPositions = 0;
 
@@ -506,12 +507,9 @@ public class WeightedSpanTermExtractor {
   static private class PositionCheckingMap<K> extends HashMap<K,WeightedSpanTerm> {
 
     @Override
-    public void putAll(Map m) {
-      Iterator<Map.Entry<K, WeightedSpanTerm>> it = m.entrySet().iterator();
-      while (it.hasNext()) {
-        Map.Entry<K, WeightedSpanTerm> entry = it.next();
+    public void putAll(Map<? extends K,? extends WeightedSpanTerm> m) {
+      for (Map.Entry<? extends K,? extends WeightedSpanTerm> entry : m.entrySet())
         this.put(entry.getKey(), entry.getValue());
-      }
     }
 
     @Override
