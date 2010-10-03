@@ -1331,6 +1331,7 @@ public class IndexWriter implements Closeable {
    * @deprecated use {@link
    *  IndexWriterConfig#setReaderTermsIndexDivisor} instead.
    */
+  @Deprecated
   public void setReaderTermsIndexDivisor(int divisor) {
     ensureOpen();
     config.setReaderTermsIndexDivisor(divisor);
@@ -1343,6 +1344,7 @@ public class IndexWriter implements Closeable {
    * @deprecated use {@link
    *  IndexWriterConfig#getReaderTermsIndexDivisor} instead.
    */
+  @Deprecated
   public int getReaderTermsIndexDivisor() {
     ensureOpen();
     return config.getReaderTermsIndexDivisor();
@@ -2863,6 +2865,7 @@ public class IndexWriter implements Closeable {
   /**
    * @deprecated use {@link #addIndexes(Directory...)} instead
    */
+  @Deprecated
   public void addIndexesNoOptimize(Directory... dirs)
       throws CorruptIndexException, IOException {
     addIndexes(dirs);

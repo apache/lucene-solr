@@ -246,7 +246,7 @@ public class MultiPhraseQuery extends Query {
       fieldExpl.setDescription("fieldWeight("+getQuery()+" in "+doc+
                                "), product of:");
 
-      Scorer scorer = (Scorer) scorer(reader, true, false);
+      Scorer scorer = scorer(reader, true, false);
       if (scorer == null) {
         return new Explanation(0.0f, "no matching docs");
       }
