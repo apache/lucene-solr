@@ -215,7 +215,7 @@ abstract class IntDocValues extends DocValues {
 
 /**
  * <code>DocFreqValueSource</code> returns the number of documents containing the term.
- * @internal
+ * @lucene.internal
  */
 public class DocFreqValueSource extends ValueSource {
   protected String field;

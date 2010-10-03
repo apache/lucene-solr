@@ -33,7 +33,7 @@ import org.apache.solr.schema.SpatialQueryable;
 
 
 /**
- * @see {@link SpatialFilterQParserPlugin}
+ * @see SpatialFilterQParserPlugin
  */
 public class SpatialFilterQParser extends QParser {
   boolean bbox;  // do bounding box only

@@ -346,6 +346,10 @@
           bottom="Copyright &amp;copy; ${year} Apache Software Foundation.  All Rights Reserved.">
         <tag name="todo" description="To Do:"/>
         <tag name="uml.property" description="UML Property:"/>
+        <tag name="lucene.experimental" 
+      	description="WARNING: This API is experimental and might change in incompatible ways in the next release."/>
+        <tag name="lucene.internal"
+        description="NOTE: This API is for Lucene internal purposes only and might change in incompatible ways in the next release."/>
       	<link offline="true" packagelistLoc="${build.javadoc}"/>
         <link href="${javadoc.link.java}"/>
         <link href="${javadoc.link.junit}"/>
