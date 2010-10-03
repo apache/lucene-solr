@@ -86,7 +86,7 @@
     </sequential>
   </target>
 
-  <target name="javadocs">
+  <target name="javadocs" depends="compile-core">
    	<sequential>
        <mkdir dir="${javadoc.dir}/contrib-${name}"/>
        <invoke-javadoc
