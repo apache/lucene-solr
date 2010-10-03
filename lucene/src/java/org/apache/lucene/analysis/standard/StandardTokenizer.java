@@ -38,8 +38,8 @@ import java.io.Reader;
  * characters (characters above the Basic Multilingual Plane, which contains
  * those up to and including U+FFFF), this scanner will not recognize them
  * properly.  If you need to be able to process text containing supplementary 
- * characters, consider using the ICU4J-backed implementation in contrib/icu  
- * ({@link org.apache.lucene.analysis.icu.segmentation.ICUTokenizer})
+ * characters, consider using the ICU4J-backed implementation in modules/analysis/icu  
+ * (org.apache.lucene.analysis.icu.segmentation.ICUTokenizer)
  * instead of this class, since the ICU4J-backed implementation does not have
  * this limitation.
  * <p>Many applications have specific tokenizer needs.  If this tokenizer does

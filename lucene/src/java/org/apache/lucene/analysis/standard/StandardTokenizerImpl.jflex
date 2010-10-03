@@ -40,8 +40,8 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  * characters (characters above the Basic Multilingual Plane, which contains
  * those up to and including U+FFFF), this scanner will not recognize them
  * properly.  If you need to be able to process text containing supplementary 
- * characters, consider using the ICU4J-backed implementation in contrib/icu  
- * ({@link org.apache.lucene.analysis.icu.segmentation.ICUTokenizer})
+ * characters, consider using the ICU4J-backed implementation in modules/analysis/icu  
+ * (org.apache.lucene.analysis.icu.segmentation.ICUTokenizer)
  * instead of this class, since the ICU4J-backed implementation does not have
  * this limitation.
  */
@@ -162,7 +162,8 @@ EMAIL = {EMAILlocalPart} "@" ({DomainNameStrict} | {EMAILbracketedHost})
    * scripts (Thai, Lao, Myanmar, Khmer, etc.).  Sequences of these are kept 
    * together as as a single token rather than broken up, because the logic
    * required to break them at word boundaries is too complex for UAX#29.
-   * {@see Unicode Line Breaking Algorithm http://www.unicode.org/reports/tr14/#SA}
+   * <p>
+   * See Unicode Line Breaking Algorithm: http://www.unicode.org/reports/tr14/#SA
    */
   public static final int SOUTH_EAST_ASIAN_TYPE = StandardTokenizer.SOUTHEAST_ASIAN;
   
