@@ -89,6 +89,13 @@ Changes in runtime behavior
   target Directory, source and target files as arguments, and copies the source
   file to the target Directory under the target file name. (Shai Erera)
 
+* LUCENE-2663: IndexWriter no longer forcefully clears any existing
+  locks when create=true.  This was a holdover from when
+  SimpleFSLockFactory was the default locking implementation, and,
+  even then it was dangerous since it could mask bugs in IndexWriter's
+  usage, allowing applications to accidentally open two writers on the
+  same directory.  (Mike McCandless)
+
 API Changes
 
 * LUCENE-2076: Rename FSDirectory.getFile -> getDirectory.  (George
