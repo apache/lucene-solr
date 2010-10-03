@@ -133,7 +133,7 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     this(matchVersion, input,makeDictionary(dictionary),DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
   }
 
-  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, Set dictionary, boolean onlyLongestMatch) {
+  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, Set<?> dictionary, boolean onlyLongestMatch) {
     this(matchVersion, input,dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, onlyLongestMatch);
   }
 
@@ -141,11 +141,11 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     this(matchVersion, input,makeDictionary(dictionary),DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, false);
   }
 
-  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, Set dictionary) {
+  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, Set<?> dictionary) {
     this(matchVersion, input,dictionary,DEFAULT_MIN_WORD_SIZE,DEFAULT_MIN_SUBWORD_SIZE,DEFAULT_MAX_SUBWORD_SIZE, false);
   }
 
-  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, Set dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
+  protected CompoundWordTokenFilterBase(Version matchVersion, TokenStream input, Set<?> dictionary, int minWordSize, int minSubwordSize, int maxSubwordSize, boolean onlyLongestMatch) {
     super(input);
     
     this.tokens=new LinkedList<Token>();
@@ -221,8 +221,9 @@ public abstract class CompoundWordTokenFilterBase extends TokenFilter {
     }
   }
   
-  protected static final void addAllLowerCase(Set<Object> target, Collection<String> col) {
-    for (String string : col) {
+  protected static final void addAllLowerCase(CharArraySet target, Collection<?> col) {
+    for (Object obj : col) {
+      String string = (String) obj;
       target.add(string.toLowerCase());
     }
   }
