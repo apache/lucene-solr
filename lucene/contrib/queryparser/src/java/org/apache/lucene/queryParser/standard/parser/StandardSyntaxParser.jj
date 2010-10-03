@@ -60,7 +60,6 @@ import org.apache.lucene.queryParser.core.nodes.QueryNodeImpl;
 import org.apache.lucene.queryParser.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryParser.core.parser.SyntaxParser;
 
-@SuppressWarnings("all")
 public class StandardSyntaxParser implements SyntaxParser {
 
 	private static final int CONJ_NONE =0;
@@ -208,7 +207,7 @@ QueryNode TopLevelQuery(CharSequence field) :
 
 QueryNode Query(CharSequence field) :
 {
-  Vector clauses = null;
+  Vector<QueryNode> clauses = null;
   QueryNode c, first=null;
 }
 {
@@ -217,7 +216,7 @@ QueryNode Query(CharSequence field) :
     c=DisjQuery(field)
     { 
 	     if (clauses == null) {
-	         clauses = new Vector();
+	         clauses = new Vector<QueryNode>();
 	         clauses.addElement(first); 
 	     } 
     	 clauses.addElement(c);
@@ -234,7 +233,7 @@ QueryNode Query(CharSequence field) :
 
 QueryNode DisjQuery(CharSequence field) : {
 	QueryNode first, c;
-	Vector clauses = null;
+	Vector<QueryNode> clauses = null;
 }
 {
   first = ConjQuery(field)
@@ -242,7 +241,7 @@ QueryNode DisjQuery(CharSequence field) : {
    <OR> c=ConjQuery(field)
    { 
      if (clauses == null) {
-         clauses = new Vector();
+         clauses = new Vector<QueryNode>();
          clauses.addElement(first); 
      } 
      clauses.addElement(c);
@@ -259,7 +258,7 @@ QueryNode DisjQuery(CharSequence field) : {
 
 QueryNode ConjQuery(CharSequence field) : {
 	QueryNode first, c;
-	Vector clauses = null;
+	Vector<QueryNode> clauses = null;
 }
 {
   first = ModClause(field)
@@ -267,7 +266,7 @@ QueryNode ConjQuery(CharSequence field) : {
    <AND> c=ModClause(field)
    { 
      if (clauses == null) {
-         clauses = new Vector();
+         clauses = new Vector<QueryNode>();
          clauses.addElement(first);
      } 
      clauses.addElement(c); 

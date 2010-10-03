@@ -84,6 +84,7 @@ import org.junit.runner.RunWith;
  *             deprecated. When QPW is gone, so will the test.
  */
 @RunWith(LuceneTestCase.LocalizedTestCaseRunner.class)
+@Deprecated
 public class TestQueryParserWrapper extends LuceneTestCase {
   
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();

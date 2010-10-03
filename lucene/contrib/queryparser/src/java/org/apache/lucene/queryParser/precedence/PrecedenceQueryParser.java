@@ -72,12 +72,7 @@ import org.apache.lucene.util.AttributeSource;
  * href="../../../../../../../queryparsersyntax.html">query syntax
  * documentation</a>.
  * </p>
- *
- * @author Brian Goetz
- * @author Peter Halacsy
- * @author Tatu Saloranta
  */
-
 public class PrecedenceQueryParser implements PrecedenceQueryParserConstants {
 
   private static final int CONJ_NONE   = 0;

@@ -48,7 +48,6 @@ import org.apache.lucene.queryParser.core.nodes.QueryNodeImpl;
 import org.apache.lucene.queryParser.core.nodes.QuotedFieldQueryNode;
 import org.apache.lucene.queryParser.core.parser.SyntaxParser;
 
-@SuppressWarnings("all")
 public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserConstants {
 
         private static final int CONJ_NONE =0;
@@ -167,7 +166,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
 //   ConjQuery ::= Clause ( AND Clause )*
 //      Clause ::= [ Modifier ] ... 
   final public QueryNode Query(CharSequence field) throws ParseException {
-  Vector clauses = null;
+  Vector<QueryNode> clauses = null;
   QueryNode c, first=null;
     first = DisjQuery(field);
     label_1:
@@ -191,7 +190,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
       }
       c = DisjQuery(field);
              if (clauses == null) {
-                 clauses = new Vector();
+                 clauses = new Vector<QueryNode>();
                  clauses.addElement(first);
              }
          clauses.addElement(c);
@@ -206,7 +205,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
 
   final public QueryNode DisjQuery(CharSequence field) throws ParseException {
         QueryNode first, c;
-        Vector clauses = null;
+        Vector<QueryNode> clauses = null;
     first = ConjQuery(field);
     label_2:
     while (true) {
@@ -221,7 +220,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
       jj_consume_token(OR);
       c = ConjQuery(field);
      if (clauses == null) {
-         clauses = new Vector();
+         clauses = new Vector<QueryNode>();
          clauses.addElement(first);
      }
      clauses.addElement(c);
@@ -236,7 +235,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
 
   final public QueryNode ConjQuery(CharSequence field) throws ParseException {
         QueryNode first, c;
-        Vector clauses = null;
+        Vector<QueryNode> clauses = null;
     first = ModClause(field);
     label_3:
     while (true) {
@@ -251,7 +250,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
       jj_consume_token(AND);
       c = ModClause(field);
      if (clauses == null) {
-         clauses = new Vector();
+         clauses = new Vector<QueryNode>();
          clauses.addElement(first);
      }
      clauses.addElement(c);
