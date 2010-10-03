@@ -27,8 +27,9 @@ import org.apache.lucene.util.UnicodeUtil;
  * An implementation tying Java's built-in java.util.regex to RegexQuery.
  *
  * Note that because this implementation currently only returns null from
- * {@link #prefix} that queries using this implementation will enumerate and
- * attempt to {@link #match} each term for the specified field in the index.
+ * {@link RegexCapabilities.RegexMatcher#prefix()} that queries using this implementation 
+ * will enumerate and attempt to {@link RegexCapabilities.RegexMatcher#match(BytesRef)} each 
+ * term for the specified field in the index.
  */
 public class JavaUtilRegexCapabilities implements RegexCapabilities {
   private int flags = 0;

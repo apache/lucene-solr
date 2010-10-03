@@ -27,7 +27,7 @@ import org.apache.lucene.util.BytesRef;
  */
 public interface RegexCapabilities extends Serializable {
   /**
-   * Called by the constructor of {@link RegexTermEnum} allowing
+   * Called by the constructor of {@link RegexTermsEnum} allowing
    * implementations to cache a compiled version of the regular
    * expression pattern.
    *
@@ -38,7 +38,7 @@ public interface RegexCapabilities extends Serializable {
   public interface RegexMatcher {
     /**
      *
-     * @param string
+     * @param term The term in bytes.
      * @return true if string matches the pattern last passed to {@link #compile}.
      */
     public boolean match(BytesRef term);

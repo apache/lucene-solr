@@ -199,7 +199,6 @@ implements Serializable {
    * Sort by a cached entry value
    * @param creator
    * @param reverse
-   * @param sortMissingLast
    */
   public SortField( CachedArrayCreator<?> creator, boolean reverse ) 
   {

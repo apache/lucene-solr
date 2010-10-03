@@ -35,9 +35,8 @@ import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SHIFT;
  * 
  * <p>
  * Note: The maximum capacity {@link BytesRef} instance passed to
- * {@link #add(BytesRef)} must not be longer than {@link #BYTES_BLOCK_SIZE}-2 (
- * {@value #BYTES_BLOCK_SIZE}-2. The internal storage is limited to 2GB total
- * byte storage.
+ * {@link #add(BytesRef)} must not be longer than {@link ByteBlockPool#BYTE_BLOCK_SIZE}-2. 
+ * The internal storage is limited to 2GB totalbyte storage.
  * </p>
  * 
  * @lucene.internal
@@ -244,8 +243,7 @@ public final class BytesRefHash {
   }
 
   /**
-   * Clears the {@link BytesRef} and returns an {@link Entry} which maps to the
-   * given {@link BytesRef}
+   * Clears the {@link BytesRef} which maps to the given {@link BytesRef}
    */
   public void clear(boolean resetPool) {
     lastCount = count;
@@ -306,8 +304,8 @@ public final class BytesRefHash {
    *         haven't been hashed before.
    * 
    * @throws MaxBytesLengthExceededException
-   *           if the given bytes are > 2 +
-   *           {@link ByteBlockPool#BYTE_BLOCK_SIZE}
+   *           if the given bytes are >
+   *           {@link ByteBlockPool#BYTE_BLOCK_SIZE} - 2
    */
   public int add(BytesRef bytes, int code) {
     assert bytesStart != null : "Bytesstart is null - not initialized";
@@ -496,7 +494,7 @@ public final class BytesRefHash {
 
   /**
    * Thrown if a {@link BytesRef} exceeds the {@link BytesRefHash} limit of
-   * {@link #BYTES_BLOCK_SIZE}-2 ({@value #BYTES_BLOCK_SIZE}-2).
+   * {@link ByteBlockPool#BYTE_BLOCK_SIZE}-2.
    */
   @SuppressWarnings("serial")
   public static class MaxBytesLengthExceededException extends RuntimeException {

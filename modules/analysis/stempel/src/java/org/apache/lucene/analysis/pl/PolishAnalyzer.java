@@ -113,7 +113,7 @@ public final class PolishAnalyzer extends StopwordAnalyzerBase {
 
   /**
    * Builds an analyzer with the given stop words. If a non-empty stem exclusion set is
-   * provided this analyzer will add a {@link KeywordMarkerTokenFilter} before
+   * provided this analyzer will add a {@link KeywordMarkerFilter} before
    * stemming.
    * 
    * @param matchVersion lucene compatibility version

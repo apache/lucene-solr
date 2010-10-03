@@ -775,7 +775,7 @@ public abstract class Similarity implements Serializable {
 
   /**
    * This method forwards to {@link
-   * idfExplain(Term,Searcher,int)} by passing
+   * #idfExplain(Term,Searcher,int)} by passing
    * <code>searcher.docFreq(term)</code> as the docFreq.
    */
   public IDFExplanation idfExplain(final Term term, final Searcher searcher) throws IOException {

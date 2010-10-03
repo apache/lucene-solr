@@ -25,6 +25,8 @@ import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 
+import org.apache.lucene.analysis.miscellaneous.PerFieldAnalyzerWrapper; // javadocs
+
 /**
  * An convenience subclass of Analyzer that makes it easy to implement
  * {@link TokenStream} reuse.

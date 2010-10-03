@@ -867,7 +867,7 @@ public class QueryParser implements QueryParserConstants {
 
   /**
    * Builds a new RegexpQuery instance
-   * @param prefix Regexp term
+   * @param regexp Regexp term
    * @return new RegexpQuery instance
    */
   protected Query newRegexpQuery(Term regexp) {

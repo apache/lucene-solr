@@ -40,6 +40,8 @@ import org.apache.lucene.util.DoubleBarrelLRUCache;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 
+import org.apache.lucene.index.codecs.standard.StandardPostingsReader; // javadocs
+
 /** Handles a terms dict, but decouples all details of
  *  doc/freqs/positions reading to an instance of {@link
  *  StandardPostingsReader}.  This class is reusable for

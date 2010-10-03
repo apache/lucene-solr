@@ -19,6 +19,8 @@ package org.apache.lucene.index.codecs;
 
 import org.apache.lucene.index.DocsEnum;          // for javadocs
 
+import org.apache.lucene.index.codecs.standard.StandardPostingsReader; // javadocs
+
 /**
  * Holds all state required for {@link StandardPostingsReader}
  * to produce a {@link DocsEnum} without re-seeking the

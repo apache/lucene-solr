@@ -26,6 +26,8 @@ import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Bits;
 
+import org.apache.lucene.index.codecs.standard.StandardPostingsWriter; // javadocs
+
 /** PrefixCodedTermsReader interacts with a single instance
  *  of this to manage creation of {@link DocsEnum} and
  *  {@link DocsAndPositionsEnum} instances.  It provides an

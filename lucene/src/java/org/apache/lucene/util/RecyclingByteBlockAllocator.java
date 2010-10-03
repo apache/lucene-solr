@@ -70,8 +70,7 @@ public final class RecyclingByteBlockAllocator extends ByteBlockPool.Allocator {
 
   /**
    * Creates a new {@link RecyclingByteBlockAllocator} with a block size of
-   * {@link ByteBlockPool#BYTE_BLOCK_SIZE} (
-   * {@value ByteBlockPool#BYTE_BLOCK_SIZE}, upper buffered docs limit of
+   * {@link ByteBlockPool#BYTE_BLOCK_SIZE}, upper buffered docs limit of
    * {@link #DEFAULT_BUFFERED_BLOCKS} ({@value #DEFAULT_BUFFERED_BLOCKS}) and a
    * {@link DummyConcurrentLock} instance.
    * 

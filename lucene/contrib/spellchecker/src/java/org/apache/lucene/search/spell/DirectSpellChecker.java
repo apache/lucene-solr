@@ -56,7 +56,7 @@ public class DirectSpellChecker {
    *  Note: this is the fastest distance metric, because Levenshtein is used
    *  to draw candidates from the term dictionary: this just re-uses the scoring.
    *  <p>
-   *  Note also that this metric differs in subtle ways from {@link LevenshteinDistance}:
+   *  Note also that this metric differs in subtle ways from {@link LevensteinDistance}:
    *  <ul>
    *    <li> This metric treats full unicode codepoints as characters, but
    *         LevenshteinDistance calculates based on UTF-16 code units.
@@ -286,7 +286,7 @@ public class DirectSpellChecker {
 
   /**
    * Calls {@link #suggestSimilar(Term, int, IndexReader, boolean) 
-   *       suggestSimilar(term, numSug, ir, false)
+   *       suggestSimilar(term, numSug, ir, false)}
    */
   public SuggestWord[] suggestSimilar(Term term, int numSug, IndexReader ir) 
      throws IOException {
@@ -295,7 +295,7 @@ public class DirectSpellChecker {
   
   /**
    * Calls {@link #suggestSimilar(Term, int, IndexReader, boolean, float) 
-   *       suggestSimilar(term, numSug, ir, morePopular, this.accuracy)
+   *       suggestSimilar(term, numSug, ir, morePopular, this.accuracy)}
    */
   public SuggestWord[] suggestSimilar(Term term, int numSug, IndexReader ir, 
       boolean morePopular) throws IOException {

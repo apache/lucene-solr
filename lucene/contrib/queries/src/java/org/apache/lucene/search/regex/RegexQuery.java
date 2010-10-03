@@ -29,7 +29,7 @@ import java.io.IOException;
  * The expressions supported depend on the regular expression implementation
  * used by way of the {@link RegexCapabilities} interface.
  *
- * @see RegexTermEnum
+ * @see RegexTermsEnum
  */
 public class RegexQuery extends MultiTermQuery implements RegexQueryCapable {
   private RegexCapabilities regexImpl = new JavaUtilRegexCapabilities();

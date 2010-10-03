@@ -27,10 +27,10 @@ import java.lang.reflect.Method;
 
 /**
  * Implementation tying <a href="http://jakarta.apache.org/regexp">Jakarta
- * Regexp</a> to RegexQuery. Jakarta Regepx internally supports a
- * {@link #prefix} implementation which can offer performance gains under
- * certain circumstances. Yet, the implementation appears to be rather shaky as
- * it doesn't always provide a prefix even if one would exist.
+ * Regexp</a> to RegexQuery. Jakarta Regexp internally supports a
+ * {@link RegexCapabilities.RegexMatcher#prefix()} implementation which can offer 
+ * performance gains under certain circumstances. Yet, the implementation appears 
+ * to be rather shaky as it doesn't always provide a prefix even if one would exist.
  */
 public class JakartaRegexpCapabilities implements RegexCapabilities {
   private static Field prefixField;
