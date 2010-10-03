@@ -394,7 +394,7 @@ public class TernaryTree implements Cloneable, Serializable {
     Iterator iter = new Iterator();
     while (iter.hasMoreElements()) {
       v[i] = iter.getValue();
-      k[i++] = (String) iter.nextElement();
+      k[i++] = iter.nextElement();
     }
     init();
     insertBalanced(k, v, 0, n);
@@ -551,7 +551,7 @@ public class TernaryTree implements Cloneable, Serializable {
       boolean climb = true;
 
       while (climb) {
-        i = (Item) ns.pop();
+        i = ns.pop();
         i.child++;
         switch (i.child) {
           case 1:

@@ -45,6 +45,7 @@ import org.apache.lucene.util.LuceneTestCase;
  * @deprecated this tests test the deprecated MultiFieldQueryParserWrapper, so
  *             when the latter is gone, so should this test.
  */
+@Deprecated
 public class TestMultiFieldQueryParserWrapper extends LuceneTestCase {
 
   /**
