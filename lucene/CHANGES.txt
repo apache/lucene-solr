@@ -132,6 +132,13 @@ Changes in Runtime Behavior
   changed to enable unmapping by default if supported by the JRE.
   (Mike McCandless, Uwe Schindler, Robert Muir)
 
+* LUCENE-2663: IndexWriter no longer forcefully clears any existing
+  locks when create=true.  This was a holdover from when
+  SimpleFSLockFactory was the default locking implementation, and,
+  even then it was dangerous since it could mask bugs in IndexWriter's
+  usage, allowing applications to accidentally open two writers on the
+  same directory.  (Mike McCandless)
+
 API Changes
 
 * LUCENE-2302, LUCENE-1458, LUCENE-2111, LUCENE-2514: Terms are no longer

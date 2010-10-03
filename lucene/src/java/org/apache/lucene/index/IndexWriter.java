@@ -1073,11 +1073,6 @@ public class IndexWriter implements Closeable {
       create = !IndexReader.indexExists(directory);
     }
 
-    if (create) {
-      // Clear the write lock in case it's leftover:
-      directory.clearLock(WRITE_LOCK_NAME);
-    }
-
     writeLock = directory.makeLock(WRITE_LOCK_NAME);
 
     if (!writeLock.obtain(writeLockTimeout)) // obtain write lock
