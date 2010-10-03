@@ -208,7 +208,7 @@ class BiSegGraph {
       current = preNode;
     }
     for (int j = rpath.size() - 1; j >= 0; j--) {
-      Integer idInteger = (Integer) rpath.get(j);
+      Integer idInteger = rpath.get(j);
       int id = idInteger.intValue();
       SegToken t = segTokenList.get(id);
       resultPath.add(t);

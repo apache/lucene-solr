@@ -30,6 +30,7 @@ package org.apache.lucene.spatial.tier.projections;
  *
  * @deprecated Until we can put in place proper tests and a proper fix. 
  */
+@Deprecated
 public class SinusoidalProjector implements IProjector {
 
 
