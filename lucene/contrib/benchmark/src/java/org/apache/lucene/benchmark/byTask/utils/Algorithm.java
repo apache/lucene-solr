@@ -39,6 +39,7 @@ public class Algorithm {
    * @param runData perf-run-data used at running the tasks.
    * @throws Exception if errors while parsing the algorithm 
    */
+  @SuppressWarnings("fallthrough")
   public Algorithm (PerfRunData runData) throws Exception {
     String algTxt = runData.getConfig().getAlgorithmText();
     sequence = new TaskSequence(runData,null,null,false);
@@ -210,7 +211,7 @@ public class Algorithm {
               break;
     
             case '>' :
-              currSequence.setNoChildReport();
+              currSequence.setNoChildReport(); /* intentional fallthrough */
             case '}' : 
             case ']' : 
               // end sequence
