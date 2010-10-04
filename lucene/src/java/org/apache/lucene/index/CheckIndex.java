@@ -18,6 +18,8 @@ package org.apache.lucene.index;
  */
 
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -573,6 +575,8 @@ public class CheckIndex {
     final int maxDoc = reader.maxDoc();
     final Bits delDocs = reader.getDeletedDocs();
 
+    final IndexSearcher is = new IndexSearcher(reader);
+
     try {
 
       if (infoStream != null) {
@@ -584,7 +588,10 @@ public class CheckIndex {
         msg("OK [no fields/terms]");
         return status;
       }
-      
+     
+      DocsEnum docs = null;
+      DocsAndPositionsEnum postings = null;
+
       final FieldsEnum fieldsEnum = fields.iterator();
       while(true) {
         final String field = fieldsEnum.next();
@@ -593,9 +600,6 @@ public class CheckIndex {
         }
         
         final TermsEnum terms = fieldsEnum.terms();
-
-        DocsEnum docs = null;
-        DocsAndPositionsEnum postings = null;
 
         boolean hasOrd = true;
         final long termCountStart = status.termCount;
@@ -703,6 +707,70 @@ public class CheckIndex {
             }
             if (count != docFreq) {
               throw new RuntimeException("term " + term + " docFreq=" + docFreq + " != tot docs w/o deletions " + count);
+            }
+          }
+        }
+
+        // Test seek to last term:
+        if (lastTerm != null) {
+          if (terms.seek(lastTerm) != TermsEnum.SeekStatus.FOUND) {
+            throw new RuntimeException("seek to last term " + lastTerm + " failed");
+          }
+
+          is.search(new TermQuery(new Term(field, lastTerm)), 1);
+        }
+
+        // Test seeking by ord
+        if (hasOrd && status.termCount-termCountStart > 0) {
+          long termCount;
+          try {
+            termCount = fields.terms(field).getUniqueTermCount();
+          } catch (UnsupportedOperationException uoe) {
+            termCount = -1;
+          }
+
+          if (termCount != -1 && termCount != status.termCount - termCountStart) {
+            throw new RuntimeException("termCount mismatch " + termCount + " vs " + (status.termCount - termCountStart));
+          }
+
+          termCount = status.termCount;
+
+          int seekCount = (int) Math.min(10000L, termCount);
+          if (seekCount > 0) {
+            BytesRef[] seekTerms = new BytesRef[seekCount];
+            
+            // Seek by ord
+            for(int i=seekCount-1;i>=0;i--) {
+              long ord = i*(termCount/seekCount);
+              terms.seek(ord);
+              seekTerms[i] = new BytesRef(terms.term());
+            }
+
+            // Seek by term
+            long totDocCount = 0;
+            for(int i=seekCount-1;i>=0;i--) {
+              if (terms.seek(seekTerms[i]) != TermsEnum.SeekStatus.FOUND) {
+                throw new RuntimeException("seek to existing term " + seekTerms[i] + " failed");
+              }
+              
+              docs = terms.docs(delDocs, docs);
+              if (docs == null) {
+                throw new RuntimeException("null DocsEnum from to existing term " + seekTerms[i]);
+              }
+
+              while(docs.nextDoc() != DocsEnum.NO_MORE_DOCS) {
+                totDocCount++;
+              }
+            }
+
+            // TermQuery
+            long totDocCount2 = 0;
+            for(int i=0;i<seekCount;i++) {
+              totDocCount2 += is.search(new TermQuery(new Term(field, seekTerms[i])), 1).totalHits;
+            }
+
+            if (totDocCount != totDocCount2) {
+              throw new RuntimeException("search to seek terms produced wrong number of hits: " + totDocCount + " vs " + totDocCount2);
             }
           }
         }
