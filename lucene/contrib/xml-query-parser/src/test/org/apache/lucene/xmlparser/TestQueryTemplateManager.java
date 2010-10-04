@@ -1,6 +1,7 @@
 package org.apache.lucene.xmlparser;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
@@ -14,7 +15,9 @@ import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
+import org.junit.Assume;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -69,6 +72,11 @@ public class TestQueryTemplateManager extends LuceneTestCase {
 	
 	public void testFormTransforms() throws SAXException, IOException, ParserConfigurationException, TransformerException, ParserException 
 	{
+	  // Sun 1.5 suffers from http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6240963
+	  if (Constants.JAVA_VENDOR.startsWith("Sun") && Constants.JAVA_VERSION.startsWith("1.5")) {
+	    String defLang = Locale.getDefault().getLanguage();
+	    Assume.assumeTrue(!defLang.equals("tr") && !defLang.equals("az"));
+	  }
 		//Cache all the query templates we will be referring to.
 		QueryTemplateManager qtm=new QueryTemplateManager();
 		qtm.addQueryTemplate("albumBooleanQuery", getClass().getResourceAsStream("albumBooleanQuery.xsl"));
