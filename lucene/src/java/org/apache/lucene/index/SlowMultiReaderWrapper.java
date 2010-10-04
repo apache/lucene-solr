@@ -23,6 +23,9 @@ import java.util.ArrayList;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ReaderUtil;
 
+import org.apache.lucene.index.DirectoryReader; // javadoc
+import org.apache.lucene.index.MultiReader; // javadoc
+
 /**
  * This class forces a composite reader (eg a {@link
  * MultiReader} or {@link DirectoryReader} or any other

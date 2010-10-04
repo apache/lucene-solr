@@ -24,6 +24,8 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.analysis.Tokenizer;
 
+import org.apache.lucene.collation.CollationKeyAnalyzer; // javadocs
+
 import java.io.Reader;
 import java.io.IOException;
 
