@@ -32,6 +32,7 @@ import java.io.IOException;
  *
  * @deprecated Use SnowballPorterFilterFactory with language="English" instead
  */
+@Deprecated
 public class EnglishPorterFilterFactory extends BaseTokenFilterFactory implements ResourceLoaderAware {
   public static final String PROTECTED_TOKENS = "protected";
 

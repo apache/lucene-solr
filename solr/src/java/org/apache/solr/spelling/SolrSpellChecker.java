@@ -77,6 +77,7 @@ public abstract class SolrSpellChecker {
    *
    * @deprecated This method will be removed in 4.x in favor of {@link #getSuggestions(org.apache.solr.spelling.SpellingOptions)}
    */
+  @Deprecated
   public SpellingResult getSuggestions(Collection<Token> tokens, IndexReader reader) throws IOException {
     return getSuggestions(tokens, reader, 1, false, false);
   }
@@ -88,6 +89,7 @@ public abstract class SolrSpellChecker {
    *
    * @deprecated This method will be removed in 4.x in favor of {@link #getSuggestions(org.apache.solr.spelling.SpellingOptions)}
    */
+  @Deprecated
   public SpellingResult getSuggestions(Collection<Token> tokens, IndexReader reader, int count) throws IOException {
     return getSuggestions(tokens, reader, count, false, false);
   }
@@ -100,6 +102,7 @@ public abstract class SolrSpellChecker {
    *
    * @deprecated This method will be removed in 4.x in favor of {@link #getSuggestions(org.apache.solr.spelling.SpellingOptions)}
    */
+  @Deprecated
   public SpellingResult getSuggestions(Collection<Token> tokens, IndexReader reader, boolean onlyMorePopular, boolean extendedResults) throws IOException {
     return getSuggestions(tokens, reader, 1, onlyMorePopular, extendedResults);
   }
@@ -117,6 +120,7 @@ public abstract class SolrSpellChecker {
    *
    * @deprecated This method will be removed in 4.x in favor of {@link #getSuggestions(org.apache.solr.spelling.SpellingOptions)}
    */
+  @Deprecated
   public abstract SpellingResult getSuggestions(Collection<Token> tokens, IndexReader reader, int count,
                                                 boolean onlyMorePopular, boolean extendedResults)
           throws IOException;

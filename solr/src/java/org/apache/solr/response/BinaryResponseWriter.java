@@ -132,7 +132,7 @@ public class BinaryResponseWriter implements BinaryQueryResponseWriter {
 
     public SolrDocument getDoc(Document doc) {
       SolrDocument solrDoc = new SolrDocument();
-      for (Fieldable f : (List<Fieldable>) doc.getFields()) {
+      for (Fieldable f : doc.getFields()) {
         String fieldName = f.name();
         if (returnFields != null && !returnFields.contains(fieldName)) continue;
         SchemaField sf = schema.getFieldOrNull(fieldName);

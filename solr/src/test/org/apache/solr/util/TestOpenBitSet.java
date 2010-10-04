@@ -28,6 +28,7 @@ import org.apache.lucene.search.DocIdSetIterator;
  * @deprecated
  * @version $Id$
  */
+@Deprecated
 public class TestOpenBitSet extends LuceneTestCase {
   static Random rand = new Random();
 

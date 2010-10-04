@@ -409,6 +409,7 @@ public class TestHarness {
    * to a StringBuffer.
    * @deprecated see {@link #appendSimpleDoc(StringBuilder, String...)}
    */
+  @Deprecated
   public void appendSimpleDoc(StringBuffer buf, String... fieldsAndValues)
     throws IOException {
 

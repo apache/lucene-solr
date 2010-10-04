@@ -69,7 +69,7 @@ public class ReverseOrdFieldSource extends ValueSource {
       }
 
       public int intVal(int doc) {
-        return (int)(end - arr[doc]);
+        return (end - arr[doc]);
       }
 
       public long longVal(int doc) {

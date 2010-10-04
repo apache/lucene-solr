@@ -49,8 +49,8 @@ public class DoubleFieldSource extends FieldCacheSource {
 
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
     final double[] arr = (parser == null) ?
-            ((FieldCache) cache).getDoubles(reader, field) :
-            ((FieldCache) cache).getDoubles(reader, field, parser);
+            cache.getDoubles(reader, field) :
+            cache.getDoubles(reader, field, parser);
     return new DocValues() {
       public float floatVal(int doc) {
         return (float) arr[doc];

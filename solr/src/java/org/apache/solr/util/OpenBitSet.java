@@ -73,7 +73,7 @@ Test system: AMD Opteron, 64 bit linux, Sun Java 1.5_06 -server -Xbatch -Xmx64M
  @deprecated Use {@link org.apache.lucene.util.OpenBitSet} directly.
  * @version $Id$
  */
-
+@Deprecated
 public class OpenBitSet extends org.apache.lucene.util.OpenBitSet implements Cloneable, Serializable {
   /** Constructs an OpenBitSet large enough to hold numBits.
    *

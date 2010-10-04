@@ -73,7 +73,7 @@ public class SynonymMap {
     }
     List<Token> superset = currMap.synonyms==null ? replacement :
           mergeTokens(Arrays.asList(currMap.synonyms), replacement);
-    currMap.synonyms = (Token[])superset.toArray(new Token[superset.size()]);
+    currMap.synonyms = superset.toArray(new Token[superset.size()]);
     if (includeOrig) currMap.flags |= INCLUDE_ORIG;
   }
 

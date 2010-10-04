@@ -58,7 +58,7 @@ public class IntFieldSource extends FieldCacheSource {
       }
 
       public int intVal(int doc) {
-        return (int)arr[doc];
+        return arr[doc];
       }
 
       public long longVal(int doc) {

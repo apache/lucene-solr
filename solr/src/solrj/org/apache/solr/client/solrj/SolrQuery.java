@@ -351,6 +351,7 @@ public class SolrQuery extends ModifiableSolrParams
   /**
    * @deprecated use {@link #setFacetMissing(Boolean)}
    */
+  @Deprecated
   public SolrQuery setMissing(String fld) {
     return setFacetMissing(Boolean.valueOf(fld));
   }

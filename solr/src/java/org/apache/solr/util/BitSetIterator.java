@@ -26,6 +26,7 @@ import org.apache.lucene.util.OpenBitSet;
  * @deprecated Use {@link org.apache.lucene.util.OpenBitSetIterator} instead.
  * @version $Id$
  */
+@Deprecated
 public class BitSetIterator {
 
   // The General Idea: instead of having an array per byte that has

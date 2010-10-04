@@ -447,7 +447,7 @@ class JSONWriter extends TextResponseWriter {
       other = scoreMap;
       scoreMap.put("score",score);
     }
-    writeDoc(name, (List<Fieldable>)(doc.getFields()), returnFields, other);
+    writeDoc(name, doc.getFields(), returnFields, other);
   }
 
   public void writeDocList(String name, DocList ids, Set<String> fields, Map otherFields) throws IOException {

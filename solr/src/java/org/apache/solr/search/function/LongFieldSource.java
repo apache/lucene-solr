@@ -55,8 +55,8 @@ public class LongFieldSource extends FieldCacheSource {
 
   public DocValues getValues(Map context, IndexReader reader) throws IOException {
     final long[] arr = (parser == null) ?
-            ((FieldCache) cache).getLongs(reader, field) :
-            ((FieldCache) cache).getLongs(reader, field, parser);
+            cache.getLongs(reader, field) :
+            cache.getLongs(reader, field, parser);
     return new DocValues() {
       public float floatVal(int doc) {
         return (float) arr[doc];
@@ -67,7 +67,7 @@ public class LongFieldSource extends FieldCacheSource {
       }
 
       public long longVal(int doc) {
-        return (long) arr[doc];
+        return arr[doc];
       }
 
       public double doubleVal(int doc) {

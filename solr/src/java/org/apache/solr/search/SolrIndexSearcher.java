@@ -90,6 +90,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
    * 
    * @deprecated use alternate constructor
    */
+  @Deprecated
   public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, String path, boolean enableCache) throws IOException {
     this(core, schema,name, core.getIndexReaderFactory().newReader(core.getDirectoryFactory().open(path), false), true, enableCache);
   }
@@ -420,7 +421,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     
     Document d;
     if (documentCache != null) {
-      d = (Document)documentCache.get(i);
+      d = documentCache.get(i);
       if (d!=null) return d;
     }
 
@@ -536,7 +537,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
     boolean positive = query==absQ;
 
     if (filterCache != null) {
-      DocSet absAnswer = (DocSet)filterCache.get(absQ);
+      DocSet absAnswer = filterCache.get(absQ);
       if (absAnswer!=null) {
         if (positive) return absAnswer;
         else return getPositiveDocSet(matchAllDocsQuery).andNot(absAnswer);
@@ -558,7 +559,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   DocSet getPositiveDocSet(Query q) throws IOException {
     DocSet answer;
     if (filterCache != null) {
-      answer = (DocSet)filterCache.get(q);
+      answer = filterCache.get(q);
       if (answer!=null) return answer;
     }
     answer = getDocSetNC(q,null);
@@ -571,7 +572,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   public DocSet getPositiveDocSet(Query q, TermDocsState tdState) throws IOException {
     DocSet answer;
     if (filterCache != null) {
-      answer = (DocSet)filterCache.get(q);
+      answer = filterCache.get(q);
       if (answer!=null) return answer;
     }
     answer = getDocSetNC(q, null, tdState);
@@ -742,7 +743,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
     DocSet first;
     if (filterCache != null) {
-      first = (DocSet)filterCache.get(absQ);
+      first = filterCache.get(absQ);
       if (first==null) {
         first = getDocSetNC(absQ,null);
         filterCache.put(absQ,first);
@@ -859,7 +860,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
         // so set all of them on the cache key.
         key = new QueryResultKey(cmd.getQuery(), cmd.getFilterList(), cmd.getSort(), cmd.getFlags());
         if ((cmd.getFlags() & NO_CHECK_QCACHE)==0) {
-          superset = (DocList)queryResultCache.get(key);
+          superset = queryResultCache.get(key);
 
           if (superset != null) {
             // check that the cache entry has scores recorded if we need them

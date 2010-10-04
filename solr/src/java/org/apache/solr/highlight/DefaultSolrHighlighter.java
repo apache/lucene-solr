@@ -558,7 +558,7 @@ final class TokenOrderingFilter extends TokenFilter {
   private final int windowSize;
   private final LinkedList<OrderedToken> queue = new LinkedList<OrderedToken>();
   private boolean done=false;
-  private final OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+  private final OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   
   protected TokenOrderingFilter(TokenStream input, int windowSize) {
     super(input);
@@ -618,7 +618,7 @@ class TermOffsetsTokenStream {
 
   public TermOffsetsTokenStream( TokenStream tstream ){
     bufferedTokenStream = tstream;
-    bufferedOffsetAtt = (OffsetAttribute) bufferedTokenStream.addAttribute(OffsetAttribute.class);
+    bufferedOffsetAtt = bufferedTokenStream.addAttribute(OffsetAttribute.class);
     startOffset = 0;
     bufferedToken = null;
   }
@@ -630,7 +630,7 @@ class TermOffsetsTokenStream {
   
   final class MultiValuedStream extends TokenStream {
     private final int length;
-    OffsetAttribute offsetAtt = (OffsetAttribute) addAttribute(OffsetAttribute.class);
+    OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
 
       MultiValuedStream(int length) { 
         super(bufferedTokenStream.cloneAttributes());

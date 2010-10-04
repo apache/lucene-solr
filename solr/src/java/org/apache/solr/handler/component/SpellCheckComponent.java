@@ -329,7 +329,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
         sugQueue.insertWithOverflow(sug);
         if (sugQueue.size() == numSug) {
           // if queue full, maintain the minScore score
-          min = ((SuggestWord) sugQueue.top()).score;
+          min = sugQueue.top().score;
         }
       }
 
@@ -343,7 +343,7 @@ public class SpellCheckComponent extends SearchComponent implements SolrCoreAwar
       for (int k=0; k < sugQueue.size() - count; k++) sugQueue.pop();
       // now collect the top 'count' responses
       for (int k = Math.min(count, sugQueue.size()) - 1; k >= 0; k--)  {
-        suggestions[k] = ((SuggestWord) sugQueue.pop());
+        suggestions[k] = sugQueue.pop();
       }
 
       if (extendedResults) {

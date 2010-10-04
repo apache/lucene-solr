@@ -213,7 +213,7 @@ public class JavaBinUpdateRequestCodec {
       List<String> l = (List) nl.getVal(i);
       if (l != null)
         solrParams.add(nl.getName(i),
-                (String[]) l.toArray(new String[l.size()]));
+                l.toArray(new String[l.size()]));
     }
     return solrParams;
   }

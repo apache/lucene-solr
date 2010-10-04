@@ -132,6 +132,7 @@ public final class IndexSchema {
   /**
    * @deprecated -- get access to SolrConfig some other way...
    */
+  @Deprecated
   public SolrConfig getSolrConfig() {
     return solrConfig;
   }
@@ -274,6 +275,7 @@ public final class IndexSchema {
    * @param defaultField if non-null overrides the schema default
    * @deprecated
    */
+  @Deprecated
   public SolrQueryParser getSolrQueryParser(String defaultField) {
     SolrQueryParser qp = new SolrQueryParser(this,defaultField);
     String operator = getQueryParserDefaultOperator();
@@ -550,7 +552,7 @@ public final class IndexSchema {
     log.trace("Dynamic Field Ordering:" + dFields);
 
     // stuff it in a normal array for faster access
-    dynamicFields = (DynamicField[])dFields.toArray(new DynamicField[dFields.size()]);
+    dynamicFields = dFields.toArray(new DynamicField[dFields.size()]);
 
 
     Node node = (Node) xpath.evaluate("/schema/similarity", document, XPathConstants.NODE);
