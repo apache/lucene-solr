@@ -25,6 +25,9 @@ import java.io.FileOutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 
+import org.apache.lucene.store.Directory; // javadoc
+import org.apache.lucene.store.NativeFSLockFactory; // javadoc
+
 /**
  * An {@link Directory} implementation that uses the
  * Linux-specific O_DIRECT flag to bypass all OS level

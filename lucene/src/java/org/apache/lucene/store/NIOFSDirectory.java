@@ -30,7 +30,7 @@ import java.util.concurrent.Future; // javadoc
  * without synchronizing.
  * <p>
  * This class only uses FileChannel when reading; writing is achieved with
- * {@link SimpleFSDirectory.SimpleFSIndexOutput}.
+ * {@link FSDirectory.FSIndexOutput}.
  * <p>
  * <b>NOTE</b>: NIOFSDirectory is not recommended on Windows because of a bug in
  * how FileChannel.read is implemented in Sun's JRE. Inside of the
