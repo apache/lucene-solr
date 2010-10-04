@@ -25,6 +25,8 @@ import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.request.SolrQueryRequest;
 
+import org.apache.solr.response.BaseResponseWriter.SingleResponseWriter; // javadocs
+
 /**
  * 
  * 

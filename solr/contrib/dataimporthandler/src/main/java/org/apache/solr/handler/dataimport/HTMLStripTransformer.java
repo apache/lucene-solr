@@ -31,7 +31,7 @@ import java.util.Map;
  * in case you don't need this HTML anyway.
  *
  * @version $Id$
- * @see org.apache.solr.analysis.HTMLStripCharFilter
+ * @see HTMLStripCharFilter
  * @since solr 1.4
  */
 public class HTMLStripTransformer extends Transformer {

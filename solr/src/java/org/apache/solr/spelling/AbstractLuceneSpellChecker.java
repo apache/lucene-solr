@@ -162,7 +162,6 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
    * @param count The maximum number of suggestions to return
    * @param onlyMorePopular  TODO
    * @param extendedResults  TODO
-   * @return
    * @throws IOException
    */
   @Override

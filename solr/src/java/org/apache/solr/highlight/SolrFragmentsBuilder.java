@@ -34,7 +34,6 @@ public abstract class SolrFragmentsBuilder extends HighlightingPluginBase
   /**
    * Return a {@link org.apache.lucene.search.vectorhighlight.FragmentsBuilder} appropriate for this field.
    * 
-   * @param fieldName The name of the field
    * @param params The params controlling Highlighting
    * @return An appropriate {@link org.apache.lucene.search.vectorhighlight.FragmentsBuilder}.
    */
