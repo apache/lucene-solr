@@ -55,7 +55,7 @@ public class ShortFieldSource extends NumericFieldCacheSource<ShortValues> {
 
       @Override
       public short shortVal(int doc) {
-        return (short) arr[doc];
+        return arr[doc];
       }
 
       public float floatVal(int doc) {

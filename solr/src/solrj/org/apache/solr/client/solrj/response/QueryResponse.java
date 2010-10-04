@@ -259,7 +259,7 @@ public class QueryResponse extends SolrResponseBase
     for( NamedList nl : list ) {
       // NOTE, this is cheating, but we know the order they are written in, so no need to check
       String f = (String)nl.getVal( 0 );
-      Object v = (Object)nl.getVal( 1 );
+      Object v = nl.getVal( 1 );
       int cnt = ((Integer)nl.getVal( 2 )).intValue();
       List<PivotField> p = (nl.size()<4)?null:readPivots((List<NamedList>)nl.getVal(3) );
       values.add( new PivotField( f, v, cnt, p ) );

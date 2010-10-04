@@ -48,6 +48,7 @@ import java.util.Collection;
  *
  * @deprecated Use {@link org.apache.solr.handler.DocumentAnalysisRequestHandler} instead.
  **/
+@Deprecated
 public class AnalysisRequestHandler extends RequestHandlerBase {
 
   public static Logger log = LoggerFactory.getLogger(AnalysisRequestHandler.class);

@@ -21,6 +21,7 @@ package org.apache.solr.util;
  * @deprecated Use {@link org.apache.lucene.util.BitUtil} directly
  * @version $Id$
  */
+@Deprecated
 public class BitUtil extends org.apache.lucene.util.BitUtil {
   // just inherit for backwards-compatibility reasons
 }

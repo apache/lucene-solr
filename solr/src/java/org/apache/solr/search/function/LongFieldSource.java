@@ -63,7 +63,7 @@ public class LongFieldSource extends NumericFieldCacheSource<LongValues> {
       }
 
       public long longVal(int doc) {
-        return (long) arr[doc];
+        return arr[doc];
       }
 
       public double doubleVal(int doc) {

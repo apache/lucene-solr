@@ -51,6 +51,7 @@ import org.apache.lucene.search.highlight.*;
  * @deprecated use DefaultSolrHighlighter
  * @see DefaultSolrHighlighter
  */
+@Deprecated
 public class HighlightingUtils implements HighlightParams {
 
    static SolrParams DEFAULTS = null;
@@ -76,6 +77,7 @@ public class HighlightingUtils implements HighlightParams {
     * @deprecated use DefaultSolrHighlighter
     * @see DefaultSolrHighlighter#isHighlightingEnabled
     */
+   @Deprecated
    public static boolean isHighlightingEnabled(SolrQueryRequest request) {
      return HIGHLIGHTER.isHighlightingEnabled(getParams(request));
    }
@@ -84,6 +86,7 @@ public class HighlightingUtils implements HighlightParams {
     * @deprecated use DefaultSolrHighlighter
     * @see DefaultSolrHighlighter
     */
+   @Deprecated
    public static Highlighter getHighlighter(Query query, String fieldName, SolrQueryRequest request) {
      return HIGHLIGHTER.getHighlighterX(query, fieldName, request);
    }
@@ -92,6 +95,7 @@ public class HighlightingUtils implements HighlightParams {
     * @deprecated use DefaultSolrHighlighter
     * @see DefaultSolrHighlighter#getHighlightFields
     */
+   @Deprecated
    public static String[] getHighlightFields(Query query, SolrQueryRequest request, String[] defaultFields) {
      return HIGHLIGHTER.getHighlightFields(query, request, defaultFields);
    }
@@ -100,6 +104,7 @@ public class HighlightingUtils implements HighlightParams {
     * @deprecated use DefaultSolrHighlighter
     * @see DefaultSolrHighlighter
     */
+   @Deprecated
    public static int getMaxSnippets(String fieldName, SolrQueryRequest request) {
      return HIGHLIGHTER.getMaxSnippetsX(fieldName, request);
    }
@@ -108,6 +113,7 @@ public class HighlightingUtils implements HighlightParams {
     * @deprecated use DefaultSolrHighlighter
     * @see DefaultSolrHighlighter
     */
+   @Deprecated
    public static Formatter getFormatter(String fieldName, SolrQueryRequest request) {
      return HIGHLIGHTER.getFormatterX(fieldName, request);
    }
@@ -116,6 +122,7 @@ public class HighlightingUtils implements HighlightParams {
     * @deprecated use DefaultSolrHighlighter
     * @see DefaultSolrHighlighter
     */
+   @Deprecated
    public static Fragmenter getFragmenter(String fieldName, SolrQueryRequest request) {
      return HIGHLIGHTER.getFragmenterX(fieldName, request);
    }
@@ -124,7 +131,7 @@ public class HighlightingUtils implements HighlightParams {
     * @deprecated use DefaultSolrHighlighter
     * @see DefaultSolrHighlighter#doHighlighting
     */
-   @SuppressWarnings("unchecked")
+   @Deprecated @SuppressWarnings("unchecked")
    public static NamedList doHighlighting(DocList docs, Query query, SolrQueryRequest req, String[] defaultFields) throws IOException {
      return HIGHLIGHTER.doHighlighting(docs, query, req, defaultFields);
    }

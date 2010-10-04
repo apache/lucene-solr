@@ -167,7 +167,7 @@ public abstract class AbstractLuceneSpellChecker extends SolrSpellChecker {
     Term term = field != null ? new Term(field, "") : null;
     float theAccuracy = (options.accuracy == Float.MIN_VALUE) ? spellChecker.getAccuracy() : options.accuracy;
     
-    int count = (int) Math.max(options.count, AbstractLuceneSpellChecker.DEFAULT_SUGGESTION_COUNT);
+    int count = Math.max(options.count, AbstractLuceneSpellChecker.DEFAULT_SUGGESTION_COUNT);
     for (Token token : options.tokens) {
       String tokenText = new String(token.buffer(), 0, token.length());
       String[] suggestions = spellChecker.suggestSimilar(tokenText,

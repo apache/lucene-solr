@@ -52,7 +52,7 @@ public class ByteFieldSource extends NumericFieldCacheSource<ByteValues> {
     return new DocValues() {
       @Override
       public byte byteVal(int doc) {
-        return (byte) arr[doc];
+        return arr[doc];
       }
 
       @Override

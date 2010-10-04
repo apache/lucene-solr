@@ -251,7 +251,7 @@ public class  FacetComponent extends SearchComponent
       NamedList facet_queries = (NamedList)facet_counts.get("facet_queries");
       if (facet_queries != null) {
         for (int i=0; i<facet_queries.size(); i++) {
-          String returnedKey = (String)facet_queries.getName(i);
+          String returnedKey = facet_queries.getName(i);
           long count = ((Number)facet_queries.getVal(i)).longValue();
           QueryFacet qf = fi.queryFacets.get(returnedKey);
           qf.count += count;
@@ -341,7 +341,7 @@ public class  FacetComponent extends SearchComponent
 
       for (int i=0; i<facet_fields.size(); i++) {
         String key = facet_fields.getName(i);
-        DistribFieldFacet dff = (DistribFieldFacet)fi.facets.get(key);
+        DistribFieldFacet dff = fi.facets.get(key);
         if (dff == null) continue;
 
         NamedList shardCounts = (NamedList)facet_fields.getVal(i);

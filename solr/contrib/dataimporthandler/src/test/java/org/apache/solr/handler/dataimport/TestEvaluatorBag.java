@@ -154,7 +154,7 @@ public class TestEvaluatorBag extends SolrTestCaseJ4 {
         values.put("key", entry.getKey());
         resolver.addNamespace("A", values);
 
-        String expected = (String) entry.getValue();
+        String expected = entry.getValue();
         String actual = evaluator.evaluate("A.key", ctx);
         assertEquals(expected, actual);
       }

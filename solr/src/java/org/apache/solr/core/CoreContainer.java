@@ -86,6 +86,7 @@ public class CoreContainer
     /**
      * @deprecated all cores now abort on configuration error regardless of configuration
      */
+    @Deprecated
     public boolean isAbortOnConfigurationError() {
       return true;
     }
@@ -94,6 +95,7 @@ public class CoreContainer
      * @exception generates an error if you attempt to set this value to false
      * @deprecated all cores now abort on configuration error regardless of configuration
      */
+    @Deprecated
     public void setAbortOnConfigurationError(boolean abortOnConfigurationError) {
       if (false == abortOnConfigurationError)
         throw new SolrException

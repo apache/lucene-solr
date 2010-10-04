@@ -258,7 +258,7 @@ public class TestSynonymMap extends LuceneTestCase {
   }
   
   private void assertTokIncludes( SynonymMap map, String src, String exp ) throws Exception {
-    Token[] tokens = ((SynonymMap)map.submap.get( src )).synonyms;
+    Token[] tokens = map.submap.get( src ).synonyms;
     boolean inc = false;
     for( Token token : tokens ){
       if( exp.equals( new String(token.buffer(), 0, token.length()) ) )
@@ -268,6 +268,6 @@ public class TestSynonymMap extends LuceneTestCase {
   }
   
   private SynonymMap getSubSynonymMap( SynonymMap map, String src ){
-    return (SynonymMap)map.submap.get( src );
+    return map.submap.get( src );
   }
 }

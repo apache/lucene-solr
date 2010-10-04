@@ -180,7 +180,7 @@ public class SolrConfig extends Config {
 
     httpCachingConfig = new HttpCachingConfig(this);
     
-    Node jmx = (Node) getNode("jmx", false);
+    Node jmx = getNode("jmx", false);
     if (jmx != null) {
       jmxConfig = new JmxConfiguration(true, 
                                        get("jmx/@agentId", null), 

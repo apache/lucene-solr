@@ -408,7 +408,7 @@ public class QueryParsing {
       return null;
     }
 
-    return new Sort((SortField[]) lst.toArray(new SortField[lst.size()]));
+    return new Sort(lst.toArray(new SortField[lst.size()]));
   }
 
 
@@ -508,7 +508,7 @@ public class QueryParsing {
         out.append('(');
       }
       boolean first = true;
-      for (BooleanClause c : (List<BooleanClause>) q.clauses()) {
+      for (BooleanClause c : q.clauses()) {
         if (!first) {
           out.append(' ');
         } else {

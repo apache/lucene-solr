@@ -122,7 +122,7 @@ public class TSTAutocomplete {
     Stack<TernaryTreeNode> st = new Stack<TernaryTreeNode>();
     st.push(p);
     while (!st.empty()) {
-      TernaryTreeNode top = (TernaryTreeNode) st.peek();
+      TernaryTreeNode top = st.peek();
       st.pop();
       if (top.token != null) {
         suggest.add(top);

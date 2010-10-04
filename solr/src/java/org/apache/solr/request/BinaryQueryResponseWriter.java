@@ -20,6 +20,7 @@ package org.apache.solr.request;
 /**
  * @deprecated use org.apache.solr.response.BinaryQueryResponseWriter
  */
+@Deprecated
 public interface BinaryQueryResponseWriter extends org.apache.solr.response.BinaryQueryResponseWriter 
 {
   

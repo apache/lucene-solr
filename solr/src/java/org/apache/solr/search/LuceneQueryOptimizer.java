@@ -65,7 +65,7 @@ class LuceneQueryOptimizer {
     BooleanQuery query = new BooleanQuery();
     BooleanQuery filterQuery = null;
 
-    for (BooleanClause c : (List<BooleanClause>)original.clauses()) {
+    for (BooleanClause c : original.clauses()) {
 
 /***
 System.out.println("required="+c.required);

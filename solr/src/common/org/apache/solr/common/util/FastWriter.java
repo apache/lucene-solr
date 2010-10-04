@@ -55,7 +55,7 @@ public class FastWriter extends Writer {
       sink.write(buf,0,pos);
       pos=0;
     }
-    buf[pos++] = (char)c;
+    buf[pos++] = c;
   }
 
   @Override
@@ -64,7 +64,7 @@ public class FastWriter extends Writer {
       sink.write(buf,0,pos);
       pos=0;
     }
-    buf[pos++] = (char)c;
+    buf[pos++] = c;
     return this;
   }
 

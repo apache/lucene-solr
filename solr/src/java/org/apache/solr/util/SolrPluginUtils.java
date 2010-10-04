@@ -127,6 +127,7 @@ public class SolrPluginUtils {
    * Returns the param, or the default if it's empty or not specified.
    * @deprecated use SolrParam.get(String,String)
    */
+  @Deprecated
   public static String getParam(SolrQueryRequest req,
                                 String param, String def) {
 
@@ -144,6 +145,7 @@ public class SolrPluginUtils {
    * there or if it's not a number.
    * @deprecated use SolrParam.getFloat(String,float)
    */
+  @Deprecated
   public static Number getNumberParam(SolrQueryRequest req,
                                       String param, Number def) {
 
@@ -165,6 +167,7 @@ public class SolrPluginUtils {
    * any other non-empty string is true.
    * @deprecated use SolrParam.getBool(String,boolean)
    */
+  @Deprecated
   public static boolean getBooleanParam(SolrQueryRequest req,
                                        String param, boolean def) {
     String v = req.getParam(param);
@@ -543,6 +546,7 @@ public class SolrPluginUtils {
    * @see #parseFieldBoosts
    * @deprecated
    */
+  @Deprecated
   public static List<Query> parseFuncs(IndexSchema s, String in)
     throws ParseException {
 
@@ -592,7 +596,7 @@ public class SolrPluginUtils {
   public static void setMinShouldMatch(BooleanQuery q, String spec) {
 
     int optionalClauses = 0;
-    for (BooleanClause c : (List<BooleanClause>)q.clauses()) {
+    for (BooleanClause c : q.clauses()) {
       if (c.getOccur() == Occur.SHOULD) {
         optionalClauses++;
       }
@@ -659,7 +663,7 @@ public class SolrPluginUtils {
    */
   public static void flattenBooleanQuery(BooleanQuery to, BooleanQuery from) {
 
-    for (BooleanClause clause : (List<BooleanClause>)from.clauses()) {
+    for (BooleanClause clause : from.clauses()) {
 
       Query cq = clause.getQuery();
       cq.setBoost(cq.getBoost() * from.getBoost());

@@ -236,6 +236,7 @@ public class DateField extends FieldType {
    * 
    * @deprecated - use formatDate(Date) instead
    */
+  @Deprecated
   protected DateFormat getThreadLocalDateFormat() {
     return fmtThreadLocal.get();
   }

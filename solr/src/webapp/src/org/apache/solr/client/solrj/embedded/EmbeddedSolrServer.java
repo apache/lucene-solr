@@ -245,6 +245,7 @@ public class EmbeddedSolrServer extends SolrServer
    * 
    * @deprecated use {@link BinaryResponseWriter#getParsedResponse(SolrQueryRequest, SolrQueryResponse)}
    */
+  @Deprecated
   public NamedList<Object> getParsedResponse( SolrQueryRequest req, SolrQueryResponse rsp )
   {
     return BinaryResponseWriter.getParsedResponse(req, rsp);

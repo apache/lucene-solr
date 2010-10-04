@@ -144,6 +144,7 @@ public class SolrIndexWriter extends IndexWriter {
   }
   
   /** @deprecated remove when getDirectory(String,SolrIndexConfig) is gone */
+  @Deprecated
   private static DirectoryFactory LEGACY_DIR_FACTORY 
     = new StandardDirectoryFactory();
   static {
@@ -153,6 +154,7 @@ public class SolrIndexWriter extends IndexWriter {
   /**
    * @deprecated use getDirectory(String path, DirectoryFactory directoryFactory, SolrIndexConfig config)
    */
+  @Deprecated
   public static Directory getDirectory(String path, SolrIndexConfig config) throws IOException {
     log.warn("SolrIndexWriter is using LEGACY_DIR_FACTORY which means deprecated code is likely in use and SolrIndexWriter is ignoring any custom DirectoryFactory.");
     return getDirectory(path, LEGACY_DIR_FACTORY, config);
@@ -175,6 +177,7 @@ public class SolrIndexWriter extends IndexWriter {
   /**
    * @deprecated
    */
+  @Deprecated
   public SolrIndexWriter(String name, String path, boolean create, IndexSchema schema) throws IOException {
     super(getDirectory(path, null), schema.getAnalyzer(), create, MaxFieldLength.LIMITED);
     init(name, schema, null);
@@ -183,6 +186,7 @@ public class SolrIndexWriter extends IndexWriter {
   /**
    * @deprecated
    */
+  @Deprecated
   public SolrIndexWriter(String name, String path, boolean create, IndexSchema schema, SolrIndexConfig config) throws IOException {
     super(getDirectory(path, config), schema.getAnalyzer(), create, MaxFieldLength.LIMITED);
     init(name, schema, config);

@@ -66,7 +66,7 @@ public class ReverseOrdFieldSource extends ValueSource {
       }
 
       public int intVal(int doc) {
-        return (int)(end - sindex.getOrd(doc));
+        return (end - sindex.getOrd(doc));
       }
 
       public long longVal(int doc) {

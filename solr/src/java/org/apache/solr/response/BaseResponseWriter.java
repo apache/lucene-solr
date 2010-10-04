@@ -167,7 +167,7 @@ public abstract class BaseResponseWriter {
   private static SolrDocument getDoc(int id, IdxInfo info) throws IOException {
     Document doc = info.searcher.doc(id);
     SolrDocument solrDoc = new SolrDocument();
-    for (Fieldable f : (List<Fieldable>) doc.getFields()) {
+    for (Fieldable f : doc.getFields()) {
       String fieldName = f.name();
       if (info.returnFields != null && !info.returnFields.contains(fieldName))
         continue;
