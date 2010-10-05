@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
@@ -589,6 +591,8 @@ public class CheckIndex {
   private Status.TermIndexStatus testTermIndex(SegmentInfo info, SegmentReader reader) {
     final Status.TermIndexStatus status = new Status.TermIndexStatus();
 
+    final IndexSearcher is = new IndexSearcher(reader);
+
     try {
       if (infoStream != null) {
         infoStream.print("    test: terms, freq, prox...");
@@ -601,10 +605,12 @@ public class CheckIndex {
       final MySegmentTermDocs myTermDocs = new MySegmentTermDocs(reader);
 
       final int maxDoc = reader.maxDoc();
-
+      Term lastTerm = null;
       while (termEnum.next()) {
         status.termCount++;
         final Term term = termEnum.term();
+        lastTerm = term;
+
         final int docFreq = termEnum.docFreq();
         termPositions.seek(term);
         int lastDoc = -1;
@@ -649,6 +655,11 @@ public class CheckIndex {
         if (freq0 + delCount != docFreq) {
           throw new RuntimeException("term " + term + " docFreq=" + 
                                      docFreq + " != num docs seen " + freq0 + " + num docs deleted " + delCount);
+        }
+
+        // Test search on last term:
+        if (lastTerm != null) {
+          is.search(new TermQuery(lastTerm), 1);
         }
       }
 
