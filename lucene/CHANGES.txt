@@ -70,17 +70,6 @@ Changes in backwards compatibility policy
     
   (Mike McCandless, Robert Muir, Uwe Schindler, Mark Miller, Michael Busch)
 
-* LUCENE-2386: IndexWriter no longer performs an empty commit upon new index
-  creation. Previously, if you passed an empty Directory and set OpenMode to
-  CREATE*, IndexWriter would make a first empty commit. If you need that 
-  behavior you can call writer.commit()/close() immediately after you create it.
-  (Shai Erera, Mike McCandless)
-  
-* LUCENE-2316: Directory.fileLength contract was clarified - it returns the
-  actual file's length if the file exists, and throws FileNotFoundException
-  otherwise. Returning length=0 for a non-existent file is no longer allowed. If
-  you relied on that, make sure to catch the exception. (Shai Erera)
-
 * LUCENE-2265: FuzzyQuery and WildcardQuery now operate on Unicode codepoints,
   not unicode code units. For example, a Wildcard "?" represents any unicode
   character. Furthermore, the rest of the automaton package and RegexpQuery use 
@@ -260,6 +249,16 @@ New features
   data in a single text file for transparency (at the expense of poor
   performance).  (Sahin Buyrukbilen via Mike McCandless)
 
+* LUCENE-2589: Add a VariableSizedIntIndexInput, which, when used w/
+  Sep*, makes it simple to take any variable sized int block coders
+  (like Simple9/16) and use them in a codec.  (Mike McCandless)
+
+* LUCENE-2597: Add oal.index.SlowMultiReaderWrapper, to wrap a
+  composite reader (eg MultiReader or DirectoryReader), making it
+  pretend it's an atomic reader.  This is a convenience class (you can
+  use MultiFields static methods directly, instead) if you need to use
+  the flex APIs directly on a composite reader.  (Mike McCandless)
+  
 Optimizations
 
 * LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.
@@ -660,16 +659,6 @@ New features
 * LUCENE-2526: Don't throw NPE from MultiPhraseQuery.toString when
   it's empty.  (Ross Woolf via Mike McCandless)
 
-* LUCENE-2589: Add a VariableSizedIntIndexInput, which, when used w/
-  Sep*, makes it simple to take any variable sized int block coders
-  (like Simple9/16) and use them in a codec.  (Mike McCandless)
-
-* LUCENE-2597: Add oal.index.SlowMultiReaderWrapper, to wrap a
-  composite reader (eg MultiReader or DirectoryReader), making it
-  pretend it's an atomic reader.  This is a convenience class (you can
-  use MultiFields static methods directly, instead) if you need to use
-  the flex APIs directly on a composite reader.  (Mike McCandless)
-  
 * LUCENE-2671: Add SortField.setMissingValue( v ) to enable sorting
   behavior for documents that do not include the given field. (ryan)
 
