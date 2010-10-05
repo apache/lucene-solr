@@ -232,7 +232,8 @@ public class State implements Serializable, Comparable<State> {
   
   /** Sorts transitions array in-place. */
   public void sortTransitions(Comparator<Transition> comparator) {
-    Arrays.sort(transitionsArray, 0, numTransitions, comparator);
+    if (numTransitions > 1)
+      Arrays.sort(transitionsArray, 0, numTransitions, comparator);
   }
   
   /**
