@@ -682,8 +682,7 @@ Optimizations
 
 * LUCENE-2123, LUCENE-2261: Move FuzzyQuery rewrite to separate RewriteMode 
   into MultiTermQuery. The number of fuzzy expansions can be specified with
-  the maxExpansions parameter to FuzzyQuery, but the default is limited to
-  BooleanQuery.maxClauseCount() as before. 
+  the maxExpansions parameter to FuzzyQuery.
   (Uwe Schindler, Robert Muir, Mike McCandless)
 
 * LUCENE-2164: ConcurrentMergeScheduler has more control over merge

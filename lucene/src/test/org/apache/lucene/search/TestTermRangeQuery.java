@@ -138,7 +138,7 @@ public class TestTermRangeQuery extends LuceneTestCase {
   }
   
   private void checkBooleanTerms(Searcher searcher, TermRangeQuery query, String... terms) throws IOException {
-    query.setRewriteMethod(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite());
+    query.setRewriteMethod(new MultiTermQuery.TopTermsScoringBooleanQueryRewrite(50));
     final BooleanQuery bq = (BooleanQuery) searcher.rewrite(query);
     final Set<String> allowedTerms = new HashSet<String>(Arrays.asList(terms));
     assertEquals(allowedTerms.size(), bq.clauses().size());

@@ -283,14 +283,6 @@ public abstract class MultiTermQuery extends Query {
       this.size = size;
     }
     
-    /** 
-     * Create a TopTermsBooleanQueryRewrite that is limited
-     * to at most {@link BooleanQuery#getMaxClauseCount} terms. 
-     */
-    public TopTermsBooleanQueryRewrite() {
-      this(Integer.MAX_VALUE);
-    }
-    
     /** Return a suitable Query for a MultiTermQuery term. */
     protected abstract Query getQuery(Term term, int docCount);
 
@@ -380,14 +372,6 @@ public abstract class MultiTermQuery extends Query {
       TopTermsBooleanQueryRewrite {
 
     /** 
-     * Create a TopTermsScoringBooleanQueryRewrite that is limited
-     * to at most {@link BooleanQuery#getMaxClauseCount} terms. 
-     */
-    public TopTermsScoringBooleanQueryRewrite() {
-      super();
-    }
-
-    /** 
      * Create a TopTermsScoringBooleanQueryRewrite for 
      * at most <code>size</code> terms.
      * <p>
@@ -417,14 +401,6 @@ public abstract class MultiTermQuery extends Query {
   public static final class TopTermsBoostOnlyBooleanQueryRewrite extends
       TopTermsBooleanQueryRewrite {
     
-    /** 
-     * Create a TopTermsBoostOnlyBooleanQueryRewrite that is limited
-     * to at most {@link BooleanQuery#getMaxClauseCount} terms. 
-     */
-    public TopTermsBoostOnlyBooleanQueryRewrite() {
-      super();
-    }
-
     /** 
      * Create a TopTermsBoostOnlyBooleanQueryRewrite for 
      * at most <code>size</code> terms.
