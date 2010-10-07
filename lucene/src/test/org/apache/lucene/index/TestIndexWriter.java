@@ -77,7 +77,6 @@ import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
-import org.junit.Assume;
 
 public class TestIndexWriter extends LuceneTestCase {
 
@@ -3532,7 +3531,7 @@ public class TestIndexWriter extends LuceneTestCase {
     assertEquals(0, tps.nextPosition());
     w.close();
 
-    assertTrue(_TestUtil.checkIndex(dir));
+    _TestUtil.checkIndex(dir);
     s.close();
     dir.close();
   }
@@ -5275,7 +5274,6 @@ public class TestIndexWriter extends LuceneTestCase {
   // LUCENE-2593
   public void testCorruptionAfterDiskFullDuringMerge() throws IOException {
     MockDirectoryWrapper dir = newDirectory();
-    final Random rand = random;
     //IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setReaderPooling(true));
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setMergeScheduler(new SerialMergeScheduler()).setReaderPooling(true));
 

@@ -68,7 +68,7 @@ public class _TestUtil {
   /** This runs the CheckIndex tool on the index in.  If any
    *  issues are hit, a RuntimeException is thrown; else,
    *  true is returned. */
-  public static boolean checkIndex(Directory dir) throws IOException {
+  public static CheckIndex.Status checkIndex(Directory dir) throws IOException {
     ByteArrayOutputStream bos = new ByteArrayOutputStream(1024);
 
     CheckIndex checker = new CheckIndex(dir);
@@ -78,8 +78,9 @@ public class _TestUtil {
       System.out.println("CheckIndex failed");
       System.out.println(bos.toString());
       throw new RuntimeException("CheckIndex failed");
-    } else
-      return true;
+    } else {
+      return indexStatus;
+    }
   }
 
   /** start and end are BOTH inclusive */

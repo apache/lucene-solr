@@ -34,43 +34,35 @@ import org.junit.Ignore;
 // disk (but, should run successfully).  Best to run w/
 // -Dtests.codec=Standard, and w/ plenty of RAM, eg:
 //
-//   ant compile-core compile-test
+//   ant compile-test
 //
-//  java -server -Xmx2g -Xms2g -d64 -cp .:lib/junit-4.7.jar:./build/classes/test:./build/classes/java:./build/classes/demo -Dlucene.version=4.0-dev -Dtests.codec=Standard -DtempDir=build -ea org.junit.runner.JUnitCore org.apache.lucene.index.Test2BTerms
+//   java -server -Xmx2g -Xms2g -d64 -cp .:lib/junit-4.7.jar:./build/classes/test:./build/classes/java -Dlucene.version=4.0-dev -Dtests.directory=SimpleFSDirectory -Dtests.codec=Standard -DtempDir=build -ea org.junit.runner.JUnitCore org.apache.lucene.index.Test2BTerms
 //
 
 public class Test2BTerms extends LuceneTestCase {
 
-  private final static BytesRef bytes = new BytesRef(20);
+  private final static int TOKEN_LEN = 10;
+
+  private final static BytesRef bytes = new BytesRef(TOKEN_LEN);
 
   private static final class MyTokenStream extends TokenStream {
 
     private final int tokensPerDoc;
     private int tokenCount;
+    private int byteUpto;
 
     public MyTokenStream(int tokensPerDoc) {
       super(new MyAttributeFactory(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY));
       this.tokensPerDoc = tokensPerDoc;
       addAttribute(TermToBytesRefAttribute.class);
+      bytes.length = TOKEN_LEN;
     }
     
     public boolean incrementToken() {
       if (tokenCount >= tokensPerDoc) {
         return false;
       }
-      final byte[] bs = bytes.bytes;
-      for(int i=bytes.length-1;i>=0;i--) {
-        int b = bs[i]&0xff;
-        if (b == 0xff) {
-          bs[i] = 0;
-        } else {
-          bs[i] = (byte) (++b);
-          tokenCount++;
-          return true;
-        }
-      }
-      bytes.length++;
-      bs[0] = 1;
+      random.nextBytes(bytes.bytes);
       tokenCount++;
       return true;
     }
@@ -141,7 +133,7 @@ public class Test2BTerms extends LuceneTestCase {
 
     Directory dir = FSDirectory.open(_TestUtil.getTempDir("2BTerms"));
     IndexWriter w = new IndexWriter(dir,
-                                    newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
+                                    new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer())
                                                   .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
                                                 .setRAMBufferSizeMB(256.0).setMergeScheduler(new ConcurrentMergeScheduler()));
     ((LogMergePolicy) w.getConfig().getMergePolicy()).setUseCompoundFile(false);
@@ -156,14 +148,19 @@ public class Test2BTerms extends LuceneTestCase {
     //w.setInfoStream(System.out);
     final int numDocs = (int) (TERM_COUNT/TERMS_PER_DOC);
     for(int i=0;i<numDocs;i++) {
+      final long t0 = System.currentTimeMillis();
       w.addDocument(doc);
-      System.out.println(i + " of " + numDocs);
+      System.out.println(i + " of " + numDocs + " " + (System.currentTimeMillis()-t0) + " msec");
     }
     System.out.println("now optimize...");
     w.optimize();
     w.close();
 
-    _TestUtil.checkIndex(dir);
+    System.out.println("now CheckIndex...");
+    CheckIndex.Status status = _TestUtil.checkIndex(dir);
+    final long tc = status.segmentInfos.get(0).termIndexStatus.termCount;
+    assertTrue("count " + tc + " is not > " + Integer.MAX_VALUE, tc > Integer.MAX_VALUE);
+
     dir.close();
   }
 }
