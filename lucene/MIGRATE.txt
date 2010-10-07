@@ -283,3 +283,32 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
   you also override this method on upgrade, otherwise your
   customizations won't run for certain MultiTermQuerys.
 
+* LUCENE-2413: Lucene's core and contrib analyzers, along with Solr's analyzers,
+  were consolidated into modules/analysis. During the refactoring some
+  package names have changed:
+    - o.a.l.analysis.KeywordAnalyzer -> o.a.l.analysis.core.KeywordAnalyzer
+    - o.a.l.analysis.KeywordTokenizer -> o.a.l.analysis.core.KeywordTokenizer
+    - o.a.l.analysis.LetterTokenizer -> o.a.l.analysis.core.LetterTokenizer
+    - o.a.l.analysis.LowerCaseFilter -> o.a.l.analysis.core.LowerCaseFilter
+    - o.a.l.analysis.LowerCaseTokenizer -> o.a.l.analysis.core.LowerCaseTokenizer
+    - o.a.l.analysis.SimpleAnalyzer -> o.a.l.analysis.core.SimpleAnalyzer
+    - o.a.l.analysis.StopAnalyzer -> o.a.l.analysis.core.StopAnalyzer
+    - o.a.l.analysis.StopFilter -> o.a.l.analysis.core.StopFilter
+    - o.a.l.analysis.WhitespaceAnalyzer -> o.a.l.analysis.core.WhitespaceAnalyzer
+    - o.a.l.analysis.WhitespaceTokenizer -> o.a.l.analysis.core.WhitespaceTokenizer
+    - o.a.l.analysis.PorterStemFilter -> o.a.l.analysis.en.PorterStemFilter
+    - o.a.l.analysis.ASCIIFoldingFilter -> o.a.l.analysis.miscellaneous.ASCIIFoldingFilter
+    - o.a.l.analysis.ISOLatin1AccentFilter -> o.a.l.analysis.miscellaneous.ISOLatin1AccentFilter
+    - o.a.l.analysis.KeywordMarkerFilter -> o.a.l.analysis.miscellaneous.KeywordMarkerFilter
+    - o.a.l.analysis.LengthFilter -> o.a.l.analysis.miscellaneous.LengthFilter
+    - o.a.l.analysis.PerFieldAnalyzerWrapper -> o.a.l.analysis.miscellaneous.PerFieldAnalyzerWrapper
+    - o.a.l.analysis.TeeSinkTokenFilter -> o.a.l.analysis.sinks.TeeSinkTokenFilter
+    - o.a.l.analysis.CharFilter -> o.a.l.analysis.charfilter.CharFilter
+    - o.a.l.analysis.BaseCharFilter -> o.a.l.analysis.charfilter.BaseCharFilter
+    - o.a.l.analysis.MappingCharFilter -> o.a.l.analysis.charfilter.MappingCharFilter
+    - o.a.l.analysis.NormalizeCharMap -> o.a.l.analysis.charfilter.NormalizeCharMap
+    - o.a.l.analysis.CharArraySet -> o.a.l.analysis.util.CharArraySet
+    - o.a.l.analysis.CharArrayMap -> o.a.l.analysis.util.CharArrayMap
+    - o.a.l.analysis.ReusableAnalyzerBase -> o.a.l.analysis.util.ReusableAnalyzerBase
+    - o.a.l.analysis.StopwordAnalyzerBase -> o.a.l.analysis.util.StopwordAnalyzerBase
+    - o.a.l.analysis.WordListLoader -> o.a.l.analysis.util.WordListLoader
