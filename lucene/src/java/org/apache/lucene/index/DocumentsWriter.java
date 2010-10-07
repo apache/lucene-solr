@@ -716,10 +716,12 @@ final class DocumentsWriter {
    * been acquired. */
   synchronized DocumentsWriterThreadState getThreadState(Document doc, Term delTerm) throws IOException {
 
+    final Thread currentThread = Thread.currentThread();
+
     // First, find a thread state.  If this thread already
     // has affinity to a specific ThreadState, use that one
     // again.
-    DocumentsWriterThreadState state = threadBindings.get(Thread.currentThread());
+    DocumentsWriterThreadState state = threadBindings.get(currentThread);
     if (state == null) {
 
       // First time this thread has called us since last
@@ -741,7 +743,7 @@ final class DocumentsWriter {
         state = newArray[threadStates.length] = new DocumentsWriterThreadState(this);
         threadStates = newArray;
       }
-      threadBindings.put(Thread.currentThread(), state);
+      threadBindings.put(currentThread, state);
     }
 
     // Next, wait until my thread state is idle (in case

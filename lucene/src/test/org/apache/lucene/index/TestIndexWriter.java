@@ -3574,7 +3574,7 @@ public class TestIndexWriter extends LuceneTestCase {
     assertEquals(0, tps.nextPosition());
     w.close();
 
-    assertTrue(_TestUtil.checkIndex(dir));
+    _TestUtil.checkIndex(dir);
     s.close();
     dir.close();
   }
@@ -5209,7 +5209,6 @@ public class TestIndexWriter extends LuceneTestCase {
   // LUCENE-2593
   public void testCorruptionAfterDiskFullDuringMerge() throws IOException {
     MockDirectoryWrapper dir = newDirectory();
-    final Random rand = random;
     //IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(rand, TEST_VERSION_CURRENT, new MockAnalyzer()).setReaderPooling(true));
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig(TEST_VERSION_CURRENT, new WhitespaceAnalyzer(TEST_VERSION_CURRENT)).setMergeScheduler(new SerialMergeScheduler()).setReaderPooling(true));
 

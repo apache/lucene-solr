@@ -25,17 +25,12 @@ import org.apache.lucene.document.*;
 import java.io.IOException;
 import org.junit.Ignore;
 
-// NOTE: this test will fail w/ PreFlexRW codec!  (Because
-// this test uses full binary term space, but PreFlex cannot
-// handle this since it requires the terms are UTF8 bytes).
+// Best to run this test w/ plenty of RAM (because of the
+// terms index):
 //
-// Also, SimpleText codec will consume very large amounts of
-// disk (but, should run successfully).  Best to run w/
-// -Dtests.codec=Standard, and w/ plenty of RAM, eg:
+//   ant compile-test
 //
-//   ant compile-core compile-test
-//
-//   java -server -Xmx2g -Xms2g -d64 -cp .:lib/junit-4.7.jar:./build/classes/test:./build/classes/java:./build/classes/demo -Dlucene.version=4.0-dev -Dtests.codec=Standard -DtempDir=build -ea org.junit.runner.JUnitCore org.apache.lucene.index.Test2BTerms
+//   java -server -Xmx8g -d64 -cp .:lib/junit-4.7.jar:./build/classes/test:./build/classes/java -Dlucene.version=4.0-dev -Dtests.directory=SimpleFSDirectory -DtempDir=build -ea org.junit.runner.JUnitCore org.apache.lucene.index.Test2BTerms
 //
 
 public class Test2BTerms extends LuceneTestCase {
@@ -45,35 +40,30 @@ public class Test2BTerms extends LuceneTestCase {
     private final int tokensPerDoc;
     private int tokenCount;
     private final CharTermAttribute charTerm;
+    private final static int TOKEN_LEN = 5;
     private final char[] chars;
+    private final byte[] bytes;
+    private int charUpto;
 
     public MyTokenStream(int tokensPerDoc) {
       super();
       this.tokensPerDoc = tokensPerDoc;
       charTerm = addAttribute(CharTermAttribute.class);
-      chars = charTerm.resizeBuffer(30);
+      chars = charTerm.resizeBuffer(TOKEN_LEN);
+      charTerm.setLength(TOKEN_LEN);
+      bytes = new byte[2*TOKEN_LEN];
     }
     
     public boolean incrementToken() {
       if (tokenCount >= tokensPerDoc) {
         return false;
       }
-      //System.out.println("len=" + charTerm.length());
-      for(int i=charTerm.length()-1;i>=0;i--) {
-        int c = chars[i];
-        if (c == UnicodeUtil.UNI_SUR_HIGH_START-1) {
-          chars[i] = 0;
-          //System.out.println("SKIP");
-        } else {
-          chars[i] = (char) (++c);
-          tokenCount++;
-          //System.out.println("t=" + Integer.toString(chars[i], 16) + " " + (UnicodeUtil.UNI_SUR_HIGH_START-c) + " eq?=" + (c==UnicodeUtil.UNI_SUR_HIGH_START));
-          return true;
-        }
+      random.nextBytes(bytes);
+      int byteUpto = 0;
+      for(int i=0;i<TOKEN_LEN;i++) {
+        chars[i] = (char) (((bytes[byteUpto]&0xff) + (bytes[byteUpto+1]&0xff)) % UnicodeUtil.UNI_SUR_HIGH_START);
+        byteUpto += 2;
       }
-      charTerm.setLength(1+charTerm.length());
-      System.out.println("new len");
-      chars[0] = 1;
       tokenCount++;
       return true;
     }
@@ -83,7 +73,7 @@ public class Test2BTerms extends LuceneTestCase {
     }
   }
 
-  @Ignore("Takes ~4 hours to run on a fast machine!!  And requires that you don't use PreFlex codec.")
+  @Ignore("Takes ~4 hours to run on a fast machine!!")
   public void test2BTerms() throws IOException {
 
     long TERM_COUNT = ((long) Integer.MAX_VALUE) + 100000000;
@@ -107,14 +97,18 @@ public class Test2BTerms extends LuceneTestCase {
     w.setInfoStream(System.out);
     final int numDocs = (int) (TERM_COUNT/TERMS_PER_DOC);
     for(int i=0;i<numDocs;i++) {
+      final long t0 = System.currentTimeMillis();
       w.addDocument(doc);
-      System.out.println(i + " of " + numDocs);
+      System.out.println(i + " of " + numDocs + " " + (System.currentTimeMillis()-t0) + " msec");
     }
     System.out.println("now optimize...");
     w.optimize();
     w.close();
 
-    _TestUtil.checkIndex(dir);
+    System.out.println("now CheckIndex...");
+    CheckIndex.Status status = _TestUtil.checkIndex(dir);
+    final long tc = status.segmentInfos.get(0).termIndexStatus.termCount;
+    assertTrue("count " + tc + " is not > " + Integer.MAX_VALUE, tc > Integer.MAX_VALUE);
     dir.close();
   }
 }
