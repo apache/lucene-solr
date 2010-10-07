@@ -382,6 +382,10 @@ Changes in runtime behavior
   usage, allowing applications to accidentally open two writers on the
   same directory.  (Mike McCandless)
 
+* LUCENE-2689: NativeFSLockFactory no longer attempts to acquire a
+  test lock just before the real lock is acquired.  (Surinder Pal
+  Singh Bindra via Mike McCandless)
+
 API Changes
 
 * LUCENE-2076: Rename FSDirectory.getFile -> getDirectory.  (George
