@@ -17,14 +17,12 @@ package org.apache.lucene.store;
  * limitations under the License.
  */
 
-import java.lang.management.ManagementFactory;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.io.File;
 import java.io.RandomAccessFile;
 import java.io.IOException;
 import java.util.HashSet;
-import java.util.Random;
 
 /**
  * <p>Implements {@link LockFactory} using native OS file
@@ -57,54 +55,6 @@ import java.util.Random;
  */
 
 public class NativeFSLockFactory extends FSLockFactory {
-
-  private volatile boolean tested = false;
-
-  // Simple test to verify locking system is "working".  On
-  // NFS, if it's misconfigured, you can hit long (35
-  // second) timeouts which cause Lock.obtain to take far
-  // too long (it assumes the obtain() call takes zero
-  // time). 
-  private synchronized void acquireTestLock() {
-    if (tested) return;
-    tested = true;
-    
-    // Ensure that lockDir exists and is a directory.
-    if (!lockDir.exists()) {
-      if (!lockDir.mkdirs())
-        throw new RuntimeException("Cannot create directory: " +
-                              lockDir.getAbsolutePath());
-    } else if (!lockDir.isDirectory()) {
-      throw new RuntimeException("Found regular file where directory expected: " + 
-                            lockDir.getAbsolutePath());
-    }
-
-    // add the RuntimeMXBean's name to the lock file, to reduce the chance for
-    // name collisions when this code is invoked by multiple JVMs (such as in
-    // our tests). On most systems, the name includes the process Id.
-    // Also, remove any non-alphanumeric characters, so that the lock file will
-    // be created for sure on all systems.
-    String randomLockName = "lucene-"
-        + ManagementFactory.getRuntimeMXBean().getName().replaceAll("[^a-zA-Z0-9]+","") + "-"
-        + Long.toString(new Random().nextInt(), Character.MAX_RADIX)
-        + "-test.lock";
-    
-    Lock l = makeLock(randomLockName);
-    try {
-      l.obtain();
-      l.release();
-      // If the test lock failed to delete after all the attempts, attempt a
-      // delete when the JVM exits.
-      File lockFile = new File(lockDir, randomLockName);
-      if (lockFile.exists()) {
-        lockFile.deleteOnExit();
-      }
-    } catch (IOException e) {
-      RuntimeException e2 = new RuntimeException("Failed to acquire random test lock; please verify filesystem for lock directory '" + lockDir + "' supports locking");
-      e2.initCause(e);
-      throw e2;
-    }    
-  }
 
   /**
    * Create a NativeFSLockFactory instance, with null (unset)
@@ -139,7 +89,6 @@ public class NativeFSLockFactory extends FSLockFactory {
 
   @Override
   public synchronized Lock makeLock(String lockName) {
-    acquireTestLock();
     if (lockPrefix != null)
       lockName = lockPrefix + "-" + lockName;
     return new NativeFSLock(lockDir, lockName);
