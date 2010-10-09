@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queryParser.QueryParser;
@@ -278,6 +279,48 @@ public class TestFuzzyQuery extends LuceneTestCase {
     searcher.close();
     reader.close();
     directory.close();
+  }
+  
+  /** 
+   * MultiTermQuery provides (via attribute) information about which values
+   * must be competitive to enter the priority queue. 
+   * 
+   * FuzzyQuery optimizes itself around this information, if the attribute
+   * is not implemented correctly, there will be problems!
+   */
+  public void testTieBreaker() throws Exception {
+    Directory directory = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, directory);
+    addDoc("a123456", writer);
+    addDoc("c123456", writer);
+    addDoc("d123456", writer);
+    addDoc("e123456", writer);
+    
+    Directory directory2 = newDirectory();
+    RandomIndexWriter writer2 = new RandomIndexWriter(random, directory2);
+    addDoc("a123456", writer2);
+    addDoc("b123456", writer2);
+    addDoc("b123456", writer2);
+    addDoc("b123456", writer2);
+    addDoc("c123456", writer2);
+    addDoc("f123456", writer2);
+    
+    IndexReader ir1 = writer.getReader();
+    IndexReader ir2 = writer2.getReader();
+    
+    MultiReader mr = new MultiReader(ir1, ir2);
+    IndexSearcher searcher = new IndexSearcher(mr);
+    FuzzyQuery fq = new FuzzyQuery(new Term("field", "z123456"), 1f, 0, 2);
+    TopDocs docs = searcher.search(fq, 2);
+    assertEquals(5, docs.totalHits); // 5 docs, from the a and b's
+    searcher.close();
+    mr.close();
+    ir1.close();
+    ir2.close();
+    writer.close();
+    writer2.close();
+    directory.close();
+    directory2.close(); 
   }
   
   public void testTokenLengthOpt() throws IOException {
