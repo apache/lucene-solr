@@ -15,6 +15,9 @@ API Changes
    RFCs.  ClassicTokenizer/Analyzer retains the old StandardTokenizer/Analyzer
    behavior.  (Steven Rowe, Robert Muir, Uwe Schindler)
 
+ * LUCENE-1370: Added ShingleFilter option to output unigrams if no shingles
+   can be generated. (Chris Harris via Steven Rowe)
+   
 New Features
    
  * LUCENE-2413: Consolidated Solr analysis components into common. 
