@@ -128,20 +128,19 @@ public class TestBoolean2 extends LuceneTestCase {
 //System.out.println();
 //System.out.println("Query: " + queryText);
 
-    Query query1 = makeQuery(queryText);
+    Query query = makeQuery(queryText);
     TopScoreDocCollector collector = TopScoreDocCollector.create(1000, false);
-    searcher.search(query1, null, collector);
+    searcher.search(query, null, collector);
     ScoreDoc[] hits1 = collector.topDocs().scoreDocs;
-    
-    Query query2 = makeQuery(queryText); // there should be no need to parse again...
+
     collector = TopScoreDocCollector.create(1000, true);
-    searcher.search(query2, null, collector);
+    searcher.search(query, null, collector);
     ScoreDoc[] hits2 = collector.topDocs().scoreDocs; 
 
     assertEquals(mulFactor * collector.totalHits,
-                 bigSearcher.search(query1, 1).totalHits);
+                 bigSearcher.search(query, 1).totalHits);
       
-    CheckHits.checkHitsQuery(query2, hits1, hits2, expDocNrs);
+    CheckHits.checkHitsQuery(query, hits1, hits2, expDocNrs);
   }
 
   @Test
