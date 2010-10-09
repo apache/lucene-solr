@@ -38,6 +38,7 @@ public final class ShingleAnalyzerWrapper extends Analyzer {
   private int minShingleSize = ShingleFilter.DEFAULT_MIN_SHINGLE_SIZE;
   private String tokenSeparator = ShingleFilter.TOKEN_SEPARATOR;
   private boolean outputUnigrams = true;
+  private boolean outputUnigramsIfNoShingles = false;
 
   public ShingleAnalyzerWrapper(Analyzer defaultAnalyzer) {
     super();
@@ -147,6 +148,24 @@ public final class ShingleAnalyzerWrapper extends Analyzer {
   public void setOutputUnigrams(boolean outputUnigrams) {
     this.outputUnigrams = outputUnigrams;
   }
+  
+  public boolean isOutputUnigramsIfNoShingles() {
+    return outputUnigramsIfNoShingles;
+  }
+  
+  /**
+   * <p>Shall we override the behavior of outputUnigrams==false for those
+   * times when no shingles are available (because there are fewer than
+   * minShingleSize tokens in the input stream)? (default: false.)
+   * <p>Note that if outputUnigrams==true, then unigrams are always output,
+   * regardless of whether any shingles are available.
+   *
+   * @param outputUnigramsIfNoShingles Whether or not to output a single
+   *  unigram when no shingles are available.
+   */
+  public void setOutputUnigramsIfNoShingles(boolean outputUnigramsIfNoShingles) {
+    this.outputUnigramsIfNoShingles = outputUnigramsIfNoShingles;
+  }
 
   @Override
   public TokenStream tokenStream(String fieldName, Reader reader) {
@@ -161,6 +180,7 @@ public final class ShingleAnalyzerWrapper extends Analyzer {
     filter.setMaxShingleSize(maxShingleSize);
     filter.setTokenSeparator(tokenSeparator);
     filter.setOutputUnigrams(outputUnigrams);
+    filter.setOutputUnigramsIfNoShingles(outputUnigramsIfNoShingles);
     return filter;
   }
   
@@ -192,6 +212,7 @@ public final class ShingleAnalyzerWrapper extends Analyzer {
     streams.shingle.setMinShingleSize(minShingleSize);
     streams.shingle.setTokenSeparator(tokenSeparator);
     streams.shingle.setOutputUnigrams(outputUnigrams);
+    streams.shingle.setOutputUnigramsIfNoShingles(outputUnigramsIfNoShingles);
     return streams.shingle;
   }
 }
