@@ -216,4 +216,23 @@ public class TestShingleFilterFactory extends BaseTokenTestCase {
         new String[] { "this=BLAH=is=BLAH=a", "this=BLAH=is=BLAH=a=BLAH=test", 
         "is=BLAH=a=BLAH=test", });
   }
+
+  /**
+   * Test with unigrams disabled except when there are no shingles, with
+   * a single input token. Using default min/max shingle sizes: 2/2.  No
+   * shingles will be created, since there are fewer input tokens than
+   * min shingle size.  However, because outputUnigramsIfNoShingles is
+   * set to true, even though outputUnigrams is set to false, one
+   * unigram should be output.
+   */
+  public void testOutputUnigramsIfNoShingles() throws Exception {
+    Reader reader = new StringReader("test");
+    Map<String,String> args = new HashMap<String,String>();
+    args.put("outputUnigrams", "false");
+    args.put("outputUnigramsIfNoShingles", "true");
+    ShingleFilterFactory factory = new ShingleFilterFactory();
+    factory.init(args);
+    TokenStream stream = factory.create(new WhitespaceTokenizer(DEFAULT_VERSION, reader));
+    assertTokenStreamContents(stream, new String[] { "test" });
+  }
 }

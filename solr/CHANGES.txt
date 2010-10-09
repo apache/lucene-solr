@@ -168,6 +168,11 @@ New Features
   parameters for controlling the minimum shingle size produced by the filter, and
   the separator string that it uses, respectively.  (Steven Rowe via rmuir)
   
+* SOLR-744: ShingleFilterFactory supports the "outputUnigramsIfNoShingles"
+  parameter, to output unigrams if the number of input tokens is fewer than
+  minShingleSize, and no shingles can be generated.  
+  (Chris Harris via Steven Rowe)
+  
 * SOLR-571: The autowarmCount for LRUCaches (LRUCache and FastLRUCache) now 
   supports "percentages" which get evaluated  relative the current size of 
   the cache when warming happens. 
