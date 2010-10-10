@@ -514,6 +514,8 @@ Bug Fixes
   getLatestAccessedItems(0) or getOldestAccessedItems(0).
   (David Smiley via hossman)
 
+* SOLR-2148: Highlighter doesn't support q.alt. (koji)
+
 Other Changes
 ----------------------
 
