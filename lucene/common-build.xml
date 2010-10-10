@@ -41,6 +41,7 @@
   <property name="name" value="${ant.project.name}"/>
   <property name="Name" value="Lucene"/>
   <property name="dev.version" value="4.0-SNAPSHOT"/>
+  <property name="tests.luceneMatchVersion" value="4.0"/>
   <property name="version" value="${dev.version}"/>
   <property name="spec.version" value="${version}"/>	
   <property name="year" value="2000-${current.year}"/>
@@ -69,6 +70,8 @@
   <property name="tests.directory" value="random" />
   <property name="tests.iter" value="1" />
   <property name="tests.seed" value="random" />
+  <property name="tests.userdir" value="."/>
+  <property name="tests.loggingfile" value="/dev/null"/>
     
   <property name="javac.deprecation" value="off"/>
   <property name="javac.debug" value="on"/>
@@ -98,6 +101,7 @@
   <property name="build.encoding" value="utf-8"/>
 
   <property name="src.dir" location="src/java"/>
+  <property name="tests.src.dir" location="src/test"/>
   <property name="build.dir" location="build"/>
   <property name="dist.dir" location="dist"/>
   <property name="maven.dist.dir" location="dist/maven"/>
@@ -183,7 +187,7 @@
   -->
   <target name="javacc-uptodate-check">
     <uptodate property="javacc.files.uptodate">
-      <srcfiles dir="src/java" includes="**/*.jj" />
+      <srcfiles dir="${src.dir}" includes="**/*.jj" />
       <mapper type="glob" from="*.jj" to="*.java"/>
     </uptodate>
   </target>
@@ -201,7 +205,7 @@
 
   <target name="jflex-uptodate-check">
     <uptodate property="jflex.files.uptodate">
-      <srcfiles dir="src/java" includes="**/*.jflex" />
+      <srcfiles dir="${src.dir}" includes="**/*.jflex" />
       <mapper type="glob" from="*.jflex" to="*.java"/>
     </uptodate>
   </target>
@@ -271,7 +275,7 @@
   <target name="compile-core" depends="init, clover"
           description="Compiles core classes">
     <compile
-      srcdir="src/java"
+      srcdir="${src.dir}"
       destdir="${build.dir}/classes/java">
       <classpath refid="classpath"/>
     </compile>
@@ -382,7 +386,7 @@
   </macrodef>
 
   <target name="compile-test" depends="compile-core">
-  	<compile-test-macro srcdir="src/test" destdir="${build.dir}/classes/test"
+  	<compile-test-macro srcdir="${tests.src.dir}" destdir="${build.dir}/classes/test"
   						test.classpath="test.classpath"/>
   </target>
 
@@ -413,7 +417,7 @@
   <macrodef name="test-macro" description="Executes junit tests.">
   	<attribute name="junit.output.dir" default="${junit.output.dir}"/>
   	<attribute name="junit.classpath" default="junit.classpath"/>
-  	<attribute name="dataDir" default="src/test"/>
+  	<attribute name="dataDir" default="${tests.src.dir}"/>
   	<attribute name="tempDir" default="${build.dir}/test"/>
   	<attribute name="threadNum" default="1"/>
   	<attribute name="threadTotal" default="1"/>
@@ -431,10 +435,11 @@
 	    -->
     	<touch file="@{tempDir}/@{threadNum}/quiet.ant" verbose="false" mkdirs="true"/>
 	    <junit printsummary="off" haltonfailure="no" maxmemory="512M" tempdir="@{tempDir}/@{threadNum}"
-	      errorProperty="tests.failed" failureProperty="tests.failed" forkmode="perBatch" dir=".">
+	      errorProperty="tests.failed" failureProperty="tests.failed" forkmode="perBatch" dir="${tests.userdir}">
 	      <classpath refid="@{junit.classpath}"/>
 	      <assertions>
 	        <enable package="org.apache.lucene"/>
+	        <enable package="org.apache.solr"/>
 	      </assertions>
 	      
 	      <jvmarg line="${args}"/>
@@ -453,6 +458,10 @@
               <sysproperty key="tests.iter" value="${tests.iter}"/>
               <!-- set the test seed -->
               <sysproperty key="tests.seed" value="${tests.seed}"/>
+              <!-- set the Version that tests should run against -->
+              <sysproperty key="tests.luceneMatchVersion" value="${tests.luceneMatchVersion}"/>
+              <!-- logging config file -->
+              <sysproperty key="java.util.logging.config.file" value="${tests.loggingfile}"/>
 	
 	      <!-- TODO: create propertyset for test properties, so each project can have its own set -->
               <sysproperty key="tests.multiplier" value="${tests.multiplier}"/>
@@ -461,6 +470,7 @@
 	      <sysproperty key="lucene.version" value="${dev.version}"/>
               
               <sysproperty key="testmethod" value="${testmethod}"/>
+              <sysproperty key="jetty.insecurerandom" value="1"/>
 	    	
 	      <formatter type="xml"/>
 	      <formatter classname="${junit.details.formatter}" usefile="false"/>
@@ -531,10 +541,10 @@
     <taskdef resource="cloverlib.xml"/>
     <mkdir dir="${clover.db.dir}"/>
     <clover-setup initString="${clover.db.dir}/lucene_coverage.db" encoding="${build.encoding}">
-      <fileset dir="src/java">
+      <fileset dir="${src.dir}">
         <include name="org/apache/**/*.java" />
       </fileset>
-      <testsources dir="src/test">
+      <testsources dir="${tests.src.dir}">
         <include name="org/apache/**/*.java" />
       </testsources>
     </clover-setup>
@@ -564,7 +574,7 @@
     <fileset dir="contrib" id="clover.contrib.test.src.files">
       <include name="**/test/**/*.java"/>
     </fileset>
-    <fileset dir="src/test" id="clover.test.src.files">
+    <fileset dir="${tests.src.dir}" id="clover.test.src.files">
       <include name="**/*.java" />
     </fileset>
     <fileset dir="${build.dir}" id="clover.test.result.files">
@@ -677,7 +687,7 @@
   	<attribute name="title" default="${Name} ${version} API"/>
     <sequential>
       <javadoc
-          overview="src/java/overview.html"
+          overview="${src.dir}/overview.html"
           packagenames="org.apache.lucene.*"
           destdir="@{destdir}"
           access="${javadoc.access}"
