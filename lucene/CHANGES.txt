@@ -147,6 +147,9 @@ API Changes
   you also override this method on upgrade.  (Robert Muir, Mike
   McCandless)
 
+* LUCENE-2691: IndexWriter.getReader() has been made package local and is now exposed via open and reopen methods on
+  IndexReader.  The semantics of the call is the same as it was prior to the API change.  (Grant Ingersoll, Mike McCandless)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions

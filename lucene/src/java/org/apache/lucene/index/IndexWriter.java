@@ -339,7 +339,7 @@ public class IndexWriter implements Closeable {
    * the writer nor calling {@link #commit}.
    *
    * <p>Note that this is functionally equivalent to calling
-   * {#commit} and then using {@link IndexReader#open} to
+   * {#flush} and then using {@link IndexReader#open} to
    * open a new reader.  But the turnaround time of this
    * method should be faster since it avoids the potentially
    * costly {@link #commit}.</p>
@@ -389,24 +389,7 @@ public class IndexWriter implements Closeable {
    *
    * @throws IOException
    */
-  public IndexReader getReader() throws IOException {
-    return getReader(config.getReaderTermsIndexDivisor());
-  }
-
-  /** Expert: like {@link #getReader}, except you can
-   *  specify which termInfosIndexDivisor should be used for
-   *  any newly opened readers.
-   * @param termInfosIndexDivisor Subsamples which indexed
-   *  terms are loaded into RAM. This has the same effect as {@link
-   *  IndexWriter#setTermIndexInterval} except that setting
-   *  must be done at indexing time while this setting can be
-   *  set per reader.  When set to N, then one in every
-   *  N*termIndexInterval terms in the index is loaded into
-   *  memory.  By setting this to a value > 1 you can reduce
-   *  memory usage, at the expense of higher latency when
-   *  loading a TermInfo.  The default value is 1.  Set this
-   *  to -1 to skip loading the terms index entirely. */
-  public IndexReader getReader(int termInfosIndexDivisor) throws IOException {
+  IndexReader getReader() throws IOException {
 
     ensureOpen();
 
@@ -420,18 +403,19 @@ public class IndexWriter implements Closeable {
     poolReaders = true;
 
     flush(true, true, false);
-    
+
     // Prevent segmentInfos from changing while opening the
     // reader; in theory we could do similar retry logic,
     // just like we do when loading segments_N
     synchronized(this) {
       applyDeletes();
-      final IndexReader r = new DirectoryReader(this, segmentInfos, termInfosIndexDivisor, codecs);
+      final IndexReader r = new DirectoryReader(this, segmentInfos, config.getReaderTermsIndexDivisor(), codecs);
       if (infoStream != null) {
         message("return reader version=" + r.getVersion() + " reader=" + r);
       }
       return r;
     }
+
   }
 
   /** Holds shared SegmentReader instances. IndexWriter uses

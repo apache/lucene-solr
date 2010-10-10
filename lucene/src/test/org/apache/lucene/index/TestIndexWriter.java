@@ -73,6 +73,7 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.lucene.util.UnicodeUtil;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.BytesRef;
@@ -4825,17 +4826,20 @@ public class TestIndexWriter extends LuceneTestCase {
 
   public void testIndexDivisor() throws Exception {
     Directory dir = newDirectory();
-    IndexWriter w = new IndexWriter(dir, new MockAnalyzer(), IndexWriter.MaxFieldLength.UNLIMITED);
+    IndexWriterConfig config = new IndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer());
+    config.setTermIndexInterval(2);
+    IndexWriter w = new IndexWriter(dir, config);
     StringBuilder s = new StringBuilder();
     // must be > 256
     for(int i=0;i<300;i++) {
-      s.append(' ').append(""+i);
+      s.append(' ').append(i);
     }
     Document d = new Document();
     Field f = newField("field", s.toString(), Field.Store.NO, Field.Index.ANALYZED);
     d.add(f);
     w.addDocument(d);
-    IndexReader r = w.getReader(2).getSequentialSubReaders()[0];
+    
+    IndexReader r = w.getReader().getSequentialSubReaders()[0];
     TermsEnum t = r.fields().terms("field").iterator();
     int count = 0;
     while(t.next() != null) {

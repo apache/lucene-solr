@@ -634,7 +634,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     }
     w.deleteDocuments(new Term("id", "77"));
 
-    IndexReader r = w.getReader();
+    IndexReader r = IndexReader.open(w);
     IndexReader[] subs = r.getSequentialSubReaders();
     assertTrue(subs.length > 1);
     // test each segment
@@ -654,7 +654,7 @@ public class TestExternalCodecs extends LuceneTestCase {
 
     w.deleteDocuments(new Term("id", "44"));
     w.optimize();
-    r = w.getReader();
+    r = IndexReader.open(w);
     assertEquals(NUM_DOCS-2, r.maxDoc());
     assertEquals(NUM_DOCS-2, r.numDocs());
     s = new IndexSearcher(r);
