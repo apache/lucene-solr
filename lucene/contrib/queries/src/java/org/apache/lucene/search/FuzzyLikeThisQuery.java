@@ -217,6 +217,7 @@ public class FuzzyLikeThisQuery extends Query
                           variantsQ.insertWithOverflow(st);
                           minScore = variantsQ.top().score; // maintain minScore
                         }
+                        boostAtt.setMaxNonCompetitiveBoost(variantsQ.size() >= MAX_VARIANTS_PER_TERM ? minScore : Float.NEGATIVE_INFINITY);
                       }
                     }
 
