@@ -1,5 +1,4 @@
 package org.apache.lucene.search.spans;
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -17,37 +16,54 @@ package org.apache.lucene.search.spans;
  * limitations under the License.
  */
 
+
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
 
-/** Matches spans near the beginning of a field.
- * <p/> 
- * This class is a simple extension of {@link SpanPositionRangeQuery} in that it assumes the
- * start to be zero and only checks the end boundary.
- *
- *
- *  */
-public class SpanFirstQuery extends SpanPositionRangeQuery {
 
-  /** Construct a SpanFirstQuery matching spans in <code>match</code> whose end
-   * position is less than or equal to <code>end</code>. */
-  public SpanFirstQuery(SpanQuery match, int end) {
-    super(match, 0, end);
+/**
+ * Checks to see if the {@link #getMatch()} lies between a start and end position
+ *
+ * @see org.apache.lucene.search.spans.SpanFirstQuery for a derivation that is optimized for the case where start position is 0
+ */
+public class SpanPositionRangeQuery extends SpanPositionCheckQuery {
+  protected int start = 0;
+  protected int end;
+
+  public SpanPositionRangeQuery(SpanQuery match, int start, int end) {
+    super(match);
+    this.start = start;
+    this.end = end;
   }
+
 
   @Override
   protected boolean acceptPosition(Spans spans) throws IOException {
-    return spans.end() <= end;
+    return spans.start() >= start && spans.end() <= end;
   }
 
+
+  /**
+   * @return The minimum position permitted in a match
+   */
+  public int getStart() {
+    return start;
+  }
+
+  /**
+   * @return the maximum end position permitted in a match.
+   */
+  public int getEnd() {
+    return end;
+  }
 
   @Override
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
-    buffer.append("spanFirst(");
+    buffer.append("spanPosRange(");
     buffer.append(match.toString(field));
-    buffer.append(", ");
+    buffer.append(", ").append(start).append(", ");
     buffer.append(end);
     buffer.append(")");
     buffer.append(ToStringUtils.boost(getBoost()));
@@ -56,18 +72,18 @@ public class SpanFirstQuery extends SpanPositionRangeQuery {
 
   @Override
   public Object clone() {
-    SpanFirstQuery spanFirstQuery = new SpanFirstQuery((SpanQuery) match.clone(), end);
-    spanFirstQuery.setBoost(getBoost());
-    return spanFirstQuery;
+    SpanPositionRangeQuery result = new SpanPositionRangeQuery((SpanQuery) match.clone(), start, end);
+    result.setBoost(getBoost());
+    return result;
   }
 
   @Override
   public boolean equals(Object o) {
     if (this == o) return true;
-    if (!(o instanceof SpanFirstQuery)) return false;
+    if (!(o instanceof SpanPositionRangeQuery)) return false;
 
-    SpanFirstQuery other = (SpanFirstQuery)o;
-    return this.end == other.end
+    SpanPositionRangeQuery other = (SpanPositionRangeQuery)o;
+    return this.end == other.end && this.start == other.start
          && this.match.equals(other.match)
          && this.getBoost() == other.getBoost();
   }
@@ -76,9 +92,8 @@ public class SpanFirstQuery extends SpanPositionRangeQuery {
   public int hashCode() {
     int h = match.hashCode();
     h ^= (h << 8) | (h >>> 25);  // reversible
-    h ^= Float.floatToRawIntBits(getBoost()) ^ end;
+    h ^= Float.floatToRawIntBits(getBoost()) ^ end ^ start;
     return h;
   }
-
 
 }
