@@ -261,6 +261,9 @@ New features
   pretend it's an atomic reader.  This is a convenience class (you can
   use MultiFields static methods directly, instead) if you need to use
   the flex APIs directly on a composite reader.  (Mike McCandless)
+
+* LUCENE-2692: Added several new SpanQuery classes for positional checking
+  (match is in a range, payload is a specific value) (Grant Ingersoll)  
   
 Optimizations
 
