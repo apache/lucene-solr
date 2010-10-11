@@ -29,7 +29,7 @@
      tests.  if you need to test something esoteric please add a new
      "solrconfig-your-esoteric-purpose.xml" config file.
 
-     Note in particular that this test is used by MinimalSchemaTest so 
+     Note in particular that this test is used by MinimalSchemaTest so
      Anything added to this file needs to work correctly even if there
      is now uniqueKey or defaultSearch Field.
 
@@ -115,15 +115,15 @@
 
   <updateHandler class="solr.DirectUpdateHandler2">
 
-    <!-- autocommit pending docs if certain criteria are met 
-    <autoCommit> 
+    <!-- autocommit pending docs if certain criteria are met
+    <autoCommit>
       <maxDocs>10000</maxDocs>
-      <maxTime>3600000</maxTime> 
+      <maxTime>3600000</maxTime>
     </autoCommit>
     -->
     <!-- represents a lower bound on the frequency that commits may
     occur (in seconds). NOTE: not yet implemented
-    
+
     <commitIntervalLowerBound>0</commitIntervalLowerBound>
     -->
 
@@ -342,6 +342,12 @@
       <str name="spellcheckIndexDir">spellchecker1</str>
       <str name="buildOnCommit">true</str>
     </lst>
+    <lst name="spellchecker">
+			<str name="name">multipleFields</str>
+			<str name="field">lowerfilt1and2</str>
+			<str name="spellcheckIndexDir">spellcheckerMultipleFields</str>
+			<str name="buildOnCommit">true</str>
+   	</lst>
     <!-- Example of using different distance measure -->
     <lst name="spellchecker">
       <str name="name">jarowinkler</str>
@@ -411,8 +417,17 @@
       <str>spellcheck</str>
     </arr>
   </requestHandler>
+  <requestHandler name="spellCheckCompRH1" class="org.apache.solr.handler.component.SearchHandler">
+			<lst name="defaults">
+				<str name="defType">dismax</str>
+				<str name="qf">lowerfilt1^1</str>
+			</lst>
+			<arr name="last-components">
+				<str>spellcheck</str>
+			</arr>
+ </requestHandler>
 
-  
+
   <searchComponent name="tvComponent" class="org.apache.solr.handler.component.TermVectorComponent"/>
 
   <requestHandler name="tvrh" class="org.apache.solr.handler.component.SearchHandler">
@@ -502,5 +517,5 @@
     </processor>
     <processor class="solr.RunUpdateProcessorFactory" />
   </updateRequestProcessorChain>
-  
+
 </config>

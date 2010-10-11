@@ -289,6 +289,9 @@ New Features
   to retrieve correction candidates directly from the term dictionary using
   levenshtein automata.  (rmuir)
 
+* SOLR-2010: Added ability to verify that spell checking collations have
+   actual results in the index.  (James Dyer via gsingers)
+
 Optimizations
 ----------------------
 
