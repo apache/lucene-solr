@@ -686,7 +686,7 @@ public class IndexWriter implements Closeable {
    * Used internally to throw an {@link
    * AlreadyClosedException} if this IndexWriter has been
    * closed.
-   * @throws AlreadyClosedException if this IndexWriter is
+   * @throws AlreadyClosedException if this IndexWriter is closed
    */
   protected final void ensureOpen(boolean includePendingClose) throws AlreadyClosedException {
     if (closed || (includePendingClose && closing)) {

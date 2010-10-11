@@ -245,8 +245,8 @@ public class TestPayloads extends LuceneTestCase {
             for (int i = 0; i < freq; i++) {
                 for (int j = 0; j < numTerms; j++) {
                     tps[j].nextPosition();
-                    BytesRef br = tps[j].getPayload();
-                    if (br != null) {
+                    if (tps[j].hasPayload()) {
+                      BytesRef br = tps[j].getPayload();
                       System.arraycopy(br.bytes, br.offset, verifyPayloadData, offset, br.length);
                       offset += br.length;
                     }
@@ -604,4 +604,27 @@ public class TestPayloads extends LuceneTestCase {
             return pool.size();
         }
     }
+
+  public void testAcrossFields() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random, dir,
+                                                     new MockAnalyzer(MockTokenizer.WHITESPACE, true, true));
+    Document doc = new Document();
+    doc.add(new Field("haspayload", "here we go", Field.Store.YES, Field.Index.ANALYZED));
+    writer.addDocument(doc);
+    writer.close();
+
+    writer = new RandomIndexWriter(random, dir,
+                                   new MockAnalyzer(MockTokenizer.WHITESPACE, true, false));
+    doc = new Document();
+    doc.add(new Field("nopayload", "here we go", Field.Store.YES, Field.Index.ANALYZED));
+    writer.addDocument(doc);
+    writer.addDocument(doc);
+    writer.optimize();
+    writer.close();
+
+    _TestUtil.checkIndex(dir);
+
+    dir.close();
+  }
 }

@@ -504,6 +504,7 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       posIndex.set(termState.posIndex);
       posSeekPending = true;
       //posIndex.seek(posReader);
+      payloadPending = false;
 
       skipOffset = termState.skipOffset;
       payloadOffset = termState.payloadOffset;
@@ -640,7 +641,6 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
           assert payloadLength >= 0;
         }
         pendingPosCount--;
-        payloadPending = true;
         position = 0;
         pendingPayloadBytes += payloadLength;
       }
@@ -653,14 +653,13 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
           assert payloadLength >= 0;
         }
         position += code >> 1;
+        pendingPayloadBytes += payloadLength;
+        payloadPending = payloadLength > 0;
       } else {
         position += code;
       }
     
-      pendingPayloadBytes += payloadLength;
-      payloadPending = payloadLength > 0;
       pendingPosCount--;
-      payloadPending = true;
       assert pendingPosCount >= 0;
       return position;
     }

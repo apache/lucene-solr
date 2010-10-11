@@ -399,7 +399,7 @@ public class QueryUtils {
       public void collect(int doc) throws IOException {
         float score = scorer.score();
         try {
-          
+          long startMS = System.currentTimeMillis();
           for (int i=lastDoc[0]+1; i<=doc; i++) {
             Weight w = q.weight(s);
             Scorer scorer = w.scorer(reader, true, false);
@@ -408,6 +408,12 @@ public class QueryUtils {
             float skipToScore = scorer.score();
             Assert.assertEquals("unstable skipTo("+i+") score!",skipToScore,scorer.score(),maxDiff); 
             Assert.assertEquals("query assigned doc "+doc+" a score of <"+score+"> but skipTo("+i+") has <"+skipToScore+">!",score,skipToScore,maxDiff);
+            
+            // Hurry things along if they are going slow (eg
+            // if you got SimpleText codec this will kick in):
+            if (i < doc && System.currentTimeMillis() - startMS > 5) {
+              i = doc-1;
+            }
           }
           lastDoc[0] = doc;
         } catch (IOException e) {
