@@ -30,6 +30,7 @@ import java.util.Set;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.BufferedIndexInput;
@@ -41,6 +42,11 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.CloseableThreadLocal;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.FieldsProducer;
+import org.apache.lucene.index.values.Bytes;
+import org.apache.lucene.index.values.Ints;
+import org.apache.lucene.index.values.Reader;
+import org.apache.lucene.index.values.Floats;
+import org.apache.lucene.index.values.Values;
 import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
 import org.apache.lucene.util.BytesRef;
 
@@ -135,7 +141,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
         // Ask codec for its Fields
         fields = si.getCodec().fieldsProducer(new SegmentReadState(cfsDir, si, fieldInfos, readBufferSize, termsIndexDivisor));
         assert fields != null;
-
+        openIndexValuesReaders(cfsDir, si);
         success = true;
       } finally {
         if (!success) {
@@ -148,6 +154,57 @@ public class SegmentReader extends IndexReader implements Cloneable {
       // purge the FieldCache (will hit NPE because core is
       // not assigned yet).
       this.origInstance = origInstance;
+    }
+
+    final Map<String,Reader> indexValues = new HashMap<String,Reader>();
+
+    // Only opens files... doesn't actually load any values
+    private void openIndexValuesReaders(Directory dir, SegmentInfo si) throws IOException {
+      final int numFields = fieldInfos.size();
+      for(int i=0;i<numFields;i++) {
+        final FieldInfo fieldInfo = fieldInfos.fieldInfo(i);
+        final Values v = fieldInfo.getIndexValues();
+        final String field = fieldInfo.name;
+        final String id = IndexFileNames.segmentFileName(segment, Integer
+            .toString(fieldInfo.number), "");
+        // nocommit - externalize the filenames 
+        if (v != null && dir.fileExists(id+".dat")) {
+          switch(v) {
+          case PACKED_INTS:
+            indexValues.put(field, Ints.getReader(dir, id, false));
+            break;
+          case PACKED_INTS_FIXED:
+            indexValues.put(field, Ints.getReader(dir, id, true));
+            break;
+          case SIMPLE_FLOAT_4BYTE:
+            indexValues.put(field, Floats.getReader(dir, id, si.docCount));
+            break;
+          case SIMPLE_FLOAT_8BYTE:
+            indexValues.put(field, Floats.getReader(dir, id, si.docCount));
+            break;
+          case BYTES_FIXED_STRAIGHT:
+            indexValues.put(field, Bytes.getReader(dir, id, Bytes.Mode.STRAIGHT, true, si.docCount));
+            break;
+          case BYTES_FIXED_DEREF:
+            indexValues.put(field, Bytes.getReader(dir, id, Bytes.Mode.DEREF, true, si.docCount));
+            break;
+          case BYTES_FIXED_SORTED:
+            indexValues.put(field, Bytes.getReader(dir, id, Bytes.Mode.SORTED, true, si.docCount));
+            break;
+          case BYTES_VAR_STRAIGHT:
+            indexValues.put(field, Bytes.getReader(dir, id, Bytes.Mode.STRAIGHT, false, si.docCount));
+            break;
+          case BYTES_VAR_DEREF:
+            indexValues.put(field, Bytes.getReader(dir, id, Bytes.Mode.DEREF, false, si.docCount));
+            break;
+          case BYTES_VAR_SORTED:
+            indexValues.put(field, Bytes.getReader(dir, id, Bytes.Mode.SORTED, false, si.docCount));
+            break;
+          default:
+            throw new IllegalStateException("unrecognized index values mode " + v);
+          }
+        }
+      }
     }
 
     synchronized TermVectorsReader getTermVectorsReaderOrig() {
@@ -167,9 +224,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
     }
 
     synchronized void decRef() throws IOException {
-
       if (ref.decrementAndGet() == 0) {
-
         if (fields != null) {
           fields.close();
         }
@@ -198,8 +253,16 @@ public class SegmentReader extends IndexReader implements Cloneable {
         if (origInstance != null) {
           FieldCache.DEFAULT.purge(origInstance);
         }
+        closeIndexValuesReaders();
       }
     }
+
+    private void closeIndexValuesReaders() throws IOException {
+      for (Reader reader : indexValues.values()) {
+        reader.close();
+      }
+    }
+
 
     synchronized void openDocStores(SegmentInfo si) throws IOException {
 
@@ -1280,5 +1343,10 @@ public class SegmentReader extends IndexReader implements Cloneable {
   @Override
   public int getTermInfosIndexDivisor() {
     return core.termsIndexDivisor;
+  }
+
+  @Override
+  public Reader getIndexValues(String field) {
+    return core.indexValues.get(field);
   }
 }

@@ -47,7 +47,7 @@ public class TestIndexWriterConfig extends LuceneTestCase {
     // Does not implement anything - used only for type checking on IndexWriterConfig.
 
     @Override
-    DocConsumer getChain(DocumentsWriter documentsWriter) {
+    public DocConsumer getChain(DocumentsWriter documentsWriter) {
       return null;
     }
     

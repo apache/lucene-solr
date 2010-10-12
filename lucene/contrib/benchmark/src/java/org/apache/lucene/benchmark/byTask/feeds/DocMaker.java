@@ -19,6 +19,7 @@ package org.apache.lucene.benchmark.byTask.feeds;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -28,9 +29,11 @@ import org.apache.lucene.benchmark.byTask.utils.Config;
 import org.apache.lucene.benchmark.byTask.utils.Format;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.ValuesField;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field.TermVector;
+import org.apache.lucene.index.values.Values;
 
 /**
  * Creates {@link Document} objects. Uses a {@link ContentSource} to generate
@@ -157,12 +160,13 @@ public class DocMaker {
   private long lastPrintedNumUniqueBytes = 0;
 
   private int printNum = 0;
+  private Map<String, Values> fieldVauleMap;
 
   // create a doc
   // use only part of the body, modify it to keep the rest (or use all if size==0).
   // reset the docdata properties so they are not added more than once.
   private Document createDocument(DocData docData, int size, int cnt) throws UnsupportedEncodingException {
-
+    Values valueType;
     final DocState ds = getDocState();
     final Document doc = reuseFields ? ds.doc : new Document();
     doc.getFields().clear();
@@ -178,6 +182,7 @@ public class DocMaker {
     name = cnt < 0 ? name : name + "_" + cnt;
     Field nameField = ds.getField(NAME_FIELD, storeVal, indexVal, termVecVal);
     nameField.setValue(name);
+    trySetIndexValues(nameField);
     doc.add(nameField);
     
     // Set DATE_FIELD
@@ -187,12 +192,14 @@ public class DocMaker {
     }
     Field dateField = ds.getField(DATE_FIELD, storeVal, indexVal, termVecVal);
     dateField.setValue(date);
+    trySetIndexValues(dateField);
     doc.add(dateField);
     
     // Set TITLE_FIELD
     String title = docData.getTitle();
     Field titleField = ds.getField(TITLE_FIELD, storeVal, indexVal, termVecVal);
     titleField.setValue(title == null ? "" : title);
+    trySetIndexValues(titleField);
     doc.add(titleField);
     
     String body = docData.getBody();
@@ -214,12 +221,15 @@ public class DocMaker {
       }
       Field bodyField = ds.getField(BODY_FIELD, bodyStoreVal, bodyIndexVal, termVecVal);
       bodyField.setValue(bdy);
+      trySetIndexValues(bodyField);
       doc.add(bodyField);
       
       if (storeBytes) {
         Field bytesField = ds.getField(BYTES_FIELD, Store.YES, Index.NOT_ANALYZED_NO_NORMS, TermVector.NO);
         bytesField.setValue(bdy.getBytes("UTF-8"));
+        trySetIndexValues(bytesField);
         doc.add(bytesField);
+        
       }
     }
 
@@ -229,6 +239,7 @@ public class DocMaker {
         for (final Map.Entry<Object,Object> entry : props.entrySet()) {
           Field f = ds.getField((String) entry.getKey(), storeVal, indexVal, termVecVal);
           f.setValue((String) entry.getValue());
+          trySetIndexValues(f);
           doc.add(f);
         }
         docData.setProps(null);
@@ -237,6 +248,12 @@ public class DocMaker {
     
     //System.out.println("============== Created doc "+numDocsCreated+" :\n"+doc+"\n==========");
     return doc;
+  }
+  
+  private void trySetIndexValues(Field field) {
+    final Values valueType;
+    if((valueType = fieldVauleMap.get(field.name())) != null)
+      ValuesField.set(field, valueType);
   }
 
   private void resetLeftovers() {
@@ -367,6 +384,22 @@ public class DocMaker {
     resetLeftovers();
   }
   
+  private static final Map<String, Values> parseValueFields(String fields) {
+    if(fields == null)
+      return Collections.emptyMap();
+    String[] split = fields.split(";");
+    Map<String, Values> result = new HashMap<String, Values>();
+    for (String tuple : split) {
+      final String[] nameValue = tuple.split(":");
+      if (nameValue.length != 2) {
+        throw new IllegalArgumentException("illegal doc.stored.values format: "
+            + fields + " expected fieldname:ValuesType;...;...;");
+      }
+      result.put(nameValue[0].trim(), Values.valueOf(nameValue[1]));
+    }
+    return result;
+  }
+  
   /** Set the configuration parameters of this doc maker. */
   public void setConfig(Config config) {
     this.config = config;
@@ -386,6 +419,7 @@ public class DocMaker {
     boolean norms = config.get("doc.tokenized.norms", false);
     boolean bodyNorms = config.get("doc.body.tokenized.norms", true);
     boolean termVec = config.get("doc.term.vector", false);
+    fieldVauleMap = parseValueFields(config.get("doc.stored.values", null));
     storeVal = (stored ? Field.Store.YES : Field.Store.NO);
     bodyStoreVal = (bodyStored ? Field.Store.YES : Field.Store.NO);
     if (tokenized) {
@@ -423,7 +457,6 @@ public class DocMaker {
     docState = new ThreadLocal<DocState>();
     
     indexProperties = config.get("doc.index.props", false);
-
     updateDocIDLimit = config.get("doc.random.id.limit", -1);
     if (updateDocIDLimit != -1) {
       r = new Random(179);

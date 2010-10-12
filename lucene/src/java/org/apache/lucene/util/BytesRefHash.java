@@ -353,6 +353,7 @@ public final class BytesRefHash {
         // 1 byte to store length
         buffer[bufferUpto] = (byte) length;
         pool.byteUpto += length + 1;
+        assert length >= 0: "Length must be positive: " + length;
         System.arraycopy(bytes.bytes, bytes.offset, buffer, bufferUpto + 1,
             length);
       } else {
@@ -568,5 +569,65 @@ public final class BytesRefHash {
       return bytesUsed;
     }
 
+  }
+  
+  public static class ParallelBytesStartArray<T extends ParallelArrayBase<T>> extends BytesStartArray {
+    private final T prototype;
+    public T array;
+    
+    public ParallelBytesStartArray(T template) {
+      this.prototype = template;
+    }
+    @Override
+    public int[] init() {
+      if(array == null) { 
+        array = prototype.newInstance(2);
+      }
+      return array.textStart;
+    }
+
+    @Override
+    public int[] grow() {
+      array = array.grow();
+      return array.textStart;
+    }
+
+    @Override
+    public int[] clear() {
+      if(array != null) {
+        array.deref();
+        array = null;
+      }
+      return null;
+    }
+
+    @Override
+    public AtomicLong bytesUsed() {
+      return array.bytesUsed();
+    }
+    
+  }
+  
+  public abstract static class ParallelArrayBase<T extends ParallelArrayBase<T>> extends ParallelArray<T> {
+    final int[] textStart;
+    
+    protected ParallelArrayBase(int size, AtomicLong bytesUsed) {
+      super(size, bytesUsed);
+      textStart = new int[size];
+    }
+
+    @Override
+    protected int bytesPerEntry() {
+      return RamUsageEstimator.NUM_BYTES_INT;
+    }
+
+    @Override
+    protected void copyTo(T toArray, int numToCopy) {
+      System.arraycopy(textStart, 0, toArray.textStart, 0, size);
+    }
+
+    @Override
+    public abstract T newInstance(int size);
+    
   }
 }

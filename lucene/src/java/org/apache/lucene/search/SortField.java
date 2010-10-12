@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.Comparator;
 import java.util.Locale;
 
 import org.apache.lucene.search.cache.ByteValuesCreator;
@@ -29,6 +30,11 @@ import org.apache.lucene.search.cache.IntValuesCreator;
 import org.apache.lucene.search.cache.LongValuesCreator;
 import org.apache.lucene.search.cache.ShortValuesCreator;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.BytesRef;
+
+// nocommit -- for cleaner transition, maybe we should make
+// a new SortField that subclasses this one and always uses
+// index values?
 
 /**
  * Stores information about how to sort documents by terms in an individual
@@ -89,6 +95,9 @@ implements Serializable {
    * This is typically slower than {@link #STRING}, which
    * uses ordinals to do the sorting. */
   public static final int STRING_VAL = 11;
+  
+  /** Sort use byte[] index values. */
+  public static final int BYTES = 12;
   
   /** Represents sorting by document score (relevancy). */
   public static final SortField FIELD_SCORE = new SortField (null, SCORE);
@@ -440,6 +449,26 @@ implements Serializable {
       field = StringHelper.intern(field);
   }
 
+  private boolean useIndexValues;
+
+  public void setUseIndexValues(boolean b) {
+    useIndexValues = b;
+  }
+
+  public boolean getUseIndexValues() {
+    return useIndexValues;
+  }
+
+  private Comparator<BytesRef> bytesComparator = BytesRef.getUTF8SortedAsUnicodeComparator();
+
+  public void setBytesComparator(Comparator<BytesRef> b) {
+    bytesComparator = b;
+  }
+
+  public Comparator<BytesRef> getBytesComparator() {
+    return bytesComparator;
+  }
+
   /** Returns the {@link FieldComparator} to use for
    * sorting.
    *
@@ -469,10 +498,18 @@ implements Serializable {
       return new FieldComparator.DocComparator(numHits);
 
     case SortField.INT:
-      return new FieldComparator.IntComparator(numHits, (IntValuesCreator)creator, (Integer)missingValue );
+      if (useIndexValues) {
+        return new FieldComparator.IntIndexValuesComparator(numHits, field);
+      } else {
+        return new FieldComparator.IntComparator(numHits, (IntValuesCreator)creator, (Integer) missingValue);
+      }
 
     case SortField.FLOAT:
-      return new FieldComparator.FloatComparator(numHits, (FloatValuesCreator)creator, (Float)missingValue );
+      if (useIndexValues) {
+        return new FieldComparator.FloatIndexValuesComparator(numHits, field);
+      } else {
+        return new FieldComparator.FloatComparator(numHits, (FloatValuesCreator) creator, (Float) missingValue);
+      }
 
     case SortField.LONG:
       return new FieldComparator.LongComparator(numHits, (LongValuesCreator)creator, (Long)missingValue );

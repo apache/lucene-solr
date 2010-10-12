@@ -75,8 +75,7 @@ public class SearchWithSortTask extends ReadTask {
         } else {
           throw new RuntimeException("You must specify the sort type ie page:int,subject:string");
         }
-        int type = getType(typeString);
-        sortField0 = new SortField(fieldName, type);
+        sortField0 = getSortField(fieldName, typeString);
       }
       sortFields[upto++] = sortField0;
     }
@@ -86,12 +85,26 @@ public class SearchWithSortTask extends ReadTask {
       System.arraycopy(sortFields, 0, newSortFields, 0, upto);
       sortFields = newSortFields;
     }
+    
     this.sort = new Sort(sortFields);
   }
 
-  private int getType(String typeString) {
-    int type;
-    if (typeString.equals("float")) {
+  private SortField getSortField(String fieldName, String typeString) {
+    boolean useIndexValues = false;
+    int type = -1;
+    if (typeString.equals("intvalues")) {
+      useIndexValues = true;
+      type = SortField.INT;
+    } else if (typeString.equals("floatvalues")) {
+      useIndexValues = true;
+      type = SortField.FLOAT;
+    } else if (typeString.equals("stringvalues")) {
+      useIndexValues = true;
+      type = SortField.STRING;
+    } else if (typeString.equals("bytesvalues")) {
+      useIndexValues = true;
+      type = SortField.BYTES;
+    } else if (typeString.equals("float")) {
       type = SortField.FLOAT;
     } else if (typeString.equals("double")) {
       type = SortField.DOUBLE;
@@ -110,7 +123,10 @@ public class SearchWithSortTask extends ReadTask {
     } else {
       throw new RuntimeException("Unrecognized sort field type " + typeString);
     }
-    return type;
+
+    SortField f = new SortField(fieldName, type);
+    f.setUseIndexValues(useIndexValues);
+    return f;
   }
 
   @Override

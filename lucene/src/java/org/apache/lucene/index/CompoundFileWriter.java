@@ -49,9 +49,13 @@ import java.io.IOException;
  */
 final class CompoundFileWriter {
 
-    private static final class FileEntry {
+    static final class FileEntry {
+	
+	FileEntry(String file) {
+	    this.file = file;
+	}
         /** source file */
-        String file;
+        final String file;
 
         /** temporary holder for the start of directory entry for this file */
         long directoryOffset;
@@ -128,10 +132,7 @@ final class CompoundFileWriter {
         if (! ids.add(file))
             throw new IllegalArgumentException(
                 "File " + file + " already added");
-
-        FileEntry entry = new FileEntry();
-        entry.file = file;
-        entries.add(entry);
+        entries.add(new FileEntry(file));
     }
 
     /** Merge files with the extensions added up to now.

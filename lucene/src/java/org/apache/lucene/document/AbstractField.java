@@ -19,6 +19,7 @@ import org.apache.lucene.search.PhraseQuery; // for javadocs
 import org.apache.lucene.search.spans.SpanQuery; // for javadocs
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.StringHelper; // for javadocs
 
 
@@ -292,4 +293,16 @@ public abstract class AbstractField implements Fieldable {
     result.append('>');
     return result.toString();
   }
+  private AttributeSource source;
+  
+  public boolean hasFieldAttribute() {
+    return source != null;
+  }
+  
+  public AttributeSource getFieldAttributes() {
+    if(source == null)
+      source = new AttributeSource();
+    return source;
+  }
+
 }

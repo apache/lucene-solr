@@ -20,10 +20,16 @@ package org.apache.lucene.index;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.Map.Entry;
 import java.io.IOException;
+
+import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.values.ValuesAttribute;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -243,10 +249,24 @@ final class DocFieldProcessorPerThread extends DocConsumerPerThread {
     // enabled; we could save [small amount of] CPU
     // here.
     quickSort(fields, 0, fieldCount-1);
+   
 
-    for(int i=0;i<fieldCount;i++)
-      fields[i].consumer.processFields(fields[i].fields, fields[i].fieldCount);
-
+    for(int i=0;i<fieldCount;i++) {
+      final DocFieldProcessorPerField perField = fields[i];
+      final Fieldable fieldable = perField.fields[0];
+      perField.consumer.processFields(perField.fields, perField.fieldCount);
+      if(!fieldable.hasFieldAttribute())
+        continue;
+      final AttributeSource attrSource = fieldable.getFieldAttributes();
+      if(!attrSource.hasAttribute(ValuesAttribute.class))
+        continue;
+      final ValuesAttribute attribute = attrSource.getAttribute(ValuesAttribute.class);
+      final DocFieldProcessor.IndexValuesProcessor processor = docFieldProcessor
+          .getProcessor(docState.docWriter.directory,
+              docState.docWriter.segment, fieldable.name(), attribute, perField.fieldInfo);
+      if (processor != null)
+        processor.add(docState.docID, fieldable.name(), attribute);
+    }
     if (docState.maxTermPrefix != null && docState.infoStream != null) {
       docState.infoStream.println("WARNING: document contains at least one immense term (whose UTF8 encoding is longer than the max length " + DocumentsWriter.MAX_TERM_LENGTH_UTF8 + "), all of which were skipped.  Please correct the analyzer to not produce such terms.  The prefix of the first immense term is: '" + docState.maxTermPrefix + "...'"); 
       docState.maxTermPrefix = null;

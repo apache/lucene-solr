@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.values.Values;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -39,8 +40,11 @@ public final class FieldInfos {
   // First used in 2.9; prior to 2.9 there was no format header
   public static final int FORMAT_START = -2;
 
+  // Records index values for this field
+  public static final int FORMAT_INDEX_VALUES = -3;
+
   // whenever you add a new format, make it 1 smaller (negative version logic)!
-  static final int FORMAT_CURRENT = FORMAT_START;
+  static final int FORMAT_CURRENT = FORMAT_INDEX_VALUES;
   
   static final int FORMAT_MINIMUM = FORMAT_START;
   
@@ -301,9 +305,51 @@ public final class FieldInfos {
       if (fi.omitNorms) bits |= OMIT_NORMS;
       if (fi.storePayloads) bits |= STORE_PAYLOADS;
       if (fi.omitTermFreqAndPositions) bits |= OMIT_TERM_FREQ_AND_POSITIONS;
-      
+
       output.writeString(fi.name);
       output.writeByte(bits);
+
+      final byte b;
+
+      if (fi.indexValues == null) {
+        b = 0;
+      } else {
+        switch(fi.indexValues) {
+        case PACKED_INTS:
+          b = 1;
+          break;
+        case SIMPLE_FLOAT_4BYTE:
+          b = 2;
+          break;
+        case SIMPLE_FLOAT_8BYTE:
+          b = 3;
+          break;
+        case BYTES_FIXED_STRAIGHT:
+          b = 4;
+          break;
+        case BYTES_FIXED_DEREF:
+          b = 5;
+          break;
+        case BYTES_FIXED_SORTED:
+          b = 6;
+          break;
+        case BYTES_VAR_STRAIGHT:
+          b = 7;
+          break;
+        case BYTES_VAR_DEREF:
+          b = 8;
+          break;
+        case BYTES_VAR_SORTED:
+          b = 9;
+          break;
+        case PACKED_INTS_FIXED:
+          b = 10;
+          break;
+        default:
+          throw new IllegalStateException("unhandled indexValues type " + fi.indexValues);
+        }
+      }
+      output.writeByte(b);
     }
   }
 
@@ -330,7 +376,49 @@ public final class FieldInfos {
       boolean storePayloads = (bits & STORE_PAYLOADS) != 0;
       boolean omitTermFreqAndPositions = (bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0;
       
-      addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+      FieldInfo fi = addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
+
+      if (format <= FORMAT_INDEX_VALUES) {
+        final byte b = input.readByte();
+
+        switch(b) {
+        case 0:
+          fi.indexValues = null;
+          break;
+        case 1:
+          fi.indexValues = Values.PACKED_INTS;
+          break;
+        case 2:
+          fi.indexValues = Values.SIMPLE_FLOAT_4BYTE;
+          break;
+        case 3:
+          fi.indexValues = Values.SIMPLE_FLOAT_8BYTE;
+          break;
+        case 4:
+          fi.indexValues = Values.BYTES_FIXED_STRAIGHT;
+          break;
+        case 5:
+          fi.indexValues = Values.BYTES_FIXED_DEREF;
+          break;
+        case 6:
+          fi.indexValues = Values.BYTES_FIXED_SORTED;
+          break;
+        case 7:
+          fi.indexValues = Values.BYTES_VAR_STRAIGHT;
+          break;
+        case 8:
+          fi.indexValues = Values.BYTES_VAR_DEREF;
+          break;
+        case 9:
+          fi.indexValues = Values.BYTES_VAR_SORTED;
+          break;
+        case 10:
+          fi.indexValues = Values.PACKED_INTS_FIXED;
+          break;
+        default:
+          throw new IllegalStateException("unhandled indexValues type " + b);
+        }
+      }
     }
 
     if (input.getFilePointer() != input.length()) {

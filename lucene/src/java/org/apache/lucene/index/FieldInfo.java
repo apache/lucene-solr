@@ -1,5 +1,7 @@
 package org.apache.lucene.index;
 
+import org.apache.lucene.index.values.Values;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -22,6 +24,8 @@ public final class FieldInfo {
   public String name;
   public boolean isIndexed;
   public int number;
+  Values indexValues;
+
 
   // true if term vector for this field should be stored
   boolean storeTermVector;
@@ -87,5 +91,19 @@ public final class FieldInfo {
         this.omitTermFreqAndPositions = true;                // if one require omitTermFreqAndPositions at least once, it remains off for life
       }
     }
+  }
+
+  void setIndexValues(Values v) {
+    if (indexValues != null) {
+      if (indexValues != v) {
+        throw new IllegalArgumentException("indexValues is already set to " + indexValues + "; cannot change to " + v);
+      }
+    } else{
+	   indexValues = v;
+    }
+  }
+
+  Values getIndexValues() {
+    return indexValues;
   }
 }

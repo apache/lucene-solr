@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.values.ValuesEnum;
 import org.apache.lucene.util.AttributeSource;
 
 /** Enumerates indexed fields.  You must first call {@link
@@ -55,7 +56,7 @@ public abstract class FieldsEnum {
    *  null this method should not be called. This method
    *  will not return null. */
   public abstract TermsEnum terms() throws IOException;
-
+  
   public final static FieldsEnum[] EMPTY_ARRAY = new FieldsEnum[0];
 
   /** Provides zero fields */

@@ -26,6 +26,7 @@ analyzer=org.apache.lucene.analysis.standard.StandardAnalyzer
 directory=FSDirectory
 #directory=RamDirectory
 
+doc.index.props=true
 doc.stored=true
 doc.tokenized=true
 doc.term.vector=false
@@ -66,6 +67,4 @@ log.queries=true
      } : 4
 
 } 
-
 RepSumByName
-

@@ -62,6 +62,18 @@ public final class ByteBlockPool {
       return new byte[blockSize];
     }
   }
+  
+  public static class DirectAllocator extends Allocator {
+
+    public DirectAllocator(int blockSize) {
+      super(blockSize);
+    }
+
+    @Override
+    public void recycleByteBlocks(byte[][] blocks, int start, int end) {
+    }
+    
+  }
 
   public byte[][] buffers = new byte[10][];
 

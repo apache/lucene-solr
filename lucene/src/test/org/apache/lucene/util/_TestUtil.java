@@ -117,6 +117,37 @@ public class _TestUtil {
     }
     return new String(buffer, 0, end);
   }
+  
+  public static String randomUnicodeString(Random r, int minLength, int maxLength) {
+    if(minLength > maxLength)
+      throw new IllegalArgumentException("minLength must be >= maxLength");
+    final boolean lenEqual = minLength==maxLength;
+    final int end = lenEqual?minLength:minLength + r.nextInt(maxLength-minLength+1);
+    if (end == 0) {
+      // allow 0 length
+      return "";
+    }
+    
+    // TODO(simonw): check this
+    final int fixedPlane = 5;//minLength % 5;
+    final char[] buffer = new char[end];
+    for (int i = 0; i < end; i++) {
+      int t = lenEqual? fixedPlane: r.nextInt(5);
+      //buffer[i] = (char) (97 + r.nextInt(26));
+      if (0 == t && i < end - 1 && !lenEqual) {
+        // Make a surrogate pair
+        // High surrogate
+        buffer[i++] = (char) nextInt(r, 0xd800, 0xdbff);
+        // Low surrogate
+        buffer[i] = (char) nextInt(r, 0xdc00, 0xdfff);
+      }
+      else if (t <= 1) buffer[i] = (char) r.nextInt(0x80);
+      else if (2 == t) buffer[i] = (char) nextInt(r, 0x80, 0x800);
+      else if (3 == t) buffer[i] = (char) nextInt(r, 0x800, 0xd7ff);
+      else if (4 == t) buffer[i] = (char) nextInt(r, 0xe000, 0xffff);
+    }
+    return new String(buffer, 0, end);
+  }
 
   private static final int[] blockStarts = {
     0x0000, 0x0080, 0x0100, 0x0180, 0x0250, 0x02B0, 0x0300, 0x0370, 0x0400, 

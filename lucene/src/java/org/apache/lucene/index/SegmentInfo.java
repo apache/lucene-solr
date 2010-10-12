@@ -23,6 +23,7 @@ import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.index.codecs.Codec;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.codecs.DefaultSegmentInfosWriter;
+
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
@@ -31,6 +32,7 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.HashMap;
 import java.util.ArrayList;
+import java.util.regex.Pattern;
 
 /**
  * Information about a segment such as it's name, directory, and files related
@@ -476,7 +478,12 @@ public final class SegmentInfo {
     if (delFileName != null && (delGen >= YES || dir.fileExists(delFileName))) {
       fileSet.add(delFileName);
     }
-
+    //nocommit - is there a better way to get all the dat / idx files?
+    for(String file : dir.listAll()) {
+      if(file.startsWith(name) && (file.endsWith("dat") || file.endsWith("idx"))){
+        fileSet.add(file);
+      }
+    }
     if (normGen != null) {
       for (int i = 0; i < normGen.length; i++) {
         long gen = normGen[i];

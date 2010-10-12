@@ -21,6 +21,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.values.Cache;
+import org.apache.lucene.index.values.Reader;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -1373,6 +1375,17 @@ public abstract class IndexReader implements Cloneable,Closeable {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }
 
+  // nocommit -- should this expose the iterator API via Fields and access Source only via getIndexValuesCache?
+  public Reader getIndexValues(String field) {
+    throw new UnsupportedOperationException();
+  }
+
+  private final Cache indexValuesCache = new Cache(this);
+
+  // nocommit -- don't expose readers if we have this?
+  public Cache getIndexValuesCache() {
+    return indexValuesCache;
+  }
 
   private Fields fields;
 

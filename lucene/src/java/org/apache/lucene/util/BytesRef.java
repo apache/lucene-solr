@@ -18,6 +18,7 @@ package org.apache.lucene.util;
  */
 
 import java.util.Comparator;
+import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
@@ -271,12 +272,13 @@ public final class BytesRef implements Comparable<BytesRef>, Externalizable {
   }
 
   private final static Comparator<BytesRef> utf8SortedAsUnicodeSortOrder = new UTF8SortedAsUnicodeComparator();
-
+  
   public static Comparator<BytesRef> getUTF8SortedAsUnicodeComparator() {
     return utf8SortedAsUnicodeSortOrder;
   }
 
-  private static class UTF8SortedAsUnicodeComparator implements Comparator<BytesRef> {
+  @SuppressWarnings("serial") // serializable to work with contrib/remote
+  private static final class UTF8SortedAsUnicodeComparator implements Serializable, Comparator<BytesRef> {
     // Only singleton
     private UTF8SortedAsUnicodeComparator() {};
 

@@ -36,7 +36,14 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.Lock;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.values.Reader;
+import org.apache.lucene.index.values.Values;
+import org.apache.lucene.index.values.ValuesEnum;
+import org.apache.lucene.index.values.Reader.Source;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.FloatsRef;
+import org.apache.lucene.util.LongsRef;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.BytesRef;
 
@@ -990,7 +997,264 @@ class DirectoryReader extends IndexReader implements Cloneable {
 
     return commits;
   }
+  
+  public Reader getIndexValues(String field) {
+    ensureOpen();
+    if (subReaders.length == 1) {
+      return subReaders[0].getIndexValues(field);
+    } 
+    return new MultiValueReader(field);
+  }
+  
+  private class MultiValueReader extends Reader {
 
+    private String id;
+    private Values value;
+
+    public MultiValueReader(String id) {
+      this.id = id;
+      for (SegmentReader reader : subReaders) {
+        FieldInfo fieldInfo = reader.fieldInfos().fieldInfo(id);
+        if(fieldInfo != null){
+          value = fieldInfo.getIndexValues();
+          break;
+        }
+      }
+    }
+
+    @Override
+    public ValuesEnum getEnum(AttributeSource source) throws IOException {
+      return new MultiValuesEnum(id, value);
+    }
+
+    @Override
+    public Source load() throws IOException {
+      return new MultiSource(id);
+    }
+
+    public void close() throws IOException {
+      //      
+    }
+    
+  }
+  
+  private class MultiValuesEnum extends ValuesEnum {
+    private int numDocs_ = 0;
+    private int pos = -1;
+    private int start = 0;
+    private final String id;
+    private final ValuesEnum[] enumCache;
+    private ValuesEnum current;
+
+    protected MultiValuesEnum(String id, Values enumType) {
+      super(enumType);
+      enumCache = new ValuesEnum[subReaders.length];
+      this.id = id;
+    }
+
+    @Override
+    public void close() throws IOException {
+      for (ValuesEnum valuesEnum : enumCache) {
+        if(valuesEnum != null)
+          valuesEnum.close();
+      }
+    }
+
+    @Override
+    public int advance( int target) throws IOException {
+      int n = target - start;
+      do {
+        if(target >= maxDoc)
+          return pos = NO_MORE_DOCS;
+        if (n >= numDocs_) {
+          int idx = readerIndex(target);
+          if (enumCache[idx] == null) {
+            try {
+              Reader indexValues = subReaders[idx].getIndexValues(id);
+              if (indexValues != null) // nocommit does that work with default
+                // values?
+                enumCache[idx] = indexValues.getEnum(this.attributes());
+              else
+                enumCache[idx] = new DummyEnum(this.attributes(),
+                    subReaders[idx].maxDoc(), attr.type());
+            } catch (IOException ex) {
+              // nocommit what to do here?
+              throw new RuntimeException(ex);
+            }
+          }
+          current = enumCache[idx];
+          start = starts[idx];
+          numDocs_ = subReaders[idx].maxDoc();
+          n = target - start;
+        }
+        target = start+numDocs_;
+      } while ((n = current.advance(n)) == NO_MORE_DOCS);
+      return pos = start+current.docID();
+    }
+
+
+    @Override
+    public int docID() {
+      return pos;
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      return advance(pos+1);
+    }
+  }
+  
+  private class MultiSource extends Source {
+    private int numDocs_ = 0;
+    private int start = 0;
+    private Source current;
+    private final String id;
+    
+    MultiSource(String id) {
+      this.id = id;
+    }
+    
+    public long ints(int docID) {
+      int n = docID - start;
+      if(n >= numDocs_) {
+        int idx = readerIndex(docID);
+        try{
+        current = subReaders[idx].getIndexValuesCache().getInts(id);
+        if(current == null) //nocommit does that work with default values?
+          current = new DummySource();
+        }catch(IOException ex) {
+          // nocommit what to do here?
+          throw new RuntimeException(ex);
+        }
+        start = starts[idx];
+        numDocs_ = subReaders[idx].maxDoc();
+        n = docID - start;
+      }
+      return current.ints(n);
+    }
+
+    public double floats(int docID) {
+      int n = docID - start;
+      if(n >= numDocs_) {
+          int idx = readerIndex(docID);
+          try{
+          current = subReaders[idx].getIndexValuesCache().getFloats(id);
+          if(current == null) //nocommit does that work with default values?
+            current = new DummySource();
+          }catch(IOException ex) {
+            // nocommit what to do here?
+            throw new RuntimeException(ex);
+          }
+          numDocs_ = subReaders[idx].maxDoc();
+
+          start = starts[idx];
+          n = docID - start;
+      }
+      return current.floats(n);
+    }
+
+    public BytesRef bytes(int docID) {
+      int n = docID - start;
+      if(n >= numDocs_) {
+        int idx = readerIndex(docID);
+        try{
+        current = subReaders[idx].getIndexValuesCache().getBytes(id);
+        if(current == null) //nocommit does that work with default values?
+          current = new DummySource();
+        }catch(IOException ex) {
+          // nocommit what to do here?
+          throw new RuntimeException(ex);
+        }
+        numDocs_ = subReaders[idx].maxDoc();
+        start = starts[idx];
+        n = docID - start;
+      }
+      return current.bytes(n);
+    }
+    
+    public long ramBytesUsed() {
+      return current.ramBytesUsed();
+    }
+    
+  }
+
+  private static class DummySource extends Source {
+    private final BytesRef ref = new BytesRef();
+    @Override
+    public BytesRef bytes(int docID) {
+      return ref;
+    }
+
+    
+    @Override
+    public double floats(int docID) {
+      return 0.0d;
+    }
+
+    @Override
+    public long ints(int docID) {
+      return 0;
+    }
+
+    public long ramBytesUsed() {
+      return 0;
+    }
+  }
+  
+  private static class DummyEnum extends ValuesEnum {
+    private int pos = -1;
+    private final int maxDoc;
+    
+    public DummyEnum(AttributeSource source, int maxDoc, Values type) {
+      super(source, type);
+      this.maxDoc = maxDoc;
+      switch (type) {
+      case BYTES_VAR_STRAIGHT:
+      case BYTES_FIXED_STRAIGHT:
+      case BYTES_FIXED_DEREF:
+      case BYTES_FIXED_SORTED:
+      case BYTES_VAR_DEREF:
+      case BYTES_VAR_SORTED:
+        // nocommit - this is not correct for Fixed_straight
+        BytesRef bytes = attr.bytes();
+        bytes.length = 0;
+        bytes.offset = 0;
+        break;
+      case PACKED_INTS:
+      case PACKED_INTS_FIXED:
+        LongsRef ints = attr.ints();
+        ints.set(0);
+        break;
+
+      case SIMPLE_FLOAT_4BYTE:
+      case SIMPLE_FLOAT_8BYTE:
+        FloatsRef floats = attr.floats();
+        floats.set(0d);
+        break;
+      default:
+        throw new IllegalArgumentException("unknown Values type: " + type);
+      }
+    }
+    @Override
+    public void close() throws IOException {
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      return pos = (pos < maxDoc ? target: NO_MORE_DOCS);
+    }
+    @Override
+    public int docID() {
+      return pos;
+    }
+    @Override
+    public int nextDoc() throws IOException {
+      return advance(pos+1);
+    }
+    
+  }
+  
+  
   private static final class ReaderCommit extends IndexCommit {
     private String segmentsFileName;
     Collection<String> files;
