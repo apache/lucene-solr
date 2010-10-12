@@ -73,7 +73,6 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.store.SingleInstanceLockFactory;
 import org.apache.lucene.util.UnicodeUtil;
-import org.apache.lucene.util.Version;
 import org.apache.lucene.util._TestUtil;
 import org.apache.lucene.util.ThreadInterruptedException;
 import org.apache.lucene.util.BytesRef;
@@ -4962,7 +4961,7 @@ public class TestIndexWriter extends LuceneTestCase {
     final Random r = random;
 
     Directory dir = newDirectory();
-    FlushCountingIndexWriter w = new FlushCountingIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer()).setRAMBufferSizeMB(0.5).setMaxBufferedDocs(-1).setMaxBufferedDeleteTerms(-1));
+    FlushCountingIndexWriter w = new FlushCountingIndexWriter(dir, newIndexWriterConfig( TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, true, false)).setRAMBufferSizeMB(0.5).setMaxBufferedDocs(-1).setMaxBufferedDeleteTerms(-1));
     //w.setInfoStream(System.out);
     Document doc = new Document();
     doc.add(newField("field", "go 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20", Field.Store.NO, Field.Index.ANALYZED));

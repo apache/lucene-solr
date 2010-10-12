@@ -22,7 +22,6 @@ import java.io.Reader;
 
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.index.Payload;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
@@ -38,7 +37,7 @@ public final class MockAnalyzer extends Analyzer {
   private int positionIncrementGap;
 
   public MockAnalyzer(CharacterRunAutomaton runAutomaton, boolean lowerCase, CharacterRunAutomaton filter, boolean enablePositionIncrements) {
-    this(runAutomaton, lowerCase, filter, enablePositionIncrements, false);    
+    this(runAutomaton, lowerCase, filter, enablePositionIncrements, true);    
   }
 
   /**
@@ -65,7 +64,7 @@ public final class MockAnalyzer extends Analyzer {
    * @param lowerCase true if the tokenizer should lowercase terms
    */
   public MockAnalyzer(CharacterRunAutomaton runAutomaton, boolean lowerCase) {
-    this(runAutomaton, lowerCase, MockTokenFilter.EMPTY_STOPSET, false, false);
+    this(runAutomaton, lowerCase, MockTokenFilter.EMPTY_STOPSET, false, true);
   }
 
   public MockAnalyzer(CharacterRunAutomaton runAutomaton, boolean lowerCase, boolean payload) {
@@ -147,5 +146,11 @@ final class SimplePayloadFilter extends TokenFilter {
     } else {
       return false;
     }
+  }
+
+  @Override
+  public void reset() throws IOException {
+    super.reset();
+    pos = 0;
   }
 }
