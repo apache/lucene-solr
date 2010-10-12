@@ -100,7 +100,7 @@ public abstract class CachedArrayCreator<T extends CachedArray> extends EntryCre
   /**
    * Utility function to help check what bits are valid
    */
-  protected Bits checkMatchAllBits( Bits deleted, OpenBitSet valid, int maxDocs, int numDocs )
+  protected Bits checkMatchAllBits( Bits deleted, OpenBitSet valid, int numDocs, int maxDocs )
   {
     if( numDocs != maxDocs ) {
       if( hasOption( OPTION_CACHE_BITS ) ) {
