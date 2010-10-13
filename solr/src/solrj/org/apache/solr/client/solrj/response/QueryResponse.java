@@ -204,7 +204,7 @@ public class QueryResponse extends SolrResponseBase
       _facetFields = new ArrayList<FacetField>( ff.size() );
       _limitingFacets = new ArrayList<FacetField>( ff.size() );
       
-      long minsize = _results.getNumFound();
+      long minsize = _results == null ? Long.MAX_VALUE :_results.getNumFound();
       for( Map.Entry<String,NamedList<Number>> facet : ff ) {
         FacetField f = new FacetField( facet.getKey() );
         for( Map.Entry<String, Number> entry : facet.getValue() ) {
