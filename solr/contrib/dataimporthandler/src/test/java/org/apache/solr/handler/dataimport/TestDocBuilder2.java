@@ -215,8 +215,8 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
 
   @Test
   public void testFileListEntityProcessor_lastIndexTime() throws Exception  {
-    long time = System.currentTimeMillis();
-    File tmpdir = new File("." + time);
+    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
+    tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
 

@@ -35,8 +35,8 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
   @Test
   @SuppressWarnings("unchecked")
   public void testSimple() throws IOException {
-    long time = System.currentTimeMillis();
-    File tmpdir = new File("." + time);
+    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
+    tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
     createFile(tmpdir, "a.xml", "a.xml".getBytes(), false);
@@ -61,8 +61,8 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
   
   @Test
   public void testBiggerSmallerFiles() throws IOException {
-    long time = System.currentTimeMillis();
-    File tmpdir = new File("." + time);
+    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
+    tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
     long minLength = Long.MAX_VALUE;
@@ -131,8 +131,8 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
 
   @Test
   public void testNTOT() throws IOException {
-    long time = System.currentTimeMillis();
-    File tmpdir = new File("." + time);
+    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
+    tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
     createFile(tmpdir, "a.xml", "a.xml".getBytes(), true);
@@ -167,8 +167,8 @@ public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCa
 
   @Test
   public void testRECURSION() throws IOException {
-    long time = System.currentTimeMillis();
-    File tmpdir = new File("." + time);
+    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
+    tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
     File childdir = new File(tmpdir + "/child" );
