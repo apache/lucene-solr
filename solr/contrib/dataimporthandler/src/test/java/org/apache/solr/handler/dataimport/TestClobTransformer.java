@@ -16,9 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import junit.framework.Assert;
-
-import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Test;
 
 import java.io.StringReader;
@@ -35,7 +32,7 @@ import java.util.*;
  * @see org.apache.solr.handler.dataimport.ClobTransformer
  * @since solr 1.4
  */
-public class TestClobTransformer extends SolrTestCaseJ4 {
+public class TestClobTransformer extends AbstractDataImportHandlerTestCase {
   @Test
   public void simple() throws Exception {
     List<Map<String, String>> flds = new ArrayList<Map<String, String>>();
@@ -45,7 +42,7 @@ public class TestClobTransformer extends SolrTestCaseJ4 {
     f.put(ClobTransformer.CLOB, "true");
     f.put(DataImporter.NAME, "description");
     flds.add(f);
-    Context ctx = AbstractDataImportHandlerTestCase.getContext(null, new VariableResolverImpl(), null, Context.FULL_DUMP, flds, Collections.EMPTY_MAP);
+    Context ctx = getContext(null, new VariableResolverImpl(), null, Context.FULL_DUMP, flds, Collections.EMPTY_MAP);
     Transformer t = new ClobTransformer();
     Map<String, Object> row = new HashMap<String, Object>();
     Clob clob = (Clob) Proxy.newProxyInstance(this.getClass().getClassLoader(), new Class[]{Clob.class}, new InvocationHandler() {
@@ -59,6 +56,6 @@ public class TestClobTransformer extends SolrTestCaseJ4 {
 
     row.put("dsc", clob);
     t.transformRow(row, ctx);
-    Assert.assertEquals("hello!", row.get("dsc"));
+    assertEquals("hello!", row.get("dsc"));
   }
 }

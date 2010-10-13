@@ -16,6 +16,8 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -33,26 +35,18 @@ import java.text.ParseException;
  * @since solr 1.3
  */
 public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
-  @Override
-  public String getSchemaFile() {
-    return "dataimport-schema.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
   }
 
-  @Override
-  public String getSolrConfigFile() {
-    return "dataimport-solrconfig.xml";
-  }
-
-  @Override
+  @Before @Override
   public void setUp() throws Exception {
     super.setUp();
+    clearIndex();
+    assertU(commit());
   }
-
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-
+  
   @Test
   @SuppressWarnings("unchecked")
   public void testCompositePk_FullImport() throws Exception {
@@ -66,11 +60,12 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
     MockDataSource.setIterator("select * from y where y.A=1", childRow
             .iterator());
 
-    super.runFullImport(dataConfig);
+    runFullImport(dataConfig);
 
     assertQ(req("id:1"), "//*[@numFound='1']");
     assertQ(req("desc:hello"), "//*[@numFound='1']");
   }
+  
   @Test
   @SuppressWarnings("unchecked")
   public void testCompositePk_FullImport_MT() throws Exception {
@@ -85,7 +80,7 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
     MockDataSource.setIterator("select * from y where y.A=1", childRow.iterator());
     MockDataSource.setIterator("select * from y where y.A=2", childRow.iterator());
 
-    super.runFullImport(dataConfig_2threads);
+    runFullImport(dataConfig_2threads);
 
     assertQ(req("id:1"), "//*[@numFound='1']");
     assertQ(req("id:2"), "//*[@numFound='1']");
@@ -106,7 +101,7 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
             .iterator());
 
 
-    super.runFullImport(dataConfig,createMap("commit","false"));
+    runFullImport(dataConfig,createMap("commit","false"));
     assertQ(req("id:10"), "//*[@numFound='0']");
   }
 
@@ -128,7 +123,7 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
     MockDataSource.setIterator("select * from y where y.A=5", childRow
             .iterator());
 
-    super.runDeltaImport(dataConfig);
+    runDeltaImport(dataConfig);
 
     assertQ(req("id:5"), "//*[@numFound='1']");
     assertQ(req("desc:hello"), "//*[@numFound='1']");
@@ -147,7 +142,7 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
     MockDataSource.setIterator("select * from y where y.A=11", childRow
             .iterator());
 
-    super.runFullImport(dataConfig);
+    runFullImport(dataConfig);
 
     assertQ(req("id:11"), "//*[@numFound='1']");
 
@@ -175,13 +170,11 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
     MockDataSource.setIterator("select * from x where id = '17'", parentRow
             .iterator());
 
-    super.runDeltaImport(dataConfig);
+    runDeltaImport(dataConfig);
 
     assertQ(req("id:15"), "//*[@numFound='1']");
     assertQ(req("id:11"), "//*[@numFound='0']");
     assertQ(req("id:17"), "//*[@numFound='0']");
-
-
   }
 
   @Test
@@ -202,7 +195,7 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
     MockDataSource.setIterator("select * from y where y.A=5", childRow
             .iterator());
 
-    super.runDeltaImport(dataConfig_deltaimportquery);
+    runDeltaImport(dataConfig_deltaimportquery);
 
     assertQ(req("id:5"), "//*[@numFound='1']");
     assertQ(req("desc:hello"), "//*[@numFound='1']");
@@ -214,7 +207,7 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
     List row = new ArrayList();
     row.add(createMap("id", 5));
     MockDataSource.setIterator("select * from x where last_modified > OK", row.iterator());
-    super.runFullImport(dataConfig_LastIndexTime);
+    runFullImport(dataConfig_LastIndexTime);
     assertQ(req("id:5"), "//*[@numFound='1']");
   }
 

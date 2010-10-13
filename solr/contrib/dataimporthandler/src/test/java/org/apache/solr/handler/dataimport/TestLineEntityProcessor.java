@@ -16,8 +16,6 @@ package org.apache.solr.handler.dataimport;
  * limitations under the License.
  */
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -32,11 +30,11 @@ import java.util.*;
  * @version $Id$
  * @since solr 1.4
  */
-public class TestLineEntityProcessor extends SolrTestCaseJ4 {
+public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
 
   @Test
   /************************************************************************/
-  public void simple() throws IOException {
+  public void testSimple() throws IOException {
 
     /* we want to create the equiv of :-
      *  <entity name="list_all_files" 
@@ -45,13 +43,13 @@ public class TestLineEntityProcessor extends SolrTestCaseJ4 {
      *           />
      */
 
-    Map attrs = AbstractDataImportHandlerTestCase.createMap(
+    Map attrs = createMap(
             LineEntityProcessor.URL, "dummy.lis",
             LineEntityProcessor.ACCEPT_LINE_REGEX, null,
             LineEntityProcessor.SKIP_LINE_REGEX, null
     );
 
-    Context c = AbstractDataImportHandlerTestCase.getContext(
+    Context c = getContext(
             null,                          //parentEntity
             new VariableResolverImpl(),  //resolver
             getDataSource(filecontents),   //parentDataSource
@@ -63,20 +61,20 @@ public class TestLineEntityProcessor extends SolrTestCaseJ4 {
     ep.init(c);
 
     /// call the entity processor to the list of lines
-    System.out.print("\n");
+    if (VERBOSE) System.out.print("\n");
     List<String> fList = new ArrayList<String>();
     while (true) {
       Map<String, Object> f = ep.nextRow();
       if (f == null) break;
       fList.add((String) f.get("rawLine"));
-      System.out.print("     rawLine='" + f.get("rawLine") + "'\n");
+      if (VERBOSE) System.out.print("     rawLine='" + f.get("rawLine") + "'\n");
     }
-    Assert.assertEquals(24, fList.size());
+    assertEquals(24, fList.size());
   }
 
   @Test
   /************************************************************************/
-  public void only_xml_files() throws IOException {
+  public void testOnly_xml_files() throws IOException {
 
     /* we want to create the equiv of :-
      *  <entity name="list_all_files" 
@@ -85,13 +83,13 @@ public class TestLineEntityProcessor extends SolrTestCaseJ4 {
      *           acceptLineRegex="xml"
      *           />
      */
-    Map attrs = AbstractDataImportHandlerTestCase.createMap(
+    Map attrs = createMap(
             LineEntityProcessor.URL, "dummy.lis",
             LineEntityProcessor.ACCEPT_LINE_REGEX, "xml",
             LineEntityProcessor.SKIP_LINE_REGEX, null
     );
 
-    Context c = AbstractDataImportHandlerTestCase.getContext(
+    Context c = getContext(
             null,                          //parentEntity
             new VariableResolverImpl(),  //resolver
             getDataSource(filecontents),   //parentDataSource
@@ -109,12 +107,12 @@ public class TestLineEntityProcessor extends SolrTestCaseJ4 {
       if (f == null) break;
       fList.add((String) f.get("rawLine"));
     }
-    Assert.assertEquals(5, fList.size());
+    assertEquals(5, fList.size());
   }
 
   @Test
   /************************************************************************/
-  public void only_xml_files_no_xsd() throws IOException {
+  public void testOnly_xml_files_no_xsd() throws IOException {
     /* we want to create the equiv of :-
      *  <entity name="list_all_files" 
      *           processor="LineEntityProcessor"
@@ -123,13 +121,13 @@ public class TestLineEntityProcessor extends SolrTestCaseJ4 {
      *           omitLineRegex="\\.xsd"
      *           />
      */
-    Map attrs = AbstractDataImportHandlerTestCase.createMap(
+    Map attrs = createMap(
             LineEntityProcessor.URL, "dummy.lis",
             LineEntityProcessor.ACCEPT_LINE_REGEX, "\\.xml",
             LineEntityProcessor.SKIP_LINE_REGEX, "\\.xsd"
     );
 
-    Context c = AbstractDataImportHandlerTestCase.getContext(
+    Context c = getContext(
             null,                          //parentEntity
             new VariableResolverImpl(),  //resolver
             getDataSource(filecontents),   //parentDataSource
@@ -147,12 +145,12 @@ public class TestLineEntityProcessor extends SolrTestCaseJ4 {
       if (f == null) break;
       fList.add((String) f.get("rawLine"));
     }
-    Assert.assertEquals(4, fList.size());
+    assertEquals(4, fList.size());
   }
 
   @Test
   /************************************************************************/
-  public void no_xsd_files() throws IOException {
+  public void testNo_xsd_files() throws IOException {
     /* we want to create the equiv of :-
      *  <entity name="list_all_files" 
      *           processor="LineEntityProcessor"
@@ -160,12 +158,12 @@ public class TestLineEntityProcessor extends SolrTestCaseJ4 {
      *           omitLineRegex="\\.xsd"
      *           />
      */
-    Map attrs = AbstractDataImportHandlerTestCase.createMap(
+    Map attrs = createMap(
             LineEntityProcessor.URL, "dummy.lis",
             LineEntityProcessor.SKIP_LINE_REGEX, "\\.xsd"
     );
 
-    Context c = AbstractDataImportHandlerTestCase.getContext(
+    Context c = getContext(
             null,                          //parentEntity
             new VariableResolverImpl(),  //resolver
             getDataSource(filecontents),   //parentDataSource
@@ -183,7 +181,7 @@ public class TestLineEntityProcessor extends SolrTestCaseJ4 {
       if (f == null) break;
       fList.add((String) f.get("rawLine"));
     }
-    Assert.assertEquals(18, fList.size());
+    assertEquals(18, fList.size());
   }
 
   /**

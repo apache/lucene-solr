@@ -16,8 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.text.DecimalFormatSymbols;
@@ -34,7 +32,7 @@ import java.util.Map;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestNumberFormatTransformer extends SolrTestCaseJ4 {
+public class TestNumberFormatTransformer extends AbstractDataImportHandlerTestCase {
   private char GROUPING_SEP = new DecimalFormatSymbols().getGroupingSeparator();
   private char DECIMAL_SEP = new DecimalFormatSymbols().getDecimalSeparator();
 
@@ -43,55 +41,53 @@ public class TestNumberFormatTransformer extends SolrTestCaseJ4 {
   public void testTransformRow_SingleNumber() {
     char GERMAN_GROUPING_SEP = new DecimalFormatSymbols(Locale.GERMANY).getGroupingSeparator();
     List l = new ArrayList();
-    l.add(AbstractDataImportHandlerTestCase.createMap("column", "num",
+    l.add(createMap("column", "num",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER));
-    l.add(AbstractDataImportHandlerTestCase.createMap("column", "localizedNum",
+    l.add(createMap("column", "localizedNum",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER, NumberFormatTransformer.LOCALE, "de-DE"));
-    Context c = AbstractDataImportHandlerTestCase.getContext(null, null, null, Context.FULL_DUMP, l, null);
-    Map m = AbstractDataImportHandlerTestCase.createMap("num", "123" + GROUPING_SEP + "567", "localizedNum", "123" + GERMAN_GROUPING_SEP + "567");
+    Context c = getContext(null, null, null, Context.FULL_DUMP, l, null);
+    Map m = createMap("num", "123" + GROUPING_SEP + "567", "localizedNum", "123" + GERMAN_GROUPING_SEP + "567");
     new NumberFormatTransformer().transformRow(m, c);
-    Assert.assertEquals(new Long(123567), m.get("num"));
-    Assert.assertEquals(new Long(123567), m.get("localizedNum"));
+    assertEquals(new Long(123567), m.get("num"));
+    assertEquals(new Long(123567), m.get("localizedNum"));
   }
 
   @Test
   @SuppressWarnings("unchecked")
   public void testTransformRow_MultipleNumbers() throws Exception {
     List fields = new ArrayList();
-    fields.add(AbstractDataImportHandlerTestCase.createMap(DataImporter.COLUMN,
-            "inputs"));
-    fields.add(AbstractDataImportHandlerTestCase.createMap(DataImporter.COLUMN,
+    fields.add(createMap(DataImporter.COLUMN, "inputs"));
+    fields.add(createMap(DataImporter.COLUMN,
             "outputs", RegexTransformer.SRC_COL_NAME, "inputs",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER));
 
     List inputs = new ArrayList();
     inputs.add("123" + GROUPING_SEP + "567");
     inputs.add("245" + GROUPING_SEP + "678");
-    Map row = AbstractDataImportHandlerTestCase.createMap("inputs", inputs);
+    Map row = createMap("inputs", inputs);
 
     VariableResolverImpl resolver = new VariableResolverImpl();
     resolver.addNamespace("e", row);
 
-    Context context = AbstractDataImportHandlerTestCase.getContext(null, resolver, null, Context.FULL_DUMP, fields, null);
+    Context context = getContext(null, resolver, null, Context.FULL_DUMP, fields, null);
     new NumberFormatTransformer().transformRow(row, context);
 
     List output = new ArrayList();
     output.add(new Long(123567));
     output.add(new Long(245678));
-    Map outputRow = AbstractDataImportHandlerTestCase.createMap("inputs", inputs,
-            "outputs", output);
+    Map outputRow = createMap("inputs", inputs, "outputs", output);
 
-    Assert.assertEquals(outputRow, row);
+    assertEquals(outputRow, row);
   }
 
   @Test(expected = DataImportHandlerException.class)
   @SuppressWarnings("unchecked")
   public void testTransformRow_InvalidInput1_Number() {
     List l = new ArrayList();
-    l.add(AbstractDataImportHandlerTestCase.createMap("column", "num",
+    l.add(createMap("column", "num",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER));
-    Context c = AbstractDataImportHandlerTestCase.getContext(null, null, null, Context.FULL_DUMP, l, null);
-    Map m = AbstractDataImportHandlerTestCase.createMap("num", "123" + GROUPING_SEP + "5a67");
+    Context c = getContext(null, null, null, Context.FULL_DUMP, l, null);
+    Map m = createMap("num", "123" + GROUPING_SEP + "5a67");
     new NumberFormatTransformer().transformRow(m, c);
   }
 
@@ -99,10 +95,10 @@ public class TestNumberFormatTransformer extends SolrTestCaseJ4 {
   @SuppressWarnings("unchecked")
   public void testTransformRow_InvalidInput2_Number() {
     List l = new ArrayList();
-    l.add(AbstractDataImportHandlerTestCase.createMap("column", "num",
+    l.add(createMap("column", "num",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER));
-    Context c = AbstractDataImportHandlerTestCase.getContext(null, null, null, Context.FULL_DUMP, l, null);
-    Map m = AbstractDataImportHandlerTestCase.createMap("num", "123" + GROUPING_SEP + "567b");
+    Context c = getContext(null, null, null, Context.FULL_DUMP, l, null);
+    Map m = createMap("num", "123" + GROUPING_SEP + "567b");
     new NumberFormatTransformer().transformRow(m, c);
   }
 
@@ -110,10 +106,10 @@ public class TestNumberFormatTransformer extends SolrTestCaseJ4 {
   @SuppressWarnings("unchecked")
   public void testTransformRow_InvalidInput2_Currency() {
     List l = new ArrayList();
-    l.add(AbstractDataImportHandlerTestCase.createMap("column", "num",
+    l.add(createMap("column", "num",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.CURRENCY));
-    Context c = AbstractDataImportHandlerTestCase.getContext(null, null, null, Context.FULL_DUMP, l, null);
-    Map m = AbstractDataImportHandlerTestCase.createMap("num", "123" + GROUPING_SEP + "567b");
+    Context c = getContext(null, null, null, Context.FULL_DUMP, l, null);
+    Map m = createMap("num", "123" + GROUPING_SEP + "567b");
     new NumberFormatTransformer().transformRow(m, c);
   }
 
@@ -121,10 +117,10 @@ public class TestNumberFormatTransformer extends SolrTestCaseJ4 {
   @SuppressWarnings("unchecked")
   public void testTransformRow_InvalidInput1_Percent() {
     List l = new ArrayList();
-    l.add(AbstractDataImportHandlerTestCase.createMap("column", "num",
+    l.add(createMap("column", "num",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.PERCENT));
-    Context c = AbstractDataImportHandlerTestCase.getContext(null, null, null, Context.FULL_DUMP, l, null);
-    Map m = AbstractDataImportHandlerTestCase.createMap("num", "123" + GROUPING_SEP + "5a67");
+    Context c = getContext(null, null, null, Context.FULL_DUMP, l, null);
+    Map m = createMap("num", "123" + GROUPING_SEP + "5a67");
     new NumberFormatTransformer().transformRow(m, c);
   }
 
@@ -132,11 +128,10 @@ public class TestNumberFormatTransformer extends SolrTestCaseJ4 {
   @SuppressWarnings("unchecked")
   public void testTransformRow_InvalidInput3_Currency() {
     List l = new ArrayList();
-    l.add(AbstractDataImportHandlerTestCase.createMap("column", "num",
+    l.add(createMap("column", "num",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.CURRENCY));
-    Context c = AbstractDataImportHandlerTestCase.getContext(null, null, null, Context.FULL_DUMP, l, null);
-    Map m = AbstractDataImportHandlerTestCase.createMap(
-            "num", "123" + DECIMAL_SEP + "456" + DECIMAL_SEP + "789");
+    Context c = getContext(null, null, null, Context.FULL_DUMP, l, null);
+    Map m = createMap("num", "123" + DECIMAL_SEP + "456" + DECIMAL_SEP + "789");
     new NumberFormatTransformer().transformRow(m, c);
   }
 
@@ -144,11 +139,10 @@ public class TestNumberFormatTransformer extends SolrTestCaseJ4 {
   @SuppressWarnings("unchecked")
   public void testTransformRow_InvalidInput3_Number() {
     List l = new ArrayList();
-    l.add(AbstractDataImportHandlerTestCase.createMap("column", "num",
+    l.add(createMap("column", "num",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER));
-    Context c = AbstractDataImportHandlerTestCase.getContext(null, null, null, Context.FULL_DUMP, l, null);
-    Map m = AbstractDataImportHandlerTestCase.createMap(
-            "num", "123" + DECIMAL_SEP + "456" + DECIMAL_SEP + "789");
+    Context c = getContext(null, null, null, Context.FULL_DUMP, l, null);
+    Map m = createMap("num", "123" + DECIMAL_SEP + "456" + DECIMAL_SEP + "789");
     new NumberFormatTransformer().transformRow(m, c);
   }
 
@@ -156,12 +150,11 @@ public class TestNumberFormatTransformer extends SolrTestCaseJ4 {
   @SuppressWarnings("unchecked")
   public void testTransformRow_MalformedInput_Number() {
     List l = new ArrayList();
-    l.add(AbstractDataImportHandlerTestCase.createMap("column", "num",
+    l.add(createMap("column", "num",
             NumberFormatTransformer.FORMAT_STYLE, NumberFormatTransformer.NUMBER));
-    Context c = AbstractDataImportHandlerTestCase.getContext(null, null, null, Context.FULL_DUMP, l, null);
-    Map m = AbstractDataImportHandlerTestCase.createMap(
-            "num", "123" + GROUPING_SEP + GROUPING_SEP + "789");
+    Context c = getContext(null, null, null, Context.FULL_DUMP, l, null);
+    Map m = createMap("num", "123" + GROUPING_SEP + GROUPING_SEP + "789");
     new NumberFormatTransformer().transformRow(m, c);
-    Assert.assertEquals(new Long(123789), m.get("num"));
+    assertEquals(new Long(123789), m.get("num"));
   }
 }

@@ -16,10 +16,11 @@
  */
 package org.apache.solr.handler.dataimport;
 
+import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -39,26 +40,17 @@ public class TestSqlEntityProcessorDelta2 extends AbstractDataImportHandlerTestC
 
   private static final String DELETED_PK_QUERY = "select id from x where last_modified > NOW AND deleted='true'";
 
-  @Override
-  public String getSchemaFile() {
-    return "dataimport-solr_id-schema.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("dataimport-solrconfig.xml", "dataimport-solr_id-schema.xml");
   }
-
-  @Override
-  public String getSolrConfigFile() {
-    return "dataimport-solrconfig.xml";
-  }
-
-  @Override
+  
+  @Before @Override
   public void setUp() throws Exception {
     super.setUp();
+    clearIndex();
+    assertU(commit());
   }
-
-  @Override
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-
 
   @SuppressWarnings("unchecked")
   private void add1document() throws Exception {
@@ -71,7 +63,7 @@ public class TestSqlEntityProcessorDelta2 extends AbstractDataImportHandlerTestC
     MockDataSource.setIterator("select * from y where y.A='1'", childRow
         .iterator());
 
-    super.runFullImport(dataConfig_delta2);
+    runFullImport(dataConfig_delta2);
 
     assertQ(req("*:* OR add1document"), "//*[@numFound='1']");
     assertQ(req("solr_id:prefix-1"), "//*[@numFound='1']");
@@ -100,7 +92,7 @@ public class TestSqlEntityProcessorDelta2 extends AbstractDataImportHandlerTestC
     MockDataSource.setIterator("select * from y where y.A='1'", childRow
         .iterator());
 
-    super.runDeltaImport(dataConfig_delta2);
+    runDeltaImport(dataConfig_delta2);
     assertQ(req("*:* OR testCompositePk_DeltaImport_delete"), "//*[@numFound='0']");
   }
 
@@ -124,7 +116,7 @@ public class TestSqlEntityProcessorDelta2 extends AbstractDataImportHandlerTestC
     MockDataSource.setIterator("select * from y where y.A='1'", childRow
         .iterator());
 
-    super.runDeltaImport(dataConfig_delta2);
+    runDeltaImport(dataConfig_delta2);
 
     assertQ(req("*:* OR testCompositePk_DeltaImport_empty"), "//*[@numFound='1']");
     assertQ(req("solr_id:prefix-1"), "//*[@numFound='1']");
@@ -133,7 +125,7 @@ public class TestSqlEntityProcessorDelta2 extends AbstractDataImportHandlerTestC
 
   @Test
   @SuppressWarnings("unchecked")
-  public void XtestCompositePk_DeltaImport_replace_delete() throws Exception {
+  public void testCompositePk_DeltaImport_replace_delete() throws Exception {
     add1document();
     MockDataSource.clearCache();
 
@@ -157,7 +149,7 @@ public class TestSqlEntityProcessorDelta2 extends AbstractDataImportHandlerTestC
     MockDataSource.setIterator("select * from y where y.A='1'", childRow
         .iterator());
 
-    super.runDeltaImport(dataConfig_delta2);
+    runDeltaImport(dataConfig_delta2);
 
     assertQ(req("*:* OR testCompositePk_DeltaImport_replace_delete"), "//*[@numFound='0']");
   }
@@ -187,7 +179,7 @@ public class TestSqlEntityProcessorDelta2 extends AbstractDataImportHandlerTestC
     MockDataSource.setIterator("select * from y where y.A='1'", childRow
         .iterator());
 
-    super.runDeltaImport(dataConfig_delta2);
+    runDeltaImport(dataConfig_delta2);
 
     assertQ(req("*:* OR XtestCompositePk_DeltaImport_replace_nodelete"), "//*[@numFound='1']");
     assertQ(req("solr_id:prefix-1"), "//*[@numFound='1']");
@@ -216,7 +208,7 @@ public class TestSqlEntityProcessorDelta2 extends AbstractDataImportHandlerTestC
     MockDataSource.setIterator("select * from y where y.A='2'", childRow
         .iterator());
 
-    super.runDeltaImport(dataConfig_delta2);
+    runDeltaImport(dataConfig_delta2);
 
     assertQ(req("*:* OR testCompositePk_DeltaImport_add"), "//*[@numFound='2']");
     assertQ(req("solr_id:prefix-1"), "//*[@numFound='1']");
@@ -234,7 +226,7 @@ public class TestSqlEntityProcessorDelta2 extends AbstractDataImportHandlerTestC
     MockDataSource.setIterator(DELTA_QUERY,
         Collections.EMPTY_LIST.iterator());
 
-    super.runDeltaImport(dataConfig_delta2);
+    runDeltaImport(dataConfig_delta2);
 
     assertQ(req("*:* OR testCompositePk_DeltaImport_nodelta"), "//*[@numFound='1']");
     assertQ(req("solr_id:prefix-1 OR testCompositePk_DeltaImport_nodelta"), "//*[@numFound='1']");
@@ -267,7 +259,7 @@ public class TestSqlEntityProcessorDelta2 extends AbstractDataImportHandlerTestC
     MockDataSource.setIterator("select * from y where y.A='2'", childRow
         .iterator());
 
-    super.runDeltaImport(dataConfig_delta2);
+    runDeltaImport(dataConfig_delta2);
 
     assertQ(req("*:* OR XtestCompositePk_DeltaImport_add_delete"), "//*[@numFound='1']");
     assertQ(req("solr_id:prefix-2"), "//*[@numFound='1']");
