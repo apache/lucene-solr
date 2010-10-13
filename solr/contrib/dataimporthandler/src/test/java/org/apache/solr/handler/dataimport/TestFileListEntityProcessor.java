@@ -16,12 +16,9 @@ package org.apache.solr.handler.dataimport;
  * limitations under the License.
  */
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.*;
 
@@ -33,7 +30,7 @@ import java.util.*;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestFileListEntityProcessor extends SolrTestCaseJ4 {
+public class TestFileListEntityProcessor extends AbstractDataImportHandlerTestCase {
 
   @Test
   @SuppressWarnings("unchecked")
@@ -45,10 +42,10 @@ public class TestFileListEntityProcessor extends SolrTestCaseJ4 {
     createFile(tmpdir, "a.xml", "a.xml".getBytes(), false);
     createFile(tmpdir, "b.xml", "b.xml".getBytes(), false);
     createFile(tmpdir, "c.props", "c.props".getBytes(), false);
-    Map attrs = AbstractDataImportHandlerTestCase.createMap(
+    Map attrs = createMap(
             FileListEntityProcessor.FILE_NAME, "xml$",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath());
-    Context c = AbstractDataImportHandlerTestCase.getContext(null,
+    Context c = getContext(null,
             new VariableResolverImpl(), null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
     FileListEntityProcessor fileListEntityProcessor = new FileListEntityProcessor();
     fileListEntityProcessor.init(c);
@@ -59,7 +56,7 @@ public class TestFileListEntityProcessor extends SolrTestCaseJ4 {
         break;
       fList.add((String) f.get(FileListEntityProcessor.ABSOLUTE_FILE));
     }
-    Assert.assertEquals(2, fList.size());
+    assertEquals(2, fList.size());
   }
   
   @Test
@@ -88,37 +85,37 @@ public class TestFileListEntityProcessor extends SolrTestCaseJ4 {
       minLength = content.length;
       smallestFile = "c.props";
     }
-    Map attrs = AbstractDataImportHandlerTestCase.createMap(
+    Map attrs = createMap(
             FileListEntityProcessor.FILE_NAME, ".*",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.BIGGER_THAN, String.valueOf(minLength));
     List<String> fList = getFiles(null, attrs);
-    Assert.assertEquals(2, fList.size());
+    assertEquals(2, fList.size());
     Set<String> l = new HashSet<String>();
     l.add(new File(tmpdir, "a.xml").getAbsolutePath());
     l.add(new File(tmpdir, "b.xml").getAbsolutePath());
-    Assert.assertEquals(l, new HashSet<String>(fList));
-    attrs = AbstractDataImportHandlerTestCase.createMap(
+    assertEquals(l, new HashSet<String>(fList));
+    attrs = createMap(
             FileListEntityProcessor.FILE_NAME, ".*",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.SMALLER_THAN, String.valueOf(minLength+1));
     fList = getFiles(null, attrs);
     l.clear();
     l.add(new File(tmpdir, smallestFile).getAbsolutePath());
-    Assert.assertEquals(l, new HashSet<String>(fList));
-    attrs = AbstractDataImportHandlerTestCase.createMap(
+    assertEquals(l, new HashSet<String>(fList));
+    attrs = createMap(
             FileListEntityProcessor.FILE_NAME, ".*",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.SMALLER_THAN, "${a.x}");
     VariableResolverImpl resolver = new VariableResolverImpl();
-    resolver.addNamespace("a", AbstractDataImportHandlerTestCase.createMap("x", "4"));
+    resolver.addNamespace("a", createMap("x", "4"));
     fList = getFiles(resolver, attrs);
-    Assert.assertEquals(l, new HashSet<String>(fList));
+    assertEquals(l, new HashSet<String>(fList));
   }
 
   @SuppressWarnings("unchecked")
   static List<String> getFiles(VariableResolverImpl resolver, Map attrs) {
-    Context c = AbstractDataImportHandlerTestCase.getContext(null,
+    Context c = getContext(null,
             resolver, null, Context.FULL_DUMP, Collections.EMPTY_LIST, attrs);
     FileListEntityProcessor fileListEntityProcessor = new FileListEntityProcessor();
     fileListEntityProcessor.init(c);
@@ -141,31 +138,31 @@ public class TestFileListEntityProcessor extends SolrTestCaseJ4 {
     createFile(tmpdir, "a.xml", "a.xml".getBytes(), true);
     createFile(tmpdir, "b.xml", "b.xml".getBytes(), true);
     createFile(tmpdir, "c.props", "c.props".getBytes(), true);
-    Map attrs = AbstractDataImportHandlerTestCase.createMap(
+    Map attrs = createMap(
             FileListEntityProcessor.FILE_NAME, "xml$",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.OLDER_THAN, "'NOW'");
     List<String> fList = getFiles(null, attrs);
-    Assert.assertEquals(2, fList.size());
-    attrs = AbstractDataImportHandlerTestCase.createMap(
+    assertEquals(2, fList.size());
+    attrs = createMap(
             FileListEntityProcessor.FILE_NAME, ".xml$",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.NEWER_THAN, "'NOW-2HOURS'");
     fList = getFiles(null, attrs);
-    Assert.assertEquals(2, fList.size());
+    assertEquals(2, fList.size());
 
     // Use a variable for newerThan
-    attrs = AbstractDataImportHandlerTestCase.createMap(
+    attrs = createMap(
             FileListEntityProcessor.FILE_NAME, ".xml$",
             FileListEntityProcessor.BASE_DIR, tmpdir.getAbsolutePath(),
             FileListEntityProcessor.NEWER_THAN, "${a.x}");
     VariableResolverImpl resolver = new VariableResolverImpl();
     String lastMod = DataImporter.DATE_TIME_FORMAT.get().format(new Date(System.currentTimeMillis() - 50000));
-    resolver.addNamespace("a", AbstractDataImportHandlerTestCase.createMap("x", lastMod));
+    resolver.addNamespace("a", createMap("x", lastMod));
     createFile(tmpdir, "t.xml", "t.xml".getBytes(), false);
     fList = getFiles(resolver, attrs);
-    Assert.assertEquals(1, fList.size());
-    Assert.assertEquals("File name must be t.xml", new File(tmpdir, "t.xml").getAbsolutePath(), fList.get(0));
+    assertEquals(1, fList.size());
+    assertEquals("File name must be t.xml", new File(tmpdir, "t.xml").getAbsolutePath(), fList.get(0));
   }
 
   @Test
@@ -180,23 +177,11 @@ public class TestFileListEntityProcessor extends SolrTestCaseJ4 {
     createFile(childdir, "a.xml", "a.xml".getBytes(), true);
     createFile(childdir, "b.xml", "b.xml".getBytes(), true);
     createFile(childdir, "c.props", "c.props".getBytes(), true);
-    Map attrs = AbstractDataImportHandlerTestCase.createMap(
+    Map attrs = createMap(
             FileListEntityProcessor.FILE_NAME, "^.*\\.xml$",
             FileListEntityProcessor.BASE_DIR, childdir.getAbsolutePath(),
             FileListEntityProcessor.RECURSIVE, "true");
     List<String> fList = getFiles(null, attrs);
-    Assert.assertEquals(2, fList.size());
-  }
-
-  public static File createFile(File tmpdir, String name, byte[] content,
-                                boolean changeModifiedTime) throws IOException {
-    File file = new File(tmpdir.getAbsolutePath() + File.separator + name);
-    file.deleteOnExit();
-    FileOutputStream f = new FileOutputStream(file);
-    f.write(content);
-    f.close();
-    if (changeModifiedTime)
-      file.setLastModified(System.currentTimeMillis() - 3600000);
-    return file;
+    assertEquals(2, fList.size());
   }
 }

@@ -16,9 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import junit.framework.Assert;
-
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -47,7 +44,7 @@ import java.util.Map;
  * @see org.apache.solr.handler.dataimport.MailEntityProcessor
  * @since solr 1.4
  */
-public class TestMailEntityProcessor extends SolrTestCaseJ4 {
+public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
 
   // Credentials
   private static final String user = "user";
@@ -72,7 +69,7 @@ public class TestMailEntityProcessor extends SolrTestCaseJ4 {
     rp.command = "full-import";
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
-    Assert.assertEquals("top1 did not return 2 messages", swi.docs.size(), 2);
+    assertEquals("top1 did not return 2 messages", swi.docs.size(), 2);
   }
 
   @Test
@@ -89,7 +86,7 @@ public class TestMailEntityProcessor extends SolrTestCaseJ4 {
     rp.command = "full-import";
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
-    Assert.assertEquals("top2 and its children did not return 8 messages", swi.docs.size(), 8);
+    assertEquals("top2 and its children did not return 8 messages", swi.docs.size(), 8);
   }
 
   @Test
@@ -107,7 +104,7 @@ public class TestMailEntityProcessor extends SolrTestCaseJ4 {
     rp.command = "full-import";
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
-    Assert.assertEquals("top2 and its direct children did not return 5 messages", swi.docs.size(), 5);
+    assertEquals("top2 and its direct children did not return 5 messages", swi.docs.size(), 5);
   }
 
   @Test
@@ -125,7 +122,7 @@ public class TestMailEntityProcessor extends SolrTestCaseJ4 {
     rp.command = "full-import";
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
-    Assert.assertEquals("top2 and its direct children did not return 3 messages", swi.docs.size(), 3);
+    assertEquals("top2 and its direct children did not return 3 messages", swi.docs.size(), 3);
   }
 
   @Test
@@ -144,7 +141,7 @@ public class TestMailEntityProcessor extends SolrTestCaseJ4 {
     rp.command = "full-import";
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
-    Assert.assertEquals("top2 and its direct children did not return 3 messages", swi.docs.size(), 3);
+    assertEquals("top2 and its direct children did not return 3 messages", swi.docs.size(), 3);
   }
 
   @Test
@@ -162,7 +159,7 @@ public class TestMailEntityProcessor extends SolrTestCaseJ4 {
     rp.command = "full-import";
     SolrWriterImpl swi = new SolrWriterImpl();
     di.runCmd(rp, swi);
-    Assert.assertEquals("top2 and its direct children did not return 3 messages", swi.docs.size(), 3);
+    assertEquals("top2 and its direct children did not return 3 messages", swi.docs.size(), 3);
   }
 
   private String getConfigFromMap(Map<String, String> params) {

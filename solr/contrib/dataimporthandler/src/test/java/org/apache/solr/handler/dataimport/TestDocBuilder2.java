@@ -16,16 +16,14 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.junit.After;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.Assert;
+
 import org.apache.solr.request.LocalSolrQueryRequest;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Date;
 import java.io.File;
 
 /**
@@ -38,24 +36,9 @@ import java.io.File;
  */
 public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
 
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-
-  @Override
-  public String getSchemaFile() {
-    return "dataimport-schema.xml";
-  }
-
-  @Override
-  public String getSolrConfigFile() {
-    return "dataimport-solrconfig.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("dataimport-solrconfig.xml", "dataimport-schema.xml");
   }
 
   @Test
@@ -65,7 +48,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     rows.add(createMap("id", "1", "desc", "one"));
     MockDataSource.setIterator("select * from x", rows.iterator());
 
-    super.runFullImport(loadDataConfig("single-entity-data-config.xml"));
+    runFullImport(loadDataConfig("single-entity-data-config.xml"));
 
     assertQ(req("id:1"), "//*[@numFound='1']");
   }
@@ -77,7 +60,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     rows.add(createMap("id", "1", "desC", "one"));
     MockDataSource.setIterator("select * from x", rows.iterator());
 
-    super.runFullImport(dataConfigWithCaseInsensitiveFields);
+    runFullImport(dataConfigWithCaseInsensitiveFields);
 
     assertQ(req("id:1"), "//*[@numFound='1']");
     assertTrue("Start event listener was not called", StartEventListener.executed);
@@ -91,7 +74,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     rows.add(createMap("id", "1", "desc", "one"));
     MockDataSource.setIterator("select * from x", rows.iterator());
 
-    super.runFullImport(dataConfigWithDynamicTransformer);
+    runFullImport(dataConfigWithDynamicTransformer);
 
     assertQ(req("id:1"), "//*[@numFound='1']");
     assertQ(req("dynamic_s:test"), "//*[@numFound='1']");
@@ -134,7 +117,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     rows.add(createMap("id", "1", "desc", "one"));
     MockDataSource.setIterator("select * from x", rows.iterator());
 
-    super.runFullImport(loadDataConfig("data-config-with-transformer.xml"));
+    runFullImport(loadDataConfig("data-config-with-transformer.xml"));
   }
 
   @Test
@@ -145,7 +128,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     rows.add(createMap("id", "2", "desc", "two", "$skipDoc", "true"));
     MockDataSource.setIterator("select * from x", rows.iterator());
 
-    super.runFullImport(dataConfigWithDynamicTransformer);
+    runFullImport(dataConfigWithDynamicTransformer);
 
     assertQ(req("id:1"), "//*[@numFound='1']");
     assertQ(req("id:2"), "//*[@numFound='0']");
@@ -159,7 +142,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     rows.add(createMap("id", "2", "desc", "two", "$skipRow", "true"));
     MockDataSource.setIterator("select * from x", rows.iterator());
 
-    super.runFullImport(dataConfigWithDynamicTransformer);
+    runFullImport(dataConfigWithDynamicTransformer);
 
     assertQ(req("id:1"), "//*[@numFound='1']");
     assertQ(req("id:2"), "//*[@numFound='0']");
@@ -179,7 +162,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     rows.add(createMap("name_s", "xyz", "$skipRow", "true"));
     MockDataSource.setIterator("4", rows.iterator());
 
-    super.runFullImport(dataConfigWithTwoEntities);
+    runFullImport(dataConfigWithTwoEntities);
     assertQ(req("id:3"), "//*[@numFound='1']");
     assertQ(req("id:4"), "//*[@numFound='1']");
     assertQ(req("name_s:abcd"), "//*[@numFound='1']");
@@ -194,7 +177,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     rows.add(createMap("id", "2", "desc", "two", "$stopTransform", "true"));
     MockDataSource.setIterator("select * from x", rows.iterator());
 
-    super.runFullImport(dataConfigForSkipTransform);
+    runFullImport(dataConfigForSkipTransform);
 
     assertQ(req("id:1"), "//*[@numFound='1']");
     assertQ(req("id:2"), "//*[@numFound='1']");
@@ -210,7 +193,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     rows.add(createMap("id", "3", "desc", "two", "$deleteDocById", "2"));
     MockDataSource.setIterator("select * from x", rows.iterator());
 
-    super.runFullImport(dataConfigForSkipTransform);
+    runFullImport(dataConfigForSkipTransform);
 
     assertQ(req("id:1"), "//*[@numFound='1']");
     assertQ(req("id:2"), "//*[@numFound='0']");
@@ -223,7 +206,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
     rows.add(createMap("id", "3", "desc", "two", "$deleteDocByQuery", "desc:one"));
     MockDataSource.setIterator("select * from x", rows.iterator());
 
-    super.runFullImport(dataConfigForSkipTransform);
+    runFullImport(dataConfigForSkipTransform);
 
     assertQ(req("id:1"), "//*[@numFound='0']");
     assertQ(req("id:2"), "//*[@numFound='0']");
@@ -239,15 +222,15 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
 
     Map<String, String> params = createMap("baseDir", tmpdir.getAbsolutePath());
 
-    TestFileListEntityProcessor.createFile(tmpdir, "a.xml", "a.xml".getBytes(), true);
-    TestFileListEntityProcessor.createFile(tmpdir, "b.xml", "b.xml".getBytes(), true);
-    TestFileListEntityProcessor.createFile(tmpdir, "c.props", "c.props".getBytes(), true);
-    super.runFullImport(dataConfigFileList, params);
+    createFile(tmpdir, "a.xml", "a.xml".getBytes(), true);
+    createFile(tmpdir, "b.xml", "b.xml".getBytes(), true);
+    createFile(tmpdir, "c.props", "c.props".getBytes(), true);
+    runFullImport(dataConfigFileList, params);
     assertQ(req("*:*"), "//*[@numFound='3']");
 
     // Add a new file after a full index is done
-    TestFileListEntityProcessor.createFile(tmpdir, "t.xml", "t.xml".getBytes(), false);
-    super.runFullImport(dataConfigFileList, params);
+    createFile(tmpdir, "t.xml", "t.xml".getBytes(), false);
+    runFullImport(dataConfigFileList, params);
     // we should find only 1 because by default clean=true is passed
     // and this particular import should find only one file t.xml
     assertQ(req("*:*"), "//*[@numFound='1']");
@@ -255,7 +238,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
 
   public static class MockTransformer extends Transformer {
     public Object transformRow(Map<String, Object> row, Context context) {
-      Assert.assertTrue("Context gave incorrect data source", context.getDataSource("mockDs") instanceof MockDataSource2);
+      assertTrue("Context gave incorrect data source", context.getDataSource("mockDs") instanceof MockDataSource2);
       return row;
     }
   }

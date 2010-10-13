@@ -16,8 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.*;
@@ -30,18 +28,17 @@ import java.util.*;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestSqlEntityProcessor extends SolrTestCaseJ4 {
+public class TestSqlEntityProcessor extends AbstractDataImportHandlerTestCase {
   private static ThreadLocal<Integer> local = new ThreadLocal<Integer>();
 
   @Test
-  public void singleBatch() {
+  public void testSingleBatch() {
     SqlEntityProcessor sep = new SqlEntityProcessor();
     List<Map<String, Object>> rows = getRows(3);
     VariableResolverImpl vr = new VariableResolverImpl();
     HashMap<String, String> ea = new HashMap<String, String>();
     ea.put("query", "SELECT * FROM A");
-    Context c = AbstractDataImportHandlerTestCase.getContext(null, vr, getDs(rows),
-            Context.FULL_DUMP, null, ea);
+    Context c = getContext(null, vr, getDs(rows), Context.FULL_DUMP, null, ea);
     sep.init(c);
     int count = 0;
     while (true) {
@@ -51,11 +48,11 @@ public class TestSqlEntityProcessor extends SolrTestCaseJ4 {
       count++;
     }
 
-    Assert.assertEquals(3, count);
+    assertEquals(3, count);
   }
 
   @Test
-  public void tranformer() {
+  public void testTranformer() {
     EntityProcessor sep = new EntityProcessorWrapper( new SqlEntityProcessor(), null);
     List<Map<String, Object>> rows = getRows(2);
     VariableResolverImpl vr = new VariableResolverImpl();
@@ -63,8 +60,7 @@ public class TestSqlEntityProcessor extends SolrTestCaseJ4 {
     ea.put("query", "SELECT * FROM A");
     ea.put("transformer", T.class.getName());
 
-    sep.init(AbstractDataImportHandlerTestCase.getContext(null, vr, getDs(rows),
-            Context.FULL_DUMP, null, ea));
+    sep.init(getContext(null, vr, getDs(rows), Context.FULL_DUMP, null, ea));
     List<Map<String, Object>> rs = new ArrayList<Map<String, Object>>();
     Map<String, Object> r = null;
     while (true) {
@@ -74,12 +70,12 @@ public class TestSqlEntityProcessor extends SolrTestCaseJ4 {
       rs.add(r);
 
     }
-    Assert.assertEquals(2, rs.size());
-    Assert.assertNotNull(rs.get(0).get("T"));
+    assertEquals(2, rs.size());
+    assertNotNull(rs.get(0).get("T"));
   }
 
   @Test
-  public void tranformerWithReflection() {
+  public void testTranformerWithReflection() {
     EntityProcessor sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
     List<Map<String, Object>> rows = getRows(2);
     VariableResolverImpl vr = new VariableResolverImpl();
@@ -87,8 +83,7 @@ public class TestSqlEntityProcessor extends SolrTestCaseJ4 {
     ea.put("query", "SELECT * FROM A");
     ea.put("transformer", T3.class.getName());
 
-    sep.init(AbstractDataImportHandlerTestCase.getContext(null, vr, getDs(rows),
-            Context.FULL_DUMP, null, ea));
+    sep.init(getContext(null, vr, getDs(rows), Context.FULL_DUMP, null, ea));
     List<Map<String, Object>> rs = new ArrayList<Map<String, Object>>();
     Map<String, Object> r = null;
     while (true) {
@@ -98,12 +93,12 @@ public class TestSqlEntityProcessor extends SolrTestCaseJ4 {
       rs.add(r);
 
     }
-    Assert.assertEquals(2, rs.size());
-    Assert.assertNotNull(rs.get(0).get("T3"));
+    assertEquals(2, rs.size());
+    assertNotNull(rs.get(0).get("T3"));
   }
 
   @Test
-  public void tranformerList() {
+  public void testTranformerList() {
     EntityProcessor sep = new EntityProcessorWrapper(new SqlEntityProcessor(),null);
     List<Map<String, Object>> rows = getRows(2);
     VariableResolverImpl vr = new VariableResolverImpl();
@@ -111,8 +106,7 @@ public class TestSqlEntityProcessor extends SolrTestCaseJ4 {
     HashMap<String, String> ea = new HashMap<String, String>();
     ea.put("query", "SELECT * FROM A");
     ea.put("transformer", T2.class.getName());
-    sep.init(AbstractDataImportHandlerTestCase.getContext(null, vr, getDs(rows),
-            Context.FULL_DUMP, null, ea));
+    sep.init(getContext(null, vr, getDs(rows), Context.FULL_DUMP, null, ea));
 
     local.set(0);
     Map<String, Object> r = null;
@@ -123,8 +117,8 @@ public class TestSqlEntityProcessor extends SolrTestCaseJ4 {
         break;
       count++;
     }
-    Assert.assertEquals(2, (int) local.get());
-    Assert.assertEquals(4, count);
+    assertEquals(2, (int) local.get());
+    assertEquals(4, count);
   }
 
   private List<Map<String, Object>> getRows(int count) {

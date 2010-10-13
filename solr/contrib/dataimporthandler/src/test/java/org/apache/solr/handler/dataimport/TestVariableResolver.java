@@ -16,9 +16,7 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.junit.Assert;
 import org.junit.Test;
-import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.DateMathParser;
 
 import java.text.SimpleDateFormat;
@@ -32,7 +30,7 @@ import java.util.*;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestVariableResolver extends SolrTestCaseJ4 {
+public class TestVariableResolver extends AbstractDataImportHandlerTestCase {
 
   @Test
   public void testSimpleNamespace() {
@@ -40,7 +38,7 @@ public class TestVariableResolver extends SolrTestCaseJ4 {
     Map<String, Object> ns = new HashMap<String, Object>();
     ns.put("world", "WORLD");
     vri.addNamespace("hello", ns);
-    Assert.assertEquals("WORLD", vri.resolve("hello.world"));
+    assertEquals("WORLD", vri.resolve("hello.world"));
   }
 
   @Test
@@ -54,9 +52,8 @@ public class TestVariableResolver extends SolrTestCaseJ4 {
     VariableResolverImpl vri = new VariableResolverImpl(m);
     Object val = vri.resolve(TestVariableResolver.class.getName());
     // System.out.println("val = " + val);
-    Assert.assertEquals("hello", val);
-    Assert.assertEquals("world",vri.resolve("hello"));
-
+    assertEquals("hello", val);
+    assertEquals("world",vri.resolve("hello"));
   }
 
   @Test
@@ -68,7 +65,7 @@ public class TestVariableResolver extends SolrTestCaseJ4 {
     ns = new HashMap<String, Object>();
     ns.put("world1", "WORLD1");
     vri.addNamespace("hello.my", ns);
-    Assert.assertEquals("WORLD1", vri.resolve("hello.my.world1"));
+    assertEquals("WORLD1", vri.resolve("hello.my.world1"));
   }
 
   @Test
@@ -80,7 +77,7 @@ public class TestVariableResolver extends SolrTestCaseJ4 {
     ns = new HashMap<String, Object>();
     ns.put("world1", "WORLD1");
     vri.addNamespace("hello.my.new", ns);
-    Assert.assertEquals("WORLD1", vri.resolve("hello.my.new.world1"));
+    assertEquals("WORLD1", vri.resolve("hello.my.new.world1"));
   }
 
   @Test
@@ -95,7 +92,7 @@ public class TestVariableResolver extends SolrTestCaseJ4 {
       Date d = new Date();
       ns.put("dt", d);
       vri.addNamespace("A", ns);
-      Assert.assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(d),
+      assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(d),
                       vri.replaceTokens("${dataimporter.functions.formatDate(A.dt,'yyyy-MM-dd HH:mm:ss')}"));
     } finally {
       Context.CURRENT_CONTEXT.remove();
@@ -117,7 +114,7 @@ public class TestVariableResolver extends SolrTestCaseJ4 {
       DateMathParser dmp = new DateMathParser(TimeZone.getDefault(), Locale.getDefault());
 
       String s = vri.replaceTokens("${dataimporter.functions.formatDate('NOW/DAY','yyyy-MM-dd HH:mm')}");
-      Assert.assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(dmp.parseMath("/DAY")), s);
+      assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm").format(dmp.parseMath("/DAY")), s);
     } finally {
       Context.CURRENT_CONTEXT.remove();
     }
@@ -129,7 +126,7 @@ public class TestVariableResolver extends SolrTestCaseJ4 {
     Map<String, Object> ns = new HashMap<String, Object>();
     ns.put("world", "WORLD");
     vri.addNamespace(null, ns);
-    Assert.assertEquals("WORLD", vri.resolve("world"));
+    assertEquals("WORLD", vri.resolve("world"));
   }
 
   @Test
@@ -138,7 +135,7 @@ public class TestVariableResolver extends SolrTestCaseJ4 {
     Map<String, Object> ns = new HashMap<String, Object>();
     ns.put("world", "WORLD");
     vri.addNamespace(null, ns);
-    Assert.assertEquals("WORLD", vri.resolve("world"));
+    assertEquals("WORLD", vri.resolve("world"));
   }
 
   @Test
@@ -162,9 +159,9 @@ public class TestVariableResolver extends SolrTestCaseJ4 {
               .getFunctionsNamespace(l,null));
       String s = resolver
               .replaceTokens("${dataimporter.functions.formatDate('NOW/DAY','yyyy-MM-dd HH:mm')}");
-      Assert.assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm")
+      assertEquals(new SimpleDateFormat("yyyy-MM-dd HH:mm")
               .format(dmp.parseMath("/DAY")), s);
-      Assert.assertEquals("Hello World", resolver
+      assertEquals("Hello World", resolver
               .replaceTokens("${dataimporter.functions.test('TEST')}"));
     } finally {
       Context.CURRENT_CONTEXT.remove();

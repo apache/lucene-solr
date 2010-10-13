@@ -16,8 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.apache.solr.SolrTestCaseJ4;
-import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.w3c.dom.Document;
@@ -43,11 +41,11 @@ import java.util.Map;
  * @version $Id$
  * @since solr 1.3
  */
-public class TestScriptTransformer extends SolrTestCaseJ4 {
+public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
 
   @Test
   @Ignore
-  public void basic() {
+  public void testBasic() {
     String script = "function f1(row,context){"
             + "row.put('name','Hello ' + row.get('name'));" + "return row;\n" + "}";
     Context context = getContext("f1", script);
@@ -56,8 +54,7 @@ public class TestScriptTransformer extends SolrTestCaseJ4 {
     EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
     sep.init(context);
     sep.applyTransformer(map);
-    Assert.assertEquals(map.get("name"), "Hello Scott");
-
+    assertEquals(map.get("name"), "Hello Scott");
   }
 
   private Context getContext(String funcName, String script) {
@@ -66,7 +63,7 @@ public class TestScriptTransformer extends SolrTestCaseJ4 {
     entity.put("name", "hello");
     entity.put("transformer", "script:" + funcName);
 
-    AbstractDataImportHandlerTestCase.TestContext context = AbstractDataImportHandlerTestCase.getContext(null, null, null,
+    TestContext context = getContext(null, null, null,
             Context.FULL_DUMP, fields, entity);
     context.script = script;
     context.scriptlang = "JavaScript";
@@ -75,7 +72,7 @@ public class TestScriptTransformer extends SolrTestCaseJ4 {
 
   @Test
   @Ignore
-  public void oneparam() {
+  public void testOneparam() {
 
     String script = "function f1(row){"
             + "row.put('name','Hello ' + row.get('name'));" + "return row;\n" + "}";
@@ -86,25 +83,24 @@ public class TestScriptTransformer extends SolrTestCaseJ4 {
     EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
     sep.init(context);
     sep.applyTransformer(map);
-    Assert.assertEquals(map.get("name"), "Hello Scott");
-
+    assertEquals(map.get("name"), "Hello Scott");
   }
 
   @Test
   @Ignore
-  public void readScriptTag() throws Exception {
+  public void testReadScriptTag() throws Exception {
     DocumentBuilder builder = DocumentBuilderFactory.newInstance()
             .newDocumentBuilder();
     Document document = builder.parse(new InputSource(new StringReader(xml)));
     DataConfig config = new DataConfig();
     config.readFromXml((Element) document.getElementsByTagName("dataConfig")
             .item(0));
-    Assert.assertTrue(config.script.text.indexOf("checkNextToken") > -1);
+    assertTrue(config.script.text.indexOf("checkNextToken") > -1);
   }
 
   @Test
   @Ignore
-  public void checkScript() throws Exception {
+  public void testCheckScript() throws Exception {
     DocumentBuilder builder = DocumentBuilderFactory.newInstance()
             .newDocumentBuilder();
     Document document = builder.parse(new InputSource(new StringReader(xml)));
@@ -119,12 +115,11 @@ public class TestScriptTransformer extends SolrTestCaseJ4 {
     EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
     sep.init(c);
     sep.applyTransformer(map);
-    Assert.assertEquals("true", map.get("$hasMore"));
+    assertEquals("true", map.get("$hasMore"));
     map = new HashMap();
     map.put("nextToken", "");
     sep.applyTransformer(map);
-    Assert.assertNull(map.get("$hasMore"));
-
+    assertNull(map.get("$hasMore"));
   }
 
   static String xml = "<dataConfig>\n"

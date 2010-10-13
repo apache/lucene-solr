@@ -16,9 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import static org.junit.Assert.assertEquals;
-
-import org.apache.solr.SolrTestCaseJ4;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -26,15 +23,13 @@ import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import junit.framework.Assert;
-
 /**
  * <p> Test for EvaluatorBag </p>
  *
  * @version $Id$
  * @since solr 1.3
  */
-public class TestEvaluatorBag extends SolrTestCaseJ4 {
+public class TestEvaluatorBag extends AbstractDataImportHandlerTestCase {
   private static final String ENCODING = "UTF-8";
 
   VariableResolverImpl resolver;
@@ -91,10 +86,10 @@ public class TestEvaluatorBag extends SolrTestCaseJ4 {
     VariableResolverImpl vr = new VariableResolverImpl();
     vr.addNamespace("a",m);
     List l =  EvaluatorBag.parseParams(" 1 , a.b, 'hello!', 'ds,o,u\'za',",vr);
-    Assert.assertEquals(new Double(1),l.get(0));
-    Assert.assertEquals("B",((EvaluatorBag.VariableWrapper)l.get(1)).resolve());
-    Assert.assertEquals("hello!",l.get(2));
-    Assert.assertEquals("ds,o,u'za",l.get(3));
+    assertEquals(new Double(1),l.get(0));
+    assertEquals("B",((EvaluatorBag.VariableWrapper)l.get(1)).resolve());
+    assertEquals("hello!",l.get(2));
+    assertEquals("ds,o,u'za",l.get(3));
   }
 
   @Test
