@@ -45,10 +45,12 @@ import java.util.Set;
  */
 public class TestLBHttpSolrServer extends LuceneTestCase {
   SolrInstance[] solr = new SolrInstance[3];
-  HttpClient httpClient = new HttpClient();
+  HttpClient httpClient;
 
   public void setUp() throws Exception {
     super.setUp();
+    httpClient = new HttpClient();
+    httpClient.getParams().setParameter("http.connection.timeout", new Integer(1000));
     for (int i = 0; i < solr.length; i++) {
       solr[i] = new SolrInstance("solr" + i, 0);
       solr[i].setUp();

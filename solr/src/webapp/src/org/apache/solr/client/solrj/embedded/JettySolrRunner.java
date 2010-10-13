@@ -30,6 +30,7 @@ import org.apache.solr.servlet.SolrDispatchFilter;
 import org.mortbay.jetty.Handler;
 import org.mortbay.jetty.Server;
 import org.mortbay.jetty.Connector;
+import org.mortbay.jetty.nio.SelectChannelConnector;
 import org.mortbay.jetty.servlet.Context;
 import org.mortbay.jetty.servlet.FilterHolder;
 import org.mortbay.jetty.servlet.HashSessionIdManager;
@@ -77,9 +78,13 @@ public class JettySolrRunner
   {
     this.context = context;
     server = new Server( port );    
-    if (System.getProperty("jetty.insecurerandom") != null)
+    if (System.getProperty("jetty.testMode") != null) {
+      SelectChannelConnector connector = new SelectChannelConnector();
+      connector.setPort(port);
+      connector.setReuseAddress(true);
+      server.setConnectors(new Connector[] { connector });
       server.setSessionIdManager(new HashSessionIdManager(new Random()));
-
+    }
     server.setStopAtShutdown( true );
     
     // Initialize the servlets
