@@ -79,4 +79,9 @@ public final class ShardResponse {
   {
     this.rspCode = rspCode;
   }
+
+  /** What was the shard address that returned this response.  Example:  "http://localhost:8983/solr" */
+  public String getShardAddress() { return this.shardAddress; }
+
+  void setShardAddress(String addr) { this.shardAddress = addr; }
 }

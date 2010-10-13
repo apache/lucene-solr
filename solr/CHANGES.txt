@@ -291,6 +291,10 @@ New Features
 
 * SOLR-2010: Added ability to verify that spell checking collations have
    actual results in the index.  (James Dyer via gsingers)
+   
+* SOLR-1873: SolrCloud - added shared/central config and core/shard managment via zookeeper,
+  built-in load balancing, and infrastructure for future SolrCloud work. 
+  (yonik, Mark Miller)
 
 Optimizations
 ----------------------

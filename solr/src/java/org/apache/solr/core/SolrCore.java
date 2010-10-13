@@ -512,7 +512,8 @@ public final class SolrCore implements SolrInfoMBean {
     this.setName( name );
     resourceLoader = config.getResourceLoader();
     if (dataDir == null){
-      dataDir =  config.getDataDir();
+      // nocommit: why did solrconfig override core descriptor !?
+      if(cd.usingDefaultDataDir()) dataDir = config.getDataDir();
       if(dataDir == null) dataDir = cd.getDataDir();
     }
 
@@ -1556,12 +1557,10 @@ public final class SolrCore implements SolrInfoMBean {
         
         // Hide everything...
         Set<String> hide = new HashSet<String>();
-        File configdir = new File( solrConfig.getResourceLoader().getConfigDir() ); 
-        if( configdir.exists() && configdir.isDirectory() ) {
-          for( String file : configdir.list() ) {
-            hide.add( file.toUpperCase(Locale.ENGLISH) );
-          }
-        }
+
+        for (String file : solrConfig.getResourceLoader().listConfigDir()) {
+          hide.add(file.toUpperCase(Locale.ENGLISH));
+        }    
         
         // except the "gettable" list
         StringTokenizer st = new StringTokenizer( gettable );
@@ -1588,16 +1587,7 @@ public final class SolrCore implements SolrInfoMBean {
           "solrconfig.xml uses deprecated <bool name='facet.sort'>. Please "+
           "update your config to use <string name='facet.sort'>.");
     }
-
-    if (!solrConfig.getBool("abortOnConfigurationError",true))
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-                              "Setting abortOnConfigurationError==false is no longer supported");
-    if (null != solrConfig.getVal("abortOnConfigurationError", false))
-      log.warn("The abortOnConfigurationError option is no longer supported "+
-               "in solrconfig.xml.  Setting it has no effect.");
-    
-  }
-  
+  } 
 
   public CoreDescriptor getCoreDescriptor() {
     return coreDescriptor;

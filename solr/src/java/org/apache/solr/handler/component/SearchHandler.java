@@ -17,32 +17,53 @@
 
 package org.apache.solr.handler.component;
 
-import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.RTimer;
+import java.net.MalformedURLException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.commons.httpclient.DefaultHttpMethodRetryHandler;
+import org.apache.commons.httpclient.HttpClient;
+import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
+import org.apache.commons.httpclient.params.HttpMethodParams;
+import org.apache.lucene.queryParser.ParseException;
+import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
+import org.apache.solr.client.solrj.impl.LBHttpSolrServer;
+import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.RTimer;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.client.solrj.SolrServer;
-import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.client.solrj.SolrResponse;
-import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.impl.CommonsHttpSolrServer;
-
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.SolrCoreAware;
-import org.apache.solr.core.SolrCore;
-import org.apache.lucene.queryParser.ParseException;
-import org.apache.commons.httpclient.MultiThreadedHttpConnectionManager;
-import org.apache.commons.httpclient.HttpClient;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.*;
-import java.util.concurrent.*;
 
 /**
  *
@@ -199,7 +220,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
       subt.stop();
     }
 
-    if (rb.shards == null) {
+    if (!rb.isDistrib) {
       // a normal non-distributed request
 
       // The semantics of debugging vs not debugging are different enough that
@@ -265,6 +286,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware
             for (String shard : sreq.actualShards) {
               ModifiableSolrParams params = new ModifiableSolrParams(sreq.params);
               params.remove(ShardParams.SHARDS);      // not a top-level request
+              params.remove("distrib");               // not a top-level request
               params.remove("indent");
               params.remove(CommonParams.HEADER_ECHO_PARAMS);
               params.set(ShardParams.IS_SHARD, true);  // a sub (shard) request
@@ -367,6 +389,8 @@ class HttpCommComponent {
 
 
   static HttpClient client;
+  static Random r = new Random();
+  static LBHttpSolrServer loadbalancer;
 
   static {
     MultiThreadedHttpConnectionManager mgr = new MultiThreadedHttpConnectionManager();
@@ -375,11 +399,28 @@ class HttpCommComponent {
     mgr.getParams().setConnectionTimeout(SearchHandler.connectionTimeout);
     mgr.getParams().setSoTimeout(SearchHandler.soTimeout);
     // mgr.getParams().setStaleCheckingEnabled(false);
-    client = new HttpClient(mgr);    
+
+    client = new HttpClient(mgr);
+
+    // prevent retries  (note: this didn't work when set on mgr.. needed to be set on client)
+    DefaultHttpMethodRetryHandler retryhandler = new DefaultHttpMethodRetryHandler(0, false);
+    client.getParams().setParameter(HttpMethodParams.RETRY_HANDLER, retryhandler);
+
+    try {
+      loadbalancer = new LBHttpSolrServer(client);
+    } catch (MalformedURLException e) {
+      // should be impossible since we're not passing any URLs here
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,e);
+    }
   }
 
   CompletionService<ShardResponse> completionService = new ExecutorCompletionService<ShardResponse>(commExecutor);
   Set<Future<ShardResponse>> pending = new HashSet<Future<ShardResponse>>();
+
+  // maps "localhost:8983|localhost:7574" to a shuffled List("http://localhost:8983","http://localhost:7574")
+  // This is primarily to keep track of what order we should use to query the replicas of a shard
+  // so that we use the same replica for all phases of a distributed request.
+  Map<String,List<String>> shardToURLs = new HashMap<String,List<String>>();
 
   HttpCommComponent() {
   }
@@ -404,7 +445,36 @@ class HttpCommComponent {
     }
   }
 
+
+  // Not thread safe... don't use in Callable.
+  // Don't modify the returned URL list.
+  private List<String> getURLs(String shard) {
+    List<String> urls = shardToURLs.get(shard);
+    if (urls==null) {
+      urls = StrUtils.splitSmart(shard,"|",true);
+
+      // convert shard to URL
+      for (int i=0; i<urls.size(); i++) {
+        urls.set(i, SearchHandler.scheme + urls.get(i));
+      }
+
+      //
+      // Shuffle the list instead of use round-robin by default.
+      // This prevents accidental synchronization where multiple shards could get in sync
+      // and query the same replica at the same time.
+      //
+      if (urls.size() > 1)
+        Collections.shuffle(urls, r);
+      shardToURLs.put(shard, urls);
+    }
+    return urls;
+  }
+
+
   void submit(final ShardRequest sreq, final String shard, final ModifiableSolrParams params) {
+    // do this outside of the callable for thread safety reasons
+    final List<String> urls = getURLs(shard);
+
     Callable<ShardResponse> task = new Callable<ShardResponse>() {
       public ShardResponse call() throws Exception {
 
@@ -416,13 +486,9 @@ class HttpCommComponent {
         long startTime = System.currentTimeMillis();
 
         try {
-          // String url = "http://" + shard + "/select";
-          String url = SearchHandler.scheme + shard;
-
           params.remove(CommonParams.WT); // use default (currently javabin)
           params.remove(CommonParams.VERSION);
 
-          SolrServer server = new CommonsHttpSolrServer(url, client);
           // SolrRequest req = new QueryRequest(SolrRequest.METHOD.POST, "/select");
           // use generic request to avoid extra processing of queries
           QueryRequest req = new QueryRequest(params);
@@ -430,10 +496,24 @@ class HttpCommComponent {
 
           // no need to set the response parser as binary is the default
           // req.setResponseParser(new BinaryResponseParser());
-          // srsp.rsp = server.request(req);
-          // srsp.rsp = server.query(sreq.params);
 
-          ssr.nl = server.request(req);
+          // if there are no shards available for a slice, urls.size()==0
+          if (urls.size()==0) {
+            // TODO: what's the right error code here? We should use the same thing when
+            // all of the servers for a shard are down.
+            throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "no servers hosting shard: " + shard);
+          }
+
+          if (urls.size() <= 1) {
+            String url = urls.get(0);
+            srsp.setShardAddress(url);
+            SolrServer server = new CommonsHttpSolrServer(url, client);
+            ssr.nl = server.request(req);
+          } else {
+            LBHttpSolrServer.Rsp rsp = loadbalancer.request(new LBHttpSolrServer.Req(req, urls));
+            ssr.nl = rsp.getResponse();
+            srsp.setShardAddress(rsp.getServer());
+          }
         } catch (Throwable th) {
           srsp.setException(th);
           if (th instanceof SolrException) {

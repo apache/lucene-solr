@@ -20,6 +20,8 @@ package org.apache.solr.core;
 import java.util.Properties;
 import java.io.File;
 
+import org.apache.solr.cloud.CloudDescriptor;
+
 /**
  * A Solr core descriptor
  *
@@ -34,10 +36,20 @@ public class CoreDescriptor {
   protected String schemaName;
   private final CoreContainer coreContainer;
   private Properties coreProperties;
+  
+  private CloudDescriptor cloudDesc;
 
   public CoreDescriptor(CoreContainer coreContainer, String name, String instanceDir) {
     this.coreContainer = coreContainer;
     this.name = name;
+    
+    if(coreContainer.getZkController() != null) {
+      this.cloudDesc = new CloudDescriptor();
+      // cloud collection defaults to core name
+      cloudDesc.setCollectionName(name == "" ? coreContainer.getDefaultCoreName() : name);
+      this.cloudDesc.setShardId(coreContainer.getZkController().getNodeName() + "_" + name);
+    }
+    
     if (name == null) {
       throw new RuntimeException("Core needs a name");
     }
@@ -112,6 +124,10 @@ public class CoreDescriptor {
     // normalize zero length to null.
     if (dataDir != null && dataDir.length()==0) dataDir=null;
   }
+  
+  public boolean usingDefaultDataDir() {
+    return this.dataDir == null;
+  }
 
   /**@return the core instance directory. */
   public String getInstanceDir() {
@@ -170,5 +186,13 @@ public class CoreDescriptor {
       if(coreProperties != null)
         this.coreProperties.putAll(coreProperties);
     }
+  }
+
+  public CloudDescriptor getCloudDescriptor() {
+    return cloudDesc;
+  }
+  
+  public void setCloudDescriptor(CloudDescriptor cloudDesc) {
+    this.cloudDesc = cloudDesc;
   }
 }

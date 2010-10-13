@@ -69,7 +69,7 @@ public class SolrResourceLoader implements ResourceLoader
   static final String base = "org.apache" + "." + project;
   static final String[] packages = {"","analysis.","schema.","handler.","search.","update.","core.","response.","request.","update.processor.","util.", "spelling.", "handler.component.", "handler.dataimport." };
 
-  private URLClassLoader classLoader;
+  protected URLClassLoader classLoader;
   private final String instanceDir;
   private String dataDir;
   
@@ -204,6 +204,15 @@ public class SolrResourceLoader implements ResourceLoader
   /** Ensures a directory name always ends with a '/'. */
   public  static String normalizeDir(String path) {
     return ( path != null && (!(path.endsWith("/") || path.endsWith("\\"))) )? path + File.separator : path;
+  }
+  
+  public String[] listConfigDir() {
+    File configdir = new File(getConfigDir());
+    if( configdir.exists() && configdir.isDirectory() ) {
+      return configdir.list();
+    } else {
+      return new String[0];
+    }
   }
 
   public String getConfigDir() {

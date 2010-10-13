@@ -1,6 +1,20 @@
 package org.apache.solr;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.Set;
+
 import junit.framework.TestCase;
+
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -16,10 +30,6 @@ import org.apache.solr.util.AbstractSolrTestCase;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.*;
 
 /**
  * Helper base class for distributed search test cases
@@ -44,6 +54,8 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected List<JettySolrRunner> jettys = new ArrayList<JettySolrRunner>();
   protected String context = "/solr";
   protected String shards;
+  protected String[] shardsArr;
+  protected String[] deadServers = {"does_not_exist_54321.com:33331/solr","localhost:33332/solr"};
   protected File testDir;
   protected SolrServer controlClient;
 
@@ -130,20 +142,51 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     super.tearDown();
   }
 
-  private void createServers(int numShards) throws Exception {
-    controlJetty = createJetty(testDir, "control");
+  protected void createServers(int numShards) throws Exception {
+    controlJetty = createJetty(testDir, testDir + "/control/data");
     controlClient = createNewSolrServer(controlJetty.getLocalPort());
 
+    shardsArr = new String[numShards];
     StringBuilder sb = new StringBuilder();
-    for (int i = 1; i <= numShards; i++) {
+    for (int i = 0; i < numShards; i++) {
       if (sb.length() > 0) sb.append(',');
-      JettySolrRunner j = createJetty(testDir, "shard" + i);
+      JettySolrRunner j = createJetty(testDir, testDir + "/shard" + i + "/data");
       jettys.add(j);
       clients.add(createNewSolrServer(j.getLocalPort()));
-      sb.append("localhost:").append(j.getLocalPort()).append(context);
+      String shardStr = "localhost:" + j.getLocalPort() + context;
+      shardsArr[i] = shardStr;
+      sb.append(shardStr);
     }
 
     shards = sb.toString();
+  }
+
+
+  protected void setDistributedParams(ModifiableSolrParams params) {
+    params.set("shards", getShardsString());
+  }
+
+  protected String getShardsString() {
+    if (deadServers == null) return shards;
+    
+    StringBuilder sb = new StringBuilder();
+    for (String shard : shardsArr) {
+      if (sb.length() > 0) sb.append(',');
+      int nDeadServers = r.nextInt(deadServers.length+1);
+      if (nDeadServers > 0) {
+        List<String> replicas = new ArrayList<String>(Arrays.asList(deadServers));
+        Collections.shuffle(replicas, r);
+        replicas.add(r.nextInt(nDeadServers+1), shard);
+        for (int i=0; i<nDeadServers+1; i++) {
+          if (i!=0) sb.append('|');
+          sb.append(replicas.get(i));
+        }
+      } else {
+        sb.append(shard);
+      }
+    }
+
+    return sb.toString();
   }
 
   protected void destroyServers() throws Exception {
@@ -152,18 +195,26 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     clients.clear();
     jettys.clear();
   }
-
-  public static JettySolrRunner createJetty(File baseDir, String dataDirName) throws Exception {
-    File subDir = new File(baseDir, dataDirName);
-    subDir.mkdirs();
-    System.setProperty("solr.data.dir", subDir.toString());
-
-    JettySolrRunner jetty = new JettySolrRunner("/solr", 0);
-
-    jetty.start();
-    return jetty;
+  
+  public JettySolrRunner createJetty(File baseDir, String dataDir) throws Exception {
+    return createJetty(baseDir, dataDir, null, null);
   }
 
+  public JettySolrRunner createJetty(File baseDir, String dataDir, String shardId) throws Exception {
+    return createJetty(baseDir, dataDir, shardId, null);
+  }
+  
+  public JettySolrRunner createJetty(File baseDir, String dataDir, String shardList, String solrConfigOverride) throws Exception {
+    System.setProperty("solr.data.dir", dataDir);
+    JettySolrRunner jetty = new JettySolrRunner("/solr", 0, solrConfigOverride);
+    if(shardList != null) {
+      System.setProperty("shard", shardList);
+    }
+    jetty.start();
+    System.clearProperty("shard");
+    return jetty;
+  }
+  
   protected SolrServer createNewSolrServer(int port) {
     try {
       // setup the server...
@@ -230,6 +281,14 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
     for (SolrServer client : clients) client.commit();
   }
 
+  protected QueryResponse queryServer(ModifiableSolrParams params) throws SolrServerException {
+    // query a random server
+    int which = r.nextInt(clients.size());
+    SolrServer client = clients.get(which);
+    QueryResponse rsp = client.query(params);
+    return rsp;
+  }
+
   protected void query(Object... q) throws Exception {
     final ModifiableSolrParams params = new ModifiableSolrParams();
 
@@ -239,11 +298,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
 
     final QueryResponse controlRsp = controlClient.query(params);
 
-    // query a random server
-    params.set("shards", shards);
-    int which = r.nextInt(clients.size());
-    SolrServer client = clients.get(which);
-    QueryResponse rsp = client.query(params);
+    setDistributedParams(params);
+
+    QueryResponse rsp = queryServer(params);
 
     compareResponses(rsp, controlRsp);
 

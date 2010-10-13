@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler.admin;
 
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
@@ -228,7 +229,14 @@ public class CoreAdminHandler extends RequestHandlerBase {
     try {
       SolrParams params = req.getParams();
       String name = params.get(CoreAdminParams.NAME);
-      CoreDescriptor dcore = new CoreDescriptor(coreContainer, name, params.get(CoreAdminParams.INSTANCE_DIR));
+
+      String instanceDir = params.get(CoreAdminParams.INSTANCE_DIR);
+      if (instanceDir == null) {
+        // instanceDir = coreContainer.getSolrHome() + "/" + name;
+        instanceDir = name; // bare name is already relative to solr home
+      }
+
+      CoreDescriptor dcore = new CoreDescriptor(coreContainer, name, instanceDir);
 
       //  fillup optional parameters
       String opts = params.get(CoreAdminParams.CONFIG);
@@ -242,6 +250,19 @@ public class CoreAdminHandler extends RequestHandlerBase {
       opts = params.get(CoreAdminParams.DATA_DIR);
       if (opts != null)
         dcore.setDataDir(opts);
+
+      CloudDescriptor cd = dcore.getCloudDescriptor();
+      if (cd != null) {
+        cd.setParams(req.getParams());
+
+        opts = params.get(CoreAdminParams.COLLECTION);
+        if (opts != null)
+          cd.setCollectionName(opts);
+        
+        opts = params.get(CoreAdminParams.SHARD);
+        if (opts != null)
+          cd.setShardId(opts);
+      }
 
       dcore.setCoreProperties(null);
       SolrCore core = coreContainer.create(dcore);
