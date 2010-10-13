@@ -42,12 +42,11 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
   
   @Test
   public void withFieldsAndXpath() throws Exception {
-    long time = System.currentTimeMillis();
-    File tmpdir = new File("." + time);
+    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
+    tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
-    TestFileListEntityProcessor.createFile(tmpdir, "x.xsl", xsl.getBytes(),
-            false);
+    createFile(tmpdir, "x.xsl", xsl.getBytes(), false);
     Map entityAttrs = createMap("name", "e", "url", "cd.xml",
             XPathEntityProcessor.FOR_EACH, "/catalog/cd");
     List fields = new ArrayList();
@@ -208,8 +207,8 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
   
   @Test
   public void withDefaultSolrAndXsl() throws Exception {
-    long time = System.currentTimeMillis();
-    File tmpdir = new File("." + time);
+    File tmpdir = File.createTempFile("test", "tmp", TEMP_DIR);
+    tmpdir.delete();
     tmpdir.mkdir();
     tmpdir.deleteOnExit();
     TestFileListEntityProcessor.createFile(tmpdir, "x.xsl", xsl.getBytes(),
