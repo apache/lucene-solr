@@ -312,3 +312,7 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
     - o.a.l.analysis.ReusableAnalyzerBase -> o.a.l.analysis.util.ReusableAnalyzerBase
     - o.a.l.analysis.StopwordAnalyzerBase -> o.a.l.analysis.util.StopwordAnalyzerBase
     - o.a.l.analysis.WordListLoader -> o.a.l.analysis.util.WordListLoader
+
+* LUCENE-2691: The near-real-time API has moved from IndexWriter to
+  IndexReader.  Instead of IndexWriter.getReader(), call
+  IndexReader.open(IndexWriter) or IndexReader.reopen(IndexWriter).
