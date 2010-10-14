@@ -197,17 +197,24 @@ public final class FuzzyTermsEnum extends TermsEnum {
     return (similarity - minSimilarity) * scale_factor;
   }
 
+  private BytesRef queuedBottom = null;
+  
   @Override
   public BytesRef next() throws IOException {
+    if (queuedBottom != null) {
+      bottomChanged(bottom, queuedBottom);
+      queuedBottom = null;
+    }
+    
     BytesRef term = actualEnum.next();
     boostAtt.setBoost(actualBoostAtt.getBoost());
     
     final float bottom = boostAtt.getMaxNonCompetitiveBoost();
-    if (bottom != this.bottom) {
+    if (bottom != this.bottom && term != null) {
       this.bottom = bottom;
       // clone the term before potentially doing something with it
       // this is a rare but wonderful occurrence anyway
-      bottomChanged(bottom, term == null ? null : (BytesRef) term.clone());
+      queuedBottom = new BytesRef(term);
     }
     
     return term;
