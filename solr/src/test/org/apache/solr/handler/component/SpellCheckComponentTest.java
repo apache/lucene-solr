@@ -43,6 +43,9 @@ import static org.junit.Assert.*;
  * @since solr 1.3
  */
 public class SpellCheckComponentTest extends SolrTestCaseJ4 {
+  static String rh = "spellCheckCompRH";
+
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml","schema.xml");
@@ -77,7 +80,8 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
     SolrQueryResponse rsp;
     rsp = new SolrQueryResponse();
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
+    SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
+    handler.handleRequest(req, rsp);
     NamedList values = rsp.getValues();
     String cmdExec = (String) values.get("command");
     assertEquals("build",cmdExec);
@@ -88,6 +92,8 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     Collection<String> theSuggestion = (Collection<String>) blue.get("suggestion");
     assertEquals(5,theSuggestion.size());
     //we know there are at least 5, but now only get 3
+
+    req.close();
 
     params.remove(SpellCheckComponent.SPELLCHECK_COUNT);
     params.remove(SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS);
@@ -115,35 +121,10 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
 
   @Test
   public void test() throws Exception {
-    SolrCore core = h.getCore();
-    SearchComponent speller = core.getSearchComponent("spellcheck");
-    assertTrue("speller is null and it shouldn't be", speller != null);
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CommonParams.QT, "spellCheckCompRH");
-    params.add(SpellCheckComponent.SPELLCHECK_BUILD, "true");
-    params.add(CommonParams.Q, "documemt");
-    params.add(SpellCheckComponent.COMPONENT_NAME, "true");
-
-    SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    NamedList values = rsp.getValues();
-    String cmdExec = (String) values.get("command");
-    assertTrue("command is null and it shouldn't be", cmdExec != null);
-    assertTrue(cmdExec + " is not equal to " + "build",
-            cmdExec.equals("build") == true);
-    NamedList spellCheck = (NamedList) values.get("spellcheck");
-    assertNotNull(spellCheck);
-    NamedList suggestions = (NamedList) spellCheck.get("suggestions");
-    assertNotNull(suggestions);
-    NamedList document = (NamedList) suggestions.get("documemt");
-    assertEquals(1, document.get("numFound"));
-    assertEquals(0, document.get("startOffset"));
-    assertEquals(document.get("endOffset"), "documemt".length());
-    Collection<String> theSuggestion = (Collection<String>) document.get("suggestion");
-    assertEquals(1, theSuggestion.size());
-    assertEquals("document", theSuggestion.iterator().next());
+    assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellCheckComponent.SPELLCHECK_BUILD, "true", "q","documemt")
+       ,"/command=='build'"
+       ,"/spellcheck=={'suggestions':['documemt',{'numFound':1,'startOffset':0,'endOffset':8,'suggestion':['document']}]}"
+    );
   }
 
 
