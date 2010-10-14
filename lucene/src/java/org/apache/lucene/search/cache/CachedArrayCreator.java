@@ -79,7 +79,7 @@ public abstract class CachedArrayCreator<T extends CachedArray> extends EntryCre
   {
     int parserHashCode = parser.hashCode();
     if( value.parserHashCode != null && value.parserHashCode != parserHashCode ) {
-      throw new RuntimeException( "Parser changed in subsequet call.  "
+      throw new RuntimeException( "Parser changed in subsequent call.  "
           +value.parserHashCode+" != "+parserHashCode + " :: " + parser );
     }
     value.parserHashCode = parserHashCode;
@@ -91,7 +91,7 @@ public abstract class CachedArrayCreator<T extends CachedArray> extends EntryCre
     if( parser != null && value.parserHashCode != null ) {
       int parserHashCode = parser.hashCode();
       if(  value.parserHashCode != parserHashCode ) {
-        throw new RuntimeException( "Parser changed in subsequet call.  "
+        throw new RuntimeException( "Parser changed in subsequent call.  "
             +value.parserHashCode+" != "+parserHashCode + " :: " + parser );
       }
     }
