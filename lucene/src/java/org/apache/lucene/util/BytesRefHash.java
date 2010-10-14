@@ -89,21 +89,21 @@ public final class BytesRefHash {
   }
 
   /**
-   * Returns the {@link BytesRef} value for the given ord.
+   * Populates and returns a {@link BytesRef} with the bytes for the given ord.
    * <p>
    * Note: the given ord must be a positive integer less that the current size (
    * {@link #size()})
    * </p>
+   *
+   * @param ord the ord
+   * @param ref the {@link BytesRef} to populate
    * 
-   * @param ord
-   *          the ord
-   * 
-   * @return a BytesRef instance for the given ord
+   * @return the given BytesRef instance populated with the bytes for the given ord
    */
-  public BytesRef get(int ord) {
+  public BytesRef get(int ord, BytesRef ref) {
     assert bytesStart != null : "bytesStart is null - not initialized";
     assert ord < bytesStart.length: "ord exceeeds byteStart len: " + bytesStart.length;
-    return pool.setBytesRef(scratch1, bytesStart[ord]);
+    return pool.setBytesRef(ref, bytesStart[ord]);
   }
 
   /**
