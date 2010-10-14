@@ -66,57 +66,14 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   
   @Test
   public void testExtendedResultsCount() throws Exception {
-    SolrCore core = h.getCore();
-    SearchComponent speller = core.getSearchComponent("spellcheck");
-    assertTrue("speller is null and it shouldn't be", speller != null);
+    assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellCheckComponent.SPELLCHECK_BUILD, "true", "q","bluo", SpellCheckComponent.SPELLCHECK_COUNT,"5", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS,"false")
+       ,"/spellcheck/suggestions/[0]=='bluo'"
+       ,"/spellcheck/suggestions/[1]/numFound==5"
+    );
 
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CommonParams.QT, "spellCheckCompRH");
-    params.add(SpellCheckComponent.SPELLCHECK_BUILD, "true");
-    params.add(CommonParams.Q, "bluo");
-    params.add(SpellCheckComponent.COMPONENT_NAME, "true");
-    params.add(SpellCheckComponent.SPELLCHECK_COUNT, String.valueOf(5));
-    params.add(SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, String.valueOf(false));
-    SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
-    SolrQueryResponse rsp;
-    rsp = new SolrQueryResponse();
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, params);
-    handler.handleRequest(req, rsp);
-    NamedList values = rsp.getValues();
-    String cmdExec = (String) values.get("command");
-    assertEquals("build",cmdExec);
-    NamedList spellCheck = (NamedList) values.get("spellcheck");
-    NamedList suggestions = (NamedList) spellCheck.get("suggestions");
-    NamedList blue = (NamedList) suggestions.get("bluo");
-    assertEquals(5,blue.get("numFound"));
-    Collection<String> theSuggestion = (Collection<String>) blue.get("suggestion");
-    assertEquals(5,theSuggestion.size());
-    //we know there are at least 5, but now only get 3
-
-    req.close();
-
-    params.remove(SpellCheckComponent.SPELLCHECK_COUNT);
-    params.remove(SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS);
-    params.remove(SpellCheckComponent.SPELLCHECK_BUILD);
-    params.add(SpellCheckComponent.SPELLCHECK_COUNT, "3");
-    params.add(SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, String.valueOf(true));
-    params.add(SpellCheckComponent.SPELLCHECK_BUILD, "false");
-    rsp = new SolrQueryResponse();
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    values = rsp.getValues();
-
-    spellCheck = (NamedList) values.get("spellcheck");
-    suggestions = (NamedList) spellCheck.get("suggestions");
-    blue = (NamedList) suggestions.get("bluo");
-    assertEquals(3, blue.get("numFound"));
-
-    List<SimpleOrderedMap> theSuggestions = (List<SimpleOrderedMap>)blue.get("suggestion");
-    assertEquals(3, theSuggestions.size());
-
-    for (SimpleOrderedMap sug : theSuggestions) {
-      assertNotNull(sug.get("word"));
-      assertNotNull(sug.get("freq"));      
-    }
+    assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","bluo", SpellCheckComponent.SPELLCHECK_COUNT,"3", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS,"true")
+       ,"/spellcheck/suggestions/[1]/suggestion==[{'word':'blue','freq':1}, {'word':'blud','freq':1}, {'word':'boue','freq':1}]"
+    );
   }
 
   @Test
