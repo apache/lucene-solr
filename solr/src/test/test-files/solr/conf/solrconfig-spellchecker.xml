@@ -101,6 +101,9 @@
       <str name="lookupImpl">org.apache.solr.spelling.suggest.jaspell.JaspellLookup</str>
       <str name="field">suggest</str>
       <str name="buildOnCommit">true</str>
+
+      <!-- Suggester properties -->
+      <str name="threshold">0.0</str>
 <!--
       <str name="sourceLocation">american-english</str>
 -->
