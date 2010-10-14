@@ -49,19 +49,19 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml","schema.xml");
-    assertNull(h.validateUpdate(adoc("id", "0", "lowerfilt", "This is a title")));
-    assertNull(h.validateUpdate(adoc("id", "1", "lowerfilt",
+    assertU(adoc("id", "0", "lowerfilt", "This is a title"));
+    assertU((adoc("id", "1", "lowerfilt",
             "The quick reb fox jumped over the lazy brown dogs.")));
-    assertNull(h.validateUpdate(adoc("id", "2", "lowerfilt", "This is a document")));
-    assertNull(h.validateUpdate(adoc("id", "3", "lowerfilt", "another document")));
+    assertU((adoc("id", "2", "lowerfilt", "This is a document")));
+    assertU((adoc("id", "3", "lowerfilt", "another document")));
     //bunch of docs that are variants on blue
-    assertNull(h.validateUpdate(adoc("id", "4", "lowerfilt", "blue")));
-    assertNull(h.validateUpdate(adoc("id", "5", "lowerfilt", "blud")));
-    assertNull(h.validateUpdate(adoc("id", "6", "lowerfilt", "boue")));
-    assertNull(h.validateUpdate(adoc("id", "7", "lowerfilt", "glue")));
-    assertNull(h.validateUpdate(adoc("id", "8", "lowerfilt", "blee")));
-    assertNull(h.validateUpdate(adoc("id", "9", "lowerfilt", "pixmaa")));
-    assertNull(h.validateUpdate(commit()));
+    assertU((adoc("id", "4", "lowerfilt", "blue")));
+    assertU((adoc("id", "5", "lowerfilt", "blud")));
+    assertU((adoc("id", "6", "lowerfilt", "boue")));
+    assertU((adoc("id", "7", "lowerfilt", "glue")));
+    assertU((adoc("id", "8", "lowerfilt", "blee")));
+    assertU((adoc("id", "9", "lowerfilt", "pixmaa")));
+    assertU((commit()));
   }
   
   @Test
@@ -78,8 +78,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
 
   @Test
   public void test() throws Exception {
-    assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellCheckComponent.SPELLCHECK_BUILD, "true", "q","documemt")
-       ,"/command=='build'"
+    assertJQ(req("qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documemt")
        ,"/spellcheck=={'suggestions':['documemt',{'numFound':1,'startOffset':0,'endOffset':8,'suggestion':['document']}]}"
     );
   }
@@ -87,45 +86,11 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
 
   @Test
   public void testPerDictionary() throws Exception {
-    SolrCore core = h.getCore();
-    SearchComponent speller = core.getSearchComponent("spellcheck");
-    assertTrue("speller is null and it shouldn't be", speller != null);
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CommonParams.QT, "spellCheckCompRH");
-    params.add(SpellCheckComponent.SPELLCHECK_BUILD, "true");
-    params.add(CommonParams.Q, "documemt");
-    params.add(SpellCheckComponent.COMPONENT_NAME, "true");
-    params.add(SpellingParams.SPELLCHECK_DICT, "perDict");
-
-    params.add(SpellingParams.SPELLCHECK_PREFIX + ".perDict.foo", "bar");
-    params.add(SpellingParams.SPELLCHECK_PREFIX + ".perDict.bar", "foo");
-
-    SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    NamedList values = rsp.getValues();
-
-    NamedList spellCheck = (NamedList) values.get("spellcheck");
-    NamedList suggestions = (NamedList) spellCheck.get("suggestions");
-    assertNotNull("suggestions", suggestions);
-    NamedList suggestion;
-    Collection<String> theSuggestion;
-    suggestion = (NamedList) suggestions.get("foo");
-    assertEquals(1, suggestion.get("numFound"));
-    assertEquals(0, suggestion.get("startOffset"));
-    assertEquals(suggestion.get("endOffset"), 1);
-    theSuggestion = (Collection<String>) suggestion.get("suggestion");
-    assertEquals(1, theSuggestion.size());
-    assertEquals("bar", theSuggestion.iterator().next());
-
-    suggestion = (NamedList) suggestions.get("bar");
-    assertEquals(1, suggestion.get("numFound"));
-    assertEquals(2, suggestion.get("startOffset"));
-    assertEquals(3, suggestion.get("endOffset"));
-    theSuggestion = (Collection<String>) suggestion.get("suggestion");
-    assertEquals(1, theSuggestion.size());
-    assertEquals("foo", theSuggestion.iterator().next());
+    assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellCheckComponent.SPELLCHECK_BUILD, "true", "q","documemt"
+        , SpellingParams.SPELLCHECK_DICT, "perDict", SpellingParams.SPELLCHECK_PREFIX + ".perDict.foo", "bar", SpellingParams.SPELLCHECK_PREFIX + ".perDict.bar", "foo")
+       ,"/spellcheck/suggestions/bar=={'numFound':1, 'startOffset':0, 'endOffset':1, 'suggestion':['foo']}"
+       ,"/spellcheck/suggestions/foo=={'numFound':1, 'startOffset':2, 'endOffset':3, 'suggestion':['bar']}"        
+    );
   }
 
   @Test
