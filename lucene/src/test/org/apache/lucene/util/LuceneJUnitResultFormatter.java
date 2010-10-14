@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.NumberFormat;
+import java.util.logging.LogManager;
 
 import junit.framework.AssertionFailedError;
 import junit.framework.Test;
@@ -115,6 +116,9 @@ public class LuceneJUnitResultFormatter implements JUnitResultFormatter {
     if (out == null) {
       return; // Quick return - no output do nothing.
     }
+    try {
+      LogManager.getLogManager().readConfiguration();
+    } catch (Exception e) {}
     sb.setLength(0);
     sb.append("Testsuite: ");
     sb.append(suite.getName());
