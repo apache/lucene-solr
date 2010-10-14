@@ -265,14 +265,14 @@ public class PivotFacetComponent extends SearchComponent
   }
 
   public String getSourceId() {
-    return "$Id:  $";
+    return "$Id$";
   }
 
   public String getSource() {
-    return "$URL: $";
+    return "$URL$";
   }
 
   public String getVersion() {
-    return "$Revision:  $";
+    return "$Revision$";
   }
 }
