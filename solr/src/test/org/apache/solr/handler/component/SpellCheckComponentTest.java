@@ -98,80 +98,27 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellCheckComponent.SPELLCHECK_BUILD, "true", "q","documemt", SpellCheckComponent.SPELLCHECK_COLLATE, "true")
        ,"/spellcheck/suggestions/collation=='document'"
     );
-    assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellCheckComponent.SPELLCHECK_BUILD, "true", "q","documemt lowerfilt:broen^4", SpellCheckComponent.SPELLCHECK_COLLATE, "true")
+    assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documemt lowerfilt:broen^4", SpellCheckComponent.SPELLCHECK_COLLATE, "true")
        ,"/spellcheck/suggestions/collation=='document lowerfilt:brown^4'"
     );
-    assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellCheckComponent.SPELLCHECK_BUILD, "true", "q","documemtsss broens", SpellCheckComponent.SPELLCHECK_COLLATE, "true")
+    assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","documemtsss broens", SpellCheckComponent.SPELLCHECK_COLLATE, "true")
        ,"/spellcheck/suggestions/collation=='document brown'"
+    );
+    assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","pixma-a-b-c-d-e-f-g", SpellCheckComponent.SPELLCHECK_COLLATE, "true")
+       ,"/spellcheck/suggestions/collation=='pixmaa'"
     );
   }
   
-  @Test
-  public void testCollate2() throws Exception {
-    SolrCore core = h.getCore();
-    SearchComponent speller = core.getSearchComponent("spellcheck");
-    assertTrue("speller is null and it shouldn't be", speller != null);
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CommonParams.QT, "spellCheckCompRH");
-    params.add(SpellCheckComponent.SPELLCHECK_BUILD, "true");
-    params.add(CommonParams.Q, "pixma-a-b-c-d-e-f-g");
-    params.add(SpellCheckComponent.COMPONENT_NAME, "true");
-    params.add(SpellCheckComponent.SPELLCHECK_COLLATE, "true");
-
-    SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    NamedList values = rsp.getValues();
-    NamedList spellCheck = (NamedList) values.get("spellcheck");
-    NamedList suggestions = (NamedList) spellCheck.get("suggestions");
-    String collation = (String) suggestions.get("collation");
-    assertEquals("pixmaa", collation);
-  }
 
   @Test
   public void testCorrectSpelling() throws Exception {
-    SolrCore core = h.getCore();
-    Map<String, String> args = new HashMap<String, String>();
-
-    args.put(CommonParams.Q, "lowerfilt:lazy lowerfilt:brown");
-    args.put(CommonParams.QT, "spellCheckCompRH");
-    args.put(SpellCheckComponent.SPELLCHECK_BUILD, "true");
-    args.put(SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true");
-    args.put(SpellCheckComponent.COMPONENT_NAME, "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(
-            args));
-
-    assertQ("Make sure correct spellings are signalled in the response", req, 
-            "//*[@numFound='1']", "//result/doc[1]/int[@name='id'][.='1']",
-            "//*/lst[@name='suggestions']");
-    
-    
-    args = new HashMap<String, String>();
-
-    args.put(CommonParams.Q, "lakkle");
-    args.put(CommonParams.QT, "spellCheckCompRH");
-    args.put(SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true");
-    args.put(SpellCheckComponent.COMPONENT_NAME, "true");
-    req = new LocalSolrQueryRequest(core, new MapSolrParams(
-            args));
-    
-    assertQ("Make sure correct spellings are signalled in the response", req, 
-        "//*[@numFound='0']", "//*/lst[@name='suggestions']", "//*/bool[@name='correctlySpelled'][.='false']");
-    
-    
-    args = new HashMap<String, String>();
-
-    args.put(CommonParams.Q, "lowerfilt:lazy");
-    args.put(CommonParams.QT, "spellCheckCompRH");
-    args.put(SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true");
-    args.put(SpellCheckComponent.COMPONENT_NAME, "true");
-    req = new LocalSolrQueryRequest(core, new MapSolrParams(
-            args));
-    
-    assertQ("Make sure correct spellings are signalled in the response", req, 
-        "//*[@numFound='1']", "//*/lst[@name='suggestions']", "//*/bool[@name='correctlySpelled'][.='true']");
+    // Make sure correct spellings are signaled in the response
+    assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","lowerfilt:lazy lowerfilt:brown", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true")
+       ,"/spellcheck/suggestions=={'correctlySpelled':true}"
+    );
+    assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", "q","lakkle", SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, "true")
+       ,"/spellcheck/suggestions/correctlySpelled==false"
+    );
   }
 
   @Test
