@@ -241,6 +241,9 @@ Build
 
  * LUCENE-2399, LUCENE-2683: Upgrade contrib/icu's ICU jar file to ICU 4.4.2  
    (Robert Muir)
+
+ * LUCENE-2413: Moved the demo out of lucene core and into contrib/demo.
+   (Robert Muir)
    
 Optimizations
 
