@@ -163,6 +163,7 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
       }
     }
 
+    @SuppressWarnings("unchecked")
     public Object get(IndexReader reader, Entry<T> key) throws IOException {
       Map<Entry<T>,Object> innerCache;
       Object value;
@@ -273,6 +274,7 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
     return getBytes(reader, field, new ByteValuesCreator(field, parser)).values;
   }
 
+  @SuppressWarnings("unchecked")
   public ByteValues getBytes(IndexReader reader, String field, EntryCreator<ByteValues> creator ) throws IOException 
   {
     return (ByteValues)caches.get(Byte.TYPE).get(reader, new Entry(field, creator));
@@ -288,6 +290,7 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
     return getShorts(reader, field, new ShortValuesCreator(field,parser)).values;
   }
 
+  @SuppressWarnings("unchecked")
   public ShortValues getShorts(IndexReader reader, String field, EntryCreator<ShortValues> creator ) throws IOException 
   {
     return (ShortValues)caches.get(Short.TYPE).get(reader, new Entry(field, creator));
@@ -303,8 +306,8 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
     return getInts(reader, field, new IntValuesCreator( field, parser )).values;
   }
 
-  public IntValues getInts(IndexReader reader, String field, EntryCreator<IntValues> creator ) throws IOException 
-  {
+  @SuppressWarnings("unchecked")
+  public IntValues getInts(IndexReader reader, String field, EntryCreator<IntValues> creator ) throws IOException {
     return (IntValues)caches.get(Integer.TYPE).get(reader, new Entry(field, creator));
   }
   
@@ -318,8 +321,8 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
     return getFloats(reader, field, new FloatValuesCreator( field, parser ) ).values;
   }
 
-  public FloatValues getFloats(IndexReader reader, String field, EntryCreator<FloatValues> creator ) throws IOException 
-  {
+  @SuppressWarnings("unchecked")
+  public FloatValues getFloats(IndexReader reader, String field, EntryCreator<FloatValues> creator ) throws IOException {
     return (FloatValues)caches.get(Float.TYPE).get(reader, new Entry(field, creator));
   }
 
@@ -332,8 +335,8 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
     return getLongs(reader, field, new LongValuesCreator( field, parser ) ).values;
   }
 
-  public LongValues getLongs(IndexReader reader, String field, EntryCreator<LongValues> creator ) throws IOException 
-  {
+  @SuppressWarnings("unchecked")
+  public LongValues getLongs(IndexReader reader, String field, EntryCreator<LongValues> creator ) throws IOException {
     return (LongValues)caches.get(Long.TYPE).get(reader, new Entry(field, creator));
   }
   
@@ -347,8 +350,8 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
     return getDoubles(reader, field, new DoubleValuesCreator( field, parser ) ).values;
   }
 
-  public DoubleValues getDoubles(IndexReader reader, String field, EntryCreator<DoubleValues> creator ) throws IOException 
-  {
+  @SuppressWarnings("unchecked")
+  public DoubleValues getDoubles(IndexReader reader, String field, EntryCreator<DoubleValues> creator ) throws IOException {
     return (DoubleValues)caches.get(Double.TYPE).get(reader, new Entry(field, creator));
   }
 
@@ -361,8 +364,8 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
         fasterButMoreRAM ? DocTermsIndexCreator.FASTER_BUT_MORE_RAM : 0 ) );
   }
 
-  public DocTermsIndex getTermsIndex(IndexReader reader, String field, EntryCreator<DocTermsIndex> creator) throws IOException 
-  {
+  @SuppressWarnings("unchecked")
+  public DocTermsIndex getTermsIndex(IndexReader reader, String field, EntryCreator<DocTermsIndex> creator) throws IOException {
     return (DocTermsIndex)caches.get(DocTermsIndex.class).get(reader, new Entry(field, creator));
   }
 
@@ -377,8 +380,8 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
         fasterButMoreRAM ? DocTermsCreator.FASTER_BUT_MORE_RAM : 0 ) );
   }
 
-  public DocTerms getTerms(IndexReader reader, String field, EntryCreator<DocTerms> creator) throws IOException 
-  {
+  @SuppressWarnings("unchecked")
+  public DocTerms getTerms(IndexReader reader, String field, EntryCreator<DocTerms> creator) throws IOException {
     return (DocTerms)caches.get(DocTerms.class).get(reader, new Entry(field, creator));
   }
 
