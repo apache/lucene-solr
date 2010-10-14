@@ -95,49 +95,15 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCollate() throws Exception {
-    SolrCore core = h.getCore();
-    SearchComponent speller = core.getSearchComponent("spellcheck");
-    assertTrue("speller is null and it shouldn't be", speller != null);
-
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CommonParams.QT, "spellCheckCompRH");
-    params.add(SpellCheckComponent.SPELLCHECK_BUILD, "true");
-    params.add(CommonParams.Q, "documemt");
-    params.add(SpellCheckComponent.COMPONENT_NAME, "true");
-    params.add(SpellCheckComponent.SPELLCHECK_COLLATE, "true");
-
-    SolrRequestHandler handler = core.getRequestHandler("spellCheckCompRH");
-    SolrQueryResponse rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    NamedList values = rsp.getValues();
-    NamedList spellCheck = (NamedList) values.get("spellcheck");
-    NamedList suggestions = (NamedList) spellCheck.get("suggestions");
-    String collation = (String) suggestions.get("collation");
-    assertEquals("document", collation);
-    params.remove(CommonParams.Q);
-    params.add(CommonParams.Q, "documemt lowerfilt:broen^4");
-    handler = core.getRequestHandler("spellCheckCompRH");
-    rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    values = rsp.getValues();
-    spellCheck = (NamedList) values.get("spellcheck");
-    suggestions = (NamedList) spellCheck.get("suggestions");
-    collation = (String) suggestions.get("collation");
-    assertEquals("document lowerfilt:brown^4", collation);
-
-    params.remove(CommonParams.Q);
-    params.add(CommonParams.Q, "documemtsss broens");
-    handler = core.getRequestHandler("spellCheckCompRH");
-    rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    values = rsp.getValues();
-    spellCheck = (NamedList) values.get("spellcheck");
-    suggestions = (NamedList) spellCheck.get("suggestions");
-    collation = (String) suggestions.get("collation");
-    assertEquals("document brown",collation);
+    assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellCheckComponent.SPELLCHECK_BUILD, "true", "q","documemt", SpellCheckComponent.SPELLCHECK_COLLATE, "true")
+       ,"/spellcheck/suggestions/collation=='document'"
+    );
+    assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellCheckComponent.SPELLCHECK_BUILD, "true", "q","documemt lowerfilt:broen^4", SpellCheckComponent.SPELLCHECK_COLLATE, "true")
+       ,"/spellcheck/suggestions/collation=='document lowerfilt:brown^4'"
+    );
+    assertJQ(req("json.nl","map", "qt",rh, SpellCheckComponent.COMPONENT_NAME, "true", SpellCheckComponent.SPELLCHECK_BUILD, "true", "q","documemtsss broens", SpellCheckComponent.SPELLCHECK_COLLATE, "true")
+       ,"/spellcheck/suggestions/collation=='document brown'"
+    );
   }
   
   @Test
