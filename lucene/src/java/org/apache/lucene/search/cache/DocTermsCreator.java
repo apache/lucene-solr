@@ -134,7 +134,9 @@ public class DocTermsCreator<T extends DocTerms> extends EntryCreatorWithOptions
     }
 
     // maybe an int-only impl?
-    return (T)new DocTermsImpl(bytes.freeze(true), docToOffset.getMutable());
+    @SuppressWarnings("unchecked") final T t =
+      (T)new DocTermsImpl(bytes.freeze(true), docToOffset.getMutable());
+    return t;
   }
 
   @Override

@@ -166,7 +166,9 @@ public class DocTermsIndexCreator<T extends DocTermsIndex> extends EntryCreatorW
     }
 
     // maybe an int-only impl?
-    return (T)new DocTermsIndexImpl(bytes.freeze(true), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd);
+    @SuppressWarnings("unchecked") final T t =
+      (T)new DocTermsIndexImpl(bytes.freeze(true), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd);
+    return t;
   }
 
   @Override
