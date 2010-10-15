@@ -33,13 +33,18 @@ import org.apache.lucene.index.IndexReader;
  * once per day.
  */
 public class QueryWrapperFilter extends Filter {
-  private Query query;
+  private final Query query;
 
   /** Constructs a filter which only matches documents matching
    * <code>query</code>.
    */
   public QueryWrapperFilter(Query query) {
     this.query = query;
+  }
+  
+  /** returns the inner Query */
+  public final Query getQuery() {
+    return query;
   }
 
   @Override

@@ -21,6 +21,7 @@ import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.FilteredTermsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ToStringUtils;
 
 import java.io.IOException;
@@ -60,7 +61,7 @@ public class RegexQuery extends MultiTermQuery implements RegexQueryCapable {
   }
 
   @Override
-  protected FilteredTermsEnum getTermsEnum(IndexReader reader) throws IOException {
+  protected FilteredTermsEnum getTermsEnum(IndexReader reader, AttributeSource atts) throws IOException {
     return new RegexTermsEnum(reader, term, regexImpl);
   }
 

@@ -27,14 +27,7 @@ import java.util.Collection;
 
 public final class ArrayUtil {
 
-  /**
-   * @deprecated This constructor was not intended to be public and should not be used.
-   *  This class contains solely a static utility methods.
-   *  It will be made private in Lucene 4.0
-   */
-  // make private in 4.0!
-  @Deprecated
-  public ArrayUtil() {} // no instance
+  private ArrayUtil() {} // no instance
 
   /*
      Begin Apache Harmony code
@@ -245,6 +238,19 @@ public final class ArrayUtil {
   }
 
   public static short[] grow(short[] array) {
+    return grow(array, 1 + array.length);
+  }
+  
+  public static float[] grow(float[] array, int minSize) {
+    if (array.length < minSize) {
+      float[] newArray = new float[oversize(minSize, RamUsageEstimator.NUM_BYTES_FLOAT)];
+      System.arraycopy(array, 0, newArray, 0, array.length);
+      return newArray;
+    } else
+      return array;
+  }
+
+  public static float[] grow(float[] array) {
     return grow(array, 1 + array.length);
   }
 

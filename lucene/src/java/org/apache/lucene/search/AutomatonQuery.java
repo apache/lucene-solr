@@ -24,6 +24,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
@@ -85,7 +86,7 @@ public class AutomatonQuery extends MultiTermQuery {
   }
 
   @Override
-  protected TermsEnum getTermsEnum(IndexReader reader) throws IOException {
+  protected TermsEnum getTermsEnum(IndexReader reader, AttributeSource atts) throws IOException {
     // matches nothing
     if (BasicOperations.isEmpty(automaton)) {
       return TermsEnum.EMPTY;

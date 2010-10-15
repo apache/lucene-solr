@@ -36,6 +36,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
@@ -103,7 +104,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     }
     
     @Override
-    protected TermsEnum getTermsEnum(IndexReader reader) throws IOException {
+    protected TermsEnum getTermsEnum(IndexReader reader, AttributeSource atts) throws IOException {
       return new SimpleAutomatonTermsEnum(reader, field);
     }
 

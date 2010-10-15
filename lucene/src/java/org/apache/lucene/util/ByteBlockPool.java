@@ -16,8 +16,12 @@ package org.apache.lucene.util;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.util.Arrays;
+import java.util.List;
+import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
 
-/* Class that Posting and PostingVector use to write byte
+/** 
+ * Class that Posting and PostingVector use to write byte
  * streams into shared fixed-size byte[] arrays.  The idea
  * is to allocate slices of increasing lengths For
  * example, the first slice is 5 bytes, the next slice is
@@ -31,14 +35,10 @@ package org.apache.lucene.util;
  * the end with a non-zero byte.  This way the methods
  * that are writing into the slice don't need to record
  * its length and instead allocate a new slice once they
- * hit a non-zero byte. */
-
-import java.util.Arrays;
-
-
-import java.util.List;
-import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
-
+ * hit a non-zero byte. 
+ * 
+ * @lucene.internal
+ **/
 public final class ByteBlockPool {
   public final static int BYTE_BLOCK_SHIFT = 15;
   public final static int BYTE_BLOCK_SIZE = 1 << BYTE_BLOCK_SHIFT;
@@ -61,6 +61,22 @@ public final class ByteBlockPool {
     public byte[] getByteBlock() {
       return new byte[blockSize];
     }
+  }
+  
+  public static final class DirectAllocator extends Allocator {
+    
+    public DirectAllocator() {
+      this(BYTE_BLOCK_SIZE);
+    }
+
+    public DirectAllocator(int blockSize) {
+      super(blockSize);
+    }
+
+    @Override
+    public void recycleByteBlocks(byte[][] blocks, int start, int end) {
+    }
+    
   }
 
   public byte[][] buffers = new byte[10][];

@@ -147,8 +147,10 @@ API Changes
   you also override this method on upgrade.  (Robert Muir, Mike
   McCandless)
 
-* LUCENE-2691: IndexWriter.getReader() has been made package local and is now exposed via open and reopen methods on
-  IndexReader.  The semantics of the call is the same as it was prior to the API change.  (Grant Ingersoll, Mike McCandless)
+* LUCENE-2691: IndexWriter.getReader() has been made package local and is now
+  exposed via open and reopen methods on IndexReader.  The semantics of the
+  call is the same as it was prior to the API change.
+  (Grant Ingersoll, Mike McCandless)
 
 New features
 
@@ -265,6 +267,9 @@ New features
 * LUCENE-2692: Added several new SpanQuery classes for positional checking
   (match is in a range, payload is a specific value) (Grant Ingersoll)  
   
+* LUCENE-2690: MultiTermQuery boolean rewrites per segment.
+  (Uwe Schindler, Robert Muir, Mike McCandless)
+
 Optimizations
 
 * LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.

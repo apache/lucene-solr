@@ -29,6 +29,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 
@@ -199,7 +200,10 @@ public class FuzzyLikeThisQuery extends Query
                   ScoreTermQueue variantsQ=new ScoreTermQueue(MAX_VARIANTS_PER_TERM); //maxNum variants considered for any one term
                   float minScore=0;
                   Term startTerm=internSavingTemplateTerm.createTerm(term);
-                  FuzzyTermsEnum fe = new FuzzyTermsEnum(reader, startTerm, f.minSimilarity, f.prefixLength);
+                  AttributeSource atts = new AttributeSource();
+                  MultiTermQuery.MaxNonCompetitiveBoostAttribute maxBoostAtt =
+                    atts.addAttribute(MultiTermQuery.MaxNonCompetitiveBoostAttribute.class);
+                  FuzzyTermsEnum fe = new FuzzyTermsEnum(reader, atts, startTerm, f.minSimilarity, f.prefixLength);
                   //store the df so all variants use same idf
                   int df = reader.docFreq(startTerm);
                   int numVariants=0;
@@ -217,7 +221,7 @@ public class FuzzyLikeThisQuery extends Query
                           variantsQ.insertWithOverflow(st);
                           minScore = variantsQ.top().score; // maintain minScore
                         }
-                        boostAtt.setMaxNonCompetitiveBoost(variantsQ.size() >= MAX_VARIANTS_PER_TERM ? minScore : Float.NEGATIVE_INFINITY);
+                        maxBoostAtt.setMaxNonCompetitiveBoost(variantsQ.size() >= MAX_VARIANTS_PER_TERM ? minScore : Float.NEGATIVE_INFINITY);
                       }
                     }
 

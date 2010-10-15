@@ -17,13 +17,15 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_MASK;
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SHIFT;
+import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
+
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_MASK;
-import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SIZE;
-import static org.apache.lucene.util.ByteBlockPool.BYTE_BLOCK_SHIFT;
+import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
 
 /**
  * {@link BytesRefHash} is a special purpose hash-map like data-structure
@@ -54,6 +56,14 @@ public final class BytesRefHash {
   public static final int DEFAULT_CAPACITY = 16;
   private final BytesStartArray bytesStartArray;
   private AtomicLong bytesUsed;
+  
+  /**
+   * Creates a new {@link BytesRefHash} with a {@link ByteBlockPool} using a
+   * {@link DirectAllocator}.
+   */
+  public BytesRefHash() { 
+    this(new ByteBlockPool(new DirectAllocator()));
+  }
 
   /**
    * Creates a new {@link BytesRefHash}
@@ -75,7 +85,7 @@ public final class BytesRefHash {
     Arrays.fill(ords, -1);
     this.bytesStartArray = bytesStartArray;
     bytesStart = bytesStartArray.init();
-    bytesUsed = bytesStartArray.bytesUsed();
+    bytesUsed = bytesStartArray.bytesUsed() == null? new AtomicLong(0) : bytesStartArray.bytesUsed();;
     bytesUsed.addAndGet(hashSize * RamUsageEstimator.NUM_BYTES_INT);
   }
 
@@ -143,7 +153,6 @@ public final class BytesRefHash {
    *          the {@link Comparator} used for sorting
    */
   public int[] sort(Comparator<BytesRef> comp) {
-    assert bytesStart != null : "Bytesstart is null - not initialized";
     final int[] compact = compact();
     quickSort(comp, compact, 0, count - 1);
     return compact;
@@ -536,13 +545,13 @@ public final class BytesRefHash {
     public abstract AtomicLong bytesUsed();
   }
 
-  static class DirectBytesStartArray extends BytesStartArray {
+  public static class DirectBytesStartArray extends BytesStartArray {
 
-    private final int initSize;
+    protected final int initSize;
     private int[] bytesStart;
     private final AtomicLong bytesUsed = new AtomicLong(0);
 
-    DirectBytesStartArray(int initSize) {
+    public DirectBytesStartArray(int initSize) {
       this.initSize = initSize;
     }
 

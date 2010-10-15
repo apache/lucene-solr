@@ -886,7 +886,7 @@ public class MemoryIndex implements Serializable {
 
       @Override
       public int docFreq() {
-        return info.sortedTerms[termUpto].getValue().size();
+        return 1;
       }
 
       @Override

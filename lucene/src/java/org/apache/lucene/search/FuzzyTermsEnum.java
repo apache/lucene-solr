@@ -22,6 +22,7 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
@@ -51,7 +52,12 @@ public final class FuzzyTermsEnum extends TermsEnum {
   private final MultiTermQuery.BoostAttribute boostAtt =
     attributes().addAttribute(MultiTermQuery.BoostAttribute.class);
   
-  private float bottom = boostAtt.getMaxNonCompetitiveBoost();
+  private final MultiTermQuery.MaxNonCompetitiveBoostAttribute maxBoostAtt;
+  
+  private float bottom;
+  private BytesRef bottomTerm;
+  // nocommit: chicken-and-egg
+  private final Comparator<BytesRef> termComparator = BytesRef.getUTF8SortedAsUnicodeComparator();
   
   private final float minSimilarity;
   private final float scale_factor;
@@ -82,7 +88,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
    * @param prefixLength Length of required common prefix. Default value is 0.
    * @throws IOException
    */
-  public FuzzyTermsEnum(IndexReader reader, Term term, 
+  public FuzzyTermsEnum(IndexReader reader, AttributeSource atts, Term term, 
       final float minSimilarity, final int prefixLength) throws IOException {
     if (minSimilarity >= 1.0f && minSimilarity != (int)minSimilarity)
       throw new IllegalArgumentException("fractional edit distances are not allowed");
@@ -116,9 +122,10 @@ public final class FuzzyTermsEnum extends TermsEnum {
     }
     this.scale_factor = 1.0f / (1.0f - this.minSimilarity);
 
-    TermsEnum subEnum = getAutomatonEnum(maxEdits, null);
-    setEnum(subEnum != null ? subEnum : 
-      new LinearFuzzyTermsEnum());
+    this.maxBoostAtt = atts.addAttribute(MultiTermQuery.MaxNonCompetitiveBoostAttribute.class);
+    bottom = maxBoostAtt.getMaxNonCompetitiveBoost();
+    bottomTerm = maxBoostAtt.getCompetitiveTerm();
+    bottomChanged(null, true);
   }
   
   /**
@@ -169,19 +176,24 @@ public final class FuzzyTermsEnum extends TermsEnum {
    * fired when the max non-competitive boost has changed. this is the hook to
    * swap in a smarter actualEnum
    */
-  private void bottomChanged(float boostValue, BytesRef lastTerm)
+  private void bottomChanged(BytesRef lastTerm, boolean init)
       throws IOException {
     int oldMaxEdits = maxEdits;
     
+    // true if the last term encountered is lexicographically equal or after the bottom term in the PQ
+    boolean termAfter = bottomTerm == null || (lastTerm != null && termComparator.compare(lastTerm, bottomTerm) >= 0);
+
     // as long as the max non-competitive boost is >= the max boost
     // for some edit distance, keep dropping the max edit distance.
-    while (maxEdits > 0 && boostValue >= calculateMaxBoost(maxEdits))
+    while (maxEdits > 0 && (termAfter ? bottom >= calculateMaxBoost(maxEdits) : bottom > calculateMaxBoost(maxEdits)))
       maxEdits--;
     
-    if (oldMaxEdits != maxEdits) { // the maximum n has changed
+    if (oldMaxEdits != maxEdits || init) { // the maximum n has changed
       TermsEnum newEnum = getAutomatonEnum(maxEdits, lastTerm);
       if (newEnum != null) {
         setEnum(newEnum);
+      } else if (init) {
+        setEnum(new LinearFuzzyTermsEnum());      
       }
     }
   }
@@ -202,16 +214,18 @@ public final class FuzzyTermsEnum extends TermsEnum {
   @Override
   public BytesRef next() throws IOException {
     if (queuedBottom != null) {
-      bottomChanged(bottom, queuedBottom);
+      bottomChanged(queuedBottom, false);
       queuedBottom = null;
     }
     
     BytesRef term = actualEnum.next();
     boostAtt.setBoost(actualBoostAtt.getBoost());
     
-    final float bottom = boostAtt.getMaxNonCompetitiveBoost();
-    if (bottom != this.bottom && term != null) {
+    final float bottom = maxBoostAtt.getMaxNonCompetitiveBoost();
+    final BytesRef bottomTerm = maxBoostAtt.getCompetitiveTerm();
+    if (term != null && (bottom != this.bottom || bottomTerm != this.bottomTerm)) {
       this.bottom = bottom;
+      this.bottomTerm = bottomTerm;
       // clone the term before potentially doing something with it
       // this is a rare but wonderful occurrence anyway
       queuedBottom = new BytesRef(term);
