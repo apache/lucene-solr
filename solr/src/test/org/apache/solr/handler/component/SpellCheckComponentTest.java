@@ -145,7 +145,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, "spellchecker1");
     args.add("spellchecker", spellchecker);
 
-    // TODO: this is really fragile - find a higher level way to test this.
+    // TODO: this is really fragile and error prone - find a higher level way to test this.
     SpellCheckComponent checker = new SpellCheckComponent();
     checker.init(args);
     checker.inform(h.getCore());
@@ -164,6 +164,8 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     } catch (NullPointerException e) {
       fail("NullPointerException due to reload not initializing analyzers");
     }
+
+    rb.req.close();
   }
   
     @SuppressWarnings("unchecked")
