@@ -21,21 +21,15 @@ import java.io.File;
 import java.util.*;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SpellingParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.spelling.AbstractLuceneSpellChecker;
-import org.apache.solr.spelling.IndexBasedSpellChecker;
 import org.junit.BeforeClass;
 import org.junit.Test;
+ 
 
 import static org.junit.Assert.*;
 
@@ -120,80 +114,19 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
        ,"/spellcheck/suggestions/correctlySpelled==false"
     );
   }
-
-  @Test
-  public void testInit() throws Exception {
-    SolrCore core = h.getCore();
-    SpellCheckComponent scc = new SpellCheckComponent();
-    NamedList args = new NamedList();
-    NamedList spellchecker = new NamedList();
-    spellchecker.add("classname", IndexBasedSpellChecker.class.getName());
-    spellchecker.add("name", "default");
-    spellchecker.add("field", "lowerfilt");
-    spellchecker.add("spellcheckIndexDir", "./spellchecker");
-
-    args.add("spellchecker", spellchecker);
-    NamedList altSC = new NamedList();
-    altSC.add("classname", IndexBasedSpellChecker.class.getName());
-    altSC.add("name", "alternate");
-    altSC.add("field", "lowerfilt");
-    altSC.add("spellcheckIndexDir", "./spellchecker");
-
-    args.add("spellchecker", altSC);
-    args.add("queryAnalyzerFieldType", "lowerfilt");
-    NamedList defaults = new NamedList();
-    defaults.add(SpellCheckComponent.SPELLCHECK_COLLATE, true);
-    defaults.add(SpellCheckComponent.SPELLCHECK_EXTENDED_RESULTS, false);
-    defaults.add(SpellCheckComponent.SPELLCHECK_COUNT, 2);
-    args.add("defaults", defaults);
-    scc.init(args);
-    scc.inform(core);
-    //hmm, not sure what to assert here...
-
-    //add the sc again and then init again, we should get an exception
-    args.add("spellchecker", spellchecker);
-    scc = new SpellCheckComponent();
-    scc.init(args);
-    try {
-      scc.inform(core);
-      assertTrue(false);
-    } catch (Exception e) {
-
-    }
-
-
-  }
   
   @SuppressWarnings("unchecked")
   @Test
   public void testRelativeIndexDirLocation() throws Exception {
     SolrCore core = h.getCore();
-    Map<String, String> args = new HashMap<String, String>();
-
-    args.put(CommonParams.Q, "test");
-    args.put(CommonParams.QT, "spellCheckCompRH");
-    args.put(SpellCheckComponent.SPELLCHECK_BUILD, "true");
-    args.put(SpellCheckComponent.COMPONENT_NAME, "true");
-    SolrQueryRequest req = new LocalSolrQueryRequest(core, new MapSolrParams(
-        args));
-
-    File indexDir = new File(core.getDataDir() + File.separator
-        + "spellchecker1");
-    assertTrue(
-        "spellcheckerIndexDir was not created inside the configured value for dataDir folder as configured in solrconfig.xml",
-        indexDir.exists());
+    File indexDir = new File(core.getDataDir() + File.separator + "spellchecker1");
+    assertTrue(indexDir.exists());
     
-    indexDir = new File(core.getDataDir() + File.separator
-        + "spellchecker2");
-    assertTrue(
-        "spellcheckerIndexDir was not created inside the configured value for dataDir folder as configured in solrconfig.xml",
-        indexDir.exists());
+    indexDir = new File(core.getDataDir() + File.separator + "spellchecker2");
+    assertTrue(indexDir.exists());
     
-    indexDir = new File(core.getDataDir() + File.separator
-        + "spellchecker3");
-    assertTrue(
-        "spellcheckerIndexDir was not created inside the configured value for dataDir folder as configured in solrconfig.xml",
-        indexDir.exists());
+    indexDir = new File(core.getDataDir() + File.separator + "spellchecker3");
+    assertTrue(indexDir.exists());
   }
 
   @Test
@@ -212,6 +145,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     spellchecker.add(AbstractLuceneSpellChecker.INDEX_DIR, "spellchecker1");
     args.add("spellchecker", spellchecker);
 
+    // TODO: this is really fragile - find a higher level way to test this.
     SpellCheckComponent checker = new SpellCheckComponent();
     checker.init(args);
     checker.inform(h.getCore());
@@ -244,7 +178,4 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
     
     assertQ(req, "//arr[@name='suggestion'][.='lucenejava']");
   }
-  
-  // TODO: add more tests for various spelling options
-
 }
