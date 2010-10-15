@@ -145,7 +145,7 @@ public class TestThreadSafe extends LuceneTestCase {
     int num = 100 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
       ir1 = IndexReader.open(dir1, false);
-      doTest(10,100);
+      doTest(10,10);
       ir1.close();
     }
     dir1.close();
