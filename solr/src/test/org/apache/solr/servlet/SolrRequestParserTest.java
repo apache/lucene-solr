@@ -39,6 +39,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.core.SolrCore;
 import org.junit.AfterClass;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -119,8 +120,8 @@ public class SolrRequestParserTest extends SolrTestCaseJ4 {
       txt = IOUtils.toString( connection.getInputStream());
     }
     catch( Exception ex ) {
-      // TODO - should it fail/skip?
-      fail( "this test only works if you have a network connection." );
+      System.out.println( "this test only works if you have a network connection." );
+      Assume.assumeNoException(ex);
       return;
     }
 
