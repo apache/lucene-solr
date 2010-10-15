@@ -18,6 +18,7 @@ package org.apache.solr.search;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -261,11 +262,13 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
       SolrQueryResponse last=null;
       for (String q : qs) {
         // System.out.println("QUERY="+q);
+        SolrQueryRequest req = req("q",q,"rows","1000");
         SolrQueryResponse qr = h.queryAndResponse(handler, req("q",q,"rows","1000"));
         if (last != null) {
           // we only test if the same docs matched since some queries will include factors like idf, etc.
           sameDocs((DocSet)qr.getValues().get("response"), (DocSet)last.getValues().get("response"));
         }
+        req.close();
         last = qr;
       }
     }

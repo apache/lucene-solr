@@ -566,6 +566,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     // ensure field is not lazy
     assertTrue( d.getFieldable("test_hlt") instanceof Field );
     assertTrue( d.getFieldable("title") instanceof Field );
+    req.close();
   }
 
   @Test
@@ -588,6 +589,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     // ensure field is lazy
     assertTrue( !( d.getFieldable("test_hlt") instanceof Field ) );
     assertTrue( d.getFieldable("title") instanceof Field );
+    req.close();
   } 
             
 

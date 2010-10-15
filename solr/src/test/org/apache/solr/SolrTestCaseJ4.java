@@ -328,14 +328,18 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       String results = h.validateXPath(response, tests);
 
       if (null != results) {
-        fail(m + "query failed XPath: " + results +
-             "\n xml response was: " + response +
-             "\n request was: " + req.getParamString());
+        String msg = "REQUEST FAILED: xpath=" + results
+            + "\n\txml response was: " + response
+            + "\n\trequest was:" + req.getParamString();
+
+        log.error(msg);
+        throw new RuntimeException(msg);
       }
 
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
+      log.error("REQUEST FAILED: " + req.getParamString());
       throw new RuntimeException("Exception during query", e2);
     }
   }

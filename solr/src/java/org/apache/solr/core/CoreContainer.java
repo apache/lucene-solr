@@ -79,6 +79,7 @@ public class CoreContainer
   
   public CoreContainer() {
     solrHome = SolrResourceLoader.locateSolrHome();
+    log.info("New CoreContainer: solrHome=" + solrHome + " instance="+System.identityHashCode(this));
   }
 
   public Properties getContainerProperties() {
@@ -360,7 +361,7 @@ public class CoreContainer
   protected void finalize() throws Throwable {
     try {
       if(!isShutDown){
-        log.error("CoreContainer was not shutdown prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!");
+        log.error("CoreContainer was not shutdown prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!  instance=" + System.identityHashCode(this));
         shutdown();
       }
     } finally {

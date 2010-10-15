@@ -355,13 +355,16 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
   SolrQueryResponse loadLocal(String filename, String... args) throws Exception {
     LocalSolrQueryRequest req = (LocalSolrQueryRequest) req(args);
-
-    // TODO: stop using locally defined streams once stream.file and
-    // stream.body work everywhere
-    List<ContentStream> cs = new ArrayList<ContentStream>();
-    cs.add(new ContentStreamBase.FileStream(new File(filename)));
-    req.setContentStreams(cs);
-    return h.queryAndResponse("/update/extract", req);
+    try {
+      // TODO: stop using locally defined streams once stream.file and
+      // stream.body work everywhere
+      List<ContentStream> cs = new ArrayList<ContentStream>();
+      cs.add(new ContentStreamBase.FileStream(new File(filename)));
+      req.setContentStreams(cs);
+      return h.queryAndResponse("/update/extract", req);
+    } finally {
+      req.close();
+    }
   }
 
 
