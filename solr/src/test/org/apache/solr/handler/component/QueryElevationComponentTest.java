@@ -50,14 +50,6 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     initCore("solrconfig-elevate.xml","schema12.xml");
   }
   
-  @Before
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    clearIndex();
-    assertU(commit());
-  }
-  
   @Test
   public void testInterface() throws Exception
   {
@@ -70,9 +62,12 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
     QueryElevationComponent comp = new QueryElevationComponent();
     comp.init( args );
     comp.inform( core );
-    
-    IndexReader reader = core.getSearcher().get().getReader();
+
+    SolrQueryRequest req = req();
+    IndexReader reader = req.getSearcher().getReader();
     Map<String, ElevationObj> map = comp.getElevationMap( reader, core );
+    req.close();
+
     // Make sure the boosts loaded properly
     assertEquals( 3, map.size() );
     assertEquals( 1, map.get( "XXXX" ).priority.size() );
