@@ -19,16 +19,14 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.IOException;
 import org.apache.lucene.store.FSDirectory;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-public class AlternateDirectoryTest extends AbstractSolrTestCase {
-
-  public String getSchemaFile() {
-    return "schema.xml";
-  }
-
-  public String getSolrConfigFile() {
-    return "solrconfig-altdirectory.xml";
+public class AlternateDirectoryTest extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-altdirectory.xml", "schema.xml");
   }
 
   /**
@@ -36,12 +34,14 @@ public class AlternateDirectoryTest extends AbstractSolrTestCase {
    * 
    * @throws Exception
    */
+  @Test
   public void testAltDirectoryUsed() throws Exception {
+    assertQ(req("q","*:*","qt","standard"));
     assertTrue(TestFSDirectoryFactory.openCalled);
   }
 
   static public class TestFSDirectoryFactory extends DirectoryFactory {
-    public static boolean openCalled = false;
+    public static volatile boolean openCalled = false;
 
     public FSDirectory open(String path) throws IOException {
       openCalled = true;
