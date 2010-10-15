@@ -347,8 +347,15 @@ public abstract class LuceneTestCase extends Assert {
 
     @Override
     public void failed(Throwable e, FrameworkMethod method) {
-      testsFailed = true;
-      reportAdditionalFailureInfo();
+      // org.junit.internal.AssumptionViolatedException in older releases
+      // org.junit.Assume.AssumptionViolatedException in recent ones
+      if (e.getClass().getName().endsWith("AssumptionViolatedException")) {
+        System.err.println("NOTE: " + method.getName() + " Assume failed (ignored):");
+        e.printStackTrace();
+      } else {
+        testsFailed = true;
+        reportAdditionalFailureInfo();
+      }
       super.failed(e, method);
     }
 
