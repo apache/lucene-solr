@@ -18,6 +18,9 @@ package org.apache.solr.core;
 
 import java.io.File;
 import java.io.IOException;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.junit.BeforeClass;
@@ -38,6 +41,7 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
   public void testAltDirectoryUsed() throws Exception {
     assertQ(req("q","*:*","qt","standard"));
     assertTrue(TestFSDirectoryFactory.openCalled);
+    assertTrue(TestIndexReaderFactory.newReaderCalled);
   }
 
   static public class TestFSDirectoryFactory extends DirectoryFactory {
@@ -48,6 +52,17 @@ public class AlternateDirectoryTest extends SolrTestCaseJ4 {
       return FSDirectory.open(new File(path));
     }
 
+  }
+
+
+  static public class TestIndexReaderFactory extends IndexReaderFactory {
+    static volatile boolean newReaderCalled = false;
+
+    public IndexReader newReader(Directory indexDir, boolean readOnly)
+        throws IOException {
+      TestIndexReaderFactory.newReaderCalled = true;
+      return IndexReader.open(indexDir, readOnly);
+    }
   }
 
 }
