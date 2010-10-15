@@ -145,130 +145,25 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
 
   @Test
   public void testPerField() throws Exception {
-    SolrCore core = h.getCore();
-    SearchComponent tvComp = core.getSearchComponent("tvComponent");
-    assertTrue("tvComp is null and it shouldn't be", tvComp != null);
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CommonParams.Q, "id:0");
-    params.add(CommonParams.QT, "tvrh");
-    params.add(TermVectorParams.FIELDS, "test_basictv,test_notv,test_postv,test_offtv,test_posofftv");
-    params.add(TermVectorParams.TF, "true");
-    params.add(TermVectorParams.DF, "true");
-    params.add(TermVectorParams.OFFSETS, "true");
-    params.add(TermVectorParams.POSITIONS, "true");
-    params.add(TermVectorParams.TF_IDF, "true");
-    params.add(TermVectorComponent.COMPONENT_NAME, "true");
-    //per field
-    params.add("f.test_posofftv." + TermVectorParams.POSITIONS, "false");
-    params.add("f.test_offtv." + TermVectorParams.OFFSETS, "false");
-    params.add("f.test_basictv." + TermVectorParams.DF, "false");
-    params.add("f.test_basictv." + TermVectorParams.TF, "false");
-    params.add("f.test_basictv." + TermVectorParams.TF_IDF, "false");
-    SolrRequestHandler handler = core.getRequestHandler("tvrh");
-    SolrQueryResponse rsp;
-    rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    NamedList values = rsp.getValues();
-    NamedList termVectors = (NamedList) values.get(TermVectorComponent.TERM_VECTORS);
-    assertTrue("termVectors is null and it shouldn't be", termVectors != null);
-    if (VERBOSE) System.out.println("TVs: " + termVectors);
-    NamedList doc = (NamedList) termVectors.get("doc-0");
-    assertTrue("doc is null and it shouldn't be", doc != null);
-    assertEquals(doc.size(), 5);
-    NamedList vec;
-    NamedList another;
-    NamedList offsets;
-    NamedList pos;
-    Integer df;
-    Double val;
-    vec = (NamedList) doc.get("test_posofftv");
-    assertNotNull(vec);
-    assertEquals(vec.size(), 2);
-    another = (NamedList) vec.get("anoth");
-    offsets = (NamedList) another.get("offsets");
-    assertNotNull(offsets);
-    assertTrue(offsets.size() > 0);
-    pos = (NamedList) another.get("positions");
-    //positions should be null, since we turned them off
-    assertNull(pos);
-    df = (Integer) another.get("df");
-    assertNotNull(df);
-    assertTrue(df == 2);
-    val = (Double) another.get("tf-idf");
-    assertTrue("tfIdf is null and it shouldn't be", val != null);
-    assertTrue(val + " does not equal: " + 0.5, val == 0.5);
-    //Try out the other fields, too
-    vec = (NamedList) doc.get("test_offtv");
-    assertNotNull(vec);
-    assertEquals(vec.size(), 2);
-    another = (NamedList) vec.get("anoth");
-    offsets = (NamedList) another.get("offsets");
-    assertNull(offsets);
-    pos = (NamedList) another.get("positions");
-    //positions should be null, since we turned them off
-    assertNull(vec.toString(), pos);
-    df = (Integer) another.get("df");
-    assertNotNull(df);
-    assertTrue(df == 2);
-    val = (Double) another.get("tf-idf");
-    assertTrue("tfIdf is null and it shouldn't be", val != null);
-    assertTrue(val + " does not equal: " + 0.5, val == 0.5);
-    vec = (NamedList) doc.get("test_basictv");
-    assertNotNull(vec);
-    assertEquals(vec.size(), 2);
-    another = (NamedList) vec.get("anoth");
-    offsets = (NamedList) another.get("offsets");
-    assertNull(offsets);
-    pos = (NamedList) another.get("positions");
-    assertNull(pos);
-    df = (Integer) another.get("df");
-    assertNull(df);
-    val = (Double) another.get("tf-idf");
-    assertNull(val);
-    val = (Double) another.get("tf");
-    assertNull(val);
-    //Now validate we have error messages
-    NamedList warnings = (NamedList) termVectors.get("warnings");
-    assertNotNull(warnings);
-    List<String> theList;
-    theList = (List<String>) warnings.get("noTermVectors");
-    assertNotNull(theList);
-    assertEquals(theList.size(), 1);
-    theList = (List<String>) warnings.get("noPositions");
-    assertNotNull(theList);
-    assertEquals(theList.size(), 2);
-    theList = (List<String>) warnings.get("noOffsets");
-    assertNotNull(theList);
-    assertEquals(theList.size(), 2);
-  }
-
-  @Test
-  public void testNoFields() throws Exception {
-    ignoreException("undefined field: foo");
-    SolrCore core = h.getCore();
-    SearchComponent tvComp = core.getSearchComponent("tvComponent");
-    assertTrue("tvComp is null and it shouldn't be", tvComp != null);
-    ModifiableSolrParams params = new ModifiableSolrParams();
-    params.add(CommonParams.Q, "id:0");
-    params.add(CommonParams.QT, "tvrh");
-    params.add(TermVectorParams.TF, "true");
-    //Pass in a field that doesn't exist on the doc, thus, no vectors should be returned
-    params.add(TermVectorParams.FIELDS, "foo");
-    params.add(TermVectorComponent.COMPONENT_NAME, "true");
-    SolrRequestHandler handler = core.getRequestHandler("tvrh");
-    SolrQueryResponse rsp;
-    rsp = new SolrQueryResponse();
-    rsp.add("responseHeader", new SimpleOrderedMap());
-    handler.handleRequest(new LocalSolrQueryRequest(core, params), rsp);
-    Exception exception = rsp.getException();
-    assertNotNull(exception);
-    resetExceptionIgnores();
+    assertJQ(req("json.nl","map", "qt",tv, "q", "id:0", TermVectorComponent.COMPONENT_NAME, "true"
+        ,TermVectorParams.TF, "true", TermVectorParams.DF, "true", TermVectorParams.OFFSETS, "true", TermVectorParams.POSITIONS, "true", TermVectorParams.TF_IDF, "true"
+        ,TermVectorParams.FIELDS, "test_basictv,test_notv,test_postv,test_offtv,test_posofftv"
+        ,"f.test_posofftv." + TermVectorParams.POSITIONS, "false"
+        ,"f.test_offtv." + TermVectorParams.OFFSETS, "false"
+        ,"f.test_basictv." + TermVectorParams.DF, "false"
+        ,"f.test_basictv." + TermVectorParams.TF, "false"
+        ,"f.test_basictv." + TermVectorParams.TF_IDF, "false"
+        )
+    ,"/termVectors/doc-0/test_basictv=={'anoth':{},'titl':{}}"
+    ,"/termVectors/doc-0/test_postv/anoth=={'tf':1, 'positions':{'position':1}, 'df':2, 'tf-idf':0.5}"
+    ,"/termVectors/doc-0/test_offtv/anoth=={'tf':1, 'df':2, 'tf-idf':0.5}"
+    ,"/termVectors/warnings=={ 'noTermVectors':['test_notv'], 'noPositions':['test_basictv', 'test_offtv'], 'noOffsets':['test_basictv', 'test_postv']}"
+    );
   }
 
 
-
-
+  // TODO: this test is really fragile since it pokes around in solr's guts and makes many assumptions.
+  // it should be rewritten to use the real distributed interface
   @Test
   public void testDistributed() throws Exception {
     SolrCore core = h.getCore();
@@ -309,12 +204,11 @@ public class TermVectorComponentTest extends SolrTestCaseJ4 {
       ModifiableSolrParams solrParams = request.params;
       log.info("Shard: " + Arrays.asList(request.shards) + " Params: " + solrParams);
     }
+
+    rb.req.close();
   }
 
 }
-
-
-
 
 
 /*
