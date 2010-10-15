@@ -308,7 +308,7 @@ public class TestHarness {
   }
 
   /**
-   * Processes a "query" using a user constructed SolrQueryRequest
+   * Processes a "query" using a user constructed SolrQueryRequest, and closes the request at the end.
    *
    * @param handler the name of the request handler to process the request
    * @param req the Query to process, will be closed.
@@ -318,17 +318,22 @@ public class TestHarness {
    * @see LocalSolrQueryRequest
    */
   public String query(String handler, SolrQueryRequest req) throws IOException, Exception {
-    SolrQueryResponse rsp = queryAndResponse(handler, req);
+    try {
+      SolrQueryResponse rsp = queryAndResponse(handler, req);
 
-    StringWriter sw = new StringWriter(32000);
-    QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
-    responseWriter.write(sw,req,rsp);
+      StringWriter sw = new StringWriter(32000);
+      QueryResponseWriter responseWriter = core.getQueryResponseWriter(req);
+      responseWriter.write(sw,req,rsp);
 
-    req.close();
+      req.close();
 
-    return sw.toString();
+      return sw.toString();
+    } finally {
+      req.close();
+    }
   }
 
+  /** It is the users responsibility to close the request object when done with it */
   public SolrQueryResponse queryAndResponse(String handler, SolrQueryRequest req) throws Exception {
     SolrQueryResponse rsp = new SolrQueryResponse();
     core.execute(core.getRequestHandler(handler),req,rsp);
