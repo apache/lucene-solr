@@ -47,6 +47,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatchman;
@@ -779,6 +780,14 @@ public abstract class LuceneTestCase extends Assert {
     protected List<FrameworkMethod> computeTestMethods() {
       if (testMethods != null)
         return testMethods;
+      // check if the current test's class has methods annotated with @Ignore
+      final Class<?> clazz = getTestClass().getJavaClass();
+      for (Method m : clazz.getMethods()) {
+        Ignore ignored = m.getAnnotation(Ignore.class);
+        if (ignored != null) {
+          System.err.println("NOTE: Ignoring test method '" + m.getName() + "' " + ignored.value());
+        }
+      }
       testMethods = getTestClass().getAnnotatedMethods(Test.class);
       for (Method m : getTestClass().getJavaClass().getMethods()) {
         final int mod = m.getModifiers();
