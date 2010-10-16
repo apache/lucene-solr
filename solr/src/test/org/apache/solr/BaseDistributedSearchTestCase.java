@@ -57,7 +57,7 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
   protected String[] shardsArr;
   // Some ISPs redirect to their own web site for domains that don't exist, causing this to fail
   // protected String[] deadServers = {"does_not_exist_54321.com:33331/solr","localhost:33332/solr"};
-  protected String[] deadServers = {"localhost:33332/solr"};
+  protected String[] deadServers = {"[::1]:33332/solr"};
   protected File testDir;
   protected SolrServer controlClient;
 
