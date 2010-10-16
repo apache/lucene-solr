@@ -356,12 +356,12 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
   }
 
   public DocTermsIndex getTermsIndex(IndexReader reader, String field) throws IOException {    
-    return getTermsIndex(reader, field, new DocTermsIndexCreator<DocTermsIndex>( field ) );
+    return getTermsIndex(reader, field, new DocTermsIndexCreator(field));
   }
 
   public DocTermsIndex getTermsIndex(IndexReader reader, String field, boolean fasterButMoreRAM) throws IOException {    
-    return getTermsIndex(reader, field, new DocTermsIndexCreator<DocTermsIndex>( field, 
-        fasterButMoreRAM ? DocTermsIndexCreator.FASTER_BUT_MORE_RAM : 0 ) );
+    return getTermsIndex(reader, field, new DocTermsIndexCreator(field, 
+        fasterButMoreRAM ? DocTermsIndexCreator.FASTER_BUT_MORE_RAM : 0));
   }
 
   @SuppressWarnings("unchecked")
@@ -372,12 +372,12 @@ public class FieldCacheImpl implements FieldCache {  // Made Public so that
   // TODO: this if DocTermsIndex was already created, we
   // should share it...
   public DocTerms getTerms(IndexReader reader, String field) throws IOException {
-    return getTerms(reader, field, new DocTermsCreator<DocTerms>( field ) );
+    return getTerms(reader, field, new DocTermsCreator(field));
   }
 
   public DocTerms getTerms(IndexReader reader, String field, boolean fasterButMoreRAM) throws IOException {
-    return getTerms(reader, field, new DocTermsCreator<DocTerms>( field,
-        fasterButMoreRAM ? DocTermsCreator.FASTER_BUT_MORE_RAM : 0 ) );
+    return getTerms(reader, field, new DocTermsCreator(field,
+        fasterButMoreRAM ? DocTermsCreator.FASTER_BUT_MORE_RAM : 0));
   }
 
   @SuppressWarnings("unchecked")
