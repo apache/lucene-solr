@@ -29,6 +29,7 @@ import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.SearchHandler;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.mortbay.log.Log;
@@ -58,7 +59,7 @@ public class SpellCheckCollator {
       verifyCandidateWithQuery = false;
     }
     if (queryComponent == null && verifyCandidateWithQuery) {
-      LOG.warn("Could not find an instance of QueryComponent.  Disabling collation verification against the index.");
+      LOG.info("Could not find an instance of QueryComponent.  Disabling collation verification against the index.");
       maxTries = 1;
       verifyCandidateWithQuery = false;
     }
@@ -82,14 +83,12 @@ public class SpellCheckCollator {
         checkResponse.components = Arrays.asList(new SearchComponent[] { queryComponent });
 
         ModifiableSolrParams params = new ModifiableSolrParams(ultimateResponse.req.getParams());
-        params.remove(CommonParams.Q);
-        params.add(CommonParams.Q, collationQueryStr);
+        params.set(CommonParams.Q, collationQueryStr);
         params.remove(CommonParams.START);
-        params.remove(CommonParams.ROWS);
-        params.add(CommonParams.FL, "id");
-        params.add(CommonParams.ROWS, "0");
-        //Would rather have found a concrete class to use...
-        checkResponse.req = new SolrQueryRequestBase(ultimateResponse.req.getCore(), params) { };
+        params.set(CommonParams.FL, "id");
+        params.set(CommonParams.ROWS, "0");
+        // creating a request here... make sure to close it!
+        checkResponse.req = new LocalSolrQueryRequest(ultimateResponse.req.getCore(), params);
         checkResponse.rsp = new SolrQueryResponse();
 
         try {
@@ -98,6 +97,8 @@ public class SpellCheckCollator {
           hits = (Integer) checkResponse.rsp.getToLog().get("hits");
         } catch (Exception e) {
           Log.warn("Exception trying to re-query to check if a spell check possibility would return any hits.", e);
+        } finally {
+          checkResponse.req.close();  
         }
       }
       if (hits > 0 || !verifyCandidateWithQuery) {
