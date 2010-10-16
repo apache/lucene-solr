@@ -44,7 +44,7 @@ import java.util.Map;
 public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
 
   @Test
-  @Ignore
+  @Ignore("Requires scripting support in Java 1.6+")
   public void testBasic() {
     String script = "function f1(row,context){"
             + "row.put('name','Hello ' + row.get('name'));" + "return row;\n" + "}";
@@ -71,7 +71,7 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  @Ignore
+  @Ignore("Requires scripting support in Java 1.6+")
   public void testOneparam() {
 
     String script = "function f1(row){"
@@ -87,7 +87,7 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  @Ignore
+  @Ignore("Requires scripting support in Java 1.6+")
   public void testReadScriptTag() throws Exception {
     DocumentBuilder builder = DocumentBuilderFactory.newInstance()
             .newDocumentBuilder();
@@ -99,7 +99,7 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  @Ignore
+  @Ignore("Requires scripting support in Java 1.6+")
   public void testCheckScript() throws Exception {
     DocumentBuilder builder = DocumentBuilderFactory.newInstance()
             .newDocumentBuilder();

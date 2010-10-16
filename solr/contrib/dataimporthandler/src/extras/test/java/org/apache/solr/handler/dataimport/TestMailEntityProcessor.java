@@ -55,7 +55,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
   private static Map<String, String> paramMap = new HashMap<String, String>();
 
   @Test
-  @Ignore
+  @Ignore("Needs a Mock Mail Server to work")
   public void testConnection() {
     // also tests recurse = false and default settings
     paramMap.put("folders", "top2");
@@ -73,7 +73,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  @Ignore
+  @Ignore("Needs a Mock Mail Server to work")
   public void testRecursion() {
     paramMap.put("folders", "top2");
     paramMap.put("recurse", "true");
@@ -90,7 +90,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  @Ignore
+  @Ignore("Needs a Mock Mail Server to work")
   public void testExclude() {
     paramMap.put("folders", "top2");
     paramMap.put("recurse", "true");
@@ -108,7 +108,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  @Ignore
+  @Ignore("Needs a Mock Mail Server to work")
   public void testInclude() {
     paramMap.put("folders", "top2");
     paramMap.put("recurse", "true");
@@ -126,7 +126,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  @Ignore
+  @Ignore("Needs a Mock Mail Server to work")
   public void testIncludeAndExclude() {
     paramMap.put("folders", "top1,top2");
     paramMap.put("recurse", "true");
@@ -145,7 +145,7 @@ public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  @Ignore
+  @Ignore("Needs a Mock Mail Server to work")
   public void testFetchTimeSince() throws ParseException {
     paramMap.put("folders", "top1/child11");
     paramMap.put("recurse", "true");
