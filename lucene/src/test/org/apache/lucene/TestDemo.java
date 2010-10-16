@@ -43,7 +43,6 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestDemo extends LuceneTestCase {
 
   public void testDemo() throws IOException, ParseException {
-    fail();
     Analyzer analyzer = new MockAnalyzer();
 
     // Store the index in memory:
