@@ -16,7 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -44,17 +43,21 @@ import java.util.Map;
 public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
 
   @Test
-  @Ignore
   public void testBasic() {
-    String script = "function f1(row,context){"
-            + "row.put('name','Hello ' + row.get('name'));" + "return row;\n" + "}";
-    Context context = getContext("f1", script);
-    Map<String, Object> map = new HashMap<String, Object>();
-    map.put("name", "Scott");
-    EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
-    sep.init(context);
-    sep.applyTransformer(map);
-    assertEquals(map.get("name"), "Hello Scott");
+    try {
+      String script = "function f1(row,context){"
+              + "row.put('name','Hello ' + row.get('name'));" + "return row;\n" + "}";
+      Context context = getContext("f1", script);
+      Map<String, Object> map = new HashMap<String, Object>();
+      map.put("name", "Scott");
+      EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
+      sep.init(context);
+      sep.applyTransformer(map);
+      assertEquals(map.get("name"), "Hello Scott");
+    } catch (DataImportHandlerException e) {
+      assumeFalse("JRE does not contain a JavaScript engine (OpenJDK)", "<script> can be used only in java 6 or above".equals(e.getMessage()));
+      throw e;
+    }
   }
 
   private Context getContext(String funcName, String script) {
@@ -71,55 +74,66 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  @Ignore
   public void testOneparam() {
+    try {
+      String script = "function f1(row){"
+              + "row.put('name','Hello ' + row.get('name'));" + "return row;\n" + "}";
 
-    String script = "function f1(row){"
-            + "row.put('name','Hello ' + row.get('name'));" + "return row;\n" + "}";
-
-    Context context = getContext("f1", script);
-    Map<String, Object> map = new HashMap<String, Object>();
-    map.put("name", "Scott");
-    EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
-    sep.init(context);
-    sep.applyTransformer(map);
-    assertEquals(map.get("name"), "Hello Scott");
+      Context context = getContext("f1", script);
+      Map<String, Object> map = new HashMap<String, Object>();
+      map.put("name", "Scott");
+      EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
+      sep.init(context);
+      sep.applyTransformer(map);
+      assertEquals(map.get("name"), "Hello Scott");
+    } catch (DataImportHandlerException e) {
+      assumeFalse("JRE does not contain a JavaScript engine (OpenJDK)", "<script> can be used only in java 6 or above".equals(e.getMessage()));
+      throw e;
+    }
   }
 
   @Test
-  @Ignore
   public void testReadScriptTag() throws Exception {
-    DocumentBuilder builder = DocumentBuilderFactory.newInstance()
-            .newDocumentBuilder();
-    Document document = builder.parse(new InputSource(new StringReader(xml)));
-    DataConfig config = new DataConfig();
-    config.readFromXml((Element) document.getElementsByTagName("dataConfig")
-            .item(0));
-    assertTrue(config.script.text.indexOf("checkNextToken") > -1);
+    try {
+      DocumentBuilder builder = DocumentBuilderFactory.newInstance()
+              .newDocumentBuilder();
+      Document document = builder.parse(new InputSource(new StringReader(xml)));
+      DataConfig config = new DataConfig();
+      config.readFromXml((Element) document.getElementsByTagName("dataConfig")
+              .item(0));
+      assertTrue(config.script.text.indexOf("checkNextToken") > -1);
+    } catch (DataImportHandlerException e) {
+      assumeFalse("JRE does not contain a JavaScript engine (OpenJDK)", "<script> can be used only in java 6 or above".equals(e.getMessage()));
+      throw e;
+    }
   }
 
   @Test
-  @Ignore
   public void testCheckScript() throws Exception {
-    DocumentBuilder builder = DocumentBuilderFactory.newInstance()
-            .newDocumentBuilder();
-    Document document = builder.parse(new InputSource(new StringReader(xml)));
-    DataConfig config = new DataConfig();
-    config.readFromXml((Element) document.getElementsByTagName("dataConfig")
-            .item(0));
+    try {
+      DocumentBuilder builder = DocumentBuilderFactory.newInstance()
+              .newDocumentBuilder();
+      Document document = builder.parse(new InputSource(new StringReader(xml)));
+      DataConfig config = new DataConfig();
+      config.readFromXml((Element) document.getElementsByTagName("dataConfig")
+              .item(0));
 
-    Context c = getContext("checkNextToken", config.script.text);
+      Context c = getContext("checkNextToken", config.script.text);
 
-    Map map = new HashMap();
-    map.put("nextToken", "hello");
-    EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
-    sep.init(c);
-    sep.applyTransformer(map);
-    assertEquals("true", map.get("$hasMore"));
-    map = new HashMap();
-    map.put("nextToken", "");
-    sep.applyTransformer(map);
-    assertNull(map.get("$hasMore"));
+      Map map = new HashMap();
+      map.put("nextToken", "hello");
+      EntityProcessorWrapper sep = new EntityProcessorWrapper(new SqlEntityProcessor(), null);
+      sep.init(c);
+      sep.applyTransformer(map);
+      assertEquals("true", map.get("$hasMore"));
+      map = new HashMap();
+      map.put("nextToken", "");
+      sep.applyTransformer(map);
+      assertNull(map.get("$hasMore"));
+    } catch (DataImportHandlerException e) {
+      assumeFalse("JRE does not contain a JavaScript engine (OpenJDK)", "<script> can be used only in java 6 or above".equals(e.getMessage()));
+      throw e;
+    }
   }
 
   static String xml = "<dataConfig>\n"
