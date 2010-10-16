@@ -18,6 +18,7 @@ package org.apache.solr.handler.dataimport;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -203,6 +204,7 @@ public class TestSqlEntityProcessor2 extends AbstractDataImportHandlerTestCase {
 
   @Test
   @SuppressWarnings("unchecked")
+  @Ignore("Known Locale/TZ problems: see https://issues.apache.org/jira/browse/SOLR-1916")
   public void testLastIndexTime() throws Exception  {
     List row = new ArrayList();
     row.add(createMap("id", 5));
