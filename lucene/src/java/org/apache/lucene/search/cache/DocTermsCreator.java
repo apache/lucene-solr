@@ -34,7 +34,7 @@ import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
 // TODO: this if DocTermsIndex was already created, we should share it...
-public class DocTermsCreator<T extends DocTerms> extends EntryCreatorWithOptions<T>
+public class DocTermsCreator extends EntryCreatorWithOptions<DocTerms>
 {
   public static final int FASTER_BUT_MORE_RAM = 2;
 
@@ -64,7 +64,7 @@ public class DocTermsCreator<T extends DocTerms> extends EntryCreatorWithOptions
   }
 
   @Override
-  public T create(IndexReader reader) throws IOException {
+  public DocTerms create(IndexReader reader) throws IOException {
 
     String field = StringHelper.intern(this.field); // TODO?? necessary?
     Terms terms = MultiFields.getTerms(reader, field);
@@ -134,13 +134,11 @@ public class DocTermsCreator<T extends DocTerms> extends EntryCreatorWithOptions
     }
 
     // maybe an int-only impl?
-    @SuppressWarnings("unchecked") final T t =
-      (T)new DocTermsImpl(bytes.freeze(true), docToOffset.getMutable());
-    return t;
+    return new DocTermsImpl(bytes.freeze(true), docToOffset.getMutable());
   }
 
   @Override
-  public T validate(T entry, IndexReader reader) throws IOException {
+  public DocTerms validate(DocTerms entry, IndexReader reader) throws IOException {
     // TODO? nothing? perhaps subsequent call with FASTER_BUT_MORE_RAM?
     return entry;
   }

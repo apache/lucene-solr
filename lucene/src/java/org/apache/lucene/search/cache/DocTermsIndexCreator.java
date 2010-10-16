@@ -36,7 +36,7 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.packed.GrowableWriter;
 import org.apache.lucene.util.packed.PackedInts;
 
-public class DocTermsIndexCreator<T extends DocTermsIndex> extends EntryCreatorWithOptions<T>
+public class DocTermsIndexCreator extends EntryCreatorWithOptions<DocTermsIndex>
 {
   public static final int FASTER_BUT_MORE_RAM = 2;
 
@@ -66,7 +66,7 @@ public class DocTermsIndexCreator<T extends DocTermsIndex> extends EntryCreatorW
   }
 
   @Override
-  public T create(IndexReader reader) throws IOException
+  public DocTermsIndex create(IndexReader reader) throws IOException
   {
     String field = StringHelper.intern(this.field); // TODO?? necessary?
     Terms terms = MultiFields.getTerms(reader, field);
@@ -166,13 +166,11 @@ public class DocTermsIndexCreator<T extends DocTermsIndex> extends EntryCreatorW
     }
 
     // maybe an int-only impl?
-    @SuppressWarnings("unchecked") final T t =
-      (T)new DocTermsIndexImpl(bytes.freeze(true), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd);
-    return t;
+    return new DocTermsIndexImpl(bytes.freeze(true), termOrdToBytesOffset.getMutable(), docToTermOrd.getMutable(), termOrd);
   }
 
   @Override
-  public T validate(T entry, IndexReader reader) throws IOException {
+  public DocTermsIndex validate(DocTermsIndex entry, IndexReader reader) throws IOException {
     // TODO? nothing? perhaps subsequent call with FASTER_BUT_MORE_RAM?
     return entry;
   }
