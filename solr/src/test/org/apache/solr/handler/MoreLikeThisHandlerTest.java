@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.*;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
@@ -30,21 +31,22 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 
 /**
  * TODO -- this needs to actually test the results/query etc
  */
-public class MoreLikeThisHandlerTest extends AbstractSolrTestCase {
+public class MoreLikeThisHandlerTest extends SolrTestCaseJ4 {
 
-  @Override public String getSchemaFile() { return "schema.xml"; }
-  @Override public String getSolrConfigFile() { return "solrconfig.xml"; }
-  @Override public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void moreLikeThisBeforeClass() throws Exception {
+    initCore("solrconfig.xml", "schema.xml");
     lrf = h.getRequestFactory("standard", 0, 20 );
   }
-  
-  
+
+  @Test
   public void testInterface() throws Exception
   {
     SolrCore core = h.getCore();
@@ -68,6 +70,9 @@ public class MoreLikeThisHandlerTest extends AbstractSolrTestCase {
       mlt.handleRequestBody( req, new SolrQueryResponse() );
     }
     catch( Exception ex ) {} // expected
+    finally {
+      req.close();
+    }
     
     assertU(adoc("id","42","name","Tom Cruise","subword","Top Gun","subword","Risky Business","subword","The Color of Money","subword","Minority Report","subword", "Days of Thunder","subword", "Eyes Wide Shut","subword", "Far and Away", "foo_ti","10"));
     assertU(adoc("id","43","name","Tom Hanks","subword","The Green Mile","subword","Forest Gump","subword","Philadelphia Story","subword","Big","subword","Cast Away", "foo_ti","10"));
