@@ -42,6 +42,7 @@ import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
+import org.junit.Assume;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -351,8 +352,16 @@ public abstract class LuceneTestCase extends Assert {
       // org.junit.internal.AssumptionViolatedException in older releases
       // org.junit.Assume.AssumptionViolatedException in recent ones
       if (e.getClass().getName().endsWith("AssumptionViolatedException")) {
-        System.err.println("NOTE: " + method.getName() + " Assume failed (ignored):");
-        e.printStackTrace();
+        if (e.getCause() instanceof TestIgnoredException)
+          e = e.getCause();
+        System.err.print("NOTE: Assume failed in '" + method.getName() + "' (ignored):");
+        if (VERBOSE) {
+          System.err.println();
+          e.printStackTrace(System.err);
+        } else {
+          System.err.print(" ");
+          System.err.println(e.getMessage());
+        }
       } else {
         testsFailed = true;
         reportAdditionalFailureInfo();
@@ -373,7 +382,7 @@ public abstract class LuceneTestCase extends Assert {
   public void setUp() throws Exception {
     seed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l2;
     random.setSeed(seed);
-    Assert.assertFalse("ensure your tearDown() calls super.tearDown()!!!", setup);
+    assertFalse("ensure your tearDown() calls super.tearDown()!!!", setup);
     setup = true;
     savedUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
@@ -410,7 +419,7 @@ public abstract class LuceneTestCase extends Assert {
 
   @After
   public void tearDown() throws Exception {
-    Assert.assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
+    assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
     setup = false;
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
     try {
@@ -514,6 +523,49 @@ public abstract class LuceneTestCase extends Assert {
   @Deprecated
   static public void assertEquals(String message, float expected, float actual) {
     assertEquals(message, Float.valueOf(expected), Float.valueOf(actual));
+  }
+  
+  // Replacement for Assume jUnit class, so we can add a message with explanation:
+  
+  private static final class TestIgnoredException extends RuntimeException {
+    TestIgnoredException(String msg) {
+      super(msg);
+    }
+    
+    TestIgnoredException(String msg, Throwable t) {
+      super(msg, t);
+    }
+    
+    @Override
+    public String getMessage() {
+      StringBuilder sb = new StringBuilder(super.getMessage());
+      if (getCause() != null)
+        sb.append(" - ").append(getCause());
+      return sb.toString();
+    }
+    
+    // only this one is called by our code, exception is not used outside this class:
+    @Override
+    public void printStackTrace(PrintStream s) {
+      if (getCause() != null) {
+        s.println(super.toString() + " - Caused by:");
+        getCause().printStackTrace(s);
+      } else {
+        super.printStackTrace(s);
+      }
+    }
+  }
+  
+  public static void assumeTrue(String msg, boolean b) {
+    Assume.assumeNoException(b ? null : new TestIgnoredException(msg));
+  }
+ 
+  public static void assumeFalse(String msg, boolean b) {
+    assumeTrue(msg, !b);
+  }
+  
+  public static void assumeNoException(String msg, Exception e) {
+    Assume.assumeNoException(e == null ? null : new TestIgnoredException(msg, e));
   }
  
   /**
@@ -792,16 +844,14 @@ public abstract class LuceneTestCase extends Assert {
     protected List<FrameworkMethod> computeTestMethods() {
       if (testMethods != null)
         return testMethods;
-      // check if the current test's class has methods annotated with @Ignore
-      final Class<?> clazz = getTestClass().getJavaClass();
-      for (Method m : clazz.getMethods()) {
-        Ignore ignored = m.getAnnotation(Ignore.class);
-        if (ignored != null) {
-          System.err.println("NOTE: Ignoring test method '" + m.getName() + "' " + ignored.value());
-        }
-      }
       testMethods = getTestClass().getAnnotatedMethods(Test.class);
       for (Method m : getTestClass().getJavaClass().getMethods()) {
+        // check if the current test's class has methods annotated with @Ignore
+        final Ignore ignored = m.getAnnotation(Ignore.class);
+        if (ignored != null) {
+          System.err.println("NOTE: Ignoring test method '" + m.getName() + "': " + ignored.value());
+        }
+        // add methods starting with "test"
         final int mod = m.getModifiers();
         if (m.getName().startsWith("test") &&
             m.getAnnotation(Test.class) == null &&

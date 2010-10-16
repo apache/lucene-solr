@@ -34,7 +34,6 @@ import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.BytesRef;
-import static org.junit.Assume.*;
 
 /**
  * Tests lazy skipping on the proximity file.
@@ -121,7 +120,7 @@ public class TestLazyProxSkipping extends LuceneTestCase {
     }
  
     public void testLazySkipping() throws IOException {
-        assumeTrue(!CodecProvider.getDefaultCodec().equals("SimpleText"));
+        assumeFalse("This test cannot run with SimpleText codec", CodecProvider.getDefaultCodec().equals("SimpleText"));
         // test whether only the minimum amount of seeks()
         // are performed
         performTest(5);
