@@ -35,8 +35,6 @@ import java.util.Map;
  * Test for ScriptTransformer
  * </p>
  * <p/>
- * All tests in this have been ignored because script support is only available
- * in Java 1.6+
  *
  * @version $Id$
  * @since solr 1.3
@@ -44,7 +42,6 @@ import java.util.Map;
 public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
 
   @Test
-  @Ignore
   public void testBasic() {
     String script = "function f1(row,context){"
             + "row.put('name','Hello ' + row.get('name'));" + "return row;\n" + "}";
@@ -71,7 +68,6 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  @Ignore
   public void testOneparam() {
 
     String script = "function f1(row){"
@@ -87,7 +83,6 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  @Ignore
   public void testReadScriptTag() throws Exception {
     DocumentBuilder builder = DocumentBuilderFactory.newInstance()
             .newDocumentBuilder();
@@ -99,7 +94,6 @@ public class TestScriptTransformer extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  @Ignore
   public void testCheckScript() throws Exception {
     DocumentBuilder builder = DocumentBuilderFactory.newInstance()
             .newDocumentBuilder();
