@@ -20,49 +20,49 @@ package org.apache.solr.spelling;
 import org.apache.solr.common.util.NamedList;
 
 public class SpellCheckCollation implements Comparable<SpellCheckCollation> {
-	private NamedList<String> misspellingsAndCorrections;
-	private int hits;
-	private int internalRank;
-	private String collationQuery;
-	
-	public int compareTo(SpellCheckCollation scc) {
-		int c = new Integer(internalRank).compareTo(scc.internalRank);
-		if (c == 0) {
-			return collationQuery.compareTo(scc.collationQuery);
-		}
-		return c;
-	}
+  private NamedList<String> misspellingsAndCorrections;
+  private int hits;
+  private int internalRank;
+  private String collationQuery;
 
-	public NamedList<String> getMisspellingsAndCorrections() {
-		return misspellingsAndCorrections;
-	}
+  public int compareTo(SpellCheckCollation scc) {
+    int c = new Integer(internalRank).compareTo(scc.internalRank);
+    if (c == 0) {
+      return collationQuery.compareTo(scc.collationQuery);
+    }
+    return c;
+  }
 
-	public void setMisspellingsAndCorrections(
-			NamedList<String> misspellingsAndCorrections) {
-		this.misspellingsAndCorrections = misspellingsAndCorrections;
-	}
+  public NamedList<String> getMisspellingsAndCorrections() {
+    return misspellingsAndCorrections;
+  }
 
-	public int getHits() {
-		return hits;
-	}
+  public void setMisspellingsAndCorrections(
+      NamedList<String> misspellingsAndCorrections) {
+    this.misspellingsAndCorrections = misspellingsAndCorrections;
+  }
 
-	public void setHits(int hits) {
-		this.hits = hits;
-	}
+  public int getHits() {
+    return hits;
+  }
 
-	public String getCollationQuery() {
-		return collationQuery;
-	}
+  public void setHits(int hits) {
+    this.hits = hits;
+  }
 
-	public void setCollationQuery(String collationQuery) {
-		this.collationQuery = collationQuery;
-	}
-	
-	public int getInternalRank() {
-		return internalRank;
-	}
+  public String getCollationQuery() {
+    return collationQuery;
+  }
 
-	public void setInternalRank(int internalRank) {
-		this.internalRank = internalRank;
-	}
+  public void setCollationQuery(String collationQuery) {
+    this.collationQuery = collationQuery;
+  }
+
+  public int getInternalRank() {
+    return internalRank;
+  }
+
+  public void setInternalRank(int internalRank) {
+    this.internalRank = internalRank;
+  }
 }

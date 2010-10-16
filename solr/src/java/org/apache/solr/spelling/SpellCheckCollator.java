@@ -36,107 +36,107 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SpellCheckCollator {
-	private static final Logger LOG = LoggerFactory.getLogger(SpellCheckCollator.class);
+  private static final Logger LOG = LoggerFactory.getLogger(SpellCheckCollator.class);
 
-	public List<SpellCheckCollation> collate(SpellingResult result, String originalQuery, ResponseBuilder ultimateResponse,
-			int maxCollations, int maxTries) {
-		List<SpellCheckCollation> collations = new ArrayList<SpellCheckCollation>();
+  public List<SpellCheckCollation> collate(SpellingResult result, String originalQuery, ResponseBuilder ultimateResponse,
+                                           int maxCollations, int maxTries) {
+    List<SpellCheckCollation> collations = new ArrayList<SpellCheckCollation>();
 
-		QueryComponent queryComponent = null;
-		if (ultimateResponse.components != null) {
-			for (SearchComponent sc : ultimateResponse.components) {
-				if (sc instanceof QueryComponent) {
-					queryComponent = (QueryComponent) sc;
-					break;
-				}
-			}
-		}
-		
-		boolean verifyCandidateWithQuery = true;
-		if (maxTries < 1) {
-			maxTries = 1;
-			verifyCandidateWithQuery = false;
-		}
-		if (queryComponent == null && verifyCandidateWithQuery) {
-			LOG.warn("Could not find an instance of QueryComponent.  Disabling collation verification against the index.");
-			maxTries = 1;
-			verifyCandidateWithQuery = false;
-		}
-		
-		int tryNo = 0;
-		int collNo = 0;
-		PossibilityIterator possibilityIter = new PossibilityIterator(result.getSuggestions());
-		while (tryNo < maxTries && collNo < maxCollations && possibilityIter.hasNext()) {
+    QueryComponent queryComponent = null;
+    if (ultimateResponse.components != null) {
+      for (SearchComponent sc : ultimateResponse.components) {
+        if (sc instanceof QueryComponent) {
+          queryComponent = (QueryComponent) sc;
+          break;
+        }
+      }
+    }
 
-			RankedSpellPossibility possibility = possibilityIter.next();
-			String collationQueryStr = getCollation(originalQuery, possibility.getCorrections());
-			int hits = 0;
-					
-			if (verifyCandidateWithQuery) {
-				tryNo++;
+    boolean verifyCandidateWithQuery = true;
+    if (maxTries < 1) {
+      maxTries = 1;
+      verifyCandidateWithQuery = false;
+    }
+    if (queryComponent == null && verifyCandidateWithQuery) {
+      LOG.warn("Could not find an instance of QueryComponent.  Disabling collation verification against the index.");
+      maxTries = 1;
+      verifyCandidateWithQuery = false;
+    }
 
-				ResponseBuilder checkResponse = new ResponseBuilder();
-				checkResponse.setQparser(ultimateResponse.getQparser());				
-				checkResponse.setFilters(ultimateResponse.getFilters());
-				checkResponse.setQueryString(collationQueryStr);				
-				checkResponse.components = Arrays.asList(new SearchComponent[] { queryComponent });
-				
-				ModifiableSolrParams params = new ModifiableSolrParams(ultimateResponse.req.getParams());
-				params.remove(CommonParams.Q);
-				params.add(CommonParams.Q, collationQueryStr);
-				params.remove(CommonParams.START);
-				params.remove(CommonParams.ROWS);
-				params.add(CommonParams.FL, "id");
-				params.add(CommonParams.ROWS, "0");
-				//Would rather have found a concrete class to use...
-				checkResponse.req = new SolrQueryRequestBase(ultimateResponse.req.getCore(), params) { };
-				checkResponse.rsp = new SolrQueryResponse();
-				
-				try {
-					queryComponent.prepare(checkResponse);
-					queryComponent.process(checkResponse);				
-					hits = (Integer) checkResponse.rsp.getToLog().get("hits");					
-				} catch (Exception e) {
-					Log.warn("Exception trying to re-query to check if a spell check possibility would return any hits.", e);
-				}
-			}
-			if (hits > 0 || !verifyCandidateWithQuery) {
-				collNo++;
-				SpellCheckCollation collation = new SpellCheckCollation();
-				collation.setCollationQuery(collationQueryStr);
-				collation.setHits(hits);
-				collation.setInternalRank(possibility.getRank());
+    int tryNo = 0;
+    int collNo = 0;
+    PossibilityIterator possibilityIter = new PossibilityIterator(result.getSuggestions());
+    while (tryNo < maxTries && collNo < maxCollations && possibilityIter.hasNext()) {
 
-				NamedList<String> misspellingsAndCorrections = new NamedList<String>();
-				for (SpellCheckCorrection corr : possibility.getCorrections()) {
-					misspellingsAndCorrections.add(corr.getOriginal().toString(), corr.getCorrection());
-				}
-				collation.setMisspellingsAndCorrections(misspellingsAndCorrections);
-				collations.add(collation);
-			}
-			if (LOG.isDebugEnabled()) {
-				LOG.debug("Collation: " + collationQueryStr + (verifyCandidateWithQuery ? (" will return " + hits + " hits.") : ""));
-			}		
-		}
-		return collations;
-	}
+      RankedSpellPossibility possibility = possibilityIter.next();
+      String collationQueryStr = getCollation(originalQuery, possibility.getCorrections());
+      int hits = 0;
 
-	private String getCollation(String origQuery,
-			List<SpellCheckCorrection> corrections) {
-		StringBuilder collation = new StringBuilder(origQuery);
-		int offset = 0;
-		for (SpellCheckCorrection correction : corrections) {
-			Token tok = correction.getOriginal();
-			// we are replacing the query in order, but injected terms might cause
-			// illegal offsets due to previous replacements.
-			if (tok.getPositionIncrement() == 0)
-				continue;
-			collation.replace(tok.startOffset() + offset, tok.endOffset() + offset,
-					correction.getCorrection());
-			offset += correction.getCorrection().length()
-					- (tok.endOffset() - tok.startOffset());
-		}
-		return collation.toString();
-	}
+      if (verifyCandidateWithQuery) {
+        tryNo++;
+
+        ResponseBuilder checkResponse = new ResponseBuilder();
+        checkResponse.setQparser(ultimateResponse.getQparser());
+        checkResponse.setFilters(ultimateResponse.getFilters());
+        checkResponse.setQueryString(collationQueryStr);
+        checkResponse.components = Arrays.asList(new SearchComponent[] { queryComponent });
+
+        ModifiableSolrParams params = new ModifiableSolrParams(ultimateResponse.req.getParams());
+        params.remove(CommonParams.Q);
+        params.add(CommonParams.Q, collationQueryStr);
+        params.remove(CommonParams.START);
+        params.remove(CommonParams.ROWS);
+        params.add(CommonParams.FL, "id");
+        params.add(CommonParams.ROWS, "0");
+        //Would rather have found a concrete class to use...
+        checkResponse.req = new SolrQueryRequestBase(ultimateResponse.req.getCore(), params) { };
+        checkResponse.rsp = new SolrQueryResponse();
+
+        try {
+          queryComponent.prepare(checkResponse);
+          queryComponent.process(checkResponse);
+          hits = (Integer) checkResponse.rsp.getToLog().get("hits");
+        } catch (Exception e) {
+          Log.warn("Exception trying to re-query to check if a spell check possibility would return any hits.", e);
+        }
+      }
+      if (hits > 0 || !verifyCandidateWithQuery) {
+        collNo++;
+        SpellCheckCollation collation = new SpellCheckCollation();
+        collation.setCollationQuery(collationQueryStr);
+        collation.setHits(hits);
+        collation.setInternalRank(possibility.getRank());
+
+        NamedList<String> misspellingsAndCorrections = new NamedList<String>();
+        for (SpellCheckCorrection corr : possibility.getCorrections()) {
+          misspellingsAndCorrections.add(corr.getOriginal().toString(), corr.getCorrection());
+        }
+        collation.setMisspellingsAndCorrections(misspellingsAndCorrections);
+        collations.add(collation);
+      }
+      if (LOG.isDebugEnabled()) {
+        LOG.debug("Collation: " + collationQueryStr + (verifyCandidateWithQuery ? (" will return " + hits + " hits.") : ""));
+      }
+    }
+    return collations;
+  }
+
+  private String getCollation(String origQuery,
+                              List<SpellCheckCorrection> corrections) {
+    StringBuilder collation = new StringBuilder(origQuery);
+    int offset = 0;
+    for (SpellCheckCorrection correction : corrections) {
+      Token tok = correction.getOriginal();
+      // we are replacing the query in order, but injected terms might cause
+      // illegal offsets due to previous replacements.
+      if (tok.getPositionIncrement() == 0)
+        continue;
+      collation.replace(tok.startOffset() + offset, tok.endOffset() + offset,
+          correction.getCorrection());
+      offset += correction.getCorrection().length()
+          - (tok.endOffset() - tok.startOffset());
+    }
+    return collation.toString();
+  }
 
 }
