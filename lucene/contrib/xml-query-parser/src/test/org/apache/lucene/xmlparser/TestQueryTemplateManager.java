@@ -17,7 +17,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.Assume;
+
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -75,7 +75,7 @@ public class TestQueryTemplateManager extends LuceneTestCase {
 	  // Sun 1.5 suffers from http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6240963
 	  if (Constants.JAVA_VENDOR.startsWith("Sun") && Constants.JAVA_VERSION.startsWith("1.5")) {
 	    String defLang = Locale.getDefault().getLanguage();
-	    Assume.assumeTrue(!defLang.equals("tr") && !defLang.equals("az"));
+	    assumeFalse("Sun JRE 1.5 suffers from http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6240963 under Turkish locale", defLang.equals("tr") || defLang.equals("az"));
 	  }
 		//Cache all the query templates we will be referring to.
 		QueryTemplateManager qtm=new QueryTemplateManager();
