@@ -147,7 +147,7 @@ public class TestJdbcDataSource extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
-  @Ignore
+  @Ignore("Needs a Mock database server to work")
   public void testBasic() throws Exception {
     JdbcDataSource dataSource = new JdbcDataSource();
     Properties p = new Properties();
