@@ -23,6 +23,7 @@ import org.apache.lucene.analysis.tokenattributes.*;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.*;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
+import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.queryParser.QueryParser;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.Version;
@@ -595,6 +596,8 @@ public class TestPhraseQuery extends LuceneTestCase {
   }
 
   public void testRandomPhrases() throws Exception {
+    assumeFalse("test runs extremely slow (minutes) with SimpleText", 
+        CodecProvider.getDefaultCodec().equals("SimpleText"));
     Directory dir = newDirectory();
     Analyzer analyzer = new MockAnalyzer();
 
