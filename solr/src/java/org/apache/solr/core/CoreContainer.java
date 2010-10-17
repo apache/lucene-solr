@@ -463,6 +463,7 @@ public class CoreContainer
    * Stops all cores.
    */
   public void shutdown() {
+    log.info("Shutting down CoreContainer instance="+System.identityHashCode(this));    
     synchronized(cores) {
       try {
         for(SolrCore core : cores.values()) {
