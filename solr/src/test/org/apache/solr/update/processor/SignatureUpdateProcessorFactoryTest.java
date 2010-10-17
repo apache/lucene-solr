@@ -235,5 +235,6 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
     streams.add(new ContentStreamBase.StringStream(doc));
     req.setContentStreams(streams);
     handler.handleRequestBody(req, new SolrQueryResponse());
+    req.close();
   }
 }
