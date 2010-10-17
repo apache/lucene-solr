@@ -300,6 +300,9 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
+  /** @deprecated: until we fix no-fork problems in solr tests */
+  private static List<String> testClassesRun = new ArrayList<String>();
+  
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
     staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l1;
@@ -337,6 +340,10 @@ public abstract class LuceneTestCase extends Assert {
       System.out.println("NOTE: test params are: codec=" + codec + 
         ", locale=" + locale + 
         ", timezone=" + (timeZone == null ? "(null)" : timeZone.getID()));
+    if (testsFailed) {
+      System.err.println("NOTE: all tests run in this JVM:");
+      System.err.println(Arrays.toString(testClassesRun.toArray()));
+    }
   }
 
   private static boolean testsFailed; /* true if any tests failed */
@@ -844,6 +851,7 @@ public abstract class LuceneTestCase extends Assert {
     protected List<FrameworkMethod> computeTestMethods() {
       if (testMethods != null)
         return testMethods;
+      testClassesRun.add(getTestClass().getJavaClass().getSimpleName());
       testMethods = getTestClass().getAnnotatedMethods(Test.class);
       for (Method m : getTestClass().getJavaClass().getMethods()) {
         // check if the current test's class has methods annotated with @Ignore
