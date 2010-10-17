@@ -85,12 +85,42 @@ public class CoreContainer
   private SolrZkServer zkServer;
 
   private String zkHost;
-  
-  public CoreContainer() {
-    solrHome = SolrResourceLoader.locateSolrHome();
+
+  {
     log.info("New CoreContainer: solrHome=" + solrHome + " instance="+System.identityHashCode(this));
   }
-  
+
+  public CoreContainer() {
+    solrHome = SolrResourceLoader.locateSolrHome();
+  }
+
+  /**
+   * Initalize CoreContainer directly from the constructor
+   *
+   * @param dir
+   * @param configFile
+   * @throws ParserConfigurationException
+   * @throws IOException
+   * @throws SAXException
+   */
+  public CoreContainer(String dir, File configFile) throws ParserConfigurationException, IOException, SAXException
+  {
+    this.load(dir, configFile);
+  }
+
+  /**
+   * Minimal CoreContainer constructor.
+   * @param loader the CoreContainer resource loader
+   */
+  public CoreContainer(SolrResourceLoader loader) {
+    this.loader = loader;
+    this.solrHome = loader.getInstanceDir();
+  }
+
+  public CoreContainer(String solrHome) {
+    this.solrHome = solrHome;
+  }
+
   private void initZooKeeper(String zkHost, int zkClientTimeout) {
     // if zkHost sys property is not set, we are not using ZooKeeper
     String zookeeperHost;
@@ -245,32 +275,7 @@ public class CoreContainer
     return p;
   }
 
-  /**
-   * Initalize CoreContainer directly from the constructor
-   * 
-   * @param dir
-   * @param configFile
-   * @throws ParserConfigurationException
-   * @throws IOException
-   * @throws SAXException
-   */
-  public CoreContainer(String dir, File configFile) throws ParserConfigurationException, IOException, SAXException 
-  {
-    this.load(dir, configFile);
-  }
-  
-  /**
-   * Minimal CoreContainer constructor. 
-   * @param loader the CoreContainer resource loader
-   */
-  public CoreContainer(SolrResourceLoader loader) {
-    this.loader = loader;
-    this.solrHome = loader.getInstanceDir();
-  }
 
-  public CoreContainer(String solrHome) {
-    this.solrHome = solrHome;
-  }
 
   //-------------------------------------------------------------------
   // Initialization / Cleanup
