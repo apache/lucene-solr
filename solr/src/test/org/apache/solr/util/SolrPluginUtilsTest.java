@@ -82,7 +82,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     for (SolrDocument document : list) {
       assertNotNull(document.get("val_t"));
     }
-
+    srchr.close();
   }
 
   @Test
