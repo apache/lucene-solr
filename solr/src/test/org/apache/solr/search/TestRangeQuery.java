@@ -263,7 +263,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
       for (String q : qs) {
         // System.out.println("QUERY="+q);
         SolrQueryRequest req = req("q",q,"rows","1000");
-        SolrQueryResponse qr = h.queryAndResponse(handler, req("q",q,"rows","1000"));
+        SolrQueryResponse qr = h.queryAndResponse(handler, req);
         if (last != null) {
           // we only test if the same docs matched since some queries will include factors like idf, etc.
           sameDocs((DocSet)qr.getValues().get("response"), (DocSet)last.getValues().get("response"));
@@ -280,9 +280,7 @@ public class TestRangeQuery extends SolrTestCaseJ4 {
     assertEquals(a.size(), b.size());
     while (i.hasNext()) {
       int doc = i.nextDoc();
-      if (!b.exists(doc)) {
-        TestCase.fail("Missing doc " + doc);
-      }
+      assertTrue(b.exists(doc));
       // System.out.println("MATCH! " + doc);
     }
     return true;
