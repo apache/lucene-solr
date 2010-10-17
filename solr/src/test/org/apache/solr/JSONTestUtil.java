@@ -53,10 +53,12 @@ public class JSONTestUtil {
   
   public static String matchObj(String path, Object input, Object expected) throws Exception {
     CollectionTester tester = new CollectionTester(input);
-    if (!tester.seek(path)) {
+    boolean reversed = path.startsWith("!");
+    String positivePath = reversed ? path.substring(1) : path;
+    if (!tester.seek(positivePath) ^ reversed) {
       return "Path not found: " + path;
     }
-    if (expected != null && !tester.match(expected)) {
+    if (expected != null && (!tester.match(expected) ^ reversed)) {
       return tester.err + " @ " + tester.getPath();
     }
     return null;
