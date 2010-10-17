@@ -17,6 +17,7 @@
 package org.apache.solr.handler.dataimport;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.net.URLEncoder;
@@ -115,6 +116,7 @@ public class TestEvaluatorBag extends AbstractDataImportHandlerTestCase {
    * Test method for {@link EvaluatorBag#getDateFormatEvaluator()}.
    */
   @Test
+  @Ignore("Known Locale/TZ problems: see https://issues.apache.org/jira/browse/SOLR-1916")
   public void testGetDateFormatEvaluator() {
     Evaluator dateFormatEval = EvaluatorBag.getDateFormatEvaluator();
     ContextImpl context = new ContextImpl(null, resolver, null, Context.FULL_DUMP, Collections.EMPTY_MAP, null, null);
