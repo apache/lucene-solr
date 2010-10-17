@@ -178,6 +178,7 @@ public class CoreAdminHandler extends RequestHandlerBase {
     SolrParams required = params.required();
     String cname = required.get(CoreAdminParams.CORE);
     SolrCore core = coreContainer.getCore(cname);
+    SolrQueryRequest wrappedReq = null;
     if (core != null) {
       try {
         doPersist = coreContainer.isPersistent();
@@ -192,12 +193,13 @@ public class CoreAdminHandler extends RequestHandlerBase {
 
         UpdateRequestProcessorChain processorChain =
                 core.getUpdateProcessingChain(params.get(UpdateParams.UPDATE_PROCESSOR));
-        SolrQueryRequest wrappedReq = new LocalSolrQueryRequest(core, req.getParams());
+        wrappedReq = new LocalSolrQueryRequest(core, req.getParams());
         UpdateRequestProcessor processor =
                 processorChain.createProcessor(wrappedReq, rsp);
         processor.processMergeIndexes(new MergeIndexesCommand(dirs));
       } finally {
         core.close();
+        wrappedReq.close();
       }
     }
     return doPersist;
