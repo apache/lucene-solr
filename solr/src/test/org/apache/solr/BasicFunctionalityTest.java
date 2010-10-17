@@ -237,12 +237,12 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
       };
     handler.init(new NamedList());
     SolrQueryResponse rsp = new SolrQueryResponse();
+    SolrQueryRequest req = req();
     h.getCore().execute(handler, 
-                        new LocalSolrQueryRequest(h.getCore(),
-                                                  new NamedList()),
+                        req,
                         rsp);
     assertNotNull("should have found an exception", rsp.getException());
-                        
+    req.close();                    
   }
 
   @Test
