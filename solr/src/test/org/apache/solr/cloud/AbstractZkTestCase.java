@@ -42,23 +42,28 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
   protected static Logger log = LoggerFactory
       .getLogger(AbstractZkTestCase.class);
 
-  protected ZkTestServer zkServer;
+  protected static ZkTestServer zkServer;
 
-  protected String zkDir;
+  protected static String zkDir;
 
   public AbstractZkTestCase() {
 
   }
 
   @BeforeClass
-  public static void beforeClass() throws Exception {
+  public static void azt_beforeClass() throws Exception {
   }
   
   @Override
   public void setUp() throws Exception {
-
     super.setUp();
-    
+
+    if (h != null) {
+      log.warn("HACK: closing previous test harness");     
+      h.close();
+      h=null;
+    }
+
     zkDir = dataDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     zkServer = new ZkTestServer(zkDir);
@@ -80,7 +85,7 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
         this.dataDir = AbstractZkTestCase.dataDir.getAbsolutePath();
       }
     };
-    
+
     h = new TestHarness("", init);
     lrf = h.getRequestFactory("standard", 0, 20, "version", "2.2");
     
