@@ -154,7 +154,11 @@ API Changes
 
  * LUCENE-2626: FastVectorHighlighter: enable FragListBuilder and FragmentsBuilder
    to be set per-field override. (Koji Sekiguchi)
-   
+
+ * LUCENE-2712: FieldBoostMapAttribute in contrib/queryparser was changed from 
+   a Map<CharSequence,Float> to a Map<String,Float>. Per the CharSequence javadoc,
+   CharSequence is inappropriate as a map key. (Robert Muir)
+    
 New features
 
  * LUCENE-2306: Add NumericRangeFilter and NumericRangeQuery support to XMLQueryParser.

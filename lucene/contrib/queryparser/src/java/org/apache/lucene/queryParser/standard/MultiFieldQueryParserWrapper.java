@@ -74,8 +74,7 @@ public class MultiFieldQueryParserWrapper extends QueryParserWrapper {
    * what fields they appear.
    * </p>
    */
-  @SuppressWarnings("unchecked")
-public MultiFieldQueryParserWrapper(String[] fields, Analyzer analyzer, Map boosts) {
+public MultiFieldQueryParserWrapper(String[] fields, Analyzer analyzer, Map<String, Float> boosts) {
     this(fields, analyzer);
     StandardQueryParser qpHelper = getQueryParserHelper();
 
