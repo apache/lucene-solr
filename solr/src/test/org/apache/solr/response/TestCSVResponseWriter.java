@@ -160,6 +160,8 @@ public class TestCSVResponseWriter extends SolrTestCaseJ4 {
     w.write(buf, req, rsp);
     String s = buf.toString();
     assertTrue(s.indexOf("score") >=0 && s.indexOf("2.718") > 0 && s.indexOf("89.83") > 0 );
+
+    req.close();
   }
 
 }
