@@ -175,12 +175,21 @@ public class TestHarness {
     }
     @Override
     public CoreContainer initialize() {
-      CoreContainer container = new CoreContainer(new SolrResourceLoader(SolrResourceLoader.locateSolrHome()));
+      CoreContainer container = new CoreContainer(new SolrResourceLoader(SolrResourceLoader.locateSolrHome())) {
+        {
+          hostPort = System.getProperty("hostPort");
+          hostContext = "solr";
+          defaultCoreName = "collection1";
+          initZooKeeper(System.getProperty("zkHost"), 10000);
+        }
+      };
+      
       CoreDescriptor dcore = new CoreDescriptor(container, coreName, solrConfig.getResourceLoader().getInstanceDir());
       dcore.setConfigName(solrConfig.getResourceName());
       dcore.setSchemaName(indexSchema.getResourceName());
-      SolrCore core = new SolrCore( null, dataDirectory, solrConfig, indexSchema, dcore);
+      SolrCore core = new SolrCore("collection1", dataDirectory, solrConfig, indexSchema, dcore);
       container.register(coreName, core, false);
+
       return container;
     }
   }

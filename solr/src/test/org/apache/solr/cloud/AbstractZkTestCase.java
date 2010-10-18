@@ -18,14 +18,14 @@ package org.apache.solr.cloud;
  */
 
 import java.io.File;
+import java.io.IOException;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.util.TestHarness;
 import org.apache.zookeeper.CreateMode;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,51 +46,22 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
 
   protected static String zkDir;
 
-  public AbstractZkTestCase() {
-
-  }
 
   @BeforeClass
   public static void azt_beforeClass() throws Exception {
-  }
-  
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-
-    if (h != null) {
-      log.warn("HACK: closing previous test harness");     
-      h.close();
-      h=null;
-    }
-
+    createTempDir();
     zkDir = dataDir.getAbsolutePath() + File.separator
         + "zookeeper/server1/data";
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
+    
     System.setProperty("zkHost", zkServer.getZkAddress());
+    System.setProperty("hostPort", "0000");
+    
     buildZooKeeper(zkServer.getZkHost(), zkServer.getZkAddress(),
-        getSolrConfigFile(), getSchemaFile());
+        "solrconfig.xml", "schema.xml");
     
-    log.info("####SETUP_START " + getName());
-
-    dataDir.mkdirs();
-    
-    // set some system properties for use by tests
-    System.setProperty("solr.test.sys.prop1", "propone");
-    System.setProperty("solr.test.sys.prop2", "proptwo");
-    
-    CoreContainer.Initializer init = new CoreContainer.Initializer() {
-      {
-        this.dataDir = AbstractZkTestCase.dataDir.getAbsolutePath();
-      }
-    };
-
-    h = new TestHarness("", init);
-    lrf = h.getRequestFactory("standard", 0, 20, "version", "2.2");
-    
-    log.info("####SETUP_END " + getName());
-    
+    initCore("solrconfig.xml", "schema.xml");
   }
 
   // static to share with distrib test
@@ -131,15 +102,20 @@ public abstract class AbstractZkTestCase extends SolrTestCaseJ4 {
     if (DEBUG) {
       printLayout(zkServer.getZkHost());
     }
+
+    SolrConfig.severeErrors.clear();
+    super.tearDown();
+  }
+  
+  @AfterClass
+  public static void azt_afterClass() throws IOException {
     zkServer.shutdown();
     System.clearProperty("zkHost");
     System.clearProperty("solr.test.sys.prop1");
     System.clearProperty("solr.test.sys.prop2");
-    SolrConfig.severeErrors.clear();
-    super.tearDown();
   }
 
-  private void printLayout(String zkHost) throws Exception {
+  protected void printLayout(String zkHost) throws Exception {
     SolrZkClient zkClient = new SolrZkClient(zkHost, AbstractZkTestCase.TIMEOUT);
     zkClient.printLayoutToStdOut();
     zkClient.close();

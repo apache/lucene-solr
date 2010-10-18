@@ -80,7 +80,7 @@ public class CoreContainer
   protected String solrHome;
   @Deprecated
   protected String solrConfigFilenameOverride;
-  private String defaultCoreName = "";
+  protected String defaultCoreName = "";
   private ZkController zkController;
   private SolrZkServer zkServer;
 
@@ -121,7 +121,7 @@ public class CoreContainer
     this.solrHome = solrHome;
   }
 
-  private void initZooKeeper(String zkHost, int zkClientTimeout) {
+  protected void initZooKeeper(String zkHost, int zkClientTimeout) {
     // if zkHost sys property is not set, we are not using ZooKeeper
     String zookeeperHost;
     if(zkHost == null) {

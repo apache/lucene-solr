@@ -21,17 +21,18 @@ import org.apache.lucene.index.LogMergePolicy;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.SolrIndexWriter;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 /**
  *
  */
 public class BasicZkTest extends AbstractZkTestCase {
+  
   @BeforeClass
-  public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml", "schema.xml");
+  public static void beforeClass() {
+    System.setProperty("CLOUD_UPDATE_DELAY", "1");
   }
   
   @Test
@@ -99,13 +100,17 @@ public class BasicZkTest extends AbstractZkTestCase {
     Thread.sleep(300);
     
     // try a reconnect from disconnect
-    
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
     
-    // ensure zk still thinks node is up
-    assertTrue(zkController.getCloudState().liveNodesContain(zkController.getNodeName()));
+    Thread.sleep(300);
     
+    // ensure zk still thinks node is up
+    assertTrue(
+        zkController.getCloudState().getLiveNodes().toString(),
+        zkController.getCloudState().liveNodesContain(
+            zkController.getNodeName()));
+
     // test maxint
     assertQ(req("q", "id:[100 TO 110]", "rows", "2147483647"),
         "//*[@numFound='4']");
@@ -124,6 +129,10 @@ public class BasicZkTest extends AbstractZkTestCase {
     assertU(delQ("id:[100 TO 110]"));
     assertU(commit());
     assertQ(req("id:[100 TO 110]"), "//*[@numFound='0']");
-
+  }
+  
+  @AfterClass
+  public static void afterClass() {
+    System.clearProperty("CLOUD_UPDATE_DELAY");
   }
 }

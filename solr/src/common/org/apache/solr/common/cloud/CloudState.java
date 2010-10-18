@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.solr.common.SolrException;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -139,6 +138,13 @@ public class CloudState {
     liveNodesSet.addAll(liveNodes);
 
     return liveNodesSet;
+  }
+  
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("live nodes:" + liveNodes);
+    sb.append(" collections:" + collectionStates);
+    return sb.toString();
   }
 
 }

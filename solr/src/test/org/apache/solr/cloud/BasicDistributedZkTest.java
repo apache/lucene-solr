@@ -24,7 +24,6 @@ import org.apache.solr.client.solrj.impl.CloudSolrServer;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.core.SolrConfig;
 import org.junit.BeforeClass;
 
 /**
@@ -279,5 +278,6 @@ public class BasicDistributedZkTest extends AbstractDistributedZkTestCase {
   public void tearDown() throws Exception {
     super.tearDown();
     System.clearProperty("CLOUD_UPDATE_DELAY");
+    System.clearProperty("zkHost");
   }
 }

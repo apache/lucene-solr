@@ -21,9 +21,7 @@ import java.io.IOException;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ZkNodeProps;
-
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 
 public class ZkNodePropsTest extends SolrTestCaseJ4 {

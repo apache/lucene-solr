@@ -219,8 +219,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     if (factoryProp == null) {
       System.setProperty("solr.directoryFactory","solr.RAMDirectoryFactory");
     }
-
-    createTempDir();
+    if (dataDir == null) {
+      createTempDir();
+    }
 
     // other  methods like starting a jetty instance need these too
     System.setProperty("solr.test.sys.prop1", "propone");
