@@ -132,7 +132,11 @@ API Changes
 
  * LUCENE-2626: FastVectorHighlighter: enable FragListBuilder and FragmentsBuilder
    to be set per-field override. (Koji Sekiguchi)
-   
+
+ * LUCENE-2712: FieldBoostMapAttribute in contrib/queryparser was changed from 
+   a Map<CharSequence,Float> to a Map<String,Float>. Per the CharSequence javadoc,
+   CharSequence is inappropriate as a map key. (Robert Muir)
+    
  * LUCENE-1370: Added ShingleFilter option to output unigrams if no shingles
    can be generated. (Chris Harris via Steven Rowe)
    

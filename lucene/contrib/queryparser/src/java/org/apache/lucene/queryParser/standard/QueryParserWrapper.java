@@ -49,6 +49,7 @@ import org.apache.lucene.queryParser.standard.config.RangeCollatorAttribute;
 import org.apache.lucene.queryParser.standard.config.StandardQueryConfigHandler;
 import org.apache.lucene.queryParser.standard.parser.StandardSyntaxParser;
 import org.apache.lucene.queryParser.standard.processors.StandardQueryNodeProcessorPipeline;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
@@ -462,8 +463,7 @@ public class QueryParserWrapper {
     throw new UnsupportedOperationException();
   }
 
-  @SuppressWarnings("unchecked")
-  protected Query getBooleanQuery(List clauses, boolean disableCoord)
+  protected Query getBooleanQuery(List<BooleanClause> clauses, boolean disableCoord)
       throws ParseException {
     throw new UnsupportedOperationException();
   }
