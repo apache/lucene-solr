@@ -83,6 +83,8 @@ public class SolrInfoMBeanTest extends LuceneTestCase
     }
     assertTrue( "there are at least 10 SolrInfoMBean that should be found in the classpath, found " + checked, checked > 10 );
   }
+  
+  static final String FOLDER = File.separator + "build" + File.separator + "solr" + File.separator + "org" + File.separator + "apache" + File.separator + "solr" + File.separator;
 
   private static List<Class> getClassesForPackage(String pckgname) throws Exception {
     ArrayList<File> directories = new ArrayList<File>();
@@ -91,11 +93,8 @@ public class SolrInfoMBeanTest extends LuceneTestCase
     Enumeration<URL> resources = cld.getResources(path);
     while (resources.hasMoreElements()) {
       final File f = new File(resources.nextElement().toURI());
-      // only iterate classes from the core, not the tests
-      if (!f.toString().contains("build" + File.separator + "solr"))
-        continue;
-      // extra security :-)
-      if (f.toString().contains("tests"))
+      // only iterate classes from the core, not the tests (must be in dir "/build/solr/org"
+      if (!f.toString().contains(FOLDER))
         continue;
       directories.add(f);
     }
