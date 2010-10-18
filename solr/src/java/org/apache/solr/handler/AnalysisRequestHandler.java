@@ -227,17 +227,17 @@ public class AnalysisRequestHandler extends RequestHandlerBase {
 
   @Override
   public String getVersion() {
-    return "$Revision:$";
+    return "$Revision$";
   }
 
   @Override
   public String getSourceId() {
-    return "$Id:$";
+    return "$Id$";
   }
 
   @Override
   public String getSource() {
-    return "$URL:$";
+    return "$URL$";
   }
 
 }
