@@ -377,6 +377,13 @@ public final class ZkController {
       }
     }
     zkClient.getChildren(ZkStateReader.LIVE_NODES_ZKNODE, liveNodeWatcher);
+    try {
+      zkStateReader.updateLiveNodes();
+    } catch (IOException e) {
+      log.error("", e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
+          "", e);
+    }
   }
   
   public String getNodeName() {
