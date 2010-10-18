@@ -22,7 +22,7 @@ import org.apache.lucene.search.cache.CachedArrayCreator;
 
 /**
  * 
- * @version $Id: FieldCacheSource.java 794328 2009-07-15 17:21:04Z shalin $
+ * @version $Id$
  */
 public abstract class NumericFieldCacheSource<T extends CachedArray> extends FieldCacheSource {
   protected final CachedArrayCreator<T> creator;

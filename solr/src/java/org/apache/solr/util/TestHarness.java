@@ -65,7 +65,7 @@ import java.util.Map;
  * distribution, in order to encourage plugin writers to create unit 
  * tests for their plugins.
  *
- * @version $Id:$
+ * @version $Id$
  */
 public class TestHarness {
   protected CoreContainer container;

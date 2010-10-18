@@ -24,7 +24,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 /**
- * @version $Id:$
+ * @version $Id$
  * @see PatternReplaceFilter
  */
 public class PatternReplaceFilterFactory extends BaseTokenFilterFactory {

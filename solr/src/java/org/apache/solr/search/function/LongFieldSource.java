@@ -32,7 +32,7 @@ import java.util.Map;
  * using <code>getFloats()</code>
  * and makes those values available as other numeric types, casting as needed.
  *
- * @version $Id: FloatFieldSource.java 555343 2007-07-11 17:46:25Z hossman $
+ * @version $Id$
  */
 
 public class LongFieldSource extends NumericFieldCacheSource<LongValues> {

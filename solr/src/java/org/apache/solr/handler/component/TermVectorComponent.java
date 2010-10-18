@@ -387,7 +387,7 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
   }
 
   public String getSource() {
-    return "$URL:";
+    return "$URL$";
   }
 
   public String getDescription() {
