@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.analysis.Token;
@@ -172,6 +173,9 @@ public class Suggester extends SolrSpellChecker {
           options.onlyMorePopular, options.count);
       if (suggestions == null) {
         continue;
+      }
+      if (!options.onlyMorePopular) {
+        Collections.sort(suggestions);
       }
       for (LookupResult lr : suggestions) {
         res.add(t, lr.key, ((Number)lr.value).intValue());

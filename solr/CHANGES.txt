@@ -236,6 +236,7 @@ New Features
   after parsing the functions, instead of silently ignoring it.
   This allows expressions like q=dist(2,vector(1,2),$pt)&pt=3,4   (yonik)
 
+* SOLR-2157 Suggester should return alpha-sorted results when onlyMorePopular=false (ab)
 
 
 Optimizations
