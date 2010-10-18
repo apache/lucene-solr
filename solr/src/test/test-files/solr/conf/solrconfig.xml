@@ -340,13 +340,13 @@
       <str name="name">default</str>
       <str name="field">lowerfilt</str>
       <str name="spellcheckIndexDir">spellchecker1</str>
-      <str name="buildOnCommit">true</str>
+      <str name="buildOnCommit">false</str>
     </lst>
     <lst name="spellchecker">
 			<str name="name">multipleFields</str>
 			<str name="field">lowerfilt1and2</str>
 			<str name="spellcheckIndexDir">spellcheckerMultipleFields</str>
-			<str name="buildOnCommit">true</str>
+			<str name="buildOnCommit">false</str>
    	</lst>
     <!-- Example of using different distance measure -->
     <lst name="spellchecker">
@@ -375,14 +375,14 @@
         3. A fully qualified class name
        -->
       <str name="comparatorClass">freq</str>
-      <str name="buildOnCommit">true</str>
+      <str name="buildOnCommit">false</str>
     </lst>
     <lst name="spellchecker">
       <str name="name">fqcn</str>
       <str name="field">lowerfilt</str>
       <str name="spellcheckIndexDir">spellcheckerFQCN</str>
       <str name="comparatorClass">org.apache.solr.spelling.SampleComparator</str>
-      <str name="buildOnCommit">true</str>
+      <str name="buildOnCommit">false</str>
     </lst>
     <lst name="spellchecker">
       <str name="name">perDict</str>
