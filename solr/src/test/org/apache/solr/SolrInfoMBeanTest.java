@@ -41,7 +41,6 @@ public class SolrInfoMBeanTest extends LuceneTestCase
    * Gets a list of everything we can find in the classpath and makes sure it has
    * a name, description, etc...
    */
-  @Ignore("meddles with unrelated tests")
   public void testCallMBeanInfo() throws Exception {
     List<Class> classes = new ArrayList<Class>();
     classes.addAll(getClassesForPackage(StandardRequestHandler.class.getPackage().getName()));
@@ -91,7 +90,14 @@ public class SolrInfoMBeanTest extends LuceneTestCase
     String path = pckgname.replace('.', '/');
     Enumeration<URL> resources = cld.getResources(path);
     while (resources.hasMoreElements()) {
-      directories.add(new File(resources.nextElement().toURI()));
+      final File f = new File(resources.nextElement().toURI());
+      // only iterate classes from the core, not the tests
+      if (!f.toString().contains("build" + File.separator + "solr"))
+        continue;
+      // extra security :-)
+      if (f.toString().contains("tests"))
+        continue;
+      directories.add(f);
     }
       
     ArrayList<Class> classes = new ArrayList<Class>();
@@ -100,12 +106,6 @@ public class SolrInfoMBeanTest extends LuceneTestCase
         String[] files = directory.list();
         for (String file : files) {
           if (file.endsWith(".class")) {
-            // FIXME: Find the static/sysprop/file leakage here.
-            // If we call Class.forName(ReplicationHandler) here, its test will later fail
-            // when run inside the same JVM (-Dtests.threadspercpu=0), so something is wrong.
-            if (file.contains("ReplicationHandler"))
-              continue;
-            
              classes.add(Class.forName(pckgname + '.' + file.substring(0, file.length() - 6)));
           }
         }
