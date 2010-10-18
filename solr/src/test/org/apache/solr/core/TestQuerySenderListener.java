@@ -19,6 +19,7 @@ package org.apache.solr.core;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.RefCounted;
 import org.apache.solr.common.params.EventParams;
 import org.apache.lucene.store.Directory;
 import org.junit.BeforeClass;
@@ -48,7 +49,8 @@ public class TestQuerySenderListener extends SolrTestCaseJ4 {
     assertTrue("Not an instance of QuerySenderListener", newSearcherListener instanceof QuerySenderListener);
     QuerySenderListener qsl = (QuerySenderListener) newSearcherListener;
 
-    SolrIndexSearcher currentSearcher = core.getSearcher().get();
+    RefCounted<SolrIndexSearcher> currentSearcherRef = core.getSearcher();
+    SolrIndexSearcher currentSearcher = currentSearcherRef.get();
     qsl.newSearcher(currentSearcher, null);//test new Searcher
     MockQuerySenderListenerReqHandler mock = (MockQuerySenderListenerReqHandler) core.getRequestHandler("mock");
     assertNotNull("Mock is null", mock);
@@ -62,6 +64,8 @@ public class TestQuerySenderListener extends SolrTestCaseJ4 {
     evt = mock.req.getParams().get(EventParams.EVENT);
     assertNotNull("Event is null", evt);
     assertTrue(evt + " is not equal to " + EventParams.NEW_SEARCHER, evt.equals(EventParams.NEW_SEARCHER) == true);
+    newSearcher.close();
+    currentSearcherRef.decref();
   }
 
 }

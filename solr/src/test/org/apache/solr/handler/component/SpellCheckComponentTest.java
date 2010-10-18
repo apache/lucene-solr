@@ -42,7 +42,7 @@ public class SpellCheckComponentTest extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void beforeClass() throws Exception {
-    initCore("solrconfig.xml","schema.xml");
+    initCore("solrconfig-spellcheckcomponent.xml","schema.xml");
     assertU(adoc("id", "0", "lowerfilt", "This is a title"));
     assertU((adoc("id", "1", "lowerfilt",
             "The quick reb fox jumped over the lazy brown dogs.")));
