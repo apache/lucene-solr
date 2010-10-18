@@ -69,7 +69,7 @@ final class BooleanScorer extends Scorer {
     }
     
     @Override
-    public final void collect(final int doc) throws IOException {
+    public void collect(final int doc) throws IOException {
       final BucketTable table = bucketTable;
       final int i = doc & BucketTable.MASK;
       Bucket bucket = table.buckets[i];
@@ -159,7 +159,7 @@ final class BooleanScorer extends Scorer {
       return new BooleanScorerCollector(mask, this);
     }
 
-    public final int size() { return SIZE; }
+    public int size() { return SIZE; }
   }
 
   static final class SubScorer {
@@ -320,14 +320,10 @@ final class BooleanScorer extends Scorer {
       more = false;
       end += BucketTable.SIZE;
       for (SubScorer sub = scorers; sub != null; sub = sub.next) {
-        Scorer scorer = sub.scorer;
-        sub.collector.setScorer(scorer);
-        int doc = scorer.docID();
-        while (doc < end) {
-          sub.collector.collect(doc);
-          doc = scorer.nextDoc();
+        int subScorerDocID = sub.scorer.docID();
+        if (subScorerDocID != NO_MORE_DOCS) {
+          more |= sub.scorer.score(sub.collector, end, subScorerDocID);
         }
-        more |= (doc != NO_MORE_DOCS);
       }
     } while (bucketTable.first != null || more);
 
