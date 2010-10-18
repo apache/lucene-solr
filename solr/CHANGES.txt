@@ -525,6 +525,8 @@ Bug Fixes
 
 * SOLR-2139: Wrong cast from string to float (Igor Rodionov via koji)
 
+* SOLR-2157 Suggester should return alpha-sorted results when onlyMorePopular=false (ab)
+
 Other Changes
 ----------------------
 
