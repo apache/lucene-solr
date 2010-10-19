@@ -158,6 +158,10 @@ API Changes
  * LUCENE-2712: FieldBoostMapAttribute in contrib/queryparser was changed from 
    a Map<CharSequence,Float> to a Map<String,Float>. Per the CharSequence javadoc,
    CharSequence is inappropriate as a map key. (Robert Muir)
+
+ * LUCENE-1937: Add more methods to manipulate QueryNodeProcessorPipeline elements.
+   QueryNodeProcessorPipeline now implements the List interface, this is useful
+   if you want to extend or modify an existing pipeline. (Adriano Crestani via Robert Muir)
     
 New features
 

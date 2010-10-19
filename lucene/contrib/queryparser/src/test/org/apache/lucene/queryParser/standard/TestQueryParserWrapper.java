@@ -139,9 +139,9 @@ public class TestQueryParserWrapper extends LuceneTestCase {
 
       QueryNodeProcessorPipeline newProcessorPipeline = new QueryNodeProcessorPipeline(
           getQueryProcessor().getQueryConfigHandler());
-      newProcessorPipeline.addProcessor(new WildcardQueryNodeProcessor());
-      newProcessorPipeline.addProcessor(new QPTestParserQueryNodeProcessor());
-      newProcessorPipeline.addProcessor(getQueryProcessor());
+      newProcessorPipeline.add(new WildcardQueryNodeProcessor());
+      newProcessorPipeline.add(new QPTestParserQueryNodeProcessor());
+      newProcessorPipeline.add(getQueryProcessor());
 
       setQueryProcessor(newProcessorPipeline);
 

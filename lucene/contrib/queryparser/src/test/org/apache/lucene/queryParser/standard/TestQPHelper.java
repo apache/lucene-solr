@@ -138,7 +138,7 @@ public class TestQPHelper extends LuceneTestCase {
   public static class QPTestParser extends StandardQueryParser {
     public QPTestParser(Analyzer a) {
       ((QueryNodeProcessorPipeline)getQueryNodeProcessor())
-          .addProcessor(new QPTestParserQueryNodeProcessor());
+          .add(new QPTestParserQueryNodeProcessor());
       this.setAnalyzer(a);
 
     }
