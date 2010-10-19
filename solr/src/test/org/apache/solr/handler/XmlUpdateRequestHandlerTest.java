@@ -16,7 +16,7 @@
  */
 package org.apache.solr.handler;
 
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import java.io.StringReader;
 import java.util.Collection;
 
@@ -24,26 +24,20 @@ import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;
 
 import org.apache.solr.common.SolrInputDocument;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-public class XmlUpdateRequestHandlerTest extends AbstractSolrTestCase 
-{
-  private XMLInputFactory inputFactory = XMLInputFactory.newInstance();
-  protected XmlUpdateRequestHandler handler;
+public class XmlUpdateRequestHandlerTest extends SolrTestCaseJ4 {
+  private static XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+  protected static XmlUpdateRequestHandler handler;
 
-@Override public String getSchemaFile() { return "schema.xml"; }
-@Override public String getSolrConfigFile() { return "solrconfig.xml"; }
-
-  @Override 
-  public void setUp() throws Exception {
-    super.setUp();
+  @BeforeClass
+  public static void beforeTests() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
     handler = new XmlUpdateRequestHandler();
   }
-  
-  @Override 
-  public void tearDown() throws Exception {
-    super.tearDown();
-  }
-  
+
+  @Test
   public void testReadDoc() throws Exception
   {
     String xml = 

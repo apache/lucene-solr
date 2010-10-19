@@ -17,9 +17,12 @@
 
 package org.apache.solr.schema;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 /**
  * This is a simple test to make sure the unique key is not required 
@@ -27,22 +30,14 @@ import org.apache.solr.util.AbstractSolrTestCase;
  * 
  * It needs its own file so it can load a special schema file
  */
-public class NotRequiredUniqueKeyTest extends AbstractSolrTestCase {
+public class NotRequiredUniqueKeyTest extends SolrTestCaseJ4 {
 
-  @Override public String getSchemaFile() { return "schema-not-required-unique-key.xml"; }
-  @Override public String getSolrConfigFile() { return "solrconfig.xml"; }
-
-  @Override 
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-  
-  @Override 
-  public void tearDown() throws Exception {
-    super.tearDown();
+  @BeforeClass
+  public static void beforeTests() throws Exception {
+    initCore("solrconfig.xml","schema-not-required-unique-key.xml");
   }
 
-  
+  @Test
   public void testSchemaLoading() 
   {
     SolrCore core = h.getCore();
