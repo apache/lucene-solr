@@ -557,6 +557,10 @@ Documentation
   Java NOI behavior when a Thread is interrupted while blocking on IO.
   (Simon Willnauer, Robert Muir)
 
+* LUCENE-2625: Add a note to IndexReader.termDocs() with additional verbage
+  that the TermEnum must be seeked since it is unpositioned.
+  (Adriano Crestani via Robert Muir)
+  
 ================== Release 2.9.3 / 3.0.2 2010-06-18 ====================
 
 Changes in backwards compatibility policy

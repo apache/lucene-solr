@@ -842,6 +842,11 @@ public abstract class IndexReader implements Cloneable,Closeable {
   }
 
   /** Returns an unpositioned {@link TermDocs} enumerator.
+   * <p>
+   * Note: the TermDocs returned is unpositioned. Before using it, ensure
+   * that you first position it with {@link TermDocs#seek(Term)} or 
+   * {@link TermDocs#seek(TermEnum)}.
+   * 
    * @throws IOException if there is a low-level IO error
    */
   public abstract TermDocs termDocs() throws IOException;
