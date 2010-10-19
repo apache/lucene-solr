@@ -232,21 +232,7 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
       searcherHolder.decref();
       searcherHolder = null;
     }
-    allocator = null;
   }
-
-  public volatile Exception allocator;
-  {
-    allocator = new RuntimeException("WhoAmI");
-    allocator.fillInStackTrace();
-  }
-  @Override
-  protected void finalize() throws Throwable {
-    if (allocator != null) {
-      SolrException.log(SolrCore.log, "MISSING CLOSE for req allocated at ", allocator);
-    }
-  }
-
 
   /** A Collection of ContentStreams passed to the request
    */
@@ -265,7 +251,5 @@ public abstract class SolrQueryRequestBase implements SolrQueryRequest {
   public String toString() {
     return this.getClass().getSimpleName() + '{' + params + '}';
   }
-
-
 
 }
