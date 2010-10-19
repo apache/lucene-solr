@@ -23,7 +23,6 @@ import java.nio.CharBuffer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.lucene.util.UnicodeUtil;
 
 /**
  * The term text of a Token.
@@ -245,7 +244,8 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
   public Object clone() {
     CharTermAttributeImpl t = (CharTermAttributeImpl)super.clone();
     // Do a deep clone
-    t.termBuffer = termBuffer.clone();
+    t.termBuffer = new char[this.termLength];
+    System.arraycopy(this.termBuffer, 0, t.termBuffer, 0, this.termLength);
     return t;
   }
   
