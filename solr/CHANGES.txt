@@ -527,6 +527,9 @@ Bug Fixes
 
 * SOLR-2157 Suggester should return alpha-sorted results when onlyMorePopular=false (ab)
 
+* SOLR-1794: Dataimport of CLOB fields fails when getCharacterStream() is 
+  defined in a superclass. (Gunnar Gauslaa Bergem via rmuir)
+  
 Other Changes
 ----------------------
 
