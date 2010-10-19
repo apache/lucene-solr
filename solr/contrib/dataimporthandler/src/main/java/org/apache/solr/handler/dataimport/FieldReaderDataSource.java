@@ -22,11 +22,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.sql.Blob;
 import java.sql.Clob;
+import java.sql.SQLException;
 import java.util.Properties;
 
 /**
@@ -83,16 +81,7 @@ public class FieldReaderDataSource extends DataSource<Reader> {
     } else if (o instanceof Blob) {
       Blob blob = (Blob) o;
       try {
-        //Most of the JDBC drivers have getBinaryStream defined as public
-        // so let us just check it
-        Method m = blob.getClass().getDeclaredMethod("getBinaryStream");
-        if (Modifier.isPublic(m.getModifiers())) {
-          return getReader(m, blob);
-        } else {
-          // force invoke
-          m.setAccessible(true);
-          return getReader(m, blob);
-        }
+        return getReader(blob);
       } catch (Exception e) {
         LOG.info("Unable to get data from BLOB");
         return null;
@@ -106,27 +95,19 @@ public class FieldReaderDataSource extends DataSource<Reader> {
 
   static Reader readCharStream(Clob clob) {
     try {
-      Method m = clob.getClass().getDeclaredMethod("getCharacterStream");
-      if (Modifier.isPublic(m.getModifiers())) {
-        return (Reader) m.invoke(clob);
-      } else {
-        // force invoke
-        m.setAccessible(true);
-        return (Reader) m.invoke(clob);
-      }
+      return clob.getCharacterStream();
     } catch (Exception e) {
       wrapAndThrow(SEVERE, e,"Unable to get reader from clob");
       return null;//unreachable
     }
   }
 
-  private Reader getReader(Method m, Blob blob)
-          throws IllegalAccessException, InvocationTargetException, UnsupportedEncodingException {
-    InputStream is = (InputStream) m.invoke(blob);
+  private Reader getReader(Blob blob)
+          throws SQLException, UnsupportedEncodingException {
     if (encoding == null) {
-      return (new InputStreamReader(is));
+      return (new InputStreamReader(blob.getBinaryStream()));
     } else {
-      return (new InputStreamReader(is, encoding));
+      return (new InputStreamReader(blob.getBinaryStream(), encoding));
     }
   }
 
