@@ -745,6 +745,9 @@ Optimizations
 * LUCENE-2098: Improve the performance of BaseCharFilter, especially for
   large documents.  (Robin Wojciki, Koji Sekiguchi, Robert Muir)
 
+* LUCENE-2556: Improve memory usage after cloning (Char)TermAttribute.
+  (Adriano Crestani via Uwe Schindler)
+
 Build
 
 * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
