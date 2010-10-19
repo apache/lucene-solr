@@ -834,7 +834,6 @@ public final class SolrCore implements SolrInfoMBean {
     addIfNotPresent(components,HighlightComponent.COMPONENT_NAME,HighlightComponent.class);
     addIfNotPresent(components,QueryComponent.COMPONENT_NAME,QueryComponent.class);
     addIfNotPresent(components,FacetComponent.COMPONENT_NAME,FacetComponent.class);
-    addIfNotPresent(components,PivotFacetComponent.COMPONENT_NAME,PivotFacetComponent.class);
     addIfNotPresent(components,MoreLikeThisComponent.COMPONENT_NAME,MoreLikeThisComponent.class);
     addIfNotPresent(components,StatsComponent.COMPONENT_NAME,StatsComponent.class);
     addIfNotPresent(components,DebugComponent.COMPONENT_NAME,DebugComponent.class);
@@ -843,6 +842,9 @@ public final class SolrCore implements SolrInfoMBean {
   private <T> void addIfNotPresent(Map<String ,T> registry, String name, Class<? extends  T> c){
     if(!registry.containsKey(name)){
       T searchComp = (T) resourceLoader.newInstance(c.getName());
+      if (searchComp instanceof NamedListInitializedPlugin){
+        ((NamedListInitializedPlugin)searchComp).init( new NamedList() );
+      }
       registry.put(name, searchComp);
       if (searchComp instanceof SolrInfoMBean){
         infoRegistry.put(((SolrInfoMBean)searchComp).getName(), (SolrInfoMBean)searchComp);

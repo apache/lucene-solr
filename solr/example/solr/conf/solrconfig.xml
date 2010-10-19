@@ -498,9 +498,6 @@
        <str name="version">2.1</str>
         -->
      </lst>
-     <arr name="last-components">
-       <str>pivot</str> <!-- not included by default -->
-     </arr>
   </requestHandler>
   
   <!-- 
@@ -668,7 +665,6 @@
     
    <searchComponent name="query"     class="org.apache.solr.handler.component.QueryComponent" />
    <searchComponent name="facet"     class="org.apache.solr.handler.component.FacetComponent" />
-   <searchComponent name="pivot"     class="org.apache.solr.handler.component.PivotFacetComponent" />
    <searchComponent name="mlt"       class="org.apache.solr.handler.component.MoreLikeThisComponent" />
    <searchComponent name="highlight" class="org.apache.solr.handler.component.HighlightComponent" />
    <searchComponent name="stats"     class="org.apache.solr.handler.component.StatsComponent" />
