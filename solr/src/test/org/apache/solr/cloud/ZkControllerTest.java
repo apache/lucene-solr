@@ -159,7 +159,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         zkClient.printLayoutToStdOut();
       }
       zkClient.close();
-      ZkController zkController = new ZkController(server.getZkAddress(), TIMEOUT, 1000,
+      ZkController zkController = new ZkController(server.getZkAddress(), TIMEOUT, TIMEOUT,
           "localhost", "8983", "/solr");
       try {
         String configName = zkController.readConfigName(COLLECTION_NAME);
