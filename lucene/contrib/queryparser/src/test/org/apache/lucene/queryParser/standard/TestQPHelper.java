@@ -76,7 +76,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
-import org.junit.runner.RunWith;
 
 /**
  * This test case is a copy of the core Lucene query parser test, it was adapted
@@ -84,7 +83,6 @@ import org.junit.runner.RunWith;
  * 
  * Tests QueryParser.
  */
-@RunWith(LuceneTestCase.LocalizedTestCaseRunner.class)
 public class TestQPHelper extends LuceneTestCase {
 
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();

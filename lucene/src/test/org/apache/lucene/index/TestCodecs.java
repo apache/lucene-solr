@@ -41,7 +41,6 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
-import org.junit.runner.RunWith;
 
 // TODO: test multiple codecs here?
 
@@ -60,7 +59,6 @@ import org.junit.runner.RunWith;
 //     goes to 1 before next one known to exist
 //   - skipTo(term)
 //   - skipTo(doc)
-@RunWith(LuceneTestCase.MultiCodecTestCaseRunner.class)
 public class TestCodecs extends LuceneTestCase {
   private static String[] fieldNames = new String[] {"one", "two", "three", "four"};
 

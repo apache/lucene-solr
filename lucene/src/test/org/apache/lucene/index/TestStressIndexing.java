@@ -22,11 +22,9 @@ import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.*;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.*;
-import org.junit.runner.RunWith;
 
 import java.io.File;
 
-@RunWith(LuceneTestCase.MultiCodecTestCaseRunner.class)
 public class TestStressIndexing extends LuceneTestCase {
   private static abstract class TimedThread extends Thread {
     volatile boolean failed;

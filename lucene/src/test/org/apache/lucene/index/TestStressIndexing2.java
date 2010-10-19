@@ -35,9 +35,7 @@ import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
-import org.junit.runner.RunWith;
 
-@RunWith(LuceneTestCase.MultiCodecTestCaseRunner.class)
 public class TestStressIndexing2 extends LuceneTestCase {
   static int maxFields=4;
   static int bigFieldSize=10;

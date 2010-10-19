@@ -19,16 +19,12 @@ package org.apache.solr.schema;
 
 import org.apache.solr.schema.DateField;
 import org.apache.solr.util.DateMathParser;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.runner.RunWith;
 
 import java.util.Date;
 import java.util.TimeZone;
 import java.util.Locale;
-import java.text.DateFormat;
 
-@RunWith(LuceneTestCase.LocalizedTestCaseRunner.class)
 public class LegacyDateFieldTest extends LuceneTestCase {
   // if and when this class is removed, make sure to refactor all
   // appropriate code to DateFieldTest

@@ -21,11 +21,9 @@ import java.io.IOException;
 import java.io.Reader;
 import java.text.Collator;
 import java.text.DateFormat;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 
@@ -72,7 +70,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
-import org.junit.runner.RunWith;
 
 /**
  * This test case is a copy of the core Lucene query parser test, it was adapted
@@ -83,7 +80,6 @@ import org.junit.runner.RunWith;
  * @deprecated this entire test case tests QueryParserWrapper which is
  *             deprecated. When QPW is gone, so will the test.
  */
-@RunWith(LuceneTestCase.LocalizedTestCaseRunner.class)
 @Deprecated
 public class TestQueryParserWrapper extends LuceneTestCase {
   
