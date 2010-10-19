@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.Reader;
 import java.text.Collator;
 import java.text.DateFormat;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -63,12 +62,10 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.runner.RunWith;
 
 /**
  * Tests QueryParser.
  */
-@RunWith(LuceneTestCase.LocalizedTestCaseRunner.class)
 public class TestQueryParser extends LuceneTestCase {
   
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();

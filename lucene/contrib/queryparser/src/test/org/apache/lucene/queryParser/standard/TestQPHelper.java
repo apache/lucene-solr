@@ -75,7 +75,6 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.runner.RunWith;
 
 /**
  * This test case is a copy of the core Lucene query parser test, it was adapted
@@ -83,7 +82,6 @@ import org.junit.runner.RunWith;
  * 
  * Tests QueryParser.
  */
-@RunWith(LuceneTestCase.LocalizedTestCaseRunner.class)
 public class TestQPHelper extends LuceneTestCase {
 
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();

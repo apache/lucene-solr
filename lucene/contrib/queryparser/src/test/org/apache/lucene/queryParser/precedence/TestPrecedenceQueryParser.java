@@ -38,7 +38,6 @@ import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -47,7 +46,6 @@ import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Collections;
 
-@RunWith(LuceneTestCase.LocalizedTestCaseRunner.class)
 public class TestPrecedenceQueryParser extends LuceneTestCase {
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 
