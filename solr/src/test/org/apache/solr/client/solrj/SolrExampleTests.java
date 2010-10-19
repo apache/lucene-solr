@@ -650,9 +650,9 @@ abstract public class SolrExampleTests extends SolrJettyTestBase
     counts = p.getPivot();
   //  p.write(System.out, 5 );
     assertEquals( 1, counts.size() );
-    assertEquals( "inStock", counts.get(0).getField() );
-    assertEquals( "true",    counts.get(0).getValue() );
-    assertEquals(  2,       counts.get(0).getCount() );
+    assertEquals( "inStock",    counts.get(0).getField() );
+    assertEquals( Boolean.TRUE, counts.get(0).getValue() );
+    assertEquals(  2,           counts.get(0).getCount() );
   }
   
   public static SolrInputDocument makeTestDoc( Object ... kvp )

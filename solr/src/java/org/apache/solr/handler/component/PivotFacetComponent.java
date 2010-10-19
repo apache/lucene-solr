@@ -30,6 +30,10 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.document.Field.Index;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.Term;
 
 import java.io.IOException;
@@ -116,30 +120,30 @@ public class PivotFacetComponent extends SearchComponent
   {
     SolrIndexSearcher searcher = rb.req.getSearcher();
     // TODO: optimize to avoid converting to an external string and then having to convert back to internal below
-    FieldType ftype = null;
+    FieldType ftype = searcher.getSchema().getField(field).getType();
+    
+    // Required to translate back to an object
+    Field f = new Field( field, "X", Store.YES, Index.ANALYZED );
 
- //   SimpleFacets sf = getFacetImplementation(rb.req, docs, rb.req.getParams());
     String nextField = fnames.poll();
 
     List<NamedList<Object>> values = new ArrayList<NamedList<Object>>( superFacets.size() );
     for (Map.Entry<String, Integer> kv : superFacets) {
       // Only sub-facet if parent facet has positive count - still may not be any values for the sub-field though
-      if (kv.getValue() > minMatch ) {  
+      if (kv.getValue() > minMatch ) {
+        String internal = ftype.toInternal( kv.getKey() );
+        f.setValue( internal );
+        
         SimpleOrderedMap<Object> pivot = new SimpleOrderedMap<Object>();
         pivot.add( "field", field );
-        pivot.add( "value", kv.getKey() );
+        pivot.add( "value", ftype.toObject( f ) );
         pivot.add( "count", kv.getValue() );
         
         if( subField == null ) {
           values.add( pivot );
         }
         else {
-          String s = kv.getKey();
-          if( ftype == null ) {
-            ftype = searcher.getSchema().getField(field).getType();
-          }
-          
-          Query query = new TermQuery(new Term(field, ftype.toInternal(s)));
+          Query query = new TermQuery(new Term(field, internal));
           DocSet subset = searcher.getDocSet(query, docs);
           SimpleFacets sf = getFacetImplementation(rb.req, subset, rb.req.getParams());
           
