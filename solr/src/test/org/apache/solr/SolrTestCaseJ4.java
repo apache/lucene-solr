@@ -30,6 +30,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestHarness;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -44,6 +45,7 @@ import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -64,6 +66,10 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   public static void afterClassSolrTestCase() throws Exception {
     deleteCore();
     resetExceptionIgnores();
+    for (Map.Entry<SolrIndexSearcher,Throwable> entry : SolrIndexSearcher.openSearchers.entrySet()) {
+      log.error("ERROR SEARCHER="+entry.getKey());
+      SolrException.log(log, "SEARCHER ALLOCED AT ", entry.getValue());
+    }
   }
 
   @Override
@@ -238,6 +244,10 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
               ("standard",0,20,"version","2.2");
     }
     log.info("####initCore end");
+
+    RefCounted<SolrIndexSearcher> holder = h.getCore().getSearcher();
+    log.info("START SEARCHER REFCOUNT=" + (holder.getRefcount()-1) + " instance="+holder.get());
+    holder.decref();
   }
 
   /** Subclasses that override setUp can optionally call this method
@@ -264,7 +274,13 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
    */
   public static void deleteCore() throws Exception {
     log.info("###deleteCore" );
-    if (h != null) { h.close(); }
+    RefCounted<SolrIndexSearcher> holder = null;
+
+    if (h != null) {
+      holder = h.getCore().getSearcher();
+      log.info("END SEARCHER REFCOUNT=" + (holder.getRefcount()-1) + " instance="+holder.get());
+      h.close();
+    }
     if (dataDir != null) {
       String skip = System.getProperty("solr.test.leavedatadir");
       if (null != skip && 0 != skip.trim().length()) {
@@ -285,6 +301,12 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     h = null;
     lrf = null;
     configString = schemaString = null;
+
+
+    if (holder != null) {
+      log.info("FINAL SEARCHER REFCOUNT=" + (holder.getRefcount()-1) + " instance="+holder.get());
+      holder.decref();
+    }
 
     endTrackingSearchers();
   }

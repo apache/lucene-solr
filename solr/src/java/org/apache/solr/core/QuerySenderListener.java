@@ -45,7 +45,7 @@ class QuerySenderListener extends AbstractSolrEventListener {
         NamedList params = addEventParms(currentSearcher, nlst);
         LocalSolrQueryRequest req = new LocalSolrQueryRequest(core,params) {
           @Override public SolrIndexSearcher getSearcher() { return searcher; }
-          @Override public void close() { }
+          // @Override public void close() { }
         };
 
         SolrQueryResponse rsp = new SolrQueryResponse();

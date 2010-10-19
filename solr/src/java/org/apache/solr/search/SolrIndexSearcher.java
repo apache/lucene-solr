@@ -37,6 +37,7 @@ import org.apache.lucene.util.OpenBitSet;
 import java.io.IOException;
 import java.net.URL;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.solr.search.function.ValueSource;
@@ -56,6 +57,8 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
   // These should *only* be used for debugging or monitoring purposes
   public static final AtomicLong numOpens = new AtomicLong();
   public static final AtomicLong numCloses = new AtomicLong();
+
+  public static Map<SolrIndexSearcher, Throwable> openSearchers = new ConcurrentHashMap<SolrIndexSearcher, Throwable>();
 
 
   private static Logger log = LoggerFactory.getLogger(SolrIndexSearcher.class);
@@ -138,6 +141,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
 
   public SolrIndexSearcher(SolrCore core, IndexSchema schema, String name, IndexReader r, boolean closeReader, boolean enableCache) {
     super(wrap(r));
+openSearchers.put(this, new RuntimeException("SearcherAlloc").fillInStackTrace());
     this.reader = (SolrIndexReader)super.getIndexReader();
     this.core = core;
     this.schema = schema;
@@ -228,6 +232,7 @@ public class SolrIndexSearcher extends IndexSearcher implements SolrInfoMBean {
    * In particular, the underlying reader and any cache's in use are closed.
    */
   public void close() throws IOException {
+    openSearchers.remove(this);
     if (cachingEnabled) {
       StringBuilder sb = new StringBuilder();
       sb.append("Closing ").append(name);

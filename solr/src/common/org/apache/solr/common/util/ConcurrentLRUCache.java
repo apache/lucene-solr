@@ -59,6 +59,8 @@ public class ConcurrentLRUCache<K,V> {
   public ConcurrentLRUCache(int upperWaterMark, final int lowerWaterMark, int acceptableWatermark,
                             int initialSize, boolean runCleanupThread, boolean runNewThreadForCleanup,
                             EvictionListener<K,V> evictionListener) {
+log.info("new ConcurrentLRUCache: " + this);
+
     if (upperWaterMark < 1) throw new IllegalArgumentException("upperWaterMark must be > 0");
     if (lowerWaterMark >= upperWaterMark)
       throw new IllegalArgumentException("lowerWaterMark must be  < upperWaterMark");
@@ -500,8 +502,9 @@ public class ConcurrentLRUCache<K,V> {
     }
   }
 
- private boolean isDestroyed =  false;
+ private volatile boolean isDestroyed =  false;
   public void destroy() {
+    log.info("destroying " + this);
     try {
       if(cleanupThread != null){
         cleanupThread.stopThread();
@@ -607,7 +610,7 @@ public class ConcurrentLRUCache<K,V> {
   protected void finalize() throws Throwable {
     try {
       if(!isDestroyed){
-        log.error("ConcurrentLRUCache was not destroyed prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!!");
+        log.error("ConcurrentLRUCache was not destroyed prior to finalize(), indicates a bug -- POSSIBLE RESOURCE LEAK!!! - " + this);
         destroy();
       }
     } finally {
