@@ -504,6 +504,7 @@
   -->
   <requestHandler name="/browse" class="solr.SearchHandler">
      <lst name="defaults">
+       <str name="echoParams">explicit</str>
 
        <!-- VelocityResponseWriter settings -->
        <str name="wt">velocity</str>
