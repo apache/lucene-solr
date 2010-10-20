@@ -685,6 +685,19 @@ public final class SolrCore implements SolrInfoMBean {
       return;
     }
     log.info(logid+" CLOSING SolrCore " + this);
+
+
+    if( closeHooks != null ) {
+       for( CloseHook hook : closeHooks ) {
+         try {
+           hook.close( this );
+         } catch (Throwable e) {
+           SolrException.log(log, e);           
+         }
+      }
+    }
+
+
     try {
       infoRegistry.clear();
     } catch (Exception e) {
@@ -696,20 +709,27 @@ public final class SolrCore implements SolrInfoMBean {
       SolrException.log(log,e);
     }
     try {
-      closeSearcher();
+      searcherExecutor.shutdown();
+      if (!searcherExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+        log.error("Timeout waiting for searchExecutor to terminate");
+      }
     } catch (Exception e) {
       SolrException.log(log,e);
     }
     try {
-      searcherExecutor.shutdown();
+      // Since we waited for the searcherExecutor to shut down,
+      // there should be no more searchers warming in the background
+      // that we need to take care of.
+      //
+      // For the case that a searcher was registered *before* warming
+      // then the searchExecutor will throw an exception when getSearcher()
+      // tries to use it, and the exception handling code should close it.
+      closeSearcher();
     } catch (Exception e) {
       SolrException.log(log,e);
     }
-    if( closeHooks != null ) {
-       for( CloseHook hook : closeHooks ) {
-         hook.close( this );
-      }
-    }
+
+
   }
 
   /** Current core usage count. */
@@ -1274,6 +1294,18 @@ public final class SolrCore implements SolrInfoMBean {
 
         _searcher = newSearcherHolder;
         SolrIndexSearcher newSearcher = newSearcherHolder.get();
+
+        /***
+        // a searcher may have been warming asynchronously while the core was being closed.
+        // if this happens, just close the searcher.
+        if (isClosed()) {
+          // NOTE: this should not happen now - see close() for details.
+          // *BUT* if we left it enabled, this could still happen before
+          // close() stopped the executor - so disable this test for now.
+          log.error("Ignoring searcher register on closed core:" + newSearcher);
+          _searcher.decref();
+        }
+        ***/
 
         newSearcher.register(); // register subitems (caches)
         log.info(logid+"Registered new searcher " + newSearcher);
