@@ -248,6 +248,11 @@ New features
 
  * LUCENE-2624: Add Analyzers for Armenian, Basque, and Catalan, from snowball.
    (Robert Muir)
+   
+ * LUCENE-1938: PrecedenceQueryParser is now implemented with the flexible QP framework.
+   This means that you can also add this functionality to your own QP pipeline by using
+   BooleanModifiersQueryNodeProcessor, for example instead of GroupQueryNodeProcessor.
+   (Adriano Crestani via Robert Muir)
 
 Build
 

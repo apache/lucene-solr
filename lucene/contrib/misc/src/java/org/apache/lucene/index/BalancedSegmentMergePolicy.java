@@ -103,31 +103,6 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
     }
   }
   
-  private boolean isOptimized(SegmentInfos infos, IndexWriter writer, int maxNumSegments, Set<SegmentInfo> segmentsToOptimize) throws IOException {
-    final int numSegments = infos.size();
-    int numToOptimize = 0;
-    SegmentInfo optimizeInfo = null;
-    for(int i=0;i<numSegments && numToOptimize <= maxNumSegments;i++) {
-      final SegmentInfo info = infos.info(i);
-      if (segmentsToOptimize.contains(info)) {
-        numToOptimize++;
-        optimizeInfo = info;
-      }
-    }
-
-    return numToOptimize <= maxNumSegments &&
-      (numToOptimize != 1 || isOptimized(writer, optimizeInfo));
-  }
-  
-  private boolean isOptimized(IndexWriter writer, SegmentInfo info)
-    throws IOException {
-    assert writer != null;
-    return !info.hasDeletions() &&
-      !info.hasSeparateNorms() &&
-      info.dir == writer.getDirectory() &&
-      info.getUseCompoundFile() == getUseCompoundFile();
-  }
-
   @Override
   public MergeSpecification findMergesForOptimize(SegmentInfos infos, int maxNumSegments, Set<SegmentInfo> segmentsToOptimize) throws IOException {
     
@@ -135,7 +110,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
 
     MergeSpecification spec = null;
 
-    if (!isOptimized(infos, writer.get(), maxNumSegments, segmentsToOptimize)) {
+    if (!isOptimized(infos, maxNumSegments, segmentsToOptimize)) {
 
       // Find the newest (rightmost) segment that needs to
       // be optimized (other segments may have been flushed
@@ -158,7 +133,7 @@ public class BalancedSegmentMergePolicy extends LogByteSizeMergePolicy {
           // Since we must optimize down to 1 segment, the
           // choice is simple:
           boolean useCompoundFile = getUseCompoundFile();
-          if (last > 1 || !isOptimized(writer.get(), infos.info(0))) {
+          if (last > 1 || !isOptimized(infos.info(0))) {
 
             spec = new MergeSpecification();
             spec.add(new OneMerge(infos.range(0, last), useCompoundFile));
