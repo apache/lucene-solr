@@ -397,6 +397,10 @@ Changes in runtime behavior
   test lock just before the real lock is acquired.  (Surinder Pal
   Singh Bindra via Mike McCandless)
 
+* LUCENE-2701: maxMergeMB and maxMergeDocs constraints set on LogMergePolicy now
+  affect optimize() as well (as opposed to only regular merges). This means that
+  you can run optimize() and too large segments won't be merged. (Shai Erera)
+
 API Changes
 
 * LUCENE-2076: Rename FSDirectory.getFile -> getDirectory.  (George
