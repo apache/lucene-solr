@@ -529,6 +529,8 @@ Bug Fixes
 
 * SOLR-1794: Dataimport of CLOB fields fails when getCharacterStream() is 
   defined in a superclass. (Gunnar Gauslaa Bergem via rmuir)
+
+* SOLR-2173 Suggester should always rebuild Lookup data if Lookup.load fails. (ab)
   
 Other Changes
 ----------------------

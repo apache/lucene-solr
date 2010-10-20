@@ -129,20 +129,10 @@ public class Suggester extends SolrSpellChecker {
       if (lookup.load(storeDir)) {
         return;  // loaded ok
       }
+      LOG.debug("load failed, need to build Lookup again");
     }
-    // dictionary based on the current index may need refreshing
-    if (dictionary instanceof HighFrequencyDictionary) {
-      reader = reader.reopen();
-      dictionary = new HighFrequencyDictionary(reader, field, threshold);
-      try {
-        lookup.build(dictionary);
-        if (storeDir != null) {
-          lookup.store(storeDir);
-        }
-      } catch (Exception e) {
-        throw new IOException(e);
-      }
-    }
+    // loading was unsuccessful - build it again
+    build(core, searcher);
   }
 
   public void add(String query, int numHits) {
