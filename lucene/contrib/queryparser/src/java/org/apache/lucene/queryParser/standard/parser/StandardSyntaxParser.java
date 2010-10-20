@@ -378,7 +378,7 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
   boolean regexp = false;
   QueryNode q =null;
   ParametricQueryNode qLower, qUpper;
-  float defaultMinSimilarity = 0.5f;
+  float defaultMinSimilarity = org.apache.lucene.search.FuzzyQuery.defaultMinSimilarity;
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case TERM:
     case REGEXPTERM:

@@ -64,11 +64,8 @@ Improves on FuzzyQuery by rewarding all fuzzy variants of a term with the same I
 <!-- Controls the level of similarity required for fuzzy variants where 1 is identical and 0.5 is that the variant contains 
 	half of the original's characters in the same order. Lower values produce more results but may take longer to execute due to
 	additional IO required to read matching document ids-->
-<!ATTLIST Field minSimilarity CDATA "0.5">
+<!ATTLIST Field minSimilarity CDATA "2.0">
 <!-- Controls the minimum number of characters at the start of fuzzy variant words that must exactly match the original.
-	A value of zero will require no minimum and the search software will effectively scan ALL terms from a to z looking for variations.
-	This can incur high CPU overhead and a prefix length of just "1" will reduce this overhead to 1/26th of the original cost (assuming
-	an even distribution of letters used from the alphabet).
  -->
 <!ATTLIST Field prefixLength CDATA "1">
 <!-- fieldName must be defined here or is taken from the most immediate parent XML element that defines a "fieldName" attribute -->	

@@ -100,7 +100,7 @@ public class TestMultiFieldQueryParserWrapper extends LuceneTestCase {
     assertEquals("((b:one t:one)^2.0) (b:two t:two)", q.toString());
 
     q = mfqp.parse("one~ two");
-    assertEquals("(b:one~0.5 t:one~0.5) (b:two t:two)", q.toString());
+    assertEquals("(b:one~2.0 t:one~2.0) (b:two t:two)", q.toString());
 
     q = mfqp.parse("one~0.8 two^2");
     assertEquals("(b:one~0.8 t:one~0.8) ((b:two t:two)^2.0)", q.toString());
@@ -314,7 +314,7 @@ public class TestMultiFieldQueryParserWrapper extends LuceneTestCase {
     q = parser.parse("bla*");
     assertEquals("f1:bla* f2:bla* f3:bla*", q.toString());
     q = parser.parse("bla~");
-    assertEquals("f1:bla~0.5 f2:bla~0.5 f3:bla~0.5", q.toString());
+    assertEquals("f1:bla~2.0 f2:bla~2.0 f3:bla~2.0", q.toString());
     q = parser.parse("[a TO c]");
     assertEquals("f1:[a TO c] f2:[a TO c] f3:[a TO c]", q.toString());
   }
