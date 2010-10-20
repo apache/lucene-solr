@@ -39,21 +39,24 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     Directory dir = new RAMDirectory();
 
     // Prepare an index w/ several small segments and a large one.
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
     // prevent any merges from happening.
     conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
     IndexWriter writer = new IndexWriter(dir, conf);
     final int numSegments = 15;
     for (int i = 0; i < numSegments; i++) {
-      int numDocs = i == 7 ? 10 : 1;
+      int numDocs = i == 7 ? 30 : 1;
       addDocs(writer, numDocs);
     }
-    
     writer.close();
-
-    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    
+    SegmentInfos sis = new SegmentInfos();
+    sis.read(dir);
+    double min = sis.info(0).sizeInBytes();
+    
+    conf = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
     LogByteSizeMergePolicy lmp = new LogByteSizeMergePolicy();
-    lmp.setMaxMergeMB(200.0 / (1 << 20)); // ~100 bytes tops
+    lmp.setMaxMergeMB((min + 1) / (1 << 20));
     conf.setMergePolicy(lmp);
     
     writer = new IndexWriter(dir, conf);
@@ -61,7 +64,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     writer.close();
 
     // Should only be 3 segments in the index, because one of them exceeds the size limit
-    SegmentInfos sis = new SegmentInfos();
+    sis = new SegmentInfos();
     sis.read(dir);
     assertEquals(3, sis.size());
   }
