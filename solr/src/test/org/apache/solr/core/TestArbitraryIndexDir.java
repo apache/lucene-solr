@@ -48,15 +48,16 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
 
   public void setUp() throws Exception {
     super.setUp();
+
     dataDir = new File(TEMP_DIR,
         getClass().getName() + "-" + System.currentTimeMillis() + System.getProperty("file.separator") + "solr"
         + System.getProperty("file.separator") + "data");
     dataDir.mkdirs();
 
-    solrConfig = h.createConfig(getSolrConfigFile());
+    solrConfig = h.createConfig("solrconfig.xml");
     h = new TestHarness( dataDir.getAbsolutePath(),
         solrConfig,
-        getSchemaFile());
+        "schema12.xml");
     lrf = h.getRequestFactory
     ("standard",0,20,"version","2.2");
   }
@@ -68,12 +69,12 @@ public class TestArbitraryIndexDir extends AbstractSolrTestCase{
 
   @Override
   public String getSchemaFile() {
-    return "schema12.xml";
+    return null;
   }
 
   @Override
   public String getSolrConfigFile() {
-    return "solrconfig.xml";
+    return null;  // prevent superclass from creating it's own TestHarness
   }
 
   @Test

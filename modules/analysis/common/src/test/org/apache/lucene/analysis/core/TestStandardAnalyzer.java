@@ -394,7 +394,7 @@ public class TestStandardAnalyzer extends BaseTokenStreamTestCase {
   }
 
   public void testUnicodeWordBreaks() throws Exception {
-    WordBreakTestUnicode_5_2_0 wordBreakTest = new WordBreakTestUnicode_5_2_0();
+    WordBreakTestUnicode_6_0_0 wordBreakTest = new WordBreakTestUnicode_6_0_0();
     wordBreakTest.test(a);
   }
 }

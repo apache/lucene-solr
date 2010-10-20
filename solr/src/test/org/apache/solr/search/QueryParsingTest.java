@@ -146,6 +146,7 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     sort = QueryParsing.parseSort("", req);
     assertNull(sort);
 
+    req.close();
   }
 
   @Test
@@ -194,6 +195,7 @@ public class QueryParsingTest extends SolrTestCaseJ4 {
     } catch (SolrException e) {
     }
 
+    req.close();
   }
 
 }

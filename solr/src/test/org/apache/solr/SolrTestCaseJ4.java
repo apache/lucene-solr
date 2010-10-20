@@ -27,7 +27,9 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.util.TestHarness;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -85,12 +87,33 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
   /** Call initCore in @BeforeClass to instantiate a solr core in your test class.
    * deleteCore will be called for you via SolrTestCaseJ4 @AfterClass */
   public static void initCore(String config, String schema, String solrHome) throws Exception {
+    startTrackingSearchers();
     configString = config;
     schemaString = schema;
     if (solrHome != null) {
       System.setProperty("solr.solr.home", solrHome);
     }
     initCore();
+  }
+
+
+  static long numOpens;
+  static long numCloses;
+  protected static void startTrackingSearchers() {
+    numOpens = SolrIndexSearcher.numOpens.get();
+    numCloses = SolrIndexSearcher.numCloses.get();
+  }
+
+  protected static void endTrackingSearchers() {
+     long endNumOpens = SolrIndexSearcher.numOpens.get();
+     long endNumCloses = SolrIndexSearcher.numCloses.get();
+
+     if (endNumOpens-numOpens != endNumCloses-numCloses) {
+       String msg = "ERROR: SolrIndexSearcher opens=" + (endNumOpens-numOpens) + " closes=" + (endNumCloses-numCloses);
+       log.error(msg);
+       // TODO: make this fail if we manage to clean up
+       // fail(msg);
+     }
   }
 
   /** Causes an exception matching the regex pattern to not be logged. */
@@ -196,8 +219,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     if (factoryProp == null) {
       System.setProperty("solr.directoryFactory","solr.RAMDirectoryFactory");
     }
-
-    createTempDir();
+    if (dataDir == null) {
+      createTempDir();
+    }
 
     // other  methods like starting a jetty instance need these too
     System.setProperty("solr.test.sys.prop1", "propone");
@@ -260,7 +284,9 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     solrConfig = null;
     h = null;
     lrf = null;
-    configString = schemaString = null;    
+    configString = schemaString = null;
+
+    endTrackingSearchers();
   }
 
 
@@ -328,14 +354,18 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
       String results = h.validateXPath(response, tests);
 
       if (null != results) {
-        fail(m + "query failed XPath: " + results +
-             "\n xml response was: " + response +
-             "\n request was: " + req.getParamString());
+        String msg = "REQUEST FAILED: xpath=" + results
+            + "\n\txml response was: " + response
+            + "\n\trequest was:" + req.getParamString();
+
+        log.error(msg);
+        throw new RuntimeException(msg);
       }
 
     } catch (XPathExpressionException e1) {
       throw new RuntimeException("XPath is invalid", e1);
     } catch (Exception e2) {
+      SolrException.log(log,"REQUEST FAILED: " + req.getParamString(), e2);
       throw new RuntimeException("Exception during query", e2);
     }
   }
@@ -524,6 +554,14 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     return d;
   }
 
+  public static ModifiableSolrParams params(String... params) {
+    ModifiableSolrParams msp = new ModifiableSolrParams();
+    for (int i=0; i<params.length; i+=2) {
+      msp.add(params[i], params[i+1]);
+    }
+    return msp;
+  }
+
   /**
    * Generates a SolrQueryRequest using the LocalRequestFactory
    * @see #lrf
@@ -546,6 +584,17 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
     }
 
     return lrf.makeRequest(allParams);
+  }
+
+  /**
+   * Generates a SolrQueryRequest
+   */
+  public static SolrQueryRequest req(SolrParams params, String... moreParams) {
+    ModifiableSolrParams mp = new ModifiableSolrParams(params);
+    for (int i=0; i<moreParams.length; i+=2) {
+      mp.add(moreParams[i], moreParams[i+1]);
+    }
+    return new LocalSolrQueryRequest(h.getCore(), mp);
   }
 
   /** Neccessary to make method signatures un-ambiguous */

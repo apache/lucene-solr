@@ -19,32 +19,32 @@ package org.apache.solr.spelling;
 import org.apache.lucene.analysis.Token;
 
 public class SpellCheckCorrection {
-	private Token original;
-	private String correction;
-	private int numberOfOccurences;
+  private Token original;
+  private String correction;
+  private int numberOfOccurences;
 
-	public Token getOriginal() {
-		return original;
-	}
+  public Token getOriginal() {
+    return original;
+  }
 
-	public void setOriginal(Token original) {
-		this.original = original;
-	}
+  public void setOriginal(Token original) {
+    this.original = original;
+  }
 
-	public String getCorrection() {
-		return correction;
-	}
+  public String getCorrection() {
+    return correction;
+  }
 
-	public void setCorrection(String correction) {
-		this.correction = correction;
-	}
+  public void setCorrection(String correction) {
+    this.correction = correction;
+  }
 
-	public int getNumberOfOccurences() {
-		return numberOfOccurences;
-	}
+  public int getNumberOfOccurences() {
+    return numberOfOccurences;
+  }
 
-	public void setNumberOfOccurences(int numberOfOccurences) {
-		this.numberOfOccurences = numberOfOccurences;
-	}
+  public void setNumberOfOccurences(int numberOfOccurences) {
+    this.numberOfOccurences = numberOfOccurences;
+  }
 
 }

@@ -733,8 +733,6 @@ public class CheckIndex {
             throw new RuntimeException("termCount mismatch " + termCount + " vs " + (status.termCount - termCountStart));
           }
 
-          termCount = status.termCount;
-
           int seekCount = (int) Math.min(10000L, termCount);
           if (seekCount > 0) {
             BytesRef[] seekTerms = new BytesRef[seekCount];

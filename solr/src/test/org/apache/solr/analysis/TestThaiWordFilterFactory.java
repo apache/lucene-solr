@@ -24,7 +24,6 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.WhitespaceTokenizer;
 import org.apache.lucene.analysis.th.ThaiWordFilter;
-import org.junit.Assume;
 
 /**
  * Simple tests to ensure the Thai word filter factory is working.
@@ -34,7 +33,7 @@ public class TestThaiWordFilterFactory extends BaseTokenTestCase {
    * Ensure the filter actually decomposes text.
    */
   public void testWordBreak() throws Exception {
-    Assume.assumeTrue(ThaiWordFilter.DBBI_AVAILABLE);
+    assumeTrue("JRE does not support Thai dictionary-based BreakIterator", ThaiWordFilter.DBBI_AVAILABLE);
     Reader reader = new StringReader("การที่ได้ต้องแสดงว่างานดี");
     Tokenizer tokenizer = new WhitespaceTokenizer(DEFAULT_VERSION, reader);
     ThaiWordFilterFactory factory = new ThaiWordFilterFactory();

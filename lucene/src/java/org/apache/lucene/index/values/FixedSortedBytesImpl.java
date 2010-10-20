@@ -106,7 +106,7 @@ class FixedSortedBytesImpl {
       // first dump bytes data, recording address as we go
       for(int i=0;i<count;i++) {
         final int e = sortedEntries[i];
-        final BytesRef bytes = hash.get(e);
+        final BytesRef bytes = hash.get(e, new BytesRef());
         assert bytes.length == size;
         datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
         address[e] = 1+i;

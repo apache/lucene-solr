@@ -383,11 +383,11 @@ public class TermVectorComponent extends SearchComponent implements SolrCoreAwar
   }
 
   public String getSourceId() {
-    return "$Id:$";
+    return "$Id$";
   }
 
   public String getSource() {
-    return "$Revision:$";
+    return "$URL$";
   }
 
   public String getDescription() {

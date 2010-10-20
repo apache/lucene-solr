@@ -30,6 +30,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
@@ -387,7 +388,10 @@ public class DirectSpellChecker {
   private Collection<ScoreTerm> suggestSimilar(Term term, int numSug, 
       IndexReader ir, int docfreq, int editDistance, float accuracy) throws IOException {
     
-    FuzzyTermsEnum e = new FuzzyTermsEnum(ir, term, editDistance, Math.max(minPrefix, editDistance-1));
+    AttributeSource atts = new AttributeSource();
+    MultiTermQuery.MaxNonCompetitiveBoostAttribute maxBoostAtt =
+      atts.addAttribute(MultiTermQuery.MaxNonCompetitiveBoostAttribute.class);
+    FuzzyTermsEnum e = new FuzzyTermsEnum(ir, atts, term, editDistance, Math.max(minPrefix, editDistance-1));
     final PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<ScoreTerm>();
     
     BytesRef queryTerm = new BytesRef(term.text());
@@ -435,7 +439,7 @@ public class DirectSpellChecker {
       stQueue.offer(st);
       // possibly drop entries from queue
       st = (stQueue.size() > numSug) ? stQueue.poll() : new ScoreTerm();
-      boostAtt.setMaxNonCompetitiveBoost((stQueue.size() >= numSug) ? stQueue.peek().boost : Float.NEGATIVE_INFINITY);
+      maxBoostAtt.setMaxNonCompetitiveBoost((stQueue.size() >= numSug) ? stQueue.peek().boost : Float.NEGATIVE_INFINITY);
     }
       
     return stQueue;

@@ -498,9 +498,6 @@
        <str name="version">2.1</str>
         -->
      </lst>
-     <arr name="last-components">
-       <str>pivot</str> <!-- not included by default -->
-     </arr>
   </requestHandler>
   
   <!-- 
@@ -527,7 +524,23 @@
        <str name="facet">on</str>
        <str name="facet.field">cat</str>
        <str name="facet.field">manu_exact</str>
+       <str name="facet.query">ipod</str>
+       <str name="facet.query">GB</str>
        <str name="facet.mincount">1</str>
+       <str name="facet.pivot">cat,inStock</str>
+       <str name="facet.range">price</str>
+       <int name="facet.range.start">0</int>
+       <int name="facet.range.end">600</int>
+       <int name="facet.range.gap">50</int>
+       <str name="facet.range.other">after</str>
+       <str name="facet.date">manufacturedate_dt</str>
+       <str name="facet.date.start">NOW/YEAR-10YEARS</str>
+       <str name="facet.date.end">NOW</str>
+       <str name="facet.mincount">1</str>
+       <str name="facet.date.gap">+1YEAR</str>
+       <str name="facet.date.other">before</str>
+       <str name="facet.date.other">after</str>
+
 
        <!-- Highlighting defaults -->
        <str name="hl">on</str>
@@ -668,7 +681,6 @@
     
    <searchComponent name="query"     class="org.apache.solr.handler.component.QueryComponent" />
    <searchComponent name="facet"     class="org.apache.solr.handler.component.FacetComponent" />
-   <searchComponent name="pivot"     class="org.apache.solr.handler.component.PivotFacetComponent" />
    <searchComponent name="mlt"       class="org.apache.solr.handler.component.MoreLikeThisComponent" />
    <searchComponent name="highlight" class="org.apache.solr.handler.component.HighlightComponent" />
    <searchComponent name="stats"     class="org.apache.solr.handler.component.StatsComponent" />

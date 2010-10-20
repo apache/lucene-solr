@@ -10,3 +10,10 @@
       </ul>
     #end
   #end
+#parse('facet_queries.vm')
+#parse('facet_ranges.vm')
+#parse('facet_dates.vm')
+#parse('facet_pivot.vm')
+
+
+

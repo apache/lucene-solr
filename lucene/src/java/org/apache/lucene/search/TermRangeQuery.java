@@ -25,6 +25,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.AttributeSource;
 
 /**
  * A Query that matches documents within an range of terms.
@@ -130,7 +131,7 @@ public class TermRangeQuery extends MultiTermQuery {
   public Collator getCollator() { return collator; }
   
   @Override
-  protected TermsEnum getTermsEnum(IndexReader reader) throws IOException {
+  protected TermsEnum getTermsEnum(IndexReader reader, AttributeSource atts) throws IOException {
     if (collator == null && lowerTerm != null && upperTerm != null && lowerTerm.compareTo(upperTerm) > 0) {
       return TermsEnum.EMPTY;
     }

@@ -73,7 +73,7 @@ import java.util.regex.Pattern;
  * inspecting the keySet of <code>CALENDAR_UNITS</code>.
  * </p>
  *
- * @version $Id:$
+ * @version $Id$
  */
 public class DateMathParser  {
 

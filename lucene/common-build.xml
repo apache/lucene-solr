@@ -470,7 +470,7 @@
 	      <sysproperty key="lucene.version" value="${dev.version}"/>
               
               <sysproperty key="testmethod" value="${testmethod}"/>
-              <sysproperty key="jetty.insecurerandom" value="1"/>
+              <sysproperty key="jetty.testMode" value="1"/>
 	    	
 	      <formatter type="xml"/>
 	      <formatter classname="${junit.details.formatter}" usefile="false"/>

@@ -26,6 +26,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.extraction.ExtractingParams;
 import org.apache.solr.handler.extraction.ExtractingRequestHandler;
 import org.apache.solr.handler.extraction.ExtractingDocumentLoader;
+
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -34,6 +35,7 @@ import static org.junit.Assert.*;
 
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Locale;
 import java.io.File;
 
 
@@ -56,6 +58,9 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testExtraction() throws Exception {
+    // broken for turkish: https://issues.apache.org/jira/browse/SOLR-2088
+    String defLang = Locale.getDefault().getLanguage();
+    assumeFalse("Known bugs under Turkish locale: https://issues.apache.org/jira/browse/SOLR-2088", defLang.equals("tr") || defLang.equals("az"));
     ExtractingRequestHandler handler = (ExtractingRequestHandler) h.getCore().getRequestHandler("/update/extract");
     assertTrue("handler is null and it shouldn't be", handler != null);
     loadLocal("solr-word.pdf", "fmap.created", "extractedDate", "fmap.producer", "extractedProducer",
@@ -355,13 +360,16 @@ public class ExtractingRequestHandlerTest extends SolrTestCaseJ4 {
 
   SolrQueryResponse loadLocal(String filename, String... args) throws Exception {
     LocalSolrQueryRequest req = (LocalSolrQueryRequest) req(args);
-
-    // TODO: stop using locally defined streams once stream.file and
-    // stream.body work everywhere
-    List<ContentStream> cs = new ArrayList<ContentStream>();
-    cs.add(new ContentStreamBase.FileStream(new File(filename)));
-    req.setContentStreams(cs);
-    return h.queryAndResponse("/update/extract", req);
+    try {
+      // TODO: stop using locally defined streams once stream.file and
+      // stream.body work everywhere
+      List<ContentStream> cs = new ArrayList<ContentStream>();
+      cs.add(new ContentStreamBase.FileStream(new File(filename)));
+      req.setContentStreams(cs);
+      return h.queryAndResponse("/update/extract", req);
+    } finally {
+      req.close();
+    }
   }
 
 

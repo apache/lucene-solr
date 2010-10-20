@@ -312,3 +312,15 @@ LUCENE-1458, LUCENE-2111: Flexible Indexing
     - o.a.l.analysis.ReusableAnalyzerBase -> o.a.l.analysis.util.ReusableAnalyzerBase
     - o.a.l.analysis.StopwordAnalyzerBase -> o.a.l.analysis.util.StopwordAnalyzerBase
     - o.a.l.analysis.WordListLoader -> o.a.l.analysis.util.WordListLoader
+
+* LUCENE-2691: The near-real-time API has moved from IndexWriter to
+  IndexReader.  Instead of IndexWriter.getReader(), call
+  IndexReader.open(IndexWriter) or IndexReader.reopen(IndexWriter).
+
+* LUCENE-2690: MultiTermQuery boolean rewrites per segment.
+  Also MultiTermQuery.getTermsEnum() now takes an AttributeSource. FuzzyTermsEnum
+  is both consumer and producer of attributes: MTQ.BoostAttribute is
+  added to the FuzzyTermsEnum and MTQ's rewrite mode consumes it.
+  The other way round MTQ.TopTermsBooleanQueryRewrite supplys a
+  global AttributeSource to each segments TermsEnum. The TermsEnum is consumer
+  and gets the current minimum competitive boosts (MTQ.MaxNonCompetitiveBoostAttribute).

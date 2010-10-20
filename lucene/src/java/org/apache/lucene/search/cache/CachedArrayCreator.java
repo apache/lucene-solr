@@ -79,7 +79,7 @@ public abstract class CachedArrayCreator<T extends CachedArray> extends EntryCre
   {
     int parserHashCode = parser.hashCode();
     if( value.parserHashCode != null && value.parserHashCode != parserHashCode ) {
-      throw new RuntimeException( "Parser changed in subsequet call.  "
+      throw new RuntimeException( "Parser changed in subsequent call.  "
           +value.parserHashCode+" != "+parserHashCode + " :: " + parser );
     }
     value.parserHashCode = parserHashCode;
@@ -91,7 +91,7 @@ public abstract class CachedArrayCreator<T extends CachedArray> extends EntryCre
     if( parser != null && value.parserHashCode != null ) {
       int parserHashCode = parser.hashCode();
       if(  value.parserHashCode != parserHashCode ) {
-        throw new RuntimeException( "Parser changed in subsequet call.  "
+        throw new RuntimeException( "Parser changed in subsequent call.  "
             +value.parserHashCode+" != "+parserHashCode + " :: " + parser );
       }
     }
@@ -100,7 +100,7 @@ public abstract class CachedArrayCreator<T extends CachedArray> extends EntryCre
   /**
    * Utility function to help check what bits are valid
    */
-  protected Bits checkMatchAllBits( Bits deleted, OpenBitSet valid, int maxDocs, int numDocs )
+  protected Bits checkMatchAllBits( Bits deleted, OpenBitSet valid, int numDocs, int maxDocs )
   {
     if( numDocs != maxDocs ) {
       if( hasOption( OPTION_CACHE_BITS ) ) {

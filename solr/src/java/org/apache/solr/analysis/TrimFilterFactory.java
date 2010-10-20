@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.miscellaneous.TrimFilter;
 import org.apache.solr.common.SolrException;
 
 /**
- * @version $Id:$
+ * @version $Id$
  * @see TrimFilter
  */
 public class TrimFilterFactory extends BaseTokenFilterFactory {

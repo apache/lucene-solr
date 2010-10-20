@@ -43,7 +43,6 @@ import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
-import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -51,7 +50,6 @@ import java.text.DateFormat;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 
-@RunWith(LuceneTestCase.LocalizedTestCaseRunner.class)
 public class TestPrecedenceQueryParser extends LuceneTestCase {
   public static Analyzer qpAnalyzer = new QPTestAnalyzer();
 

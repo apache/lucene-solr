@@ -291,6 +291,10 @@ New Features
 
 * SOLR-2010: Added ability to verify that spell checking collations have
    actual results in the index.  (James Dyer via gsingers)
+   
+* SOLR-1873: SolrCloud - added shared/central config and core/shard managment via zookeeper,
+  built-in load balancing, and infrastructure for future SolrCloud work. 
+  (yonik, Mark Miller)
 
 Optimizations
 ----------------------
@@ -519,6 +523,13 @@ Bug Fixes
 
 * SOLR-2148: Highlighter doesn't support q.alt. (koji)
 
+* SOLR-2139: Wrong cast from string to float (Igor Rodionov via koji)
+
+* SOLR-2157 Suggester should return alpha-sorted results when onlyMorePopular=false (ab)
+
+* SOLR-1794: Dataimport of CLOB fields fails when getCharacterStream() is 
+  defined in a superclass. (Gunnar Gauslaa Bergem via rmuir)
+  
 Other Changes
 ----------------------
 

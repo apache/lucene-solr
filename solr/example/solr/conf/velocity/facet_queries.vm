@@ -1,0 +1,2 @@
+#set($field = $response.response.facet_counts.facet_queries)
+#display_facet_query($field, "Facet Queries", "")

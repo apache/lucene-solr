@@ -94,7 +94,8 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
     add_doc("id", "47", 
             "range_facet_f", "28.62", 
             "trait_s", "Pig",
-            "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!");   
+            "text", "line up and fly directly at the enemy death cannons, clogging them with wreckage!",
+            "zerolen_s","");   
   }
 
   @Test
@@ -300,6 +301,16 @@ public class SimpleFacetsTest extends SolrTestCaseJ4 {
             ,"//int[2][@name='Obnoxious'][.='1']"
             ,"//int[3][@name='Tool'][.='2']"
             );
+
+
+     assertQ(req("q", "id:[42 TO 47]"
+                ,"facet", "true"
+                ,"facet.method","fc"
+                ,"fq", "id:[42 TO 45]"
+                ,"facet.field", "zerolen_s"
+                )
+            ,"*[count(//lst[@name='zerolen_s']/int)=1]"
+     );
   }
 
   public static void indexDateFacets() {

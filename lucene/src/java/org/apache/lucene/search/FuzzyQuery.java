@@ -20,6 +20,7 @@ package org.apache.lucene.search;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ToStringUtils;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
@@ -135,11 +136,11 @@ public class FuzzyQuery extends MultiTermQuery {
   }
 
   @Override
-  protected TermsEnum getTermsEnum(IndexReader reader) throws IOException {
+  protected TermsEnum getTermsEnum(IndexReader reader, AttributeSource atts) throws IOException {
     if (!termLongEnough) {  // can only match if it's exact
       return new SingleTermsEnum(reader, term);
     }
-    return new FuzzyTermsEnum(reader, getTerm(), minimumSimilarity, prefixLength);
+    return new FuzzyTermsEnum(reader, atts, getTerm(), minimumSimilarity, prefixLength);
   }
   
   /**

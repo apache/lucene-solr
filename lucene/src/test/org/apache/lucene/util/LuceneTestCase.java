@@ -42,11 +42,13 @@ import org.apache.lucene.search.FieldCache.CacheEntry;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.FieldCacheSanityChecker.Insanity;
+import org.junit.Assume;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestWatchman;
@@ -298,6 +300,9 @@ public abstract class LuceneTestCase extends Assert {
     }
   }
 
+  /** @deprecated: until we fix no-fork problems in solr tests */
+  private static List<String> testClassesRun = new ArrayList<String>();
+  
   @BeforeClass
   public static void beforeClassLuceneTestCaseJ4() {
     staticSeed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l1;
@@ -335,6 +340,10 @@ public abstract class LuceneTestCase extends Assert {
       System.out.println("NOTE: test params are: codec=" + codec + 
         ", locale=" + locale + 
         ", timezone=" + (timeZone == null ? "(null)" : timeZone.getID()));
+    if (testsFailed) {
+      System.err.println("NOTE: all tests run in this JVM:");
+      System.err.println(Arrays.toString(testClassesRun.toArray()));
+    }
   }
 
   private static boolean testsFailed; /* true if any tests failed */
@@ -347,8 +356,23 @@ public abstract class LuceneTestCase extends Assert {
 
     @Override
     public void failed(Throwable e, FrameworkMethod method) {
-      testsFailed = true;
-      reportAdditionalFailureInfo();
+      // org.junit.internal.AssumptionViolatedException in older releases
+      // org.junit.Assume.AssumptionViolatedException in recent ones
+      if (e.getClass().getName().endsWith("AssumptionViolatedException")) {
+        if (e.getCause() instanceof TestIgnoredException)
+          e = e.getCause();
+        System.err.print("NOTE: Assume failed in '" + method.getName() + "' (ignored):");
+        if (VERBOSE) {
+          System.err.println();
+          e.printStackTrace(System.err);
+        } else {
+          System.err.print(" ");
+          System.err.println(e.getMessage());
+        }
+      } else {
+        testsFailed = true;
+        reportAdditionalFailureInfo();
+      }
       super.failed(e, method);
     }
 
@@ -365,7 +389,7 @@ public abstract class LuceneTestCase extends Assert {
   public void setUp() throws Exception {
     seed = "random".equals(TEST_SEED) ? seedRand.nextLong() : TwoLongs.fromString(TEST_SEED).l2;
     random.setSeed(seed);
-    Assert.assertFalse("ensure your tearDown() calls super.tearDown()!!!", setup);
+    assertFalse("ensure your tearDown() calls super.tearDown()!!!", setup);
     setup = true;
     savedUncaughtExceptionHandler = Thread.getDefaultUncaughtExceptionHandler();
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
@@ -402,7 +426,7 @@ public abstract class LuceneTestCase extends Assert {
 
   @After
   public void tearDown() throws Exception {
-    Assert.assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
+    assertTrue("ensure your setUp() calls super.setUp()!!!", setup);
     setup = false;
     BooleanQuery.setMaxClauseCount(savedBoolMaxClauseCount);
     try {
@@ -506,6 +530,49 @@ public abstract class LuceneTestCase extends Assert {
   @Deprecated
   static public void assertEquals(String message, float expected, float actual) {
     assertEquals(message, Float.valueOf(expected), Float.valueOf(actual));
+  }
+  
+  // Replacement for Assume jUnit class, so we can add a message with explanation:
+  
+  private static final class TestIgnoredException extends RuntimeException {
+    TestIgnoredException(String msg) {
+      super(msg);
+    }
+    
+    TestIgnoredException(String msg, Throwable t) {
+      super(msg, t);
+    }
+    
+    @Override
+    public String getMessage() {
+      StringBuilder sb = new StringBuilder(super.getMessage());
+      if (getCause() != null)
+        sb.append(" - ").append(getCause());
+      return sb.toString();
+    }
+    
+    // only this one is called by our code, exception is not used outside this class:
+    @Override
+    public void printStackTrace(PrintStream s) {
+      if (getCause() != null) {
+        s.println(super.toString() + " - Caused by:");
+        getCause().printStackTrace(s);
+      } else {
+        super.printStackTrace(s);
+      }
+    }
+  }
+  
+  public static void assumeTrue(String msg, boolean b) {
+    Assume.assumeNoException(b ? null : new TestIgnoredException(msg));
+  }
+ 
+  public static void assumeFalse(String msg, boolean b) {
+    assumeTrue(msg, !b);
+  }
+  
+  public static void assumeNoException(String msg, Exception e) {
+    Assume.assumeNoException(e == null ? null : new TestIgnoredException(msg, e));
   }
  
   /**
@@ -751,7 +818,19 @@ public abstract class LuceneTestCase extends Assert {
   // We get here from InterceptTestCaseEvents on the 'failed' event....
   public void reportAdditionalFailureInfo() {
     System.out.println("NOTE: reproduce with: ant test -Dtestcase=" + getClass().getSimpleName() 
-        + " -Dtestmethod=" + getName() + " -Dtests.seed=" + new TwoLongs(staticSeed, seed));
+        + " -Dtestmethod=" + getName() + " -Dtests.seed=" + new TwoLongs(staticSeed, seed)
+        + reproduceWithExtraParams());
+  }
+  
+  // extra params that were overridden needed to reproduce the command
+  private String reproduceWithExtraParams() {
+    StringBuilder sb = new StringBuilder();
+    if (!TEST_CODEC.equals("random")) sb.append(" -Dtests.codec=").append(TEST_CODEC);
+    if (!TEST_LOCALE.equals("random")) sb.append(" -Dtests.locale=").append(TEST_LOCALE);
+    if (!TEST_TIMEZONE.equals("random")) sb.append(" -Dtests.timezone=").append(TEST_TIMEZONE);
+    if (!TEST_DIRECTORY.equals("random")) sb.append(" -Dtests.directory=").append(TEST_DIRECTORY);
+    if (RANDOM_MULTIPLIER > 1) sb.append(" -Dtests.multiplier=").append(RANDOM_MULTIPLIER);
+    return sb.toString();
   }
 
   // recorded seed: for beforeClass
@@ -772,8 +851,15 @@ public abstract class LuceneTestCase extends Assert {
     protected List<FrameworkMethod> computeTestMethods() {
       if (testMethods != null)
         return testMethods;
+      testClassesRun.add(getTestClass().getJavaClass().getSimpleName());
       testMethods = getTestClass().getAnnotatedMethods(Test.class);
       for (Method m : getTestClass().getJavaClass().getMethods()) {
+        // check if the current test's class has methods annotated with @Ignore
+        final Ignore ignored = m.getAnnotation(Ignore.class);
+        if (ignored != null) {
+          System.err.println("NOTE: Ignoring test method '" + m.getName() + "': " + ignored.value());
+        }
+        // add methods starting with "test"
         final int mod = m.getModifiers();
         if (m.getName().startsWith("test") &&
             m.getAnnotation(Test.class) == null &&
@@ -814,105 +900,5 @@ public abstract class LuceneTestCase extends Assert {
         throw new RuntimeException(e);
       }
     }
-  }
-  
-  /**
-   * Test runner for Lucene test classes that test Locale-sensitive behavior.
-   * <p>
-   * This class will run tests under the default Locale, but then will also run
-   * tests under all available JVM locales. This is helpful to ensure tests will
-   * not fail under a different environment.
-   * </p>
-   */
-  public static class LocalizedTestCaseRunner extends LuceneTestCaseRunner {
-    /**
-     * Before changing the default Locale, save the default Locale here so
-     * that it can be restored.
-     */
-    private final Locale defaultLocale = Locale.getDefault();
-    
-    /**
-     * The locale being used as the system default Locale
-     */
-    private Locale locale;
-    
-    private final RunListener listener = new RunListener() {
-      @Override
-      public void testFailure(Failure failure) throws Exception {
-        super.testFailure(failure);
-        String methodName = failure.getDescription().getMethodName();
-        if (locale.equals(defaultLocale))
-          System.out.println("Test failure of '" + methodName
-            + "' occurred with the default Locale " + locale);
-        else
-          System.out.println("Test failure of '" + methodName
-            + "' occurred under a different Locale " + locale);
-      }
-    };
-    
-    public LocalizedTestCaseRunner(Class<?> clazz) throws InitializationError {
-      super(clazz);
-    }
-// FIXME see LUCENE-2652
-//    @Override
-//    protected void runChild(FrameworkMethod arg0, RunNotifier arg1) {
-//      arg1.addListener(listener);
-//      locale = defaultLocale;
-//      super.runChild(arg0, arg1);
-//      
-//      for (Locale other : Locale.getAvailableLocales()) {
-//        locale = other;
-//        Locale.setDefault(locale);
-//        super.runChild(arg0, arg1);
-//      }
-//      
-//      Locale.setDefault(defaultLocale);
-//    }
-  }
-  
-  /**
-   * Test runner for Lucene test classes that run across all core codecs.
-   */
-  public static class MultiCodecTestCaseRunner extends LuceneTestCaseRunner {
-    /**
-     * Before changing the default Codec, save the default Codec here so
-     * that it can be restored.
-     */
-    private final String defaultCodec = CodecProvider.getDefaultCodec();
-    
-    /**
-     * The Codec being used as the system default
-     */
-    private String codec;
-    
-    private final RunListener listener = new RunListener() {
-      @Override
-      public void testFailure(Failure failure) throws Exception {
-        super.testFailure(failure);
-        String methodName = failure.getDescription().getMethodName();
-        System.out.println("Test failure of '" + methodName
-          + "' occurred with codec " + codec);
-      }
-    };
-    
-    public MultiCodecTestCaseRunner(Class<?> clazz) throws InitializationError {
-      super(clazz);
-    }
-    
-    @Override
-    protected void runChild(FrameworkMethod arg0, RunNotifier arg1) {
-      arg1.addListener(listener);
-      // If we're running w/ PreFlex codec we must swap in the
-      // test-only PreFlexRW codec (since core PreFlex can
-      // only read segments):
-      swapCodec(new PreFlexRWCodec());
-      for (String other : CodecProvider.CORE_CODECS) {
-        codec = other;
-        CodecProvider.setDefaultCodec(codec);
-        super.runChild(arg0, arg1);
-      }
-      CodecProvider.setDefaultCodec(defaultCodec);
-    }
-
   }
 }

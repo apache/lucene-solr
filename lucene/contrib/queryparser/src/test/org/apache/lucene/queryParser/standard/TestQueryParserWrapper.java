@@ -21,11 +21,9 @@ import java.io.IOException;
 import java.io.Reader;
 import java.text.Collator;
 import java.text.DateFormat;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 
@@ -72,7 +70,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.automaton.BasicAutomata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.RegExp;
-import org.junit.runner.RunWith;
 
 /**
  * This test case is a copy of the core Lucene query parser test, it was adapted
@@ -83,7 +80,6 @@ import org.junit.runner.RunWith;
  * @deprecated this entire test case tests QueryParserWrapper which is
  *             deprecated. When QPW is gone, so will the test.
  */
-@RunWith(LuceneTestCase.LocalizedTestCaseRunner.class)
 @Deprecated
 public class TestQueryParserWrapper extends LuceneTestCase {
   
@@ -143,9 +139,9 @@ public class TestQueryParserWrapper extends LuceneTestCase {
 
       QueryNodeProcessorPipeline newProcessorPipeline = new QueryNodeProcessorPipeline(
           getQueryProcessor().getQueryConfigHandler());
-      newProcessorPipeline.addProcessor(new WildcardQueryNodeProcessor());
-      newProcessorPipeline.addProcessor(new QPTestParserQueryNodeProcessor());
-      newProcessorPipeline.addProcessor(getQueryProcessor());
+      newProcessorPipeline.add(new WildcardQueryNodeProcessor());
+      newProcessorPipeline.add(new QPTestParserQueryNodeProcessor());
+      newProcessorPipeline.add(getQueryProcessor());
 
       setQueryProcessor(newProcessorPipeline);
 
@@ -505,12 +501,12 @@ public class TestQueryParserWrapper extends LuceneTestCase {
   public void testWildcard() throws Exception {
     assertQueryEquals("term*", null, "term*");
     assertQueryEquals("term*^2", null, "term*^2.0");
-    assertQueryEquals("term~", null, "term~0.5");
+    assertQueryEquals("term~", null, "term~2.0");
     assertQueryEquals("term~0.7", null, "term~0.7");
 
-    assertQueryEquals("term~^2", null, "term~0.5^2.0");
+    assertQueryEquals("term~^3", null, "term~2.0^3.0");
 
-    assertQueryEquals("term^2~", null, "term~0.5^2.0");
+    assertQueryEquals("term^3~", null, "term~2.0^3.0");
     assertQueryEquals("term*germ", null, "term*germ");
     assertQueryEquals("term*germ^3", null, "term*germ^3.0");
 
@@ -522,7 +518,7 @@ public class TestQueryParserWrapper extends LuceneTestCase {
     assertEquals(0.7f, fq.getMinSimilarity(), 0.1f);
     assertEquals(FuzzyQuery.defaultPrefixLength, fq.getPrefixLength());
     fq = (FuzzyQuery) getQuery("term~", null);
-    assertEquals(0.5f, fq.getMinSimilarity(), 0.1f);
+    assertEquals(2.0f, fq.getMinSimilarity(), 0.1f);
     assertEquals(FuzzyQuery.defaultPrefixLength, fq.getPrefixLength());
 
     assertParseException("term~1.1"); // value > 1, throws exception
@@ -558,9 +554,9 @@ public class TestQueryParserWrapper extends LuceneTestCase {
     assertWildcardQueryEquals("TE?M", false, "TE?M");
     assertWildcardQueryEquals("Te?m*gerM", false, "Te?m*gerM");
     // Fuzzy queries:
-    assertWildcardQueryEquals("Term~", "term~0.5");
-    assertWildcardQueryEquals("Term~", true, "term~0.5");
-    assertWildcardQueryEquals("Term~", false, "Term~0.5");
+    assertWildcardQueryEquals("Term~", "term~2.0");
+    assertWildcardQueryEquals("Term~", true, "term~2.0");
+    assertWildcardQueryEquals("Term~", false, "Term~2.0");
     // Range queries:
 
     // TODO: implement this on QueryParser
@@ -854,10 +850,10 @@ public class TestQueryParserWrapper extends LuceneTestCase {
 
     assertQueryEquals("a:b\\\\?c", a, "a:b\\?c");
 
-    assertQueryEquals("a:b\\-c~", a, "a:b-c~0.5");
-    assertQueryEquals("a:b\\+c~", a, "a:b+c~0.5");
-    assertQueryEquals("a:b\\:c~", a, "a:b:c~0.5");
-    assertQueryEquals("a:b\\\\c~", a, "a:b\\c~0.5");
+    assertQueryEquals("a:b\\-c~", a, "a:b-c~2.0");
+    assertQueryEquals("a:b\\+c~", a, "a:b+c~2.0");
+    assertQueryEquals("a:b\\:c~", a, "a:b:c~2.0");
+    assertQueryEquals("a:b\\\\c~", a, "a:b\\c~2.0");
 
     // TODO: implement Range queries on QueryParser
     assertQueryEquals("[ a\\- TO a\\+ ]", null, "[a- TO a+]");

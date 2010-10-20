@@ -435,7 +435,7 @@
       <sysproperty key="tests.multiplier" value="${tests.multiplier}"/>
       <sysproperty key="tests.iter" value="${tests.iter}"/>
       <sysproperty key="tests.seed" value="${tests.seed}"/>
-      <sysproperty key="jetty.insecurerandom" value="1"/>
+      <sysproperty key="jetty.testMode" value="1"/>
       <sysproperty key="tempDir" file="@{tempDir}/@{threadNum}"/>
       <sysproperty key="testmethod" value="${testmethod}"/>
       <!-- TODO: why is this unconditionally set to "" above? disable for now

@@ -109,7 +109,7 @@ class VarSortedBytesImpl {
         offsets[i] = offset;
         index[e] = 1 + i;
 
-        final BytesRef bytes = hash.get(e);
+        final BytesRef bytes = hash.get(e, new BytesRef());
         // TODO: we could prefix code...
         datOut.writeBytes(bytes.bytes, bytes.offset, bytes.length);
         lastOffset = offset;

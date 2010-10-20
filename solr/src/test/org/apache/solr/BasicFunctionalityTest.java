@@ -237,12 +237,12 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
       };
     handler.init(new NamedList());
     SolrQueryResponse rsp = new SolrQueryResponse();
+    SolrQueryRequest req = req();
     h.getCore().execute(handler, 
-                        new LocalSolrQueryRequest(h.getCore(),
-                                                  new NamedList()),
+                        req,
                         rsp);
     assertNotNull("should have found an exception", rsp.getException());
-                        
+    req.close();                    
   }
 
   @Test
@@ -303,11 +303,13 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     rsp.add("\"quoted\"", "\"value\"");
 
     StringWriter writer = new StringWriter(32000);
-    XMLWriter.writeResponse(writer,req("foo"),rsp);
+    SolrQueryRequest req = req("foo");
+    XMLWriter.writeResponse(writer,req,rsp);
 
     DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
     builder.parse(new ByteArrayInputStream
                   (writer.toString().getBytes("UTF-8")));
+    req.close();
   }
 
   @Test
@@ -327,6 +329,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertEquals(2, arrayParams.length);
     assertEquals("array", arrayParams[0]);
     assertEquals("value", arrayParams[1]);
+    req.close();
   }
 
   @Test
@@ -442,7 +445,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     assertEquals("SSS", p.get("ss"));
     assertEquals("XXX", p.get("xx"));
 
-    
+    req.close();
   }
 
   @Test
@@ -566,6 +569,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     // ensure field is not lazy
     assertTrue( d.getFieldable("test_hlt") instanceof Field );
     assertTrue( d.getFieldable("title") instanceof Field );
+    req.close();
   }
 
   @Test
@@ -588,6 +592,7 @@ public class BasicFunctionalityTest extends SolrTestCaseJ4 {
     // ensure field is lazy
     assertTrue( !( d.getFieldable("test_hlt") instanceof Field ) );
     assertTrue( d.getFieldable("title") instanceof Field );
+    req.close();
   } 
             
 

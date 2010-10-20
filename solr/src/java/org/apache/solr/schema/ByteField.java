@@ -30,7 +30,7 @@ import java.io.IOException;
 import java.util.Map;
 
 /**
- * @version $Id:$
+ * @version $Id$
  */
 public class ByteField extends FieldType {
   protected void init(IndexSchema schema, Map<String, String> args) {

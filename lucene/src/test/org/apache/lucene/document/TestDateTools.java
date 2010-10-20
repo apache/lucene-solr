@@ -9,7 +9,6 @@ import java.util.TimeZone;
 import java.util.Locale;
 
 import org.apache.lucene.util.LuceneTestCase;
-import org.junit.runner.RunWith;
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
@@ -27,7 +26,6 @@ import org.junit.runner.RunWith;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-@RunWith(LuceneTestCase.LocalizedTestCaseRunner.class)
 public class TestDateTools extends LuceneTestCase {
 
   public void testStringToDate() throws ParseException {

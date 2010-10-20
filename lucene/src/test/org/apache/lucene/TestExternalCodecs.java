@@ -129,6 +129,8 @@ public class TestExternalCodecs extends LuceneTestCase {
     static class RAMDoc {
       final int docID;
       final int[] positions;
+      byte[][] payloads;
+
       public RAMDoc(int docID, int freq) {
         this.docID = docID;
         positions = new int[freq];
@@ -212,10 +214,15 @@ public class TestExternalCodecs extends LuceneTestCase {
 
       @Override
       public void addPosition(int position, BytesRef payload) {
-        if (payload != null) {
-          throw new UnsupportedOperationException("can't handle payloads");
+        current.positions[posUpto] = position;
+        if (payload != null && payload.length > 0) {
+          if (current.payloads == null) {
+            current.payloads = new byte[current.positions.length][];
+          }
+          byte[] bytes = current.payloads[posUpto] = new byte[payload.length];
+          System.arraycopy(payload.bytes, payload.offset, bytes, 0, payload.length);
         }
-        current.positions[posUpto++] = position;
+        posUpto++;
       }
 
       @Override
@@ -436,12 +443,12 @@ public class TestExternalCodecs extends LuceneTestCase {
 
       @Override
       public boolean hasPayload() {
-        return false;
+        return current.payloads != null && current.payloads[posUpto-1] != null;
       }
 
       @Override
       public BytesRef getPayload() {
-        return null;
+        return new BytesRef(current.payloads[posUpto-1]);
       }
     }
 
@@ -614,7 +621,7 @@ public class TestExternalCodecs extends LuceneTestCase {
     final int NUM_DOCS = 173;
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir,
-                                    newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer()).setCodecProvider(new MyCodecs()));
+                                    newIndexWriterConfig(TEST_VERSION_CURRENT, new MockAnalyzer(MockTokenizer.WHITESPACE, true, true)).setCodecProvider(new MyCodecs()));
 
     w.setMergeFactor(3);
     Document doc = new Document();

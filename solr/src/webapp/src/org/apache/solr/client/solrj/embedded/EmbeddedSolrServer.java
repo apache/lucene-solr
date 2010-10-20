@@ -143,8 +143,9 @@ public class EmbeddedSolrServer extends SolrServer
       throw new SolrException( SolrException.ErrorCode.BAD_REQUEST, "unknown handler: "+path );
     }
 
+    SolrQueryRequest req = null;
     try {
-      SolrQueryRequest req = _parser.buildRequestFrom( core, params, request.getContentStreams() );
+      req = _parser.buildRequestFrom( core, params, request.getContentStreams() );
       req.getContext().put( "path", path );
       SolrQueryResponse rsp = new SolrQueryResponse();
       core.execute( handler, req, rsp );
@@ -216,14 +217,10 @@ public class EmbeddedSolrServer extends SolrServer
         catch (Exception ex) {
           throw new RuntimeException(ex);
         }
-        finally {
-          req.close();
-        }
       }
       
       // Now write it out
       NamedList<Object> normalized = getParsedResponse(req, rsp);
-      req.close();
       return normalized;
     }
     catch( IOException iox ) {
@@ -233,6 +230,7 @@ public class EmbeddedSolrServer extends SolrServer
       throw new SolrServerException( ex );
     }
     finally {
+      if (req != null) req.close();
       core.close();
     }
   }

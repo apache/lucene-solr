@@ -24,6 +24,7 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.ToStringUtils;
 
 /** A Query that matches documents containing terms with a specified prefix. A PrefixQuery
@@ -45,7 +46,7 @@ public class PrefixQuery extends MultiTermQuery {
   public Term getPrefix() { return prefix; }
   
   @Override  
-  protected TermsEnum getTermsEnum(IndexReader reader) throws IOException {
+  protected TermsEnum getTermsEnum(IndexReader reader, AttributeSource atts) throws IOException {
     if (prefix.bytes().length == 0) {
       // no prefix -- match all terms for this field:
       // NOTE: for now, MultiTermQuery enums terms at the

@@ -116,7 +116,7 @@
       <sysproperty key="tests.multiplier" value="${tests.multiplier}"/>
       <sysproperty key="tests.seed" value="${tests.seed}"/>
       <sysproperty key="tests.iter" value="${tests.iter}"/>
-      <sysproperty key="jetty.insecurerandom" value="1"/>
+      <sysproperty key="jetty.testMode" value="1"/>
       <sysproperty key="tempDir" file="${junit.output.dir}"/>
       <sysproperty key="testmethod" value="${testmethod}"/>
       <jvmarg line="${args}"/>

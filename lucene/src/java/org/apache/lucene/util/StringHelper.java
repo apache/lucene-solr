@@ -59,7 +59,10 @@ public abstract class StringHelper {
    * @param s1 The first string to compare
    * @param s2 The second string to compare
    * @return The first position where the two strings differ.
+   * 
+   * @deprecated This method cannot handle supplementary characters.
    */
+  @Deprecated
   public static final int stringDifference(String s1, String s2) {
     int len1 = s1.length();
     int len2 = s2.length();

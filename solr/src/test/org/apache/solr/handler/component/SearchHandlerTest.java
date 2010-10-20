@@ -20,17 +20,23 @@ package org.apache.solr.handler.component;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
 
-public class SearchHandlerTest extends AbstractSolrTestCase 
+public class SearchHandlerTest extends SolrTestCaseJ4 
 {
-  @Override public String getSchemaFile() { return "schema.xml"; }
-  @Override public String getSolrConfigFile() { return "solrconfig.xml"; }
+  @BeforeClass
+  public static void beforeTests() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
+  }
+
   
   @SuppressWarnings("unchecked")
+  @Test
   public void testInitalization()
   {
     SolrCore core = h.getCore();

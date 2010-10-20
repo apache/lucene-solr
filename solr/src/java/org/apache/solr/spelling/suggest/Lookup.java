@@ -16,7 +16,7 @@ public abstract class Lookup {
   /**
    * Result of a lookup.
    */
-  public static final class LookupResult {
+  public static final class LookupResult implements Comparable<LookupResult> {
     String key;
     float value;
     
@@ -27,6 +27,11 @@ public abstract class Lookup {
     
     public String toString() {
       return key + "/" + value;
+    }
+
+    /** Compare alphabetically. */
+    public int compareTo(LookupResult o) {
+      return this.key.compareTo(o.key);
     }
   }
   

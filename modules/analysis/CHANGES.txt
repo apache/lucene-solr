@@ -15,6 +15,9 @@ API Changes
    RFCs.  ClassicTokenizer/Analyzer retains the old StandardTokenizer/Analyzer
    behavior.  (Steven Rowe, Robert Muir, Uwe Schindler)
 
+ * LUCENE-2699: Update StandardTokenizer and UAX29Tokenizer to Unicode 6.0.0.
+   (Steven Rowe)
+   
  * LUCENE-1370: Added ShingleFilter option to output unigrams if no shingles
    can be generated. (Chris Harris via Steven Rowe)
    

@@ -40,7 +40,7 @@ public class IndexReaderFactoryTest extends AbstractSolrTestCase {
   public void testAltReaderUsed() throws Exception {
     IndexReaderFactory readerFactory = h.getCore().getIndexReaderFactory();
     assertNotNull("Factory is null", readerFactory);
-    assertTrue("readerFactory is not an instanceof " + AlternateIndexReaderTest.TestIndexReaderFactory.class, readerFactory instanceof StandardIndexReaderFactory);
+    assertTrue("readerFactory is not an instanceof " + AlternateDirectoryTest.TestIndexReaderFactory.class, readerFactory instanceof StandardIndexReaderFactory);
     assertTrue("termInfoIndexDivisor not set to 12", readerFactory.getTermInfosIndexDivisor() == 12);
 
 

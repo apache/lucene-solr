@@ -512,7 +512,8 @@ public final class SolrCore implements SolrInfoMBean {
     this.setName( name );
     resourceLoader = config.getResourceLoader();
     if (dataDir == null){
-      dataDir =  config.getDataDir();
+      // nocommit: why did solrconfig override core descriptor !?
+      if(cd.usingDefaultDataDir()) dataDir = config.getDataDir();
       if(dataDir == null) dataDir = cd.getDataDir();
     }
 
@@ -684,6 +685,19 @@ public final class SolrCore implements SolrInfoMBean {
       return;
     }
     log.info(logid+" CLOSING SolrCore " + this);
+
+
+    if( closeHooks != null ) {
+       for( CloseHook hook : closeHooks ) {
+         try {
+           hook.close( this );
+         } catch (Throwable e) {
+           SolrException.log(log, e);           
+         }
+      }
+    }
+
+
     try {
       infoRegistry.clear();
     } catch (Exception e) {
@@ -695,20 +709,27 @@ public final class SolrCore implements SolrInfoMBean {
       SolrException.log(log,e);
     }
     try {
-      closeSearcher();
+      searcherExecutor.shutdown();
+      if (!searcherExecutor.awaitTermination(60, TimeUnit.SECONDS)) {
+        log.error("Timeout waiting for searchExecutor to terminate");
+      }
     } catch (Exception e) {
       SolrException.log(log,e);
     }
     try {
-      searcherExecutor.shutdown();
+      // Since we waited for the searcherExecutor to shut down,
+      // there should be no more searchers warming in the background
+      // that we need to take care of.
+      //
+      // For the case that a searcher was registered *before* warming
+      // then the searchExecutor will throw an exception when getSearcher()
+      // tries to use it, and the exception handling code should close it.
+      closeSearcher();
     } catch (Exception e) {
       SolrException.log(log,e);
     }
-    if( closeHooks != null ) {
-       for( CloseHook hook : closeHooks ) {
-         hook.close( this );
-      }
-    }
+
+
   }
 
   /** Current core usage count. */
@@ -833,7 +854,6 @@ public final class SolrCore implements SolrInfoMBean {
     addIfNotPresent(components,HighlightComponent.COMPONENT_NAME,HighlightComponent.class);
     addIfNotPresent(components,QueryComponent.COMPONENT_NAME,QueryComponent.class);
     addIfNotPresent(components,FacetComponent.COMPONENT_NAME,FacetComponent.class);
-    addIfNotPresent(components,PivotFacetComponent.COMPONENT_NAME,PivotFacetComponent.class);
     addIfNotPresent(components,MoreLikeThisComponent.COMPONENT_NAME,MoreLikeThisComponent.class);
     addIfNotPresent(components,StatsComponent.COMPONENT_NAME,StatsComponent.class);
     addIfNotPresent(components,DebugComponent.COMPONENT_NAME,DebugComponent.class);
@@ -842,6 +862,9 @@ public final class SolrCore implements SolrInfoMBean {
   private <T> void addIfNotPresent(Map<String ,T> registry, String name, Class<? extends  T> c){
     if(!registry.containsKey(name)){
       T searchComp = (T) resourceLoader.newInstance(c.getName());
+      if (searchComp instanceof NamedListInitializedPlugin){
+        ((NamedListInitializedPlugin)searchComp).init( new NamedList() );
+      }
       registry.put(name, searchComp);
       if (searchComp instanceof SolrInfoMBean){
         infoRegistry.put(((SolrInfoMBean)searchComp).getName(), (SolrInfoMBean)searchComp);
@@ -1272,6 +1295,18 @@ public final class SolrCore implements SolrInfoMBean {
         _searcher = newSearcherHolder;
         SolrIndexSearcher newSearcher = newSearcherHolder.get();
 
+        /***
+        // a searcher may have been warming asynchronously while the core was being closed.
+        // if this happens, just close the searcher.
+        if (isClosed()) {
+          // NOTE: this should not happen now - see close() for details.
+          // *BUT* if we left it enabled, this could still happen before
+          // close() stopped the executor - so disable this test for now.
+          log.error("Ignoring searcher register on closed core:" + newSearcher);
+          _searcher.decref();
+        }
+        ***/
+
         newSearcher.register(); // register subitems (caches)
         log.info(logid+"Registered new searcher " + newSearcher);
 
@@ -1556,12 +1591,10 @@ public final class SolrCore implements SolrInfoMBean {
         
         // Hide everything...
         Set<String> hide = new HashSet<String>();
-        File configdir = new File( solrConfig.getResourceLoader().getConfigDir() ); 
-        if( configdir.exists() && configdir.isDirectory() ) {
-          for( String file : configdir.list() ) {
-            hide.add( file.toUpperCase(Locale.ENGLISH) );
-          }
-        }
+
+        for (String file : solrConfig.getResourceLoader().listConfigDir()) {
+          hide.add(file.toUpperCase(Locale.ENGLISH));
+        }    
         
         // except the "gettable" list
         StringTokenizer st = new StringTokenizer( gettable );
@@ -1588,16 +1621,7 @@ public final class SolrCore implements SolrInfoMBean {
           "solrconfig.xml uses deprecated <bool name='facet.sort'>. Please "+
           "update your config to use <string name='facet.sort'>.");
     }
-
-    if (!solrConfig.getBool("abortOnConfigurationError",true))
-      throw new SolrException(ErrorCode.SERVER_ERROR,
-                              "Setting abortOnConfigurationError==false is no longer supported");
-    if (null != solrConfig.getVal("abortOnConfigurationError", false))
-      log.warn("The abortOnConfigurationError option is no longer supported "+
-               "in solrconfig.xml.  Setting it has no effect.");
-    
-  }
-  
+  } 
 
   public CoreDescriptor getCoreDescriptor() {
     return coreDescriptor;

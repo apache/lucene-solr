@@ -209,6 +209,7 @@
           <packageset dir="contrib/benchmark/src/java"/>
           <packageset dir="contrib/db/bdb-je/src/java"/>
           <packageset dir="contrib/db/bdb/src/java"/>
+          <packageset dir="contrib/demo/src/java"/>
           <packageset dir="contrib/highlighter/src/java"/>
           <packageset dir="contrib/instantiated/src/java"/>
           <packageset dir="contrib/lucli/src/java"/>
@@ -299,7 +300,6 @@
       <tarfileset prefix="lucene-${version}" dir=".">
         <patternset refid="binary.root.dist.patterns"/>
       </tarfileset>
-      <tarfileset dir="${build.dir}" includes="build-demo.xml" fullpath="lucene-${version}/build.xml"/>
       <tarfileset prefix="lucene-${version}" dir="${build.dir}">
         <patternset refid="binary.build.dist.patterns"/>
       </tarfileset>
@@ -463,10 +463,13 @@
       <fileset dir="contrib/queryparser/src/java/org/apache/lucene/queryParser/standard/parser" includes="*.java">
         <containsregexp expression="Generated.*By.*JavaCC"/>
       </fileset>
+      <fileset dir="contrib/demo/src/java/org/apache/lucene/demo/html" includes="*.java">
+        <containsregexp expression="Generated.*By.*JavaCC"/>
+      </fileset>
     </delete>
   </target>
 
-  <target name="javacc" depends="init,javacc-check,clean-javacc,javacc-QueryParser,javacc-contrib-queryparser"/>
+  <target name="javacc" depends="init,javacc-check,clean-javacc,javacc-QueryParser,javacc-contrib-queryparser,javacc-contrib-demo"/>
 
   <target name="javacc-QueryParser" depends="init,javacc-check" if="javacc.present">
     <sequential>
@@ -491,6 +494,13 @@
       dir="contrib/queryparser"
       antfile="build.xml" 
     />
+  </target>
+
+  <target name="javacc-contrib-demo" depends="init,javacc-check" if="javacc.present">
+	<ant target="javacc"
+	  dir="contrib/demo"
+	  antfile="build.xml" 
+	/>
   </target>
 
   <macrodef name="createLevAutomaton">

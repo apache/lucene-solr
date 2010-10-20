@@ -228,7 +228,7 @@ public final class PagedBytes {
    * This only supports bytes.length <= blockSize */
   public void copy(BytesRef bytes, BytesRef out) throws IOException {
     int left = blockSize - upto;
-    if (bytes.length > left) {
+    if (bytes.length > left || currentBlock==null) {
       if (currentBlock != null) {
         blocks.add(currentBlock);
         blockEnd.add(upto);

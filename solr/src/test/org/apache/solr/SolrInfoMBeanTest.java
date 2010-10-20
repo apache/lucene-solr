@@ -24,6 +24,7 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.search.LRUCache;
+import org.junit.Ignore;
 
 import java.io.File;
 import java.net.URL;
@@ -82,6 +83,8 @@ public class SolrInfoMBeanTest extends LuceneTestCase
     }
     assertTrue( "there are at least 10 SolrInfoMBean that should be found in the classpath, found " + checked, checked > 10 );
   }
+  
+  static final String FOLDER = File.separator + "build" + File.separator + "solr" + File.separator + "org" + File.separator + "apache" + File.separator + "solr" + File.separator;
 
   private static List<Class> getClassesForPackage(String pckgname) throws Exception {
     ArrayList<File> directories = new ArrayList<File>();
@@ -89,7 +92,11 @@ public class SolrInfoMBeanTest extends LuceneTestCase
     String path = pckgname.replace('.', '/');
     Enumeration<URL> resources = cld.getResources(path);
     while (resources.hasMoreElements()) {
-      directories.add(new File(resources.nextElement().toURI()));
+      final File f = new File(resources.nextElement().toURI());
+      // only iterate classes from the core, not the tests (must be in dir "/build/solr/org"
+      if (!f.toString().contains(FOLDER))
+        continue;
+      directories.add(f);
     }
       
     ArrayList<Class> classes = new ArrayList<Class>();
@@ -98,12 +105,6 @@ public class SolrInfoMBeanTest extends LuceneTestCase
         String[] files = directory.list();
         for (String file : files) {
           if (file.endsWith(".class")) {
-            // FIXME: Find the static/sysprop/file leakage here.
-            // If we call Class.forName(ReplicationHandler) here, its test will later fail
-            // when run inside the same JVM (-Dtests.threadspercpu=0), so something is wrong.
-            if (file.contains("ReplicationHandler"))
-              continue;
-            
              classes.add(Class.forName(pckgname + '.' + file.substring(0, file.length() - 6)));
           }
         }
