@@ -76,7 +76,7 @@ public class Suggester extends SolrSpellChecker {
     LOG.info("init: " + config);
     String name = super.init(config, core);
     threshold = config.get(THRESHOLD_TOKEN_FREQUENCY) == null ? 0.0f
-            : (Float)config.get(THRESHOLD_TOKEN_FREQUENCY);
+            : Float.parseFloat(config.get(THRESHOLD_TOKEN_FREQUENCY).toString());
     sourceLocation = (String) config.get(LOCATION);
     field = (String)config.get(FIELD);
     lookupImpl = (String)config.get(LOOKUP_IMPL);
