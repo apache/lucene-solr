@@ -90,7 +90,7 @@ a {
   letter-spacing: 0.08em;
 }
 
-.query-box input {
+.query-box #q {
   margin-left: 8px;
   width: 60%;
   height: 50px;
@@ -101,6 +101,20 @@ a {
 
 .query-box {
   top: -35px;
+  position: relative;
+}
+
+.query-boost {
+  width: 20%;
+  top: 10px;
+  left: 50px;
+  position: relative;
+  font-size: 0.8em;
+}
+
+.query-box .inputs{
+  left: 180px;
+  top: -20px;
   position: relative;
 }
 
