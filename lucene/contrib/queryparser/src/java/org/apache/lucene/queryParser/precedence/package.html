@@ -16,7 +16,24 @@
  limitations under the License.
 -->
 <html>
+<head>
+   <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
 <body>
-QueryParser designed to handle operator precedence in a more sensible fashion than the default QueryParser.
+
+This package contains the Precedence Query Parser Implementation
+
+<h2>Lucene Precedence Query Parser</h2>
+
+<p>
+The Precedence Query Parser extends the Standard Query Parser and enables 
+the boolean precedence. So, the query <a AND b OR c AND d> is parsed to 
+<(+a +b) (+c +d)> instead of <+a +b +c +d>.
+</p>
+<p>
+Check {@link org.apache.lucene.queryParser.standard.StandardQueryParser} for more details about the
+supported syntax and query parser functionalities. 
+</p>
+
 </body>
 </html>

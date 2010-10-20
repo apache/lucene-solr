@@ -30,7 +30,7 @@
   <!--
     NOTE: see the README.javacc for details on how to fully regenerate the parser
   -->
-  <target name="javacc" depends="javacc-flexible,javacc-precedence,javacc-surround"/>
+  <target name="javacc" depends="javacc-flexible,javacc-surround"/>
 
   <target name="javacc-flexible" depends="javacc-check">
     <delete>
@@ -93,19 +93,6 @@ import org.apache.lucene.queryParser.core.messages.*;"
                              replace="  static private String add_escapes(String str) {"
                              flags="g"
                              byline="true"/>
-  </target>
-  
-  <property name="javacc.precedence.path" location="src/java/org/apache/lucene/queryParser/precedence"/>
-
-  <target name="javacc-precedence" depends="javacc-check" description="generate precedence query parser from jj (requires javacc 4.1)">
-    <delete>
-      <fileset dir="${javacc.precedence.path}" includes="*.java">
-        <containsregexp expression="Generated.*By.*JavaCC"/>
-      </fileset>
-    </delete>
-    <invoke-javacc target="${javacc.precedence.path}/PrecedenceQueryParser.jj"
-                   outputDir="${javacc.precedence.path}"
-    />
   </target>
 
   <target name="javacc-surround" depends="javacc-check" description="generate surround query parser from jj (requires javacc 4.1">
