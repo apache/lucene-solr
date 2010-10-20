@@ -557,7 +557,6 @@
      </lst>
      <arr name="last-components">
        <str>spellcheck</str>
-       <str>pivot</str>
      </arr>
      <!--
      <str name="url-scheme">httpx</str>
