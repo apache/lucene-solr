@@ -341,7 +341,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
     IndexWriter writer = new IndexWriter(dir, conf);
     
-    addDocs(writer, 3);
+    addDocs(writer, 5);
     
     writer.close();
   
@@ -363,7 +363,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     SegmentInfos sis = new SegmentInfos();
     sis.read(dir);
     assertEquals(1, sis.size());
-    assertTrue(sis.info(2).hasDeletions());
+    assertTrue(sis.info(0).hasDeletions());
   }
 
 }
