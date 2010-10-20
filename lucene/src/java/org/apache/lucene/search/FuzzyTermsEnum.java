@@ -22,6 +22,8 @@ import org.apache.lucene.index.DocsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.Attribute;
+import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -34,7 +36,7 @@ import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 
@@ -53,6 +55,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
     attributes().addAttribute(MultiTermQuery.BoostAttribute.class);
   
   private final MultiTermQuery.MaxNonCompetitiveBoostAttribute maxBoostAtt;
+  private final Priv.LevenshteinAutomataAttribute dfaAtt;
   
   private float bottom;
   private BytesRef bottomTerm;
@@ -67,8 +70,6 @@ public final class FuzzyTermsEnum extends TermsEnum {
   private int maxEdits;
   private final boolean raw;
 
-  private List<ByteRunAutomaton> runAutomata;
-  
   private final IndexReader reader;
   private final Term term;
   private final int termText[];
@@ -83,6 +84,9 @@ public final class FuzzyTermsEnum extends TermsEnum {
    * valid term if such a term exists. 
    * 
    * @param reader Delivers terms.
+   * @param atts {@link AttributeSource} created by the rewrite method of {@link MultiTermQuery}
+   * thats contains information about competitive boosts during rewrite. It is also used
+   * to cache DFAs between segment transitions.
    * @param term Pattern term.
    * @param minSimilarity Minimum required similarity for terms from the reader.
    * @param prefixLength Length of required common prefix. Default value is 0.
@@ -105,6 +109,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
     for (int cp, i = 0, j = 0; i < utf16.length(); i += Character.charCount(cp))
            termText[j++] = cp = utf16.codePointAt(i);
     this.termLength = termText.length;
+    this.dfaAtt = atts.addAttribute(Priv.LevenshteinAutomataAttribute.class);
 
     //The prefix could be longer than the word.
     //It's kind of silly though.  It means we must match the entire word.
@@ -134,35 +139,35 @@ public final class FuzzyTermsEnum extends TermsEnum {
    */
   private TermsEnum getAutomatonEnum(int editDistance, BytesRef lastTerm)
       throws IOException {
-    initAutomata(editDistance);
-    if (runAutomata != null && editDistance < runAutomata.size()) {
+    final List<ByteRunAutomaton> runAutomata = initAutomata(editDistance);
+    if (editDistance < runAutomata.size()) {
       return new AutomatonFuzzyTermsEnum(runAutomata.subList(0, editDistance + 1)
-          .toArray(new ByteRunAutomaton[0]), lastTerm);
+          .toArray(new ByteRunAutomaton[editDistance + 1]), lastTerm);
     } else {
       return null;
     }
   }
 
   /** initialize levenshtein DFAs up to maxDistance, if possible */
-  private void initAutomata(int maxDistance) {
-    if (runAutomata == null && 
+  private List<ByteRunAutomaton> initAutomata(int maxDistance) {
+    final List<ByteRunAutomaton> runAutomata = dfaAtt.automata();
+    if (runAutomata.size() <= maxDistance && 
         maxDistance <= LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
       LevenshteinAutomata builder = 
         new LevenshteinAutomata(UnicodeUtil.newString(termText, realPrefixLength, termText.length - realPrefixLength));
 
-      final ByteRunAutomaton[] ra = new ByteRunAutomaton[maxDistance + 1];
-      for (int i = 0; i <= maxDistance; i++) {
+      for (int i = runAutomata.size(); i <= maxDistance; i++) {
         Automaton a = builder.toAutomaton(i);
         // constant prefix
         if (realPrefixLength > 0) {
           Automaton prefix = BasicAutomata.makeString(
-              UnicodeUtil.newString(termText, 0, realPrefixLength));
+            UnicodeUtil.newString(termText, 0, realPrefixLength));
           a = BasicOperations.concatenate(prefix, a);
         }
-        ra[i] = new ByteRunAutomaton(a);
+        runAutomata.add(new ByteRunAutomaton(a));
       }
-      runAutomata = Arrays.asList(ra);
     }
+    return runAutomata;
   }
 
   /** swap in a new actual enum to proxy to */
@@ -544,5 +549,51 @@ public final class FuzzyTermsEnum extends TermsEnum {
   /** @lucene.internal */
   public float getScaleFactor() {
     return scale_factor;
+  }
+  
+  // Wrapper class to hide the attribute from outside!
+  private static final class Priv {
+  
+    /** @lucene.internal */
+    public static interface LevenshteinAutomataAttribute extends Attribute {
+      public List<ByteRunAutomaton> automata();
+    }
+    
+    /** @lucene.internal */
+    public static final class LevenshteinAutomataAttributeImpl extends AttributeImpl implements LevenshteinAutomataAttribute {
+      private final List<ByteRunAutomaton> automata = new ArrayList<ByteRunAutomaton>();
+      
+      public List<ByteRunAutomaton> automata() {
+        return automata;
+      }
+
+      @Override
+      public void clear() {
+        automata.clear();
+      }
+
+      @Override
+      public int hashCode() {
+        return automata.hashCode();
+      }
+
+      @Override
+      public boolean equals(Object other) {
+        if (this == other)
+          return true;
+        if (!(other instanceof LevenshteinAutomataAttributeImpl))
+          return false;
+        return automata.equals(((LevenshteinAutomataAttributeImpl) other).automata);
+      }
+
+      @Override
+      public void copyTo(AttributeImpl target) {
+        final List<ByteRunAutomaton> targetAutomata =
+          ((LevenshteinAutomataAttribute) target).automata();
+        targetAutomata.clear();
+        targetAutomata.addAll(automata);
+      }
+    }
+    
   }
 }
