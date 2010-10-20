@@ -238,6 +238,7 @@ New Features
 
 * SOLR-2157 Suggester should return alpha-sorted results when onlyMorePopular=false (ab)
 
+* SOLR-2173 Suggester should always rebuild Lookup data if Lookup.load fails. (ab)
 
 Optimizations
 ----------------------
