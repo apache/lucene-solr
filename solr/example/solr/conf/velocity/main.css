@@ -89,6 +89,8 @@ a {
   width: 80%;
 }
 
+
+
 .query-box, .constraints {
   padding: 5px;
   margin: 5px;
@@ -111,7 +113,7 @@ a {
 }
 
 .query-boost {
-  width: 20%;
+  
   top: 10px;
   left: 50px;
   position: relative;
@@ -145,6 +147,24 @@ a {
   margin: 5px;
   margin-left: 210px;
   margin-bottom: 15px;
+}
+
+.result-document div{
+  padding: 5px;
+}
+
+.result-title{
+  width:60%;
+}
+
+.mlt{
+  
+}
+
+.map{
+  float: right;
+  position: relative;
+  top: -25px;  
 }
 
 .result-document:nth-child(2n+1) {

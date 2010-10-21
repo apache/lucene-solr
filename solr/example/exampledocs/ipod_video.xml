@@ -32,7 +32,7 @@
   <field name="price">399.00</field>
   <field name="popularity">10</field>
   <field name="inStock">true</field>
-  <!-- San Francisco store -->
-  <field name="store">37.7752,-122.4232</field>
+  <!-- Dodge City store -->
+  <field name="store">37.7752,-100.0232</field>
   <field name="manufacturedate_dt">2005-10-12T08:00:00Z</field>
 </doc></add>

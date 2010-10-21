@@ -4,7 +4,7 @@
 #macro(url_for_solr)/solr#if($request.core.name != "")/$request.core.name#end#end
 #macro(url_for_home)#url_for_solr/browse#end
 
-#macro(q)q=$!{esc.url($params.get('q'))}#end
+#macro(q)&q=$!{esc.url($params.get('q'))}#end
 
 #macro(fqs $p)#foreach($fq in $p)#if($velocityCount>1)&#{end}fq=$esc.url($fq)#end#end
 
@@ -14,15 +14,18 @@
 
 #macro(annotate)#if($request.params.get('annotateBrowse'))&annotateBrowse=true#end#end
 
-#macro(annTitle $msg)#if($annotate == true)title="$msg"#end#end        
+#macro(annTitle $msg)#if($annotate == true)title="$msg"#end#end
 
-#macro(lens)?#q#if($request.params.getParams('fq') and $list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end#debug#if($request.params.get('bf') == 'price')&bf=price#end#annotate#end
+#macro(spatial)#if($request.params.get('sfield'))&sfield=store#end#if($request.params.get('pt'))&pt=$request.params.get('pt')#end#if($request.params.get('d'))&d=$request.params.get('d')#end#end        
+
+#macro(lensNoQ)?#if($request.params.getParams('fq') and $list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end#debug#boostPrice#annotate#spatial#end
+#macro(lens)#lensNoQ#q#end
 
 #macro(url_for_lens)#{url_for_home}#lens#end
 
 #macro(url_for_start $start)#url_for_home#lens&start=$start#end
 
-#macro(url_for_filters $p)#url_for_home?#q#if($list.size($p) > 0)&#fqs($p)#end#debug#end
+#macro(url_for_filters $p)#url_for_home?#q#boostPrice#spatial#if($list.size($p) > 0)&#fqs($p)#end#debug#end
 
 #macro(url_for_nested_facet_query $field)#url_for_home#lens&fq=$esc.url($field)#end
 

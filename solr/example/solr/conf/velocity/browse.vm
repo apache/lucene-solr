@@ -1,33 +1,9 @@
 #set($searcher=$request.searcher)
 #set($params=$request.params)
 #set($clusters = $response.response.clusters)
-#set($annotate = $request.params.get("annotateBrowse"))
-<div class="query-box">
-  <form id="query-form" action="#{url_for_home}" method="GET">
-    <div class="inputs"><span>Find: <input type="text" id="q" name="q" value="$!esc.html($params.get('q'))"/> <input type="submit"/> <input type="reset"/></span>
-    <div class="query-boost"><input type="checkbox" name="bf" #annTitle("Add the boost function &bf=price to the query") value="price" #if($request.params.get('bf') == 'price')checked="true"#end>Boost by Price</input> </div></div>
-    #if($request.params.get('debugQuery'))
-      <input type="hidden" name="debugQuery" value="true"/>
-    #end
-    #if($annotate == true)
-      <input type="hidden" name="annotateBrowse" value="true"/>
-    #end
-    #foreach($fq in $request.params.getParams('fq'))
-      <input type="hidden" name="fq" value="$esc.html($fq)"/>
-    #end
-    <div class="constraints">
-      #foreach($fq in $params.getParams('fq'))
-        #set($previous_fq_count=$velocityCount - 1)
-      &gt; <a style="{text-decoration: line-through;}" href="#url_for_filters($request.params.getParams('fq').subList(0,$previous_fq_count))">$fq</a>
-      #end
-    </div>
-     #if($request.params.get('debugQuery'))
-        <a href="#" onclick='jQuery(this).siblings("pre").toggle(); return false;'>toggle parsed query</a>
-        <pre style="display:none">$response.response.debug.parsedquery</pre>
-      #end    
-  </form>
-</div>
-
+#set($mltResults = $response.response.get("moreLikeThis"))
+#set($annotate = $params.get("annotateBrowse"))
+#parse('query.vm')
 #if($response.response.spellcheck.suggestions and $response.response.spellcheck.suggestions.size() > 0)
   Did you mean <a href="#url_for_home?q=$esc.url($response.response.spellcheck.suggestions.collation)#if($list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end#debug">$response.response.spellcheck.suggestions.collation</a>?
 #end
