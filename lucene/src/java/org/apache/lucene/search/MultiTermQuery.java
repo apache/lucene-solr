@@ -247,10 +247,9 @@ public abstract class MultiTermQuery extends Query {
 
   private abstract static class BooleanQueryRewrite extends RewriteMethod {
   
-    protected final int collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
+    protected final void collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
       final List<IndexReader> subReaders = new ArrayList<IndexReader>();
       ReaderUtil.gatherSubReaders(subReaders, reader);
-      int count = 0;
       Comparator<BytesRef> lastTermComp = null;
       
       for (IndexReader r : subReaders) {
@@ -281,15 +280,11 @@ public abstract class MultiTermQuery extends Query {
         collector.setNextEnum(termsEnum);
         BytesRef bytes;
         while ((bytes = termsEnum.next()) != null) {
-          if (collector.collect(bytes)) {
-            termsEnum.cacheCurrentTerm();
-            count++;
-          } else {
-            return count; // interrupt whole term collection, so also don't iterate other subReaders
-          }
+          termsEnum.cacheCurrentTerm();
+          if (!collector.collect(bytes))
+            return; // interrupt whole term collection, so also don't iterate other subReaders
         }
       }
-      return count;
     }
     
     protected static abstract class TermCollector {
