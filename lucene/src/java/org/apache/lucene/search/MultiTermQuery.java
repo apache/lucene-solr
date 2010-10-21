@@ -99,24 +99,17 @@ public abstract class MultiTermQuery extends Query {
 
   private abstract static class BooleanQueryRewrite extends RewriteMethod {
   
-    protected final int collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
+    protected final void collectTerms(IndexReader reader, MultiTermQuery query, TermCollector collector) throws IOException {
       final FilteredTermEnum enumerator = query.getEnum(reader);
-      int count = 0;
       try {
         do {
-          Term t = enumerator.term();
-          if (t != null) {
-            if (collector.collect(t, enumerator.difference())) {
-              count++;
-            } else {
-              break;
-            }
-          }
+          final Term t = enumerator.term();
+          if (t == null || !collector.collect(t, enumerator.difference()))
+            break;
         } while (enumerator.next());    
       } finally {
         enumerator.close();
       }
-      return count;
     }
     
     protected interface TermCollector {
@@ -130,14 +123,15 @@ public abstract class MultiTermQuery extends Query {
     @Override
     public Query rewrite(final IndexReader reader, final MultiTermQuery query) throws IOException {
       final BooleanQuery result = new BooleanQuery(true);
-      query.incTotalNumberOfTerms(collectTerms(reader, query, new TermCollector() {
+      collectTerms(reader, query, new TermCollector() {
         public boolean collect(Term t, float boost) {
           TermQuery tq = new TermQuery(t); // found a match
           tq.setBoost(query.getBoost() * boost); // set the boost
           result.add(tq, BooleanClause.Occur.SHOULD); // add to query
           return true;
         }
-      }));
+      });
+      query.incTotalNumberOfTerms(result.clauses().size());
       return result;
     }
 
