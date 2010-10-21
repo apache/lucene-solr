@@ -436,6 +436,9 @@ Bug Fixes
 
 * SOLR-1794: Dataimport of CLOB fields fails when getCharacterStream() is 
   defined in a superclass. (Gunnar Gauslaa Bergem via rmuir)
+
+* SOLR-2180: It was possible for EmbeddedSolrServer to leave searchers
+  open if a request threw an exception. (yonik)
   
 Other Changes
 ----------------------
