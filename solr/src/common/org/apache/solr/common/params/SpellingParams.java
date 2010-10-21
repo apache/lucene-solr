@@ -81,9 +81,34 @@ public interface SpellingParams {
    * Take the top suggestion for each token and create a new query from it
    */
   public static final String SPELLCHECK_COLLATE = SPELLCHECK_PREFIX + "collate";
-
+  /**
+   * <p>
+   * The maximum number of collations to return.  Default=1.  Ignored if "spellcheck.collate" is false.
+   * </p>
+   */
+  public static final String SPELLCHECK_MAX_COLLATIONS = SPELLCHECK_PREFIX + "maxCollations"; 
+  /**
+   * <p>
+   * The maximum number of collations to test by querying against the index.   
+   * When testing, the collation is substituted for the original query's "q" param.  Any "qf"s are retained.
+   * If this is set to zero, does not test for hits before returning collations (returned collations may result in zero hits).
+   * Default=0. Ignored of "spellcheck.collate" is false. 
+   * </p>
+   */
+  public static final String SPELLCHECK_MAX_COLLATION_TRIES = SPELLCHECK_PREFIX + "maxCollationTries";
+  
+  /**
+   * <p>
+   * Whether to use the Extended Results Format for collations. 
+   * Includes "before>after" pairs to easily allow clients to generate messages like "no results for PORK.  did you mean POLK?"
+   * Also indicates the # of hits each collation will return on re-query.  Default=false, which retains 1.4-compatible output.
+   * </p>
+   */
+  public static final String SPELLCHECK_COLLATE_EXTENDED_RESULTS = SPELLCHECK_PREFIX + "collateExtendedResults";
+  
   /**
    * Certain spelling implementations may allow for an accuracy setting.
    */
   public static final String SPELLCHECK_ACCURACY = SPELLCHECK_PREFIX + "accuracy";
+  
 }

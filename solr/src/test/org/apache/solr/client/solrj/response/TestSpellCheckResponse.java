@@ -20,15 +20,28 @@ import junit.framework.Assert;
 import org.apache.solr.client.solrj.SolrJettyTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.SpellCheckResponse.Collation;
+import org.apache.solr.client.solrj.response.SpellCheckResponse.Correction;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SpellingParams;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.handler.component.SpellCheckComponent;
+import org.apache.solr.request.LocalSolrQueryRequest;
+import org.apache.solr.request.SolrRequestHandler;
+import org.apache.solr.response.SolrQueryResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.List;
 
+import static org.junit.Assert.fail;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -102,5 +115,80 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
 
     // Hmmm... the API for SpellCheckResponse could be nicer:
     response.getSuggestions().get(0).getAlternatives().get(0);
+  }
+  
+  @Test
+  public void testSpellCheckCollationResponse() throws Exception {
+  	getSolrServer();
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", "0");
+    doc.setField("name", "faith hope and love");
+    server.add(doc);
+    doc = new SolrInputDocument();
+    doc.setField("id", "1");
+    doc.setField("name", "faith hope and loaves");
+    server.add(doc);
+    doc = new SolrInputDocument();
+    doc.setField("id", "2");
+    doc.setField("name", "fat hops and loaves");
+    server.add(doc);
+    doc = new SolrInputDocument();
+    doc.setField("id", "3");
+    doc.setField("name", "faith of homer");
+    server.add(doc);
+    doc = new SolrInputDocument();
+    doc.setField("id", "4");
+    doc.setField("name", "fat of homer");
+    server.add(doc);    
+    server.commit(true, true);
+     
+    //Test Backwards Compatibility
+    SolrQuery query = new SolrQuery("name:(+fauth +home +loane)");
+    query.set(CommonParams.QT, "/spell");
+    query.set("spellcheck", true);
+    query.set(SpellingParams.SPELLCHECK_BUILD, true);
+    query.set(SpellingParams.SPELLCHECK_COUNT, 10);
+    query.set(SpellingParams.SPELLCHECK_COLLATE, true);
+    QueryRequest request = new QueryRequest(query);
+    SpellCheckResponse response = request.process(server).getSpellCheckResponse();
+    response = request.process(server).getSpellCheckResponse();
+    assertTrue("name:(+faith +homer +loaves)".equals(response.getCollatedResult()));
+    
+    //Test Expanded Collation Results
+    query.set(SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, true);
+    query.set(SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, 5);
+    query.set(SpellingParams.SPELLCHECK_MAX_COLLATIONS, 2); 
+    request = new QueryRequest(query);
+    response = request.process(server).getSpellCheckResponse();
+    assertTrue("name:(+faith +hope +love)".equals(response.getCollatedResult()) || "name:(+faith +hope +loaves)".equals(response.getCollatedResult()));
+    
+    List<Collation> collations = response.getCollatedResults();
+    assertTrue(collations.size()==2);
+    for(Collation collation : collations)
+    {
+    	assertTrue("name:(+faith +hope +love)".equals(collation.getCollationQueryString()) || "name:(+faith +hope +loaves)".equals(collation.getCollationQueryString()));
+      assertTrue(collation.getNumberOfHits()==1);
+    	
+    	List<Correction> misspellingsAndCorrections = collation.getMisspellingsAndCorrections();
+    	assertTrue(misspellingsAndCorrections.size()==3);
+    	for(Correction correction : misspellingsAndCorrections)
+    	{    	
+    		if("fauth".equals(correction.getOriginal()))
+    		{
+    			assertTrue("faith".equals(correction.getCorrection()));
+    		} else if("home".equals(correction.getOriginal()))
+    		{
+    			assertTrue("hope".equals(correction.getCorrection()));
+    		} else if("loane".equals(correction.getOriginal()))
+    		{
+    			assertTrue("love".equals(correction.getCorrection()) || "loaves".equals(correction.getCorrection()));
+    		} else
+    		{
+    			fail("Original Word Should have been either fauth, home or loane.");
+    		}	    	
+    	}
+    	
+    }
+    
   }
 }

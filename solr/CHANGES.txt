@@ -240,6 +240,9 @@ New Features
 
 * SOLR-2173 Suggester should always rebuild Lookup data if Lookup.load fails. (ab)
 
+* SOLR-2010: Added ability to verify that spell checking collations have
+   actual results in the index.  (James Dyer via gsingers)
+
 Optimizations
 ----------------------
 
