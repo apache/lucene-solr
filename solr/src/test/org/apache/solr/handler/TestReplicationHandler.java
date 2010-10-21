@@ -444,6 +444,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     masterClient = createNewSolrServer(masterJetty.getLocalPort());
     copyFile(new File(SLAVE_CONFIG), new File(slave.getConfDir(), "solrconfig.xml"), masterJetty.getLocalPort());
     //start slave
+    slaveJetty.stop();
     slaveJetty = createJetty(slave);
     slaveClient = createNewSolrServer(slaveJetty.getLocalPort());
   }

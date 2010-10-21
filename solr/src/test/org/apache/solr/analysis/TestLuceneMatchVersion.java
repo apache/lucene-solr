@@ -20,6 +20,7 @@ import java.io.StringReader;
 import java.lang.reflect.Field;
 
 import org.apache.lucene.analysis.standard.StandardTokenizer;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.core.Config;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.FieldType;
@@ -27,20 +28,16 @@ import org.apache.solr.util.AbstractSolrTestCase;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.util.Version;
+import org.junit.BeforeClass;
 
 /**
  * Tests for luceneMatchVersion property for analyzers
  */
-public class TestLuceneMatchVersion extends AbstractSolrTestCase {
+public class TestLuceneMatchVersion extends SolrTestCaseJ4 {
 
-  @Override
-  public String getSchemaFile() {
-    return "schema-luceneMatchVersion.xml";
-  }
-  
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig.xml";
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema-luceneMatchVersion.xml");
   }
   
   // this must match the solrconfig.xml version for this test

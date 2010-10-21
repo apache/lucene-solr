@@ -22,19 +22,15 @@ import java.io.IOException;
 import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LogByteSizeMergePolicy;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.update.DirectUpdateHandler2;
-import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-public class TestPropInjectDefaults extends AbstractSolrTestCase {
-
-  @Override
-  public String getSchemaFile() {
-    return "schema.xml";
-  }
-
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig-propinject-indexdefault.xml";
+public class TestPropInjectDefaults extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-propinject-indexdefault.xml", "schema.xml");
   }
   
   class ExposeWriterHandler extends DirectUpdateHandler2 {
@@ -47,7 +43,8 @@ public class TestPropInjectDefaults extends AbstractSolrTestCase {
       return writer;
     }
   }
-  
+
+  @Test
   public void testMergePolicyDefaults() throws Exception {
     ExposeWriterHandler uh = new ExposeWriterHandler();
     IndexWriter writer = uh.getWriter();
@@ -56,7 +53,7 @@ public class TestPropInjectDefaults extends AbstractSolrTestCase {
     uh.close();
   }
   
-
+  @Test
   public void testPropsDefaults() throws Exception {
     ExposeWriterHandler uh = new ExposeWriterHandler();
     IndexWriter writer = uh.getWriter();
