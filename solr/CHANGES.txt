@@ -523,8 +523,6 @@ Bug Fixes
 
 * SOLR-2148: Highlighter doesn't support q.alt. (koji)
 
-* SOLR-2139: Wrong cast from string to float (Igor Rodionov via koji)
-
 * SOLR-2157 Suggester should return alpha-sorted results when onlyMorePopular=false (ab)
 
 * SOLR-1794: Dataimport of CLOB fields fails when getCharacterStream() is 
