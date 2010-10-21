@@ -49,6 +49,15 @@ public class QueryElevationComponentTest extends SolrTestCaseJ4 {
   public static void beforeClass() throws Exception {
     initCore("solrconfig-elevate.xml","schema12.xml");
   }
+
+  @Before
+  @Override
+  public void setUp() throws Exception{
+    super.setUp();
+    clearIndex();
+    assertU(commit());
+    assertU(optimize());
+  }
   
   @Test
   public void testInterface() throws Exception
