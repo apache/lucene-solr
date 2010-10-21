@@ -79,7 +79,7 @@ public class TestBasicOperations extends LuceneTestCase {
     
     singleton = BasicAutomata.makeString("\ud801\udc1c");
     expandedSingleton = singleton.cloneExpanded();
-    //assertEquals(singleton, expandedSingleton);
+    assertTrue(BasicOperations.sameLanguage(singleton, expandedSingleton));
   }
 
   public void testGetRandomAcceptedString() throws Throwable {
