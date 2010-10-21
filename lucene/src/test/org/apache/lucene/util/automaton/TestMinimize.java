@@ -45,9 +45,10 @@ public class TestMinimize extends LuceneTestCase {
       a2 = BasicOperations.complement(a2);
     
     // combine them in random ways
-    switch(random.nextInt(3)) {
+    switch(random.nextInt(4)) {
       case 0: return BasicOperations.concatenate(a1, a2);
       case 1: return BasicOperations.union(a1, a2);
+      case 2: return BasicOperations.intersection(a1, a2);
       default: return BasicOperations.minus(a1, a2);
     }
   }
