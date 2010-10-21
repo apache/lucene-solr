@@ -56,11 +56,6 @@ final public class MinimizationOperations {
     //if (a.hash_code == 0) a.hash_code = 1;
   }
   
-  private static <T> void initialize(ArrayList<T> list, int size) {
-    for (int i = 0; i < size; i++)
-      list.add(null);
-  }
-  
   /**
    * Minimizes the given automaton using Hopcroft's algorithm.
    */
@@ -73,66 +68,55 @@ final public class MinimizationOperations {
     }
     a.totalize();
 
-    int[] sigma = a.getStartPoints();
     // initialize data structures
-    ArrayList<ArrayList<LinkedList<State>>> reverse = new ArrayList<ArrayList<LinkedList<State>>>();
+    final int[] sigma = a.getStartPoints();
     final State[] states = a.getNumberedStates();
-
-    for (int q = 0; q < states.length; q++) {
-      ArrayList<LinkedList<State>> v = new ArrayList<LinkedList<State>>();
-      initialize(v, sigma.length);
-      reverse.add(v);
-    }
-    boolean[][] reverse_nonempty = new boolean[states.length][sigma.length];
-    ArrayList<LinkedList<State>> partition = new ArrayList<LinkedList<State>>();
-    initialize(partition, states.length);
-    int[] block = new int[states.length];
-    StateList[][] active = new StateList[states.length][sigma.length];
-    StateListNode[][] active2 = new StateListNode[states.length][sigma.length];
-    LinkedList<IntPair> pending = new LinkedList<IntPair>();
-    boolean[][] pending2 = new boolean[sigma.length][states.length];
-    ArrayList<State> split = new ArrayList<State>();
-    boolean[] split2 = new boolean[states.length];
-    ArrayList<Integer> refine = new ArrayList<Integer>();
-    boolean[] refine2 = new boolean[states.length];
-    ArrayList<ArrayList<State>> splitblock = new ArrayList<ArrayList<State>>();
-    initialize(splitblock, states.length);
-    for (int q = 0; q < states.length; q++) {
-      splitblock.set(q, new ArrayList<State>());
-      partition.set(q, new LinkedList<State>());
-      for (int x = 0; x < sigma.length; x++) {
-        reverse.get(q).set(x, new LinkedList<State>());
+    final int sigmaLen = sigma.length, statesLen = states.length;
+    @SuppressWarnings("unchecked") final LinkedList<State>[][] reverse =
+      (LinkedList<State>[][]) new LinkedList[statesLen][sigmaLen];
+    @SuppressWarnings("unchecked") final LinkedList<State>[] partition =
+      (LinkedList<State>[]) new LinkedList[statesLen];
+    @SuppressWarnings("unchecked") final ArrayList<State>[] splitblock =
+      (ArrayList<State>[]) new ArrayList[statesLen];
+    final int[] block = new int[statesLen];
+    final StateList[][] active = new StateList[statesLen][sigmaLen];
+    final StateListNode[][] active2 = new StateListNode[statesLen][sigmaLen];
+    final LinkedList<IntPair> pending = new LinkedList<IntPair>();
+    final boolean[][] pending2 = new boolean[sigmaLen][statesLen];
+    final ArrayList<State> split = new ArrayList<State>();
+    final boolean[] split2 = new boolean[statesLen];
+    final ArrayList<Integer> refine = new ArrayList<Integer>();
+    final boolean[] refine2 = new boolean[statesLen];
+    for (int q = 0; q < statesLen; q++) {
+      splitblock[q] = new ArrayList<State>();
+      partition[q] = new LinkedList<State>();
+      for (int x = 0; x < sigmaLen; x++) {
         active[q][x] = new StateList();
       }
     }
     // find initial partition and reverse edges
-    for (int q = 0; q < states.length; q++) {
-      State qq = states[q];
-      int j;
-      if (qq.accept) j = 0;
-      else j = 1;
-      partition.get(j).add(qq);
+    for (int q = 0; q < statesLen; q++) {
+      final State qq = states[q];
+      final int j = qq.accept ? 0 : 1;
+      partition[j].add(qq);
       block[qq.number] = j;
-      for (int x = 0; x < sigma.length; x++) {
-        int y = sigma[x];
-        State p = qq.step(y);
-        reverse.get(p.number).get(x).add(qq);
-        reverse_nonempty[p.number][x] = true;
+      for (int x = 0; x < sigmaLen; x++) {
+        final LinkedList<State>[] r =
+          reverse[qq.step(sigma[x]).number];
+        if (r[x] == null)
+          r[x] = new LinkedList<State>();
+        r[x].add(qq);
       }
     }
     // initialize active sets
     for (int j = 0; j <= 1; j++)
-      for (int x = 0; x < sigma.length; x++)
-        for (State qq : partition.get(j))
-          if (reverse_nonempty[qq.number][x]) active2[qq.number][x] = active[j][x]
-              .add(qq);
+      for (int x = 0; x < sigmaLen; x++)
+        for (State qq : partition[j])
+          if (reverse[qq.number][x] != null)
+            active2[qq.number][x] = active[j][x].add(qq);
     // initialize pending
-    for (int x = 0; x < sigma.length; x++) {
-      int a0 = active[0][x].size;
-      int a1 = active[1][x].size;
-      int j;
-      if (a0 <= a1) j = 0;
-      else j = 1;
+    for (int x = 0; x < sigmaLen; x++) {
+      final int j = (active[0][x].size <= active[1][x].size) ? 0 : 1;
       pending.add(new IntPair(j, x));
       pending2[x][j] = true;
     }
@@ -140,33 +124,36 @@ final public class MinimizationOperations {
     int k = 2;
     while (!pending.isEmpty()) {
       IntPair ip = pending.removeFirst();
-      int p = ip.n1;
-      int x = ip.n2;
+      final int p = ip.n1;
+      final int x = ip.n2;
       pending2[x][p] = false;
       // find states that need to be split off their blocks
-      for (StateListNode m = active[p][x].first; m != null; m = m.next)
-        for (State s : reverse.get(m.q.number).get(x))
+      for (StateListNode m = active[p][x].first; m != null; m = m.next) {
+        final LinkedList<State> r = reverse[m.q.number][x];
+        if (r != null) for (State s : r) {
           if (!split2[s.number]) {
             split2[s.number] = true;
             split.add(s);
-            int j = block[s.number];
-            splitblock.get(j).add(s);
+            final int j = block[s.number];
+            splitblock[j].add(s);
             if (!refine2[j]) {
               refine2[j] = true;
               refine.add(j);
             }
           }
+        }
+      }
       // refine blocks
       for (int j : refine) {
-        if (splitblock.get(j).size() < partition.get(j).size()) {
-          LinkedList<State> b1 = partition.get(j);
-          LinkedList<State> b2 = partition.get(k);
-          for (State s : splitblock.get(j)) {
+        if (splitblock[j].size() < partition[j].size()) {
+          final LinkedList<State> b1 = partition[j];
+          final LinkedList<State> b2 = partition[k];
+          for (State s : splitblock[j]) {
             b1.remove(s);
             b2.add(s);
             block[s.number] = k;
-            for (int c = 0; c < sigma.length; c++) {
-              StateListNode sn = active2[s.number][c];
+            for (int c = 0; c < sigmaLen; c++) {
+              final StateListNode sn = active2[s.number][c];
               if (sn != null && sn.sl == active[j][c]) {
                 sn.remove();
                 active2[s.number][c] = active[k][c].add(s);
@@ -174,9 +161,9 @@ final public class MinimizationOperations {
             }
           }
           // update pending
-          for (int c = 0; c < sigma.length; c++) {
-            int aj = active[j][c].size;
-            int ak = active[k][c].size;
+          for (int c = 0; c < sigmaLen; c++) {
+            final int aj = active[j][c].size;
+            final int ak = active[k][c].size;
             if (!pending2[c][j] && 0 < aj && aj <= ak) {
               pending2[c][j] = true;
               pending.add(new IntPair(j, c));
@@ -187,10 +174,10 @@ final public class MinimizationOperations {
           }
           k++;
         }
-        for (State s : splitblock.get(j))
+        for (State s : splitblock[j])
           split2[s.number] = false;
         refine2[j] = false;
-        splitblock.get(j).clear();
+        splitblock[j].clear();
       }
       split.clear();
       refine.clear();
@@ -198,9 +185,9 @@ final public class MinimizationOperations {
     // make a new state for each equivalence class, set initial state
     State[] newstates = new State[k];
     for (int n = 0; n < newstates.length; n++) {
-      State s = new State();
+      final State s = new State();
       newstates[n] = s;
-      for (State q : partition.get(n)) {
+      for (State q : partition[n]) {
         if (q == a.initial) a.initial = s;
         s.accept = q.accept;
         s.number = q.number; // select representative
@@ -209,7 +196,7 @@ final public class MinimizationOperations {
     }
     // build transitions and set acceptance
     for (int n = 0; n < newstates.length; n++) {
-      State s = newstates[n];
+      final State s = newstates[n];
       s.accept = states[s.number].accept;
       for (Transition t : states[s.number].getTransitions())
         s.addTransition(new Transition(t.min, t.max, newstates[t.to.number]));
@@ -218,9 +205,9 @@ final public class MinimizationOperations {
     a.removeDeadTransitions();
   }
   
-  static class IntPair {
+  static final class IntPair {
     
-    int n1, n2;
+    final int n1, n2;
     
     IntPair(int n1, int n2) {
       this.n1 = n1;
@@ -228,7 +215,7 @@ final public class MinimizationOperations {
     }
   }
   
-  static class StateList {
+  static final class StateList {
     
     int size;
     
@@ -239,13 +226,13 @@ final public class MinimizationOperations {
     }
   }
   
-  static class StateListNode {
+  static final class StateListNode {
     
-    State q;
+    final State q;
     
     StateListNode next, prev;
     
-    StateList sl;
+    final StateList sl;
     
     StateListNode(State q, StateList sl) {
       this.q = q;
