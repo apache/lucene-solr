@@ -433,15 +433,15 @@ public abstract class MultiTermQuery extends Query {
     
       public boolean collect(Term t, float boost) throws IOException {
         pendingTerms.add(t);
-        if (pendingTerms.size() >= termCountLimit || docVisitCount >= docCountCutoff) {
-          hasCutOff = true;
-          return false;
-        }
         // Loading the TermInfo from the terms dict here
         // should not be costly, because 1) the
         // query/filter will load the TermInfo when it
         // runs, and 2) the terms dict has a cache:
         docVisitCount += reader.docFreq(t);
+        if (pendingTerms.size() >= termCountLimit || docVisitCount >= docCountCutoff) {
+          hasCutOff = true;
+          return false;
+        }
         return true;
       }
       
