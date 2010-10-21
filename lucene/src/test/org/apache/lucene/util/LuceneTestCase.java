@@ -301,6 +301,7 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   /** @deprecated: until we fix no-fork problems in solr tests */
+  @Deprecated
   private static List<String> testClassesRun = new ArrayList<String>();
   
   @BeforeClass
