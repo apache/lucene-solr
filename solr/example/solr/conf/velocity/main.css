@@ -1,3 +1,11 @@
+#admin{
+  text-align: right;
+  vertical-align: top; 
+}
+
+#head{
+  width: 100%;
+}
 .array-field {
   border: 2px solid #474747;
   background: #FFE9D8;
@@ -73,13 +81,12 @@ a {
   background: white;
 }
 
-#logo {
-  margin: 10px;
-  border-style: none; 
-}
-
 .constraints {
   margin-top: 10px;
+}
+
+#query-form{
+  width: 80%;
 }
 
 .query-box, .constraints {
@@ -100,8 +107,7 @@ a {
 }
 
 .query-box {
-  top: -35px;
-  position: relative;
+  
 }
 
 .query-boost {
@@ -116,12 +122,12 @@ a {
   left: 180px;
   top: -20px;
   position: relative;
+  
 }
 
 #logo {
-  top: 35px;
-  position: relative;
-  margin-right: 50px;
+  margin: 10px;
+  border-style: none;
 }
 
 .pagination {

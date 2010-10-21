@@ -1,3 +1,4 @@
+
 #macro(param $key)$request.params.get($key)#end
 
 #macro(url_for_solr)/solr#if($request.core.name != "")/$request.core.name#end#end
@@ -9,9 +10,13 @@
 
 #macro(debug)#if($request.params.get('debugQuery'))&debugQuery=true#end#end
 
-#macro(boostPrice)#if($request.params.get('bf') == 'price')CHECKED#end#end        
+#macro(boostPrice)#if($request.params.get('bf') == 'price')&bf=price#end#end        
 
-#macro(lens)?#q#if($request.params.getParams('fq') and $list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end#debug#if($request.params.get('bf') == 'price')&bf=price#end#end
+#macro(annotate)#if($request.params.get('annotateBrowse'))&annotateBrowse=true#end#end
+
+#macro(annTitle $msg)#if($annotate == true)title="$msg"#end#end        
+
+#macro(lens)?#q#if($request.params.getParams('fq') and $list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end#debug#if($request.params.get('bf') == 'price')&bf=price#end#annotate#end
 
 #macro(url_for_lens)#{url_for_home}#lens#end
 
