@@ -431,8 +431,6 @@ Bug Fixes
 
 * SOLR-2148: Highlighter doesn't support q.alt. (koji)
 
-* SOLR-2139: Wrong cast from string to float (Igor Rodionov via koji)
-
 * SOLR-1794: Dataimport of CLOB fields fails when getCharacterStream() is 
   defined in a superclass. (Gunnar Gauslaa Bergem via rmuir)
   
