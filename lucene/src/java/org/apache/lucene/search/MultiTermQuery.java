@@ -759,12 +759,12 @@ public abstract class MultiTermQuery extends Query {
         
       @Override
       public boolean collect(BytesRef bytes) throws IOException {
+        pendingTerms.add(bytes);
+        docVisitCount += termsEnum.docFreq();
         if (pendingTerms.size() >= termCountLimit || docVisitCount >= docCountCutoff) {
           hasCutOff = true;
           return false;
         }
-        pendingTerms.add(bytes);
-        docVisitCount += termsEnum.docFreq();
         return true;
       }
       
