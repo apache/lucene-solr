@@ -111,8 +111,7 @@ public abstract class SolrTestCaseJ4 extends LuceneTestCase {
      if (endNumOpens-numOpens != endNumCloses-numCloses) {
        String msg = "ERROR: SolrIndexSearcher opens=" + (endNumOpens-numOpens) + " closes=" + (endNumCloses-numCloses);
        log.error(msg);
-       // TODO: make this fail if we manage to clean up
-       // fail(msg);
+       fail(msg);
      }
   }
 
