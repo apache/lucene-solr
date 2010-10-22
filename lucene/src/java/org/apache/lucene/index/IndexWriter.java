@@ -3662,8 +3662,9 @@ public class IndexWriter implements Closeable {
           // This merge (and, generally, any change to the
           // segments) may now enable new merges, so we call
           // merge policy & update pending merges.
-          if (success && !merge.isAborted() && !closed && !closing)
+          if (success && !merge.isAborted() && (merge.optimize || (!closed && !closing))) {
             updatePendingMerges(merge.maxNumSegmentsOptimize, merge.optimize);
+          }
         }
       }
     } catch (OutOfMemoryError oom) {
