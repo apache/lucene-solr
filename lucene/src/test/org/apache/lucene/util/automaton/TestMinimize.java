@@ -21,35 +21,32 @@ import org.apache.lucene.util.LuceneTestCase;
 
 /** 
  * This test builds some randomish NFA/DFA and minimizes them.
- * the minimal and non-minimal are compared to ensure they are the same.
  */
 public class TestMinimize extends LuceneTestCase {
+  /** the minimal and non-minimal are compared to ensure they are the same. */
   public void test() {
-    int num = 10000 * RANDOM_MULTIPLIER;
+    int num = 2000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      Automaton a = randomishAutomaton();
+      Automaton a = AutomatonTestUtil.randomAutomaton(random);
       Automaton b = a.clone();
       MinimizationOperations.minimize(b);
       assertTrue(BasicOperations.sameLanguage(a, b));
     }
   }
   
-  private Automaton randomishAutomaton() {
-    // get two random Automata from regexps
-    Automaton a1 = AutomatonTestUtil.randomRegexp(random).toAutomaton();
-    if (random.nextBoolean())
-      a1 = BasicOperations.complement(a1);
-    
-    Automaton a2 = AutomatonTestUtil.randomRegexp(random).toAutomaton();
-    if (random.nextBoolean()) 
-      a2 = BasicOperations.complement(a2);
-    
-    // combine them in random ways
-    switch(random.nextInt(4)) {
-      case 0: return BasicOperations.concatenate(a1, a2);
-      case 1: return BasicOperations.union(a1, a2);
-      case 2: return BasicOperations.intersection(a1, a2);
-      default: return BasicOperations.minus(a1, a2);
+  /** compare minimized against minimized with a slower, simple impl.
+   * we check not only that they are the same, but that #states/#transitions
+   * are the same. */
+  public void testAgainstBrzozowski() {
+    int num = 2000 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < num; i++) {
+      Automaton a = AutomatonTestUtil.randomAutomaton(random);
+      AutomatonTestUtil.minimizeSimple(a);
+      Automaton b = a.clone();
+      MinimizationOperations.minimize(b);
+      assertTrue(BasicOperations.sameLanguage(a, b));
+      assertEquals(a.getNumberOfStates(), b.getNumberOfStates());
+      assertEquals(a.getNumberOfTransitions(), b.getNumberOfTransitions());
     }
   }
 }
