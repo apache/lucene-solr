@@ -87,7 +87,7 @@ public class CoreContainer
   private String zkHost;
 
   {
-    log.info("New CoreContainer: solrHome=" + solrHome + " instance="+System.identityHashCode(this));
+    log.info("New CoreContainer " + System.identityHashCode(this));
   }
 
   public CoreContainer() {
