@@ -269,7 +269,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
    * @exception ParseException
    */
   @Override
-  protected Query getRangeQuery(String field, String part1, String part2, boolean inclusive)
+  protected Query getRangeQuery(String field, String part1, String part2, boolean startInclusive, boolean endInclusive)
       throws ParseException {
     // get Analyzer from superclass and tokenize the terms
     TokenStream source = getAnalyzer().tokenStream(field, new StringReader(part1));
@@ -316,7 +316,7 @@ public class AnalyzingQueryParser extends org.apache.lucene.queryParser.QueryPar
       throw new ParseException("Cannot build RangeQuery with analyzer " + getAnalyzer().getClass()
           + " - tokens were added to part2");
     }
-    return super.getRangeQuery(field, part1, part2, inclusive);
+    return super.getRangeQuery(field, part1, part2, startInclusive, endInclusive);
   }
 
 }

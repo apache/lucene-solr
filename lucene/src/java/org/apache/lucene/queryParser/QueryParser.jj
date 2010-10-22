@@ -173,7 +173,7 @@ PARSER_END(QueryParser)
 | <#_QUOTED_CHAR: ( ~[ "\"", "\\" ] | <_ESCAPED_CHAR> ) >
 }
 
-<DEFAULT, RangeIn, RangeEx> SKIP : {
+<DEFAULT, Range> SKIP : {
   < <_WHITESPACE>>
 }
 
@@ -194,26 +194,20 @@ PARSER_END(QueryParser)
 | <PREFIXTERM:  ("*") | ( <_TERM_START_CHAR> (<_TERM_CHAR>)* "*" ) >
 | <WILDTERM:  (<_TERM_START_CHAR> | [ "*", "?" ]) (<_TERM_CHAR> | ( [ "*", "?" ] ))* >
 | <REGEXPTERM: "/" (~[ "/" ] | "\\/" )* "/" >
-| <RANGEIN_START: "[" > : RangeIn
-| <RANGEEX_START: "{" > : RangeEx
+| <RANGEIN_START: "[" > : Range
+| <RANGEEX_START: "{" > : Range
 }
 
 <Boost> TOKEN : {
 <NUMBER:    (<_NUM_CHAR>)+ ( "." (<_NUM_CHAR>)+ )? > : DEFAULT
 }
 
-<RangeIn> TOKEN : {
-<RANGEIN_TO: "TO">
+<Range> TOKEN : {
+<RANGE_TO: "TO">
 | <RANGEIN_END: "]"> : DEFAULT
-| <RANGEIN_QUOTED: "\"" (~["\""] | "\\\"")+ "\"">
-| <RANGEIN_GOOP: (~[ " ", "]" ])+ >
-}
-
-<RangeEx> TOKEN : {
-<RANGEEX_TO: "TO">
 | <RANGEEX_END: "}"> : DEFAULT
-| <RANGEEX_QUOTED: "\"" (~["\""] | "\\\"")+ "\"">
-| <RANGEEX_GOOP: (~[ " ", "}" ])+ >
+| <RANGE_QUOTED: "\"" (~["\""] | "\\\"")+ "\"">
+| <RANGE_GOOP: (~[ " ", "]", "}" ])+ >
 }
 
 // *   Query  ::= ( Clause )*
@@ -308,6 +302,8 @@ Query Term(String field) : {
   boolean wildcard = false;
   boolean fuzzy = false;
   boolean regexp = false;
+  boolean startInc=false;
+  boolean endInc=false;
   Query q;
 }
 {
@@ -325,32 +321,20 @@ Query Term(String field) : {
      {
        q = handleBareTokenQuery(field, term, fuzzySlop, prefix, wildcard, fuzzy, regexp);
      }
-     | ( <RANGEIN_START> ( goop1=<RANGEIN_GOOP>|goop1=<RANGEIN_QUOTED> )
-         [ <RANGEIN_TO> ] ( goop2=<RANGEIN_GOOP>|goop2=<RANGEIN_QUOTED> )
-         <RANGEIN_END> )
+     | ( ( <RANGEIN_START> {startInc=true;} | <RANGEEX_START> )
+         ( goop1=<RANGE_GOOP>|goop1=<RANGE_QUOTED> )
+         [ <RANGE_TO> ]
+         ( goop2=<RANGE_GOOP>|goop2=<RANGE_QUOTED> )
+         ( <RANGEIN_END> {endInc=true;} | <RANGEEX_END>))
        [ <CARAT> boost=<NUMBER> ]
         {
-          if (goop1.kind == RANGEIN_QUOTED) {
+          if (goop1.kind == RANGE_QUOTED) {
             goop1.image = goop1.image.substring(1, goop1.image.length()-1);
           }
-          if (goop2.kind == RANGEIN_QUOTED) {
+          if (goop2.kind == RANGE_QUOTED) {
             goop2.image = goop2.image.substring(1, goop2.image.length()-1);
           }
-          q = getRangeQuery(field, discardEscapeChar(goop1.image), discardEscapeChar(goop2.image), true);
-        }
-     | ( <RANGEEX_START> ( goop1=<RANGEEX_GOOP>|goop1=<RANGEEX_QUOTED> )
-         [ <RANGEEX_TO> ] ( goop2=<RANGEEX_GOOP>|goop2=<RANGEEX_QUOTED> )
-         <RANGEEX_END> )
-       [ <CARAT> boost=<NUMBER> ]
-        {
-          if (goop1.kind == RANGEEX_QUOTED) {
-            goop1.image = goop1.image.substring(1, goop1.image.length()-1);
-          }
-          if (goop2.kind == RANGEEX_QUOTED) {
-            goop2.image = goop2.image.substring(1, goop2.image.length()-1);
-          }
-
-          q = getRangeQuery(field, discardEscapeChar(goop1.image), discardEscapeChar(goop2.image), false);
+          q = getRangeQuery(field, discardEscapeChar(goop1.image), discardEscapeChar(goop2.image), startInc, endInc);
         }
      | term=<QUOTED>
        [ fuzzySlop=<FUZZY_SLOP> ]

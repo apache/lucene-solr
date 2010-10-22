@@ -42,6 +42,9 @@ import java.util.*;
  */
 public abstract class QueryParserBase {
 
+  /** Do not catch this exception in your code, it means you are using methods that you should no longer use. */
+  public static class MethodRemovedUseAnother extends Throwable {}
+
   static final int CONJ_NONE   = 0;
   static final int CONJ_AND    = 1;
   static final int CONJ_OR     = 2;
@@ -694,13 +697,18 @@ public abstract class QueryParserBase {
   }
 
 
+  @Deprecated
+  protected final Query getRangeQuery(String field, String part1, String part2, boolean inclusive) throws MethodRemovedUseAnother {return null;}
+
+
   /**
    * @exception org.apache.lucene.queryParser.ParseException throw in overridden method to disallow
    */
   protected Query getRangeQuery(String field,
                                 String part1,
                                 String part2,
-                                boolean inclusive) throws ParseException
+                                boolean startInclusive,
+                                boolean endInclusive) throws ParseException
   {
     if (lowercaseExpandedTerms) {
       part1 = part1.toLowerCase();
@@ -711,7 +719,7 @@ public abstract class QueryParserBase {
       df.setLenient(true);
       Date d1 = df.parse(part1);
       Date d2 = df.parse(part2);
-      if (inclusive) {
+      if (endInclusive) {
         // The user can only specify the date, not the time, so make sure
         // the time is set to the latest possible time of that date to really
         // include all documents:
@@ -737,7 +745,7 @@ public abstract class QueryParserBase {
     }
     catch (Exception e) { }
 
-    return newRangeQuery(field, part1, part2, inclusive);
+    return newRangeQuery(field, part1, part2, startInclusive, endInclusive);
   }
 
  /**
@@ -818,16 +826,21 @@ public abstract class QueryParserBase {
     return new FuzzyQuery(term,minimumSimilarity,prefixLength);
   }
 
+  @Deprecated
+  protected final Query newRangeQuery(String field, String part1, String part2, boolean inclusive) throws MethodRemovedUseAnother {return null;}
+
+
   /**
    * Builds a new TermRangeQuery instance
    * @param field Field
    * @param part1 min
    * @param part2 max
-   * @param inclusive true if range is inclusive
+   * @param startInclusive true if the start of the range is inclusive
+   * @param endInclusive true if the end of the range is inclusive
    * @return new TermRangeQuery instance
    */
-  protected Query newRangeQuery(String field, String part1, String part2, boolean inclusive) {
-    final TermRangeQuery query = new TermRangeQuery(field, part1, part2, inclusive, inclusive, rangeCollator);
+  protected Query newRangeQuery(String field, String part1, String part2, boolean startInclusive, boolean endInclusive) {
+    final TermRangeQuery query = new TermRangeQuery(field, part1, part2, startInclusive, endInclusive, rangeCollator);
     query.setRewriteMethod(multiTermRewriteMethod);
     return query;
   }

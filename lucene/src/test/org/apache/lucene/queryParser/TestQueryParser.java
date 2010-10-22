@@ -541,7 +541,10 @@ public class TestQueryParser extends LuceneTestCase {
 
   public void testRange() throws Exception {
     assertQueryEquals("[ a TO z]", null, "[a TO z]");
-    assertEquals(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT, ((TermRangeQuery)getQuery("[ a TO z]", null)).getRewriteMethod());
+    assertQueryEquals("[ a TO z}", null, "[a TO z}");
+    assertQueryEquals("{ a TO z]", null, "{a TO z]"); 
+
+     assertEquals(MultiTermQuery.CONSTANT_SCORE_AUTO_REWRITE_DEFAULT, ((TermRangeQuery)getQuery("[ a TO z]", null)).getRewriteMethod());
 
     QueryParser qp = new QueryParser(TEST_VERSION_CURRENT, "field", new MockAnalyzer(MockTokenizer.SIMPLE, true));
     qp.setMultiTermRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
@@ -555,7 +558,7 @@ public class TestQueryParser extends LuceneTestCase {
     assertQueryEquals("[ a TO z] AND bar", null, "+[a TO z] +bar");
     assertQueryEquals("( bar blar { a TO z}) ", null, "bar blar {a TO z}");
     assertQueryEquals("gack ( bar blar { a TO z}) ", null, "gack (bar blar {a TO z})");
-  }
+ }
     
   public void testFarsiRangeCollating() throws Exception {
     Directory ramDir = newDirectory();
