@@ -77,15 +77,15 @@ public class ValuesAttributeImpl extends AttributeImpl implements ValuesAttribut
     case BYTES_VAR_DEREF:
     case BYTES_VAR_SORTED:
     case BYTES_VAR_STRAIGHT:
-      bytes = (BytesRef) other.bytes.clone();
+      other.bytes.copy(bytes);
       break;
     case PACKED_INTS:
     case PACKED_INTS_FIXED:
-      ints = (LongsRef) other.ints.clone();
+      other.ints.copy(ints);
       break;
     case SIMPLE_FLOAT_4BYTE:
     case SIMPLE_FLOAT_8BYTE:
-      floats = (FloatsRef) other.floats.clone();
+      other.floats.copy(floats);
       break;
 
     }

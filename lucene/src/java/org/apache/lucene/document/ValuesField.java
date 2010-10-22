@@ -130,7 +130,6 @@ public class ValuesField extends AbstractField {
     default:
       throw new IllegalArgumentException("unknown type: " + type);
     }
-    
     return valField.set(field);
   }
 }

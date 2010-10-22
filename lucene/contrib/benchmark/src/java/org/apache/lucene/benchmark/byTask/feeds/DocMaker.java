@@ -175,7 +175,8 @@ public class DocMaker {
     Field idField = ds.getField(ID_FIELD, storeVal, Index.NOT_ANALYZED_NO_NORMS, termVecVal);
     idField.setValue("doc" + (r != null ? r.nextInt(updateDocIDLimit) : incrNumDocsCreated()));
     doc.add(idField);
-    
+    trySetIndexValues(idField);
+
     // Set NAME_FIELD
     String name = docData.getName();
     if (name == null) name = "";
@@ -390,16 +391,15 @@ public class DocMaker {
     String[] split = fields.split(";");
     Map<String, Values> result = new HashMap<String, Values>();
     for (String tuple : split) {
-      final String[] nameValue = tuple.split(":");
+      final String[] nameValue = tuple.split("=");
       if (nameValue.length != 2) {
         throw new IllegalArgumentException("illegal doc.stored.values format: "
-            + fields + " expected fieldname:ValuesType;...;...;");
+            + fields + " expected fieldname=ValuesType;...;...;");
       }
       result.put(nameValue[0].trim(), Values.valueOf(nameValue[1]));
     }
     return result;
   }
-  
   /** Set the configuration parameters of this doc maker. */
   public void setConfig(Config config) {
     this.config = config;
