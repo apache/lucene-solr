@@ -41,7 +41,9 @@ public class SolrInfoMBeanTest extends LuceneTestCase
    * Gets a list of everything we can find in the classpath and makes sure it has
    * a name, description, etc...
    */
+  @Ignore // TODO: reenable once SOLR-2160 is fixed
   public void testCallMBeanInfo() throws Exception {
+//    Object[] init = org.apache.solr.search.QParserPlugin.standardPlugins;
     List<Class> classes = new ArrayList<Class>();
     classes.addAll(getClassesForPackage(StandardRequestHandler.class.getPackage().getName()));
     classes.addAll(getClassesForPackage(SearchHandler.class.getPackage().getName()));
@@ -82,7 +84,7 @@ public class SolrInfoMBeanTest extends LuceneTestCase
       }
     }
     assertTrue( "there are at least 10 SolrInfoMBean that should be found in the classpath, found " + checked, checked > 10 );
-  }
+ }
   
   static final String FOLDER = File.separator + "build" + File.separator + "solr" + File.separator + "org" + File.separator + "apache" + File.separator + "solr" + File.separator;
 
