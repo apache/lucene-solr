@@ -56,6 +56,13 @@ public class TestBasicOperations extends LuceneTestCase {
     assertTrue(BasicOperations.sameLanguage(other, concat2));
   }
   
+  /** Test concatenation with empty language returns empty */
+  public void testEmptyLanguageConcatenate() {
+    Automaton a = BasicAutomata.makeString("a");
+    Automaton concat = BasicOperations.concatenate(a, BasicAutomata.makeEmpty());
+    assertTrue(BasicOperations.isEmpty(concat));
+  }
+  
   /** Test optimization to concatenate() with empty String to an NFA */
   public void testEmptySingletonNFAConcatenate() {
     Automaton singleton = BasicAutomata.makeString("");
