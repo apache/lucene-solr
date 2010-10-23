@@ -16,22 +16,18 @@
  */
 package org.apache.solr.core;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.AbstractSolrTestCase;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
  * @version $Id$
  */
-public class TestSolrDeletionPolicy2 extends AbstractSolrTestCase {
-
-  @Override
-  public String getSchemaFile() {
-    return "schema.xml";
-  }
-
-  @Override
-  public String getSolrConfigFile() {
-    return "solrconfig-delpolicy2.xml";
+public class TestSolrDeletionPolicy2 extends SolrTestCaseJ4 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig-delpolicy2.xml","schema.xml");
   }
 
   @Test
