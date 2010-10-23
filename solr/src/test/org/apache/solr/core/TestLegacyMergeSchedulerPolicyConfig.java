@@ -18,9 +18,11 @@ public class TestLegacyMergeSchedulerPolicyConfig extends SolrTestCaseJ4 {
 
   @Test
   public void testLegacy() throws Exception {
-    IndexWriter writer = new ExposeWriterHandler().getWriter();
+    ExposeWriterHandler duh = new ExposeWriterHandler();
+    IndexWriter writer = duh.getWriter();
     assertTrue(writer.getMergePolicy().getClass().getName().equals(LogDocMergePolicy.class.getName()));
     assertTrue(writer.getMergeScheduler().getClass().getName().equals(SerialMergeScheduler.class.getName()));
+    duh.close();
   }
   
   class ExposeWriterHandler extends DirectUpdateHandler2 {
