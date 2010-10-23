@@ -1064,6 +1064,12 @@ public class IndexWriter implements Closeable {
 
     boolean success = false;
 
+    // TODO: we should check whether this index is too old,
+    // and throw an IndexFormatTooOldExc up front, here,
+    // instead of later when merge, applyDeletes, getReader
+    // is attempted.  I think to do this we should store the
+    // oldest segment's version in segments_N.
+
     try {
       if (create) {
         // Try to read first.  This is to allow create
@@ -3662,7 +3668,7 @@ public class IndexWriter implements Closeable {
           // This merge (and, generally, any change to the
           // segments) may now enable new merges, so we call
           // merge policy & update pending merges.
-          if (success && !merge.isAborted() && !closed && !closing) {
+          if (success && !merge.isAborted() && (merge.optimize || (!closed && !closing))) {
             updatePendingMerges(merge.maxNumSegmentsOptimize, merge.optimize);
           }
         }
