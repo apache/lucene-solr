@@ -34,14 +34,21 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     writer.commit();
   }
   
+  private static IndexWriterConfig newWriterConfig() throws IOException {
+    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    conf.setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH);
+    conf.setRAMBufferSizeMB(IndexWriterConfig.DEFAULT_RAM_BUFFER_SIZE_MB);
+    // prevent any merges by default.
+    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    return conf;
+  }
+  
   public void testByteSizeLimit() throws Exception {
     // tests that the max merge size constraint is applied during optimize.
     Directory dir = new RAMDirectory();
 
     // Prepare an index w/ several small segments and a large one.
-    IndexWriterConfig conf = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
-    // prevent any merges from happening.
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
     final int numSegments = 15;
     for (int i = 0; i < numSegments; i++) {
@@ -54,7 +61,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     sis.read(dir);
     double min = sis.info(0).sizeInBytes();
 
-    conf = new IndexWriterConfig(TEST_VERSION_CURRENT, null);
+    conf = newWriterConfig();
     LogByteSizeMergePolicy lmp = new LogByteSizeMergePolicy();
     lmp.setMaxMergeMB((min + 1) / (1 << 20));
     conf.setMergePolicy(lmp);
@@ -74,9 +81,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     Directory dir = new RAMDirectory();
 
     // Prepare an index w/ several small segments and a large one.
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
-    // prevent any merges from happening.
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
 
     addDocs(writer, 3);
@@ -89,7 +94,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     
     writer.close();
 
-    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
     lmp.setMaxMergeDocs(3);
     conf.setMergePolicy(lmp);
@@ -107,8 +112,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
   public void testLastSegmentTooLarge() throws Exception {
     Directory dir = new RAMDirectory();
 
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
 
     addDocs(writer, 3);
@@ -118,7 +122,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     
     writer.close();
 
-    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
     lmp.setMaxMergeDocs(3);
     conf.setMergePolicy(lmp);
@@ -135,8 +139,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
   public void testFirstSegmentTooLarge() throws Exception {
     Directory dir = new RAMDirectory();
     
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
     
     addDocs(writer, 5);
@@ -146,7 +149,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     
     writer.close();
     
-    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
     lmp.setMaxMergeDocs(3);
     conf.setMergePolicy(lmp);
@@ -163,8 +166,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
   public void testAllSegmentsSmall() throws Exception {
     Directory dir = new RAMDirectory();
     
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
     
     addDocs(writer, 3);
@@ -174,7 +176,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     
     writer.close();
     
-    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
     lmp.setMaxMergeDocs(3);
     conf.setMergePolicy(lmp);
@@ -191,8 +193,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
   public void testAllSegmentsLarge() throws Exception {
     Directory dir = new RAMDirectory();
     
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
     
     addDocs(writer, 3);
@@ -201,7 +202,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     
     writer.close();
     
-    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
     lmp.setMaxMergeDocs(2);
     conf.setMergePolicy(lmp);
@@ -218,8 +219,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
   public void testOneLargeOneSmall() throws Exception {
     Directory dir = new RAMDirectory();
     
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
     
     addDocs(writer, 3);
@@ -229,7 +229,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     
     writer.close();
     
-    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
     lmp.setMaxMergeDocs(3);
     conf.setMergePolicy(lmp);
@@ -246,8 +246,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
   public void testMergeFactor() throws Exception {
     Directory dir = new RAMDirectory();
     
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
     
     addDocs(writer, 3);
@@ -260,7 +259,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     
     writer.close();
     
-    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
     lmp.setMaxMergeDocs(3);
     lmp.setMergeFactor(2);
@@ -280,8 +279,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
   public void testSingleNonOptimizedSegment() throws Exception {
     Directory dir = new RAMDirectory();
     
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
     
     addDocs(writer, 3);
@@ -295,7 +293,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     r.deleteDocument(r.numDocs() - 1);
     r.close();
     
-    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
     lmp.setMaxMergeDocs(3);
     conf.setMergePolicy(lmp);
@@ -314,15 +312,14 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
   public void testSingleOptimizedSegment() throws Exception {
     Directory dir = new RAMDirectory();
     
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
     
     addDocs(writer, 3);
     
     writer.close();
     
-    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
     lmp.setMaxMergeDocs(3);
     conf.setMergePolicy(lmp);
@@ -340,8 +337,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
   public void testSingleNonOptimizedTooLargeSegment() throws Exception {
     Directory dir = new RAMDirectory();
     
-    IndexWriterConfig conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
-    conf.setMergePolicy(NoMergePolicy.COMPOUND_FILES);
+    IndexWriterConfig conf = newWriterConfig();
     IndexWriter writer = new IndexWriter(dir, conf);
     
     addDocs(writer, 5);
@@ -353,7 +349,7 @@ public class TestSizeBoundedOptimize extends LuceneTestCase {
     r.deleteDocument(r.numDocs() - 1);
     r.close();
     
-    conf = newIndexWriterConfig(TEST_VERSION_CURRENT, null);
+    conf = newWriterConfig();
     LogMergePolicy lmp = new LogDocMergePolicy();
     lmp.setMaxMergeDocs(2);
     conf.setMergePolicy(lmp);
