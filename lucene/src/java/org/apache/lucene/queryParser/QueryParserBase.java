@@ -702,7 +702,8 @@ public abstract class QueryParserBase {
 
 
   /**
-   * @exception org.apache.lucene.queryParser.ParseException throw in overridden method to disallow
+   *
+   * @exception org.apache.lucene.queryParser.ParseException
    */
   protected Query getRangeQuery(String field,
                                 String part1,
@@ -711,13 +712,28 @@ public abstract class QueryParserBase {
                                 boolean endInclusive) throws ParseException
   {
     if (lowercaseExpandedTerms) {
-      part1 = part1.toLowerCase();
-      part2 = part2.toLowerCase();
+      part1 = part1==null ? null : part1.toLowerCase();
+      part2 = part2==null ? null : part2.toLowerCase();
     }
+
+
+    DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, locale);
+    df.setLenient(true);
+    DateTools.Resolution resolution = getDateResolution(field);
+    
     try {
-      DateFormat df = DateFormat.getDateInstance(DateFormat.SHORT, locale);
-      df.setLenient(true);
       Date d1 = df.parse(part1);
+      if (resolution == null) {
+        // no default or field specific date resolution has been set,
+        // use deprecated DateField to maintain compatibility with
+        // pre-1.9 Lucene versions.
+        part1 = DateField.dateToString(d1);
+      } else {
+        part1 = DateTools.dateToString(d1, resolution);
+      }
+    } catch (Exception e) { }
+
+    try {
       Date d2 = df.parse(part2);
       if (endInclusive) {
         // The user can only specify the date, not the time, so make sure
@@ -731,19 +747,15 @@ public abstract class QueryParserBase {
         cal.set(Calendar.MILLISECOND, 999);
         d2 = cal.getTime();
       }
-      DateTools.Resolution resolution = getDateResolution(field);
       if (resolution == null) {
         // no default or field specific date resolution has been set,
         // use deprecated DateField to maintain compatibility with
         // pre-1.9 Lucene versions.
-        part1 = DateField.dateToString(d1);
         part2 = DateField.dateToString(d2);
       } else {
-        part1 = DateTools.dateToString(d1, resolution);
         part2 = DateTools.dateToString(d2, resolution);
       }
-    }
-    catch (Exception e) { }
+    } catch (Exception e) { }
 
     return newRangeQuery(field, part1, part2, startInclusive, endInclusive);
   }

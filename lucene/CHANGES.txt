@@ -275,6 +275,11 @@ New features
   QueryParser subclasses that overrode getRangeQuery will need to be changed
   to use the new getRangeQuery method.  (Andrew Schurman, Mark Miller, yonik)
 
+* LUCENE-995: The QueryParser now interprets * as an open end for range
+  queries.  Literal asterisks may be represented by quoting or escaping
+  (i.e. \* or "*")  Custom QueryParser sublcasses overriding getRangeQuery()
+  will be passed null for any open endpoint. (Adriano Crestani, yonik)
+
 Optimizations
 
 * LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.

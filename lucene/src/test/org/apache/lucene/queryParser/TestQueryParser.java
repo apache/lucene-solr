@@ -558,6 +558,11 @@ public class TestQueryParser extends LuceneTestCase {
     assertQueryEquals("[ a TO z] AND bar", null, "+[a TO z] +bar");
     assertQueryEquals("( bar blar { a TO z}) ", null, "bar blar {a TO z}");
     assertQueryEquals("gack ( bar blar { a TO z}) ", null, "gack (bar blar {a TO z})");
+
+    assertQueryEquals("[* TO Z]",null,"[* TO z]");
+    assertQueryEquals("[A TO *]",null,"[a TO *]");
+    assertQueryEquals("[* TO *]",null,"[* TO *]");
+    assertQueryEquals("[\\* TO \"*\"]",null,"[\\* TO \\*]");
  }
     
   public void testFarsiRangeCollating() throws Exception {

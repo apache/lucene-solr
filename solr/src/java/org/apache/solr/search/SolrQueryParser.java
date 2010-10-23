@@ -166,10 +166,7 @@ public class SolrQueryParser extends QueryParser {
   protected Query getRangeQuery(String field, String part1, String part2, boolean startInclusive, boolean endInclusive) throws ParseException {
     checkNullField(field);
     SchemaField sf = schema.getField(field);
-    return sf.getType().getRangeQuery(parser, sf,
-            "*".equals(part1) ? null : part1,
-            "*".equals(part2) ? null : part2,
-            startInclusive, endInclusive);
+    return sf.getType().getRangeQuery(parser, sf, part1, part2, startInclusive, endInclusive);
   }
 
   @Override

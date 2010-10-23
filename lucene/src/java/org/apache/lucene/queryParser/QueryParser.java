@@ -448,13 +448,19 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
         jj_la1[17] = jj_gen;
         ;
       }
+          boolean startOpen=false;
+          boolean endOpen=false;
           if (goop1.kind == RANGE_QUOTED) {
             goop1.image = goop1.image.substring(1, goop1.image.length()-1);
+          } else if ("*".equals(goop1.image)) {
+            startOpen=true;
           }
           if (goop2.kind == RANGE_QUOTED) {
             goop2.image = goop2.image.substring(1, goop2.image.length()-1);
+          } else if ("*".equals(goop2.image)) {
+            endOpen=true;
           }
-          q = getRangeQuery(field, discardEscapeChar(goop1.image), discardEscapeChar(goop2.image), startInc, endInc);
+          q = getRangeQuery(field, startOpen ? null : discardEscapeChar(goop1.image), endOpen ? null : discardEscapeChar(goop2.image), startInc, endInc);
       break;
     case QUOTED:
       term = jj_consume_token(QUOTED);

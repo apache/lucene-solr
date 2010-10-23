@@ -160,9 +160,9 @@ public class TermRangeQuery extends MultiTermQuery {
           buffer.append(":");
       }
       buffer.append(includeLower ? '[' : '{');
-      buffer.append(lowerTerm != null ? lowerTerm : "*");
+      buffer.append(lowerTerm != null ? ("*".equals(lowerTerm) ? "\\*" : lowerTerm)  : "*");
       buffer.append(" TO ");
-      buffer.append(upperTerm != null ? upperTerm : "*");
+      buffer.append(upperTerm != null ? ("*".equals(upperTerm) ? "\\*" : upperTerm) : "*");
       buffer.append(includeUpper ? ']' : '}');
       buffer.append(ToStringUtils.boost(getBoost()));
       return buffer.toString();
