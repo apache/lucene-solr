@@ -418,8 +418,9 @@ public final class SolrCore implements SolrInfoMBean {
     if (msg == null) msg = "SolrCore Object";
     try {
         clazz = getResourceLoader().findClass(className);
-        if (cast != null && !cast.isAssignableFrom(clazz))
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " is not a " +cast.getName());
+        if (cast != null && !cast.isAssignableFrom(clazz)) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " is not a " +cast.getName(), false);
+        }
       //most of the classes do not have constructors which takes SolrCore argument. It is recommended to obtain SolrCore by implementing SolrCoreAware.
       // So invariably always it will cause a  NoSuchMethodException. So iterate though the list of available constructors
         Constructor[] cons =  clazz.getConstructors();
@@ -591,7 +592,7 @@ public final class SolrCore implements SolrInfoMBean {
       resourceLoader.inform( this );  // last call before the latch is released.
       instance = this;   // set singleton for backwards compatibility
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, e, false);
     } finally {
       // allow firstSearcher events to fire
       latch.countDown();
