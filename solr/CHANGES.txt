@@ -236,9 +236,7 @@ New Features
   after parsing the functions, instead of silently ignoring it.
   This allows expressions like q=dist(2,vector(1,2),$pt)&pt=3,4   (yonik)
 
-* SOLR-2157 Suggester should return alpha-sorted results when onlyMorePopular=false (ab)
-
-* SOLR-2173 Suggester should always rebuild Lookup data if Lookup.load fails. (ab)
+* SOLR-2157: Suggester should return alpha-sorted results when onlyMorePopular=false (ab)
 
 * SOLR-2010: Added ability to verify that spell checking collations have
    actual results in the index.  (James Dyer via gsingers)
@@ -439,6 +437,10 @@ Bug Fixes
 
 * SOLR-2180: It was possible for EmbeddedSolrServer to leave searchers
   open if a request threw an exception. (yonik)
+
+* SOLR-2173: Suggester should always rebuild Lookup data if Lookup.load fails. (ab)
+
+* SOLR-2190: change xpath from RSS 0.9 to 1.0 in slashdot sample. (koji)
   
 Other Changes
 ----------------------
