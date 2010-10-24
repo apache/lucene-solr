@@ -512,7 +512,6 @@ public final class SolrCore implements SolrInfoMBean {
     this.setName( name );
     resourceLoader = config.getResourceLoader();
     if (dataDir == null){
-      // nocommit: why did solrconfig override core descriptor !?
       if(cd.usingDefaultDataDir()) dataDir = config.getDataDir();
       if(dataDir == null) dataDir = cd.getDataDir();
     }
