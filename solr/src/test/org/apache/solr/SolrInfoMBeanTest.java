@@ -24,6 +24,7 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.SearchHandler;
 import org.apache.solr.highlight.DefaultSolrHighlighter;
 import org.apache.solr.search.LRUCache;
+import org.junit.BeforeClass;
 import org.junit.Ignore;
 
 import java.io.File;
@@ -35,8 +36,13 @@ import java.util.List;
 /**
  * A simple test used to increase code coverage for some standard things...
  */
-public class SolrInfoMBeanTest extends LuceneTestCase 
+public class SolrInfoMBeanTest extends SolrTestCaseJ4
 {
+  @BeforeClass
+  public static void beforeClass() throws Exception {
+    initCore("solrconfig.xml","schema.xml");
+  }
+
   /**
    * Gets a list of everything we can find in the classpath and makes sure it has
    * a name, description, etc...
@@ -88,7 +94,7 @@ public class SolrInfoMBeanTest extends LuceneTestCase
 
   private static List<Class> getClassesForPackage(String pckgname) throws Exception {
     ArrayList<File> directories = new ArrayList<File>();
-    ClassLoader cld = Thread.currentThread().getContextClassLoader();
+    ClassLoader cld = h.getCore().getResourceLoader().getClassLoader();
     String path = pckgname.replace('.', '/');
     Enumeration<URL> resources = cld.getResources(path);
     while (resources.hasMoreElements()) {
