@@ -281,7 +281,7 @@ public class CharTermAttributeImpl extends AttributeImpl implements CharTermAttr
    */
   @Override
   public String toString() {
-    // nocommit: CharSequence requires that only the contents are returned, but this is orginal code: "term=" + new String(termBuffer, 0, termLength)
+    // CharSequence requires that only the contents are returned, but this is orginal code: "term=" + new String(termBuffer, 0, termLength)
     return new String(termBuffer, 0, termLength);
   }
   
