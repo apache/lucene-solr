@@ -1,7 +1,7 @@
 <dataConfig>
     <dataSource driver="org.hsqldb.jdbcDriver" url="jdbc:hsqldb:./example-DIH/hsqldb/ex" user="sa" />
     <document>
-            <entity name="item" query="select * from item"
+        <entity name="item" query="select * from item"
                 deltaQuery="select id from item where last_modified > '${dataimporter.last_index_time}'">
             <field column="NAME" name="name" />
             <field column="NAME" name="nameSort" />
