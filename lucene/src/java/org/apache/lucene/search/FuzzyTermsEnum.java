@@ -59,7 +59,8 @@ public final class FuzzyTermsEnum extends TermsEnum {
   
   private float bottom;
   private BytesRef bottomTerm;
-  // nocommit: chicken-and-egg
+
+  // TODO: chicken-and-egg
   private final Comparator<BytesRef> termComparator = BytesRef.getUTF8SortedAsUnicodeComparator();
   
   private final float minSimilarity;
