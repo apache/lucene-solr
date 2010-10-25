@@ -531,6 +531,8 @@ Bug Fixes
 * SOLR-2173: Suggester should always rebuild Lookup data if Lookup.load fails. (ab)
 
 * SOLR-2190: change xpath from RSS 0.9 to 1.0 in slashdot sample. (koji)
+
+* SOLR-1962: SolrCore#initIndex should not use a mix of indexPath and newIndexPath (Mark Miller)
   
 Other Changes
 ----------------------
