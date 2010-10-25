@@ -700,6 +700,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
 
     TestHarness.LocalRequestFactory lrf = h.getRequestFactory("standard", 0,
         10, args);
+
     SolrQueryRequest request = lrf.makeRequest("test");
     SolrHighlighter highlighter = request.getCore().getHighlighter();
     List<String> highlightFieldNames = Arrays.asList(highlighter
@@ -710,6 +711,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         highlightFieldNames.contains("text"));
     assertFalse("Expected to not highlight on field \"weight\"",
         highlightFieldNames.contains("weight"));
+    request.close();
 
     args.put("hl.fl", "foo_*");
     lrf = h.getRequestFactory("standard", 0, 10, args);
@@ -721,6 +723,7 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         .size());
     assertEquals("Expected to highlight on field \"foo_s\"", "foo_s",
         highlightFieldNames.get(0));
+    request.close();
   }
 
   @Test
