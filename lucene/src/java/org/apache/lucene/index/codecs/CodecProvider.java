@@ -26,6 +26,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.codecs.preflex.PreFlexCodec;
 import org.apache.lucene.index.codecs.pulsing.PulsingCodec;
 import org.apache.lucene.index.codecs.standard.StandardCodec;
+import org.apache.lucene.index.codecs.simpletext.SimpleTextCodec;
 
 /** Holds a set of codecs, keyed by name.  You subclass
  *  this, instantiate it, and register your codecs, then
@@ -45,7 +46,7 @@ public abstract class CodecProvider {
 
   private static String defaultCodec = "Standard";
 
-  public final static String[] CORE_CODECS = new String[] {"Standard", "Pulsing", "PreFlex"};
+  public final static String[] CORE_CODECS = new String[] {"Standard", "Pulsing", "PreFlex", "SimpleText"};
 
   public synchronized void register(Codec codec) {
     if (codec.name == null) {
@@ -116,6 +117,7 @@ class DefaultCodecProvider extends CodecProvider {
     register(new StandardCodec());
     register(new PreFlexCodec());
     register(new PulsingCodec(1));
+    register(new SimpleTextCodec());
   }
 
   @Override
