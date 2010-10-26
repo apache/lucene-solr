@@ -604,9 +604,13 @@ final class DocumentsWriter {
 
   synchronized private void initFlushState(boolean onlyDocStore) {
     initSegmentName(onlyDocStore);
-    flushState = new SegmentWriteState(infoStream, directory, segment, docFieldProcessor.fieldInfos,
-                                       docStoreSegment, numDocsInRAM, numDocsInStore, writer.getConfig().getTermIndexInterval(),
-                                       writer.codecs);
+    flushState = segWriteState();
+  }
+  
+  SegmentWriteState segWriteState() { 
+    return new SegmentWriteState(infoStream, directory, segment, docFieldProcessor.fieldInfos,
+        docStoreSegment, numDocsInRAM, numDocsInStore, writer.getConfig().getTermIndexInterval(),
+        writer.codecs);
   }
 
   /** Returns the codec used to flush the last segment */

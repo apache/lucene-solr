@@ -25,6 +25,8 @@ import org.apache.lucene.analysis.*;
 import org.apache.lucene.index.codecs.*;
 import org.apache.lucene.index.codecs.standard.*;
 import org.apache.lucene.index.codecs.pulsing.*;
+import org.apache.lucene.index.values.DocValues;
+import org.apache.lucene.index.values.codec.DocValuesConsumer;
 import org.apache.lucene.store.*;
 import java.util.*;
 import java.io.*;
@@ -159,6 +161,13 @@ public class TestExternalCodecs extends LuceneTestCase {
       public void close() {
         // TODO: finalize stuff
       }
+
+      @Override
+      public DocValuesConsumer addValuesField(FieldInfo field)
+          throws IOException {
+      //TODO(simonw): can we fix this easily?
+        throw new UnsupportedOperationException("no implemented");
+      }
     }
 
     private static class RAMTermsConsumer extends TermsConsumer {
@@ -257,6 +266,11 @@ public class TestExternalCodecs extends LuceneTestCase {
       public TermsEnum terms() {
         return new RAMTermsEnum(postings.fieldToTerms.get(current));
       }
+
+      @Override
+      public DocValues docValues() throws IOException {
+        throw new UnsupportedOperationException("not implemented");
+       }
     }
 
     static class RAMTermsEnum extends TermsEnum {

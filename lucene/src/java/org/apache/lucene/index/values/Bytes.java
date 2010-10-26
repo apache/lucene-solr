@@ -25,8 +25,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.IndexFileNames;
-import org.apache.lucene.index.values.Reader.SortedSource;
-import org.apache.lucene.index.values.Reader.Source;
+import org.apache.lucene.index.values.DocValues.SortedSource;
+import org.apache.lucene.index.values.DocValues.Source;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
@@ -47,8 +47,7 @@ import org.apache.lucene.util.CodecUtil;
  * NOTE: Each byte[] must be <= 32768 bytes in length
  * </p>
  */
-//nocommit - add mmap version 
-//nocommti - add bulk copy where possible
+//TODO - add bulk copy where possible
 public final class Bytes {
 
   // don't instantiate!
@@ -59,17 +58,7 @@ public final class Bytes {
     STRAIGHT, DEREF, SORTED
   };
 
-  public static void files(Directory dir, String id, Collection<String> files)
-      throws IOException {
-    files.add(IndexFileNames.segmentFileName(id, "",
-        IndexFileNames.CSF_DATA_EXTENSION));
-    final String idxFile = IndexFileNames.segmentFileName(id, "",
-        IndexFileNames.CSF_INDEX_EXTENSION);
-    if (dir.fileExists(idxFile)) {
-      files.add(idxFile);
-    }
-  }
-
+  
   // nocommit -- i shouldn't have to specify fixed? can
   // track itself & do the write thing at write time?
   public static Writer getWriter(Directory dir, String id, Mode mode,
@@ -101,7 +90,7 @@ public final class Bytes {
   }
 
   // nocommit -- I can peek @ header to determing fixed/mode?
-  public static Reader getReader(Directory dir, String id, Mode mode,
+  public static DocValues getValues(Directory dir, String id, Mode mode,
       boolean fixedSize, int maxDoc) throws IOException {
     if (fixedSize) {
       if (mode == Mode.STRAIGHT) {
@@ -172,6 +161,7 @@ public final class Bytes {
 
   static abstract class BytesWriterBase extends Writer {
 
+
     private final Directory dir;
     private final String id;
     protected IndexOutput idxOut;
@@ -239,13 +229,32 @@ public final class Bytes {
       bytesRef = attr.bytes();
       assert bytesRef != null;
     }
+    
+    @Override
+    public void add(int docID, ValuesAttribute attr) throws IOException {
+      final BytesRef ref;
+      if((ref = attr.bytes()) != null) {
+        add(docID, ref);
+      }
+    }
+
+    @Override
+    public void files(Collection<String> files) throws IOException {
+      files.add(IndexFileNames.segmentFileName(id, "",
+          IndexFileNames.CSF_DATA_EXTENSION));
+      final String idxFile = IndexFileNames.segmentFileName(id, "",
+          IndexFileNames.CSF_INDEX_EXTENSION);
+      if (dir.fileExists(idxFile)) { // TODO is this correct? could be initialized lazy
+        files.add(idxFile);
+      }
+    }
   }
 
   /**
    * Opens all necessary files, but does not read any data in until you call
    * {@link #load}.
    */
-   static abstract class BytesReaderBase extends Reader {
+   static abstract class BytesReaderBase extends DocValues {
     protected final IndexInput idxIn;
     protected final IndexInput datIn;
     protected final int version;
@@ -270,31 +279,21 @@ public final class Bytes {
     }
 
     protected final IndexInput cloneData() {
-      assert !isClosed.get():printEx();
       // is never NULL
       return (IndexInput) datIn.clone();
     }
 
     protected final IndexInput cloneIndex() {
-      assert !isClosed.get():printEx();
       return idxIn == null ? null : (IndexInput) idxIn.clone();
     }
-    private final AtomicBoolean isClosed = new AtomicBoolean(false);
-    Exception ex;
+
     public void close() throws IOException {
-      assert !isClosed.getAndSet(true);
-      ex =new Exception();
       if (datIn != null) {
         datIn.close();
       }
       if (idxIn != null) {
         idxIn.close();
       }
-    }
-    
-    private String printEx() {
-      ex.printStackTrace();
-      return ex.getMessage();
     }
   }
 

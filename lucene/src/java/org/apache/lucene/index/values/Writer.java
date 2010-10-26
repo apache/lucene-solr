@@ -17,12 +17,17 @@ package org.apache.lucene.index.values;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.util.List;
+import java.util.Comparator;
 
+import org.apache.lucene.index.values.codec.DocValuesConsumer;
+import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
-public abstract class Writer {
+public abstract class Writer extends DocValuesConsumer {
+  
+  public static final String INDEX_EXTENSION = "idx";
+  public static final String DATA_EXTENSION = "dat";
 
   /** Records the specfied value for the docID */
   public void add(int docID, long value) throws IOException {
@@ -47,28 +52,8 @@ public abstract class Writer {
   /** Finish writing, close any files */
   public abstract void finish(int docCount) throws IOException;
 
-  public static class MergeState {
-    public final Reader reader;
-    public final int docBase;
-    public final int docCount;
-    public final Bits bits;
-
-    public MergeState(Reader reader, int docBase, int docCount, Bits bits) {
-      assert reader != null;
-      this.reader = reader;
-      this.docBase = docBase;
-      this.docCount = docCount;
-      this.bits = bits;
-    }
-  }
-
-  public void add(List<MergeState> states) throws IOException {
-    for (MergeState state : states) {
-      merge(state);
-    }
-  }
-
   // enables bulk copies in subclasses per MergeState
+  @Override
   protected void merge(MergeState state) throws IOException {
     final ValuesEnum valEnum = state.reader.getEnum();
     assert valEnum != null;
@@ -87,6 +72,33 @@ public abstract class Writer {
       }
     } finally {
       valEnum.close();
+    }
+  }
+  
+  public static Writer create(Values v, String id,
+      Directory directory, Comparator<BytesRef> comp) throws IOException {
+    switch (v) {
+    case PACKED_INTS:
+    case PACKED_INTS_FIXED:
+      return Ints.getWriter(directory, id, true);
+    case SIMPLE_FLOAT_4BYTE:
+      return Floats.getWriter(directory, id, 4);
+    case SIMPLE_FLOAT_8BYTE:
+      return Floats.getWriter(directory, id, 8);
+    case BYTES_FIXED_STRAIGHT:
+      return Bytes.getWriter(directory, id, Bytes.Mode.STRAIGHT, comp, true);
+    case BYTES_FIXED_DEREF:
+      return Bytes.getWriter(directory, id, Bytes.Mode.DEREF, comp, true);
+    case BYTES_FIXED_SORTED:
+      return Bytes.getWriter(directory, id, Bytes.Mode.SORTED, comp, true);
+    case BYTES_VAR_STRAIGHT:
+      return Bytes.getWriter(directory, id, Bytes.Mode.STRAIGHT, comp, false);
+    case BYTES_VAR_DEREF:
+      return Bytes.getWriter(directory, id, Bytes.Mode.DEREF, comp, false);
+    case BYTES_VAR_SORTED:
+      return Bytes.getWriter(directory, id, Bytes.Mode.SORTED, comp, false);
+    default:
+      throw new IllegalArgumentException("Unknown Values: " + v);
     }
   }
 }

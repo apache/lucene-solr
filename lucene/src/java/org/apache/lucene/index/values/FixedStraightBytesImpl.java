@@ -217,5 +217,10 @@ class FixedStraightBytesImpl {
         return advance(pos+1);
       }
     }
+    
+    @Override
+    public Values type() {
+      return Values.BYTES_FIXED_STRAIGHT;
+    }
   }
 }

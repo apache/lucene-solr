@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
+import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.values.ValuesEnum;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
@@ -58,6 +59,11 @@ public class FilterIndexReader extends IndexReader {
     @Override
     public Terms terms(String field) throws IOException {
       return in.terms(field);
+    }
+
+    @Override
+    public DocValues docValues(String field) throws IOException {
+      return in.docValues(field);
     }
   }
 
@@ -116,6 +122,11 @@ public class FilterIndexReader extends IndexReader {
     @Override
     public TermsEnum terms() throws IOException {
       return in.terms();
+    }
+
+    @Override
+    public DocValues docValues() throws IOException {
+      return in.docValues();
     }
   }
 

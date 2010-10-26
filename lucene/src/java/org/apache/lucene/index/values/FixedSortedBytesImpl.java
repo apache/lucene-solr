@@ -156,7 +156,7 @@ class FixedSortedBytesImpl {
     }
 
     @Override
-    public org.apache.lucene.index.values.Reader.Source load() throws IOException {
+    public org.apache.lucene.index.values.DocValues.Source load() throws IOException {
       return loadSorted(null);
     }
 
@@ -253,6 +253,11 @@ class FixedSortedBytesImpl {
     public ValuesEnum getEnum(AttributeSource source) throws IOException {
         // do unsorted
         return new DerefBytesEnum(source, cloneData(), cloneIndex(), CODEC_NAME, size);
+    }
+    
+    @Override
+    public Values type() {
+      return Values.BYTES_FIXED_SORTED;
     }
   }
 }

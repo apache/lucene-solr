@@ -103,7 +103,7 @@ public final class FieldInfo {
     }
   }
 
-  Values getIndexValues() {
+  public Values getIndexValues() {
     return indexValues;
   }
 }

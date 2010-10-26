@@ -21,7 +21,9 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.document.FieldSelectorResult;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.util.Bits;
+import org.apache.lucene.util.Pair;
 import org.apache.lucene.search.FieldCache; // not great (circular); used only to purge FieldCache entry on close
 import org.apache.lucene.util.BytesRef;
 
@@ -174,14 +176,22 @@ public class ParallelReader extends IndexReader {
         return TermsEnum.EMPTY;
       }
     }
+
+    @Override
+    public DocValues docValues() throws IOException {
+      assert currentReader != null;
+      return MultiFields.getDocValues(currentReader, currentField);
+    }
   }
 
   // Single instance of this, per ParallelReader instance
   private class ParallelFields extends Fields {
-    final HashMap<String,Terms> fields = new HashMap<String,Terms>();
+    final HashMap<String,Pair<Terms, DocValues>> fields = new HashMap<String,Pair<Terms, DocValues>>();
 
     public void addField(String field, IndexReader r) throws IOException {
-      fields.put(field, MultiFields.getFields(r).terms(field));
+      Fields multiFields = MultiFields.getFields(r);
+      fields.put(field, new Pair<Terms, DocValues>( multiFields.terms(field),
+          multiFields.docValues(field)));
     }
 
     @Override
@@ -190,11 +200,16 @@ public class ParallelReader extends IndexReader {
     }
     @Override
     public Terms terms(String field) throws IOException {
-      return fields.get(field);
+      return fields.get(field).cur;
+    }
+
+    @Override
+    public DocValues docValues(String field) throws IOException {
+      return fields.get(field).cud;
     }
   }
-
-  @Override
+  
+   @Override
   public Bits getDeletedDocs() {
     return MultiFields.getDeletedDocs(readers.get(0));
   }

@@ -22,7 +22,7 @@ import java.text.Collator;
 import java.util.Locale;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.values.Reader.Source;
+import org.apache.lucene.index.values.DocValues.Source;
 import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.search.FieldCache.DocTermsIndex;
 import org.apache.lucene.search.cache.ByteValuesCreator;

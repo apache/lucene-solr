@@ -41,6 +41,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CodecUtil;
 
 import org.apache.lucene.index.codecs.standard.StandardPostingsReader; // javadocs
+import org.apache.lucene.index.values.DocValues;
 
 /** Handles a terms dict, but decouples all details of
  *  doc/freqs/positions reading to an instance of {@link
@@ -244,6 +245,12 @@ public class PrefixCodedTermsReader extends FieldsProducer {
     @Override
     public TermsEnum terms() throws IOException {
       return current.iterator();
+    }
+
+    @Override
+    public DocValues docValues() throws IOException {
+      // TODO Auto-generated method stub
+      return null;
     }
   }
 

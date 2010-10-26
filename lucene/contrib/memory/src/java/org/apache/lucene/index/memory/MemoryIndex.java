@@ -48,6 +48,7 @@ import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermVectorMapper;
 import org.apache.lucene.index.FieldInvertState;
+import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
@@ -789,6 +790,12 @@ public class MemoryIndex implements Serializable {
             public TermsEnum terms() {
               return new MemoryTermsEnum(sortedFields[upto].getValue());
             }
+
+            @Override
+            public DocValues docValues() throws IOException {
+              // TODO 
+              throw new UnsupportedOperationException("not implemented");
+            }
           };
         }
 
@@ -818,6 +825,12 @@ public class MemoryIndex implements Serializable {
               }
             };
           }
+        }
+
+        @Override
+        public DocValues docValues(String field) throws IOException {
+          // TODO 
+          throw new UnsupportedOperationException("not implemented");
         }
       };
     }

@@ -22,6 +22,10 @@ import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
 import java.util.ArrayList;
+
+import org.apache.lucene.index.values.DocValues;
+import org.apache.lucene.index.values.MultiDocValues;
+import org.apache.lucene.index.values.MultiDocValues.DocValuesIndex;
 import org.apache.lucene.util.ReaderUtil;
 import org.apache.lucene.util.ReaderUtil.Gather;  // for javadocs
 import org.apache.lucene.util.Bits;
@@ -46,6 +50,7 @@ public final class MultiFields extends Fields {
   private final Fields[] subs;
   private final ReaderUtil.Slice[] subSlices;
   private final Map<String,Terms> terms = new HashMap<String,Terms>();
+  private final Map<String,DocValues> docValues = new HashMap<String,DocValues>();
 
   /** Returns a single {@link Fields} instance for this
    *  reader, merging fields/terms/docs/positions on the
@@ -186,6 +191,12 @@ public final class MultiFields extends Fields {
       return fields.terms(field);
     }
   }
+  
+  /**  This method may return null if the field does not exist.*/
+  public static DocValues getDocValues(IndexReader r, String field) throws IOException {
+    final Fields fields = getFields(r);
+    return fields == null? null: fields.docValues(field);
+  }
 
   /** Returns {@link DocsEnum} for the specified field &
    *  term.  This may return null if the term does not
@@ -270,5 +281,35 @@ public final class MultiFields extends Fields {
 
     return result;
   }
+  
+  @Override
+  public DocValues docValues(String field) throws IOException {
+    final DocValues result;
+
+    if (!docValues.containsKey(field)) {
+
+      // Lazy init: first time this field is requested, we
+      // create & add to docValues:
+      final List<MultiDocValues.DocValuesIndex> subs2 = new ArrayList<MultiDocValues.DocValuesIndex>();
+      final List<ReaderUtil.Slice> slices2 = new ArrayList<ReaderUtil.Slice>();
+
+      // Gather all sub-readers that share this field
+      for(int i=0;i<subs.length;i++) {
+        final DocValues values = subs[i].docValues(field);
+        if (values != null) {
+          subs2.add(new MultiDocValues.DocValuesIndex(values, i));
+          slices2.add(subSlices[i]);
+        }
+      }
+      result = subs2.isEmpty()?null: new MultiDocValues(subs2.toArray(DocValuesIndex.EMPTY_ARRAY),
+                                slices2.toArray(ReaderUtil.Slice.EMPTY_ARRAY));
+      docValues.put(field, result);
+    } else {
+      result = docValues.get(field);
+    }
+
+    return result;  }
+  
+ 
 }
 

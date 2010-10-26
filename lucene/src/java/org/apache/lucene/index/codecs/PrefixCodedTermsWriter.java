@@ -94,7 +94,7 @@ public class PrefixCodedTermsWriter extends FieldsConsumer {
 
   @Override
   public TermsConsumer addField(FieldInfo field) {
-    assert currentField == null || currentField.name.compareTo(field.name) < 0;
+    assert currentField == null || currentField.name.compareTo(field.name) < 0 : "current field name " + (currentField == null? null: currentField.name) + " given: " +field.name;
     currentField = field;
     TermsIndexWriterBase.FieldWriter fieldIndexWriter = termsIndexWriter.addField(field);
     TermsConsumer terms = new TermsWriter(fieldIndexWriter, field, postingsWriter);

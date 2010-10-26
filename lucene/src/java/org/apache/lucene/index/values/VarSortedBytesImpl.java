@@ -157,7 +157,7 @@ class VarSortedBytesImpl {
     }
 
     @Override
-    public org.apache.lucene.index.values.Reader.Source load()
+    public org.apache.lucene.index.values.DocValues.Source load()
         throws IOException {
       return loadSorted(null);
     }
@@ -339,6 +339,11 @@ class VarSortedBytesImpl {
       public int nextDoc() throws IOException {
         return advance(pos + 1);
       }
+    }
+    
+    @Override
+    public Values type() {
+      return Values.BYTES_VAR_SORTED;
     }
   }
 }

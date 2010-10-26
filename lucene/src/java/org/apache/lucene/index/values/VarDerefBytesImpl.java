@@ -251,5 +251,10 @@ class VarDerefBytesImpl {
         datIn.readBytes(ref.bytes, 0, size);
       }
     }
+    
+    @Override
+    public Values type() {
+      return Values.BYTES_VAR_DEREF;
+    }
   }
 }

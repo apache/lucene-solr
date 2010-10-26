@@ -17,6 +17,7 @@ package org.apache.lucene.index.values;
  * limitations under the License.
  */
 import java.io.IOException;
+import java.util.Collection;
 
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.store.Directory;
@@ -38,6 +39,8 @@ class PackedIntsImpl {
   static final int VERSION_CURRENT = VERSION_START;
 
   static class IntsWriter extends Writer {
+   
+
     // nocommit - can we bulkcopy this on a merge?
     private LongsRef intsRef;
     private long[] docToValue;
@@ -125,13 +128,27 @@ class PackedIntsImpl {
     protected void setNextAttribute(ValuesAttribute attr) {
       intsRef = attr.ints();
     }
+    
+    @Override
+    public void add(int docID, ValuesAttribute attr) throws IOException {
+      final LongsRef ref;
+      if((ref = attr.ints()) != null) {
+        add(docID, ref.get());
+      }
+    }
+
+    @Override
+    public void files(Collection<String> files) throws IOException {
+      files.add(IndexFileNames.segmentFileName(id, "",
+          IndexFileNames.CSF_DATA_EXTENSION));      
+    }
   }
 
   /**
    * Opens all necessary files, but does not read any data in until you call
    * {@link #load}.
    */
-  static class IntsReader extends Reader {
+  static class IntsReader extends DocValues {
     private final IndexInput datIn;
 
     protected IntsReader(Directory dir, String id) throws IOException {
@@ -185,6 +202,11 @@ class PackedIntsImpl {
     @Override
     public ValuesEnum getEnum(AttributeSource source) throws IOException {
       return new IntsEnumImpl(source, (IndexInput) datIn.clone());
+    }
+    
+    @Override
+    public Values type() {
+      return Values.PACKED_INTS;
     }
 
   }

@@ -23,8 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.values.Reader.SortedSource;
-import org.apache.lucene.index.values.Reader.Source;
+import org.apache.lucene.index.values.DocValues.SortedSource;
+import org.apache.lucene.index.values.DocValues.Source;
 import org.apache.lucene.util.BytesRef;
 
 public class Cache {
@@ -42,7 +42,7 @@ public class Cache {
   synchronized public Source getInts(String id) throws IOException {
     Source s = ints.get(id);
     if (s == null) {
-      final Reader indexValues = r.getIndexValues(id);
+      final DocValues indexValues = r.docValues(id);
       if (indexValues == null) {
         return null;
       }
@@ -56,7 +56,7 @@ public class Cache {
   synchronized public Source getFloats(String id) throws IOException {
     Source s = floats.get(id);
     if (s == null) {
-      final Reader indexValues = r.getIndexValues(id);
+      final DocValues indexValues = r.docValues(id);
       if (indexValues == null) {
         return null;
       }
@@ -71,7 +71,7 @@ public class Cache {
       Comparator<BytesRef> comp) throws IOException {
     SortedSource s = sortedBytes.get(id);
     if (s == null) {
-      final Reader indexValues = r.getIndexValues(id);
+      final DocValues indexValues = r.docValues(id);
       if (indexValues == null) {
         return null;
       }
@@ -87,7 +87,7 @@ public class Cache {
   synchronized public Source getBytes(String id) throws IOException {
     Source s = bytes.get(id);
     if (s == null) {
-      final Reader indexValues = r.getIndexValues(id);
+      final DocValues indexValues = r.docValues(id);
       if (indexValues == null) {
         return null;
       }

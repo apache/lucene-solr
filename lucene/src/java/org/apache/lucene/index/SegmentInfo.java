@@ -478,12 +478,7 @@ public final class SegmentInfo {
     if (delFileName != null && (delGen >= YES || dir.fileExists(delFileName))) {
       fileSet.add(delFileName);
     }
-    //nocommit - is there a better way to get all the dat / idx files?
-    for(String file : dir.listAll()) {
-      if(file.startsWith(name) && (file.endsWith("dat") || file.endsWith("idx"))){
-        fileSet.add(file);
-      }
-    }
+   
     if (normGen != null) {
       for (int i = 0; i < normGen.length; i++) {
         long gen = normGen[i];

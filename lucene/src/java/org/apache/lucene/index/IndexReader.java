@@ -22,7 +22,7 @@ import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.values.Cache;
-import org.apache.lucene.index.values.Reader;
+import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
@@ -117,6 +117,9 @@ public abstract class IndexReader implements Cloneable,Closeable {
     public static final FieldOption TERMVECTOR_WITH_OFFSET = new FieldOption ("TERMVECTOR_WITH_OFFSET");
     /** All fields with termvectors with offset values and position values enabled */
     public static final FieldOption TERMVECTOR_WITH_POSITION_OFFSET = new FieldOption ("TERMVECTOR_WITH_POSITION_OFFSET");
+    /** All fields holding doc values */
+    public static final FieldOption DOC_VALUES = new FieldOption ("DOC_VALUES");
+
   }
 
   private boolean closed;
@@ -1374,10 +1377,13 @@ public abstract class IndexReader implements Cloneable,Closeable {
   public int getTermInfosIndexDivisor() {
     throw new UnsupportedOperationException("This reader does not support this method.");
   }
-
-  // nocommit -- should this expose the iterator API via Fields and access Source only via getIndexValuesCache?
-  public Reader getIndexValues(String field) {
-    throw new UnsupportedOperationException();
+  
+  public DocValues docValues(String field) throws IOException {
+    final Fields fields = fields();
+    if (fields == null) {
+      return null;
+    }
+    return fields.docValues(field);
   }
 
   private final Cache indexValuesCache = new Cache(this);

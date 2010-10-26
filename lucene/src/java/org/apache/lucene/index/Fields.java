@@ -19,6 +19,8 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.values.DocValues;
+
 /** Flex API for access to fields and terms
  *  @lucene.experimental */
 
@@ -31,6 +33,16 @@ public abstract class Fields {
   /** Get the {@link Terms} for this field.  This may return
    *  null if the field does not exist. */
   public abstract Terms terms(String field) throws IOException;
+  
+  /**
+   * Returns {@link DocValues} for the current field.
+   * 
+   * @param field the field name
+   * @return the {@link DocValues} for this field or <code>null</code> if not
+   *         applicable.
+   * @throws IOException
+   */
+  public abstract DocValues docValues(String field) throws IOException;
 
   public final static Fields[] EMPTY_ARRAY = new Fields[0];
 }

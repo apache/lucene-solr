@@ -28,10 +28,6 @@ public class Floats {
   private static final int INT_ZERO = Float.floatToRawIntBits(0.0f);
   private static final long LONG_ZERO = Double.doubleToRawLongBits(0.0);
 
-  public static void files(String id, Collection<String> files) {
-    files.add(id + "." + IndexFileNames.CSF_DATA_EXTENSION);
-  }
-
   public static Writer getWriter(Directory dir, String id, int precisionBytes)
       throws IOException {
     if (precisionBytes != 4 && precisionBytes != 8) {
@@ -45,12 +41,14 @@ public class Floats {
     }
   }
 
-  public static Reader getReader(Directory dir, String id, int maxDoc)
+  public static DocValues getValues(Directory dir, String id, int maxDoc)
       throws IOException {
     return new FloatsReader(dir, id, maxDoc);
   }
 
   abstract static class FloatsWriter extends Writer {
+
+
     private final Directory dir;
     private final String id;
     private FloatsRef floatsRef;
@@ -81,6 +79,13 @@ public class Floats {
     protected void add(int docID) throws IOException {
       add(docID, floatsRef.get());
     }
+    
+    @Override
+    public void add(int docID, ValuesAttribute attr) throws IOException {
+      final FloatsRef ref;
+      if((ref = attr.floats()) != null)
+      add(docID, ref.get());
+    }
 
     @Override
     protected void setNextAttribute(ValuesAttribute attr) {
@@ -109,6 +114,13 @@ public class Floats {
       } else
         super.merge(state);
     }
+    
+    @Override
+    public void files(Collection<String> files) throws IOException {
+      files.add(IndexFileNames.segmentFileName(id, "",
+          IndexFileNames.CSF_DATA_EXTENSION));
+    }
+
 
   }
 
@@ -203,7 +215,7 @@ public class Floats {
    * Opens all necessary files, but does not read any data in until you call
    * {@link #load}.
    */
-  static class FloatsReader extends Reader {
+  static class FloatsReader extends DocValues {
 
     private final IndexInput datIn;
     private final int precisionBytes;
@@ -302,6 +314,12 @@ public class Floats {
       indexInput.readByte();
       return precisionBytes == 4 ? new Floats4Enum(source, indexInput, maxDoc)
           : new Floats8EnumImpl(source, indexInput, maxDoc);
+    }
+    
+    @Override
+    public Values type() {
+      return precisionBytes == 4 ? Values.SIMPLE_FLOAT_4BYTE
+          : Values.SIMPLE_FLOAT_8BYTE;
     }
   }
 

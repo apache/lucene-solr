@@ -35,6 +35,8 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.values.DocValues;
+import org.apache.lucene.index.values.codec.DocValuesConsumer;
 import org.apache.lucene.store.Directory;
 
 
@@ -112,6 +114,18 @@ public class PerFieldCodecWrapper extends Codec {
         throw err;
       }
     }
+
+    @Override
+    public DocValuesConsumer addValuesField(FieldInfo field) throws IOException {
+      fieldsSeen.add(field.name);
+      Codec codec = getCodec(field.name);
+      FieldsConsumer fields = codecs.get(codec);
+      if (fields == null) {
+        fields = codec.fieldsConsumer(state);
+        codecs.put(codec, fields);
+      }
+      return fields.addValuesField(field);
+    }
   }
 
   private class FieldsReader extends FieldsProducer {
@@ -164,6 +178,11 @@ public class PerFieldCodecWrapper extends Codec {
           return null;
         }
       }
+
+      @Override
+      public DocValues docValues() throws IOException {
+        return codecs.get(getCodec(current)).docValues(current);
+      }
     }
       
     @Override
@@ -206,6 +225,14 @@ public class PerFieldCodecWrapper extends Codec {
       while(it.hasNext()) {
         it.next().loadTermsIndex(indexDivisor);
       }
+    }
+
+    @Override
+    public DocValues docValues(String field) throws IOException {
+      final Codec codec = getCodec(field);
+      FieldsProducer fields = codecs.get(codec);
+      assert fields != null;
+      return fields.docValues(field);
     }
   }
 

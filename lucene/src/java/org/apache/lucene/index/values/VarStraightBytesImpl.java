@@ -228,5 +228,10 @@ class VarStraightBytesImpl {
         return advance(pos+1);
       }
     }
+    
+    @Override
+    public Values type() {
+      return Values.BYTES_VAR_STRAIGHT;
+    }
   }
 }

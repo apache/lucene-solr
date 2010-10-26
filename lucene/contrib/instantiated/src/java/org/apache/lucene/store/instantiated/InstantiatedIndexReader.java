@@ -31,6 +31,7 @@ import java.util.Comparator;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.index.*;
+import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BitVector;
 import org.apache.lucene.util.BytesRef;
@@ -394,6 +395,11 @@ public class InstantiatedIndexReader extends IndexReader {
           public TermsEnum terms() {
             return new InstantiatedTermsEnum(orderedTerms, upto, currentField);
           }
+
+          @Override
+          public DocValues docValues() throws IOException {
+            return null;
+          }
         };
       }
 
@@ -421,6 +427,11 @@ public class InstantiatedIndexReader extends IndexReader {
             return BytesRef.getUTF8SortedAsUnicodeComparator();
           }
         };
+      }
+
+      @Override
+      public DocValues docValues(String field) throws IOException {
+        return null;
       }
     };
   }

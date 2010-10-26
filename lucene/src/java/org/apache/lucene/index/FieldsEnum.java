@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.values.ValuesEnum;
 import org.apache.lucene.util.AttributeSource;
 
@@ -57,6 +58,16 @@ public abstract class FieldsEnum {
    *  will not return null. */
   public abstract TermsEnum terms() throws IOException;
   
+  /**
+   * Returns {@link DocValues} for the current field.
+   * 
+   * @return the {@link DocValues} for this field or <code>null</code> if not
+   *         applicable.
+   * @throws IOException
+   */
+  public abstract DocValues docValues() throws IOException;
+
+  
   public final static FieldsEnum[] EMPTY_ARRAY = new FieldsEnum[0];
 
   /** Provides zero fields */
@@ -69,6 +80,11 @@ public abstract class FieldsEnum {
 
     @Override
     public TermsEnum terms() {
+      throw new IllegalStateException("this method should never be called");
+    }
+
+    @Override
+    public DocValues docValues() throws IOException {
       throw new IllegalStateException("this method should never be called");
     }
   };

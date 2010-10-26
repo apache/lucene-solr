@@ -23,9 +23,11 @@ import java.util.Comparator;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 
-public abstract class Reader implements Closeable {
+public abstract class DocValues implements Closeable {
   
   
+  public static final DocValues[] EMPTY_ARRAY = new DocValues[0];
+
   public ValuesEnum getEnum() throws IOException{
     return getEnum(null);
   }
@@ -37,6 +39,8 @@ public abstract class Reader implements Closeable {
   public SortedSource loadSorted(Comparator<BytesRef> comparator) throws IOException {
     throw new UnsupportedOperationException();
   }
+  
+  public abstract Values type();
   
 
   /**

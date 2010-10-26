@@ -17,6 +17,8 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
+import org.apache.lucene.index.values.DocValues;
+import org.apache.lucene.index.values.MultiDocValues;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.ReaderUtil;
 
@@ -42,6 +44,8 @@ public final  class MultiFieldsEnum extends FieldsEnum {
 
   // Re-used TermsEnum
   private final MultiTermsEnum terms;
+  private final MultiDocValues docValues;
+
 
   private String currentField;
 
@@ -50,6 +54,7 @@ public final  class MultiFieldsEnum extends FieldsEnum {
   public MultiFieldsEnum(FieldsEnum[] subs, ReaderUtil.Slice[] subSlices) throws IOException {
     terms = new MultiTermsEnum(subSlices);
     queue = new FieldMergeQueue(subs.length);
+    docValues = new MultiDocValues(subSlices);
     top = new FieldsEnumWithSlice[subs.length];
 
     // Init q
@@ -137,6 +142,20 @@ public final  class MultiFieldsEnum extends FieldsEnum {
       // No need to break ties by field name: TermsEnum handles that
       return fieldsA.current.compareTo(fieldsB.current) < 0;
     }
+  }
+
+  @Override
+  public DocValues docValues() throws IOException {
+    final List<MultiDocValues.DocValuesIndex> values = new ArrayList<MultiDocValues.DocValuesIndex>();
+    for (int i = 0; i < numTop; i++) {
+      final DocValues docValues = top[i].fields.docValues();
+      if (docValues != null) {
+        values.add(new MultiDocValues.DocValuesIndex(docValues,
+            top[i].index));
+      }
+    }
+    // TODO return an empty docvalues instance if values are empty
+    return docValues.reset(values.toArray(MultiDocValues.DocValuesIndex.EMPTY_ARRAY));
   }
 }
 

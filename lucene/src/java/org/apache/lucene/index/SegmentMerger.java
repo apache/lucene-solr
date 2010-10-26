@@ -33,7 +33,7 @@ import org.apache.lucene.index.codecs.MergeState;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.values.Bytes;
 import org.apache.lucene.index.values.Ints;
-import org.apache.lucene.index.values.Reader;
+import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.values.Floats;
 import org.apache.lucene.index.values.Values;
 import org.apache.lucene.index.values.Writer;
@@ -162,9 +162,6 @@ final class SegmentMerger {
 
     if (mergeDocStores && fieldInfos.hasVectors())
       mergeVectors();
-
-    mergeIndexValues();
-
     return mergedDocs;
   }
 
@@ -176,12 +173,6 @@ final class SegmentMerger {
   final void closeReaders() throws IOException {
     for (final IndexReader reader : readers) {
       reader.close();
-    }
-  }
-  
-  private void addIfExists(Set<String> files, String file, Directory dir) throws IOException{
-    if(dir.fileExists(file)){
-      files.add(file);
     }
   }
 
@@ -203,14 +194,6 @@ final class SegmentMerger {
     final int numFIs = fieldInfos.size();
     for (int i = 0; i < numFIs; i++) {
       final FieldInfo fi = fieldInfos.fieldInfo(i);
-      // Index Values aka. CSF
-      if (fi.indexValues != null) {
-        addIfExists(fileSet, IndexFileNames.segmentFileName(segment, Integer
-            .toString(fi.number), IndexFileNames.CSF_DATA_EXTENSION), directory);
-        addIfExists(fileSet, IndexFileNames.segmentFileName(segment, Integer
-            .toString(fi.number), IndexFileNames.CSF_INDEX_EXTENSION),
-            directory);
-      }
       if (fi.isIndexed && !fi.omitNorms) {
         fileSet.add(IndexFileNames.segmentFileName(segment, "", IndexFileNames.NORMS_EXTENSION));
         break;
@@ -318,7 +301,7 @@ final class SegmentMerger {
           if (mergedIndexValues == null) {
             merged.setIndexValues(fiIndexValues);
           } else if (mergedIndexValues != fiIndexValues) {
-            // nocommit -- what to do?
+            // TODO -- can we recover from this?
             throw new IllegalStateException("cannot merge field " + fi.name + " indexValues changed from " + mergedIndexValues + " to " + fiIndexValues);
           }
         }
@@ -331,8 +314,7 @@ final class SegmentMerger {
         addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.STORES_PAYLOADS), false, false, false, true, false);
         addIndexed(reader, fieldInfos, reader.getFieldNames(FieldOption.INDEXED), false, false, false, false, false);
         fieldInfos.add(reader.getFieldNames(FieldOption.UNINDEXED), false);
-
-        // nocommit -- how should we handle index values here?
+        fieldInfos.add(reader.getFieldNames(FieldOption.DOC_VALUES), false);
       }
     }
     fieldInfos.write(directory, segment + ".fnm");
@@ -391,77 +373,6 @@ final class SegmentMerger {
     segmentWriteState = new SegmentWriteState(null, directory, segment, fieldInfos, null, docCount, 0, termIndexInterval, codecs);
 
     return docCount;
-  }
-
-  private void mergeIndexValues() throws IOException {
-    final int numFields = fieldInfos.size();
-    for (int i = 0; i < numFields; i++) {
-      final FieldInfo fieldInfo = fieldInfos.fieldInfo(i);
-      final Values v = fieldInfo.indexValues;
-      // nocommit we need some kind of compatibility notation for values such
-      // that two slighly different segments can be merged eg. fixed vs.
-      // variable byte len or float32 vs. float64
-
-      if (v != null) {
-        int docBase = 0;
-        final List<Writer.MergeState> mergeStates = new ArrayList<Writer.MergeState>();
-        for (IndexReader reader : readers) {
-          Reader r = reader.getIndexValues(fieldInfo.name);
-          if (r != null) {
-            mergeStates.add(new Writer.MergeState(r, docBase, reader
-                .maxDoc(), reader.getDeletedDocs()));
-          }
-          docBase += reader.numDocs();
-        }
-        if (mergeStates.isEmpty()) {
-          continue;
-        }
-        final String id = segment + "_" + fieldInfo.number;
-        final Writer writer;
-        switch (v) {
-        case PACKED_INTS:
-        case PACKED_INTS_FIXED:
-          writer = Ints.getWriter(directory, id, true);
-          break;
-        case SIMPLE_FLOAT_4BYTE:
-          writer = Floats.getWriter(directory, id, 4);
-          break;
-        case SIMPLE_FLOAT_8BYTE:
-          writer = Floats.getWriter(directory, id, 8);
-          break;
-        case BYTES_FIXED_STRAIGHT:
-          writer = Bytes.getWriter(directory, id,
-              Bytes.Mode.STRAIGHT, null, true);
-          break;
-        case BYTES_FIXED_DEREF:
-          writer = Bytes.getWriter(directory, id,
-              Bytes.Mode.DEREF, null, true);
-          break;
-        case BYTES_FIXED_SORTED:
-          // nocommit -- enable setting Comparator
-          writer = Bytes.getWriter(directory, id,
-              Bytes.Mode.SORTED, null, true);
-          break;
-        case BYTES_VAR_STRAIGHT:
-          writer = Bytes.getWriter(directory, id,
-              Bytes.Mode.STRAIGHT, null, false);
-          break;
-        case BYTES_VAR_DEREF:
-          writer = Bytes.getWriter(directory, id,
-              Bytes.Mode.DEREF, null, false);
-          break;
-        case BYTES_VAR_SORTED:
-          // nocommit -- enable setting Comparator
-          writer = Bytes.getWriter(directory, id,
-              Bytes.Mode.SORTED, null, false);
-          break;
-        default:
-          continue;
-        }
-        writer.add(mergeStates);
-        writer.finish(mergedDocs);
-      }
-    }
   }
 
   private int copyFieldsWithDeletions(final FieldsWriter fieldsWriter, final IndexReader reader,

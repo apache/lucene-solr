@@ -257,6 +257,11 @@ class FixedDerefBytesImpl {
       }
 
     }
+
+    @Override
+    public Values type() {
+      return Values.BYTES_FIXED_DEREF;
+    }
   }
 
 }
