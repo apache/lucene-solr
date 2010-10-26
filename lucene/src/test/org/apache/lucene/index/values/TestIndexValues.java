@@ -46,7 +46,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.codecs.CodecProvider;
 import org.apache.lucene.index.values.DocValues.SortedSource;
 import org.apache.lucene.index.values.DocValues.Source;
-import org.apache.lucene.index.values.codec.DocValuesCodec;
+import org.apache.lucene.index.codecs.docvalues.DocValuesCodec;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BytesRef;

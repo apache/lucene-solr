@@ -26,7 +26,7 @@ import org.apache.lucene.index.codecs.*;
 import org.apache.lucene.index.codecs.standard.*;
 import org.apache.lucene.index.codecs.pulsing.*;
 import org.apache.lucene.index.values.DocValues;
-import org.apache.lucene.index.values.codec.DocValuesConsumer;
+import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
 import org.apache.lucene.store.*;
 import java.util.*;
 import java.io.*;

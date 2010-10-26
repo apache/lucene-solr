@@ -28,7 +28,7 @@ import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.codecs.preflex.TermInfo;
-import org.apache.lucene.index.values.codec.DocValuesConsumer;
+import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
 import org.apache.lucene.store.IndexOutput;
 
 import java.io.IOException;

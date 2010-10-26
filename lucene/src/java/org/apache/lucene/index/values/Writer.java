@@ -19,7 +19,7 @@ package org.apache.lucene.index.values;
 import java.io.IOException;
 import java.util.Comparator;
 
-import org.apache.lucene.index.values.codec.DocValuesConsumer;
+import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
