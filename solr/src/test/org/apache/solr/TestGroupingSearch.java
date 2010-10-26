@@ -37,11 +37,11 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
   @Test
   public void testGroupingGroupSortingScore_basic() {
-    assertU(add(doc("id", "1","name", "author1", "title", "a book title")));
-    assertU(add(doc("id", "2","name", "author1", "title", "the title")));
-    assertU(add(doc("id", "3","name", "author2", "title", "a book title")));
-    assertU(add(doc("id", "4","name", "author2", "title", "title")));
-    assertU(add(doc("id", "5","name", "author3", "title", "the title of a title")));
+    assertU(add(doc("id", "1","name", "author1", "title", "a book title", "group_si", "1")));
+    assertU(add(doc("id", "2","name", "author1", "title", "the title", "group_si", "2")));
+    assertU(add(doc("id", "3","name", "author2", "title", "a book title", "group_si", "1")));
+    assertU(add(doc("id", "4","name", "author2", "title", "title", "group_si", "2")));
+    assertU(add(doc("id", "5","name", "author3", "title", "the title of a title", "group_si", "1")));
     assertU(commit());
     
     assertQ(req("q","title:title", "group", "true", "group.field","name")
@@ -62,6 +62,19 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
     //        ,"//arr[@name='groups']/lst[3]/int[@name='matches'][.='1']"
             ,"//arr[@name='groups']/lst[3]/result[@numFound='1']"
             ,"//arr[@name='groups']/lst[3]/result/doc/*[@name='id'][.='5']"
+            );
+
+    assertQ(req("q","title:title", "group", "true", "group.field","group_si")
+            ,"//lst[@name='grouped']/lst[@name='group_si']"
+            ,"*[count(//arr[@name='groups']/lst) = 2]"
+
+            ,"//arr[@name='groups']/lst[1]/int[@name='groupValue'][.='2']"
+            ,"//arr[@name='groups']/lst[1]/result[@numFound='2']"
+            ,"//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='4']"
+
+            ,"//arr[@name='groups']/lst[2]/int[@name='groupValue'][.='1']"
+            ,"//arr[@name='groups']/lst[2]/result[@numFound='3']"
+            ,"//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='5']"
             );
   }
 

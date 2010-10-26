@@ -249,7 +249,8 @@ New Features
   (Martijn van Groningen, Emmanuel Keller, Shalin Shekhar Mangar,
    Koji Sekiguchi, Iv�n de Prado, Ryan McKinley, Marc Sturlese, Peter Karich,
    Bojan Smid, Charles Hornberger, Dieter Grad, Dmitry Lihachev, Doug Steigerwald,
-   Karsten Sperling, Michael Gundlach, Oleg Gnatovskiy, Thomas Traeger, yonik)
+   Karsten Sperling, Michael Gundlach, Oleg Gnatovskiy, Thomas Traeger,
+   Harish Agarwal, yonik)
 
 * SOLR-1316: Create autosuggest component.
   (Ankul Garg, Jason Rutherglen, Shalin Shekhar Mangar, gsingers, Robert Muir, ab)
