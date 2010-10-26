@@ -353,13 +353,24 @@ public class TestQueryParser extends LuceneTestCase {
     assertQueryEquals("a AND -b", null, "+a -b");
     assertQueryEquals("a AND !b", null, "+a -b");
     assertQueryEquals("a && b", null, "+a +b");
-    assertQueryEquals("a && ! b", null, "+a -b");
+//    assertQueryEquals("a && ! b", null, "+a -b");
 
     assertQueryEquals("a OR b", null, "a b");
     assertQueryEquals("a || b", null, "a b");
     assertQueryEquals("a OR !b", null, "a -b");
-    assertQueryEquals("a OR ! b", null, "a -b");
+//    assertQueryEquals("a OR ! b", null, "a -b");
     assertQueryEquals("a OR -b", null, "a -b");
+
+    // +,-,! should be directly adjacent to operand (i.e. not separated by whitespace) to be treated as an operator
+    Analyzer a = new Analyzer() {
+      @Override
+      public TokenStream tokenStream(String fieldName, Reader reader) {
+        return new MockTokenizer(reader, MockTokenizer.WHITESPACE, false);
+      }
+    };
+    assertQueryEquals("a - b", a, "a - b");
+    assertQueryEquals("a + b", a, "a + b");
+    assertQueryEquals("a ! b", a, "a ! b");
 
     assertQueryEquals("+term -term term", null, "+term -term term");
     assertQueryEquals("foo:term AND field:anotherTerm", null,

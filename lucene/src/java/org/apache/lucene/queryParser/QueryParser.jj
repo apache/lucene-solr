@@ -183,6 +183,7 @@ PARSER_END(QueryParser)
 | <NOT:       ("NOT" | "!") >
 | <PLUS:      "+" >
 | <MINUS:     "-" >
+| <BAREOPER:    ("+"|"-"|"!") <_WHITESPACE> >
 | <LPAREN:    "(" >
 | <RPAREN:    ")" >
 | <COLON:     ":" >
@@ -315,6 +316,7 @@ Query Term(String field) : {
        | term=<WILDTERM> { wildcard=true; }
        | term=<REGEXPTERM> { regexp=true; }
        | term=<NUMBER>
+       | term=<BAREOPER> { term.image = term.image.substring(0,1); }
      )
      [ fuzzySlop=<FUZZY_SLOP> { fuzzy=true; } ]
      [ <CARAT> boost=<NUMBER> [ fuzzySlop=<FUZZY_SLOP> { fuzzy=true; } ] ]

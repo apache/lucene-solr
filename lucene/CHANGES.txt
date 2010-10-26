@@ -152,6 +152,9 @@ API Changes
   call is the same as it was prior to the API change.
   (Grant Ingersoll, Mike McCandless)
 
+* LUCENE-2566: QueryParser: Unary operators +,-,! will not be treated as
+  operators if they are followed by whitespace. (yonik)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions
