@@ -29,7 +29,7 @@ public class TestDeterminism extends LuceneTestCase {
   public void testRegexps() throws Exception {
       int num = 500 * RANDOM_MULTIPLIER;
       for (int i = 0; i < num; i++)
-        assertAutomaton(AutomatonTestUtil.randomRegexp(random).toAutomaton());
+        assertAutomaton(new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton());
   }
   
   /** test against a simple, unoptimized det */

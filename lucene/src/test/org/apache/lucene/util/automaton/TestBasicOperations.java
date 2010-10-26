@@ -94,7 +94,7 @@ public class TestBasicOperations extends LuceneTestCase {
     final int ITER2 = 100 * RANDOM_MULTIPLIER;
     for(int i=0;i<ITER1;i++) {
 
-      final RegExp re = AutomatonTestUtil.randomRegexp(random);
+      final RegExp re = new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE);
       final Automaton a = re.toAutomaton();
       assertFalse(BasicOperations.isEmpty(a));
 

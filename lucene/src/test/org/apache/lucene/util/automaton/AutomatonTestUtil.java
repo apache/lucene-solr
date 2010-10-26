@@ -33,16 +33,15 @@ import org.apache.lucene.util._TestUtil;
 
 public class AutomatonTestUtil {
   /** Returns random string, including full unicode range. */
-  public static RegExp randomRegexp(Random r) {
+  public static String randomRegexp(Random r) {
     while (true) {
       String regexp = randomRegexpString(r);
       // we will also generate some undefined unicode queries
       if (!UnicodeUtil.validUTF16String(regexp))
         continue;
       try {
-        // NOTE: we parse-tostring-parse again, because we are
-        // really abusing RegExp.toString() here (its just for debugging)
-        return new RegExp(new RegExp(regexp, RegExp.NONE).toString(), RegExp.NONE);
+        new RegExp(regexp, RegExp.NONE);
+        return regexp;
       } catch (Exception e) {}
     }
   }
@@ -254,11 +253,11 @@ public class AutomatonTestUtil {
   /** return a random NFA/DFA for testing */
   public static Automaton randomAutomaton(Random random) {
     // get two random Automata from regexps
-    Automaton a1 = AutomatonTestUtil.randomRegexp(random).toAutomaton();
+    Automaton a1 = new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton();
     if (random.nextBoolean())
       a1 = BasicOperations.complement(a1);
     
-    Automaton a2 = AutomatonTestUtil.randomRegexp(random).toAutomaton();
+    Automaton a2 = new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE).toAutomaton();
     if (random.nextBoolean()) 
       a2 = BasicOperations.complement(a2);
     
