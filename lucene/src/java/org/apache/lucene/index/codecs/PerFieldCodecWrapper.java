@@ -23,7 +23,6 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.IdentityHashMap;
-import java.util.TreeMap;
 import java.util.TreeSet;
 import java.io.IOException;
 
@@ -35,8 +34,8 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.SegmentInfo;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.SegmentReadState;
+import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
 import org.apache.lucene.index.values.DocValues;
-import org.apache.lucene.index.values.codec.DocValuesConsumer;
 import org.apache.lucene.store.Directory;
 
 

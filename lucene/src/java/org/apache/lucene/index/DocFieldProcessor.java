@@ -17,24 +17,15 @@ package org.apache.lucene.index;
  * limitations under the License.
  */
 
-import org.apache.lucene.store.Directory;
-import org.apache.lucene.index.codecs.FieldsConsumer;
-import org.apache.lucene.index.values.Ints;
-import org.apache.lucene.index.values.Floats;
-import org.apache.lucene.index.values.Bytes;
-import org.apache.lucene.index.values.ValuesAttribute;
-import org.apache.lucene.index.values.Writer;
-import org.apache.lucene.index.values.codec.DocValuesConsumer;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.FloatsRef;
-import org.apache.lucene.util.LongsRef;
-
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Comparator;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
+import org.apache.lucene.index.codecs.FieldsConsumer;
+import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
+import org.apache.lucene.index.values.ValuesAttribute;
+import org.apache.lucene.store.Directory;
 
 /**
  * This is a DocConsumer that gathers all fields under the

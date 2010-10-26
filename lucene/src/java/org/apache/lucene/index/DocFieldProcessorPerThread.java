@@ -24,8 +24,8 @@ import java.io.IOException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Fieldable;
+import org.apache.lucene.index.codecs.docvalues.DocValuesConsumer;
 import org.apache.lucene.index.values.ValuesAttribute;
-import org.apache.lucene.index.values.codec.DocValuesConsumer;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.RamUsageEstimator;
