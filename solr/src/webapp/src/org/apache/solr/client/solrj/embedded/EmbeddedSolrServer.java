@@ -230,8 +230,11 @@ public class EmbeddedSolrServer extends SolrServer
       throw new SolrServerException( ex );
     }
     finally {
-      if (req != null) req.close();
-      core.close();
+      try {
+        if (req != null) req.close();
+      } finally {
+        core.close();
+      }
     }
   }
   

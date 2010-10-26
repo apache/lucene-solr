@@ -161,25 +161,25 @@ public class ComplexPhraseQueryParser extends QueryParser {
 
   @Override
   protected Query getRangeQuery(String field, String part1, String part2,
-      boolean inclusive) throws ParseException {
+      boolean startInclusive, boolean endInclusive) throws ParseException {
     if (isPass2ResolvingPhrases) {
       checkPhraseClauseIsForSameField(field);
     }
-    return super.getRangeQuery(field, part1, part2, inclusive);
+    return super.getRangeQuery(field, part1, part2, startInclusive, endInclusive);
   }
 
   @Override
   protected Query newRangeQuery(String field, String part1, String part2,
-      boolean inclusive) {
+      boolean startInclusive, boolean endInclusive) {
     if (isPass2ResolvingPhrases) {
       // Must use old-style RangeQuery in order to produce a BooleanQuery
       // that can be turned into SpanOr clause
-      TermRangeQuery rangeQuery = new TermRangeQuery(field, part1, part2, inclusive, inclusive,
+      TermRangeQuery rangeQuery = new TermRangeQuery(field, part1, part2, startInclusive, endInclusive,
           getRangeCollator());
       rangeQuery.setRewriteMethod(MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE);
       return rangeQuery;
     }
-    return super.newRangeQuery(field, part1, part2, inclusive);
+    return super.newRangeQuery(field, part1, part2, startInclusive, endInclusive);
   }
 
   @Override

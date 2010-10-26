@@ -523,12 +523,16 @@ Bug Fixes
 
 * SOLR-2148: Highlighter doesn't support q.alt. (koji)
 
-* SOLR-2139: Wrong cast from string to float (Igor Rodionov via koji)
-
 * SOLR-2157 Suggester should return alpha-sorted results when onlyMorePopular=false (ab)
 
 * SOLR-1794: Dataimport of CLOB fields fails when getCharacterStream() is 
   defined in a superclass. (Gunnar Gauslaa Bergem via rmuir)
+
+* SOLR-2173: Suggester should always rebuild Lookup data if Lookup.load fails. (ab)
+
+* SOLR-2190: change xpath from RSS 0.9 to 1.0 in slashdot sample. (koji)
+
+* SOLR-1962: SolrCore#initIndex should not use a mix of indexPath and newIndexPath (Mark Miller)
   
 Other Changes
 ----------------------

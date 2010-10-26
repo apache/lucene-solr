@@ -61,6 +61,8 @@ final public class BasicOperations {
   static public Automaton concatenate(Automaton a1, Automaton a2) {
     if (a1.isSingleton() && a2.isSingleton()) return BasicAutomata
         .makeString(a1.singleton + a2.singleton);
+    if (isEmpty(a1) || isEmpty(a2))
+      return BasicAutomata.makeEmpty();
     // adding epsilon transitions with the NFA concatenation algorithm
     // in this case always produces a resulting DFA, preventing expensive
     // redundant determinize() calls for this common case.

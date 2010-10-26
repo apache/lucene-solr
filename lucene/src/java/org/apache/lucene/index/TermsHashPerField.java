@@ -50,7 +50,6 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
 
   final FieldInfo fieldInfo;
 
-  // nocommit - how to communicate byte usage to DocumentsWriter?
   final BytesRefHash bytesHash;
  
   ParallelPostingsArray postingsArray;

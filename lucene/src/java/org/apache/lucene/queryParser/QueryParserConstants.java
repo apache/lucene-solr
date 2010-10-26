@@ -61,30 +61,22 @@ public interface QueryParserConstants {
   /** RegularExpression Id. */
   int NUMBER = 26;
   /** RegularExpression Id. */
-  int RANGEIN_TO = 27;
+  int RANGE_TO = 27;
   /** RegularExpression Id. */
   int RANGEIN_END = 28;
   /** RegularExpression Id. */
-  int RANGEIN_QUOTED = 29;
+  int RANGEEX_END = 29;
   /** RegularExpression Id. */
-  int RANGEIN_GOOP = 30;
+  int RANGE_QUOTED = 30;
   /** RegularExpression Id. */
-  int RANGEEX_TO = 31;
-  /** RegularExpression Id. */
-  int RANGEEX_END = 32;
-  /** RegularExpression Id. */
-  int RANGEEX_QUOTED = 33;
-  /** RegularExpression Id. */
-  int RANGEEX_GOOP = 34;
+  int RANGE_GOOP = 31;
 
   /** Lexical state. */
   int Boost = 0;
   /** Lexical state. */
-  int RangeEx = 1;
+  int Range = 1;
   /** Lexical state. */
-  int RangeIn = 2;
-  /** Lexical state. */
-  int DEFAULT = 3;
+  int DEFAULT = 2;
 
   /** Literal token values. */
   String[] tokenImage = {
@@ -117,12 +109,9 @@ public interface QueryParserConstants {
     "<NUMBER>",
     "\"TO\"",
     "\"]\"",
-    "<RANGEIN_QUOTED>",
-    "<RANGEIN_GOOP>",
-    "\"TO\"",
     "\"}\"",
-    "<RANGEEX_QUOTED>",
-    "<RANGEEX_GOOP>",
+    "<RANGE_QUOTED>",
+    "<RANGE_GOOP>",
   };
 
 }

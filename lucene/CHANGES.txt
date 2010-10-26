@@ -270,6 +270,16 @@ New features
 * LUCENE-2690: MultiTermQuery boolean rewrites per segment.
   (Uwe Schindler, Robert Muir, Mike McCandless, Simon Willnauer)
 
+* LUCENE-996: The QueryParser now accepts mixed inclusive and exclusive
+  bounds for range queries.  Example: "{3 TO 5]"
+  QueryParser subclasses that overrode getRangeQuery will need to be changed
+  to use the new getRangeQuery method.  (Andrew Schurman, Mark Miller, yonik)
+
+* LUCENE-995: The QueryParser now interprets * as an open end for range
+  queries.  Literal asterisks may be represented by quoting or escaping
+  (i.e. \* or "*")  Custom QueryParser sublcasses overriding getRangeQuery()
+  will be passed null for any open endpoint. (Adriano Crestani, yonik)
+
 Optimizations
 
 * LUCENE-2410: ~20% speedup on exact (slop=0) PhraseQuery matching.

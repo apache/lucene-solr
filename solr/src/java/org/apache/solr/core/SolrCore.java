@@ -367,12 +367,12 @@ public final class SolrCore implements SolrInfoMBean {
 
   void initIndex() {
     try {
-
       initDirectoryFactory();
-      boolean indexExists = getDirectoryFactory().exists(getNewIndexDir());
+      String indexDir = getNewIndexDir();
+      boolean indexExists = getDirectoryFactory().exists(indexDir);
       boolean firstTime;
       synchronized (SolrCore.class) {
-        firstTime = dirs.add(new File(getNewIndexDir()).getCanonicalPath());
+        firstTime = dirs.add(new File(indexDir).getCanonicalPath());
       }
       boolean removeLocks = solrConfig.unlockOnStartup;
 
@@ -381,10 +381,10 @@ public final class SolrCore implements SolrInfoMBean {
       if (indexExists && firstTime && removeLocks) {
         // to remove locks, the directory must already exist... so we create it
         // if it didn't exist already...
-        Directory dir = SolrIndexWriter.getDirectory(getIndexDir(), getDirectoryFactory(), solrConfig.mainIndexConfig);
+        Directory dir = SolrIndexWriter.getDirectory(indexDir, getDirectoryFactory(), solrConfig.mainIndexConfig);
         if (dir != null)  {
           if (IndexWriter.isLocked(dir)) {
-            log.warn(logid+"WARNING: Solr index directory '" + getIndexDir() + "' is locked.  Unlocking...");
+            log.warn(logid+"WARNING: Solr index directory '" + indexDir+ "' is locked.  Unlocking...");
             IndexWriter.unlock(dir);
           }
           dir.close();
@@ -393,10 +393,10 @@ public final class SolrCore implements SolrInfoMBean {
 
       // Create the index if it doesn't exist.
       if(!indexExists) {
-        log.warn(logid+"Solr index directory '" + new File(getNewIndexDir()) + "' doesn't exist."
+        log.warn(logid+"Solr index directory '" + new File(indexDir) + "' doesn't exist."
                 + " Creating new index...");
 
-        SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex", getIndexDir(), getDirectoryFactory(), true, schema, solrConfig.mainIndexConfig, solrDelPolicy);
+        SolrIndexWriter writer = new SolrIndexWriter("SolrCore.initIndex", indexDir, getDirectoryFactory(), true, schema, solrConfig.mainIndexConfig, solrDelPolicy);
         writer.close();
       }
 
@@ -418,8 +418,9 @@ public final class SolrCore implements SolrInfoMBean {
     if (msg == null) msg = "SolrCore Object";
     try {
         clazz = getResourceLoader().findClass(className);
-        if (cast != null && !cast.isAssignableFrom(clazz))
+        if (cast != null && !cast.isAssignableFrom(clazz)) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " is not a " +cast.getName());
+        }
       //most of the classes do not have constructors which takes SolrCore argument. It is recommended to obtain SolrCore by implementing SolrCoreAware.
       // So invariably always it will cause a  NoSuchMethodException. So iterate though the list of available constructors
         Constructor[] cons =  clazz.getConstructors();
@@ -433,7 +434,7 @@ public final class SolrCore implements SolrInfoMBean {
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " failed to instantiate " +cast.getName(), e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,"Error Instantiating "+msg+", "+className+ " failed to instantiate " +cast.getName(), e, false);
     }
   }
 
@@ -512,7 +513,6 @@ public final class SolrCore implements SolrInfoMBean {
     this.setName( name );
     resourceLoader = config.getResourceLoader();
     if (dataDir == null){
-      // nocommit: why did solrconfig override core descriptor !?
       if(cd.usingDefaultDataDir()) dataDir = config.getDataDir();
       if(dataDir == null) dataDir = cd.getDataDir();
     }
@@ -592,7 +592,7 @@ public final class SolrCore implements SolrInfoMBean {
       resourceLoader.inform( this );  // last call before the latch is released.
       instance = this;   // set singleton for backwards compatibility
     } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, null, e, false);
     } finally {
       // allow firstSearcher events to fire
       latch.countDown();

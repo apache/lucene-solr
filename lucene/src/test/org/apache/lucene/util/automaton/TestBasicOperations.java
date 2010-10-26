@@ -56,6 +56,13 @@ public class TestBasicOperations extends LuceneTestCase {
     assertTrue(BasicOperations.sameLanguage(other, concat2));
   }
   
+  /** Test concatenation with empty language returns empty */
+  public void testEmptyLanguageConcatenate() {
+    Automaton a = BasicAutomata.makeString("a");
+    Automaton concat = BasicOperations.concatenate(a, BasicAutomata.makeEmpty());
+    assertTrue(BasicOperations.isEmpty(concat));
+  }
+  
   /** Test optimization to concatenate() with empty String to an NFA */
   public void testEmptySingletonNFAConcatenate() {
     Automaton singleton = BasicAutomata.makeString("");
@@ -79,7 +86,7 @@ public class TestBasicOperations extends LuceneTestCase {
     
     singleton = BasicAutomata.makeString("\ud801\udc1c");
     expandedSingleton = singleton.cloneExpanded();
-    //assertEquals(singleton, expandedSingleton);
+    assertTrue(BasicOperations.sameLanguage(singleton, expandedSingleton));
   }
 
   public void testGetRandomAcceptedString() throws Throwable {
@@ -87,7 +94,7 @@ public class TestBasicOperations extends LuceneTestCase {
     final int ITER2 = 100 * RANDOM_MULTIPLIER;
     for(int i=0;i<ITER1;i++) {
 
-      final RegExp re = AutomatonTestUtil.randomRegexp(random);
+      final RegExp re = new RegExp(AutomatonTestUtil.randomRegexp(random), RegExp.NONE);
       final Automaton a = re.toAutomaton();
       assertFalse(BasicOperations.isEmpty(a));
 

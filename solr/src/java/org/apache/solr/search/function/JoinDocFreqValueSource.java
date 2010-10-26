@@ -24,6 +24,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.FieldCache.DocTerms;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.search.SolrIndexReader;
 
 /**
  * Use a field value and find the Document Frequency within another field.
@@ -45,19 +46,31 @@ public class JoinDocFreqValueSource extends FieldCacheSource {
     return NAME + "(" + field +":("+qfield+"))";
   }
 
-  public DocValues getValues(Map context, final IndexReader reader) throws IOException 
+  public DocValues getValues(Map context, IndexReader reader) throws IOException 
   {
     final DocTerms terms = cache.getTerms(reader, field, true );
     
+    int offset = 0;
+    IndexReader topReader = reader;
+    if (topReader instanceof SolrIndexReader) {
+      SolrIndexReader r = (SolrIndexReader)topReader;
+      while (r.getParent() != null) {
+        offset += r.getBase();
+        r = r.getParent();
+      }
+      topReader = r;
+    }
+    final IndexReader top = topReader;
+    
     return new DocValues() {
+      BytesRef ref = new BytesRef();
 
       public int intVal(int doc) 
       {
         try {
-          BytesRef ref = new BytesRef();
           terms.getTerm(doc, ref);
-          int v = reader.docFreq( qfield, ref ); 
-          //System.out.println( NAME+"["+ref.utf8ToString()+"="+v+"]" );
+          int v = top.docFreq( qfield, ref ); 
+          //System.out.println( NAME+"["+field+"="+ref.utf8ToString()+"=("+qfield+":"+v+")]" );
           return v;
         } 
         catch (IOException e) {

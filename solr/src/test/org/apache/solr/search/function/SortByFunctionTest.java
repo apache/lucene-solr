@@ -94,6 +94,7 @@ public class SortByFunctionTest extends AbstractSolrTestCase {
   {
     assertU(adoc("id", "4", "id_s", "D", "links_mfacet", "A", "links_mfacet", "B", "links_mfacet", "C" ) );
     assertU(adoc("id", "3", "id_s", "C", "links_mfacet", "A", "links_mfacet", "B" ) );
+    assertU(commit()); // Make sure it uses two readers
     assertU(adoc("id", "2", "id_s", "B", "links_mfacet", "A" ) );
     assertU(adoc("id", "1", "id_s", "A"  ) );
     assertU(commit());

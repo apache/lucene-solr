@@ -62,6 +62,20 @@ public class SuggesterTest extends SolrTestCaseJ4 {
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/arr[@name='suggestion']/str[2][.='accommodate']"
     );
   }
+  
+  @Test
+  public void testReload() throws Exception {
+    addDocs();
+    assertU(commit());
+    assertQ(req("qt","/suggest", "q","ac", SpellingParams.SPELLCHECK_COUNT, "2", SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR, "true"),
+        "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/int[@name='numFound'][.='2']");
+    assertU(adoc("id", "4",
+        "text", "actually"
+       ));
+    assertU(commit());
+    assertQ(req("qt","/suggest", "q","ac", SpellingParams.SPELLCHECK_COUNT, "2", SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR, "true"),
+    "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='ac']/int[@name='numFound'][.='2']");
+  }
 
   
   private TermFreqIterator getTFIT() {

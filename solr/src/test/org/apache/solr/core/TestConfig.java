@@ -130,10 +130,12 @@ public class TestConfig extends SolrTestCaseJ4 {
         return writer;
       }
     }
-    
-    IndexWriter writer = new ExposeWriterHandler().getWriter();
+
+    ExposeWriterHandler duh = new ExposeWriterHandler();
+    IndexWriter writer = duh.getWriter();
     int interval = writer.getTermIndexInterval();
     assertEquals(256, interval);
+    duh.close();
   }
 
   @Test

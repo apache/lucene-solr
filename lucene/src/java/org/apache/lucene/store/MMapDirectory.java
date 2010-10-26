@@ -79,7 +79,8 @@ import org.apache.lucene.util.Constants;
  */
 public class MMapDirectory extends FSDirectory {
   private boolean useUnmapHack = UNMAP_SUPPORTED;
-  private int maxBBuf = Constants.JRE_IS_64BIT ? Integer.MAX_VALUE : (256 * 1024 * 1024);
+  public static final int DEFAULT_MAX_BUFF = Constants.JRE_IS_64BIT ? Integer.MAX_VALUE : (256 * 1024 * 1024);
+  private int maxBBuf = DEFAULT_MAX_BUFF;
 
   /** Create a new MMapDirectory for the named location.
    *

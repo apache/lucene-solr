@@ -152,17 +152,6 @@ public class WeightedSpanTermExtractor {
         IndexReader ir = getReaderForField(mtq.getField());
         extract(query.rewrite(ir), terms);
       }
-      // nocommit is this needed anymore?
-      /*
-      else {
-        FakeReader fReader = new FakeReader();
-        MultiTermQuery.SCORING_BOOLEAN_QUERY_REWRITE.rewrite(fReader, mtq);
-        if (fReader.field != null) {
-          IndexReader ir = getReaderForField(fReader.field);
-          extract(query.rewrite(ir), terms);
-        }
-      }
-      */
     } else if (query instanceof MultiPhraseQuery) {
       final MultiPhraseQuery mpq = (MultiPhraseQuery) query;
       final List<Term[]> termArrays = mpq.getTermArrays();

@@ -103,7 +103,7 @@
       <str name="buildOnCommit">true</str>
 
       <!-- Suggester properties -->
-      <str name="threshold">0.0</str>
+      <float name="threshold">0.0</float>
 <!--
       <str name="sourceLocation">american-english</str>
 -->

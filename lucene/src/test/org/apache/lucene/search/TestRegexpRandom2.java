@@ -138,7 +138,7 @@ public class TestRegexpRandom2 extends LuceneTestCase {
     String codec = CodecProvider.getDefaultCodec();
     int num = codec.equals("PreFlex") ? 100 * RANDOM_MULTIPLIER : 1000 * RANDOM_MULTIPLIER;
     for (int i = 0; i < num; i++) {
-      String reg = AutomatonTestUtil.randomRegexp(random).toString();
+      String reg = AutomatonTestUtil.randomRegexp(random);
       assertSame(reg);
     }
   }

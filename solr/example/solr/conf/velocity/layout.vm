@@ -25,10 +25,12 @@
 
       // http://localhost:8983/solr/terms?terms.fl=name&terms.prefix=i&terms.sort=count
     });
+  
     </script>
 
   </head>
   <body>
+    <div id="admin"><a href="#url_for_solr/admin">Solr Admin</a></div>
     <div id="header">
       #parse("header.vm")
     </div>
