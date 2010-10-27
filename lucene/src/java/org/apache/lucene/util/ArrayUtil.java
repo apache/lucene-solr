@@ -18,6 +18,7 @@ package org.apache.lucene.util;
  */
 
 import java.util.Collection;
+import java.util.Comparator;
 
 /**
  * Methods for manipulating arrays.
@@ -467,4 +468,177 @@ public final class ArrayUtil {
 
     return result;
   }
+  
+  /** SorterTemplate with custom {@link Comparator} */
+  private static <T> SorterTemplate getSorter(final T[] a, final Comparator<? super T> comp) {
+    return new SorterTemplate() {
+      @Override
+      protected void swap(int i, int j) {
+        final T o = a[i];
+        a[i] = a[j];
+        a[j] = o;
+      }
+      
+      @Override
+      protected int compare(int i, int j) {
+        return comp.compare(a[i], a[j]);
+      }
+
+      @Override
+      protected void setPivot(int i) {
+        pivot = a[i];
+      }
+  
+      @Override
+      protected int comparePivot(int j) {
+        return comp.compare(pivot, a[j]);
+      }
+      
+      private T pivot;
+    };
+  }
+  
+  /** Natural SorterTemplate */
+  private static <T extends Comparable<? super T>> SorterTemplate getSorter(final T[] a) {
+    return new SorterTemplate() {
+      @Override
+      protected void swap(int i, int j) {
+        final T o = a[i];
+        a[i] = a[j];
+        a[j] = o;
+      }
+      
+      @Override
+      protected int compare(int i, int j) {
+        return a[i].compareTo(a[j]);
+      }
+
+      @Override
+      protected void setPivot(int i) {
+        pivot = a[i];
+      }
+  
+      @Override
+      protected int comparePivot(int j) {
+        return pivot.compareTo(a[j]);
+      }
+      
+      private T pivot;
+    };
+  }
+
+  // quickSorts (endindex is exclusive!):
+  
+  /**
+   * Sorts the given array slice using the {@link Comparator}. This method uses the quick sort
+   * algorithm, but falls back to insertion sort for small arrays.
+   * @param fromIndex start index (inclusive)
+   * @param toIndex end index (exclusive)
+   */
+  public static <T> void quickSort(T[] a, int fromIndex, int toIndex, Comparator<? super T> comp) {
+    getSorter(a, comp).quickSort(fromIndex, toIndex-1);
+  }
+  
+  /**
+   * Sorts the given array using the {@link Comparator}. This method uses the quick sort
+   * algorithm, but falls back to insertion sort for small arrays.
+   */
+  public static <T> void quickSort(T[] a, Comparator<? super T> comp) {
+    quickSort(a, 0, a.length, comp);
+  }
+  
+  /**
+   * Sorts the given array slice in natural order. This method uses the quick sort
+   * algorithm, but falls back to insertion sort for small arrays.
+   * @param fromIndex start index (inclusive)
+   * @param toIndex end index (exclusive)
+   */
+  public static <T extends Comparable<? super T>> void quickSort(T[] a, int fromIndex, int toIndex) {
+    getSorter(a).quickSort(fromIndex, toIndex-1);
+  }
+  
+  /**
+   * Sorts the given array in natural order. This method uses the quick sort
+   * algorithm, but falls back to insertion sort for small arrays.
+   */
+  public static <T extends Comparable<? super T>> void quickSort(T[] a) {
+    quickSort(a, 0, a.length);
+  }
+
+  // mergeSorts:
+  
+  /**
+   * Sorts the given array slice using the {@link Comparator}. This method uses the merge sort
+   * algorithm, but falls back to insertion sort for small arrays.
+   * @param fromIndex start index (inclusive)
+   * @param toIndex end index (exclusive)
+   */
+  public static <T> void mergeSort(T[] a, int fromIndex, int toIndex, Comparator<? super T> comp) {
+    getSorter(a, comp).mergeSort(fromIndex, toIndex-1);
+  }
+  
+  /**
+   * Sorts the given array using the {@link Comparator}. This method uses the merge sort
+   * algorithm, but falls back to insertion sort for small arrays.
+   */
+  public static <T> void mergeSort(T[] a, Comparator<? super T> comp) {
+    mergeSort(a, 0, a.length, comp);
+  }
+  
+  /**
+   * Sorts the given array slice in natural order. This method uses the merge sort
+   * algorithm, but falls back to insertion sort for small arrays.
+   * @param fromIndex start index (inclusive)
+   * @param toIndex end index (exclusive)
+   */
+  public static <T extends Comparable<? super T>> void mergeSort(T[] a, int fromIndex, int toIndex) {
+    getSorter(a).mergeSort(fromIndex, toIndex-1);
+  }
+  
+  /**
+   * Sorts the given array in natural order. This method uses the merge sort
+   * algorithm, but falls back to insertion sort for small arrays.
+   */
+  public static <T extends Comparable<? super T>> void mergeSort(T[] a) {
+    mergeSort(a, 0, a.length);
+  }
+
+  // insertionSorts:
+  
+  /**
+   * Sorts the given array slice using the {@link Comparator}. This method uses the insertion sort
+   * algorithm. It is only recommened to use this algorithm for partially sorted small arrays!
+   * @param fromIndex start index (inclusive)
+   * @param toIndex end index (exclusive)
+   */
+  public static <T> void insertionSort(T[] a, int fromIndex, int toIndex, Comparator<? super T> comp) {
+    getSorter(a, comp).insertionSort(fromIndex, toIndex-1);
+  }
+  
+  /**
+   * Sorts the given array using the {@link Comparator}. This method uses the insertion sort
+   * algorithm. It is only recommened to use this algorithm for partially sorted small arrays!
+   */
+  public static <T> void insertionSort(T[] a, Comparator<? super T> comp) {
+    insertionSort(a, 0, a.length, comp);
+  }
+  
+  /**
+   * Sorts the given array slice in natural order. This method uses the insertion sort
+   * algorithm. It is only recommened to use this algorithm for partially sorted small arrays!
+   * @param fromIndex start index (inclusive)
+   * @param toIndex end index (exclusive)
+   */
+  public static <T extends Comparable<? super T>> void insertionSort(T[] a, int fromIndex, int toIndex) {
+    getSorter(a).insertionSort(fromIndex, toIndex-1);
+  }
+  
+  /**
+   * Sorts the given array in natural order. This method uses the insertion sort
+   * algorithm. It is only recommened to use this algorithm for partially sorted small arrays!
+   */
+  public static <T extends Comparable<? super T>> void insertionSort(T[] a) {
+    insertionSort(a, 0, a.length);
+  }
+
 }

@@ -34,7 +34,6 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -555,9 +554,8 @@ final public class BasicOperations {
     }
 
     public void sort() {
-      if (count > 1) {
-        Arrays.sort(points, 0, count);
-      }
+      // mergesort seems to perform better on already sorted arrays:
+      if (count > 1) ArrayUtil.mergeSort(points, 0, count);
     }
 
     public void add(Transition t) {

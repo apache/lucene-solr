@@ -23,7 +23,6 @@ package org.apache.lucene.search.highlight;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -36,6 +35,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.TermFreqVector;
 import org.apache.lucene.index.TermPositionVector;
 import org.apache.lucene.index.TermVectorOffsetInfo;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -231,13 +231,9 @@ public class TokenSources {
     if (unsortedTokens != null) {
       tokensInOriginalOrder = unsortedTokens.toArray(new Token[unsortedTokens
           .size()]);
-      Arrays.sort(tokensInOriginalOrder, new Comparator<Token>() {
+      ArrayUtil.quickSort(tokensInOriginalOrder, new Comparator<Token>() {
         public int compare(Token t1, Token t2) {
-          if (t1.startOffset() > t2.endOffset())
-            return 1;
-          if (t1.startOffset() < t2.startOffset())
-            return -1;
-          return 0;
+          return t1.startOffset() - t2.endOffset();
         }
       });
     }

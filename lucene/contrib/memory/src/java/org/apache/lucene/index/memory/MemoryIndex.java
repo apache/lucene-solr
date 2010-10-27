@@ -55,6 +55,7 @@ import org.apache.lucene.search.Searcher;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.RAMDirectory; // for javadocs
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.Constants; // for javadocs
@@ -522,7 +523,7 @@ public class MemoryIndex implements Serializable {
       entries[i] = iter.next();
     }
     
-    if (size > 1) Arrays.sort(entries, termComparator);
+    if (size > 1) ArrayUtil.quickSort(entries, termComparator);
     return entries;
   }
   

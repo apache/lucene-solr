@@ -324,9 +324,11 @@ Bug fixes
 
 Changes in backwards compatibility policy
 
-* LUCENE-1483: Removed utility class oal.util.SorterTemplate; this
-  class is no longer used by Lucene.  (Gunnar Wagenknecht via Mike
-  McCandless)
+* LUCENE-2719: Changed API of internal utility class
+  org.apche.lucene.util.SorterTemplate to support faster quickSort using
+  pivot values and also merge sort and insertion sort. If you have used
+  this class, you have to implement two more methods for handling pivots.
+  (Uwe Schindler, Robert Muir, Mike McCandless)
 
 * LUCENE-1923: Renamed SegmentInfo & SegmentInfos segString method to
   toString.  These are advanced APIs and subject to change suddenly.

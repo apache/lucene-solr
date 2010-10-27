@@ -20,13 +20,13 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Set;
 import java.util.ArrayList;
-import java.util.Arrays;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DocsAndPositionsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.search.Explanation.IDFExplanation;
 import org.apache.lucene.util.ToStringUtils;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.Bits;
 
 /** A Query that matches documents containing a particular sequence of terms.
@@ -201,7 +201,7 @@ public class PhraseQuery extends Query {
 
       // sort by increasing docFreq order
       if (slop == 0) {
-        Arrays.sort(postingsFreqs);
+        ArrayUtil.quickSort(postingsFreqs);
       }
 
       if (slop == 0) {				  // optimize exact case

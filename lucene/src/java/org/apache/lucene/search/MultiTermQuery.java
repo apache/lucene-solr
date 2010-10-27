@@ -19,7 +19,6 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -507,13 +506,7 @@ public abstract class MultiTermQuery extends Query {
       final Term placeholderTerm = new Term(query.field);
       final BooleanQuery bq = new BooleanQuery(true);
       final ScoreTerm[] scoreTerms = stQueue.toArray(new ScoreTerm[stQueue.size()]);
-      Arrays.sort(scoreTerms, new Comparator<ScoreTerm>() {
-        public int compare(ScoreTerm st1, ScoreTerm st2) {
-          assert st1.termComp == st2.termComp :
-            "term comparator should not change between segments";
-          return st1.termComp.compare(st1.bytes, st2.bytes);
-        }
-      });
+      ArrayUtil.quickSort(scoreTerms, scoreTermSortByTermComp);
       for (final ScoreTerm st : scoreTerms) {
         final Term term = placeholderTerm.createTerm(st.bytes);
         assert reader.docFreq(term) == st.docFreq;
@@ -539,6 +532,15 @@ public abstract class MultiTermQuery extends Query {
       if (size != other.size) return false;
       return true;
     }
+    
+    private static final Comparator<ScoreTerm> scoreTermSortByTermComp = 
+      new Comparator<ScoreTerm>() {
+        public int compare(ScoreTerm st1, ScoreTerm st2) {
+          assert st1.termComp == st2.termComp :
+            "term comparator should not change between segments";
+          return st1.termComp.compare(st1.bytes, st2.bytes);
+        }
+      };
   
     static final class ScoreTerm implements Comparable<ScoreTerm> {
       public final Comparator<BytesRef> termComp;
