@@ -643,10 +643,8 @@ public class TestExternalCodecs extends LuceneTestCase {
 
     IndexReader r = IndexReader.open(w);
     IndexReader[] subs = r.getSequentialSubReaders();
-    assertTrue(subs.length > 1);
     // test each segment
     for(int i=0;i<subs.length;i++) {
-      //System.out.println("test i=" + i);
       testTermsOrder(subs[i]);
     }
     // test each multi-reader
@@ -679,6 +677,7 @@ public class TestExternalCodecs extends LuceneTestCase {
 
     dir.close();
   }
+
   private void testTermsOrder(IndexReader r) throws Exception {
 
     // Verify sort order matches what my comparator said:
