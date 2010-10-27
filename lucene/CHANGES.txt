@@ -767,6 +767,12 @@ Optimizations
 * LUCENE-2556: Improve memory usage after cloning (Char)TermAttribute.
   (Adriano Crestani via Uwe Schindler)
 
+* LUCENE-2719: Improved TermsHashPerField's sorting to use a better
+  quick sort algorithm that dereferences the privot element not on
+  every compare call. Also replaced lots of sorting code in Lucene
+  by the improved SorterTemplate class.
+  (Uwe Schindler, Robert Muir, Mike McCandless)
+
 Build
 
 * LUCENE-2124: Moved the JDK-based collation support from contrib/collation 
