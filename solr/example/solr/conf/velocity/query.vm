@@ -3,21 +3,8 @@
     <div class="inputs">
       <span #annTitle("Add the query using the &q= parameter")>Find: <input type="text" id="q" name="q" value="$!esc.html($params.get('q'))"/> <input type="submit" id="querySubmit"/> <input type="reset"/></span>
       <div class="query-boost"><span #annTitle("Add the boost function &bf=price to the query")><input type="checkbox" name="bf" value="price" #if($request.params.get('bf') == 'price')checked="true"#end>Boost by Price</input></span>
-      <span >
-        #set($loc = $request.params.get('pt'))
-        #set($dist = $request.params.get('d', "10"))
-        <label #annTitle("Add the &pt parameter")>Location Filter:
-          <select id="pt" name="pt">
-            <option value="none" #if($loc == '')selected="true"#end>No Filter</option>
-            <option value="45.17614,-93.87341" #if($loc == '45.17614,-93.87341')selected="true"#end>Buffalo, MN</option>
-            <option value="37.7752,-100.0232" #if($loc == '37.7752,-100.0232')selected="true"#end>Dodge City, KS</option>
-            <option value="35.0752,-97.032" #if($loc == '35.0752,-97.032')selected="true"#end>Oklahoma City, OK</option>
-            <option value="37.7752,-122.4232" #if($loc == '37.7752,-122.4232')selected="true"#end>San Francisco CA</option>
-          </select>
-        </label>
-        <span #annTitle("Add the &d parameter")>Distance (KM): <input id="d" name="d" type="text" size="6" value="#if($dist != '')${dist}#{else}10#end"/></span>
-        <input type="hidden" name="sfield" value="store"/>
-        <input type="hidden" id="spatialFQ" name="fq" value=""/>
+      #parse("querySpatial.vm")
+      #parse("queryGroup.vm")
       </div>
   </div>
 
@@ -44,23 +31,10 @@
         <a href="#" onclick='jQuery(this).siblings("pre").toggle(); return false;'>toggle parsed query</a>
         <pre style="display:none">$response.response.debug.parsedquery</pre>
       #end
+      #set($queryOpts = $request.params.get("queryOpts"))
+      #if($queryOpts && $queryOpts != "")
+        <input type="hidden" name="queryOpts" value="$queryOpts"/>
+      #end
   </form>
-<script type="text/javascript">
-  $('#query-form').submit(function() {
-    if ($("#pt").val() != "none") {
-      $("#spatialFQ").val("{!bbox}");
-      //return false;
-    }
-    $fqs = $("#allFQs").val();
-    $fqs = $fqs.replace("{!bbox}", "");
-    if ($fqs == ''){
-      $("#allFQs").remove();
-    }
-    $("#allFQs").val($fqs);
-    //$("#spatialFQ").remove();
-    alert($fqs);
-    //alert("false");
-      return true;
-    });
-</script>
+
 </div>
