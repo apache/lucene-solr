@@ -174,6 +174,8 @@ public class TestBytesRefHash extends LuceneTestCase {
         hash.add(ref);
         strings.add(str);
       }
+      // We use the UTF-16 comparator here, because we need to be able to
+      // compare to native String.compareTo() [UTF-16]:
       int[] sort = hash.sort(BytesRef.getUTF8SortedAsUTF16Comparator());
       assertTrue(strings.size() < sort.length);
       int i = 0;
