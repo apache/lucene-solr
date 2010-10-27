@@ -24,6 +24,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultipleTermPositions;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermPositions;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.ToStringUtils;
 
 /**
@@ -197,7 +198,7 @@ public class MultiPhraseQuery extends Query {
 
       // sort by increasing docFreq order
       if (slop == 0) {
-        Arrays.sort(postingsFreqs);
+        ArrayUtil.quickSort(postingsFreqs);
       }
 
       if (slop == 0) {

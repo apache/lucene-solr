@@ -21,6 +21,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.store.*;
+import org.apache.lucene.util.ArrayUtil;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -1096,7 +1097,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
       cfr = new CompoundFileReader(dir, filename);
 
       String [] files = cfr.listAll();
-      Arrays.sort(files);   // sort the array of filename so that the output is more readable
+      ArrayUtil.quickSort(files);   // sort the array of filename so that the output is more readable
 
       for (int i = 0; i < files.length; ++i) {
         long len = cfr.fileLength(files[i]);

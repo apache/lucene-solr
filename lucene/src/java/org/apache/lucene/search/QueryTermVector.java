@@ -30,6 +30,7 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.util.ArrayUtil;
 
 /**
  *
@@ -77,7 +78,7 @@ public class QueryTermVector implements TermFreqVector {
   
   private void processTerms(String[] queryTerms) {
     if (queryTerms != null) {
-      Arrays.sort(queryTerms);
+      ArrayUtil.quickSort(queryTerms);
       Map<String,Integer> tmpSet = new HashMap<String,Integer>(queryTerms.length);
       //filter out duplicates
       List<String> tmpList = new ArrayList<String>(queryTerms.length);

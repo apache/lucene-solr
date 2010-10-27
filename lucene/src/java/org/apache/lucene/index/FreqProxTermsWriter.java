@@ -21,10 +21,10 @@ import org.apache.lucene.util.UnicodeUtil;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.lucene.util.CollectionUtil;
 
 final class FreqProxTermsWriter extends TermsHashConsumer {
 
@@ -80,7 +80,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
     }
 
     // Sort by field name
-    Collections.sort(allFields);
+    CollectionUtil.quickSort(allFields);
     final int numAllFields = allFields.size();
 
     // TODO: allow Lucene user to customize this consumer:

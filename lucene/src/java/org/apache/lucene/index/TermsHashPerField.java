@@ -24,6 +24,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.SorterTemplate;
 
 final class TermsHashPerField extends InvertedDocConsumerPerField {
 
@@ -147,7 +148,7 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
                 ints[upto+stream]);
   }
 
-  private synchronized void compactPostings() {
+  private void compactPostings() {
     int upto = 0;
     for(int i=0;i<postingsHashSize;i++) {
       if (postingsHash[i] != -1) {
@@ -166,103 +167,74 @@ final class TermsHashPerField extends InvertedDocConsumerPerField {
   /** Collapse the hash table & sort in-place. */
   public int[] sortPostings() {
     compactPostings();
-    quickSort(postingsHash, 0, numPostings-1);
+    final int[] postingsHash = this.postingsHash;
+    new SorterTemplate() {
+      @Override
+      protected void swap(int i, int j) {
+        final int o = postingsHash[i];
+        postingsHash[i] = postingsHash[j];
+        postingsHash[j] = o;
+      }
+      
+      @Override
+      protected int compare(int i, int j) {
+        final int term1 = postingsHash[i], term2 = postingsHash[j];
+        if (term1 == term2)
+          return 0;
+        final int textStart1 = postingsArray.textStarts[term1],
+          textStart2 = postingsArray.textStarts[term2];
+        final char[] text1 = charPool.buffers[textStart1 >> DocumentsWriter.CHAR_BLOCK_SHIFT];
+        final int pos1 = textStart1 & DocumentsWriter.CHAR_BLOCK_MASK;
+        final char[] text2 = charPool.buffers[textStart2 >> DocumentsWriter.CHAR_BLOCK_SHIFT];
+        final int pos2 = textStart2 & DocumentsWriter.CHAR_BLOCK_MASK;
+        return comparePostings(text1, pos1, text2, pos2);
+      }
+
+      @Override
+      protected void setPivot(int i) {
+        pivotTerm = postingsHash[i];
+        final int textStart = postingsArray.textStarts[pivotTerm];
+        pivotBuf = charPool.buffers[textStart >> DocumentsWriter.CHAR_BLOCK_SHIFT];
+        pivotBufPos = textStart & DocumentsWriter.CHAR_BLOCK_MASK;
+      }
+  
+      @Override
+      protected int comparePivot(int j) {
+        final int term = postingsHash[j];
+        if (pivotTerm == term)
+          return 0;
+        final int textStart = postingsArray.textStarts[term];
+        final char[] text = charPool.buffers[textStart >> DocumentsWriter.CHAR_BLOCK_SHIFT];
+        final int pos = textStart & DocumentsWriter.CHAR_BLOCK_MASK;
+        return comparePostings(pivotBuf, pivotBufPos, text, pos);
+      }
+      
+      private int pivotTerm, pivotBufPos;
+      private char[] pivotBuf;
+
+      /** Compares term text for two Posting instance and
+       *  returns -1 if p1 < p2; 1 if p1 > p2; else 0. */
+      private int comparePostings(final char[] text1, int pos1, final char[] text2, int pos2) {
+        assert text1 != text2 || pos1 != pos2;
+
+        while(true) {
+          final char c1 = text1[pos1++];
+          final char c2 = text2[pos2++];
+          if (c1 != c2) {
+            if (0xffff == c2)
+              return 1;
+            else if (0xffff == c1)
+              return -1;
+            else
+              return c1-c2;
+          } else
+            // This method should never compare equal postings
+            // unless p1==p2
+            assert c1 != 0xffff;
+        }
+      }
+    }.quickSort(0, numPostings-1);
     return postingsHash;
-  }
-
-  void quickSort(int[] termIDs, int lo, int hi) {
-    if (lo >= hi)
-      return;
-    else if (hi == 1+lo) {
-      if (comparePostings(termIDs[lo], termIDs[hi]) > 0) {
-        final int tmp = termIDs[lo];
-        termIDs[lo] = termIDs[hi];
-        termIDs[hi] = tmp;
-      }
-      return;
-    }
-
-    int mid = (lo + hi) >>> 1;
-
-    if (comparePostings(termIDs[lo], termIDs[mid]) > 0) {
-      int tmp = termIDs[lo];
-      termIDs[lo] = termIDs[mid];
-      termIDs[mid] = tmp;
-    }
-
-    if (comparePostings(termIDs[mid], termIDs[hi]) > 0) {
-      int tmp = termIDs[mid];
-      termIDs[mid] = termIDs[hi];
-      termIDs[hi] = tmp;
-
-      if (comparePostings(termIDs[lo], termIDs[mid]) > 0) {
-        int tmp2 = termIDs[lo];
-        termIDs[lo] = termIDs[mid];
-        termIDs[mid] = tmp2;
-      }
-    }
-
-    int left = lo + 1;
-    int right = hi - 1;
-
-    if (left >= right)
-      return;
-
-    int partition = termIDs[mid];
-
-    for (; ;) {
-      while (comparePostings(termIDs[right], partition) > 0)
-        --right;
-
-      while (left < right && comparePostings(termIDs[left], partition) <= 0)
-        ++left;
-
-      if (left < right) {
-        int tmp = termIDs[left];
-        termIDs[left] = termIDs[right];
-        termIDs[right] = tmp;
-        --right;
-      } else {
-        break;
-      }
-    }
-
-    quickSort(termIDs, lo, left);
-    quickSort(termIDs, left + 1, hi);
-  }
-
-  /** Compares term text for two Posting instance and
-   *  returns -1 if p1 < p2; 1 if p1 > p2; else 0. */
-  int comparePostings(int term1, int term2) {
-
-    if (term1 == term2)
-      return 0;
-
-    final int textStart1 = postingsArray.textStarts[term1];
-    final int textStart2 = postingsArray.textStarts[term2];
-    
-    final char[] text1 = charPool.buffers[textStart1 >> DocumentsWriter.CHAR_BLOCK_SHIFT];
-    int pos1 = textStart1 & DocumentsWriter.CHAR_BLOCK_MASK;
-    final char[] text2 = charPool.buffers[textStart2 >> DocumentsWriter.CHAR_BLOCK_SHIFT];
-    int pos2 = textStart2 & DocumentsWriter.CHAR_BLOCK_MASK;
-
-    assert text1 != text2 || pos1 != pos2;
-
-    while(true) {
-      final char c1 = text1[pos1++];
-      final char c2 = text2[pos2++];
-      if (c1 != c2) {
-        if (0xffff == c2)
-          return 1;
-        else if (0xffff == c1)
-          return -1;
-        else
-          return c1-c2;
-      } else
-        // This method should never compare equal postings
-        // unless p1==p2
-        assert c1 != 0xffff;
-    }
   }
 
   /** Test whether the text for current RawPostingList p equals

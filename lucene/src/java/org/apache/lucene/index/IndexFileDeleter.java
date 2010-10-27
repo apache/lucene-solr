@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.Collection;
 
 import org.apache.lucene.store.NoSuchDirectoryException;
+import org.apache.lucene.util.CollectionUtil;
 
 /*
  * This class keeps track of each SegmentInfos instance that
@@ -231,7 +232,7 @@ final class IndexFileDeleter {
     }
 
     // We keep commits list in sorted order (oldest to newest):
-    Collections.sort(commits);
+    CollectionUtil.mergeSort(commits);
 
     // Now delete anything with ref count at 0.  These are
     // presumably abandoned files eg due to crash of
