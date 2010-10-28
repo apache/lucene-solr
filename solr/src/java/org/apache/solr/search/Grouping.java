@@ -143,6 +143,7 @@ class TopGroupCollector extends GroupCollector {
   int spareSlot;
 
   int matches;
+  boolean groupsFull = false;
 
   public TopGroupCollector(ValueSource groupByVS, Map vsContext, Sort sort, int nGroups) throws IOException {
     this.vs = groupByVS;
@@ -173,6 +174,29 @@ class TopGroupCollector extends GroupCollector {
   @Override
   public void collect(int doc) throws IOException {
     matches++;
+
+    // Doing this before ValueFiller and HashMap are executed
+    // This allows us to exit this method asap when a doc is not competitive
+    // As it turns out this happens most of the times.
+    if (groupsFull) {
+      for (int i = 0;; i++) {
+        final int c = reversed[i] * comparators[i].compareBottom(doc);
+        if (c < 0) {
+          // Definitely not competitive. So don't even bother to continue
+          return;
+        } else if (c > 0) {
+          // Definitely competitive.
+          break;
+        } else if (i == comparators.length - 1) {
+          // Here c=0. If we're at the last comparator, this doc is not
+          // competitive, since docs are visited in doc Id order, which means
+          // this doc cannot compete with any other document in the queue.
+          return;
+        }
+      }
+    }
+
+    // These next two statements are expensive
     filler.fillValue(doc);
     SearchGroup group = groupMap.get(mval);
     if (group == null) {
@@ -191,6 +215,7 @@ class TopGroupCollector extends GroupCollector {
       }
 
       if (orderedGroups == null) {
+        groupsFull = true;
         buildSet();
       }
 

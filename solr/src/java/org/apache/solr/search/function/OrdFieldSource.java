@@ -74,6 +74,14 @@ public class OrdFieldSource extends ValueSource {
         return (double)termsIndex.getOrd(doc);
       }
 
+      public int ordVal(int doc) {
+        return termsIndex.getOrd(doc);
+      }
+
+      public int numOrd() {
+        return termsIndex.numOrd();
+      }
+
       public String strVal(int doc) {
         // the string value of the ordinal, not the string itself
         return Integer.toString(termsIndex.getOrd(doc));
