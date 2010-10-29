@@ -968,7 +968,7 @@ public class SegmentReader extends IndexReader implements Cloneable {
                 fieldOption == IndexReader.FieldOption.TERMVECTOR_WITH_POSITION_OFFSET) {
         fieldSet.add(fi.name);
       }
-      else if (fi.indexValues != null && fieldOption == IndexReader.FieldOption.DOC_VALUES) {
+      else if (fi.docValues != null && fieldOption == IndexReader.FieldOption.DOC_VALUES) {
         fieldSet.add(fi.name);
       }
     }

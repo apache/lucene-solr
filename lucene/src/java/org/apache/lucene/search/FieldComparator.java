@@ -336,7 +336,7 @@ public abstract class FieldComparator {
 
     @Override
     public int compareBottom(int doc) {
-      final double v2 = currentReaderValues.floats(doc);
+      final double v2 = currentReaderValues.getFloat(doc);
       if (bottom > v2) {
         return 1;
       } else if (bottom < v2) {
@@ -348,12 +348,12 @@ public abstract class FieldComparator {
 
     @Override
     public void copy(int slot, int doc) {
-      values[slot] = currentReaderValues.floats(doc);
+      values[slot] = currentReaderValues.getFloat(doc);
     }
 
     @Override
     public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      currentReaderValues = reader.getIndexValuesCache().getFloats(field);
+      currentReaderValues = reader.docValues(field).getCached(true);
       return this;
     }
     
@@ -538,7 +538,7 @@ public abstract class FieldComparator {
     public int compareBottom(int doc) {
       // TODO: there are sneaky non-branch ways to compute
       // -1/+1/0 sign
-      final long v2 = currentReaderValues.ints(doc);
+      final long v2 = currentReaderValues.getInt(doc);
       if (bottom > v2) {
         return 1;
       } else if (bottom < v2) {
@@ -550,12 +550,12 @@ public abstract class FieldComparator {
 
     @Override
     public void copy(int slot, int doc) {
-      values[slot] = currentReaderValues.ints(doc);
+      values[slot] = currentReaderValues.getInt(doc);
     }
 
     @Override
     public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      currentReaderValues = reader.getIndexValuesCache().getInts(field);
+      currentReaderValues = reader.docValues(field).getCached(true);
       return this;
     }
     

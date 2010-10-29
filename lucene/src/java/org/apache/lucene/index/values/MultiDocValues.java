@@ -1,4 +1,5 @@
 package org.apache.lucene.index.values;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -16,196 +17,214 @@ package org.apache.lucene.index.values;
  * limitations under the License.
  */
 import java.io.IOException;
-import java.util.List;
+import java.util.Arrays;
 
-import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.index.MultiTermsEnum.TermsEnumIndex;
+import org.apache.lucene.index.values.DocValues.Source;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FloatsRef;
 import org.apache.lucene.util.LongsRef;
-import org.apache.lucene.util.ReaderUtil.Slice;
+import org.apache.lucene.util.ReaderUtil;
 
 public class MultiDocValues extends DocValues {
 
-  public static class DocValuesIndex {
+  public static class DocValuesIndex { // nocommit is this necessary?
     public final static DocValuesIndex[] EMPTY_ARRAY = new DocValuesIndex[0];
-    final int subIndex;
+    final int start;
+    final int length;
     final DocValues docValues;
 
-    public DocValuesIndex(DocValues docValues, int subIndex) {
+    public DocValuesIndex(DocValues docValues, int start, int length) {
       this.docValues = docValues;
-      this.subIndex = subIndex;
+      this.start = start;
+      this.length = length;
     }
   }
 
   private DocValuesIndex[] docValuesIdx;
-  private Slice[] subSlices;
+  private int[] starts;
 
-  public MultiDocValues(Slice[] subSlices) {
-    this.subSlices = subSlices;
+  public MultiDocValues() {
+    starts = new int[0];
+    docValuesIdx = new DocValuesIndex[0];
   }
 
-  public MultiDocValues(DocValuesIndex[] docValuesIdx, Slice[] subSlices) {
-    this(subSlices);
+  public MultiDocValues(DocValuesIndex[] docValuesIdx) {
     reset(docValuesIdx);
   }
 
   @Override
   public ValuesEnum getEnum(AttributeSource source) throws IOException {
-    return new MultiValuesEnum(subSlices, docValuesIdx, docValuesIdx[0].docValues.type());
+    return new MultiValuesEnum(docValuesIdx, starts);
   }
 
   @Override
   public Source load() throws IOException {
-    return new MultiSource(subSlices, docValuesIdx);
+    return new MultiSource(docValuesIdx, starts);
   }
 
   public void close() throws IOException {
-    //      
+    super.close();
   }
 
   public DocValues reset(DocValuesIndex[] docValuesIdx) {
+    int[] start = new int[docValuesIdx.length];
+    for (int i = 0; i < docValuesIdx.length; i++) {
+      start[i] = docValuesIdx[i].start;
+    }
+    this.starts = start;
     this.docValuesIdx = docValuesIdx;
     return this;
   }
 
+  public static class DummyDocValues extends DocValues {
+    final int maxDoc;
+    final Values type;
+    static final Source DUMMY = new DummySource();
+
+    public DummyDocValues(int maxDoc, Values type) {
+      this.type = type;
+      this.maxDoc = maxDoc;
+    }
+
+    @Override
+    public ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+      return new DummyEnum(attrSource, maxDoc, type);
+    }
+
+    @Override
+    public Source load() throws IOException {
+      return DUMMY;
+    }
+
+    @Override
+    public Source getCached(boolean load) throws IOException {
+      return DUMMY;
+    }
+
+    @Override
+    public Source releaseCached() {
+      return DUMMY;
+    }
+
+    @Override
+    public Values type() {
+      return type;
+    }
+
+    public void close() throws IOException {
+      super.close();
+    }
+
+  }
+
   private static class MultiValuesEnum extends ValuesEnum {
-    private int numDocs_ = 0;
-    private int pos = -1;
-    private int start = 0;
-    private ValuesEnum current;
-    private Slice[] subSlices;
     private DocValuesIndex[] docValuesIdx;
     private final int maxDoc;
+    private int currentStart;
+    private int currentMax;
+    private int currentDoc = -1;
+    private ValuesEnum currentEnum;
+    private final int[] starts;
 
-    public MultiValuesEnum(Slice[] subSlices, DocValuesIndex[] docValuesIdx, Values type) {
-      super(type);
-      this.subSlices = subSlices;
+    public MultiValuesEnum(DocValuesIndex[] docValuesIdx, int[] starts)
+        throws IOException {
+      super(docValuesIdx[0].docValues.type());
       this.docValuesIdx = docValuesIdx;
-      Slice slice = subSlices[subSlices.length-1];
-      maxDoc = slice.start + slice.length;
+      final DocValuesIndex last = docValuesIdx[docValuesIdx.length - 1];
+      maxDoc = last.start + last.length;
+      final DocValuesIndex idx = docValuesIdx[0];
+      currentEnum = idx.docValues.getEnum(this.attributes());
+      currentMax = idx.length;
+      currentStart = 0;
+      this.starts = starts;
     }
 
     @Override
     public void close() throws IOException {
-      
+      currentEnum.close();
     }
 
     @Override
     public int advance(int target) throws IOException {
-//      int n = target - start;
-//      do {
-//        if (target >= maxDoc)
-//          return pos = NO_MORE_DOCS;
-//        if (n >= numDocs_) {
-//          int idx = readerIndex(target);
-//          if (enumCache[idx] == null) {
-//            try {
-//              DocValues indexValues = subReaders[idx].docValues(id);
-//              if (indexValues != null) // nocommit does that work with default
-//                // values?
-//                enumCache[idx] = indexValues.getEnum(this.attributes());
-//              else
-//                enumCache[idx] = new DummyEnum(this.attributes(),
-//                    subSlices[idx].length, attr.type());
-//            } catch (IOException ex) {
-//              // nocommit what to do here?
-//              throw new RuntimeException(ex);
-//            }
-//          }
-//          current = enumCache[idx];
-//          start = subSlices[idx].start;
-//          numDocs_ = subSlices[idx].length;
-//          n = target - start;
-//        }
-//        target = start + numDocs_;
-//      } while ((n = current.advance(n)) == NO_MORE_DOCS);
-      return pos = start + current.docID();
+      assert target > currentDoc : "target " + target
+          + " must be > than the current doc " + currentDoc;
+      int relativeDoc = target - currentStart;
+      do {
+        if (target >= maxDoc) // we are beyond max doc
+          return currentDoc = NO_MORE_DOCS;
+        if (target >= currentMax) {
+          final int idx = ReaderUtil.subIndex(target, starts);
+          currentEnum.close();
+          currentEnum = docValuesIdx[idx].docValues.getEnum(this.attributes());
+          currentStart = docValuesIdx[idx].start;
+          currentMax = currentStart + docValuesIdx[idx].length;
+          relativeDoc = target - currentStart;
+        } else {
+          return currentDoc = currentStart + currentEnum.advance(relativeDoc);
+        }
+      } while ((relativeDoc = currentEnum.advance(relativeDoc)) == NO_MORE_DOCS);
+      return currentDoc = currentStart + relativeDoc;
     }
 
     @Override
     public int docID() {
-      return pos;
+      return currentDoc;
     }
 
     @Override
     public int nextDoc() throws IOException {
-      return advance(pos + 1);
+      return advance(currentDoc + 1);
     }
   }
 
-  private class MultiSource extends Source {
-    private int numDocs_ = 0;
+  private static class MultiSource extends Source {
+    private int numDocs = 0;
     private int start = 0;
     private Source current;
-    private Slice[] subSlices;
-    private DocValuesIndex[] docVAluesIdx;
+    private final int[] starts;
+    private final DocValuesIndex[] docValuesIdx;
 
-    public MultiSource(Slice[] subSlices, DocValuesIndex[] docValuesIdx) {
-      this.subSlices = subSlices;
-      this.docVAluesIdx = docValuesIdx;
+    public MultiSource(DocValuesIndex[] docValuesIdx, int[] starts) {
+      this.docValuesIdx = docValuesIdx;
+      this.starts = starts;
+
     }
 
-    public long ints(int docID) {
-//      int n = docID - start;
-//      if (n >= numDocs_) {
-//        int idx = readerIndex(docID);
-//        try {
-//          current = subReaders[idx].getIndexValuesCache().getInts(id);
-//          if (current == null) // nocommit does that work with default values?
-//            current = new DummySource();
-//        } catch (IOException ex) {
-//          // nocommit what to do here?
-//          throw new RuntimeException(ex);
-//        }
-//        start = starts[idx];
-//        numDocs_ = subReaders[idx].maxDoc();
-//        n = docID - start;
-//      }
-//      return current.ints(n);
-      return 0l;
+    public long getInt(int docID) {
+      final int doc = ensureSource(docID);
+      return current.getInt(doc);
     }
 
-    public double floats(int docID) {
-//      int n = docID - start;
-//      if (n >= numDocs_) {
-//        int idx = readerIndex(docID);
-//        try {
-//          current = subReaders[idx].getIndexValuesCache().getFloats(id);
-//          if (current == null) // nocommit does that work with default values?
-//            current = new DummySource();
-//        } catch (IOException ex) {
-//          // nocommit what to do here?
-//          throw new RuntimeException(ex);
-//        }
-//        numDocs_ = subReaders[idx].maxDoc();
-//
-//        start = starts[idx];
-//        n = docID - start;
-//      }
-//      return current.floats(n);
-      return 0d;
+    private final int ensureSource(int docID) {
+      int n = docID - start;
+      if (n >= numDocs) {
+        final int idx = ReaderUtil.subIndex(docID, starts);
+        assert idx >= 0 && idx < docValuesIdx.length : "idx was " + idx
+            + " for doc id: " + docID + " slices : " + Arrays.toString(starts);
+        assert docValuesIdx[idx] != null;
+        try {
+          current = docValuesIdx[idx].docValues.load();
+        } catch (IOException e) {
+          throw new RuntimeException("load failed", e); // TODO how should we
+          // handle this
+        }
+
+        start = docValuesIdx[idx].start;
+        numDocs = docValuesIdx[idx].length;
+        n = docID - start;
+      }
+      return n;
     }
 
-    public BytesRef bytes(int docID) {
-//      int n = docID - start;
-//      if (n >= numDocs_) {
-//        int idx = readerIndex(docID);
-//        try {
-//          current = subReaders[idx].getIndexValuesCache().getBytes(id);
-//          if (current == null) // nocommit does that work with default values?
-//            current = new DummySource();
-//        } catch (IOException ex) {
-//          // nocommit what to do here?
-//          throw new RuntimeException(ex);
-//        }
-//        numDocs_ = subReaders[idx].maxDoc();
-//        start = starts[idx];
-//        n = docID - start;
-//      }
-//      return current.bytes(n);
-      return null;
+    public double getFloat(int docID) {
+      final int doc = ensureSource(docID);
+      return current.getFloat(doc);
+    }
+
+    public BytesRef getBytes(int docID) {
+      final int doc = ensureSource(docID);
+      return current.getBytes(doc);
     }
 
     public long ramBytesUsed() {
@@ -218,17 +237,17 @@ public class MultiDocValues extends DocValues {
     private final BytesRef ref = new BytesRef();
 
     @Override
-    public BytesRef bytes(int docID) {
+    public BytesRef getBytes(int docID) {
       return ref;
     }
 
     @Override
-    public double floats(int docID) {
+    public double getFloat(int docID) {
       return 0.0d;
     }
 
     @Override
-    public long ints(int docID) {
+    public long getInt(int docID) {
       return 0;
     }
 
@@ -296,5 +315,4 @@ public class MultiDocValues extends DocValues {
   public Values type() {
     return this.docValuesIdx[0].docValues.type();
   }
-
 }

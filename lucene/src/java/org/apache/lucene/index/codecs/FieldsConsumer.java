@@ -65,32 +65,13 @@ public abstract class FieldsConsumer implements Closeable {
         final TermsConsumer termsConsumer = addField(mergeState.fieldInfo);
         termsConsumer.merge(mergeState, terms);
       }
-      
-      DocValues docValues = fieldsEnum.docValues();   // fix this - does not work due to multi fields
-      if(docValues != null) {
-      // TODO we need some kind of compatibility notation for values such
-      // that two slighly different segments can be merged eg. fixed vs.
-      // variable byte len or float32 vs. float64
-        int docBase = 0;
-        final List<Writer.MergeState> mergeStates = new ArrayList<Writer.MergeState>();
-        for (IndexReader reader : mergeState.readers) {
-          DocValues r = reader.docValues(mergeState.fieldInfo.name);
-          if (r != null) {
-            mergeStates.add(new Writer.MergeState(r, docBase, reader
-                .maxDoc(), reader.getDeletedDocs()));
-          }
-          docBase += reader.numDocs();
-        }
-        if (mergeStates.isEmpty()) {
-          continue;
-        }
+      if (mergeState.fieldInfo.hasDocValues()) {
+        final DocValues docValues = fieldsEnum.docValues();
+        assert docValues != null : "DocValues are null for " + mergeState.fieldInfo.getDocValues();
         final DocValuesConsumer docValuesConsumer = addValuesField(mergeState.fieldInfo);
-        docValuesConsumer.merge(mergeStates);
-        docValuesConsumer.finish(mergeState.mergedDocCount);
+        assert docValuesConsumer != null;
+        docValuesConsumer.merge(mergeState, docValues);
       }
-      
-      // merge doc values
-//   
     }
   }
  

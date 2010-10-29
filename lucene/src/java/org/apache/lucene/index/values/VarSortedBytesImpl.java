@@ -120,7 +120,7 @@ class VarSortedBytesImpl {
       idxOut.writeLong(offset);
 
       // write index -- first doc -> 1+ord
-      // nocommit -- allow not -1:
+      // TODO(simonw): allow not -1:
       final PackedInts.Writer indexWriter = PackedInts.getWriter(idxOut,
           docCount, PackedInts.bitsRequired(count));
       final int limit = docCount > docToEntry.length ? docToEntry.length
@@ -135,7 +135,7 @@ class VarSortedBytesImpl {
       indexWriter.finish();
 
       // next ord (0-based) -> offset
-      // nocommit -- allow not -1:
+      // TODO(simonw): -- allow not -1:
       PackedInts.Writer offsetWriter = PackedInts.getWriter(idxOut, count,
           PackedInts.bitsRequired(lastOffset));
       for (int i = 0; i < count; i++) {

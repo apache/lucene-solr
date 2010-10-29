@@ -32,7 +32,7 @@ import org.apache.lucene.search.cache.ShortValuesCreator;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.BytesRef;
 
-// nocommit -- for cleaner transition, maybe we should make
+// TODO(simonw) -- for cleaner transition, maybe we should make
 // a new SortField that subclasses this one and always uses
 // index values?
 

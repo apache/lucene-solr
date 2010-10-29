@@ -179,8 +179,8 @@ class PackedIntsImpl {
       }
 
       @Override
-      public long ints(int docID) {
-        // nocommit -- can we somehow avoid 2X method calls
+      public long getInt(int docID) {
+        // TODO -- can we somehow avoid 2X method calls
         // on each get? must push minValue down, and make
         // PackedInts implement Ints.Source
         final long val = values.get(docID);
@@ -195,7 +195,9 @@ class PackedIntsImpl {
       }
     }
 
+    @Override
     public void close() throws IOException {
+      super.close();
       datIn.close();
     }
 

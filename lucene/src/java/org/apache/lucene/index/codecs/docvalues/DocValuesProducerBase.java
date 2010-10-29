@@ -51,13 +51,13 @@ public abstract class DocValuesProducerBase extends FieldsProducer{
     final int numFields = fieldInfos.size();
     for (int i = 0; i < numFields; i++) {
       final FieldInfo fieldInfo = fieldInfos.fieldInfo(i);
-      final Values v = fieldInfo.getIndexValues();
+      final Values v = fieldInfo.getDocValues();
       final String field = fieldInfo.name;
       final String id = IndexFileNames.segmentFileName(segment, Integer
-          .toString(fieldInfo.number), "");
-      if (v != null && dir.fileExists(id + "." + Writer.DATA_EXTENSION)) {
+          .toString(fieldInfo.number),"");
+      if (v != null && dir.fileExists(id + "." +  Writer.DATA_EXTENSION)) {
         docValues.put(field, loadDocValues(docCount, dir, id, v));
-      }
+      } 
     }
   }
 

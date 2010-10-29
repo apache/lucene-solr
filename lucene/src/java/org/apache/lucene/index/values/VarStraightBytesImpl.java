@@ -82,14 +82,15 @@ class VarStraightBytesImpl {
 
     @Override
     synchronized public void finish(int docCount) throws IOException {
-      if (datOut == null)
+      if (datOut == null) {
         return;
+      }
       initIndexOut();
       // write all lengths to index
       // write index
       fill(docCount);
       idxOut.writeVInt(address);
-      // nocommit -- allow not -1
+      // TODO(simonw): allow not -1
       final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount,
           PackedInts.bitsRequired(address));
       for (int i = 0; i < docCount; i++) {
@@ -136,7 +137,7 @@ class VarStraightBytesImpl {
       }
 
       @Override
-      public BytesRef bytes(int docID) {
+      public BytesRef getBytes(int docID) {
         final int address = (int) addresses.get(docID);
         bytesRef.offset = address;
         if (docID == maxDoc - 1) {

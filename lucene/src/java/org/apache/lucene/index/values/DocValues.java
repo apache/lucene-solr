@@ -24,24 +24,48 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 
 public abstract class DocValues implements Closeable {
-  
-  
+
+  private final Object lock = new Object();
+
+  private Source cachedReference;
+
   public static final DocValues[] EMPTY_ARRAY = new DocValues[0];
 
-  public ValuesEnum getEnum() throws IOException{
+  public ValuesEnum getEnum() throws IOException {
     return getEnum(null);
   }
 
-  public abstract ValuesEnum getEnum(AttributeSource attrSource) throws IOException;
+  public abstract ValuesEnum getEnum(AttributeSource attrSource)
+      throws IOException;
 
   public abstract Source load() throws IOException;
 
-  public SortedSource loadSorted(Comparator<BytesRef> comparator) throws IOException {
+  public Source getCached(boolean load) throws IOException {
+    synchronized (lock) { // TODO make sorted source cachable too 
+      if (load && cachedReference == null)
+        cachedReference = load();
+      return cachedReference;
+    }
+  }
+
+  public Source releaseCached() {
+    synchronized (lock) {
+      final Source retVal = cachedReference;
+      cachedReference = null;
+      return retVal;
+    }
+  }
+
+  public SortedSource loadSorted(Comparator<BytesRef> comparator)
+      throws IOException {
     throw new UnsupportedOperationException();
   }
-  
+
   public abstract Values type();
   
+  public void close() throws IOException {
+    releaseCached();
+  }
 
   /**
    * Source of integer (returned as java long), per document. The underlying
@@ -50,30 +74,34 @@ public abstract class DocValues implements Closeable {
    */
   public static abstract class Source {
 
-    public long ints(int docID) {
+    public long getInt(int docID) {
       throw new UnsupportedOperationException("ints are not supported");
     }
 
-    public double floats(int docID) {
+    public double getFloat(int docID) {
       throw new UnsupportedOperationException("floats are not supported");
     }
 
-    public BytesRef bytes(int docID) {
+    public BytesRef getBytes(int docID) {
       throw new UnsupportedOperationException("bytes are not supported");
     }
-    
-    /** Returns number of unique values.  Some impls may
-     * throw UnsupportedOperationException. */
+
+    /**
+     * Returns number of unique values. Some impls may throw
+     * UnsupportedOperationException.
+     */
     public int getValueCount() {
       throw new UnsupportedOperationException();
     }
-    
-    public ValuesEnum getEnum() throws IOException{
+
+    public ValuesEnum getEnum() throws IOException {
       return getEnum(null);
     }
-    
-    // nocommit - enable obtaining enum from source since this is already in memory
-    public /*abstract*/ ValuesEnum getEnum(AttributeSource attrSource) throws IOException {
+
+    // nocommit - enable obtaining enum from source since this is already in
+    // memory
+    public/* abstract */ValuesEnum getEnum(AttributeSource attrSource)
+        throws IOException {
       throw new UnsupportedOperationException();
     }
 
@@ -83,7 +111,7 @@ public abstract class DocValues implements Closeable {
   public static abstract class SortedSource extends Source {
 
     @Override
-    public BytesRef bytes(int docID) {
+    public BytesRef getBytes(int docID) {
       return getByOrd(ord(docID));
     }
 
@@ -109,5 +137,5 @@ public abstract class DocValues implements Closeable {
      */
     public abstract LookupResult getByValue(BytesRef value);
   }
-  
+
 }

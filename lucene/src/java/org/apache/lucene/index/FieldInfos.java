@@ -311,10 +311,10 @@ public final class FieldInfos {
 
       final byte b;
 
-      if (fi.indexValues == null) {
+      if (fi.docValues == null) {
         b = 0;
       } else {
-        switch(fi.indexValues) {
+        switch(fi.docValues) {
         case PACKED_INTS:
           b = 1;
           break;
@@ -346,7 +346,7 @@ public final class FieldInfos {
           b = 10;
           break;
         default:
-          throw new IllegalStateException("unhandled indexValues type " + fi.indexValues);
+          throw new IllegalStateException("unhandled indexValues type " + fi.docValues);
         }
       }
       output.writeByte(b);
@@ -377,43 +377,41 @@ public final class FieldInfos {
       boolean omitTermFreqAndPositions = (bits & OMIT_TERM_FREQ_AND_POSITIONS) != 0;
       
       FieldInfo fi = addInternal(name, isIndexed, storeTermVector, storePositionsWithTermVector, storeOffsetWithTermVector, omitNorms, storePayloads, omitTermFreqAndPositions);
-
       if (format <= FORMAT_INDEX_VALUES) {
         final byte b = input.readByte();
-
         switch(b) {
         case 0:
-          fi.indexValues = null;
+          fi.docValues = null;
           break;
         case 1:
-          fi.indexValues = Values.PACKED_INTS;
+          fi.docValues = Values.PACKED_INTS;
           break;
         case 2:
-          fi.indexValues = Values.SIMPLE_FLOAT_4BYTE;
+          fi.docValues = Values.SIMPLE_FLOAT_4BYTE;
           break;
         case 3:
-          fi.indexValues = Values.SIMPLE_FLOAT_8BYTE;
+          fi.docValues = Values.SIMPLE_FLOAT_8BYTE;
           break;
         case 4:
-          fi.indexValues = Values.BYTES_FIXED_STRAIGHT;
+          fi.docValues = Values.BYTES_FIXED_STRAIGHT;
           break;
         case 5:
-          fi.indexValues = Values.BYTES_FIXED_DEREF;
+          fi.docValues = Values.BYTES_FIXED_DEREF;
           break;
         case 6:
-          fi.indexValues = Values.BYTES_FIXED_SORTED;
+          fi.docValues = Values.BYTES_FIXED_SORTED;
           break;
         case 7:
-          fi.indexValues = Values.BYTES_VAR_STRAIGHT;
+          fi.docValues = Values.BYTES_VAR_STRAIGHT;
           break;
         case 8:
-          fi.indexValues = Values.BYTES_VAR_DEREF;
+          fi.docValues = Values.BYTES_VAR_DEREF;
           break;
         case 9:
-          fi.indexValues = Values.BYTES_VAR_SORTED;
+          fi.docValues = Values.BYTES_VAR_SORTED;
           break;
         case 10:
-          fi.indexValues = Values.PACKED_INTS_FIXED;
+          fi.docValues = Values.PACKED_INTS_FIXED;
           break;
         default:
           throw new IllegalStateException("unhandled indexValues type " + b);

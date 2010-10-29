@@ -157,7 +157,7 @@ class FixedDerefBytesImpl {
       }
 
       @Override
-      public BytesRef bytes(int docID) {
+      public BytesRef getBytes(int docID) {
         final int id = (int) index.get(docID);
         if (id == 0) {
           return defaultValue;

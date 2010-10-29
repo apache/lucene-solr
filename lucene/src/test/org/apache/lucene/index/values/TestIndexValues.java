@@ -70,19 +70,19 @@ public class TestIndexValues extends LuceneTestCase {
   public static void beforeClassLuceneTestCaseJ4() {
     LuceneTestCase.beforeClassLuceneTestCaseJ4();
     final CodecProvider cp = CodecProvider.getDefault();
-    docValuesCodec = new DocValuesCodec(cp.lookup(CodecProvider.getDefaultCodec()));
+    docValuesCodec = new DocValuesCodec(cp.lookup(CodecProvider
+        .getDefaultCodec()));
     cp.register(docValuesCodec);
     CodecProvider.setDefaultCodec(docValuesCodec.name);
   }
-  
+
   @AfterClass
   public static void afterClassLuceneTestCaseJ4() {
     final CodecProvider cp = CodecProvider.getDefault();
     cp.unregister(docValuesCodec);
-    LuceneTestCase.afterClassLuceneTestCaseJ4();    
+    LuceneTestCase.afterClassLuceneTestCaseJ4();
   }
-  
-  
+
   public void testBytesStraight() throws IOException {
     runTestBytes(Bytes.Mode.STRAIGHT, true);
     runTestBytes(Bytes.Mode.STRAIGHT, false);
@@ -164,14 +164,14 @@ public class TestIndexValues extends LuceneTestCase {
       if (mode == Bytes.Mode.SORTED) {
         s = ss = r.loadSorted(comp);
       } else {
-        s = r.load();
+        s = getSource(r);
         ss = null;
       }
 
       for (int i = 0; i < 100; i++) {
         final int idx = 2 * i;
-        assertNotNull("doc " + idx + "; value=" + values[idx], s.bytes(idx));
-        assertEquals("doc " + idx, values[idx], s.bytes(idx).utf8ToString());
+        assertNotNull("doc " + idx + "; value=" + values[idx], s.getBytes(idx));
+        assertEquals("doc " + idx, values[idx], s.getBytes(idx).utf8ToString());
         if (ss != null) {
           assertEquals("doc " + idx, values[idx], ss.getByOrd(ss.ord(idx))
               .utf8ToString());
@@ -247,9 +247,9 @@ public class TestIndexValues extends LuceneTestCase {
 
         DocValues r = Ints.getValues(dir, "test", useFixedArrays);
         for (int iter = 0; iter < 2; iter++) {
-          Source s = r.load();
+          Source s = getSource(r);
           for (int i = 0; i < NUM_VALUES; i++) {
-            final long v = s.ints(i);
+            final long v = s.getInt(i);
             assertEquals("index " + i + " b: " + b, values[i], v);
           }
         }
@@ -311,9 +311,9 @@ public class TestIndexValues extends LuceneTestCase {
 
     DocValues r = Floats.getValues(dir, "test", NUM_VALUES + additionalValues);
     for (int iter = 0; iter < 2; iter++) {
-      Source s = r.load();
+      Source s = getSource(r);
       for (int i = 0; i < NUM_VALUES; i++) {
-        assertEquals(values[i], s.floats(i), 0.0f);
+        assertEquals(values[i], s.getFloat(i), 0.0f);
       }
     }
 
@@ -437,12 +437,12 @@ public class TestIndexValues extends LuceneTestCase {
       case PACKED_INTS:
       case PACKED_INTS_FIXED: {
         DocValues intsReader = getDocValues(r, val.name());
-        Source ints = intsReader.load();
+        Source ints = getSource(intsReader);
         ValuesEnum intsEnum = intsReader.getEnum();
         assertNotNull(intsEnum);
         LongsRef enumRef = intsEnum.addAttribute(ValuesAttribute.class).ints();
         for (int i = 0; i < base; i++) {
-          assertEquals(0, ints.ints(i));
+          assertEquals(0, ints.getInt(i));
           assertEquals(val.name() + " base: " + base + " index: " + i, i,
               random.nextBoolean() ? intsEnum.advance(i) : intsEnum.nextDoc());
           assertEquals(0, enumRef.get());
@@ -454,8 +454,8 @@ public class TestIndexValues extends LuceneTestCase {
           }
           assertEquals("advance failed at index: " + i + " of " + r.numDocs()
               + " docs", i, intsEnum.advance(i));
-          assertEquals(expected, ints.ints(i));
           assertEquals(expected, enumRef.get());
+          assertEquals(expected, ints.getInt(i));
 
         }
       }
@@ -463,14 +463,16 @@ public class TestIndexValues extends LuceneTestCase {
       case SIMPLE_FLOAT_4BYTE:
       case SIMPLE_FLOAT_8BYTE: {
         DocValues floatReader = getDocValues(r, val.name());
-        Source floats = floatReader.load();
+        assertNotNull(floatReader);
+        Source floats = getSource(floatReader);
         ValuesEnum floatEnum = floatReader.getEnum();
         assertNotNull(floatEnum);
         FloatsRef enumRef = floatEnum.addAttribute(ValuesAttribute.class)
             .floats();
 
         for (int i = 0; i < base; i++) {
-          assertEquals(0.0d, floats.floats(i), 0.0d);
+          assertEquals(" floats failed for doc: " + i + " base: " + base, 0.0d,
+              floats.getFloat(i), 0.0d);
           assertEquals(i, random.nextBoolean() ? floatEnum.advance(i)
               : floatEnum.nextDoc());
           assertEquals("index " + i, 0.0, enumRef.get(), 0.0);
@@ -483,7 +485,8 @@ public class TestIndexValues extends LuceneTestCase {
           assertEquals("advance failed at index: " + i + " of " + r.numDocs()
               + " docs base:" + base, i, floatEnum.advance(i));
           assertEquals("index " + i, 2.0 * expected, enumRef.get(), 0.00001);
-          assertEquals("index " + i, 2.0 * expected, floats.floats(i), 0.00001);
+          assertEquals("index " + i, 2.0 * expected, floats.getFloat(i),
+              0.00001);
         }
       }
         break;
@@ -505,15 +508,13 @@ public class TestIndexValues extends LuceneTestCase {
       Values.BYTES_VAR_DEREF, Values.BYTES_VAR_SORTED,
       Values.BYTES_VAR_STRAIGHT);
 
-  private static EnumSet<Values> STRAIGHT_BYTES = EnumSet.of(
-      Values.BYTES_FIXED_STRAIGHT, Values.BYTES_VAR_STRAIGHT);
-
   private static EnumSet<Values> NUMERICS = EnumSet.of(Values.PACKED_INTS,
       Values.PACKED_INTS_FIXED, Values.SIMPLE_FLOAT_4BYTE,
       Values.SIMPLE_FLOAT_8BYTE);
 
   private static Index[] IDX_VALUES = new Index[] { Index.ANALYZED,
-      Index.ANALYZED_NO_NORMS, Index.NOT_ANALYZED, Index.NOT_ANALYZED_NO_NORMS };
+      Index.ANALYZED_NO_NORMS, Index.NOT_ANALYZED, Index.NOT_ANALYZED_NO_NORMS,
+      Index.NO };
 
   private OpenBitSet indexValues(IndexWriter w, int numValues, Values value,
       List<Values> valueVarList, boolean withDeletions, int multOfSeven)
@@ -521,9 +522,10 @@ public class TestIndexValues extends LuceneTestCase {
     final boolean isNumeric = NUMERICS.contains(value);
     OpenBitSet deleted = new OpenBitSet(numValues);
     Document doc = new Document();
+    Index idx = IDX_VALUES[random.nextInt(IDX_VALUES.length)];
     Fieldable field = random.nextBoolean() ? new ValuesField(value.name())
         : newField(value.name(), _TestUtil.randomRealisticUnicodeString(random,
-            10), IDX_VALUES[random.nextInt(IDX_VALUES.length)]);
+            10), idx == Index.NO ? Store.YES : Store.NO, idx);
     doc.add(field);
 
     ValuesAttribute valuesAttribute = ValuesField.values(field);
@@ -582,9 +584,10 @@ public class TestIndexValues extends LuceneTestCase {
     }
     w.commit();
 
-    // nocommit test unoptimized with deletions
-    if (true || withDeletions || random.nextBoolean())
-      w.optimize();
+    // TODO test unoptimized with deletions
+    if (withDeletions || random.nextBoolean())
+      ;
+    w.optimize();
     return deleted;
   }
 
@@ -593,10 +596,9 @@ public class TestIndexValues extends LuceneTestCase {
     Directory d = newDirectory();
     IndexWriter w = new IndexWriter(d, cfg);
     final List<Values> byteVariantList = new ArrayList<Values>(BYTES);
-
     // run in random order to test if fill works correctly during merges
     Collections.shuffle(byteVariantList, random);
-    final int numValues = 350;
+    final int numValues = 333 + random.nextInt(150);
     for (Values byteIndexValue : byteVariantList) {
       List<Closeable> closeables = new ArrayList<Closeable>();
 
@@ -607,11 +609,10 @@ public class TestIndexValues extends LuceneTestCase {
       assertEquals(0, r.numDeletedDocs());
       final int numRemainingValues = (int) (numValues - deleted.cardinality());
       final int base = r.numDocs() - numRemainingValues;
-
       DocValues bytesReader = getDocValues(r, byteIndexValue.name());
       assertNotNull("field " + byteIndexValue.name()
           + " returned null reader - maybe merged failed", bytesReader);
-      Source bytes = bytesReader.load();
+      Source bytes = getSource(bytesReader);
       ValuesEnum bytesEnum = bytesReader.getEnum();
       assertNotNull(bytesEnum);
       final ValuesAttribute attr = bytesEnum
@@ -619,7 +620,7 @@ public class TestIndexValues extends LuceneTestCase {
       byte upto = 0;
       // test the filled up slots for correctness
       for (int i = 0; i < base; i++) {
-        final BytesRef br = bytes.bytes(i);
+        final BytesRef br = bytes.getBytes(i);
         String msg = " field: " + byteIndexValue.name() + " at index: " + i
             + " base: " + base + " numDocs:" + r.numDocs();
         switch (byteIndexValue) {
@@ -645,7 +646,7 @@ public class TestIndexValues extends LuceneTestCase {
         default:
           assertNotNull("expected none null - " + msg, br);
           if (br.length != 0) {
-            bytes.bytes(i);
+            bytes.getBytes(i);
           }
           assertEquals("expected empty bytes - " + br.utf8ToString() + msg, 0,
               br.length);
@@ -665,7 +666,7 @@ public class TestIndexValues extends LuceneTestCase {
           upto += bytesSize;
         }
 
-        BytesRef br = bytes.bytes(i);
+        BytesRef br = bytes.getBytes(i);
         if (bytesEnum.docID() != i)
           assertEquals("seek failed for index " + i + " " + msg, i, bytesEnum
               .advance(i));
@@ -692,10 +693,9 @@ public class TestIndexValues extends LuceneTestCase {
   private DocValues getDocValues(IndexReader reader, String field)
       throws IOException {
     boolean optimized = reader.isOptimized();
-    Fields fields = optimized ? reader.getSequentialSubReaders()[0].fields() : MultiFields
-        .getFields(reader);
-//    return fields.docValues(field);
-    switch (random.nextInt(optimized ? 3 : 2)) {
+    Fields fields = optimized ? reader.getSequentialSubReaders()[0].fields()
+        : MultiFields.getFields(reader);
+    switch (random.nextInt(optimized ? 3 : 2)) { // case 2 only if optimized
     case 0:
       return fields.docValues(field);
     case 1:
@@ -706,10 +706,14 @@ public class TestIndexValues extends LuceneTestCase {
           return iterator.docValues();
       }
       throw new RuntimeException("no such field " + field);
-    case 2:
+    case 2:// this only works if we are on an optimized index!
       return reader.getSequentialSubReaders()[0].docValues(field);
     }
-throw new RuntimeException();
-}
+    throw new RuntimeException();
+  }
+
+  private Source getSource(DocValues values) throws IOException {
+    return random.nextBoolean() ? values.load() : values.getCached(true);
+  }
 
 }

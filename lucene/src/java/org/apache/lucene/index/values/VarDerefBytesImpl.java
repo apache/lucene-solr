@@ -135,7 +135,7 @@ class VarDerefBytesImpl {
       idxOut.writeInt(address-1);
 
       // write index
-      // nocommit -- allow forcing fixed array (not -1)
+      // TODO(simonw): -- allow forcing fixed array (not -1)
       // TODO(simonw): check the address calculation / make it more intuitive
       final PackedInts.Writer w = PackedInts.getWriter(idxOut, docCount, PackedInts.bitsRequired(address-1));
       final int limit;
@@ -188,7 +188,7 @@ class VarDerefBytesImpl {
       }
 
       @Override
-      public BytesRef bytes(int docID) {
+      public BytesRef getBytes(int docID) {
         int address = (int) index.get(docID);
         if (address == 0) {
           assert defaultValue.length == 0: " default value manipulated";

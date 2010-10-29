@@ -287,7 +287,9 @@ public final class Bytes {
       return idxIn == null ? null : (IndexInput) idxIn.clone();
     }
 
+    @Override
     public void close() throws IOException {
+      super.close();
       if (datIn != null) {
         datIn.close();
       }

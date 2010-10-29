@@ -1,4 +1,5 @@
 package org.apache.lucene.index.codecs.docvalues;
+
 /**
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -18,9 +19,9 @@ package org.apache.lucene.index.codecs.docvalues;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.List;
 
 import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.values.ValuesAttribute;
 import org.apache.lucene.index.values.Writer;
@@ -28,22 +29,50 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 
+/**
+ * @lucene.experimental
+ */
+// TODO this might need to go in the codec package since is a direct relative to
+// TermsConsumer
 public abstract class DocValuesConsumer {
+
   public abstract void add(int docID, ValuesAttribute attr) throws IOException;
 
   public abstract void finish(int docCount) throws IOException;
 
   public abstract void files(Collection<String> files) throws IOException;
-  
-  public void merge(List<MergeState> states) throws IOException {
-    for (MergeState state : states) {
-      merge(state);
+
+  public void merge(org.apache.lucene.index.codecs.MergeState mergeState,
+      DocValues values) throws IOException {
+    // TODO we need some kind of compatibility notation for values such
+    // that two slightly different segments can be merged eg. fixed vs.
+    // variable byte len or float32 vs. float64
+    int docBase = 0;
+    boolean merged = false;
+    /*
+     * We ignore the given DocValues here and merge from the subReaders directly
+     * to support bulk copies on the DocValues Writer level. if this gets merged
+     * with MultiDocValues the writer can not optimize for bulk-copyable data
+     */
+    for (final IndexReader reader : mergeState.readers) {
+      final DocValues r = reader.docValues(mergeState.fieldInfo.name);
+      if (r != null) {
+        merged = true;
+        merge(new Writer.MergeState(r, docBase, reader.maxDoc(), reader
+            .getDeletedDocs()));
+      }
+      docBase += reader.numDocs();
     }
+    if (merged)
+      finish(mergeState.mergedDocCount);
   }
-  
+
   protected abstract void merge(MergeState mergeState) throws IOException;
-  
-  
+
+  /*
+   * specialized auxiliary MergeState is necessary since we don't want to
+   * exploit internals up to the codec ones
+   */
   public static class MergeState {
     public final DocValues reader;
     public final int docBase;
@@ -59,9 +88,10 @@ public abstract class DocValuesConsumer {
     }
   }
 
-  public static DocValuesConsumer create(String segmentName, Directory directory,
-      FieldInfo field, Comparator<BytesRef> comp) throws IOException {
+  public static DocValuesConsumer create(String segmentName,
+      Directory directory, FieldInfo field, Comparator<BytesRef> comp)
+      throws IOException {
     final String id = segmentName + "_" + field.number;
-    return Writer.create(field.getIndexValues(), id, directory, comp);
+    return Writer.create(field.getDocValues(), id, directory, comp);
   }
 }

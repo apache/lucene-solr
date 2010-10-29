@@ -49,7 +49,7 @@ final class DocFieldProcessor extends DocConsumer {
       throws IOException {
     DocValuesConsumer valuesConsumer;
     if ((valuesConsumer = docValues.get(name)) == null) {
-      fieldInfo.setIndexValues(attr.type());
+      fieldInfo.setDocValues(attr.type());
 
       if(fieldsConsumer == null) {
         /* nocommit -- this is a hack and only works since DocValuesCodec supports initializing the FieldsConsumer twice.

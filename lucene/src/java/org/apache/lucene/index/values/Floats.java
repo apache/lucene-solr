@@ -270,7 +270,7 @@ public class Floats {
       }
 
       @Override
-      public double floats(int docID) {
+      public double getFloat(int docID) {
         final float f = values.get(docID);
         // nocommit should we return NaN as default instead of 0.0?
         return Float.isNaN(f) ? 0.0f : f;
@@ -290,9 +290,9 @@ public class Floats {
       }
 
       @Override
-      public double floats(int docID) {
+      public double getFloat(int docID) {
         final double d = values.get(docID);
-        // nocommit should we return NaN as default instead of 0.0?
+        // TODO should we return NaN as default instead of 0.0?
         return Double.isNaN(d) ? 0.0d : d;
       }
 
@@ -302,7 +302,9 @@ public class Floats {
       }
     }
 
+    @Override
     public void close() throws IOException {
+      super.close();
       datIn.close();
     }
 

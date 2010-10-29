@@ -150,7 +150,7 @@ class FixedStraightBytesImpl {
       }
 
       @Override
-      public BytesRef bytes(int docID) {
+      public BytesRef getBytes(int docID) {
         bytesRef.offset = docID * size;
         return bytesRef;
       }

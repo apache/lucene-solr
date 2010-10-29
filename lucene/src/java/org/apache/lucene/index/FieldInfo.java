@@ -24,7 +24,7 @@ public final class FieldInfo {
   public String name;
   public boolean isIndexed;
   public int number;
-  Values indexValues;
+  Values docValues;
 
 
   // true if term vector for this field should be stored
@@ -93,17 +93,21 @@ public final class FieldInfo {
     }
   }
 
-  void setIndexValues(Values v) {
-    if (indexValues != null) {
-      if (indexValues != v) {
-        throw new IllegalArgumentException("indexValues is already set to " + indexValues + "; cannot change to " + v);
+  void setDocValues(Values v) {
+    if (docValues != null) {
+      if (docValues != v) {
+        throw new IllegalArgumentException("indexValues is already set to " + docValues + "; cannot change to " + v);
       }
     } else{
-	   indexValues = v;
+	   docValues = v;
     }
   }
+  
+  public boolean hasDocValues() {
+    return docValues != null;
+  }
 
-  public Values getIndexValues() {
-    return indexValues;
+  public Values getDocValues() {
+    return docValues;
   }
 }

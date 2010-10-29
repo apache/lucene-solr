@@ -34,7 +34,7 @@ public enum Values {
   SIMPLE_FLOAT_4BYTE,
   SIMPLE_FLOAT_8BYTE,
 
-  // nocommit -- shouldn't lucene decide/detect straight vs
+  // TODO(simonw): -- shouldn't lucene decide/detect straight vs
   // deref, as well fixed vs var?
   BYTES_FIXED_STRAIGHT,
   BYTES_FIXED_DEREF,
@@ -44,5 +44,5 @@ public enum Values {
   BYTES_VAR_DEREF,
   BYTES_VAR_SORTED
 
-  // nocommit -- need STRING variants as well
+  // TODO(simonw): -- need STRING variants as well
 }

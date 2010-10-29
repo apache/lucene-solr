@@ -19,8 +19,10 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.index.values.MultiDocValues;
+import org.apache.lucene.index.values.Values;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.ReaderUtil;
+import org.apache.lucene.util.ReaderUtil.Slice;
 
 import java.io.IOException;
 import java.util.List;
@@ -40,6 +42,8 @@ public final  class MultiFieldsEnum extends FieldsEnum {
   // Holds sub-readers containing field we are currently
   // on, popped from queue.
   private final FieldsEnumWithSlice[] top;
+  private final FieldsEnumWithSlice[] enumWithSlices;
+
   private int numTop;
 
   // Re-used TermsEnum
@@ -54,8 +58,9 @@ public final  class MultiFieldsEnum extends FieldsEnum {
   public MultiFieldsEnum(FieldsEnum[] subs, ReaderUtil.Slice[] subSlices) throws IOException {
     terms = new MultiTermsEnum(subSlices);
     queue = new FieldMergeQueue(subs.length);
-    docValues = new MultiDocValues(subSlices);
+    docValues = new MultiDocValues();
     top = new FieldsEnumWithSlice[subs.length];
+    List<FieldsEnumWithSlice> enumWithSlices = new ArrayList<FieldsEnumWithSlice>();
 
     // Init q
     for(int i=0;i<subs.length;i++) {
@@ -64,10 +69,13 @@ public final  class MultiFieldsEnum extends FieldsEnum {
       if (field != null) {
         // this FieldsEnum has at least one field
         final FieldsEnumWithSlice sub = new FieldsEnumWithSlice(subs[i], subSlices[i], i);
+        enumWithSlices.add(sub);
         sub.current = field;
         queue.add(sub);
       }
     }
+    this.enumWithSlices = enumWithSlices.toArray(FieldsEnumWithSlice.EMPTY_ARRAY);
+
   }
 
   @Override
@@ -119,6 +127,7 @@ public final  class MultiFieldsEnum extends FieldsEnum {
   }
 
   public final static class FieldsEnumWithSlice {
+    public static final FieldsEnumWithSlice[] EMPTY_ARRAY = new FieldsEnumWithSlice[0];
     final FieldsEnum fields;
     final ReaderUtil.Slice slice;
     final int index;
@@ -146,16 +155,37 @@ public final  class MultiFieldsEnum extends FieldsEnum {
 
   @Override
   public DocValues docValues() throws IOException {
-    final List<MultiDocValues.DocValuesIndex> values = new ArrayList<MultiDocValues.DocValuesIndex>();
-    for (int i = 0; i < numTop; i++) {
-      final DocValues docValues = top[i].fields.docValues();
-      if (docValues != null) {
-        values.add(new MultiDocValues.DocValuesIndex(docValues,
-            top[i].index));
+    final List<MultiDocValues.DocValuesIndex> docValuesIndex = new ArrayList<MultiDocValues.DocValuesIndex>();
+    int docsUpto = 0;
+    Values type = null;
+    final int numEnums = enumWithSlices.length;
+    for (int i = 0; i < numEnums; i++) {
+      FieldsEnumWithSlice withSlice = enumWithSlices[i];
+      Slice slice = withSlice.slice;
+      final DocValues values = withSlice.fields.docValues();
+
+      final int start = slice.start;
+      final int length = slice.length;
+      if (values != null) {
+        if (docsUpto != start) {
+          type = values.type();
+          docValuesIndex.add(new MultiDocValues.DocValuesIndex(
+              new MultiDocValues.DummyDocValues(start, type), docsUpto, start
+                  - docsUpto));
+        }
+        docValuesIndex.add(new MultiDocValues.DocValuesIndex(values, start,
+            length));
+        docsUpto = start + length;
+       
+
+      } else if (i+1 == numEnums && !docValuesIndex.isEmpty()) {
+        docValuesIndex.add(new MultiDocValues.DocValuesIndex(
+            new MultiDocValues.DummyDocValues(start, type), docsUpto, start
+                - docsUpto));
       }
     }
-    // TODO return an empty docvalues instance if values are empty
-    return docValues.reset(values.toArray(MultiDocValues.DocValuesIndex.EMPTY_ARRAY));
+    return docValuesIndex.isEmpty() ? null : docValues.reset(docValuesIndex
+        .toArray(MultiDocValues.DocValuesIndex.EMPTY_ARRAY));
   }
 }
 

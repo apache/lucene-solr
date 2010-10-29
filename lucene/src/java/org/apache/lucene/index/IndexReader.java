@@ -21,7 +21,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.FieldSelector;
 import org.apache.lucene.search.Similarity;
 import org.apache.lucene.index.codecs.CodecProvider;
-import org.apache.lucene.index.values.Cache;
 import org.apache.lucene.index.values.DocValues;
 import org.apache.lucene.store.*;
 import org.apache.lucene.util.Bits;
@@ -1090,7 +1089,7 @@ public abstract class IndexReader implements Cloneable,Closeable {
     if (docs == null) return 0;
     int n = 0;
     int doc;
-    while ((doc = docs.nextDoc()) != docs.NO_MORE_DOCS) {
+    while ((doc = docs.nextDoc()) != DocsEnum.NO_MORE_DOCS) {
       deleteDocument(doc);
       n++;
     }
@@ -1384,13 +1383,6 @@ public abstract class IndexReader implements Cloneable,Closeable {
       return null;
     }
     return fields.docValues(field);
-  }
-
-  private final Cache indexValuesCache = new Cache(this);
-
-  // nocommit -- don't expose readers if we have this?
-  public Cache getIndexValuesCache() {
-    return indexValuesCache;
   }
 
   private Fields fields;
