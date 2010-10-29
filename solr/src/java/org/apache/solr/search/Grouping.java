@@ -177,6 +177,11 @@ class TopGroupCollector extends GroupCollector {
     // if orderedGroups != null, then we already have collected N groups and
     // can short circuit by comparing this document to the smallest group
     // without having to even find what group this document belongs to.
+    // Even if this document belongs to a group in the top N, we know that
+    // we don't have to update that group.
+    //
+    // Downside: if the number of unique groups is very low, this is
+    // wasted effort as we will most likely be updating an existing group.
     if (orderedGroups != null) {
       for (int i = 0;; i++) {
         final int c = reversed[i] * comparators[i].compareBottom(doc);
