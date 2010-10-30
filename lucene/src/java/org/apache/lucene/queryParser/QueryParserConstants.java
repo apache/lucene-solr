@@ -33,43 +33,45 @@ public interface QueryParserConstants {
   /** RegularExpression Id. */
   int MINUS = 12;
   /** RegularExpression Id. */
-  int LPAREN = 13;
+  int BAREOPER = 13;
   /** RegularExpression Id. */
-  int RPAREN = 14;
+  int LPAREN = 14;
   /** RegularExpression Id. */
-  int COLON = 15;
+  int RPAREN = 15;
   /** RegularExpression Id. */
-  int STAR = 16;
+  int COLON = 16;
   /** RegularExpression Id. */
-  int CARAT = 17;
+  int STAR = 17;
   /** RegularExpression Id. */
-  int QUOTED = 18;
+  int CARAT = 18;
   /** RegularExpression Id. */
-  int TERM = 19;
+  int QUOTED = 19;
   /** RegularExpression Id. */
-  int FUZZY_SLOP = 20;
+  int TERM = 20;
   /** RegularExpression Id. */
-  int PREFIXTERM = 21;
+  int FUZZY_SLOP = 21;
   /** RegularExpression Id. */
-  int WILDTERM = 22;
+  int PREFIXTERM = 22;
   /** RegularExpression Id. */
-  int REGEXPTERM = 23;
+  int WILDTERM = 23;
   /** RegularExpression Id. */
-  int RANGEIN_START = 24;
+  int REGEXPTERM = 24;
   /** RegularExpression Id. */
-  int RANGEEX_START = 25;
+  int RANGEIN_START = 25;
   /** RegularExpression Id. */
-  int NUMBER = 26;
+  int RANGEEX_START = 26;
   /** RegularExpression Id. */
-  int RANGE_TO = 27;
+  int NUMBER = 27;
   /** RegularExpression Id. */
-  int RANGEIN_END = 28;
+  int RANGE_TO = 28;
   /** RegularExpression Id. */
-  int RANGEEX_END = 29;
+  int RANGEIN_END = 29;
   /** RegularExpression Id. */
-  int RANGE_QUOTED = 30;
+  int RANGEEX_END = 30;
   /** RegularExpression Id. */
-  int RANGE_GOOP = 31;
+  int RANGE_QUOTED = 31;
+  /** RegularExpression Id. */
+  int RANGE_GOOP = 32;
 
   /** Lexical state. */
   int Boost = 0;
@@ -93,6 +95,7 @@ public interface QueryParserConstants {
     "<NOT>",
     "\"+\"",
     "\"-\"",
+    "<BAREOPER>",
     "\"(\"",
     "\")\"",
     "\":\"",

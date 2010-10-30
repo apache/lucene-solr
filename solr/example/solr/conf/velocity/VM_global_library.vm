@@ -16,16 +16,21 @@
 
 #macro(annTitle $msg)#if($annotate == true)title="$msg"#end#end
 
-#macro(spatial)#if($request.params.get('sfield'))&sfield=store#end#if($request.params.get('pt'))&pt=$request.params.get('pt')#end#if($request.params.get('d'))&d=$request.params.get('d')#end#end        
+#macro(spatial)#if($request.params.get('sfield'))&sfield=store#end#if($request.params.get('pt'))&pt=$request.params.get('pt')#end#if($request.params.get('d'))&d=$request.params.get('d')#end#end
 
-#macro(lensNoQ)?#if($request.params.getParams('fq') and $list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end#debug#boostPrice#annotate#spatial#end
+#macro(qOpts)#set($queryOpts = $request.params.get("queryOpts"))#if($queryOpts && $queryOpts != "")&queryOpts=$queryOpts#end#end
+
+#macro(group)#if($request.params.getBool("group") == true)&group=true#end#if($request.params.get("group.field"))#foreach($grp in $request.params.getParams('group.field'))&group.field=$grp#end#end#end
+
+#macro(lensNoQ)?#if($request.params.getParams('fq') and $list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end#debug#boostPrice#annotate#spatial#qOpts#group#end
 #macro(lens)#lensNoQ#q#end
+        
 
 #macro(url_for_lens)#{url_for_home}#lens#end
 
 #macro(url_for_start $start)#url_for_home#lens&start=$start#end
 
-#macro(url_for_filters $p)#url_for_home?#q#boostPrice#spatial#if($list.size($p) > 0)&#fqs($p)#end#debug#end
+#macro(url_for_filters $p)#url_for_home?#q#boostPrice#spatial#qOpts#if($list.size($p) > 0)&#fqs($p)#end#debug#end
 
 #macro(url_for_nested_facet_query $field)#url_for_home#lens&fq=$esc.url($field)#end
 
@@ -166,3 +171,13 @@
     </ul>
   #end
 #end
+
+#macro(field $f)
+  #if($response.response.highlighting.get($docId).get($f).get(0))
+    $!response.response.highlighting.get($docId).get($f).get(0)
+  #else
+    #foreach($v in $doc.getFieldValues($f))
+      $v
+    #end
+  #end
+#end  

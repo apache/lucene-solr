@@ -17,6 +17,9 @@ package org.apache.lucene.util;
  * limitations under the License.
  */
 
+import java.util.Arrays;
+import java.util.Collections;
+
 public class TestArrayUtil extends LuceneTestCase {
 
   // Ensure ArrayUtil.getNextSize gives linear amortized cost of realloc/copy
@@ -113,4 +116,127 @@ public class TestArrayUtil extends LuceneTestCase {
     assertFalse(left + " does not equal: " + right, ArrayUtil.equals(leftChars, 25, rightChars, 0, left.length()));
     assertFalse(left + " does not equal: " + right, ArrayUtil.equals(leftChars, 12, rightChars, 0, left.length()));
   }
+  
+  private Integer[] createRandomArray(int maxSize) {
+    final Integer[] a = new Integer[random.nextInt(maxSize) + 1];
+    for (int i = 0; i < a.length; i++) {
+      a[i] = Integer.valueOf(random.nextInt(a.length));
+    }
+    return a;
+  }
+  
+  public void testQuickSort() {
+    for (int i = 0, c = 500 * RANDOM_MULTIPLIER; i < c; i++) {
+      Integer[] a1 = createRandomArray(1000), a2 = a1.clone();
+      ArrayUtil.quickSort(a1);
+      Arrays.sort(a2);
+      assertArrayEquals(a2, a1);
+      
+      a1 = createRandomArray(1000);
+      a2 = a1.clone();
+      ArrayUtil.quickSort(a1, Collections.reverseOrder());
+      Arrays.sort(a2, Collections.reverseOrder());
+      assertArrayEquals(a2, a1);
+      // reverse back, so we can test that completely backwards sorted array (worst case) is working:
+      ArrayUtil.quickSort(a1);
+      Arrays.sort(a2);
+      assertArrayEquals(a2, a1);
+    }
+  }
+  
+  public void testMergeSort() {
+    for (int i = 0, c = 500 * RANDOM_MULTIPLIER; i < c; i++) {
+      Integer[] a1 = createRandomArray(1000), a2 = a1.clone();
+      ArrayUtil.mergeSort(a1);
+      Arrays.sort(a2);
+      assertArrayEquals(a2, a1);
+      
+      a1 = createRandomArray(1000);
+      a2 = a1.clone();
+      ArrayUtil.mergeSort(a1, Collections.reverseOrder());
+      Arrays.sort(a2, Collections.reverseOrder());
+      assertArrayEquals(a2, a1);
+      // reverse back, so we can test that completely backwards sorted array (worst case) is working:
+      ArrayUtil.mergeSort(a1);
+      Arrays.sort(a2);
+      assertArrayEquals(a2, a1);
+    }
+  }
+  
+  public void testInsertionSort() {
+    for (int i = 0, c = 500 * RANDOM_MULTIPLIER; i < c; i++) {
+      Integer[] a1 = createRandomArray(30), a2 = a1.clone();
+      ArrayUtil.insertionSort(a1);
+      Arrays.sort(a2);
+      assertArrayEquals(a2, a1);
+      
+      a1 = createRandomArray(30);
+      a2 = a1.clone();
+      ArrayUtil.insertionSort(a1, Collections.reverseOrder());
+      Arrays.sort(a2, Collections.reverseOrder());
+      assertArrayEquals(a2, a1);
+      // reverse back, so we can test that completely backwards sorted array (worst case) is working:
+      ArrayUtil.insertionSort(a1);
+      Arrays.sort(a2);
+      assertArrayEquals(a2, a1);
+    }
+  }
+  
+  static class Item implements Comparable<Item> {
+    final int val, order;
+    
+    Item(int val, int order) {
+      this.val = val;
+      this.order = order;
+    }
+    
+    public int compareTo(Item other) {
+      return this.order - other.order;
+    }
+    
+    @Override
+    public String toString() {
+      return Integer.toString(val);
+    }
+  }
+  
+  public void testMergeSortStability() {
+    Item[] items = new Item[100];
+    for (int i = 0; i < items.length; i++) {
+      // half of the items have value but same order. The value of this items is sorted,
+      // so they should always be in order after sorting.
+      // The other half has defined order, but no (-1) value (they should appear after
+      // all above, when sorted).
+      final boolean equal = random.nextBoolean();
+      items[i] = new Item(equal ? (i+1) : -1, equal ? 0 : (random.nextInt(1000)+1));
+    }
+    
+    if (VERBOSE) System.out.println("Before: " + Arrays.toString(items));
+    // if you replace this with ArrayUtil.quickSort(), test should fail:
+    ArrayUtil.mergeSort(items);
+    if (VERBOSE) System.out.println("Sorted: " + Arrays.toString(items));
+    
+    Item last = items[0];
+    for (int i = 1; i < items.length; i++) {
+      final Item act = items[i];
+      if (act.order == 0) {
+        // order of "equal" items should be not mixed up
+        assertTrue(act.val > last.val);
+      }
+      assertTrue(act.order >= last.order);
+      last = act;
+    }
+  }
+  
+  // should produce no exceptions
+  public void testEmptyArraySort() {
+    Integer[] a = new Integer[0];
+    ArrayUtil.quickSort(a);
+    ArrayUtil.mergeSort(a);
+    ArrayUtil.insertionSort(a);
+    ArrayUtil.quickSort(a, Collections.reverseOrder());
+    ArrayUtil.mergeSort(a, Collections.reverseOrder());
+    ArrayUtil.insertionSort(a, Collections.reverseOrder());
+  }
+  
 }

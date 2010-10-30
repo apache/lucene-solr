@@ -45,18 +45,23 @@ import org.apache.lucene.util.ByteBlockPool.DirectAllocator;
  */
 public final class BytesRefHash {
 
-  private final ByteBlockPool pool;
+  public static final int DEFAULT_CAPACITY = 16;
+
+  // the following fields are needed by comparator,
+  // so package private to prevent access$-methods:
+  final ByteBlockPool pool;
+  int[] bytesStart;
+
+  private final BytesRef scratch1 = new BytesRef();
   private int hashSize;
   private int hashHalfSize;
   private int hashMask;
   private int count;
   private int lastCount = -1;
   private int[] ords;
-  private int[] bytesStart;
-  public static final int DEFAULT_CAPACITY = 16;
   private final BytesStartArray bytesStartArray;
   private AtomicLong bytesUsed;
-  
+
   /**
    * Creates a new {@link BytesRefHash} with a {@link ByteBlockPool} using a
    * {@link DirectAllocator}.
@@ -152,82 +157,47 @@ public final class BytesRefHash {
    * @param comp
    *          the {@link Comparator} used for sorting
    */
-  public int[] sort(Comparator<BytesRef> comp) {
+  public int[] sort(final Comparator<BytesRef> comp) {
     final int[] compact = compact();
-    quickSort(comp, compact, 0, count - 1);
+    new SorterTemplate() {
+      @Override
+      protected void swap(int i, int j) {
+        final int o = compact[i];
+        compact[i] = compact[j];
+        compact[j] = o;
+      }
+      
+      @Override
+      protected int compare(int i, int j) {
+        final int ord1 = compact[i], ord2 = compact[j];
+        assert bytesStart.length > ord1 && bytesStart.length > ord2;
+        return comp.compare(pool.setBytesRef(scratch1, bytesStart[ord1]),
+          pool.setBytesRef(scratch2, bytesStart[ord2]));
+      }
+
+      @Override
+      protected void setPivot(int i) {
+        final int ord = compact[i];
+        assert bytesStart.length > ord;
+        pool.setBytesRef(pivot, bytesStart[ord]);
+      }
+  
+      @Override
+      protected int comparePivot(int j) {
+        final int ord = compact[j];
+        assert bytesStart.length > ord;
+        return comp.compare(pivot,
+          pool.setBytesRef(scratch2, bytesStart[ord]));
+      }
+      
+      private final BytesRef pivot = new BytesRef(),
+        scratch1 = new BytesRef(), scratch2 = new BytesRef();
+    }.quickSort(0, count - 1);
     return compact;
   }
 
-  private void quickSort(Comparator<BytesRef> comp, int[] entries, int lo,
-      int hi) {
-    if (lo >= hi)
-      return;
-    if (hi == 1 + lo) {
-      if (compare(comp, entries[lo], entries[hi]) > 0) {
-        final int tmp = entries[lo];
-        entries[lo] = entries[hi];
-        entries[hi] = tmp;
-      }
-      return;
-    }
-    final int mid = (lo + hi) >>> 1;
-    if (compare(comp, entries[lo], entries[mid]) > 0) {
-      int tmp = entries[lo];
-      entries[lo] = entries[mid];
-      entries[mid] = tmp;
-    }
-
-    if (compare(comp, entries[mid], entries[hi]) > 0) {
-      int tmp = entries[mid];
-      entries[mid] = entries[hi];
-      entries[hi] = tmp;
-
-      if (compare(comp, entries[lo], entries[mid]) > 0) {
-        int tmp2 = entries[lo];
-        entries[lo] = entries[mid];
-        entries[mid] = tmp2;
-      }
-    }
-    int left = lo + 1;
-    int right = hi - 1;
-
-    if (left >= right)
-      return;
-
-    final int partition = entries[mid];
-
-    for (;;) {
-      while (compare(comp, entries[right], partition) > 0)
-        --right;
-
-      while (left < right && compare(comp, entries[left], partition) <= 0)
-        ++left;
-
-      if (left < right) {
-        final int tmp = entries[left];
-        entries[left] = entries[right];
-        entries[right] = tmp;
-        --right;
-      } else {
-        break;
-      }
-    }
-
-    quickSort(comp, entries, lo, left);
-    quickSort(comp, entries, left + 1, hi);
-  }
-
-  private final BytesRef scratch1 = new BytesRef();
-  private final BytesRef scratch2 = new BytesRef();
-
   private boolean equals(int ord, BytesRef b) {
     return pool.setBytesRef(scratch1, bytesStart[ord]).bytesEquals(b);
-  }
-
-  private int compare(Comparator<BytesRef> comp, int ord1, int ord2) {
-    assert bytesStart.length > ord1 && bytesStart.length > ord2;
-    return comp.compare(pool.setBytesRef(scratch1, bytesStart[ord1]),
-        pool.setBytesRef(scratch2, bytesStart[ord2]));
   }
 
   private boolean shrink(int targetSize) {

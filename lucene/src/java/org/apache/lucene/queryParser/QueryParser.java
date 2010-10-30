@@ -219,6 +219,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
       case NOT:
       case PLUS:
       case MINUS:
+      case BAREOPER:
       case LPAREN:
       case STAR:
       case QUOTED:
@@ -272,6 +273,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
       ;
     }
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case BAREOPER:
     case STAR:
     case QUOTED:
     case TERM:
@@ -316,6 +318,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
   boolean endInc=false;
   Query q;
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
+    case BAREOPER:
     case STAR:
     case TERM:
     case PREFIXTERM:
@@ -344,6 +347,10 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
         break;
       case NUMBER:
         term = jj_consume_token(NUMBER);
+        break;
+      case BAREOPER:
+        term = jj_consume_token(BAREOPER);
+                           term.image = term.image.substring(0,1);
         break;
       default:
         jj_la1[8] = jj_gen;
@@ -533,11 +540,16 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
   private int jj_gen;
   final private int[] jj_la1 = new int[21];
   static private int[] jj_la1_0;
+  static private int[] jj_la1_1;
   static {
       jj_la1_init_0();
+      jj_la1_init_1();
    }
    private static void jj_la1_init_0() {
-      jj_la1_0 = new int[] {0x300,0x300,0x1c00,0x1c00,0x7ed3f00,0x90000,0x20000,0x7ed2000,0x4e90000,0x100000,0x100000,0x20000,0x3000000,0xc0000000,0x8000000,0xc0000000,0x30000000,0x20000,0x100000,0x20000,0x7ed0000,};
+      jj_la1_0 = new int[] {0x300,0x300,0x1c00,0x1c00,0xfda7f00,0x120000,0x40000,0xfda6000,0x9d22000,0x200000,0x200000,0x40000,0x6000000,0x80000000,0x10000000,0x80000000,0x60000000,0x40000,0x200000,0x40000,0xfda2000,};
+   }
+   private static void jj_la1_init_1() {
+      jj_la1_1 = new int[] {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x1,0x0,0x1,0x0,0x0,0x0,0x0,0x0,};
    }
   final private JJCalls[] jj_2_rtns = new JJCalls[1];
   private boolean jj_rescan = false;
@@ -691,7 +703,7 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
   /** Generate ParseException. */
   public ParseException generateParseException() {
     jj_expentries.clear();
-    boolean[] la1tokens = new boolean[32];
+    boolean[] la1tokens = new boolean[33];
     if (jj_kind >= 0) {
       la1tokens[jj_kind] = true;
       jj_kind = -1;
@@ -702,10 +714,13 @@ public class QueryParser extends QueryParserBase implements QueryParserConstants
           if ((jj_la1_0[i] & (1<<j)) != 0) {
             la1tokens[j] = true;
           }
+          if ((jj_la1_1[i] & (1<<j)) != 0) {
+            la1tokens[32+j] = true;
+          }
         }
       }
     }
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < 33; i++) {
       if (la1tokens[i]) {
         jj_expentry = new int[1];
         jj_expentry[0] = i;

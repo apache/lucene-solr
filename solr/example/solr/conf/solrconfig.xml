@@ -871,6 +871,14 @@
        <!--<int name="carrot.numDescriptions">5</int>-->
        <!-- produce sub clusters -->
        <bool name="carrot.outputSubClusters">false</bool>
+       
+       <str name="defType">edismax</str>
+       <str name="qf">
+          text^0.5 features^1.0 name^1.2 sku^1.5 id^10.0 manu^1.1 cat^1.4
+       </str>
+       <str name="q.alt">*:*</str>
+       <str name="rows">10</str>
+       <str name="fl">*,score</str>
     </lst>     
     <arr name="last-components">
       <str>clusteringComponent</str>

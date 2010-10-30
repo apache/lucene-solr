@@ -20,6 +20,8 @@ package org.apache.solr.schema;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 import org.apache.noggit.CharArr;
+import org.apache.solr.search.MutableValueInt;
+import org.apache.solr.search.MutableValue;
 import org.apache.solr.search.function.ValueSource;
 import org.apache.solr.search.function.FieldCacheSource;
 import org.apache.solr.search.function.DocValues;
@@ -137,6 +139,24 @@ class SortableIntFieldSource extends FieldCacheSource {
       public String toString(int doc) {
         return description() + '=' + intVal(doc);
       }
+
+      @Override
+      public ValueFiller getValueFiller() {
+        return new ValueFiller() {
+          private final MutableValueInt mval = new MutableValueInt();
+
+          @Override
+          public MutableValue getValue() {
+            return mval;
+          }
+
+          @Override
+          public void fillValue(int doc) {
+            mval.value = intVal(doc);
+          }
+        };
+      }
+
     };
   }
 

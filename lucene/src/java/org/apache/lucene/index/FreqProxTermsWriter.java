@@ -20,7 +20,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +29,7 @@ import org.apache.lucene.index.codecs.PostingsConsumer;
 import org.apache.lucene.index.codecs.FieldsConsumer;
 import org.apache.lucene.index.codecs.TermsConsumer;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CollectionUtil;
 
 final class FreqProxTermsWriter extends TermsHashConsumer {
 
@@ -75,7 +75,7 @@ final class FreqProxTermsWriter extends TermsHashConsumer {
     final int numAllFields = allFields.size();
 
     // Sort by field name
-    Collections.sort(allFields);
+    CollectionUtil.quickSort(allFields);
 
     // TODO: allow Lucene user to customize this codec:
     final FieldsConsumer consumer = state.codec.fieldsConsumer(state);

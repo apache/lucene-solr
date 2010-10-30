@@ -18,7 +18,6 @@ package org.apache.lucene.search.spell;
  */
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -30,6 +29,7 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.MultiTermQuery;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
@@ -376,7 +376,7 @@ public class DirectSpellChecker {
       suggestions[index--] = suggestion;
     }
     
-    Arrays.sort(suggestions, Collections.reverseOrder(comparator));
+    ArrayUtil.mergeSort(suggestions, Collections.reverseOrder(comparator));
     if (numSug < suggestions.length) {
       SuggestWord trimmed[] = new SuggestWord[numSug];
       System.arraycopy(suggestions, 0, trimmed, 0, numSug);

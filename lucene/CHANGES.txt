@@ -152,6 +152,9 @@ API Changes
   call is the same as it was prior to the API change.
   (Grant Ingersoll, Mike McCandless)
 
+* LUCENE-2566: QueryParser: Unary operators +,-,! will not be treated as
+  operators if they are followed by whitespace. (yonik)
+
 New features
 
 * LUCENE-2604: Added RegexpQuery support to QueryParser. Regular expressions
@@ -321,9 +324,11 @@ Bug fixes
 
 Changes in backwards compatibility policy
 
-* LUCENE-1483: Removed utility class oal.util.SorterTemplate; this
-  class is no longer used by Lucene.  (Gunnar Wagenknecht via Mike
-  McCandless)
+* LUCENE-2719: Changed API of internal utility class
+  org.apche.lucene.util.SorterTemplate to support faster quickSort using
+  pivot values and also merge sort and insertion sort. If you have used
+  this class, you have to implement two more methods for handling pivots.
+  (Uwe Schindler, Robert Muir, Mike McCandless)
 
 * LUCENE-1923: Renamed SegmentInfo & SegmentInfos segString method to
   toString.  These are advanced APIs and subject to change suddenly.
@@ -591,9 +596,6 @@ Bug fixes
   can cause the same document to score to differently depending on
   what segment it resides in. (yonik)
 
-* LUCENE-2616: FastVectorHighlighter: out of alignment when the first value is
-  empty in multiValued field (Koji Sekiguchi)
-
 * LUCENE-2627: Fixed bug in MMapDirectory chunking when a file is an
   exact multiple of the chunk size.  (Robert Muir)
 
@@ -761,6 +763,12 @@ Optimizations
 
 * LUCENE-2556: Improve memory usage after cloning (Char)TermAttribute.
   (Adriano Crestani via Uwe Schindler)
+
+* LUCENE-2719: Improved TermsHashPerField's sorting to use a better
+  quick sort algorithm that dereferences the privot element not on
+  every compare call. Also replaced lots of sorting code in Lucene
+  by the improved SorterTemplate class.
+  (Uwe Schindler, Robert Muir, Mike McCandless)
 
 Build
 

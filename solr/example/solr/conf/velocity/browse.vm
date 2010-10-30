@@ -13,23 +13,33 @@
 </div>
 
 <div class="pagination">
-  <span><span class="results-found">$page.results_found</span> results found in ${response.responseHeader.QTime} ms</span>
+  #if($response.response.get('grouped'))
+    <span><span class="results-found">$response.response.get('grouped').size() group(s)</span> found in ${response.responseHeader.QTime} ms</span>
+  #else<span><span class="results-found">$page.results_found</span> results found in ${response.responseHeader.QTime} ms</span>
   Page <span class="page-num">$page.current_page_number</span> of <span
-        class="page-count">$page.page_count</span>
+        class="page-count">$page.page_count</span>#end
 </div>
 
 <div class="results">
-  #foreach($doc in $response.results)
-    #parse("hit.vm")
+  #if($response.response.get('grouped'))
+    #foreach($grouping in $response.response.get('grouped'))
+      #parse("hitGrouped.vm")
+    #end
+  #else
+    #foreach($doc in $response.results)
+      #parse("hit.vm")
+    #end
   #end
 </div>
 
 <div class="pagination">
+  #if($response.response.get('grouped'))
+  #else
   #link_to_previous_page("previous")
   <span class="results-found">$page.results_found</span> results found.
   Page <span class="page-num">$page.current_page_number</span> of <span
         class="page-count">$page.page_count</span>
   #link_to_next_page("next")
-
+  #end
   <br/>
 </div>

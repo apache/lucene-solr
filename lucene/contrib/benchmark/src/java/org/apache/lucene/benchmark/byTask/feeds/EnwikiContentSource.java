@@ -152,7 +152,10 @@ public class EnwikiContentSource extends ContentSource {
           title = contents.toString();
           break;
         case ID:
-          id = contents.toString();
+          //the doc id is the first one in the page.  All other ids after that one can be ignored according to the schema
+          if (id == null) {
+            id = contents.toString();
+          }
           break;
         default:
           // this element should be discarded.

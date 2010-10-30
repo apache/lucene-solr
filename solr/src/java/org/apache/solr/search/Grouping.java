@@ -173,6 +173,33 @@ class TopGroupCollector extends GroupCollector {
   @Override
   public void collect(int doc) throws IOException {
     matches++;
+
+    // if orderedGroups != null, then we already have collected N groups and
+    // can short circuit by comparing this document to the smallest group
+    // without having to even find what group this document belongs to.
+    // Even if this document belongs to a group in the top N, we know that
+    // we don't have to update that group.
+    //
+    // Downside: if the number of unique groups is very low, this is
+    // wasted effort as we will most likely be updating an existing group.
+    if (orderedGroups != null) {
+      for (int i = 0;; i++) {
+        final int c = reversed[i] * comparators[i].compareBottom(doc);
+        if (c < 0) {
+          // Definitely not competitive. So don't even bother to continue
+          return;
+        } else if (c > 0) {
+          // Definitely competitive.
+          break;
+        } else if (i == comparators.length - 1) {
+          // Here c=0. If we're at the last comparator, this doc is not
+          // competitive, since docs are visited in doc Id order, which means
+          // this doc cannot compete with any other document in the queue.
+          return;
+        }
+      }
+    }
+
     filler.fillValue(doc);
     SearchGroup group = groupMap.get(mval);
     if (group == null) {
@@ -187,29 +214,14 @@ class TopGroupCollector extends GroupCollector {
         for (FieldComparator fc : comparators)
           fc.copy(sg.comparatorSlot, doc);
         groupMap.put(sg.groupValue, sg);
+        if (groupMap.size() == nGroups) {
+          buildSet();
+        }
         return;
       }
 
-      if (orderedGroups == null) {
-        buildSet();
-      }
-
-
-      for (int i = 0;; i++) {
-        final int c = reversed[i] * comparators[i].compareBottom(doc);
-        if (c < 0) {
-          // Definitely not competitive.
-          return;
-        } else if (c > 0) {
-          // Definitely competitive.
-          break;
-        } else if (i == comparators.length - 1) {
-          // Here c=0. If we're at the last comparator, this doc is not
-          // competitive, since docs are visited in doc Id order, which means
-          // this doc cannot compete with any other document in the queue.
-          return;
-        }
-      }
+      // we already tested that the document is competitive, so replace
+      // the smallest group with this new group.
 
       // remove current smallest group
       SearchGroup smallest = orderedGroups.pollLast();

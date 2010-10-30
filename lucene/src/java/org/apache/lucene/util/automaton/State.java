@@ -32,7 +32,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.RamUsageEstimator;
 
 import java.io.Serializable;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -232,8 +231,8 @@ public class State implements Serializable, Comparable<State> {
   
   /** Sorts transitions array in-place. */
   public void sortTransitions(Comparator<Transition> comparator) {
-    if (numTransitions > 1)
-      Arrays.sort(transitionsArray, 0, numTransitions, comparator);
+    // mergesort seems to perform better on already sorted arrays:
+    if (numTransitions > 1) ArrayUtil.mergeSort(transitionsArray, 0, numTransitions, comparator);
   }
   
   /**

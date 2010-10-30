@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.TermFreqVector;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 
 /**
@@ -81,7 +82,7 @@ public class QueryTermVector implements TermFreqVector {
   
   private void processTerms(BytesRef[] queryTerms) {
     if (queryTerms != null) {
-      Arrays.sort(queryTerms);
+      ArrayUtil.quickSort(queryTerms);
       Map<BytesRef,Integer> tmpSet = new HashMap<BytesRef,Integer>(queryTerms.length);
       //filter out duplicates
       List<BytesRef> tmpList = new ArrayList<BytesRef>(queryTerms.length);

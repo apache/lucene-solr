@@ -19,12 +19,12 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.ThreadInterruptedException;
+import org.apache.lucene.util.CollectionUtil;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Collections;
 
 /** A {@link MergeScheduler} that runs each merge using a
  *  separate thread.
@@ -138,7 +138,7 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
   }
 
   // Larger merges come first
-  protected static class CompareByMergeDocCount implements Comparator<MergeThread> {
+  protected static final Comparator<MergeThread> compareByMergeDocCount = new Comparator<MergeThread>() {
     public int compare(MergeThread t1, MergeThread t2) {
       final MergePolicy.OneMerge m1 = t1.getCurrentMerge();
       final MergePolicy.OneMerge m2 = t2.getCurrentMerge();
@@ -148,13 +148,13 @@ public class ConcurrentMergeScheduler extends MergeScheduler {
 
       return c2 - c1;
     }
-  }
+  };
 
   /** Called whenever the running merges have changed, to
    *  pause & unpause threads. */
   protected synchronized void updateMergeThreads() {
 
-    Collections.sort(mergeThreads, new CompareByMergeDocCount());
+    CollectionUtil.mergeSort(mergeThreads, compareByMergeDocCount);
     
     final int count = mergeThreads.size();
     int pri = mergeThreadPriority;
