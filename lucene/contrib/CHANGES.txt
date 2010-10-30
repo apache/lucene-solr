@@ -132,6 +132,8 @@ Bug fixes
   always the case. If the dictionary is unavailable, the filter will now throw 
   UnsupportedOperationException in the constructor.  (Robert Muir)
 
+* LUCENE-2616: FastVectorHighlighter: out of alignment when the first value is
+  empty in multiValued field (Koji Sekiguchi)
    
 API Changes
 

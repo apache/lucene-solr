@@ -596,9 +596,6 @@ Bug fixes
   can cause the same document to score to differently depending on
   what segment it resides in. (yonik)
 
-* LUCENE-2616: FastVectorHighlighter: out of alignment when the first value is
-  empty in multiValued field (Koji Sekiguchi)
-
 * LUCENE-2627: Fixed bug in MMapDirectory chunking when a file is an
   exact multiple of the chunk size.  (Robert Muir)
 
