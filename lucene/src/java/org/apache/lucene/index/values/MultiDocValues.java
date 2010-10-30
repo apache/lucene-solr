@@ -19,7 +19,6 @@ package org.apache.lucene.index.values;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.apache.lucene.index.values.DocValues.Source;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FloatsRef;
@@ -28,7 +27,7 @@ import org.apache.lucene.util.ReaderUtil;
 
 public class MultiDocValues extends DocValues {
 
-  public static class DocValuesIndex { // nocommit is this necessary?
+  public static class DocValuesIndex {
     public final static DocValuesIndex[] EMPTY_ARRAY = new DocValuesIndex[0];
     final int start;
     final int length;
@@ -96,17 +95,7 @@ public class MultiDocValues extends DocValues {
     public Source load() throws IOException {
       return DUMMY;
     }
-
-    @Override
-    public Source getCached(boolean load) throws IOException {
-      return DUMMY;
-    }
-
-    @Override
-    public Source releaseCached() {
-      return DUMMY;
-    }
-
+   
     @Override
     public Values type() {
       return type;

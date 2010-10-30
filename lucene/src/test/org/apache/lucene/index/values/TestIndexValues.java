@@ -44,9 +44,9 @@ import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.codecs.CodecProvider;
+import org.apache.lucene.index.codecs.docvalues.DocValuesCodec;
 import org.apache.lucene.index.values.DocValues.SortedSource;
 import org.apache.lucene.index.values.DocValues.Source;
-import org.apache.lucene.index.codecs.docvalues.DocValuesCodec;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.util.BytesRef;
@@ -56,9 +56,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.OpenBitSet;
 import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util._TestUtil;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 
 public class TestIndexValues extends LuceneTestCase {
@@ -162,7 +160,7 @@ public class TestIndexValues extends LuceneTestCase {
       Source s;
       DocValues.SortedSource ss;
       if (mode == Bytes.Mode.SORTED) {
-        s = ss = r.loadSorted(comp);
+        s = ss = getSortedSource(r, comp);
       } else {
         s = getSource(r);
         ss = null;
@@ -436,13 +434,16 @@ public class TestIndexValues extends LuceneTestCase {
       switch (val) {
       case PACKED_INTS:
       case PACKED_INTS_FIXED: {
+        if(val == Values.PACKED_INTS_FIXED)
+          getDocValues(r, val.name());
         DocValues intsReader = getDocValues(r, val.name());
         Source ints = getSource(intsReader);
+        
         ValuesEnum intsEnum = intsReader.getEnum();
         assertNotNull(intsEnum);
         LongsRef enumRef = intsEnum.addAttribute(ValuesAttribute.class).ints();
         for (int i = 0; i < base; i++) {
-          assertEquals(0, ints.getInt(i));
+          assertEquals("index " + i, 0, ints.getInt(i));
           assertEquals(val.name() + " base: " + base + " index: " + i, i,
               random.nextBoolean() ? intsEnum.advance(i) : intsEnum.nextDoc());
           assertEquals(0, enumRef.get());
@@ -586,8 +587,7 @@ public class TestIndexValues extends LuceneTestCase {
 
     // TODO test unoptimized with deletions
     if (withDeletions || random.nextBoolean())
-      ;
-    w.optimize();
+      w.optimize();
     return deleted;
   }
 
@@ -598,7 +598,7 @@ public class TestIndexValues extends LuceneTestCase {
     final List<Values> byteVariantList = new ArrayList<Values>(BYTES);
     // run in random order to test if fill works correctly during merges
     Collections.shuffle(byteVariantList, random);
-    final int numValues = 333 + random.nextInt(150);
+    final int numValues = 179 + random.nextInt(151);
     for (Values byteIndexValue : byteVariantList) {
       List<Closeable> closeables = new ArrayList<Closeable>();
 
@@ -713,7 +713,11 @@ public class TestIndexValues extends LuceneTestCase {
   }
 
   private Source getSource(DocValues values) throws IOException {
-    return random.nextBoolean() ? values.load() : values.getCached(true);
+    // getSource uses cache internally
+    return random.nextBoolean() ? values.load() : values.getSource();
   }
-
+  private SortedSource getSortedSource(DocValues values, Comparator<BytesRef> comparator) throws IOException {
+    // getSortedSource uses cache internally
+    return random.nextBoolean() ? values.loadSorted(comparator) : values.getSortedSorted(comparator);
+  }
 }

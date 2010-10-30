@@ -62,7 +62,11 @@ public class ValuesAttributeImpl extends AttributeImpl implements ValuesAttribut
 
   @Override
   public void clear() {
-    // TODO
+    bytes = null;
+    ints = null;
+    floats = null;
+    type = null;
+    bytesComp = null;
   }
 
   @Override
@@ -91,9 +95,6 @@ public class ValuesAttributeImpl extends AttributeImpl implements ValuesAttribut
     }
   }
 
-  /* (non-Javadoc)
-   * @see java.lang.Object#hashCode()
-   */
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -105,9 +106,6 @@ public class ValuesAttributeImpl extends AttributeImpl implements ValuesAttribut
     return result;
   }
 
-  /* (non-Javadoc)
-   * @see java.lang.Object#equals(java.lang.Object)
-   */
   @Override
   public boolean equals(Object obj) {
     if (this == obj)

@@ -67,7 +67,11 @@ public abstract class FieldsConsumer implements Closeable {
       }
       if (mergeState.fieldInfo.hasDocValues()) {
         final DocValues docValues = fieldsEnum.docValues();
-        assert docValues != null : "DocValues are null for " + mergeState.fieldInfo.getDocValues();
+        // TODO: is this assert values and if so when?
+//        assert docValues != null : "DocValues are null for " + mergeState.fieldInfo.getDocValues();
+        if(docValues == null) { // for now just continue
+          continue; 
+        }
         final DocValuesConsumer docValuesConsumer = addValuesField(mergeState.fieldInfo);
         assert docValuesConsumer != null;
         docValuesConsumer.merge(mergeState, docValues);

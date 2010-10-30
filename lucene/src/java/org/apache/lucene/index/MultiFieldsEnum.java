@@ -163,10 +163,9 @@ public final  class MultiFieldsEnum extends FieldsEnum {
       FieldsEnumWithSlice withSlice = enumWithSlices[i];
       Slice slice = withSlice.slice;
       final DocValues values = withSlice.fields.docValues();
-
       final int start = slice.start;
       final int length = slice.length;
-      if (values != null) {
+      if (values != null && currentField.equals(withSlice.current)) {
         if (docsUpto != start) {
           type = values.type();
           docValuesIndex.add(new MultiDocValues.DocValuesIndex(
@@ -176,9 +175,8 @@ public final  class MultiFieldsEnum extends FieldsEnum {
         docValuesIndex.add(new MultiDocValues.DocValuesIndex(values, start,
             length));
         docsUpto = start + length;
-       
 
-      } else if (i+1 == numEnums && !docValuesIndex.isEmpty()) {
+      } else if (i + 1 == numEnums && !docValuesIndex.isEmpty()) {
         docValuesIndex.add(new MultiDocValues.DocValuesIndex(
             new MultiDocValues.DummyDocValues(start, type), docsUpto, start
                 - docsUpto));

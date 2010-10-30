@@ -353,7 +353,7 @@ public abstract class FieldComparator {
 
     @Override
     public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      currentReaderValues = reader.docValues(field).getCached(true);
+      currentReaderValues = reader.docValues(field).getSource();
       return this;
     }
     
@@ -555,7 +555,7 @@ public abstract class FieldComparator {
 
     @Override
     public FieldComparator setNextReader(IndexReader reader, int docBase) throws IOException {
-      currentReaderValues = reader.docValues(field).getCached(true);
+      currentReaderValues = reader.docValues(field).getSource();
       return this;
     }
     

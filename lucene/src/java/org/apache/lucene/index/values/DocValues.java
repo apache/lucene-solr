@@ -25,11 +25,8 @@ import org.apache.lucene.util.BytesRef;
 
 public abstract class DocValues implements Closeable {
 
-  private final Object lock = new Object();
-
-  private Source cachedReference;
-
   public static final DocValues[] EMPTY_ARRAY = new DocValues[0];
+  private SourceCache cache = new SourceCache.DirectSourceCache();
 
   public ValuesEnum getEnum() throws IOException {
     return getEnum(null);
@@ -40,20 +37,12 @@ public abstract class DocValues implements Closeable {
 
   public abstract Source load() throws IOException;
 
-  public Source getCached(boolean load) throws IOException {
-    synchronized (lock) { // TODO make sorted source cachable too 
-      if (load && cachedReference == null)
-        cachedReference = load();
-      return cachedReference;
-    }
+  public Source getSource() throws IOException {
+    return cache.load(this);
   }
-
-  public Source releaseCached() {
-    synchronized (lock) {
-      final Source retVal = cachedReference;
-      cachedReference = null;
-      return retVal;
-    }
+  
+  public SortedSource getSortedSorted(Comparator<BytesRef> comparator)  throws IOException {
+    return cache.laodSorted(this, comparator);
   }
 
   public SortedSource loadSorted(Comparator<BytesRef> comparator)
@@ -64,7 +53,14 @@ public abstract class DocValues implements Closeable {
   public abstract Values type();
   
   public void close() throws IOException {
-    releaseCached();
+    this.cache.close(this);
+  }
+  
+  public void setCache(SourceCache cache) {
+    synchronized (this.cache) {
+      this.cache.close(this);
+      this.cache = cache;
+    }
   }
 
   /**
@@ -137,5 +133,5 @@ public abstract class DocValues implements Closeable {
      */
     public abstract LookupResult getByValue(BytesRef value);
   }
-
+  
 }
