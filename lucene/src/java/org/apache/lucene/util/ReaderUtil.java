@@ -173,26 +173,4 @@ public class ReaderUtil {
     }
     return hi;
   }
-  
-  public static int subIndex(int n, Slice[] slices) {
-    // searcher/reader for doc n:
-    int size = slices.length;
-    int lo = 0; // search starts array
-    int hi = size - 1; // for first element less than n, return its index
-    while (hi >= lo) {
-      int mid = (lo + hi) >>> 1;
-      int midValue = slices[mid].start;
-      if (n < midValue)
-        hi = mid - 1;
-      else if (n > midValue)
-        lo = mid + 1;
-      else { // found a match
-        while (mid + 1 < size && slices[mid + 1].start == midValue) {
-          mid++; // scan to last match
-        }
-        return mid;
-      }
-    }
-    return hi;
-  }
 }
