@@ -76,6 +76,18 @@ public class MockSingleIntIndexOutput extends IntIndexOutput {
       }
       lastFP = fp;
     }
+
+    @Override
+    public void write(IntIndexOutput indexOut, boolean absolute) 
+      throws IOException {
+      if (absolute) {
+        indexOut.writeVLong(fp);
+      } else {
+        indexOut.writeVLong(fp - lastFP);
+      }
+      lastFP = fp;
+    }
+      
     @Override
     public String toString() {
       return Long.toString(fp);

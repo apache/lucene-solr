@@ -189,6 +189,24 @@ public abstract class VariableIntBlockIndexInput extends IntIndexInput {
     }
 
     @Override
+    public void read(final IntIndexInput.Reader indexIn, final boolean absolute) throws IOException {
+      if (absolute) {
+        fp = indexIn.readVLong();
+        upto = indexIn.next()&0xFF;
+      } else {
+        final long delta = indexIn.readVLong();
+        if (delta == 0) {
+          // same block
+          upto = indexIn.next()&0xFF;
+        } else {
+          // new block
+          fp += delta;
+          upto = indexIn.next()&0xFF;
+        }
+      }
+    }
+
+    @Override
     public String toString() {
       return "VarIntBlock.Index fp=" + fp + " upto=" + upto + " maxBlock=" + maxBlockSize;
     }

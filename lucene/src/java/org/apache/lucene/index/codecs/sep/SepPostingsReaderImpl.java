@@ -130,21 +130,14 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
   }
 
   private static class SepTermState extends TermState {
+    // We store only the seek point to the docs file because
+    // the rest of the info (freqIndex, posIndex, etc.) is
+    // stored in the docs file:
     IntIndexInput.Index docIndex;
-    IntIndexInput.Index freqIndex;
-    IntIndexInput.Index posIndex;
-    long skipOffset;
-    long payloadOffset;
 
     public Object clone() {
       SepTermState other = (SepTermState) super.clone();
       other.docIndex = (IntIndexInput.Index) docIndex.clone();
-      if (freqIndex != null) {
-        other.freqIndex = (IntIndexInput.Index) freqIndex.clone();
-      }
-      if (posIndex != null) {
-        other.posIndex = (IntIndexInput.Index) posIndex.clone();
-      }
       return other;
     }
 
@@ -152,22 +145,6 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       super.copy(_other);
       SepTermState other = (SepTermState) _other;
       docIndex.set(other.docIndex);
-      if (other.posIndex != null) {
-        if (posIndex == null) {
-          posIndex = (IntIndexInput.Index) other.posIndex.clone();
-        } else {
-          posIndex.set(other.posIndex);
-        }
-      }
-      if (other.freqIndex != null) {
-        if (freqIndex == null) {
-          freqIndex = (IntIndexInput.Index) other.freqIndex.clone();
-        } else {
-          freqIndex.set(other.freqIndex);
-        }
-      }
-      skipOffset = other.skipOffset;
-      payloadOffset = other.payloadOffset;
     }
 
     @Override
@@ -184,39 +161,8 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
   }
 
   @Override
-  public void readTerm(IndexInput termsIn, FieldInfo fieldInfo, TermState _termState, boolean isIndexTerm) throws IOException {
-    final SepTermState termState = (SepTermState) _termState;
-
-    // read freq index
-    if (!fieldInfo.omitTermFreqAndPositions) {
-      if (termState.freqIndex == null) {
-        assert isIndexTerm;
-        termState.freqIndex = freqIn.index();
-        termState.posIndex = posIn.index();
-      }
-      termState.freqIndex.read(termsIn, isIndexTerm);
-    }
-
-    // read doc index
-    termState.docIndex.read(termsIn, isIndexTerm);
-
-    // read skip index
-    if (isIndexTerm) {    
-      termState.skipOffset = termsIn.readVLong();
-    } else if (termState.docFreq >= skipInterval) {
-      termState.skipOffset += termsIn.readVLong();
-    }
-
-    // read pos, payload index
-    if (!fieldInfo.omitTermFreqAndPositions) {
-      termState.posIndex.read(termsIn, isIndexTerm);
-      final long v = termsIn.readVLong();
-      if (isIndexTerm) {
-        termState.payloadOffset = v;
-      } else {
-        termState.payloadOffset += v;
-      }
-    }
+  public void readTerm(IndexInput termsIn, FieldInfo fieldInfo, TermState termState, boolean isIndexTerm) throws IOException {
+    ((SepTermState) termState).docIndex.read(termsIn, isIndexTerm);
   }
 
   @Override
@@ -311,14 +257,18 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       docIndex.set(termState.docIndex);
       docIndex.seek(docReader);
 
-      skipOffset = termState.skipOffset;
-
       if (!omitTF) {
-        freqIndex.set(termState.freqIndex);
+        freqIndex.read(docReader, true);
         freqIndex.seek(freqReader);
+        
+        posIndex.read(docReader, true);
+        // skip payload offset
+        docReader.readVLong();
       } else {
         freq = 1;
       }
+      skipOffset = docReader.readVLong();
+
       docFreq = termState.docFreq;
       count = 0;
       doc = 0;
@@ -498,17 +448,15 @@ public class SepPostingsReaderImpl extends PostingsReaderBase {
       docIndex.set(termState.docIndex);
       docIndex.seek(docReader);
 
-      freqIndex.set(termState.freqIndex);
+      freqIndex.read(docReader, true);
       freqIndex.seek(freqReader);
 
-      posIndex.set(termState.posIndex);
+      posIndex.read(docReader, true);
       posSeekPending = true;
-      //posIndex.seek(posReader);
       payloadPending = false;
 
-      skipOffset = termState.skipOffset;
-      payloadOffset = termState.payloadOffset;
-      //payloadIn.seek(payloadOffset);
+      payloadOffset = docReader.readVLong();
+      skipOffset = docReader.readVLong();
 
       docFreq = termState.docFreq;
       count = 0;
