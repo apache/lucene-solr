@@ -262,6 +262,9 @@ Optimizations
 
 * SOLR-2046: add common functions to scripts-util. (koji)
 
+* SOLR-2200: Improve the performance of DataImportHandler for large delta-import
+  updates. (Mark Waddle via rmuir)
+
 Bug Fixes
 ----------------------
 
