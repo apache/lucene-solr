@@ -1,22 +1,5 @@
 Lucene contrib change Log
 
-New Features
-
-  * LUCENE-2500: Added DirectIOLinuxDirectory, a Linux-specific
-    Directory impl that uses the O_DIRECT flag to bypass the buffer
-    cache.  This is useful to prevent segment merging from evicting
-    pages from the buffer cache, since fadvise/madvise do not seem.
-    (Michael McCandless)
-
-  * LUCENE-2479: Added ability to provide a sort comparator for spelling suggestions along
-    with two implementations.  The existing comparator (score, then frequency) is the default (Grant Ingersoll)
-
-  * LUCENE-2608: Added the ability to specify the accuracy at method time in the SpellChecker.  The per class
-    approach is also still available.  (Grant Ingersoll)
-
-  * LUCENE-2482: Added IndexSorter tool for sorting postings data in a way that maximizes
-    quality of "early terminated" search results (Andrzej Bialecki)
-
 ======================= Lucene 3.x (not yet released) =======================
 
 Changes in backwards compatibility policy
@@ -110,6 +93,9 @@ Bug fixes
    always the case. If the dictionary is unavailable, the filter will now throw 
    UnsupportedOperationException in the constructor.  (Robert Muir)
    
+ * LUCENE-2732: Fix charset problems in XML loading in
+   HyphenationCompoundWordTokenFilter.  (Uwe Schinder)
+   
 API Changes
 
  * LUCENE-2147: Spatial GeoHashUtils now always decode GeoHash strings
@@ -146,7 +132,22 @@ API Changes
  * LUCENE-1370: Added ShingleFilter option to output unigrams if no shingles
    can be generated. (Chris Harris via Steven Rowe)
    
-New features
+New Features
+
+ * LUCENE-2500: Added DirectIOLinuxDirectory, a Linux-specific
+   Directory impl that uses the O_DIRECT flag to bypass the buffer
+   cache.  This is useful to prevent segment merging from evicting
+   pages from the buffer cache, since fadvise/madvise do not seem.
+   (Michael McCandless)
+
+ * LUCENE-2479: Added ability to provide a sort comparator for spelling suggestions along
+   with two implementations.  The existing comparator (score, then frequency) is the default (Grant Ingersoll)
+
+ * LUCENE-2608: Added the ability to specify the accuracy at method time in the SpellChecker.  The per class
+   approach is also still available.  (Grant Ingersoll)
+
+ * LUCENE-2482: Added IndexSorter tool for sorting postings data in a way that maximizes
+   quality of "early terminated" search results (Andrzej Bialecki)
 
  * LUCENE-2306: Add NumericRangeFilter and NumericRangeQuery support to XMLQueryParser.
    (Jingkei Ly, via Mark Harwood)
