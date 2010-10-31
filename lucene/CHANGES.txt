@@ -309,6 +309,9 @@ Bug fixes
   fields could lead to invalid ArrayIndexOutOfBoundsExceptions.
   (Robert Muir, Mike McCandless)
 
+* LUCENE-2732: Fix charset problems in XML loading in
+  HyphenationCompoundWordTokenFilter.  (Uwe Schinder)
+
 New features
 
 * LUCENE-2128: Parallelized fetching document frequencies during weight
